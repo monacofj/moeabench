@@ -1,0 +1,10 @@
+#!/bin/sh
+
+run() {
+	"$@" || exit $?
+}
+
+run isort optbench tests
+run ruff check --fix optbench tests
+run mypy optbench tests
+

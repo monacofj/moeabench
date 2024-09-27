@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "optbench"
+version = "0.1.0"
+description = "Mostly-automated benchmarking framework for numerical optimization engines"
+authors = ["Matheus Branco Borella <mbr@lobisomem.gay>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+matplotlib = "^3.9.2"
+numpy = "^2.1.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+mypy = "^1.11.2"
+isort = "^5.13.2"
+ruff = "^0.6.7"
+
+[tool.mypy]
+plugins = "numpy.typing.mypy_plugin"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
