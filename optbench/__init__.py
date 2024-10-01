@@ -18,14 +18,14 @@ class Problem:
 		Returns the number of objectives in this test problem.
 		"""
 		raise NotImplementedError()
-	
+
 	@property
 	def params(self) -> int:
 		"""
 		Returns the number of parameters in this test problem.
 		"""
 		raise NotImplementedError()
-	
+
 	def range_of(self, param: int) -> List[Tuple[float, float]]:
 		"""
 		Returns the list of ranges containing acceptable values for the
@@ -37,7 +37,7 @@ class Problem:
 		- `IndexError`: If `param` is greater than or equal to the `self.params`.
 		"""
 		raise NotImplementedError()
-	
+
 	def value_of(self, objective: int, params: List[float]) -> float:
 		"""
 		Returns the value of the given objective function, when evaluated with
@@ -76,12 +76,12 @@ class DTLZ1(Problem):
 
 		from math import cos, pi
 		return 100 * (len(x) + sum([(xi - 0.5) ** 2 - cos(20 * pi * (xi - 0.5)) for xi in x]))
-	
+
 	@override
 	@property
 	def objectives(self) -> int:
 		return self._objectives
-	
+
 	@override
 	@property
 	def params(self) -> int:
@@ -95,7 +95,7 @@ class DTLZ1(Problem):
 
 		# All parameters in DTLZ1 are confined to the range 0 <= x <= 1.
 		return [(0, 1)]
-	
+
 	@override
 	def value_of(self, objective: int, params: List[float]) -> float:
 		if objective >= self._objectives:
@@ -115,7 +115,7 @@ class DTLZ1(Problem):
 		c = 1 + self._g(hi)
 
 		return a * b * c / 2
-	
+
 	@override
 	def optimum_sdf(self, objs: List[float]) -> float:
 		# The Pareto-optimal surface for DTLZ1 is the hyperplane defined by
@@ -126,7 +126,7 @@ class Point:
 	_begin: int
 	_end: int
 	_points: List[float]
-	
+
 	def __init__(self, points: List[float], begin: int, end: int):
 		self._points = points
 		self._begin = begin
@@ -165,7 +165,7 @@ class Engine:
 		self._problem = problem
 		self._points = points
 		self._generation = 0
-		
+
 		self._points_curr = [0.0] * (self._problem.params * points)
 
 		# Scatter the initial points uniformily over the ranges allowed by the
@@ -186,7 +186,7 @@ class Engine:
 
 				sample = r * ranges[-1]
 				index = bisect.bisect(ranges, sample)
-				
+
 				# Should never fail unless `r` is outside the `0 <= x < 1` range,
 				# and we've hopefully already checked for that.
 				assert index < len(ranges)
@@ -230,7 +230,7 @@ class Engine:
 		"""
 		pnt = self._points_orig[point * self._problem.params:(point + 1) * self._problem.params]
 		obj = [self._problem.value_of(j, pnt) for j in range(self._problem.objectives)]
-		
+
 		return self._problem.optimum_sdf(obj)
 
 	def plot(self, dim0: int, dim1: int | None = None, dim2: int | None = None) -> None:
@@ -252,7 +252,7 @@ class Engine:
 			raise ValueError(f"dim1 ({dim1}) is out of bounds for {self._problem.objectives} objective space dimensions")
 
 		import matplotlib.pyplot as plt
-		from mpl_toolkits.mplot3d import Axes3D  # type: ignore[import-untyped] 
+		from mpl_toolkits.mplot3d import Axes3D  # type: ignore[import-untyped]
 
 		fig = plt.figure()
 		fig = plt.figure(figsize=(10, 15))

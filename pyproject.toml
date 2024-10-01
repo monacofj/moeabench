@@ -20,6 +20,10 @@ ruff = "^0.6.7"
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
 
+[tool.ruff.lint]
+select = ["E", "W", "F"]
+ignore = ["W191", "E501"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
