@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import bisect
 import random
-from typing import Callable, Generator, List, Tuple, override
+from typing import Callable, Generator, List, Tuple
+
+from typing_extensions import override
 
 
 class Problem:
