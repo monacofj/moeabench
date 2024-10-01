@@ -123,6 +123,66 @@ class DTLZ1(Problem):
 		# `sum[objs] = 0.5`. We return the signed distance to it.
 		return sum(objs) - 0.5
 
+
+class DTLZ2(Problem):
+	"""
+	The DTLZ2 family of test problems, defined in Section 6.7.2.
+	"""
+
+	def __init__(self, objectives: int, params: int):
+		self._objectives = objectives
+		self._params = params
+
+	def _g(self, x: List[float]) -> float:
+		assert len(x) == self._params - self._objectives + 1
+		return sum(((val - 0.5) ** 2 for val in x))
+
+	@override
+	@property
+	def objectives(self) -> int:
+		return self._objectives
+
+	@override
+	@property
+	def params(self) -> int:
+		return self._params
+
+	@override
+	def range_of(self, param: int) -> List[Tuple[float, float]]:
+		if param >= self._params:
+			# Not strictly necessary here, but still good not to fail silently.
+			raise IndexError(f"requested parameter {param} is outside the valid parameter range 0 <= i < {self._params}")
+
+		# All parameters in DTLZ2 are confined to the range 0 <= x <= 1.
+		return [(0, 1)]
+
+	@override
+	def value_of(self, objective: int, params: List[float]) -> float:
+		if objective >= self._objectives:
+			raise IndexError(f"requested objective {objective} is outside the valid objective range 0 <= i < {self._objectives}")
+		if len(params) != self._params:
+			raise ValueError(f"parameter list has unexpected length: expected {self._params}, got {len(params)}")
+
+		# Split the parameter vector into the part used by the objective function
+		# and the part used by `g(x)`.
+		lo = params[:-(self._params - self._objectives + 1)]
+		hi = params[len(lo):]
+		top = self._objectives - objective - 1
+
+		from math import cos, pi, prod, sin
+		a = prod((cos(val * pi / 2) for val in lo[:top]))
+		b = sin(lo[top] * pi / 2) if objective > 0 else 1
+		c = 1 + self._g(hi)
+
+		return a * b * c
+
+	@override
+	def optimum_sdf(self, objs: List[float]) -> float:
+		# The Pareto-optimal surface for DTLZ2 is the sphere defined by
+		# `sum[objs]{x^2} = 1`. We return the signed distance to it.
+		return sum((obj ** 2 for obj in objs)) - 1
+
+
 class Point:
 	_begin: int
 	_end: int
@@ -143,6 +203,7 @@ class Point:
 
 		for i, x in enumerate(value):
 			self._points[self._begin + i] = x
+
 
 class Engine:
 	_problem: Problem
@@ -286,5 +347,3 @@ class Engine:
 
 		ax.view_init(elev=360, azim=25)
 		plt.show()
-
-
