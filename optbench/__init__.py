@@ -65,9 +65,10 @@ class DTLZ1(Problem):
 	The DTLZ1 family of test problems, defined in Section 6.7.1.
 	"""
 
-	def __init__(self, objectives: int, params: int):
+	def __init__(self, objectives: int, params: int, g: Callable[[List[float]], float] | None = None):
 		self._objectives = objectives
 		self._params = params
+		self._target_g = g if g is not None else self._g
 
 	def _g(self, x: List[float]) -> float:
 		# Make sure the length of the vector we've been given corresponds to the
@@ -112,7 +113,7 @@ class DTLZ1(Problem):
 		from math import prod
 		a = prod(lo[:top])
 		b = (1 - lo[top]) if objective > 0 else 1
-		c = 1 + self._g(hi)
+		c = 1 + self._target_g(hi)
 
 		return a * b * c / 2
 
