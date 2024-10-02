@@ -183,6 +183,50 @@ class DTLZ2(Problem):
 		return sum((obj ** 2 for obj in objs)) - 1
 
 
+class DTLZ3(DTLZ2):
+	"""
+	The DTLZ3 family of test problems, defined in Section 6.7.3.
+	"""
+
+	@override
+	def _g(self, x: List[float]) -> float:
+		k = self._params - self._objectives + 1
+		assert len(x) == k
+
+		from math import cos, pi
+		return 100 * (k + sum(((xi - 0.5) ** 2 - cos(20 * pi * (xi - 0.5)) for xi in x)))
+
+
+class DTLZ4(DTLZ2):
+	"""
+	The DTLZ3 family of test problems, defined in Section 6.7.3.
+	"""
+
+	def __init__(self, objectives: int, params: int, alpha: int):
+		super().__init__(objectives, params)
+		self._alpha = alpha
+
+	@override
+	def value_of(self, objective: int, params: List[float]) -> float:
+		if objective >= self._objectives:
+			raise IndexError(f"requested objective {objective} is outside the valid objective range 0 <= i < {self._objectives}")
+		if len(params) != self._params:
+			raise ValueError(f"parameter list has unexpected length: expected {self._params}, got {len(params)}")
+
+		# Split the parameter vector into the part used by the objective function
+		# and the part used by `g(x)`.
+		lo = params[:-(self._params - self._objectives + 1)]
+		hi = params[len(lo):]
+		top = self._objectives - objective - 1
+
+		from math import cos, pi, prod, sin
+		a = prod((cos(val ** self._alpha * pi / 2) for val in lo[:top]))
+		b = sin(lo[top] ** self._alpha * pi / 2) if objective > 0 else 1
+		c = 1 + self._g(hi)
+
+		return a * b * c
+
+
 class Point:
 	_begin: int
 	_end: int
