@@ -20,10 +20,37 @@ ruff = "^0.6.7"
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
 
+[tool.ruff]
+line-length = 80
+
 [tool.ruff.lint]
-select = ["E", "W", "F"]
 ignore = ["W191", "E501"]
+
+# This list of lint rules was shamelessly ripped off of Pwndbg. Thanks, Pwndbg!
+select = [
+    "A",
+    "E",
+    "F",
+    "W",
+    "C4",
+    "ISC",
+    "SLOT",
+    "FLY",
+    "PGH",
+    "RET506",
+    "RET507",
+    "RET508",
+    "RET505",
+    "SLF",
+    "SIM",
+    "PTH",
+]
+
+[tool.isort]
+profile = "black"
+add_imports = "from __future__ import annotations"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+

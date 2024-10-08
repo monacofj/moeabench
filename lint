@@ -6,5 +6,6 @@ run() {
 
 run isort optbench tests
 run ruff check --fix optbench tests
+run ruff format optbench tests
 run mypy optbench tests
 
