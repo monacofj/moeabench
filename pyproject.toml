@@ -26,7 +26,7 @@ plugins = "numpy.typing.mypy_plugin"
 line-length = 80
 
 [tool.ruff.lint]
-ignore = ["W191", "E501"]
+ignore = ["W191", "E501", "SLF001"]
 
 # This list of lint rules was shamelessly ripped off of Pwndbg. Thanks, Pwndbg!
 select = [

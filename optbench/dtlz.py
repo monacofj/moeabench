@@ -151,7 +151,9 @@ class DTLZ2(Problem):
     def optimum_sdf(self, objs: List[float]) -> float:
         # The Pareto-optimal surface for DTLZ2 is the sphere defined by
         # `sum[objs]{x^2} = 1`. We return the signed distance to it.
-        return sum((obj**2 for obj in objs)) - 1
+        sphere = sum((obj**2 for obj in objs)) - 1
+        slices = max((-obj for obj in objs))
+        return max(sphere, slices)
 
 
 class DTLZ3(DTLZ2):
@@ -276,7 +278,9 @@ class DTLZ5(Problem):
     def optimum_sdf(self, objs: List[float]) -> float:
         # The Pareto-optimal surface for DTLZ2 is the sphere defined by
         # `sum[objs]{x^2} = 1`. We return the signed distance to it.
-        return sum((obj**2 for obj in objs)) - 1
+        sphere = sum((obj**2 for obj in objs)) - 1
+        slices = max((-obj for obj in objs))
+        return max(sphere, slices)
 
 
 class DTLZ6(DTLZ5):
