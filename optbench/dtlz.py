@@ -336,14 +336,24 @@ class DTLZ7(Problem):
                 points[height_key] = [
                     p
                     for p in points[height_key]
-                    if not all((a >= b for a, b in zip(p, point)))
+                    if not all((a >= b for a, b in zip(p[:-1], point[:-1])))
                 ]
+
+            dominated = False
+            for p in points[height_key]:
+                if all((a >= b for a, b in zip(point[:-1], p[:-1]))):
+                    # This point is dominated, skip it.
+                    dominated = True
+                    break
+            if dominated:
+                continue
 
             points[height_key].append(point)
 
         pts = []
         for item in points.values():
             pts.extend(item)
+        self._pts = pts
         self.tree = KDTree(pts, copy_data=True)
 
     def _h(self, params: List[float], g: float) -> float:

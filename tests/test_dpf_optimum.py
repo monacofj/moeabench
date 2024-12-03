@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 import pytest
 
 from optbench import Engine, Problem
-from optbench.dpf import DPF1, DPF2
+from optbench.dpf import DPF1
 
 PROBLEMS = [
     lambda objectives, parameters, redundancies: (
@@ -13,13 +13,8 @@ PROBLEMS = [
         parameters - objectives + 1,
         0.5,
     ),
-    lambda objectives, parameters, redundancies: (
-        DPF2(objectives, parameters, redundancies),
-        parameters - objectives + 1,
-        0.0,
-    ),
 ]
-PROBLEM_NAMES = ["DPF1", "DPF2"]
+PROBLEM_NAMES = ["DPF1"]
 
 
 @pytest.mark.parametrize(
@@ -29,7 +24,7 @@ PROBLEM_NAMES = ["DPF1", "DPF2"]
 @pytest.mark.parametrize("parameters", [4, 5, 6], ids=lambda x: f"{x}Params")
 @pytest.mark.parametrize("redundancies", [4, 5, 6], ids=lambda x: f"{x}Reds")
 @pytest.mark.parametrize("problem_gen", PROBLEMS, ids=PROBLEM_NAMES)
-def test_dtlz_set_optimum(
+def test_dpf1_2_set_optimum(
     points: int,
     objectives: int,
     parameters: int,

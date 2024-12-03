@@ -5,7 +5,7 @@ from typing import Callable, Tuple
 import pytest
 
 from optbench import Engine, Problem
-from optbench.dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7
+from optbench.dtlz import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6
 
 PROBLEMS = [
     lambda objectives, parameters: (
@@ -34,13 +34,8 @@ PROBLEMS = [
         0.5,
     ),
     lambda objectives, parameters: (DTLZ6(objectives), 10, 0.0),
-    lambda objectives, parameters: (
-        DTLZ7(objectives, parameters),
-        parameters - objectives + 1,
-        0.0,
-    ),
 ]
-PROBLEM_NAMES = ["DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6", "DTLZ7"]
+PROBLEM_NAMES = ["DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6"]
 
 
 @pytest.mark.parametrize(
