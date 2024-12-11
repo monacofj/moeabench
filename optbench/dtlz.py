@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Callable, Dict, List, Tuple
 
 from scipy.spatial import KDTree
@@ -213,15 +214,41 @@ class DTLZ5(Problem):
     The DTLZ5 family of test problems, defined in Section 6.7.5.
     """
 
-    def __init__(self, objectives: int, params: int):
+    def __init__(self, objectives: int, params: int, samples: int = 1000):
         self._objectives = objectives
         self._params = params
+        assert samples > 0
+
+        pts: List[List[float]] = []
+
+        # The sampling for DTLZ5 is made in accordance with Tian, Y., Xiang, X.,
+        # Zhang, X., Cheng, R., & Jin, Y. (2018). Sampling Reference Points on
+        # the Pareto Fronts of Benchmark Multi-Objective Optimization Problems.
+        # 2018 IEEE Congress on Evolutionary Computation (CEC).
+        # doi:10.1109/cec.2018.8477730
+        from math import cos, pi, sin, sqrt
+
+        for n in range(samples):
+            x = random.random()
+            v = 1 / sqrt(2)
+            point = [
+                pow(v, objectives - max(i + 1, 2)) * cos(pi / 2 * x)
+                for i in range(objectives - 1)
+            ]
+            point.append(sin(pi / 2 * x))
+
+            pts.append(point)
+
+        self._pts = pts
+        self._tree = KDTree(pts, copy_data=True)
 
     def _g(self, x: List[float]) -> float:
         assert len(x) == self._params - self._objectives + 1
         return sum(((val - 0.5) ** 2 for val in x))
 
-    def _theta(self, xi: float, g: float) -> float:
+    def _theta(self, xi: float, g: float, index: int) -> float:
+        if index == 0:
+            return xi
         from math import pi
 
         return pi / (4 * (1 + g)) * (1 + 2 * g * xi)
@@ -268,19 +295,23 @@ class DTLZ5(Problem):
 
         g = self._g(hi)
 
-        a = prod((cos(self._theta(val, g) * pi / 2) for val in lo[:top]))
-        b = sin(self._theta(lo[top], g) * pi / 2) if objective > 0 else 1
+        a = prod(
+            (
+                cos(self._theta(val, g, i) * pi / 2)
+                for i, val in enumerate(lo[:top])
+            )
+        )
+        b = sin(self._theta(lo[top], g, top) * pi / 2) if objective > 0 else 1
         c = 1 + g
 
         return a * b * c
 
     @override
     def optimum_sdf(self, objs: List[float]) -> float:
-        # The Pareto-optimal surface for DTLZ2 is the sphere defined by
-        # `sum[objs]{x^2} = 1`. We return the signed distance to it.
-        sphere = sum((obj**2 for obj in objs)) - 1
-        slices = max((-obj for obj in objs))
-        return max(sphere, slices)
+        nearest = self._tree.query(objs)[0]
+
+        assert isinstance(nearest, float)
+        return nearest
 
 
 class DTLZ6(DTLZ5):
