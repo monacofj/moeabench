@@ -13,21 +13,15 @@ The package offers facilities to programmatically create benchmark programs and 
 ## Quick Start
 
 ```python
-from MoeaBench import moeabench                     # Import MoeaBench
+from MoeaBench import mb                        # Import MoeaBench
 
-exp = moeabench.experiment()                        # Create an instance of an experiment
-exp.benchmark = moeabench.benchmark.DTLZ1()         # Select which benchmark to run in the experiment
-exp.moea          = moeabench.moea.NSGA_III()       # Select with MOEA to run in the experiment
-exp.run                                             # Run the optimization process
-moeabench.pareto(exp.result, exp.pof)               # Plot the 3D pareto surface (found and optmimal) 
+exp = mb.experiment()                           # Create an instance of an experiment
+exp.benchmark = mb.benchmarks.DTLZ2()           # Select which benchmark to run
+exp.moea      = mb.moeas.NSGA3()                # Select which MOEA to run
 
-from myStuff import my_moea, my_bench               # Import your own MOEA and benchmarks
-moeabench.add_moea(my_moea)                         # Plug them into moeabench
+exp.run()                                       # Run the optimization process
 
-exp2 = moeabench.experiment()                       # Then proceed as usual  to
-exp2.moea      = moeabench.moea.my_moea()           # select your custom MOEA,
-exp2.behchmark = moeabench.benchmark.my_benchmark() # select your custom benchmark
-exp2.run                                            # and run the optmization experiment.
+mb.spaceplot(exp.front(), mode='static')        # Plot the 3D pareto front
 ```
 
 Read more about other MoeaBench capabilties in `docs/manual.md`.
