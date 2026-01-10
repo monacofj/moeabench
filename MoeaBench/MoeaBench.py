@@ -70,7 +70,7 @@ class MoeaBench(I_UserMoeaBench):
             print(e)   
         
 
-    def timeplot(self, *args, objectives=None):
+    def timeplot(self, *args, objectives=None, mode='interactive'):
         """
         Plots metrics over time (generations).
         Accepts MetricMatrix objects (from mb.metrics.*) or legacy inputs.
@@ -81,7 +81,7 @@ class MoeaBench(I_UserMoeaBench):
             
             if is_new_metric:
                  from MoeaBench.metrics import plot_matrix
-                 plot_matrix(args)
+                 plot_matrix(args, mode=mode)
             else:
                  print("Warning: use mb.metrics.* for timeplot support.")
                  # Fallback logic could go here if we identified legacy metric objects
