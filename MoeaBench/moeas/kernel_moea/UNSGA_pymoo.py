@@ -11,6 +11,7 @@ from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.core.problem import Problem
 from pymoo.core.callback import Callback
+from MoeaBench.progress import get_active_pbar
 
 
 class callback_stop(Callback):
@@ -70,7 +71,30 @@ class callback_stop(Callback):
         self.arr_x_dom.append(x_dom)
 
         self.save(algorithm.n_gen, len(algorithm.pop))
-        if  callable(self.stop) and self.stop(self.experiment):
+        
+        # Progress Bar Support
+        pbar = get_active_pbar()
+        if pbar:
+            # Default: progress is based on generations
+            progress = algorithm.n_gen
+            
+            # Custom Stop Function Contract Logic
+            if callable(self.stop):
+                stop_val = self.stop(self.experiment)
+                
+                if isinstance(stop_val, bool):
+                    if stop_val:
+                        progress = 1.0 # Force bar to end
+                        algorithm.termination.force_termination = True
+                elif isinstance(stop_val, (int, float)):
+                    # If user returns float, it's fractional progress (0-1)
+                    # MoeaProgress handles both int(step) and float(fraction)
+                    progress = stop_val
+                    if stop_val >= 1.0:
+                        algorithm.termination.force_termination = True
+            
+            pbar.update_to(progress)
+        elif callable(self.stop) and self.stop(self.experiment):
             algorithm.termination.force_termination = True
 
 

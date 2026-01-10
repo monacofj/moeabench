@@ -37,8 +37,21 @@ class Run:
         """
         self.seed = seed
         
-        # Unwrap CACHE object to find the actual data container (DATA_conf)
-        self._engine_result = self._find_data_conf(engine_result)
+        # Store CACHE (engine_result) 
+        self._cache = engine_result
+        self._data_conf_cache = None
+
+    @property
+    def _engine_result(self):
+        """Lazy access to the internal DATA_conf."""
+        if self._data_conf_cache is not None:
+            return self._data_conf_cache
+            
+        try:
+            self._data_conf_cache = self._find_data_conf(self._cache)
+            return self._data_conf_cache
+        except ValueError:
+            return None
 
     def _find_data_conf(self, res):
         # res is likely a CACHE object
@@ -67,7 +80,9 @@ class Run:
 
     def __len__(self):
         # Assuming get_F_GEN returns a list of generations
-        return len(self._engine_result.get_F_GEN())
+        res = self._engine_result
+        if res is None: return 0
+        return len(res.get_F_GEN())
 
     def pop(self, gen=-1):
         """
@@ -79,16 +94,20 @@ class Run:
         if gen < 0:
             gen = len(self) + gen
             
-        objs = self._engine_result.get_F_GEN()[gen]
-        vars = self._engine_result.get_X_GEN()[gen]
+        res = self._engine_result
+        if res is None: raise IndexError("No generations available yet")
+            
+        objs = res.get_F_GEN()[gen]
+        vars = res.get_X_GEN()[gen]
         
         return Population(objs, vars)
 
     def front(self, gen=-1):
         """Returns the non-dominated objectives (Pareto front) at gen."""
         # For efficiency, if the engine already calculates this, use it.
-        if hasattr(self._engine_result, 'get_F_gen_non_dominate'):
-             fronts = self._engine_result.get_F_gen_non_dominate()
+        res = self._engine_result
+        if res is not None and hasattr(res, 'get_F_gen_non_dominate'):
+             fronts = res.get_F_gen_non_dominate()
              if gen < 0: gen = len(fronts) + gen
              if 0 <= gen < len(fronts):
                  return SmartArray(fronts[gen], label="Pareto Front", axis_label="Objective")
@@ -98,8 +117,9 @@ class Run:
 
     def set(self, gen=-1):
         """Returns the non-dominated variables (Pareto set) at gen."""
-        if hasattr(self._engine_result, 'get_X_gen_non_dominate'):
-             sets = self._engine_result.get_X_gen_non_dominate()
+        res = self._engine_result
+        if res is not None and hasattr(res, 'get_X_gen_non_dominate'):
+             sets = res.get_X_gen_non_dominate()
              if gen < 0: gen = len(sets) + gen
              if 0 <= gen < len(sets):
                  return SmartArray(sets[gen], label="Pareto Set", axis_label="Variable")

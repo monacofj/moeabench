@@ -9,6 +9,7 @@ from .RUN import RUN
 from .RUN_user import RUN_user
 import numpy as np
 import inspect
+from .progress import get_progress_bar, set_active_pbar
 
 class experiment(I_UserExperiment):
     def __init__(self, imports=None):
@@ -153,53 +154,52 @@ class experiment(I_UserExperiment):
         # This part is preserving the legacy "RUN" logic which is complex
         # We need to adapt it to produce a Run object.
         
-        for _ in range(repeat):
+        # Individual Run Progress
+        # If MoEA has .generations, use it as total.
+        total_gens = getattr(self.moea, 'generations', None)
+        
+        # Outer progress bar for repeats
+        outer_pbar = None
+        if repeat > 1:
+            outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name}", position=0)
+
+        for i in range(repeat):
             seed = np.random.randint(0, 1000000) # Simple seeder
             
-            # Legacy logic adaptation:
-            # We need to "setup" the MoEA. 
-            # Original: self.result = value(self, self.imports.moeas, stop)
+            # Inner progress bar
+            inner_pbar = get_progress_bar(total=total_gens, 
+                                         desc=f"  Run {i+1}/{repeat}", 
+                                         position=1 if repeat > 1 else 0,
+                                         leave=False if repeat > 1 else True)
             
-            # Let's try to mimic the essential parts of run_moea
-            # We assume self.moea is the algorithm OBJECT (e.g. initialised NSGA3)
-            # We need to run it on self.benchmark
-            
-            # If the architecture requires using the RUN class:
-            # execute = RUN()
-            # self.result = self.moea(self, None, self.stop, seed)
-            
-            # The moea object in moeabench seems to be callable?
-            # exp.moea = mb.moeas.NSGA3()
-            # NSGA3 is an object. Is it callable?  
-            # Base logic seems to be: result = moea_instance(experiment_ctx, ...)
-            
-            # Let's trust the 'moea' object is capable of running
-            # In original `run_moea`:
-            # self.result = self.moea(self, None, stop, seed) 
-            
-            # We pass 'self' (experiment). The MOEA might update self.result?
-            # Or return it.
-            
-            # Wrapper returns setup CACHE
-            current_result = self.moea(self, None, self.stop, seed)
-            
-            # Trigger execution!
-            # The result from 'self.moea' is a CACHE object (or tuple wrapping it)
-            raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
-            
-            # Legacy support: Execution callback expects exp.result to be the current cache
-            self.result = raw_result
-            
-            if hasattr(raw_result, 'edit_DATA_conf'):
-                 moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
-                 if hasattr(moea_instance, 'exec'):
-                      moea_instance.exec()
-                 else:
-                      print("Warning: MOEA instance does not have exec() method.")
-            
-            # Create Run wrapper
-            new_run = Run(raw_result, seed)
-            self._runs.append(new_run)
+            # Set as active globally for the duration of this run
+            set_active_pbar(inner_pbar)
+
+            try:
+                # 184: current_result = self.moea(self, None, self.stop, seed)
+                current_result = self.moea(self, None, self.stop, seed)
+                
+                # Trigger execution!
+                raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
+                self.result = raw_result
+                
+                # Create Run wrapper and add to experiment before execution 
+                # so stop functions can access experimental data (e.g. via experiment.last_run)
+                new_run = Run(raw_result, seed)
+                self._runs.append(new_run)
+
+                if hasattr(raw_result, 'edit_DATA_conf'):
+                     moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
+                     if hasattr(moea_instance, 'exec'):
+                          moea_instance.exec()
+            finally:
+                inner_pbar.close()
+                set_active_pbar(None)
+                if outer_pbar:
+                    outer_pbar.update_to(i + 1)
+
+        if outer_pbar:
+            outer_pbar.close()
 
     # Persistence
     def save(self, path):

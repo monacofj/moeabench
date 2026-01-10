@@ -14,5 +14,6 @@ deepdiff
 PyGithub
 joblib
 numpy
+tqdm
 
 
