@@ -13,14 +13,43 @@ except ImportError:
 
 class plot_3D(analyse_pareto):
     
-     def __init__(self, benk, vet_pt, axis, type = 'pareto-optimal front'):
+     def __init__(self, benk, vet_pt, axis, type = 'pareto-optimal front', mode='interactive'):
          self.vet_pts=vet_pt
          self.experiments=benk
          self.axis = axis
          self.type=type
+         self.mode=mode
            
 
      def configure(self):
+         if self.mode == 'static':
+             self.configure_static()
+         else:
+             self.configure_interactive()
+
+     def configure_static(self):
+         import matplotlib.pyplot as plt
+         fig = plt.figure(figsize=(10, 8))
+         ax = fig.add_subplot(111, projection='3d')
+         
+         for i in range(0, len(self.vet_pts)):
+            ax_data = self.vet_pts[i][:,self.axis[0]]
+            ay_data = self.vet_pts[i][:,self.axis[1]]
+            az_data = self.vet_pts[i][:,self.axis[2]]
+            
+            # Simple cleaning of NaNs if needed, similar to original logic
+            msk = ~(np.isnan(ax_data) | np.isnan(ay_data) | np.isnan(az_data))
+            if np.any(msk):
+                ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], label=f'{self.experiments[i]}')
+        
+         ax.set_xlabel(f"Objective {self.axis[0]+1}")
+         ax.set_ylabel(f"Objective {self.axis[1]+1}")
+         ax.set_zlabel(f"Objective {self.axis[2]+1}")
+         ax.set_title(f"3D Chart for {self.type}")
+         ax.legend()
+         plt.show()
+
+     def configure_interactive(self):
          self.figure=go.Figure()
          for i in range(0, len(self.vet_pts)):
                 ax = self.vet_pts[i][:,self.axis[0]]

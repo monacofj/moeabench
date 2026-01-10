@@ -16,16 +16,16 @@ def main():
 
     # Access results directly
     print("Objectives:")
-    print(exp.objectives())
+    print(exp.objectives)
     
     print("\nVariables:")
-    print(exp.variables())
+    print(exp.variables)
 
     # print("\nPlotting Pareto Front (Static Mode)...")
-    # mb.spaceplot(exp, mode='static')
+    # mb.spaceplot(exp.front(), mode='static')
     
     print("\nPlotting Pareto Front (Static Mode)...")
-    mb.spaceplot(exp, mode='static')
+    mb.spaceplot(exp.front(), mode='static')
 
 if __name__ == "__main__":
     main()

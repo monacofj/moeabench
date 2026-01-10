@@ -63,14 +63,6 @@ class MoeaBench(I_UserMoeaBench):
         objectives = [] if objectives is None else objectives
         """
         - **3D graph of the Pareto boundary surface:**
-        Click on the links for more
-        ...
-                - **Informations:**
-                      - sinxtase:
-                      moeabench.pareto_surface(exp.problem, experiment2_result, experiment.pof...)  
-                      - [pareto_surface](https://moeabench-rgb.github.io/MoeaBench/analysis/objectives/plot/pareto_surface/) information about the method, accepted variable types, examples and more...
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/analysis/objectives/plot/exceptions/) information on possible error types
-       
         """       
         try:
             analyse_surface_obj.IPL_plot_3D(args, objectives)   
@@ -78,23 +70,41 @@ class MoeaBench(I_UserMoeaBench):
             print(e)   
         
 
-    def spaceplot(self, *args, objectives = None):
+    def timeplot(self, *args, objectives=None):
+        """
+        Plots metrics over time (generations).
+        Accepts MetricMatrix objects (from mb.metrics.*) or legacy inputs.
+        """
+        try:
+            # Check if args are MetricMatrix (new API)
+            is_new_metric = any(hasattr(a, 'runs') and hasattr(a, 'gens') for a in args)
+            
+            if is_new_metric:
+                 from MoeaBench.metrics import plot_matrix
+                 plot_matrix(args)
+            else:
+                 print("Warning: use mb.metrics.* for timeplot support.")
+                 # Fallback logic could go here if we identified legacy metric objects
+                 
+        except Exception as e:
+            print(e)
+
+    def spaceplot(self, *args, objectives = None, mode='interactive'):
         objectives = [] if objectives is None else objectives
         """
         - **3D graph for Pareto front:**
-        Click on the links for more
-        ...
-                - **Informations:**
-                      - sinxtase:
-                      moeabench.pareto(args)  
-                      - [pareto](https://moeabench-rgb.github.io/MoeaBench/analysis/objectives/plot/pareto/) information about the method, accepted variable types, examples and more...   
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/analysis/objectives/plot/exceptions/) information on possible error types
-
         """
-      
-
         try:     
-            analyse_obj.IPL_plot_3D(args, objectives)     
+             new_args = []
+             for arg in args:
+                 if hasattr(arg, 'objectives'): # Population / JoinedPopulation
+                      new_args.append(arg.objectives)
+                 elif hasattr(arg, 'front'): # Run / Experiment? No, front() is method.
+                      new_args.append(arg)
+                 else:
+                      new_args.append(arg)
+                      
+             analyse_obj.IPL_plot_3D(tuple(new_args), objectives, mode=mode)     
         except Exception as e:
             print(e)
         
@@ -102,13 +112,6 @@ class MoeaBench(I_UserMoeaBench):
     def add_benchmark(self,problem):
         """
         - **Integrates a user benchmark problem implementation in MoeaBench:**
-        Click on the links for more
-        ...
-                - **Informations:**
-                      - sinxtase:
-                      experiment.add_benchmark(module)  
-                      - [add_benchmark](https://moeabench-rgb.github.io/MoeaBench/implement_benchmark/integration/integration/) information about the method 
-                     
         """
         import MoeaBench.benchmarks as bk
         setattr(bk,problem.__name__,problem)
@@ -117,46 +120,7 @@ class MoeaBench(I_UserMoeaBench):
     def add_moea(self,moea):
         """
         - **integrates a user genetic algorithm implementation into MoeaBench:**
-        Click on the links for more
-        ...
-                - **Informations:**
-                      - sinxtase:
-                      experiment.add_moea(module)  
-                      - [add_moea](https://moeabench-rgb.github.io/MoeaBench/implement_moea/integration/integration/) information about the method 
-                     
         """
         import MoeaBench.moeas as algotithm
         setattr(algotithm,moea.__name__,moea)
-    
-
-
-    
-
-
-
-
-
-
-    
-
-
-
-
-
- 
-
-    
-
-    
-    
-
-
- 
-        
-
-
-
-    
-    
-
     

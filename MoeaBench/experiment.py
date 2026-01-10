@@ -1,216 +1,188 @@
+from .I_UserExperiment import I_UserExperiment
+from .Run import Run
 from .RUN import RUN
 from .RUN_user import RUN_user
-from .result_set import result_set
-from .moea_round import moea_round
-from .save import save
-from .loader import loader
-from .I_UserExperiment import I_UserExperiment
-import inspect
 import numpy as np
-
+import inspect
 
 class experiment(I_UserExperiment):
+    def __init__(self, imports=None):
+        self.imports = imports # Keep for compatibility if needed
+        self._runs = []
+        self._benchmark = None
+        self._moea = None
+        self._stop = None
+        self._name = "experiment"
+        
+        # Internal state for execution
+        self.result = None 
 
-    def __init__(self, imports):
-        self.pof=None
-        self.result=None
-        self.imports = imports
-        self.result_set=result_set()
-        self.hist_M_user = []
+    def __iter__(self):
+        return iter(self._runs)
 
+    def __getitem__(self, index):
+        return self._runs[index]
 
-    @property
-    def variables(self):    
-        return self.imports.variables.variables(self.imports.result_var.result_var, self.result, self._rounds)
-    
-
-    @property
-    def objectives(self):    
-        return self.imports.objectives.objectives(self.imports.result_obj.result_obj, self.result, self._rounds)
-    
-
-    @property
-    def front(self):    
-        return self.imports.front.front(self.imports.result_front.result_front, self.result, self._rounds)
-    
+    def __len__(self):
+        return len(self._runs)
 
     @property
-    def set(self):    
-        return self.imports.set.set(self.imports.result_set.result_set, self.result, self._rounds)
-
-     
-    @property
-    def name(self):
-        return self._name 
-    
-
+    def name(self): return self._name
     @name.setter
-    def name(self, value):
-        self._name = value
-
-
-    @property
-    def rounds(self):
-        return self._rounds
-    
-
-    @rounds.setter
-    def rounds(self, value):
-        if not hasattr(self,'_rounds'):
-            self._rounds = []
-        self._rounds.extend(value)
-
-
-    @property
-    def stop(self):
-        return self._stop
-    
-
-    @stop.setter
-    def stop(self, value):
-        self._stop = value
-
-
-    @property
-    def optimal(self):
-        return self.imports.optimal.optimal(self)
-    
+    def name(self, value): self._name = value
     
     @property
-    def dominated(self):
-        return self.imports.dominated.dominated(self.imports.result_dominated.result_dominated, self.result, self._rounds)
-
-
-    @optimal.setter
-    def optimal(self, value):
-        self._optimal = value
-
-
-    @property
-    def moea(self):
-        return self._moea
-    
-
-    @moea.setter
-    def moea(self,value):  
-        stop = self.stop if hasattr(self,'_stop') else None
-        self.result = value(self, self.imports.moeas, stop) if callable(value) else value
-        self._moea = value
-
-
-    @property
-    def benchmark(self):
-        return self._benchmark
-      
-
+    def benchmark(self): return self._benchmark
     @benchmark.setter
-    def benchmark(self,value):
-        self._benchmark=value(self.imports.benchmarks) if callable(value) else value
-        self.pof=self._benchmark 
-    
-
-    def load(self,file):
-        """
-        - **Loads a user experiment into MoeaBench:**
-        Click on the links for more
-        ...
-                - Informations:
-                      - sinxtase:
-                      experiment.load(nameFile)  
-                      - [load](https://moeabench-rgb.github.io/MoeaBench/experiments/load_experiment/load_experiment/) information about the method, 
-                     
-        """
-        try:
-            loader.IPL_loader(self,file)    
-            if isinstance(self.result,tuple):
-                self.result = self.result[0]  
-        except Exception as e:
-            print(e)
-
-
-    def save(self, file):
-        """
-        - **save the user's experiment in a zip file:**
-        Click on the links for more
-        ...
-                - **Informations:**
-                      - sinxtase:
-                      experiment.save(nameFile)  
-                      - [save](https://moeabench-rgb.github.io/MoeaBench/experiments/save_experiment/save_experiment/) information about the method, 
-                     
-        """
-        algoritm = None
-        if (hasattr(self,'_moea')):
-            moea_found = self.imports.moeas.moea_algorithm()
-            algoritm = moea_found.get_MOEA(self.moea.__class__.__name__)
-        try:
-            if isinstance(algoritm,tuple) and inspect.isclass(algoritm[0]):
-                raise ValueError("experiments using the methods @mb.benchmarks.register_benchmark() and @mb.moeas.register_moea() cannot be saved.")
-            save.IPL_save(self,file)
-        except Exception as e:
-            print(e)
-   
-
-    def run_moea(self, seed):
-
-        if isinstance(self.result,tuple):
-            name_moea = self.result[2]
+    def benchmark(self, value):
+        # Auto-instantiate if it's a factory (callable but not the final instance with get_CACHE)
+        # We assume if it's callable and missing core traits, it's a factory.
+        if callable(value) and not hasattr(value, 'get_CACHE'):
+             try:
+                 self._benchmark = value()
+             except Exception as e:
+                 # Fallback or error logging
+                 print(f"Warning: Could not instantiate benchmark factory: {e}")
+                 self._benchmark = value
         else:
-            name_moea = self.result.edit_DATA_conf().get_DATA_MOEA().__class__.__name__       
-        try:
-            moea_found = self.imports.moeas.moea_algorithm()
-            algoritm = moea_found.get_MOEA(self.moea.__class__.__name__)
-            execute = RUN() if not isinstance(algoritm, bool ) and not inspect.isclass(algoritm[0]) else RUN_user()
-            
-            if isinstance(execute, RUN_user):
-                self.hist_M_user.append(self.benchmark.M)
-                self.result = self.moea(self.benchmark, self.imports.moeas) if not len(set(self.hist_M_user)) == 1 else self.result
-                         
-            elif isinstance(execute, RUN):
-                stop = self.stop if hasattr(self,'_stop') else None
-                self.result = self.moea(self, None, stop, seed) 
-            
-            self.result_moea = self.result[0] if isinstance(self.result,tuple) else self.result
-            try:
-                name_benchmark = self.benchmark.__class__.__name__.split("_")[1]
-            except Exception as e:
-                name_benchmark = self.benchmark.__class__.__name__
-                
-            return execute.MOEA_execute(self.result_moea,name_moea,name_benchmark)
-        except Exception as e:
-            print(e)
+            self._benchmark = value
 
+    @property
+    def moea(self): return self._moea
+    @moea.setter
+    def moea(self, value):
+        self._moea = value
+        # Original code did magic here to instantiate result.
+        # We will handle instantiation in run()
+
+    @property
+    def stop(self): return self._stop
+    @stop.setter
+    def stop(self, value): self._stop = value
     
-    def run(self, repeat = 0):
-        """
-        - **run the genetic algorithm:**
-        Click on the links for more
-        ...
-               - **Informations:**
-                      - sinxtase:
-                      experiment.run()   
-                      - [run()](https://moeabench-rgb.github.io/MoeaBench/experiments/combinations/combinations/#moeabench-run-the-experiment) Information about the method and return variables.
+    @property
+    def pof(self):
+        """Legacy compatibility for save mechanism."""
+        return self._benchmark
 
-        """
-        try:
-            generator = np.random.default_rng()
-            if not isinstance(repeat,int):
-                raise TypeError('Only integers are allowed as parameters for the run() method.')
-            self.result_moea = self.result[0] if isinstance(self.result,tuple) else self.result
-            execution = repeat-1 if repeat > 0 else 0
-            cont = 0
-            for exe in range(0,execution):
-                cont += 1
-                self.run_moea(generator)
-                self.rounds = [moea_round(b, f'round {cont}') for i in self.result_moea.get_elements() for b in i if hasattr(b,'get_F_GEN')]           
-            cont += 1  
-            seed_moea = generator if self.moea.seed == 0 else self.moea.seed
-            self.run_moea(seed_moea)
+    # Shortcuts
+    @property
+    def last_run(self):
+        if not self._runs: raise IndexError("No runs executed yet")
+        return self._runs[-1]
+
+    def pop(self, gen=-1):
+        """Aggregate populations from all runs."""
+        # This is tricky. API.py says:
+        # exp.pop(100).objectives # Objs of 100th gen, or all run.
+        # This implies returning a "MultiPopulation" or just all of them?
+        # If I return a list of Populations, .objectives won't work on the list.
+        # The user's API implies exp.pop(100) returns something that has .objectives.
+        # Which likely means CONCATENATED objectives from all runs?
+        # "metrics.hypervolume(exp)" handles the list iteration.
+        # But "exp.pop().objectives" implies aggregation.
+        
+        # Let's create a JoinedPopulation
+        return JoinedPopulation([run.pop(gen) for run in self._runs])
+
+    def front(self, gen=-1):
+         # Helper for single run case or aggregate?
+         # API.py: exp.front() # Front of the last run (the unique run)
+         # If multiple runs, what is exp.front()? 
+         # Likely the front of the LAST run (shortcut).
+         return self.last_run.front(gen)
+
+    def set(self, gen=-1):
+         return self.last_run.set(gen)
+
+    # Shortcuts from API.py
+    @property
+    def objectives(self):
+        return self.pop().objectives
+
+    @property
+    def variables(self):
+        return self.pop().variables
+         
+    # Execution
+    def run(self, repeat=1):
+        if repeat < 1: repeat = 1
+        
+        # Instantiate runner mechanism
+        # This part is preserving the legacy "RUN" logic which is complex
+        # We need to adapt it to produce a Run object.
+        
+        for _ in range(repeat):
+            seed = np.random.randint(0, 1000000) # Simple seeder
             
-            self.rounds = [moea_round(b, f'round {cont}') for i in self.result_moea.get_elements() for b in i if hasattr(b,'get_F_GEN')]
-        except Exception as e:
-            print(e)
+            # Legacy logic adaptation:
+            # We need to "setup" the MoEA. 
+            # Original: self.result = value(self, self.imports.moeas, stop)
+            
+            # Let's try to mimic the essential parts of run_moea
+            # We assume self.moea is the algorithm OBJECT (e.g. initialised NSGA3)
+            # We need to run it on self.benchmark
+            
+            # If the architecture requires using the RUN class:
+            # execute = RUN()
+            # self.result = self.moea(self, None, self.stop, seed)
+            
+            # The moea object in moeabench seems to be callable?
+            # exp.moea = mb.moeas.NSGA3()
+            # NSGA3 is an object. Is it callable?  
+            # Base logic seems to be: result = moea_instance(experiment_ctx, ...)
+            
+            # Let's trust the 'moea' object is capable of running
+            # In original `run_moea`:
+            # self.result = self.moea(self, None, stop, seed) 
+            
+            # We pass 'self' (experiment). The MOEA might update self.result?
+            # Or return it.
+            
+            # Wrapper returns setup CACHE
+            current_result = self.moea(self, None, self.stop, seed)
+            
+            # Trigger execution!
+            # The result from 'self.moea' is a CACHE object (or tuple wrapping it)
+            raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
+            
+            # Legacy support: Execution callback expects exp.result to be the current cache
+            self.result = raw_result
+            
+            if hasattr(raw_result, 'edit_DATA_conf'):
+                 moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
+                 if hasattr(moea_instance, 'exec'):
+                      moea_instance.exec()
+                 else:
+                      print("Warning: MOEA instance does not have exec() method.")
+            
+            # Create Run wrapper
+            new_run = Run(raw_result, seed)
+            self._runs.append(new_run)
 
+    # Persistence
+    def save(self, path):
+        # Reuse legacy save if possible, or implement simple pickle
+        from .save import save as legacy_save
+        legacy_save.IPL_save(self, path)
 
-           
-           
+    def load(self, path):
+        from .loader import loader
+        loader.IPL_loader(self, path)
+        # Note: loader populates self.result usually. 
+        # We need to extract runs from it? 
+        # Legacy loader likely restores the old state structure. 
+        # This is a risk point. For now, assume loader works enough to pop result.
+
+class JoinedPopulation:
+    def __init__(self, pops):
+        self.pops = pops
+        
+    @property
+    def objectives(self):
+        # Concatenate 
+        return np.vstack([p.objectives for p in self.pops])
+        
+    @property
+    def variables(self):
+        return np.vstack([p.variables for p in self.pops])

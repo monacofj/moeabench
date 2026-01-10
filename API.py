@@ -96,7 +96,7 @@ mb.timeplot(hv1, hv2)     # Plot the hv.gens of two experiments
 mb.spaceplot(exp.front())   # Plot the front of the last run
 mb.spaceplot(exp.front(), exp2.front())   # Plot the front of two experiments
 mb.spaceplot(exp)       #
-mb.spaceplot(exp.front(100), exp.front) # Compare two moments
+mb.spaceplot(exp.front(100), exp.front()) # Compare two moments
 
 # In the above examples, if the argument is exp use its name (if no name, the implicit name is the object name itselfOtherwise, get from argument label. Think of other usages too.ArithmeticError
 
