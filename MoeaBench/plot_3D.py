@@ -13,12 +13,13 @@ except ImportError:
 
 class plot_3D(analyse_pareto):
     
-     def __init__(self, benk, vet_pt, axis, type = 'pareto-optimal front', mode='interactive'):
+     def __init__(self, benk, vet_pt, axis, type = 'pareto-optimal front', mode='interactive', axis_label='Objective'):
          self.vet_pts=vet_pt
          self.experiments=benk
          self.axis = axis
          self.type=type
          self.mode=mode
+         self.axis_label=axis_label
            
 
      def configure(self):
@@ -42,9 +43,9 @@ class plot_3D(analyse_pareto):
             if np.any(msk):
                 ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], label=f'{self.experiments[i]}')
         
-         ax.set_xlabel(f"Objective {self.axis[0]+1}")
-         ax.set_ylabel(f"Objective {self.axis[1]+1}")
-         ax.set_zlabel(f"Objective {self.axis[2]+1}")
+         ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
+         ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
+         ax.set_zlabel(f"{self.axis_label} {self.axis[2]+1}")
          ax.set_title(f"3D Chart for {self.type}")
          ax.legend()
          plt.show()
@@ -64,17 +65,17 @@ class plot_3D(analyse_pareto):
                  name=f'{self.experiments[i]}',                       
                  showlegend=True,
                  hovertemplate = (f"{self.experiments[i]}<br>"
-                                  f"{self.axis[0]+1}: %{{x}}<br>"
-                                  f"{self.axis[1]+1}: %{{y}}<br>"
-                                  f"{self.axis[2]+1}: %{{z}}<br><extra></extra>"),
+                                  f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                  f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
+                                  f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
                  ))   
        
       
          self.figure.update_layout(
                 scene = dict(
-                    xaxis=dict(title=self.axis[0]+1, showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
-                    yaxis=dict(title=self.axis[1]+1, showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
-                    zaxis=dict(title=self.axis[2]+1, showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
+                    xaxis=dict(title=f"{self.axis_label} {self.axis[0]+1}", showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
+                    yaxis=dict(title=f"{self.axis_label} {self.axis[1]+1}", showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
+                    zaxis=dict(title=f"{self.axis_label} {self.axis[2]+1}", showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
                     aspectmode='manual',
                     aspectratio=dict(x=1,y=1,z=1)
                  ),

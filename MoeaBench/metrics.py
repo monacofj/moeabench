@@ -167,7 +167,114 @@ def hypervolume(exp, ref=None):
         
     return MetricMatrix(mat, "Hypervolume")
 
-    return MetricMatrix(mat, "Hypervolume")
+def get_reference_front(ref_exps, current_fronts):
+    """
+    Constructs the reference Pareto Front.
+    If ref_exps is provided, extracts their fronts.
+    Otherwise, uses the current fronts.
+    Returns a non-dominated set of points.
+    """
+    all_fronts = []
+    
+    # Add external references
+    for exp in ref_exps:
+         if hasattr(exp, 'get_elements'): # Old API?
+             pass 
+         elif hasattr(exp, 'front'): # Single run/exp abstraction
+             all_fronts.append(exp.front())
+         elif hasattr(exp, '__iter__'): # MultiExperiment
+             for run in exp:
+                 all_fronts.append(run.front())
+         else:
+             # Assume array
+             all_fronts.append(exp)
+    
+    # If no refs provided, usage strategy:
+    # Hypervolume: uses min/max of current.
+    # GD/IGD: needs a reference set. If none provided, commonly we use the aggregate current front.
+    if not all_fronts and not ref_exps:
+        all_fronts.extend(current_fronts)
+        
+    if not all_fronts:
+        return None
+
+    # Stack
+    # Filter for empty
+    valid = [f for f in all_fronts if len(f) > 0]
+    if not valid: return None
+    
+    merged = np.vstack(valid)
+    
+    # Calculate non-dominated subset of merged
+    # Simple N^2 or assuming small enough?
+    # For correctness of GD/IGD, it should be non-dominated.
+    # Let's assume we return all and let the metric handle it, OR filter it.
+    # PyMoo metrics often expect the True PF.
+    
+    # Let's do a quick NDS filter if possible, or return merged.
+    # Filter 
+    is_dominated = np.zeros(merged.shape[0], dtype=bool)
+    for i in range(len(merged)):
+         curr = merged[i]
+         # simple check
+         if np.any(np.all(merged <= curr, axis=1) & np.any(merged < curr, axis=1)):
+             is_dominated[i] = True
+             
+    return merged[~is_dominated]
+
+def _calc_metric(exp, ref, MetricClass, name):
+    if ref is None: ref = []
+    if not isinstance(ref, list): ref = [ref]
+    
+    F_GENs = []
+    Fs = []
+    
+    for run in exp:
+        res = run._engine_result
+        if hasattr(res, 'get_F_GEN'):
+             f_gen = res.get_F_GEN()
+             F_GENs.append(f_gen)
+             Fs.append(run.front())
+
+    # Helper for Hypervolume normalization
+    min_val, max_val = normalize(ref, Fs)
+    
+    # Helper for GD/IGD reference front
+    ref_front = get_reference_front(ref, Fs)
+    
+    max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
+    n_runs = len(exp)
+    mat = np.full((max_gens, n_runs), np.nan)
+    
+    for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
+        # Dispatch based on internal GEN_ class logic
+        if name == "Hypervolume":
+             metric = MetricClass(f_gen, f_last.shape[1], min_val, max_val)
+        else:
+             # GD, GD+, IGD, IGD+
+             if ref_front is None:
+                  # Cannot calculate without reference
+                  values = np.full(len(f_gen), np.nan)
+             else:
+                  metric = MetricClass(f_gen, ref_front)
+                  values = metric.evaluate()
+        
+        length = min(len(values), max_gens)
+        mat[:length, r_idx] = values[:length]
+        
+    return MetricMatrix(mat, name)
+
+def gd(exp, ref=None):
+    return _calc_metric(exp, ref, GEN_gd, "GD")
+
+def gdplus(exp, ref=None):
+    return _calc_metric(exp, ref, GEN_gdplus, "GD+")
+
+def igd(exp, ref=None):
+    return _calc_metric(exp, ref, GEN_igd, "IGD")
+
+def igdplus(exp, ref=None):
+    return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
 def plot_matrix(metric_matrices, mode='interactive'):
     """
@@ -176,6 +283,13 @@ def plot_matrix(metric_matrices, mode='interactive'):
     """
     if not isinstance(metric_matrices, (list, tuple)):
         metric_matrices = [metric_matrices]
+
+    # Determine common name
+    names = sorted(list(set(m.metric_name for m in metric_matrices)))
+    if len(names) == 1:
+        plot_name = names[0]
+    else:
+        plot_name = ", ".join(names)
 
     if mode == 'static':
         import matplotlib.pyplot as plt
@@ -194,9 +308,9 @@ def plot_matrix(metric_matrices, mode='interactive'):
              else:
                 ax.plot(np.arange(1, len(data)+1), data[:, 0], label=mat.metric_name)
         
-        ax.set_title("Metric over Time")
+        ax.set_title(f"{plot_name} over Time")
         ax.set_xlabel("Generation")
-        ax.set_ylabel("Metric")
+        ax.set_ylabel(plot_name)
         ax.legend()
         plt.show()
         
@@ -232,7 +346,7 @@ def plot_matrix(metric_matrices, mode='interactive'):
                     name=mat.metric_name
                 ))
                 
-        fig.update_layout(title="Metric over Time", xaxis_title="Generation", yaxis_title="Metric")
+        fig.update_layout(title=f"{plot_name} over Time", xaxis_title="Generation", yaxis_title=plot_name)
         # In non-interactive environments (like verifying script), verify it doesn't block or require browser if using static?
         # Plotly .show() opens browser.
         # Matplotlib .show() opens window.

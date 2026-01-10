@@ -1,5 +1,5 @@
 from .I_UserExperiment import I_UserExperiment
-from .Run import Run
+from .Run import Run, SmartArray
 from .RUN import RUN
 from .RUN_user import RUN_user
 import numpy as np
@@ -71,6 +71,10 @@ class experiment(I_UserExperiment):
         if not self._runs: raise IndexError("No runs executed yet")
         return self._runs[-1]
 
+    @property
+    def last_pop(self):
+        return self.last_run.last_pop
+
     def pop(self, gen=-1):
         """Aggregate populations from all runs."""
         # This is tricky. API.py says:
@@ -90,10 +94,42 @@ class experiment(I_UserExperiment):
          # API.py: exp.front() # Front of the last run (the unique run)
          # If multiple runs, what is exp.front()? 
          # Likely the front of the LAST run (shortcut).
-         return self.last_run.front(gen)
+         res = self.last_run.front(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         # Attach source for name inference
+         if hasattr(res, 'label'): res.source = self 
+         return res
 
     def set(self, gen=-1):
-         return self.last_run.set(gen)
+         res = self.last_run.set(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         return res
+
+    def dominated(self, gen=-1):
+         """Returns the dominated objectives at gen."""
+         # Similar to front(), return array of dominated objectives
+         pop = self.last_run.dominated(gen)
+         res = pop.objectives # Already a SmartArray from Population
+         
+         # Overwrite label to be specific
+         res.label = "Dominated Solutions"
+         
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         return res
+
+    def nondominated(self, gen=-1):
+         """Returns the non-dominated Population at gen."""
+         pop = self.last_run.nondominated(gen)
+         
+         # Inject metadata into population's arrays for convenience
+         if hasattr(pop.objectives, 'name'): pop.objectives.name = self.name
+         if hasattr(pop.objectives, 'label'): pop.objectives.source = self
+         if hasattr(pop.variables, 'name'): pop.variables.name = self.name
+         if hasattr(pop.variables, 'label'): pop.variables.source = self
+         
+         return pop
 
     # Shortcuts from API.py
     @property
@@ -181,8 +217,10 @@ class JoinedPopulation:
     @property
     def objectives(self):
         # Concatenate 
-        return np.vstack([p.objectives for p in self.pops])
+        data = np.vstack([p.objectives for p in self.pops])
+        return SmartArray(data, label="Population (Objectives)", axis_label="Objective")
         
     @property
     def variables(self):
-        return np.vstack([p.variables for p in self.pops])
+        data = np.vstack([p.variables for p in self.pops])
+        return SmartArray(data, label="Population (Variables)", axis_label="Variable")

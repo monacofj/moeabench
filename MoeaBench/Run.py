@@ -1,6 +1,23 @@
 from .result_population import result_population
 import numpy as np
 
+class SmartArray(np.ndarray):
+    """
+    Numpy array wrapper that carries metadata about the data it holds (label, axis_label, name).
+    """
+    def __new__(cls, input_array, label=None, axis_label=None, name=None):
+        obj = np.asarray(input_array).view(cls)
+        obj.label = label
+        obj.axis_label = axis_label
+        obj.name = name # Name of the dataset (e.g. Experiment name)
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.label = getattr(obj, 'label', None)
+        self.axis_label = getattr(obj, 'axis_label', None)
+        self.name = getattr(obj, 'name', None)
+
 class Run:
     """
     Represents a single execution (trajectory) of an optimization algorithm.
@@ -24,9 +41,12 @@ class Run:
              elements = res.get_elements()
              # elements is list of lists
              for group in elements:
-                 for item in group:
-                     if hasattr(item, 'get_F_GEN'):
-                         return item
+                 for group_item in group:
+                     # Check if it's the item or inside the item?
+                     # Legacy code iterated groups then items.
+                     # Let's assume group_item IS the item
+                     if hasattr(group_item, 'get_F_GEN'):
+                         return group_item
         # Fallback: maybe it IS the data conf?
         if hasattr(res, 'get_F_GEN'):
             return res
@@ -57,25 +77,19 @@ class Run:
         objs = self._engine_result.get_F_GEN()[gen]
         vars = self._engine_result.get_X_GEN()[gen]
         
-        # We wrap this in a lightweight Population-like object or just return a structure
-        # adhering to the API: .objectives, .variables
         return Population(objs, vars)
 
     def front(self, gen=-1):
         """Returns the non-dominated objectives (Pareto front) at gen."""
         # For efficiency, if the engine already calculates this, use it.
-        # Otherwise, calculate from pop(gen).
-        # Assuming engine has get_F_gen_non_dominate()
         if hasattr(self._engine_result, 'get_F_gen_non_dominate'):
-             # Note: get_F_gen_non_dominate might be a list of fronts
              fronts = self._engine_result.get_F_gen_non_dominate()
-             # Check index bounds
              if gen < 0: gen = len(fronts) + gen
              if 0 <= gen < len(fronts):
-                 return fronts[gen]
+                 return SmartArray(fronts[gen], label="Pareto Front", axis_label="Objective")
         
         # Fallback
-        return self.pop(gen).non_dominated().objectives
+        return self.pop(gen).nondominated().objectives
 
     def set(self, gen=-1):
         """Returns the non-dominated variables (Pareto set) at gen."""
@@ -83,9 +97,22 @@ class Run:
              sets = self._engine_result.get_X_gen_non_dominate()
              if gen < 0: gen = len(sets) + gen
              if 0 <= gen < len(sets):
-                 return sets[gen]
+                 return SmartArray(sets[gen], label="Pareto Set", axis_label="Variable")
         
-        return self.pop(gen).non_dominated().variables
+        return self.pop(gen).nondominated().variables
+
+    def nondominated(self, gen=-1):
+        """Returns the non-dominated Population at gen."""
+        return self.pop(gen).nondominated()
+        
+    def dominated(self, gen=-1):
+        """Returns the dominated Population at gen."""
+        return self.pop(gen).dominated()
+
+    @property
+    def last_pop(self):
+        """Shortcut for the last population."""
+        return self.pop()
 
 
 class Population:
@@ -93,8 +120,8 @@ class Population:
     Represents a population of solutions (vectors in Objective and Decision space).
     """
     def __init__(self, objectives, variables):
-        self.objectives = np.array(objectives)
-        self.variables = np.array(variables)
+        self.objectives = SmartArray(objectives, label="Population (Objectives)", axis_label="Objective")
+        self.variables = SmartArray(variables, label="Population (Variables)", axis_label="Variable")
         
     @property
     def objs(self): return self.objectives
@@ -109,6 +136,8 @@ class Population:
         """Returns a new Population containing only non-dominated solutions."""
         is_dominated = self._calc_domination()
         # Filter (keep those NOT dominated)
+        # Note: Indexing SmartArray returns SmartArray (via __array_finalize__)
+        # But we create a new Population, which re-wraps them.
         return Population(self.objectives[~is_dominated], self.variables[~is_dominated])
     
     def dominated(self):
