@@ -118,12 +118,11 @@ class MoeaBench(I_UserMoeaBench):
              
              for i, arg in enumerate(args):
                  # unwrapping Population
-                 if hasattr(arg, 'objectives'): 
+                 # Prioritize front() if available (for Experiment/Run objects)
+                 if hasattr(arg, 'front') and callable(getattr(arg, 'front')):
+                      val = arg.front()
+                 elif hasattr(arg, 'objectives'): 
                       val = arg.objectives
-                 elif hasattr(arg, 'front'): # Method?
-                      # If user passed exp.front(), it's already an array/SmartArray 
-                      # handled by checking arg directly
-                      val = arg
                  else:
                       val = arg
 

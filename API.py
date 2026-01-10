@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 
 ## New API
 ## This script is for documentation purposes only. Do not execute it.

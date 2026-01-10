@@ -64,7 +64,7 @@ class MetricMatrix:
     """
     A matrix (Generations x Runs) of metric values.
     """
-    def __init__(self, data, metric_name="Metric"):
+    def __init__(self, data, metric_name="Metric", source_name=None):
         self._data = np.array(data) # Shape (G, R) or (R, G)? 
         # Usually we want Trajectories as rows or columns?
         # API says:
@@ -80,6 +80,7 @@ class MetricMatrix:
              self._data = self._data.reshape(-1, 1)
              
         self.metric_name = metric_name
+        self.source_name = source_name
 
     def __repr__(self):
         return f"<MetricMatrix {self._data.shape} ({self.metric_name})>"
@@ -170,7 +171,7 @@ def hypervolume(exp, ref=None):
         length = min(len(values), max_gens)
         mat[:length, r_idx] = values[:length]
         
-    return MetricMatrix(mat, "Hypervolume")
+    return MetricMatrix(mat, "Hypervolume", source_name=getattr(exp, 'name', None))
 
 def get_reference_front(ref_exps, current_fronts):
     """
@@ -267,7 +268,7 @@ def _calc_metric(exp, ref, MetricClass, name):
         length = min(len(values), max_gens)
         mat[:length, r_idx] = values[:length]
         
-    return MetricMatrix(mat, name)
+    return MetricMatrix(mat, name, source_name=getattr(exp, 'name', None))
 
 def gd(exp, ref=None):
     return _calc_metric(exp, ref, GEN_gd, "GD")
@@ -303,15 +304,17 @@ def plot_matrix(metric_matrices, mode='interactive'):
         
         for mat in metric_matrices:
              data = mat.gens
+             label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
+             
              if data.shape[1] > 1:
                 mean = np.nanmean(data, axis=1)
                 std = np.nanstd(data, axis=1)
                 gens = np.arange(1, len(mean) + 1)
                 
-                ax.plot(gens, mean, label=f'{mat.metric_name} Mean')
+                ax.plot(gens, mean, label=f'{label} Mean')
                 # ax.fill_between(gens, mean-std, mean+std, alpha=0.3)
              else:
-                ax.plot(np.arange(1, len(data)+1), data[:, 0], label=mat.metric_name)
+                ax.plot(np.arange(1, len(data)+1), data[:, 0], label=label)
         
         ax.set_title(f"{plot_name} over Time")
         ax.set_xlabel("Generation")
@@ -328,6 +331,8 @@ def plot_matrix(metric_matrices, mode='interactive'):
             # mat is MetricMatrix (G x R)
             # Calculate mean and std dev across runs (axis 1)
             data = mat.gens # (G, R)
+            label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
+            
             if data.shape[1] > 1:
                 mean = np.nanmean(data, axis=1)
                 std = np.nanstd(data, axis=1)
@@ -337,7 +342,7 @@ def plot_matrix(metric_matrices, mode='interactive'):
                 fig.add_trace(go.Scatter(
                     x=gens, y=mean,
                     mode='lines',
-                    name=f'{mat.metric_name} Mean'
+                    name=f'{label} Mean'
                 ))
                 
                 # TODO: Add shadow/band for std dev
@@ -348,7 +353,7 @@ def plot_matrix(metric_matrices, mode='interactive'):
                     x=np.arange(1, len(data)+1),
                     y=data[:, 0],
                     mode='lines',
-                    name=mat.metric_name
+                    name=label
                 ))
                 
         fig.update_layout(title=f"{plot_name} over Time", xaxis_title="Generation", yaxis_title=plot_name)
