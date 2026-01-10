@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from .analyse_obj import analyse_obj
 from .analyse_surface_obj import analyse_surface_obj
 from .I_UserMoeaBench import I_UserMoeaBench

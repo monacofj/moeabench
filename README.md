@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # MoeaBench
 
 MoeaBench is a Python framework designed for running benchmarks for Multiobjective Evolutionary Algorithms (MOEA).
@@ -24,7 +31,7 @@ exp.run()                                       # Run the optimization process
 mb.spaceplot(exp.front(), mode='static')        # Plot the 3D pareto front
 ```
 
-Read more about other MoeaBench capabilties in `docs/manual.md`.
+Read more about other MoeaBench capabilties in `docs/userguide.md`.
 
 ## Contributing
 

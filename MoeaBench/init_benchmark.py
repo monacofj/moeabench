@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from .constraits_1 import constraits_1
 from .constraits_05 import constraits_05
 from .I_constraints import I_constraints
