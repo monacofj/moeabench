@@ -64,12 +64,16 @@ class analyse_pareto(analyse):
         it_arr = iter(idx)
         for i in args:
             arr = analyse_pareto.DATA(i)
-            # print(f"DEBUG: Processing arg. hasattr(i, '_name')={hasattr(i, '_name')}")
-            name = f'{i._name}' if hasattr(i,'_name') else False 
-            name = f'{i.__class__.__name__} {next(it_exp)}' if name is False and not isinstance(i,np.ndarray) else name
-            name =  analyse_pareto.dict_data(next(it_arr))[0]  if name is False else name
-            # print(f"DEBUG: Extracted name={name}")
-            arr =  arr if arr is not None else i
+            # Use _name if present, otherwise fall back to class name + index
+            name = getattr(i, '_name', None)
+            
+            if name is None:
+                if not isinstance(i, np.ndarray):
+                    name = f'{i.__class__.__name__} {next(it_exp)}'
+                else:
+                    name = analyse_pareto.dict_data(next(it_arr))[0]
+            
+            arr = arr if arr is not None else i
             data.append(arr)
             benk.append(name)
         return benk, data

@@ -10,11 +10,18 @@ class SmartArray(np.ndarray):
     """
     Numpy array wrapper that carries metadata about the data it holds (label, axis_label, name).
     """
-    def __new__(cls, input_array, label=None, axis_label=None, name=None):
+    def __new__(cls, input_array, label=None, axis_label=None, name=None, source=None, gen=None):
         obj = np.asarray(input_array).view(cls)
         obj.label = label
         obj.axis_label = axis_label
-        obj.name = name # Name of the dataset (e.g. Experiment name)
+        obj.gen = gen
+        
+        # Priority: explicit name > source.name > None
+        if name is None and source is not None:
+            name = getattr(source, 'name', None)
+            
+        obj.name = name 
+        obj.source = source
         return obj
 
     def __array_finalize__(self, obj):
@@ -22,24 +29,34 @@ class SmartArray(np.ndarray):
         self.label = getattr(obj, 'label', None)
         self.axis_label = getattr(obj, 'axis_label', None)
         self.name = getattr(obj, 'name', None)
+        self.source = getattr(obj, 'source', None)
+        self.gen = getattr(obj, 'gen', None)
 
 class Run:
     """
     Represents a single execution (trajectory) of an optimization algorithm.
     Provides access to populations across generations.
     """
-    def __init__(self, engine_result, seed=None):
+    def __init__(self, engine_result, seed=None, experiment=None):
         """
         Args:
             engine_result: The internal result object from the MOEA engine 
                            (must support get_F_GEN, get_X_GEN, etc.)
             seed: The random seed used for this run.
+            experiment: The Experiment object this run belongs to.
         """
         self.seed = seed
+        self.source = experiment # Link back to the experiment
         
         # Store CACHE (engine_result) 
         self._cache = engine_result
         self._data_conf_cache = None
+
+    @property
+    def name(self):
+        if self.source:
+            return getattr(self.source, 'name', None)
+        return None
 
     @property
     def _engine_result(self):
@@ -100,7 +117,7 @@ class Run:
         objs = res.get_F_GEN()[gen]
         vars = res.get_X_GEN()[gen]
         
-        return Population(objs, vars)
+        return Population(objs, vars, gen=gen)
 
     def front(self, gen=-1):
         """Returns the non-dominated objectives (Pareto front) at gen."""
@@ -110,29 +127,32 @@ class Run:
              fronts = res.get_F_gen_non_dominate()
              if gen < 0: gen = len(fronts) + gen
              if 0 <= gen < len(fronts):
-                 return SmartArray(fronts[gen], label="Pareto Front", axis_label="Objective")
+                 return SmartArray(fronts[gen], label="Pareto Front", axis_label="Objective", source=self, gen=gen)
         
         # Fallback
-        return self.pop(gen).nondominated().objectives
+        """Shortcut for the non-dominated objectives at gen."""
+        return self.non_dominated(gen).objectives
 
     def set(self, gen=-1):
-        """Returns the non-dominated variables (Pareto set) at gen."""
-        res = self._engine_result
-        if res is not None and hasattr(res, 'get_X_gen_non_dominate'):
-             sets = res.get_X_gen_non_dominate()
-             if gen < 0: gen = len(sets) + gen
-             if 0 <= gen < len(sets):
-                 return SmartArray(sets[gen], label="Pareto Set", axis_label="Variable")
-        
-        return self.pop(gen).nondominated().variables
+        """Shortcut for the non-dominated variables at gen."""
+        return self.non_dominated(gen).variables
 
-    def nondominated(self, gen=-1):
+    def non_front(self, gen=-1):
+        """Alias for the dominated objectives at gen."""
+        return self.dominated(gen).objectives
+
+    def non_set(self, gen=-1):
+        """Alias for the dominated variables at gen."""
+        return self.dominated(gen).variables
+        
+    def non_dominated(self, gen=-1):
         """Returns the non-dominated Population at gen."""
-        return self.pop(gen).nondominated()
+        return self.pop(gen).non_dominated()
         
     def dominated(self, gen=-1):
         """Returns the dominated Population at gen."""
-        return self.pop(gen).dominated()
+        pop = self.pop(gen)
+        return Population(pop.objs, pop.vars, source=self, label="Dominated").dominated()
 
     @property
     def last_pop(self):
@@ -144,9 +164,12 @@ class Population:
     """
     Represents a population of solutions (vectors in Objective and Decision space).
     """
-    def __init__(self, objectives, variables):
-        self.objectives = SmartArray(objectives, label="Population (Objectives)", axis_label="Objective")
-        self.variables = SmartArray(variables, label="Population (Variables)", axis_label="Variable")
+    def __init__(self, objectives, variables, source=None, label="Population", gen=None):
+        self.objectives = SmartArray(objectives, label=label, axis_label="Objective", source=source, gen=gen)
+        self.variables = SmartArray(variables, label=label, axis_label="Variable", source=source, gen=gen)
+        self.source = source
+        self.label = label
+        self.gen = gen
         
     @property
     def objs(self): return self.objectives
@@ -157,18 +180,18 @@ class Population:
     def __len__(self):
         return self.objectives.shape[0]
 
-    def nondominated(self):
+    def non_dominated(self):
         """Returns a new Population containing only non-dominated solutions."""
         is_dominated = self._calc_domination()
         # Filter (keep those NOT dominated)
-        # Note: Indexing SmartArray returns SmartArray (via __array_finalize__)
-        # But we create a new Population, which re-wraps them.
-        return Population(self.objectives[~is_dominated], self.variables[~is_dominated])
+        return Population(self.objectives[~is_dominated], self.variables[~is_dominated], 
+                          source=self.source, label=self.label, gen=self.gen)
     
     def dominated(self):
          """Returns a new Population containing only dominated solutions."""
          is_dominated = self._calc_domination()
-         return Population(self.objectives[is_dominated], self.variables[is_dominated])
+         return Population(self.objectives[is_dominated], self.variables[is_dominated], 
+                           source=self.source, label=self.label, gen=self.gen)
 
     def _calc_domination(self):
         """

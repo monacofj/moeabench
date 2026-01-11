@@ -51,13 +51,17 @@ exp.last_pop                 # exp[-1].pop()
 
 exp[4].pop()                   # All population 4th run, last gen.
 
-exp[4].nondominated()          # Only the non-dominated (run 4, last gen)
+exp[4].non_dominated()          # Only the non-dominated (run 4, last gen)
 
 exp[4].dominated()             # Only the dominated (run 4, last gen)
 
-exp[4].front()                 # Same as exp[4].nondominated().objectives
+exp[4].front()                 # Same as exp[4].non_dominated().objectives
 
-exp[4].set()                   # Same as exp[4].nondominated().variables
+exp[4].set()                   # Same as exp[4].non_dominated().variables
+
+exp[4].non_front()             # Same as exp[4].dominated().objectives
+
+exp[4].non_set()               # Same as exp[4].dominated().variables
 
 # Aliases
 
@@ -73,7 +77,11 @@ exp.front()            # Front of the last run (the unique run)
 
 exp.set()              # Set of the last run (the unique run)
 
-# Note: pop(), dominated(), nondominated() take gen as argument.
+exp.non_front()        # Alias for exp.dominated().objectives
+
+exp.non_set()          # Alias for exp.dominated().variables
+
+# Note: pop(), dominated(), non_dominated() take gen as argument.
 
 # Metrics
 
@@ -105,7 +113,7 @@ mb.spaceplot(exp.front(100), exp.front()) # Compare two moments
 
 # In the above examples, if the argument is exp use its name (if no name, the implicit name is the object name itselfOtherwise, get from argument label. Think of other usages too.ArithmeticError
 
-mb.spaceplot(exp.nondominated(), exp.front())
+mb.spaceplot(exp.non_dominated(), exp.front())
 
 
 

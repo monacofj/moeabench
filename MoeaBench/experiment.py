@@ -104,37 +104,54 @@ class experiment(I_UserExperiment):
          if hasattr(res, 'name'): res.name = self.name
          # Attach source for name inference
          if hasattr(res, 'label'): res.source = self 
+         if hasattr(res, 'gen'): res.gen = res.gen # Already set by last_run.front(gen)
          return res
 
     def set(self, gen=-1):
          res = self.last_run.set(gen)
          if hasattr(res, 'name'): res.name = self.name
          if hasattr(res, 'label'): res.source = self
+         if hasattr(res, 'gen'): res.gen = res.gen # Already set
          return res
 
-    def dominated(self, gen=-1):
-         """Returns the dominated objectives at gen."""
-         # Similar to front(), return array of dominated objectives
-         pop = self.last_run.dominated(gen)
-         res = pop.objectives # Already a SmartArray from Population
-         
-         # Overwrite label to be specific
-         res.label = "Dominated Solutions"
-         
+    def non_front(self, gen=-1):
+         res = self.last_run.non_front(gen)
          if hasattr(res, 'name'): res.name = self.name
          if hasattr(res, 'label'): res.source = self
          return res
 
-    def nondominated(self, gen=-1):
+    def non_set(self, gen=-1):
+         res = self.last_run.non_set(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         return res
+
+    def dominated(self, gen=-1):
+         """Returns the dominated Population at gen."""
+         pop = self.last_run.dominated(gen)
+         pop.label = "Dominated"
+         
+         # Inject metadata for automatic naming
+         for arr in [pop.objectives, pop.variables]:
+             if hasattr(arr, 'name'): arr.name = self.name
+             if hasattr(arr, 'source'): arr.source = self
+             arr.label = "Dominated"
+             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
+             
+         return pop
+
+    def non_dominated(self, gen=-1):
          """Returns the non-dominated Population at gen."""
-         pop = self.last_run.nondominated(gen)
-         
-         # Inject metadata into population's arrays for convenience
-         if hasattr(pop.objectives, 'name'): pop.objectives.name = self.name
-         if hasattr(pop.objectives, 'label'): pop.objectives.source = self
-         if hasattr(pop.variables, 'name'): pop.variables.name = self.name
-         if hasattr(pop.variables, 'label'): pop.variables.source = self
-         
+         pop = self.last_run.non_dominated(gen)
+         pop.label = "Non-dominated"
+
+         # Inject metadata for automatic naming
+         for arr in [pop.objectives, pop.variables]:
+             if hasattr(arr, 'name'): arr.name = self.name
+             if hasattr(arr, 'source'): arr.source = self
+             arr.label = "Non-dominated"
+             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
+             
          return pop
 
     # Shortcuts from API.py
@@ -185,7 +202,7 @@ class experiment(I_UserExperiment):
                 
                 # Create Run wrapper and add to experiment before execution 
                 # so stop functions can access experimental data (e.g. via experiment.last_run)
-                new_run = Run(raw_result, seed)
+                new_run = Run(raw_result, seed, experiment=self)
                 self._runs.append(new_run)
 
                 if hasattr(raw_result, 'edit_DATA_conf'):

@@ -29,7 +29,8 @@ class MoeaProgress:
                          desc=desc, 
                          leave=leave, 
                          position=position,
-                         unit="gen" if total is not None else "it")
+                         unit="gen" if total is not None else "it",
+                         ascii=" -")
         
         self.is_fractional = total is None
 

@@ -156,21 +156,30 @@ class MoeaBench(I_UserMoeaBench):
                      # This is O(N_locals) per arg.
                      # Also check .source if available
                      target_obj = arg
-                     if hasattr(arg, 'source'):
-                         target_obj = arg.source
-                         
-                     for var_name, var_val in callers_vars.items():
-                          if var_val is target_obj:
-                              found_name = var_name
-                              break
+                     # Traverse .source chain until we find something in callers_vars
+                     # Or we reach the end of the chain (Experiment)
+                     while hasattr(target_obj, 'source') and target_obj.source:
+                          # Check if current target_obj is in callers_vars
+                          found = False
+                          for var_name, var_val in callers_vars.items():
+                               if var_val is target_obj:
+                                   found_name = var_name
+                                   found = True
+                                   break
+                          if found: break
+                          target_obj = target_obj.source
+                          
+                     if not found_name:
+                         for var_name, var_val in callers_vars.items():
+                              if var_val is target_obj:
+                                  found_name = var_name
+                                  break
                  
                  if found_name:
                      inferred_names.append(found_name)
                  else:
                      inferred_names.append(None) # Will default later
                      
-             # print(f"DEBUG: inferred_names={inferred_names}") # Debugging
-             
              # Pass metadata to IPL_plot_3D
              # It expects (args, objectives, mode)
              # We might need to extend it or set globals/attributes on the class?
@@ -189,11 +198,17 @@ class MoeaBench(I_UserMoeaBench):
                   if inferred_names[i] and not hasattr(arg, '_name'):
                       # SmartArray/ndarray allows setting attributes usually
                       try:
-                          final_name = inferred_names[i]
-                          if hasattr(arg, 'label') and arg.label and arg.label not in str(final_name):
-                              final_name = f"{final_name} ({arg.label})"
-                          arg._name = final_name
-                          # print(f"DEBUG: Set _name={arg._name}")
+                           final_name = inferred_names[i]
+                           if hasattr(arg, 'label') and arg.label and arg.label not in str(final_name):
+                               final_name = f"{final_name} ({arg.label})"
+                           
+                           # Add generation info if available
+                           if hasattr(arg, 'gen') and arg.gen is not None:
+                               # If gen is -1, it means last generation.
+                               # But here we should have the resolved index.
+                               final_name = f"{final_name} [gen {arg.gen}]"
+                               
+                           arg._name = final_name
                       except:
                           pass # standard array might fail without subclass
                   
