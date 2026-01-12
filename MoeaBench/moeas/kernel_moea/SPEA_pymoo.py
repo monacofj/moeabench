@@ -15,7 +15,7 @@ class SPEA_pymoo(BasePymoo):
         crossover = SBX(prob=1.0, eta=15)
         
         algorithm = SPEA2(ref_dirs=ref_dirs, pop_size=self.population, 
-                          crossover=crossover, mutation=mutation)
+                          crossover=crossover, mutation=mutation, **self.kwargs)
         
         return self.run_minimize(algorithm)
         

@@ -12,5 +12,5 @@ class MOEAD(BaseMoeaWrapper):
         Zhang & Li (2007). MOEA/D: A Multiobjective Evolutionary Algorithm 
         Based on Decomposition. IEEE Trans. Evol. Comput.
     """
-    def __init__(self, population=150, generations=300, seed=1):
-        super().__init__(MOEAD_pymoo, population, generations, seed)
+    def __init__(self, population=150, generations=300, seed=1, **kwargs):
+        super().__init__(MOEAD_pymoo, population, generations, seed, **kwargs)

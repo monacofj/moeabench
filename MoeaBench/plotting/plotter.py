@@ -58,7 +58,31 @@ def spaceplot(*args, objectives=None, mode='interactive', title=None, axis_label
         
     # Axis selection
     if objectives is None:
-        objectives = [0, 1, 2]
+        # Auto-detect data dimension
+        dims = [d.shape[1] for d in processed_args if len(d.shape) > 1]
+        max_dim = max(dims) if dims else 3
+        
+        if max_dim < 3:
+             objectives = [0, 1]
+        else:
+             objectives = [0, 1, 2]
+             
+    # Ensure indices exist in data
+    # If 2D data is passed but we want 3D scatter, Scatter3D might need padding.
+    # However, Scatter3D likely expects [x, y, z] indices.
+    # If data has only 2 cols, index 2 is invalid.
+    # We should pad the DATA with a zero column if necessary, or update Scatter3D to handle 2D.
+    # Easiest fixes: Pad data here.
+    
+    for k in range(len(processed_args)):
+         d = processed_args[k]
+         if d.shape[1] < 3:
+             # Pad with zeros to ensure at least 3 columns for 3D plotting
+             padding = np.zeros((d.shape[0], 3 - d.shape[1]))
+             processed_args[k] = np.column_stack([d, padding])
+    
+    # Now objectives [0,1,2] are safe even if original data was 2D. 
+    # The 3rd dimension will be 0 (flat plot).
     # Ensure 3 axes
     if len(objectives) < 3:
          # Pad with 0? Or raise error?

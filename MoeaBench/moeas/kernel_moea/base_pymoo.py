@@ -68,7 +68,7 @@ class BasePymoo(BaseMoea, Problem):
     """
     Base class for all Pymoo-based MOEAs in MoeaBench.
     """
-    def __init__(self, problem, population=150, generations=300, seed=1, stop=None):
+    def __init__(self, problem, population=150, generations=300, seed=1, stop=None, **kwargs):
         # BaseMoea init
         BaseMoea.__init__(self, problem, population, generations, seed)
         
@@ -77,6 +77,7 @@ class BasePymoo(BaseMoea, Problem):
         self.M = self.get_M()
         self.n_ieq = self.get_n_ieq_constr()
         self.stop = stop
+        self.kwargs = kwargs # Store flexible parameters
         
         # Pymoo Problem init
         Problem.__init__(self, n_var=self.Nvar, n_obj=self.M, n_ieq_constr=self.n_ieq, 

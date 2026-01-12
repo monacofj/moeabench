@@ -3,11 +3,12 @@ class BaseMoeaWrapper:
     Base class for MOEA wrappers that bridge between the user-facing API 
     and the internal optimization engines.
     """
-    def __init__(self, engine_class, population=150, generations=300, seed=1):
+    def __init__(self, engine_class, population=150, generations=300, seed=1, **kwargs):
         self._engine_class = engine_class
         self._initial_population = population
         self._initial_generations = generations
         self._initial_seed = seed
+        self._kwargs = kwargs # Store user parameters
         self._instance = None
         self.problem = None # Set by Experiment
 
@@ -23,7 +24,8 @@ class BaseMoeaWrapper:
             self._initial_population,
             self._initial_generations,
             final_seed,
-            stop
+            stop,
+            **self._kwargs # Propagate to engine
         )
         return self._instance
 

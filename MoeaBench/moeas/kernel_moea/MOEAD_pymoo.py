@@ -16,7 +16,7 @@ class MOEAD_pymoo(BasePymoo):
         crossover = SBX(prob=1.0, eta=15)
         
         algorithm = MOEAD(ref_dirs, crossover=crossover, mutation=mutation, 
-                          decomposition=PBI(eps=0.0, theta=5))
+                          decomposition=PBI(eps=0.0, theta=5), **self.kwargs)
         
         return self.run_minimize(algorithm)
        

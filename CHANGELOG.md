@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Static plotting support for `timeplot` and `spaceplot` via `mode='static'` argument.
 - `verify_api.py` regression test to validate API functionality.
 - New `example-01.py` demonstrating the updated API usage.
+- **Flexible Parameters**: Implemented `**kwargs` propagation across all MOEAs (`NSGA3`, `MOEAD`) and Benchmarks (`DTLZ`, `DPF`), allowing advanced parameter tuning.
+- **Documentation**: Comprehensive `docs/reference.md` (API) and `docs/userguide.md` (How-to) created.
+- **Examples**: Added `example-05.py` (Flexible Parameters) and `example-custom.py` (Custom Extensions).
 
 ### Changed
 - **Major API Refactoring**: Restructured `MoeaBench` to follow a new object-oriented design (e.g., `mb.experiment`, `mb.moeas`, `mb.benchmarks`).

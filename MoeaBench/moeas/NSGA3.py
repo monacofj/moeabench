@@ -13,5 +13,5 @@ class NSGA3(BaseMoeaWrapper):
         Using Reference-Point-Based Nondominated Sorting Approach, Part I: Solving 
         Problems With Box Constraints. IEEE Trans. Evol. Comput.
     """
-    def __init__(self, population=150, generations=300, seed=1):
-        super().__init__(NSGA_pymoo, population, generations, seed)
+    def __init__(self, population=150, generations=300, seed=1, **kwargs):
+        super().__init__(NSGA_pymoo, population, generations, seed, **kwargs)

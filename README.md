@@ -15,7 +15,8 @@ The package offers facilities to programmatically create benchmark programs and 
 
 * Handle many-objective problems with an unlimited number of decision variables and optimization objectives.
 * Includes standard built-in benchmarks (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
-* Plug in custom benchmarks and algorithms programmatically without modifying the core code.
+* Includes standard built-in benchmarks (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
+* Plug in custom benchmarks and algorithms programmatically by inheriting from base classes (see `example-custom.py`).
 
 ## Quick Start
 
