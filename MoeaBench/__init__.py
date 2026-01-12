@@ -3,17 +3,40 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""
-        - accesses in memory an implementation of a user evolutionary algorithm.
-        Click on the links for more:
-        ...
-                - Informations:
-                      - sinxtase:
-                      experiment.benchmark = moeabench.moeas.my_new_moea(args)
-                      - [my_new_moea](https://moeabench-rgb.github.io/MoeaBench/implement_moea/memory/memory/) information about the method, 
-                     
-"""
+# Core Engine
+from .core.experiment import experiment
+from .core.run import Run
+from .core.base_moea import BaseMoea
 
+# Submodules
+from . import benchmarks
+from . import moeas
+from . import metrics
 
-from .factory import mb
+# Plotting High-Level
+from .plotting.plotter import spaceplot, timeplot
 
+# MB Wrapper for Legacy Compatibility
+class _MB:
+    """
+    Wrapper class to provide easy access via 'mb' object.
+    """
+    def __init__(self):
+        self.experiment = experiment
+        self.Run = Run
+        self.benchmarks = benchmarks
+        self.moeas = moeas
+        self.metrics = metrics
+        self.spaceplot = spaceplot
+        self.timeplot = timeplot
+        
+        # Metric Shortcuts
+        self.hv = metrics.hypervolume
+        self.igd = metrics.igd
+        self.gd = metrics.gd
+        self.gdplus = metrics.gdplus
+        self.igdplus = metrics.igdplus
+
+mb = _MB()
+
+__all__ = ["experiment", "Run", "benchmarks", "moeas", "metrics", "spaceplot", "timeplot", "mb"]

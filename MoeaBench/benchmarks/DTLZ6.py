@@ -3,41 +3,25 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .problems import problems
+import numpy as np
+from .DTLZ5 import DTLZ5
 
-
-class DTLZ6:
-     """
-        - benchmark problem:
-        Click on the links for more
-        ...
-                - DTLZ6:
-                      - sinxtase:
-                      experiment.benchmark = moeabench.benchmarks.DTLZ6(args) 
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ6/) POF sampling, results obtained in tests 
-                      with genetic algorithms, references and more... 
-                      - [implementation](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ6/DTLZ6/) detailed implementation information
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/arguments/)) custom and default settings problem
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/exceptions/) information on possible error types
+class DTLZ6(DTLZ5):
+    """
+    DTLZ6 benchmark problem.
+    Biased degenerate spherical problem.
+    """
+    def evaluation(self, X, n_ieq_constr=0):
+        X = np.atleast_2d(X)
+        M = self.M
+        X_m = X[:, M-1:]
         
-        """
-     
-     def __init__(self, M = 3, K = 5, P = 700):
-          self.M = M
-          self.K = K
-          self.P = P
-
-     
-     def __call__(self, default = None):
-   
-        try:
-            problem = problems()
-            bk = problem.get_problem(self.__class__.__name__)
-            class_bk =  getattr(bk[0],bk[1].name)
-            instance = class_bk(self.M, self.K, self.P, problem.get_CACHE())
-            instance.P_validate(self.P)
-            instance.set_BENCH_conf()
-            instance.POFsamples()
-            return instance
-        except Exception as e:
-            print(e)
+        # g = sum(xi^0.1)
+        g = np.sum(X_m**0.1, axis=1).reshape(-1, 1)
+        
+        # Theta logic same as DTLZ5
+        theta = [X[:, 0:1] * np.pi/2]
+        for i in range(1, M-1):
+            theta.append((np.pi / (4 * (1 + g))) * (1 + 2 * g * X[:, i:i+1]))
+            
+        return self._spherical_evaluation(X, g, theta=theta)

@@ -3,47 +3,48 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .problems import problems
+import numpy as np
+from .base_benchmark import BaseBenchmark
 
+class DTLZ1(BaseBenchmark):
+    """
+    DTLZ1 benchmark problem.
+    """
+    def __init__(self, M=3, K=5, **kwargs):
+        self.K = K
+        N = M + K - 1
+        super().__init__(M=M, N=N, **kwargs)
 
-class DTLZ1:
-     """
-        - benchmark problem:
-        Click on the links for more
+    def evaluation(self, X, n_ieq_constr=0):
+        """
+        Standard DTLZ1 evaluation.
+        g = 100 * [K + sum( (xi - 0.5)^2 - cos(20*pi*(xi-0.5)) )]
+        f1 = 0.5 * x1 * x2 * ... * (1 + g)
         ...
-                - DTLZ1:
-                      - sinxtase:
-                      experiment.benchmark = moeabench.benchmarks.DTLZ1(args) 
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ1/) POF sampling, results obtained in tests 
-                      with genetic algorithms, references and more... 
-                      - [implementation](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ1/DTLZ1/) detailed implementation information
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ8/arguments/)) custom and default settings problem
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ8/exceptions/) information on possible error types
+        fm = 0.5 * (1 - x1) * (1 + g)
+        """
+        X = np.atleast_2d(X)
+        M = self.M
         
-     """
-     
-     def __init__(self, M = 3, K = 5, P = 700 ):
-          self.M = M
-          self.K = K
-          self.P = P
-
-
-     def __call__(self, default = None):
-        try:
-            problem = problems()
-            bk = problem.get_problem(self.__class__.__name__)
-            class_bk =  getattr(bk[0],bk[1].name)
-            instance = class_bk(self.M, self.K, self.P, problem.get_CACHE())
-            instance.P_validate(self.P)
-            instance.set_BENCH_conf()
-            instance.POFsamples()
-            return instance
-        except Exception as e:
-            print(e)
-
-
-
-           
-
-
+        # g = 100 * (K + sum((xi - 0.5)**2 - cos(20 * pi * (xi - 0.5))))
+        X_m = X[:, M-1:]
+        g = 100 * (self.K + np.sum((X_m - 0.5)**2 - np.cos(20 * np.pi * (X_m - 0.5)), axis=1)).reshape(-1, 1)
+        
+        F = np.zeros((X.shape[0], M))
+        
+        X_front = X[:, :M-1]
+        
+        for i in range(M):
+            f = 0.5 * (1 + g).flatten()
+            if i < M - 1:
+                f *= np.prod(X_front[:, :M-i-1], axis=1)
             
+            if i > 0:
+                f *= (1 - X_front[:, M-i-1])
+                
+            F[:, i] = f
+            
+        return {'F': F}
+
+    def get_K(self):
+        return self.K

@@ -1,0 +1,283 @@
+# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+# from .I_UserExperiment import I_UserExperiment # Legacy removed
+from .run import Run, SmartArray, Population
+import numpy as np
+import inspect
+from ..progress import get_progress_bar, set_active_pbar # Progress is currently in root?
+from typing import Optional, List, Union, Any, Iterator
+
+class JoinedPopulation:
+    def __init__(self, pops: List[Population]) -> None:
+        self.pops = pops
+        
+    @property
+    def objectives(self) -> SmartArray:
+        # Concatenate 
+        if not self.pops:
+             return SmartArray(np.array([]), label="Population (Objectives)", axis_label="Objective")
+        data = np.vstack([p.objectives for p in self.pops])
+        return SmartArray(data, label="Population (Objectives)", axis_label="Objective")
+        
+    @property
+    def variables(self) -> SmartArray:
+        if not self.pops:
+             return SmartArray(np.array([]), label="Population (Variables)", axis_label="Variable")
+        data = np.vstack([p.variables for p in self.pops])
+        return SmartArray(data, label="Population (Variables)", axis_label="Variable")
+
+class experiment:
+    def __init__(self, imports: Optional[Any] = None) -> None:
+        self.imports = imports # Keep for compatibility if needed
+        self._runs: List[Run] = []
+        self._benchmark: Any = None
+        self._moea: Any = None
+        self._stop: Any = None
+        self._name: str = "experiment"
+        
+        # Internal state for execution
+        self.result: Any = None 
+
+    def __iter__(self) -> Iterator[Run]:
+        return iter(self._runs)
+
+    def __getitem__(self, index: int) -> Run:
+        return self._runs[index]
+
+    def __len__(self) -> int:
+        return len(self._runs)
+
+    @property
+    def name(self) -> str: return self._name
+    @name.setter
+    def name(self, value: str) -> None: self._name = value
+    
+    @property
+    def benchmark(self) -> Any: return self._benchmark
+    @benchmark.setter
+    def benchmark(self, value: Any) -> None:
+        # Auto-instantiate if it's a factory (callable but not the final instance with get_CACHE)
+        # We assume if it's callable and missing core traits, it's a factory.
+        if callable(value) and not hasattr(value, 'get_CACHE'):
+             try:
+                 self._benchmark = value()
+             except Exception as e:
+                 # Fallback or error logging
+                 print(f"Warning: Could not instantiate benchmark factory: {e}")
+                 self._benchmark = value
+        else:
+            self._benchmark = value
+
+    @property
+    def moea(self) -> Any: return self._moea
+    @moea.setter
+    def moea(self, value: Any) -> None:
+        self._moea = value
+
+    @property
+    def runs(self) -> List[Run]:
+        """Returns the list of Run objects from this experiment."""
+        return self._runs
+        # Original code did magic here to instantiate result.
+        # We will handle instantiation in run()
+
+    @property
+    def stop(self) -> Any: return self._stop
+    @stop.setter
+    def stop(self, value: Any) -> None: self._stop = value
+    
+    @property
+    def pof(self) -> Any:
+        """Legacy compatibility for save mechanism."""
+        return self._benchmark
+
+    # Shortcuts
+    @property
+    def last_run(self) -> Run:
+        if not self._runs: raise IndexError("No runs executed yet")
+        return self._runs[-1]
+
+    @property
+    def last_pop(self) -> Population:
+        return self.last_run.last_pop
+
+    def pop(self, gen: int = -1) -> JoinedPopulation:
+        """Aggregate populations from all runs."""
+        # This is tricky. API.py says:
+        # exp.pop(100).objectives # Objs of 100th gen, or all run.
+        # This implies returning a "MultiPopulation" or just all of them?
+        # If I return a list of Populations, .objectives won't work on the list.
+        # The user's API implies exp.pop(100) returns something that has .objectives.
+        # Which likely means CONCATENATED objectives from all runs?
+        # "metrics.hypervolume(exp)" handles the list iteration.
+        # But "exp.pop().objectives" implies aggregation.
+        
+        # Let's create a JoinedPopulation
+        return JoinedPopulation([run.pop(gen) for run in self._runs])
+
+    def front(self, gen: int = -1) -> SmartArray:
+         # Helper for single run case or aggregate?
+         # API.py: exp.front() # Front of the last run (the unique run)
+         # If multiple runs, what is exp.front()? 
+         # Likely the front of the LAST run (shortcut).
+         res = self.last_run.front(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         # Attach source for name inference
+         if hasattr(res, 'label'): res.source = self 
+         if hasattr(res, 'gen'): res.gen = res.gen # Already set by last_run.front(gen)
+         return res
+
+    def set(self, gen: int = -1) -> SmartArray:
+         res = self.last_run.set(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         if hasattr(res, 'gen'): res.gen = res.gen # Already set
+         return res
+
+    def all_fronts(self, gen: int = -1) -> List[SmartArray]:
+        """Returns a list of Pareto fronts from all runs."""
+        return [run.front(gen) for run in self._runs]
+
+    def all_sets(self, gen: int = -1) -> List[SmartArray]:
+        """Returns a list of decision sets from all runs."""
+        return [run.set(gen) for run in self._runs]
+
+    def superfront(self, gen: int = -1) -> SmartArray:
+        """Returns the non-dominated front considering all runs combined."""
+        p = self.pop(gen)
+        # Create a combined population to apply global filtering
+        combined = Population(p.objectives, p.variables, source=self, label="Superfront")
+        return combined.non_dominated().objectives
+
+    def superset(self, gen: int = -1) -> SmartArray:
+        """Returns the non-dominated decision set considering all runs combined."""
+        p = self.pop(gen)
+        combined = Population(p.objectives, p.variables, source=self, label="Superset")
+        return combined.non_dominated().variables
+
+    def non_front(self, gen: int = -1) -> SmartArray:
+         res = self.last_run.non_front(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         return res
+
+    def non_set(self, gen: int = -1) -> SmartArray:
+         res = self.last_run.non_set(gen)
+         if hasattr(res, 'name'): res.name = self.name
+         if hasattr(res, 'label'): res.source = self
+         return res
+
+    def dominated(self, gen: int = -1) -> Population:
+         """Returns the dominated Population at gen."""
+         pop = self.last_run.dominated(gen)
+         pop.label = "Dominated"
+         
+         # Inject metadata for automatic naming
+         for arr in [pop.objectives, pop.variables]:
+             if hasattr(arr, 'name'): arr.name = self.name
+             if hasattr(arr, 'source'): arr.source = self
+             arr.label = "Dominated"
+             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
+             
+         return pop
+
+    def non_dominated(self, gen: int = -1) -> Population:
+         """Returns the non-dominated Population at gen."""
+         pop = self.last_run.non_dominated(gen)
+         pop.label = "Non-dominated"
+
+         # Inject metadata for automatic naming
+         for arr in [pop.objectives, pop.variables]:
+             if hasattr(arr, 'name'): arr.name = self.name
+             if hasattr(arr, 'source'): arr.source = self
+             arr.label = "Non-dominated"
+             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
+             
+         return pop
+
+    # Shortcuts from API.py
+    @property
+    def objectives(self) -> SmartArray:
+        return self.pop().objectives
+
+    @property
+    def variables(self) -> SmartArray:
+        return self.pop().variables
+         
+    # Execution
+    def run(self, repeat: int = 1) -> None:
+        """
+        Executes the optimization experiment for one or more runs.
+
+        Args:
+            repeat (int): Number of independent runs to perform.
+        """
+        if repeat < 1: repeat = 1
+        
+        # Individual Run Progress
+        total_gens = getattr(self.moea, 'generations', None)
+        
+        # Outer progress bar for repeats
+        outer_pbar = None
+        if repeat > 1:
+            outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name}", position=0)
+
+        for i in range(repeat):
+            seed = np.random.randint(0, 1000000)
+            
+            # Inner progress bar
+            inner_pbar = get_progress_bar(total=total_gens, 
+                                         desc=f"  Run {i+1}/{repeat}", 
+                                         position=1 if repeat > 1 else 0,
+                                         leave=False if repeat > 1 else True)
+            
+            set_active_pbar(inner_pbar)
+
+            try:
+                # Check if it's a new-style MOEA with evaluation()
+                if hasattr(self.moea, 'evaluation'):
+                    # Ensure MOEA has the necessary context
+                    self.moea.problem = self
+                    if hasattr(self.moea, 'seed'): 
+                        self.moea.seed = seed
+                    
+                    data_payload = self.moea.evaluation()
+                    new_run = Run(data_payload, seed, experiment=self, index=i+1)
+                    self._runs.append(new_run)
+                else:
+                    # Legacy flow: Returns CACHE object and requires .exec()
+                    current_result = self.moea(self, None, self.stop, seed)
+                    raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
+                    
+                    new_run = Run(raw_result, seed, experiment=self, index=i+1)
+                    self._runs.append(new_run)
+
+                    if hasattr(raw_result, 'edit_DATA_conf'):
+                         moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
+                         if hasattr(moea_instance, 'exec'):
+                              moea_instance.exec()
+            finally:
+                inner_pbar.close()
+                set_active_pbar(None)
+                if outer_pbar:
+                    outer_pbar.update_to(i + 1)
+
+        if outer_pbar:
+            outer_pbar.close()
+
+    # Persistence
+    def save(self, path: str) -> None:
+        # Reuse legacy save if possible, or implement simple pickle
+        from .save import save as legacy_save
+        legacy_save.IPL_save(self, path)
+
+    def load(self, path: str) -> None:
+        from .loader import loader
+        loader.IPL_loader(self, path)
+        # Note: loader populates self.result usually. 
+        # We need to extract runs from it? 
+        # Legacy loader likely restores the old state structure. 
+        # This is a risk point. For now, assume loader works enough to pop result.

@@ -15,16 +15,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **New Directory Structure**: `core/`, `metrics/`, `plotting/` packages established.
+- **Performance**: Vectorized Non-Dominated Sort implementation (NumPy broadcasting) in `core/run.py`.
+- **Type Hints**: Comprehensive Python typing added to all Core and Benchmark components.
 - Static plotting support for `timeplot` and `spaceplot` via `mode='static'` argument.
 - `verify_api.py` regression test to validate API functionality.
 - New `example-01.py` demonstrating the updated API usage.
 
 ### Changed
 - **Major API Refactoring**: Restructured `MoeaBench` to follow a new object-oriented design (e.g., `mb.experiment`, `mb.moeas`, `mb.benchmarks`).
+- **Clean Namespace**: Standardized filenames to `snake_case` and removed 20+ legacy interface files (`I_*.py`, `H_*.py`) and the `CACHE` system.
+- **Dependency Hygiene**: Pruned unused packages (`ordered_set`, `deepdiff`, `PyGithub`) from `requirements.txt`.
 - `example-01.py` updated to use the new `MoeaBench` API and `DTLZ2` benchmark.
 - `README.md` Quick Start example updated to match the new API.
 
 ### Fixed
+- **CRITICAL**: Fixed `BaseMoeaWrapper` ignoring random seeds (`seed=...`), ensuring independent runs are now mathematically unique.
+- **Plotting**: Fixed static 3D plots to use standard Matplotlib color cycle (`prop_cycle`), preventing identical colors for multiple runs.
+- **API**: Restored missing metric shortcuts (`mb.hv`, `mb.igd`, `mb.gd`, `mb.gdplus`, `mb.igdplus`).
 - Fixed plotting backends to correctly propagate the `mode` argument.
 - Fixed typo "Vizualize" in `example-01.py` comments.
 

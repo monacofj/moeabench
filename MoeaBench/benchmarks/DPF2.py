@@ -3,48 +3,28 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .problems import problems
+import numpy as np
+from .base_dpf import BaseDPF
 
-
-class DPF2:
-     """
-        - benchmark problem:
-        Click on the links for more
-        ...
-                - DPF2:
-                      - sinxtase:
-                      experiment.benchmark = moeabench.benchmarks.DPF2(args) 
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/problems/DPF/DPF2/) POF sampling, results obtained in tests 
-                      with genetic algorithms, references and more... 
-                      - [implementation](https://moeabench-rgb.github.io/MoeaBench/problems/DPF/DPF2/DPF2/) detailed implementation information
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/problems/DPF/arguments/)) custom and default settings problem
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/problems/DPF/exceptions/) information on possible error types
+class DPF2(BaseDPF):
+    """
+    DPF2 benchmark problem.
+    Flat high-dimensional problem projected from D-dimensional DTLZ7-like base.
+    """
+    def evaluation(self, X, n_ieq_constr=0):
+        X = np.atleast_2d(X)
+        D, K, M = self.D, self.K, self.M
         
-        """
-     
-     def __init__(self, M = 3, K = 5, D = 2, P = 700):
-          self.M = M
-          self.K = K
-          self.D = D
-          self.P = P
-
-
-     def __call__(self, default = None):
-  
-        try:
-            problem = problems()
-            bk = problem.get_problem(self.__class__.__name__)
-            class_bk =  getattr(bk[0],bk[1].name)
-            instance = class_bk(self.M, self.K, self.D, self.P, problem.get_CACHE())
-            instance.P_validate(self.P)
-            instance.set_BENCH_conf()
-            instance.POFsamples()
-            return instance
-        except Exception as e:
-            print(e)
-
-
-
-            
-
-      
+        # g factor (DTLZ7-like)
+        X_m = X[:, D-1:]
+        g = 1 + 9/K * np.sum(X_m, axis=1).reshape(-1, 1)
+        
+        # Base F (D objectives)
+        F_base = np.zeros((X.shape[0], D))
+        F_base[:, :D-1] = X[:, :D-1]
+        
+        # h factor
+        h = D - np.sum((F_base[:, :D-1] / (1 + g)) * (1 + np.sin(3 * np.pi * F_base[:, :D-1])), axis=1).reshape(-1, 1)
+        F_base[:, D-1:] = (1 + g) * h
+        
+        return {'F': self._project(F_base, square=True)}

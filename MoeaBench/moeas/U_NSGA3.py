@@ -1,64 +1,17 @@
-# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
-# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+from .base_moea_wrapper import BaseMoeaWrapper
+from .kernel_moea.UNSGA_pymoo import UNSGA_pymoo
 
-from .moea_algorithm import moea_algorithm
-
-
-class U_NSGA3:
+class U_NSGA3(BaseMoeaWrapper):
     """
-        - genetic algorithm:
-        Click on the links for more
-        ...
-                - U_NSGA-II:
-                      - sinxtase:
-                      experiment.moea = moeabench.moeas.U_NSGA_3(args)  
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/algorithms/UNSGA3/) references and more...
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/algorithms/arguments/)) custom and default settings problem
-                      - [configurations](https://moeabench-rgb.github.io/MoeaBench/algorithms/configuration/) algorithm configuration adopted by MoeaBench
-        
-        """
-
-    def __init__(self,population = 150, generations = 300, seed = 0):
-        self._population=population
-        self._generations=generations
-        self.seed = seed
-        self.result = None
-
-
-    def __call__(self, problem, default = None, stop = None, seed = 0):
-        self.problem = problem
-        moea = moea_algorithm()
-        algoritm = moea.get_MOEA(self.__class__.__name__)
-        class_algoritm = getattr(algoritm[0],algoritm[1].name)
-        instance = class_algoritm(problem,self._population,self._generations, seed, stop)
-        result = moea.get_CACHE()
-        result.get_DATA_conf().set_DATA_MOEA(instance,problem.benchmark)
-        self.result = result
-        return result   
-
-
-    @property
-    def generations(self):
-        return self._generations
+    Unified Non-dominated Sorting Genetic Algorithm III (U-NSGA-III).
     
-
-    @generations.setter
-    def generations(self,value):
-        self._generations = value   
-        if hasattr(self,"problem"):
-           self.result.edit_DATA_conf().get_DATA_MOEA().generations=value
-
-
-    @property
-    def population(self):
-        return self._population
+    An extension of NSGA-III that aims to handle both single- and 
+    multi-objective optimization problems in a unified manner.
     
-
-    @population.setter
-    def population(self,value):
-        self._population = value   
-        if hasattr(self,"problem"):
-           self.result.edit_DATA_conf().get_DATA_MOEA().population=value 
-
+    References:
+        Seada & Deb (2015). U-NSGA-III: A Unified Evolutionary Optimization 
+        Procedure for Both Single and Multi-objective Optimization. 
+        Kalyanpur, India.
+    """
+    def __init__(self, population=150, generations=300, seed=1):
+        super().__init__(UNSGA_pymoo, population, generations, seed)

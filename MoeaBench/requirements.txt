@@ -3,17 +3,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-pymoo
-ipywidgets
-plotly
-ipython
-pandas
-ordered_set
-deap
-deepdiff
-PyGithub
-joblib
 numpy
+pandas
+matplotlib
+plotly
+ipywidgets
+ipython
+joblib
 tqdm
-
-
+pymoo
+deap

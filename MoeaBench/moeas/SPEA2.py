@@ -1,63 +1,17 @@
-# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
-# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+from .base_moea_wrapper import BaseMoeaWrapper
+from .kernel_moea.SPEA_pymoo import SPEA_pymoo
 
-from .moea_algorithm import moea_algorithm
-
-
-class SPEA2:
+class SPEA2(BaseMoeaWrapper):
     """
-        - genetic algorithm:
-        Click on the links for more
-        ...
-                - SPEA-II:
-                      - sinxtase:
-                      experiment.moea = moeabench.moeas.SPEA_II(args)  
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/algorithms/SPEA2/) references and  more...
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/algorithms/arguments/)) custom and default settings problem
-                      - [configurations](https://moeabench-rgb.github.io/MoeaBench/algorithms/configuration/) algorithm configuration adopted by MoeaBench
-        
-        """
-
-    def __init__(self,population = 150, generations = 300, seed = 0):
-        self._population=population
-        self._generations=generations
-        self.seed = seed
-        self.result = None
-
-
-    def __call__(self, problem, default = None, stop = None, seed = 0):
-        self.problem = problem
-        moea = moea_algorithm()
-        algoritm = moea.get_MOEA(self.__class__.__name__)
-        class_algoritm = getattr(algoritm[0],algoritm[1].name)
-        instance = class_algoritm(problem,self._population,self._generations, seed, stop)
-        result = moea.get_CACHE()
-        result.get_DATA_conf().set_DATA_MOEA(instance,problem.benchmark)
-        self.result = result
-        return result       
+    Strength Pareto Evolutionary Algorithm 2 (SPEA2).
     
-
-    @property
-    def generations(self):
-        return self._generations
+    A multi-objective evolutionary algorithm that uses a fine-grained 
+    fitness assignment strategy and an enhanced archive truncation 
+    method to maintain diversity and elitism.
     
-
-    @generations.setter
-    def generations(self,value):
-        self._generations = value   
-        if hasattr(self,"problem"):
-           self.result.edit_DATA_conf().get_DATA_MOEA().generations=value
-
-
-    @property
-    def population(self):
-        return self._population
-    
-
-    @population.setter
-    def population(self,value):
-        self._population = value   
-        if hasattr(self,"problem"):
-           self.result.edit_DATA_conf().get_DATA_MOEA().population=value
+    References:
+        Zitzler, Laumanns, & Thiele (2001). SPEA2: Improving the Strength 
+        Pareto Evolutionary Algorithm. Technical Report 103, ETH Zurich.
+    """
+    def __init__(self, population=150, generations=300, seed=1):
+        super().__init__(SPEA_pymoo, population, generations, seed)

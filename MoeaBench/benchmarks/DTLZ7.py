@@ -3,41 +3,37 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .problems import problems
+import numpy as np
+from .base_benchmark import BaseBenchmark
 
+class DTLZ7(BaseBenchmark):
+    """
+    DTLZ7 benchmark problem. 
+    Disconnected Pareto front.
+    """
+    def __init__(self, M=3, K=20, **kwargs):
+        self.K = K
+        N = M + K - 1
+        super().__init__(M=M, N=N, **kwargs)
 
-class DTLZ7:
-     """
-        - benchmark problem:
-        Click on the links for more
-        ...
-                - DTLZ7:
-                      - sinxtase:
-                      experiment.benchmark = moeabench.benchmarks.DTLZ7(args) 
-                      - [general](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ7/) POF sampling, results obtained in tests 
-                      with genetic algorithms, references and more... 
-                      - [implementation](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/DTLZ7/DTLZ7/) detailed implementation information
-                      - ([arguments](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/arguments/)) custom and default settings problem
-                      - [Exception](https://moeabench-rgb.github.io/MoeaBench/problems/DTLZ/exceptions/) information on possible error types
+    def evaluation(self, X, n_ieq_constr=0):
+        X = np.atleast_2d(X)
+        M = self.M
+        K = self.K
         
-        """
-     
-     def __init__(self, M = 3, K = 5, P = 700):
-          self.M = M
-          self.K = K
-          self.P = P
-     
-     
-     def __call__(self, default = None):
-       
-        try:
-            problem = problems()
-            bk = problem.get_problem(self.__class__.__name__)
-            class_bk =  getattr(bk[0],bk[1].name)
-            instance = class_bk(self.M, self.K, self.P, problem.get_CACHE())
-            instance.P_validate(self.P)
-            instance.set_BENCH_conf()
-            instance.POFsamples()
-            return instance
-        except Exception as e:
-            print(e)
+        # g = 1 + 9/K * sum(Xi) for i=M to N
+        X_m = X[:, M-1:]
+        g = 1 + 9 / K * np.sum(X_m, axis=1).reshape(-1, 1)
+        
+        F = np.zeros((X.shape[0], M))
+        # f1..fm-1 = x1..xm-1
+        F[:, :M-1] = X[:, :M-1]
+        
+        # h = M - sum ( fi/(1+g) * (1+sin(3*pi*fi)) )
+        h = M - np.sum( (F[:, :M-1] / (1 + g)) * (1 + np.sin(3 * np.pi * F[:, :M-1])), axis=1).reshape(-1, 1)
+        
+        F[:, M-1:] = (1 + g) * h
+        return {'F': F}
+
+    def get_K(self):
+        return self.K
