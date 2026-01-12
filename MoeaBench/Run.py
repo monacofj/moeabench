@@ -37,7 +37,7 @@ class Run:
     Represents a single execution (trajectory) of an optimization algorithm.
     Provides access to populations across generations.
     """
-    def __init__(self, engine_result, seed=None, experiment=None):
+    def __init__(self, engine_result, seed=None, experiment=None, index=None):
         """
         Args:
             engine_result: The internal result object from the MOEA engine 
@@ -47,6 +47,7 @@ class Run:
         """
         self.seed = seed
         self.source = experiment # Link back to the experiment
+        self.index = index
         
         # Store CACHE (engine_result) 
         self._cache = engine_result
@@ -54,9 +55,13 @@ class Run:
 
     @property
     def name(self):
+        base_name = None
         if self.source:
-            return getattr(self.source, 'name', None)
-        return None
+            base_name = getattr(self.source, 'name', None)
+        
+        if base_name and self.index is not None and self.source and len(self.source) > 1:
+            return f"{base_name} (run {self.index})"
+        return base_name
 
     @property
     def _engine_result(self):

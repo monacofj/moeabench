@@ -8,6 +8,7 @@ from .analyse_surface_obj import analyse_surface_obj
 from .I_UserMoeaBench import I_UserMoeaBench
 import importlib
 from .experiment import experiment
+from .metrics import hypervolume as hv_func, igd as igd_func, gd as gd_func, gdplus as gdplus_func, igdplus as igdplus_func, plot_matrix
 from MoeaBench.stats.stats import stats
 from MoeaBench.hypervolume.hypervolume import hypervolume
 from MoeaBench.gd.gd import gd
@@ -51,6 +52,22 @@ class MoeaBench(I_UserMoeaBench):
     
     def experiment(self):
         return experiment(self)
+
+    # Functional Metrics API
+    def hv(self, exp, ref=None, show_bounds=False):
+        return hv_func(exp, ref=ref)
+
+    def hypervolume_metric(self, exp, ref=None, show_bounds=False):
+        return hv_func(exp, ref=ref)
+
+    def igd_metric(self, exp, ref=None, show_bounds=False):
+        return igd_func(exp, ref=ref)
+
+    def gd_metric(self, exp, ref=None, show_bounds=False):
+        return gd_func(exp, ref=ref)
+
+    def plot_metrics(self, metric_matrices, mode='interactive', show_bounds=False):
+        return plot_matrix(metric_matrices, mode=mode, show_bounds=show_bounds)
     
 
     def __getattr__(self,name):
@@ -75,7 +92,7 @@ class MoeaBench(I_UserMoeaBench):
             print(e)   
         
 
-    def timeplot(self, *args, objectives=None, mode='interactive'):
+    def timeplot(self, *args, objectives=None, mode='interactive', show_bounds=False):
         """
         Plots metrics over time (generations).
         Accepts MetricMatrix objects (from mb.metrics.*) or legacy inputs.
@@ -86,7 +103,7 @@ class MoeaBench(I_UserMoeaBench):
             
             if is_new_metric:
                  from MoeaBench.metrics import plot_matrix
-                 plot_matrix(args, mode=mode)
+                 plot_matrix(args, mode=mode, show_bounds=show_bounds)
             else:
                  print("Warning: use mb.metrics.* for timeplot support.")
                  # Fallback logic could go here if we identified legacy metric objects

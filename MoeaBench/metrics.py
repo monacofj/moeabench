@@ -282,7 +282,7 @@ def igd(exp, ref=None):
 def igdplus(exp, ref=None):
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
-def plot_matrix(metric_matrices, mode='interactive'):
+def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
     """
     Plots a list of MetricMatrix objects.
     mode: 'interactive' (Plotly) or 'static' (Matplotlib)
@@ -310,9 +310,15 @@ def plot_matrix(metric_matrices, mode='interactive'):
                 mean = np.nanmean(data, axis=1)
                 std = np.nanstd(data, axis=1)
                 gens = np.arange(1, len(mean) + 1)
+                v_min = np.nanmin(data, axis=1)
+                v_max = np.nanmax(data, axis=1)
                 
-                ax.plot(gens, mean, label=f'{label} Mean')
-                # ax.fill_between(gens, mean-std, mean+std, alpha=0.3)
+                ax.plot(gens, mean, label=label)
+                ax.fill_between(gens, np.maximum(0, mean-std), mean+std, alpha=0.2)
+                
+                if show_bounds:
+                    ax.plot(gens, v_min, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
+                    ax.plot(gens, v_max, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
              else:
                 ax.plot(np.arange(1, len(data)+1), data[:, 0], label=label)
         
@@ -337,15 +343,49 @@ def plot_matrix(metric_matrices, mode='interactive'):
                 mean = np.nanmean(data, axis=1)
                 std = np.nanstd(data, axis=1)
                 gens = np.arange(1, len(mean) + 1)
+                v_min = np.nanmin(data, axis=1)
+                v_max = np.nanmax(data, axis=1)
                 
                 # Plot Mean
                 fig.add_trace(go.Scatter(
                     x=gens, y=mean,
                     mode='lines',
-                    name=f'{label} Mean'
+                    name=label,
+                    line=dict(width=3)
                 ))
                 
-                # TODO: Add shadow/band for std dev
+                # Add shadow/band for std dev
+                lower_bound = np.maximum(0, mean - std)
+                fig.add_trace(go.Scatter(
+                    x=np.concatenate([gens, gens[::-1]]),
+                    y=np.concatenate([mean + std, lower_bound[::-1]]),
+                    fill='toself',
+                    fillcolor='rgba(100, 100, 100, 0.2)',
+                    line=dict(color='rgba(255,255,255,0)'),
+                    hoverinfo="skip",
+                    showlegend=False,
+                    name=f'{label} StdDev'
+                ))
+                
+                if show_bounds:
+                    # v_min and v_max already calculated above
+                    
+                    fig.add_trace(go.Scatter(
+                        x=gens, y=v_min,
+                        mode='lines',
+                        line=dict(dash='dash', width=1),
+                        name=f'{label} Min',
+                        showlegend=False,
+                        opacity=0.5
+                    ))
+                    fig.add_trace(go.Scatter(
+                        x=gens, y=v_max,
+                        mode='lines',
+                        line=dict(dash='dash', width=1),
+                        name=f'{label} Max',
+                        showlegend=False,
+                        opacity=0.5
+                    ))
                 
             else:
                 # Single run

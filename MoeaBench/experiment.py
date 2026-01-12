@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .I_UserExperiment import I_UserExperiment
-from .Run import Run, SmartArray
+from .Run import Run, SmartArray, Population
 from .RUN import RUN
 from .RUN_user import RUN_user
 import numpy as np
@@ -114,6 +114,27 @@ class experiment(I_UserExperiment):
          if hasattr(res, 'gen'): res.gen = res.gen # Already set
          return res
 
+    def all_fronts(self, gen=-1):
+        """Returns a list of Pareto fronts from all runs."""
+        return [run.front(gen) for run in self._runs]
+
+    def all_sets(self, gen=-1):
+        """Returns a list of decision sets from all runs."""
+        return [run.set(gen) for run in self._runs]
+
+    def superfront(self, gen=-1):
+        """Returns the non-dominated front considering all runs combined."""
+        p = self.pop(gen)
+        # Create a combined population to apply global filtering
+        combined = Population(p.objectives, p.variables, source=self, label="Superfront")
+        return combined.non_dominated().objectives
+
+    def superset(self, gen=-1):
+        """Returns the non-dominated decision set considering all runs combined."""
+        p = self.pop(gen)
+        combined = Population(p.objectives, p.variables, source=self, label="Superset")
+        return combined.non_dominated().variables
+
     def non_front(self, gen=-1):
          res = self.last_run.non_front(gen)
          if hasattr(res, 'name'): res.name = self.name
@@ -202,7 +223,7 @@ class experiment(I_UserExperiment):
                 
                 # Create Run wrapper and add to experiment before execution 
                 # so stop functions can access experimental data (e.g. via experiment.last_run)
-                new_run = Run(raw_result, seed, experiment=self)
+                new_run = Run(raw_result, seed, experiment=self, index=i+1)
                 self._runs.append(new_run)
 
                 if hasattr(raw_result, 'edit_DATA_conf'):
