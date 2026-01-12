@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "MoeaBench"
+version = "0.1.0"
+authors = [
+  { name = "Silva F. F.", email = "fernandoferreira.silva42@usp.br" },
+  { name = "Monaco F. J.", email = "monaco@usp.br" },
+]
+description = "A comprehensive Multi-Objective Evolutionary Algorithm Benchmark library."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GPL-3.0-or-later" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = [
+    "pymoo",
+    "ipywidgets",
+    "plotly",
+    "ipython",
+    "pandas",
+    "ordered_set",
+    "deap",
+    "deepdiff",
+    "PyGithub",
+    "joblib",
+    "numpy",
+    "tqdm",
+]
+
+[tool.setuptools]
+packages = ["MoeaBench"]
+
+[tool.setuptools.package-data]
+"MoeaBench" = ["requirements.txt"]
