@@ -13,20 +13,29 @@ def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=Non
     """
     processed_args = []
     names = []
+    trace_modes = [] # Store if we want markers or lines
     
     # Defaults
     if title is None: title = "Pareto-optimal front"
     if axis_labels is None: axis_labels = "Objective"
     
+    from ..stats.attainment import AttainmentSurface
+
     for i, arg in enumerate(args):
         val = arg
         name = None
+        t_mode = 'markers'
         
         # Unwrap standard MoeaBench objects
-        # Prioritize front() method if available (Experiment/Run)
-        if hasattr(arg, 'front') and callable(getattr(arg, 'front')):
+        # 1. AttainmentSurface (special case)
+        if isinstance(arg, AttainmentSurface):
+             val = arg
+             name = arg.name
+             t_mode = 'lines+markers' # Show the boundary clearly
+        # 2. Prioritize front() method if available (Experiment/Run)
+        elif hasattr(arg, 'front') and callable(getattr(arg, 'front')):
              val = arg.front()
-        # Fallback to .objectives property (Population)
+        # 3. Fallback to .objectives property (Population)
         elif hasattr(arg, 'objectives'):
              val = arg.objectives
         
@@ -57,6 +66,7 @@ def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=Non
         val = np.array(val)
         processed_args.append(val)
         names.append(name)
+        trace_modes.append(t_mode)
         
     # Axis selection
     if objectives is None:
@@ -71,7 +81,7 @@ def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=Non
     
     # Selection of Plotter based on dimensions
     if len(objectives) == 2:
-        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels)
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes)
     else:
         # Ensure 3rd dimension exists for Scatter3D
         for k in range(len(processed_args)):
@@ -85,7 +95,7 @@ def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=Non
         while len(objectives) < 3:
              objectives.append(0)
              
-        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes)
     
     s.show()
 
