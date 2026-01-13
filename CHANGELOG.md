@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `example-06.py` demonstrating statistical comparison and Pareto testing.
 - Comprehensive `docs/reference.md` (API) and `docs/userguide.md` (How-to) created.
 - **Improved Metrics**: `MetricMatrix` now features `.gens()` and `.runs()` robust selectors.
+- **System Module**: Added `mb.system` for environmental awareness (CPU count, memory, dependency check).
+- **Parallel UI**: New multi-bar progress reporting system using IPC to display worker history in real-time.
 
 ### Changed
 - **Terminology**: Renamed `benchmarks` to **`mops`** and `BaseBenchmark` to **`BaseMop`** globally for technical accuracy and brevity.
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Dependency Hygiene**: Pruned unused packages (`ordered_set`, `deepdiff`, `PyGithub`) from `requirements.txt`.
 - `example-01.py` updated to use the new `MoeaBench` API and `DTLZ2` benchmark.
 - `README.md` Quick Start example updated to match the new API.
+- **Parallel Execution**: `workers=0` now defaults to half of available CPUs; `workers=-1` defaults to `CPUs - 1` (safemode) to prevent system freeze.
 
 ### Fixed
 - **CRITICAL**: Fixed `BaseMoeaWrapper` ignoring random seeds (`seed=...`), ensuring independent runs are now mathematically unique.
@@ -41,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **API**: Restored missing metric shortcuts (`mb.hv`, `mb.igd`, `mb.gd`, `mb.gdplus`, `mb.igdplus`).
 - Fixed plotting backends to correctly propagate the `mode` argument.
 - Fixed typo "Vizualize" in `example-01.py` comments.
+- **Fixed Parallel Reporting**: Resolved issue where workers failed to report progress due to missing local instantiation.
 
 ## [0.1.0] - 2025-01-10
 

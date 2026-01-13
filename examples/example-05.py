@@ -7,13 +7,20 @@ import mb_path
 import MoeaBench as mb
 import numpy as np
 
+# This is a more complete example of using MoeaBench
+# that illustrates how to extend the framework to create
+# custom benchmarks.
+# 
+# Notes: parameters were set for faster execution in detriment of quality
+
+
 # -------------------------------------------------------------------------
-# 1. Define your Custom MOP
+# 1. Define your Custom Benchmark
 # -------------------------------------------------------------------------
-# To create a new problem, simply inherit from BaseMOP.
+# To create a new problem, simply inherit from BaseBenchmark.
 # You need to define __init__ (dimensions/bounds) and evaluation().
 
-class MyProblem(mb.mops.BaseMOP):
+class MyProblem(mb.benchmarks.BaseBenchmark):
     """
     A simple custom bi-objective problem (ZDT1-like).
     """
@@ -42,14 +49,14 @@ class MyProblem(mb.mops.BaseMOP):
 # -------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("Running Custom MOP Example...")
+    print("Running Custom Benchmark Example...")
     
     # Instantiate your custom class
     my_problem = MyProblem()
 
     # Configure Experiment
     exp = mb.experiment()
-    exp.mop = my_problem
+    exp.benchmark = my_problem
     exp.moea = mb.moeas.NSGA3(population=100, generations=50)
     exp.name = "MyCustomProblem"
 
@@ -59,4 +66,4 @@ if __name__ == "__main__":
     # Visualize
     # Since it's a 2-objective problem, spaceplot will handle it nicely.
     print("Optimization complete. Plotting results...")
-    mb.spaceplot(exp, title="Pareto Front of MyCustomProblem")
+    mb.spaceplot(exp, mode='static', title="Pareto Front of MyCustomProblem")

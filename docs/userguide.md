@@ -73,9 +73,13 @@ For large experiments (e.g., `repeat=30`), you can significantly speed up execut
 # Run 30 repetitions using 4 parallel workers
 exp.run(repeat=30, workers=4)
 
-# Use all available CPU cores
-exp.run(repeat=30, workers=-1)
+# Use safer defaults:
+exp.run(repeat=30, workers=0)  # Uses half of available CPUs (Balanced)
+exp.run(repeat=30, workers=-1) # Uses CPUs - 1 (Safe maximum, prevents UI freeze)
 ```
+
+> [!TIP]
+> **New Parallel UI**: When running in parallel, MoeaBench now displays a multi-bar progress interface. You can see the global progress and the individual state of each worker in real-time.
 
 > [!CAUTION]
 > **RAM Usage**: Each parallel worker clones the experiment process. If your population size is huge or your problem loads large datasets, parallel execution might exhaust your system's RAM.
@@ -281,6 +285,21 @@ res = mb.stats.mann_whitney(v1, v2)
 
 For a full comparison script, see `examples/example-06.py`.
 
-## **6. References**
+### **6. System Utilities (`mb.system`)**
+
+MoeaBench includes a `system` module to monitor your environment and hardware.
+
+```python
+# Check hardware
+mb.system.cpus()          # Total cores
+mb.system.cpus(safe=True) # Cores - 1
+mb.system.memory()        # Total and available RAM (GB)
+
+# Check library health
+mb.system.check_dependencies() # Report on installed solvers
+mb.system.version()            # Library version
+```
+
+## **7. References**
 *   **Full API Documentation**: See `docs/reference.md` for exhaustive details on every class and method.
 *   **Pymoo**: The optimization engine powering standard algorithms (https://pymoo.org).
