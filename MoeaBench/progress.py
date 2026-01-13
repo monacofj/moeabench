@@ -96,7 +96,7 @@ class ParallelProgressManager:
         self.workers = workers
         self.queue = queue
         self.pbars: Dict[int, tqdm] = {}
-        self.main_pbar = tqdm(total=repeat, desc=desc, position=0)
+        self.main_pbar = tqdm(total=repeat, desc=desc, position=0, ascii=" -")
         self.completed_runs = 0
         self.stop_event = threading.Event()
         self.thread = threading.Thread(target=self._listen, daemon=True)
