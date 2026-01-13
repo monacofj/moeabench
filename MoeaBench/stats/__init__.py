@@ -3,4 +3,4 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .tests import a12, mann_whitney
+from .tests import a12, mann_whitney, ks_test

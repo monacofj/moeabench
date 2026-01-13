@@ -216,6 +216,18 @@ hv2 = mb.hv(exp2)
 res = mb.stats.mann_whitney(hv1, hv2) # Automically extracts .gens(-1)
 ```
 
+### **Detecting Shape Differences (`ks_test`)**
+While Mann-Whitney tells you if one algorithm is generally "better," the **Kolmogorov-Smirnov (KS)** test identifies if the distributions have different **shapes**. 
+
+This is useful for spotting:
+*   **Stability**: If one algorithm has much higher variance (is less stable).
+*   **Bimodality**: If an algorithm has distinct "success" and "failure" modes.
+
+```python
+# Check if the performance distributions have different "silhouettes"
+res_ks = mb.stats.ks_test(exp1, exp2)
+```
+
 ### **Customizing the Metric**
 You can specify which metric to use by passing the function or a lambda.
 

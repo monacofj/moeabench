@@ -244,6 +244,11 @@ Performs the Mann-Whitney U rank test.
     *   `**kwargs`: Arguments passed directly to the `metric` function (e.g., `ref_point`).
 *   **Returns**: object with `.statistic` and `.pvalue`.
 
+### **`mb.stats.ks_test(data1, data2, alternative='two-sided', metric=mb.hv, gen=-1, **kwargs)`**
+Performs the Kolmogorov-Smirnov two-sample test for distribution shape differences.
+*   **Args**: Same as `mann_whitney`.
+*   **Returns**: object with `.statistic` and `.pvalue`.
+
 ### **`mb.stats.a12(data1, data2, metric=mb.hv, gen=-1, **kwargs)`**
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
 *   **Args**: Same as `mann_whitney`.

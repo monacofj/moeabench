@@ -49,6 +49,12 @@ def main():
         print("  -> Significant Difference (p < 0.05)!")
     else:
         print("  -> No Significant Difference.")
+
+    # Kolmogorov-Smirnov Test (Distribution Shape)
+    ks_res = mb.stats.ks_test(exp1, exp2)
+    print(f"Kolmogorov-Smirnov P-value: {ks_res.pvalue:.2e}")
+    if ks_res.pvalue < 0.05:
+        print("  -> Distributions have different shapes/stabilities!")
         
     # Vargha-Delaney A12 (Effect Size)
     # Measures probability that 1 > 2.

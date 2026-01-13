@@ -114,3 +114,28 @@ def mann_whitney(data1, data2, alternative='two-sided', metric=None, gen=-1, **k
     """
     v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
     return mannwhitneyu(v1, v2, alternative=alternative)
+
+def ks_test(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
+    """
+    Performs the Kolmogorov-Smirnov two-sample test.
+    
+    The KS test identifies if two distributions are different in shape, 
+    detecting differences in variance, bimodality, or stability 
+    that a rank-sum test might miss.
+    
+    Supports "Smart Stats": can take raw arrays or Experiment objects.
+    
+    Args:
+        data1: First group of samples or Experiment.
+        data2: Second group of samples or Experiment.
+        alternative (str): 'two-sided', 'less', or 'greater'.
+        metric (callable): Metric function to use if experiments are passed.
+        gen (int): Generation index to extract from MetricMatrix (default -1).
+        **kwargs: Arguments passed to the metric function.
+                           
+    Returns:
+        KstestResult: Object containing 'statistic' and 'pvalue'.
+    """
+    from scipy.stats import ks_2samp
+    v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
+    return ks_2samp(v1, v2, alternative=alternative)
