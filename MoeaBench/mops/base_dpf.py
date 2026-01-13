@@ -53,6 +53,15 @@ class BaseDPF(BaseMop):
             redundant.append(proj)
         return np.concatenate((F_base, np.column_stack(redundant)), axis=1)
 
+    def ps(self, n_points=100):
+        """Analytical sampling of DPF Pareto Set."""
+        D = self.D
+        N = self.N
+        res = np.zeros((n_points, N))
+        res[:, :D-1] = np.random.random((n_points, D - 1))
+        res[:, D-1:] = 0.5
+        return res
+
     def get_D(self):
         return self.D
 

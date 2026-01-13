@@ -35,5 +35,15 @@ class DTLZ7(BaseMop):
         F[:, M-1:] = (1 + g) * h
         return {'F': F}
 
+    def ps(self, n_points=100):
+        """Analytical sampling of DTLZ7 Pareto Set."""
+        M = self.M
+        N = self.N
+        res = np.zeros((n_points, N))
+        res[:, :M-1] = np.random.random((n_points, M - 1))
+        # Optimal g=1 when xi=0 for i >= M
+        res[:, M-1:] = 0.0
+        return res
+
     def get_K(self):
         return self.K

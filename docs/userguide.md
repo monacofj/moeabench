@@ -94,6 +94,14 @@ Inspect the final trade-offs found by the algorithm.
 mb.spaceplot(exp.pop(0), exp.last_pop, title="Evolution")
 ```
 
+### **Comparing with the Theoretical Limit**
+For analytical benchmarks, you can easily plot the **True Pareto Front** to visualize how close your algorithm got to the global optimum.
+
+```python
+# exp.optimal() samples the theoretical true PF/PS
+mb.spaceplot(exp.optimal(), exp, title="Proximity to Optimal")
+```
+
 ---
 
 ## **4. Advanced Usage**
@@ -186,6 +194,37 @@ exp.moea = MyGA(population=50)
 
 ---
 
-## **5. References**
+---
+
+## **5. Statistical Analysis**
+
+When comparing algorithms, it's crucial to determine if performance differences are statistically significant. MoeaBench provides built-in tools (`mb.stats`) for this purpose.
+
+### **Hypothesis Testing (`mb.stats.mann_whitney`)**
+Use the **Mann-Whitney U test** to check if one algorithm typically produces better values than another (independent samples).
+
+```python
+# Returns a result object with .pvalue and .statistic
+res = mb.stats.mann_whitney(hv_algorithm_A, hv_algorithm_B)
+
+if res.pvalue < 0.05:
+    print("Significant difference found!")
+```
+
+### **Effect Size (`mb.stats.a12`)**
+Use the **Vargha-Delaney A12** statistic to measure the magnitude of the difference. Interpreting $A_{12}(A, B)$:
+*   **0.5**: A and B are equal.
+*   **> 0.5**: A is better than B (for maximization metrics).
+*   **< 0.5**: B is better than A.
+
+```python
+score = mb.stats.a12(hv_algorithm_A, hv_algorithm_B)
+print(f"Effect Size: {score}") 
+# Guide: Small > 0.56, Medium > 0.64, Large > 0.71
+```
+
+For a full example of a statistical pipeline, see `examples/example-06.py`.
+
+## **6. References**
 *   **Full API Documentation**: See `docs/reference.md` for exhaustive details on every class and method.
 *   **Pymoo**: The optimization engine powering standard algorithms (https://pymoo.org).

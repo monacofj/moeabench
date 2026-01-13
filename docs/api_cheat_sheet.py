@@ -65,6 +65,9 @@ run.non_front()          # Same as run.dominated().objectives
 # Shortcuts from Experiment (delegates to last_run)
 exp.front()              # Same as exp.last_run.front()
 exp.pop()                # Same as exp.last_run.pop()
+exp.optimal()            # Analytical PF/PS (Population)
+exp.optimal_front()      # Analytical PF (SmartArray)
+exp.optimal_set()        # Analytical PS (SmartArray)
 
 # ---------------------------------------------------------
 # 5. Metrics
@@ -75,8 +78,10 @@ hv = mb.hv(exp)          # Hypervolume matrix (Generations x Runs)
 igd = mb.igd(exp)        # IGD matrix (requires known true front)
 
 # Access metric data
-hv.values                # Raw numpy array
-hv.runs[0]               # Trajectory of 1st run
+# Access metric data
+hv.values                # Raw numpy array (Generations x Runs)
+hv.runs(0)               # Trajectory of 1st run (Method)
+hv.gens()                # Distribution at final generation (all runs)
 
 # ---------------------------------------------------------
 # 6. Visualization

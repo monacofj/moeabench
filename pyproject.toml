@@ -37,6 +37,7 @@ dependencies = [
     "joblib",
     "numpy",
     "tqdm",
+    "scipy",
 ]
 
 [tool.setuptools]

@@ -25,6 +25,9 @@ The top-level container.
 *   `runs` (*List[Run]*): Access to all execution results.
 *   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
 *   `last_pop` (*Population*): Shortcut to the final population of the last run.
+*   `.optimal(n=500)` (*Population*): Analytical sampling of the true Pareto optimal set and front.
+*   `.optimal_front(n=500)` (*SmartArray*): Shortcut to the analytical true PF.
+*   `.optimal_set(n=500)` (*SmartArray*): Shortcut to the analytical true PS.
 
 **Usage Example:**
 ```python
@@ -193,3 +196,50 @@ algo_tuned = mb.moeas.NSGA3(population=200,
                             n_neighbors=15,    # Custom Pymoo arg
                             eliminate_duplicates=True)
 ```
+
+---
+
+## **5. Metrics (`mb.metrics`)**
+
+Standard multi-objective performance metrics.
+
+### **Metric Calculation**
+*   **`mb.hv(exp, ref=None)`**: Calculates Hypervolume.
+*   **`mb.igd(exp, ref=None)`**: Calculates IGD (Inverse Generational Distance).
+*   **`mb.gd(exp, ref=None)`**: Calculates GD (Generational Distance).
+
+**Returns**: `MetricMatrix` object.
+
+### **`MetricMatrix` Object**
+A matrix of metric values (Generations x Runs).
+
+**Accessors:**
+*   **`.values`** (*np.ndarray*): Raw data matrix.
+*   **`.runs(idx=-1)`**: Returns the metric trajectory over generations for a specific run index.
+    *   *Default*: Last run (`-1`).
+*   **`.gens(idx=-1)`**: Returns the metric distribution across all runs for a specific generation index.
+    *   *Default*: Last generation (`-1`).
+
+**Example:**
+```python
+hv = mb.hv(exp)
+final_gen_dist = hv.gens() # Distribution at final generation
+first_run_traj = hv.runs(0) # Trajectory of first run
+```
+
+---
+
+## **6. Statistics (`mb.stats`)**
+
+Utilities for robust non-parametric statistical analysis.
+
+### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided')`**
+Wrapper for `scipy.stats.mannwhitneyu`.
+*   **Returns**: object with `.statistic` and `.pvalue`.
+
+### **`mb.stats.a12(data1, data2)`**
+Computes the **Vargha-Delaney $\hat{A}_{12}* effect size.
+*   **Returns**: Float [0.0, 1.0].
+    *   `0.5`: Equivalent.
+    *   `>0.5`: `data1` dominates.
+    *   `<0.5`: `data2` dominates.

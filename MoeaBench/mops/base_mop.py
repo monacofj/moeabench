@@ -54,3 +54,19 @@ class BaseMop(ABC):
     def get_n_ieq_constr(self) -> int:
         # Default to 0, can be overridden
         return 0
+
+    def pf(self, n_points: int = 100) -> np.ndarray:
+        """
+        Samples the true Pareto Front (objectives).
+        By default, evaluates the analytical Pareto Set samples (ps).
+        """
+        ps_samples = self.ps(n_points)
+        res = self.evaluation(ps_samples)
+        return res['F']
+
+    def ps(self, n_points: int = 100) -> np.ndarray:
+        """
+        Samples the true Pareto Set (decision variables).
+        Should be overridden by subclasses.
+        """
+        raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")

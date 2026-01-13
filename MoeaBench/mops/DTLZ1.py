@@ -46,5 +46,14 @@ class DTLZ1(BaseMop):
             
         return {'F': F}
 
+    def ps(self, n_points=100):
+        """Analytical sampling of DTLZ1 Pareto Set."""
+        M = self.M
+        N = self.N
+        res = np.zeros((n_points, N))
+        res[:, :M-1] = np.random.random((n_points, M - 1))
+        res[:, M-1:] = 0.5
+        return res
+
     def get_K(self):
         return self.K

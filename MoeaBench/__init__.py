@@ -12,6 +12,7 @@ from .core.base_moea import BaseMoea
 from . import mops
 from . import moeas
 from . import metrics
+from . import stats
 
 # Plotting High-Level
 from .plotting.plotter import spaceplot, timeplot
@@ -27,6 +28,7 @@ class _MB:
         self.mops = mops
         self.moeas = moeas
         self.metrics = metrics
+        self.stats = stats
         self.spaceplot = spaceplot
         self.timeplot = timeplot
         
@@ -39,4 +41,4 @@ class _MB:
 
 mb = _MB()
 
-__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "spaceplot", "timeplot", "mb"]
+__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "spaceplot", "timeplot", "mb"]

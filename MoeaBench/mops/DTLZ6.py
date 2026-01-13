@@ -25,3 +25,13 @@ class DTLZ6(DTLZ5):
             theta.append((np.pi / (4 * (1 + g))) * (1 + 2 * g * X[:, i:i+1]))
             
         return self._spherical_evaluation(X, g, theta=theta)
+            
+    def ps(self, n_points=100):
+        """Analytical sampling of DTLZ6 Pareto Set."""
+        M = self.M
+        N = self.N
+        res = np.zeros((n_points, N))
+        res[:, :M-1] = np.random.random((n_points, M - 1))
+        # Optimal g=0 when xi=0 for i >= M
+        res[:, M-1:] = 0.0
+        return res

@@ -198,6 +198,34 @@ class experiment:
              
          return pop
 
+    def optimal(self, n_points: int = 500) -> Population:
+        """Returns a sampling of the true Pareto optimal set and front."""
+        if not hasattr(self.mop, 'pf'):
+             raise AttributeError(f"MOP {self.mop.__class__.__name__} does not implement pf() sampling.")
+        
+        objs = self.mop.pf(n_points)
+        vars = self.mop.ps(n_points)
+        
+        # Create Population with "Optimal" label
+        # We pass self as source so metadata (like experiment name) is available,
+        # and label="Optimal" to indicate this is the theoretical PF/PS.
+        pop = Population(objs, vars, source=self, label="Optimal")
+        
+        # For analytical optimal fronts, we want the name to be "Optimal" 
+        # instead of the experiment name (NSGA3, etc.)
+        pop.objectives.name = "Optimal"
+        pop.variables.name = "Optimal"
+        
+        return pop
+
+    def optimal_front(self, n_points: int = 500) -> SmartArray:
+        """Alias for exp.optimal().objectives"""
+        return self.optimal(n_points).objectives
+
+    def optimal_set(self, n_points: int = 500) -> SmartArray:
+        """Alias for exp.optimal().variables"""
+        return self.optimal(n_points).variables
+
     # Shortcuts from API.py
     @property
     def objectives(self) -> SmartArray:

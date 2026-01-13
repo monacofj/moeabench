@@ -82,16 +82,37 @@ class MetricMatrix:
     def __array__(self):
         return self._data
         
-    @property
-    def runs(self):
-        # runs[i] returns i-th column ? No, runs[i] usually means "Run i".
-        # If matrix is G x R:
-        # Run i is column i.
-        return self._data.T # Returns (R, G), so [i] gets the row (Run i).
+    def runs(self, idx=-1):
+        """
+        Returns the metric trajectory (all generations) for a specific run.
+        defaults to the last run (-1).
+        
+        Args:
+            idx (int): Run index.
+            
+        Returns:
+            np.ndarray: 1D array of metric values over time.
+        """
+        if self._data.ndim == 1:
+            return self._data
+        return self._data[:, idx]
 
+    def gens(self, idx=-1):
+        """
+        Returns the metric distribution (all runs) for a specific generation.
+        Defaults to the last generation (-1).
+        
+        Args:
+            idx (int): Generation index.
+            
+        Returns:
+            np.ndarray: 1D array of metric values across runs.
+        """
+        return self._data[idx, :]
+        
     @property
-    def gens(self):
-        # gens[i] returns row i.
+    def values(self):
+        """Returns the raw numpy array (Generations x Runs)."""
         return self._data
 
 
@@ -276,7 +297,7 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
         fig, ax = plt.subplots(figsize=(10, 6))
         
         for mat in metric_matrices:
-             data = mat.gens
+             data = mat.values
              label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
              
              if data.shape[1] > 1:
@@ -309,7 +330,7 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
         for mat in metric_matrices:
             # mat is MetricMatrix (G x R)
             # Calculate mean and std dev across runs (axis 1)
-            data = mat.gens # (G, R)
+            data = mat.values # (G, R)
             label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
             
             if data.shape[1] > 1:
