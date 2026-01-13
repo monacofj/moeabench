@@ -229,16 +229,24 @@ first_run_traj = hv.runs(0) # Trajectory of first run
 
 ---
 
+---
+
 ## **6. Statistics (`mb.stats`)**
 
-Utilities for robust non-parametric statistical analysis.
+Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
 
-### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided')`**
-Wrapper for `scipy.stats.mannwhitneyu`.
+### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided', metric=mb.hv, gen=-1, **kwargs)`**
+Performs the Mann-Whitney U rank test.
+*   **Args**:
+    *   `data1`, `data2`: Arrays, `Experiment` objects, or `MetricMatrix` objects.
+    *   `metric` (*callable*): Metric function to use if experiments are passed (e.g., `mb.hv`, `mb.igd`).
+    *   `gen` (*int*): Generation index to extract (default is `-1`, the final generation).
+    *   `**kwargs`: Arguments passed directly to the `metric` function (e.g., `ref_point`).
 *   **Returns**: object with `.statistic` and `.pvalue`.
 
-### **`mb.stats.a12(data1, data2)`**
-Computes the **Vargha-Delaney $\hat{A}_{12}* effect size.
+### **`mb.stats.a12(data1, data2, metric=mb.hv, gen=-1, **kwargs)`**
+Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
+*   **Args**: Same as `mann_whitney`.
 *   **Returns**: Float [0.0, 1.0].
     *   `0.5`: Equivalent.
     *   `>0.5`: `data1` dominates.

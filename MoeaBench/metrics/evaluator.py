@@ -24,10 +24,16 @@ def normalize(ref_exps, all_current_objs_list):
     
     # Add external references
     for exp in ref_exps:
-        # New API: iterate runs
-        for run in exp:
-            all_fronts.append(run.front())
-    
+        if hasattr(exp, 'runs'):
+            # It's an experiment
+            for run in exp:
+                all_fronts.append(run.history('nd')[-1]) # Use last gen
+        elif isinstance(exp, np.ndarray):
+            # It's a raw array
+            all_fronts.append(exp)
+        elif hasattr(exp, 'front') and callable(exp.front):
+             all_fronts.append(exp.front())
+             
     # Add current experiment fronts (from all_current_objs_list)
     # F is a list of arrays (one per run)
     for f in all_current_objs_list:
@@ -182,14 +188,22 @@ def get_reference_front(ref_exps, current_fronts):
     
     # Add external references
     for exp in ref_exps:
-         if hasattr(exp, 'front'): # Single run/exp abstraction
+         if hasattr(exp, 'front') and callable(exp.front):
              all_fronts.append(exp.front())
-         elif hasattr(exp, '__iter__'): # MultiExperiment
+         elif hasattr(exp, 'runs'):
+             # It's an experiment object
              for run in exp:
                  all_fronts.append(run.front())
-         else:
-             # Assume array
+         elif isinstance(exp, np.ndarray):
+             # It's a raw array
              all_fronts.append(exp)
+         elif hasattr(exp, '__iter__') and not isinstance(exp, (np.ndarray, list)): 
+             # Likely a list of runs or something else iterable but not an array
+             for item in exp:
+                 if hasattr(item, 'front'):
+                     all_fronts.append(item.front())
+                 else:
+                     all_fronts.append(np.array(item))
     
     # If no refs provided, usage strategy:
     # Hypervolume: uses min/max of current.

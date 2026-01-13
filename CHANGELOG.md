@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Static plotting support for `timeplot` and `spaceplot` via `mode='static'` argument.
 - `verify_api.py` regression test to validate API functionality.
 - New `example-01.py` demonstrating the updated API usage.
-- **Statistical Analysis**: Created `mb.stats` module featuring **Mann-Whitney U** test and **Vargha-Delaney A12** effect size.
+- **Statistical Analysis**: Created `mb.stats` module featuring **"Smart Stats"** API, allowing direct comparison of `Experiment` objects with automatic metric extraction and global reference injection.
 - **Analytical Optimals**: Implemented `exp.optimal()`, `exp.optimal_front()`, and `exp.optimal_set()` for theoretical result sampling on standard MOPs.
 - `example-06.py` demonstrating statistical comparison and Pareto testing.
 - Comprehensive `docs/reference.md` (API) and `docs/userguide.md` (How-to) created.

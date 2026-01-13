@@ -196,34 +196,50 @@ exp.moea = MyGA(population=50)
 
 ---
 
-## **5. Statistical Analysis**
+## **5. Statistical Analysis ("Smart Stats")**
 
-When comparing algorithms, it's crucial to determine if performance differences are statistically significant. MoeaBench provides built-in tools (`mb.stats`) for this purpose.
+Comparing algorithms requires rigorous testing. MoeaBench provides the **"Smart Stats"** API to perform these comparisons with minimal boilerplate.
 
-### **Hypothesis Testing (`mb.stats.mann_whitney`)**
-Use the **Mann-Whitney U test** to check if one algorithm typically produces better values than another (independent samples).
-
-```python
-# Returns a result object with .pvalue and .statistic
-res = mb.stats.mann_whitney(hv_algorithm_A, hv_algorithm_B)
-
-if res.pvalue < 0.05:
-    print("Significant difference found!")
-```
-
-### **Effect Size (`mb.stats.a12`)**
-Use the **Vargha-Delaney A12** statistic to measure the magnitude of the difference. Interpreting $A_{12}(A, B)$:
-*   **0.5**: A and B are equal.
-*   **> 0.5**: A is better than B (for maximization metrics).
-*   **< 0.5**: B is better than A.
+### **Functional Comparisons**
+You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.hv`) objects directly to statistical tests. The library automatically handles:
+1.  **Metric Calculation**: If an experiment is passed, it uses Hypervolume (`mb.hv`) by default.
+2.  **Global Reference**: For experiments, it automatically injects a shared reference point (Global Nadir).
+3.  **Extraction**: For both experiments and matrices, it extracts the final generation's distribution for testing.
 
 ```python
-score = mb.stats.a12(hv_algorithm_A, hv_algorithm_B)
-print(f"Effect Size: {score}") 
-# Guide: Small > 0.56, Medium > 0.64, Large > 0.71
+# The one-liner comparison (Experiments)
+res = mb.stats.mann_whitney(exp1, exp2)
+
+# Comparing pre-calculated matrices
+hv1 = mb.hv(exp1)
+hv2 = mb.hv(exp2)
+res = mb.stats.mann_whitney(hv1, hv2) # Automically extracts .gens(-1)
 ```
 
-For a full example of a statistical pipeline, see `examples/example-06.py`.
+### **Customizing the Metric**
+You can specify which metric to use by passing the function or a lambda.
+
+```python
+# Using IGD (injects common PF automatically)
+mb.stats.mann_whitney(exp1, exp2, metric=mb.igd)
+
+# Using a lambda for custom logic
+mb.stats.mann_whitney(exp1, exp2, metric=lambda e: mb.hv(e, ref_point=[1.2, 1.2]))
+
+# Passing arguments to the metric directly
+mb.stats.mann_whitney(exp1, exp2, metric=mb.gdplus, ref=true_pf)
+```
+
+### **Backward Compatibility**
+"Smart Stats" still supports raw NumPy arrays if you have pre-extracted values.
+
+```python
+v1 = [0.81, 0.82, 0.83]
+v2 = [0.75, 0.74, 0.76]
+res = mb.stats.mann_whitney(v1, v2)
+```
+
+For a full comparison script, see `examples/example-06.py`.
 
 ## **6. References**
 *   **Full API Documentation**: See `docs/reference.md` for exhaustive details on every class and method.
