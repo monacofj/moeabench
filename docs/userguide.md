@@ -62,8 +62,24 @@ mb.spaceplot(exp, title="My First Pareto Front")
 #### **Reproducibility & Seeds**
 To ensure scientific reproducibility, MoeaBench handles random seeds deterministically:
 *   **Manual Seed**: If you provide a seed to the MOEA (e.g., `mb.moeas.NSGA3(seed=42)`), it will be used.
-*   **Automatic Seed**: If no seed is provided, a random one is generated and saved in the results.
-*   **Multi-run Logic**: When using `exp.run(repeat=N)`, MoeaBench automatically ensures each run is independent but deterministic. It uses the base `seed` for the first run and increments it for subsequent runs (`seed + i`). This ensures that a multi-run experiment is perfectly reproducible if the initial seed is fixed.
+- **Automatic Seed**: If no seed is provided, a random one is generated and saved in the results.
+- **Multi-run Logic**: When using `exp.run(repeat=N)`, MoeaBench automatically ensures each run is independent but deterministic. It uses the base `seed` for the first run and increments it for subsequent runs (`seed + i`). This ensures that a multi-run experiment is perfectly reproducible if the initial seed is fixed.
+- **Parallel Determinism**: Even when running in parallel (`workers > 1`), seeds are assigned consistently based on the run index, ensuring the same output as serial execution.
+
+#### **Parallel Execution**
+For large experiments (e.g., `repeat=30`), you can significantly speed up execution by using multiple CPU cores:
+
+```python
+# Run 30 repetitions using 4 parallel workers
+exp.run(repeat=30, workers=4)
+
+# Use all available CPU cores
+exp.run(repeat=30, workers=-1)
+```
+
+> [!CAUTION]
+> **RAM Usage**: Each parallel worker clones the experiment process. If your population size is huge or your problem loads large datasets, parallel execution might exhaust your system's RAM.
+> **Nested Parallelism**: If your MOEA or MOP already implements internal parallelism (e.g., evaluating populations in parallel), using `workers > 1` here might lead to CPU over-subscription and actually **slow down** your experiment.
 
 ---
 
@@ -75,8 +91,14 @@ MoeaBench provides powerful tools to inspect your optimization data.
 Use shortcuts to calculate common metrics like Hypervolume (`hv`) or Inverted Generational Distance (`igd`).
 
 ```python
-# Calculate Hypervolume for the entire run history
+# Calculate Hypervolume for the entire run history (Experiment)
 hv_matrix = mb.hv(exp)
+
+# Calculate for a single run
+hv_run = mb.hv(exp.last_run)
+
+# Calculate for a single population (returns a float-like MetricMatrix)
+hv_val = mb.hv(exp.last_pop)
 
 # Calculate IGD (requires the mop to have a known Pareto Front)
 igd_matrix = mb.igd(exp)

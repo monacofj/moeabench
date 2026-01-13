@@ -26,14 +26,14 @@ def main():
     exp1.name = "NSGA3"
     exp1.mop = mb.mops.DTLZ2(M=3)
     exp1.moea = mb.moeas.NSGA3(population=pop_size, generations=gens)
-    exp1.run(repeat=repeats)
+    exp1.run(repeat=repeats, workers=2)
     
     # Experiment 2: SPEA2
     exp2 = mb.experiment()
     exp2.name = "SPEA2"
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
-    exp2.run(repeat=repeats)
+    exp2.run(repeat=repeats, workers=2)
 
     # 2. Statistical Analysis ("Smart Stats")
     # Smart Stats performs extraction and uses a shared reference point automatically

@@ -30,9 +30,10 @@ The top-level container.
 *   `.optimal_set(n=500)` (*SmartArray*): Shortcut to the analytical true PS.
 
 **Methods:**
-*   **`.run(repeat=1, **kwargs)`**: Executes the optimization.
+*   **`.run(repeat=1, workers=None, **kwargs)`**: Executes the optimization.
     *   `repeat` (*int*): Number of independent runs. 
-    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs if the base seed is fixed.
+    *   `workers` (*int*): Number of parallel processes. Use `-1` for all available cores. If `None` (default), runs serially.
+    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs even in parallel mode.
     *   `**kwargs`: Passed to the MOEA execution engine.
 
 **Usage Example:**
@@ -207,12 +208,12 @@ algo_tuned = mb.moeas.NSGA3(population=200,
 
 ## **5. Metrics (`mb.metrics`)**
 
-Standard multi-objective performance metrics.
+Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
 ### **Metric Calculation**
-*   **`mb.hv(exp, ref=None)`**: Calculates Hypervolume.
-*   **`mb.igd(exp, ref=None)`**: Calculates IGD (Inverse Generational Distance).
-*   **`mb.gd(exp, ref=None)`**: Calculates GD (Generational Distance).
+*   **`mb.hv(data, ref=None)`**: Calculates Hypervolume.
+*   **`mb.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
+*   **`mb.gd(data, ref=None)`**: Calculates GD (Generational Distance).
 
 **Returns**: `MetricMatrix` object.
 
@@ -226,11 +227,18 @@ A matrix of metric values (Generations x Runs).
 *   **`.gens(idx=-1)`**: Returns the metric distribution across all runs for a specific generation index.
     *   *Default*: Last generation (`-1`).
 
+**Convenience Features**:
+*   **Float Conversion**: If the matrix contains a single value (e.g., from a single population), it can be cast directly to `float(mat)` or used in f-strings with numeric formatters (e.g., `f"{mat:.4f}"`).
+
 **Example:**
 ```python
 hv = mb.hv(exp)
 final_gen_dist = hv.gens() # Distribution at final generation
 first_run_traj = hv.runs(0) # Trajectory of first run
+
+# Single value case
+val = mb.hv(exp.last_pop)
+print(f"Final HV: {val:.4f}") 
 ```
 
 ---

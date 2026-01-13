@@ -7,7 +7,9 @@
 from .run import Run, SmartArray, Population
 import numpy as np
 import inspect
-from ..progress import get_progress_bar, set_active_pbar # Progress is currently in root?
+import os
+import concurrent.futures
+from ..progress import get_progress_bar, set_active_pbar
 from typing import Optional, List, Union, Any, Iterator, Dict
 
 class JoinedPopulation:
@@ -250,57 +252,53 @@ class experiment:
         return self.mop.evaluation(X, n_ieq_constr)
          
     # Execution
-    def run(self, repeat: int = 1) -> None:
+    def run(self, repeat: int = 1, workers: Optional[int] = None) -> None:
         """
         Executes the optimization experiment for one or more runs.
 
         Args:
             repeat (int): Number of independent runs to perform.
+            workers (int): Number of parallel workers to use. 
+                          If None, execution is serial. 
+                          If -1, uses all available CPU cores.
         """
         if repeat < 1: repeat = 1
         
-        # Individual Run Progress
-        total_gens = getattr(self.moea, 'generations', None)
+        # Determine base seed
+        base_seed = getattr(self.moea, 'seed', None)
+        if base_seed is None:
+            base_seed = np.random.randint(0, 1000000)
+            if hasattr(self.moea, 'seed'):
+                 self.moea.seed = base_seed
+
+        # Setup Parallelism
+        if workers == -1:
+            workers = os.cpu_count()
         
-        # Outer progress bar for repeats
+        if workers and workers > 1:
+            self._run_parallel(repeat, workers, base_seed)
+        else:
+            self._run_serial(repeat, base_seed)
+
+    def _run_serial(self, repeat: int, base_seed: int) -> None:
+        total_gens = getattr(self.moea, 'generations', None)
         outer_pbar = None
         if repeat > 1:
             outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name}", position=0)
 
         for i in range(repeat):
-            seed = np.random.randint(0, 1000000)
+            seed = base_seed + i
             
-            # Inner progress bar
             inner_pbar = get_progress_bar(total=total_gens, 
                                          desc=f"  Run {i+1}/{repeat}", 
                                          position=1 if repeat > 1 else 0,
                                          leave=False if repeat > 1 else True)
-            
             set_active_pbar(inner_pbar)
 
             try:
-                # Check if it's a new-style MOEA with evaluation()
-                if hasattr(self.moea, 'evaluation'):
-                    # Ensure MOEA has the necessary context
-                    self.moea.problem = self
-                    if hasattr(self.moea, 'seed'): 
-                        self.moea.seed = seed
-                    
-                    data_payload = self.moea.evaluation()
-                    new_run = Run(data_payload, seed, experiment=self, index=i+1)
-                    self._runs.append(new_run)
-                else:
-                    # Legacy flow: Returns CACHE object and requires .exec()
-                    current_result = self.moea(self, None, self.stop, seed)
-                    raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
-                    
-                    new_run = Run(raw_result, seed, experiment=self, index=i+1)
-                    self._runs.append(new_run)
-
-                    if hasattr(raw_result, 'edit_DATA_conf'):
-                         moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
-                         if hasattr(moea_instance, 'exec'):
-                              moea_instance.exec()
+                run_data, _, _ = _moea_run_worker(self.moea, self.mop, seed, i+1)
+                new_run = Run(run_data, seed, experiment=self, index=i+1)
+                self._runs.append(new_run)
             finally:
                 inner_pbar.close()
                 set_active_pbar(None)
@@ -309,6 +307,64 @@ class experiment:
 
         if outer_pbar:
             outer_pbar.close()
+
+    def _run_parallel(self, repeat: int, workers: int, base_seed: int) -> None:
+        outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name} (Parallel)", position=0)
+        
+        # Cap workers to repeat count
+        workers = min(workers, repeat)
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
+            # Schedule all runs
+            futures = []
+            for i in range(repeat):
+                seed = base_seed + i
+                futures.append(executor.submit(_moea_run_worker, self.moea, self.mop, seed, i+1))
+            
+            # Collect results as they finish
+            results = [None] * repeat
+            completed = 0
+            for future in concurrent.futures.as_completed(futures):
+                data, seed, index = future.result()
+                # Store in correct order later or just append? 
+                # Run objects need to be in the experiment in order.
+                results[index-1] = (data, seed)
+                completed += 1
+                outer_pbar.update_to(completed)
+            
+            # Build Run objects in correct order
+            for i in range(repeat):
+                data, seed = results[i]
+                new_run = Run(data, seed, experiment=self, index=i+1)
+                self._runs.append(new_run)
+        
+        outer_pbar.close()
+
+def _moea_run_worker(moea, mop, seed, index):
+    """Standalone worker function for ProcessPoolExecutor."""
+    # Inject context
+    moea.problem = mop 
+    if hasattr(moea, 'seed'):
+        moea.seed = seed
+    
+    # Execute
+    if hasattr(moea, 'evaluation'):
+        # New-style API
+        data_payload = moea.evaluation()
+    else:
+        # Legacy Flow
+        # Note: In a separate process, we need to handle the legacy stop/imports etc.
+        # But moea should have everything it needs inside itself.
+        current_result = moea(mop, None, None, seed) # stop=None for now in worker context
+        raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
+        
+        if hasattr(raw_result, 'edit_DATA_conf'):
+             moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
+             if hasattr(moea_instance, 'exec'):
+                  moea_instance.exec()
+        data_payload = raw_result
+
+    return data_payload, seed, index
 
     # Persistence
     def save(self, path: str) -> None:

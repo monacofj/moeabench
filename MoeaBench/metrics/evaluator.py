@@ -83,7 +83,19 @@ class MetricMatrix:
         self.source_name = source_name
 
     def __repr__(self):
+        if self._data.size == 1:
+            return f"{self._data.item():.6f}"
         return f"<MetricMatrix {self._data.shape} ({self.metric_name})>"
+
+    def __float__(self):
+        if self._data.size == 1:
+            return float(self._data.item())
+        raise TypeError(f"MetricMatrix ({self.metric_name}) contains {self._data.size} values and cannot be converted to a single float.")
+
+    def __format__(self, format_spec):
+        if self._data.size == 1:
+            return format(float(self._data.item()), format_spec)
+        return format(str(self), format_spec)
 
     def __array__(self):
         return self._data
@@ -122,117 +134,109 @@ class MetricMatrix:
         return self._data
 
 
+def _extract_data(data):
+    """
+    Refines input into 
+    (List[RunHistories], List[FinalFronts], SourceName, NumRuns)
+    """
+    from ..core.run import Run, Population
+    from ..core.experiment import experiment
+
+    if isinstance(data, experiment):
+        return [r.history('nd') for r in data], [r.front() for r in data], data.name, len(data)
+    
+    if isinstance(data, Run):
+        return [data.history('nd')], [data.front()], data.name, 1
+        
+    if isinstance(data, Population):
+        return [[data.objectives]], [data.objectives], data.label, 1
+        
+    if isinstance(data, np.ndarray):
+        # Treat as a single population
+        return [[data]], [data], "Array", 1
+
+    # Fallback for generic iterables
+    try:
+        histories = []
+        fronts = []
+        for item in data:
+            if hasattr(item, 'history'): # Run-like
+                histories.append(item.history('nd'))
+                fronts.append(item.front())
+            else:
+                histories.append([item])
+                fronts.append(item)
+        return histories, fronts, None, len(histories)
+    except:
+        raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
+
 def hypervolume(exp, ref=None):
     """
-    Calculates Hypervolume for an experiment.
+    Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
     """
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
     
     # 1. Collect all data
-    # We need F_GEN and F (final front) for all runs
-    F_GENs = [] # List of lists of fronts
-    Fs = []     # List of final fronts
-    
-    for run in exp:
-        f_gen = run.history('nd')
-        F_GENs.append(f_gen)
-        Fs.append(run.front())
+    F_GENs, Fs, name, n_runs = _extract_data(exp)
 
     # 2. Normalize (Find Reference Point)
     min_val, max_val = normalize(ref, Fs)
     
     # 3. Calculate
-    # result matrix: G x R
-    # But runs might have different lengths?
-    # Assume same length for matrix. If not, fill with NaN?
-    
-    max_gens = max(len(h) for h in F_GENs)
-    n_runs = len(exp)
-    
+    max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
     mat = np.full((max_gens, n_runs), np.nan)
     
     for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-        # f_gen is list of fronts over time
+        # f_last is used to get the number of objectives (M)
+        M = f_last.shape[1] if len(f_last) > 0 else 0
+        if M == 0 and len(f_gen) > 0:
+             # Try to get M from f_gen history
+             for f in f_gen:
+                  if len(f) > 0:
+                       M = f.shape[1]
+                       break
         
-        # Instantiating GEN_hypervolume for the WHOLE run? 
-        # No, GEN_hypervolume seems to handle a list of fronts?
-        # Let's check GEN_hypervolume signature in previous view_file.
-        # It takes (fgen, dim, min_non, max_non).
-        # And has .evaluate().
+        if M > 0:
+            metric = GEN_hypervolume(f_gen, M, min_val, max_val)
+            values = metric.evaluate() # Returns list of floats
+            
+            # Fill matrix
+            length = min(len(values), max_gens)
+            mat[:length, r_idx] = values[:length]
         
-        # Lines 169 in IPL_MoeaBench:
-        # return [GEN_hypervolume(fgen, f.shape[1], min_non, max_non) for fgen,f in zip(F_GEN, F)]
-        
-        # It seems F_GEN passed to set_hypervolume is a list of lists of fronts?
-        # analyse_metric_gen line 24 creates F_GEN as list of runs, where each run is list of fronts.
-        
-        metric = GEN_hypervolume(f_gen, f_last.shape[1], min_val, max_val)
-        values = metric.evaluate() # Returns list of floats
-        
-        # Fill matrix
-        length = min(len(values), max_gens)
-        mat[:length, r_idx] = values[:length]
-        
-    return MetricMatrix(mat, "Hypervolume", source_name=getattr(exp, 'name', None))
+    return MetricMatrix(mat, "Hypervolume", source_name=name)
 
 def get_reference_front(ref_exps, current_fronts):
     """
     Constructs the reference Pareto Front.
-    If ref_exps is provided, extracts their fronts.
-    Otherwise, uses the current fronts.
-    Returns a non-dominated set of points.
     """
     all_fronts = []
     
     # Add external references
-    for exp in ref_exps:
-         if hasattr(exp, 'front') and callable(exp.front):
-             all_fronts.append(exp.front())
-         elif hasattr(exp, 'runs'):
-             # It's an experiment object
-             for run in exp:
-                 all_fronts.append(run.front())
-         elif isinstance(exp, np.ndarray):
-             # It's a raw array
-             all_fronts.append(exp)
-         elif hasattr(exp, '__iter__') and not isinstance(exp, (np.ndarray, list)): 
-             # Likely a list of runs or something else iterable but not an array
-             for item in exp:
-                 if hasattr(item, 'front'):
-                     all_fronts.append(item.front())
-                 else:
-                     all_fronts.append(np.array(item))
+    for ref in ref_exps:
+         _, fronts, _, _ = _extract_data(ref)
+         all_fronts.extend(fronts)
     
     # If no refs provided, usage strategy:
-    # Hypervolume: uses min/max of current.
-    # GD/IGD: needs a reference set. If none provided, commonly we use the aggregate current front.
     if not all_fronts and not ref_exps:
         all_fronts.extend(current_fronts)
         
     if not all_fronts:
         return None
 
-    # Stack
     # Filter for empty
     valid = [f for f in all_fronts if len(f) > 0]
     if not valid: return None
     
     merged = np.vstack(valid)
     
-    # Calculate non-dominated subset of merged
-    # Simple N^2 or assuming small enough?
-    # For correctness of GD/IGD, it should be non-dominated.
-    # Let's assume we return all and let the metric handle it, OR filter it.
-    # PyMoo metrics often expect the True PF.
-    
-    # Let's do a quick NDS filter if possible, or return merged.
-    # Filter 
+    # Simple NDS filter
     is_dominated = np.zeros(merged.shape[0], dtype=bool)
     for i in range(len(merged)):
          curr = merged[i]
-         # simple check
+         # check if any other point dominates curr
          if np.any(np.all(merged <= curr, axis=1) & np.any(merged < curr, axis=1)):
              is_dominated[i] = True
              
@@ -242,13 +246,7 @@ def _calc_metric(exp, ref, MetricClass, name):
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
     
-    F_GENs = []
-    Fs = []
-    
-    for run in exp:
-        f_gen = run.history('nd')
-        F_GENs.append(f_gen)
-        Fs.append(run.front())
+    F_GENs, Fs, source_name, n_runs = _extract_data(exp)
 
     # Helper for Hypervolume normalization
     min_val, max_val = normalize(ref, Fs)
@@ -257,17 +255,20 @@ def _calc_metric(exp, ref, MetricClass, name):
     ref_front = get_reference_front(ref, Fs)
     
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
-    n_runs = len(exp)
     mat = np.full((max_gens, n_runs), np.nan)
     
     for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
         # Dispatch based on internal GEN_ class logic
         if name == "Hypervolume":
-             metric = MetricClass(f_gen, f_last.shape[1], min_val, max_val)
+             M = f_last.shape[1] if len(f_last) > 0 else 0
+             if M > 0:
+                 metric = MetricClass(f_gen, M, min_val, max_val)
+                 values = metric.evaluate()
+             else:
+                 values = np.full(len(f_gen), np.nan)
         else:
              # GD, GD+, IGD, IGD+
              if ref_front is None:
-                  # Cannot calculate without reference
                   values = np.full(len(f_gen), np.nan)
              else:
                   metric = MetricClass(f_gen, ref_front)
@@ -276,7 +277,7 @@ def _calc_metric(exp, ref, MetricClass, name):
         length = min(len(values), max_gens)
         mat[:length, r_idx] = values[:length]
         
-    return MetricMatrix(mat, name, source_name=getattr(exp, 'name', None))
+    return MetricMatrix(mat, name, source_name=source_name)
 
 def gd(exp, ref=None):
     return _calc_metric(exp, ref, GEN_gd, "GD")
