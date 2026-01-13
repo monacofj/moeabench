@@ -3,23 +3,23 @@ version = 1
 [[annotations]]
 path = "AUTHORS"
 SPDX-FileCopyrightText = [
-    "2026 Silva F. F. <fernandoferreira.silva42@usp.br>",
-    "2026 Monaco F. J. <monaco@usp.br>"
+    "2025 Silva F. F. <fernandoferreira.silva42@usp.br>",
+    "2025 Monaco F. J. <monaco@usp.br>"
 ]
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
-path = "MoeaBench_V4.ipynb"
+path = "examples/*.ipynb"
 SPDX-FileCopyrightText = [
-    "2026 Silva F. F. <fernandoferreira.silva42@usp.br>",
-    "2026 Monaco F. J. <monaco@usp.br>"
+    "2025 Silva F. F. <fernandoferreira.silva42@usp.br>",
+    "2025 Monaco F. J. <monaco@usp.br>"
 ]
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
-path = "analysis/test_exp_advanced.zip"
+path = "examples/__pycache__/*"
 SPDX-FileCopyrightText = [
-    "2026 Silva F. F. <fernandoferreira.silva42@usp.br>",
-    "2026 Monaco F. J. <monaco@usp.br>"
+    "2025 Silva F. F. <fernandoferreira.silva42@usp.br>",
+    "2025 Monaco F. J. <monaco@usp.br>"
 ]
 SPDX-License-Identifier = "GPL-3.0-or-later"
