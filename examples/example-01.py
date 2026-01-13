@@ -20,7 +20,7 @@ def main():
 
     exp = mb.experiment()
 
-    exp.benchmark = mb.benchmarks.DTLZ2()
+    exp.mop = mb.mops.DTLZ2()
     exp.moea      = mb.moeas.NSGA3(population=50, generations=50)
 
     # 2) Run the experiment

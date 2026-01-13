@@ -20,7 +20,7 @@ MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Popula
 The top-level container.
 
 **Properties:**
-*   `benchmark` (*Any*): The problem instance.
+*   `mop` (*Any*): The problem instance.
 *   `moea` (*Any*): The algorithm instance.
 *   `runs` (*List[Run]*): Access to all execution results.
 *   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
@@ -31,7 +31,7 @@ The top-level container.
 import MoeaBench as mb
 
 exp = mb.experiment()
-exp.benchmark = mb.benchmarks.DTLZ2()
+exp.mop = mb.mops.DTLZ2()
 exp.moea = mb.moeas.NSGA3()
 exp.run(repeat=1)
 
@@ -142,7 +142,7 @@ mb.spaceplot(exp.dominated(), exp.non_dominated())
 
 ---
 
-## **3. Benchmarks (`mb.benchmarks.*`)**
+## **3. MOPs (`mb.mops.*`)**
 
 ### **DTLZ Family**
 `DTLZ1` - `DTLZ9`.
@@ -152,10 +152,10 @@ mb.spaceplot(exp.dominated(), exp.non_dominated())
 **Usage Example:**
 ```python
 # Standard 3-obj
-prob = mb.benchmarks.DTLZ2(M=3)
+prob = mb.mops.DTLZ2(M=3)
 
 # Scalable many-obj
-prob_many = mb.benchmarks.DTLZ2(M=10, K=20)
+prob_many = mb.mops.DTLZ2(M=10, K=20)
 ```
 
 ### **DPF Family**
@@ -166,7 +166,7 @@ prob_many = mb.benchmarks.DTLZ2(M=10, K=20)
 **Usage Example:**
 ```python
 # Disconnected front in 3D based on 2D manifold
-prob = mb.benchmarks.DPF1(M=3, D=2)
+prob = mb.mops.DPF1(M=3, D=2)
 ```
 
 ---

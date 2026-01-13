@@ -7,9 +7,9 @@ from abc import ABC, abstractmethod
 import numpy as np
 from typing import Optional, Dict, Any, Union
 
-class BaseBenchmark(ABC):
+class BaseMop(ABC):
     """
-    Abstract Base Class for all benchmark problems in MoeaBench.
+    Abstract Base Class for all Multi-Objective Problems (MOPs) in MoeaBench.
     """
     def __init__(self, M: int = 3, N: Optional[int] = None, 
                  xl: Optional[Any] = None, xu: Optional[Any] = None, **kwargs: Any) -> None:
@@ -41,7 +41,7 @@ class BaseBenchmark(ABC):
         """
         pass
 
-    def __call__(self, *args: Any, **kwargs: Any) -> 'BaseBenchmark':
+    def __call__(self, *args: Any, **kwargs: Any) -> 'BaseMop':
         """Compatibility with legacy factory call pattern."""
         return self
 

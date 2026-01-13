@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from .base_benchmark import BaseBenchmark
+from .base_mop import BaseMop
 
-class DTLZ9(BaseBenchmark):
+class DTLZ9(BaseMop):
     """
     DTLZ9 benchmark problem. 
     Constrained problem. N must be a multiple of M.

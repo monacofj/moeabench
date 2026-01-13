@@ -24,10 +24,10 @@ def main():
     exp1.name = "Experiment 1"    # You can name experiments for easier  
     exp2.name = "Experiment 2"    # identification in the plots.
 
-    exp1.benchmark = mb.benchmarks.DTLZ2()
+    exp1.mop = mb.mops.DTLZ2()
     exp1.moea      = mb.moeas.NSGA3(population=50, generations=50)
 
-    exp2.benchmark = mb.benchmarks.DTLZ2()
+    exp2.mop = mb.mops.DTLZ2()
     exp2.moea      = mb.moeas.SPEA2(population=50, generations=50)
 
     # 2) Run the experiments

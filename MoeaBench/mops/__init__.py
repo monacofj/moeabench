@@ -8,7 +8,7 @@ MoeaBench Benchmark Problems.
 """
 
 # Modernized Benchmarks
-from .base_benchmark import BaseBenchmark
+from .base_mop import BaseMop
 
 from .DTLZ1 import DTLZ1
 from .DTLZ2 import DTLZ2

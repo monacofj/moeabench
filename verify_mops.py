@@ -7,11 +7,11 @@
 import numpy as np
 from MoeaBench import mb
 
-def verify_benchmark(name, **kwargs):
+def verify_mop(name, **kwargs):
     print(f"\n--- Verifying {name} ---")
     try:
         # 1. Factory access
-        factory = getattr(mb.benchmarks, name)(**kwargs)
+        factory = getattr(mb.mops, name)(**kwargs)
         print(f"Factory {name} created.")
         
         # 2. Specialization
@@ -58,8 +58,8 @@ def verify_benchmark(name, **kwargs):
 if __name__ == "__main__":
     # DTLZ Family
     for i in range(1, 10):
-        verify_benchmark(f"DTLZ{i}")
+        verify_mop(f"DTLZ{i}")
         
     # DPF Family
     for i in range(1, 6):
-        verify_benchmark(f"DPF{i}", D=2)
+        verify_mop(f"DPF{i}", D=2)

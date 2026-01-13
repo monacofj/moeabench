@@ -5,9 +5,9 @@
 
 import numpy as np
 from itertools import combinations
-from .base_benchmark import BaseBenchmark
+from .base_mop import BaseMop
 
-class DTLZ8(BaseBenchmark):
+class DTLZ8(BaseMop):
     """
     DTLZ8 benchmark problem. 
     Constrained problem with objective-based constraints. 

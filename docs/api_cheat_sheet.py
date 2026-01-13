@@ -15,7 +15,7 @@ import MoeaBench as mb
 exp = mb.experiment()
 
 # Assign standard components
-exp.benchmark = mb.benchmarks.DTLZ2(M=3)
+exp.mop = mb.mops.DTLZ2(M=3)
 exp.moea      = mb.moeas.NSGA3(population=100, generations=200)
 
 # Custom parameters via kwargs
@@ -94,12 +94,12 @@ mb.spaceplot(exp.dominated(), exp.non_dominated()) # Compare sets
 # 7. Extensions
 # ---------------------------------------------------------
 
-# Create custom benchmarks by inheriting from BaseBenchmark
+# Create custom mops by inheriting from BaseMOP
 
-class MyProblem(mb.benchmarks.BaseBenchmark):
+class MyProblem(mb.mops.BaseMOP):
     def __init__(self):
         super().__init__(M=2, N=10)
     def evaluation(self, X):
         return {'F': ...}
 
-exp.benchmark = MyProblem()
+exp.mop = MyProblem()

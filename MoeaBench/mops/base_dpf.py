@@ -5,9 +5,9 @@
 
 import numpy as np
 from itertools import accumulate, repeat, cycle, islice
-from .base_benchmark import BaseBenchmark
+from .base_mop import BaseMop
 
-class BaseDPF(BaseBenchmark):
+class BaseDPF(BaseMop):
     """
     Shared logic for Dominance-Preserving Flattening (DPF) benchmarks.
     """

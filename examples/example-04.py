@@ -22,7 +22,7 @@ def main():
 
     exp1.name = "Experiment 1"    # You can name experiments for easier identification.
 
-    exp1.benchmark = mb.benchmarks.DTLZ2()
+    exp1.mop = mb.mops.DTLZ2()
     exp1.moea      = mb.moeas.NSGA3(population=50, generations=50)
     
     # 2) Run the experiment several times, each time with different random seed.

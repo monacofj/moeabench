@@ -9,7 +9,7 @@ from .core.run import Run
 from .core.base_moea import BaseMoea
 
 # Submodules
-from . import benchmarks
+from . import mops
 from . import moeas
 from . import metrics
 
@@ -24,7 +24,7 @@ class _MB:
     def __init__(self):
         self.experiment = experiment
         self.Run = Run
-        self.benchmarks = benchmarks
+        self.mops = mops
         self.moeas = moeas
         self.metrics = metrics
         self.spaceplot = spaceplot
@@ -39,4 +39,4 @@ class _MB:
 
 mb = _MB()
 
-__all__ = ["experiment", "Run", "benchmarks", "moeas", "metrics", "spaceplot", "timeplot", "mb"]
+__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "spaceplot", "timeplot", "mb"]

@@ -25,8 +25,8 @@ The package offers facilities to programmatically create benchmark programs and 
 ## Key Features
 
 * Handle many-objective problems with an unlimited number of decision variables and optimization objectives.
-* Includes standard built-in benchmarks (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
-* Plug in custom benchmarks and algorithms programmatically by inheriting from base classes (see `examples/example-05.py`).
+* Includes standard built-in mops (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
+* Plug in custom mops and algorithms programmatically by inheriting from base classes (see `examples/example-05.py`).
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ import mb_path # If running from examples/ folder without install
 from MoeaBench import mb                        # Import MoeaBench
 
 exp = mb.experiment()                           # Create an instance of an experiment
-exp.benchmark = mb.benchmarks.DTLZ2()           # Select which benchmark to run
+exp.mop = mb.mops.DTLZ2()           # Select which mop to run
 exp.moea      = mb.moeas.NSGA3()                # Select which MOEA to run
 
 exp.run()                                       # Run the optimization process

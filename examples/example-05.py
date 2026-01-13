@@ -8,12 +8,12 @@ import MoeaBench as mb
 import numpy as np
 
 # -------------------------------------------------------------------------
-# 1. Define your Custom Benchmark
+# 1. Define your Custom MOP
 # -------------------------------------------------------------------------
-# To create a new problem, simply inherit from BaseBenchmark.
+# To create a new problem, simply inherit from BaseMOP.
 # You need to define __init__ (dimensions/bounds) and evaluation().
 
-class MyProblem(mb.benchmarks.BaseBenchmark):
+class MyProblem(mb.mops.BaseMOP):
     """
     A simple custom bi-objective problem (ZDT1-like).
     """
@@ -42,14 +42,14 @@ class MyProblem(mb.benchmarks.BaseBenchmark):
 # -------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    print("Running Custom Benchmark Example...")
+    print("Running Custom MOP Example...")
     
     # Instantiate your custom class
     my_problem = MyProblem()
 
     # Configure Experiment
     exp = mb.experiment()
-    exp.benchmark = my_problem
+    exp.mop = my_problem
     exp.moea = mb.moeas.NSGA3(population=100, generations=50)
     exp.name = "MyCustomProblem"
 

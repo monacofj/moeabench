@@ -4,9 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from .base_benchmark import BaseBenchmark
+from .base_mop import BaseMop
 
-class DTLZ7(BaseBenchmark):
+class DTLZ7(BaseMop):
     """
     DTLZ7 benchmark problem. 
     Disconnected Pareto front.

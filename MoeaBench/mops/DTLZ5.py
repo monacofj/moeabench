@@ -6,7 +6,7 @@
 import numpy as np
 from .DTLZ2 import DTLZ2
 
-class DTLZ5(BaseBenchmark if False else DTLZ2): # Inherit helper from DTLZ2
+class DTLZ5(BaseMop if False else DTLZ2): # Inherit helper from DTLZ2
     """
     DTLZ5 benchmark problem.
     Degenerate spherical problem.

@@ -8,7 +8,7 @@ from .run import Run, SmartArray, Population
 import numpy as np
 import inspect
 from ..progress import get_progress_bar, set_active_pbar # Progress is currently in root?
-from typing import Optional, List, Union, Any, Iterator
+from typing import Optional, List, Union, Any, Iterator, Dict
 
 class JoinedPopulation:
     def __init__(self, pops: List[Population]) -> None:
@@ -33,7 +33,7 @@ class experiment:
     def __init__(self, imports: Optional[Any] = None) -> None:
         self.imports = imports # Keep for compatibility if needed
         self._runs: List[Run] = []
-        self._benchmark: Any = None
+        self._mop: Any = None
         self._moea: Any = None
         self._stop: Any = None
         self._name: str = "experiment"
@@ -56,20 +56,20 @@ class experiment:
     def name(self, value: str) -> None: self._name = value
     
     @property
-    def benchmark(self) -> Any: return self._benchmark
-    @benchmark.setter
-    def benchmark(self, value: Any) -> None:
+    def mop(self) -> Any: return self._mop
+    @mop.setter
+    def mop(self, value: Any) -> None:
         # Auto-instantiate if it's a factory (callable but not the final instance with get_CACHE)
         # We assume if it's callable and missing core traits, it's a factory.
         if callable(value) and not hasattr(value, 'get_CACHE'):
              try:
-                 self._benchmark = value()
+                 self._mop = value()
              except Exception as e:
                  # Fallback or error logging
-                 print(f"Warning: Could not instantiate benchmark factory: {e}")
-                 self._benchmark = value
+                 print(f"Warning: Could not instantiate MOP factory: {e}")
+                 self._mop = value
         else:
-            self._benchmark = value
+            self._mop = value
 
     @property
     def moea(self) -> Any: return self._moea
@@ -92,7 +92,7 @@ class experiment:
     @property
     def pof(self) -> Any:
         """Legacy compatibility for save mechanism."""
-        return self._benchmark
+        return self._mop
 
     # Shortcuts
     @property
@@ -206,6 +206,20 @@ class experiment:
     @property
     def variables(self) -> SmartArray:
         return self.pop().variables
+
+    # Delegation to mop for MOEA compatibility
+    @property
+    def M(self) -> int: return self.mop.M
+    @property
+    def N(self) -> int: return self.mop.N
+    
+    def get_M(self) -> int: return self.mop.get_M()
+    def get_Nvar(self) -> Optional[int]: return self.mop.get_Nvar()
+    def get_n_ieq_constr(self) -> int: return self.mop.get_n_ieq_constr()
+
+    def evaluation(self, X: np.ndarray, n_ieq_constr: int = 0) -> Dict[str, np.ndarray]:
+        """Delegates evaluation to the internal MOP."""
+        return self.mop.evaluation(X, n_ieq_constr)
          
     # Execution
     def run(self, repeat: int = 1) -> None:
