@@ -59,6 +59,12 @@ exp.run()
 mb.spaceplot(exp, title="My First Pareto Front")
 ```
 
+#### **Reproducibility & Seeds**
+To ensure scientific reproducibility, MoeaBench handles random seeds deterministically:
+*   **Manual Seed**: If you provide a seed to the MOEA (e.g., `mb.moeas.NSGA3(seed=42)`), it will be used.
+*   **Automatic Seed**: If no seed is provided, a random one is generated and saved in the results.
+*   **Multi-run Logic**: When using `exp.run(repeat=N)`, MoeaBench automatically ensures each run is independent but deterministic. It uses the base `seed` for the first run and increments it for subsequent runs (`seed + i`). This ensures that a multi-run experiment is perfectly reproducible if the initial seed is fixed.
+
 ---
 
 ## **3. Analyzing Results**

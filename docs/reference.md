@@ -29,6 +29,12 @@ The top-level container.
 *   `.optimal_front(n=500)` (*SmartArray*): Shortcut to the analytical true PF.
 *   `.optimal_set(n=500)` (*SmartArray*): Shortcut to the analytical true PS.
 
+**Methods:**
+*   **`.run(repeat=1, **kwargs)`**: Executes the optimization.
+    *   `repeat` (*int*): Number of independent runs. 
+    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs if the base seed is fixed.
+    *   `**kwargs`: Passed to the MOEA execution engine.
+
 **Usage Example:**
 ```python
 import MoeaBench as mb
