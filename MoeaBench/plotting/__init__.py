@@ -5,4 +5,5 @@
 
 from .plotter import spaceplot, timeplot
 from .scatter3d import Scatter3D
+from .scatter2d import Scatter2D
 from .coordinate import ParallelCoordinate

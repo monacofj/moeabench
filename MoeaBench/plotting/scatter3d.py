@@ -20,7 +20,7 @@ except ImportError:
 
 
 class Scatter3D:
-     def __init__(self, names, data_arrays, axis, type = 'pareto-optimal front', mode='interactive', axis_label='Objective'):
+     def __init__(self, names, data_arrays, axis, type = 'pareto-optimal front', mode='interactive', axis_label='Objective', trace_modes=None):
          """
          names: list of names for legend
          data_arrays: list of numpy arrays (Nx3 or more)
@@ -32,6 +32,7 @@ class Scatter3D:
          self.type = type
          self.mode = mode
          self.axis_label = axis_label
+         self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
            
      def show(self):
          if self.mode == 'static':
@@ -59,8 +60,17 @@ class Scatter3D:
             if np.any(msk):
                 # Pick color from cycle
                 current_color = cycle_colors[i % len(cycle_colors)]
-                ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], 
-                           label=f'{self.experiments[i]}', color=current_color)
+                label = f'{self.experiments[i]}'
+                
+                t_mode = self.trace_modes[i]
+                if 'lines' in t_mode:
+                     ax.plot(ax_data[msk], ay_data[msk], az_data[msk], 
+                             label=label, color=current_color)
+                
+                if 'markers' in t_mode:
+                     ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], 
+                                label=label if 'lines' not in t_mode else None, 
+                                color=current_color)
         
          ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
          ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
@@ -79,8 +89,8 @@ class Scatter3D:
                 if np.any(msk):
                  self.figure.add_trace(go.Scatter3d(
                  x=ax, y=ay, z=az,
-                 mode='markers',
-                 marker=dict(size=3),  
+                 mode=self.trace_modes[i],
+                 marker=dict(size=4 if 'lines' in self.trace_modes[i] else 3),  
                  name=f'{self.experiments[i]}',                       
                  showlegend=True,
                  hovertemplate = (f"{self.experiments[i]}<br>"

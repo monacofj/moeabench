@@ -4,9 +4,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .scatter3d import Scatter3D
+from .scatter2d import Scatter2D
 import numpy as np
 
-def spaceplot(*args, objectives=None, mode='interactive', title=None, axis_labels=None):
+def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=None):
     """
     Plots 3D scatter of objectives (Pareto Front).
     """
@@ -30,15 +31,16 @@ def spaceplot(*args, objectives=None, mode='interactive', title=None, axis_label
              val = arg.objectives
         
         # Try to extract name metadata
-        # 1. inner array .name (SmartArray)
-        if hasattr(val, 'name') and val.name:
-             name = val.name
-        # 2. original object .name
-        elif hasattr(arg, 'name') and arg.name:
-             name = arg.name
-        # 3. .label (Population)
-        elif hasattr(arg, 'label') and arg.label:
-             name = arg.label
+        if not name:
+            # 1. inner array .name (SmartArray)
+            if hasattr(val, 'name') and val.name:
+                 name = val.name
+            # 2. original object .name
+            elif hasattr(arg, 'name') and arg.name:
+                 name = arg.name
+            # 3. .label (Population)
+            elif hasattr(arg, 'label') and arg.label:
+                 name = arg.label
 
         # Fallback name
         if not name:
@@ -60,41 +62,31 @@ def spaceplot(*args, objectives=None, mode='interactive', title=None, axis_label
     if objectives is None:
         # Auto-detect data dimension
         dims = [d.shape[1] for d in processed_args if len(d.shape) > 1]
-        max_dim = max(dims) if dims else 3
+        max_dim = max(dims) if dims else 2
         
         if max_dim < 3:
              objectives = [0, 1]
         else:
              objectives = [0, 1, 2]
-             
-    # Ensure indices exist in data
-    # If 2D data is passed but we want 3D scatter, Scatter3D might need padding.
-    # However, Scatter3D likely expects [x, y, z] indices.
-    # If data has only 2 cols, index 2 is invalid.
-    # We should pad the DATA with a zero column if necessary, or update Scatter3D to handle 2D.
-    # Easiest fixes: Pad data here.
     
-    for k in range(len(processed_args)):
-         d = processed_args[k]
-         if d.shape[1] < 3:
-             # Pad with zeros to ensure at least 3 columns for 3D plotting
-             padding = np.zeros((d.shape[0], 3 - d.shape[1]))
-             processed_args[k] = np.column_stack([d, padding])
-    
-    # Now objectives [0,1,2] are safe even if original data was 2D. 
-    # The 3rd dimension will be 0 (flat plot).
-    # Ensure 3 axes
-    if len(objectives) < 3:
-         # Pad with 0? Or raise error?
-         # Legacy used list generic filling.
-         # For 2D data, we might want 2D plot?
-         # Scatter3D supports 3D. 
-         # If data is 2D, we can plot 2D on Z=0?
-         # Or stick to 3 indices.
-         while len(objectives) < 3:
+    # Selection of Plotter based on dimensions
+    if len(objectives) == 2:
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels)
+    else:
+        # Ensure 3rd dimension exists for Scatter3D
+        for k in range(len(processed_args)):
+             d = processed_args[k]
+             if d.shape[1] < 3:
+                 # Pad with zeros to ensure at least 3 columns for 3D plotting
+                 padding = np.zeros((d.shape[0], 3 - d.shape[1]))
+                 processed_args[k] = np.column_stack([d, padding])
+
+        # Ensure objectives has 3 elements
+        while len(objectives) < 3:
              objectives.append(0)
              
-    s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels)
+    
     s.show()
 
 def timeplot(*args, **kwargs):
