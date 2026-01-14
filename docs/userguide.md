@@ -22,7 +22,7 @@ MoeaBench is a comprehensive Python framework designed for moping **Multi-object
 *   **Visual Analysis**: Built-in 3D plotting (`spaceplot`) and convergence tracking (`timeplot`).
 
 ### **References & Provenance**
-MoeaBench implements standard community benchmarks:
+MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[Benchmarks Guide](file:///home/monaco/Work/moeabench/docs/benchmarks.md)**:
 *   **DTLZ**: Scalable test problems by Deb et al. (2002).
 *   **DPF**: Degenerate Pareto Front benchmarks by Zhen et al. (2018).
 

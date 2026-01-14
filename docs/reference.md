@@ -286,5 +286,7 @@ Returns the current library version string.
 ---
 
 ## **8. References**
+For a detailed technical narrative on the implementation history and mathematical nuances of our benchmarks, see the **[Benchmarks Guide](file:///home/monaco/Work/moeabench/docs/benchmarks.md)**.
+
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "Scalable multi-objective optimization test problems." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "Multiobjective test problems with degenerate Pareto fronts." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.

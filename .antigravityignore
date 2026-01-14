@@ -1,0 +1,28 @@
+# Exclusions for Antigravity IDE Indexing (Language Server / Pyrefly)
+
+# Version Control
+.git/
+
+# Bytecode
+__pycache__/
+
+# Documentation (Static/Heavy)
+# Documentation (Static/Heavy - excluded from high-level indexing, but visible)
+# docs/ <- Removed from total ignore to allow tools to work
+LICENSES/
+
+# Examples (Usually stable, can be excluded to save indexing)
+examples/
+
+# Data and Artifacts
+analysis/
+*.ipynb
+*.csv
+*.json
+*.log
+
+# Environments (Already in .gitignore, but being explicit)
+.venv/
+env/
+venv/
+node_modules/
