@@ -9,7 +9,11 @@ from .base_mop import BaseMop
 
 class BaseDPF(BaseMop):
     """
-    Shared logic for Dominance-Preserving Flattening (DPF) benchmarks.
+    Shared logic for Degenerate Pareto Front (DPF) benchmarks.
+    
+    References:
+        Zhen, L., Li, M., Cheng, R., Peng, D., & Yao, X. (2018). "Multiobjective Test 
+        Problems with Degenerate Pareto Fronts." IEEE Trans. Evol. Comput.
     """
     def __init__(self, M=3, D=2, K=5, **kwargs):
         if D < 2 or D >= M:

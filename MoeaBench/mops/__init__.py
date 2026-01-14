@@ -5,6 +5,12 @@
 
 """     
 MoeaBench Benchmark Problems.
+
+References:
+    [DTLZ] K. Deb, L. Thiele, M. Laumanns, and E. Zitzler, "Scalable Multi-Objective 
+           Optimization Test Problems," Proc. IEEE CEC, 2002.
+    [DPF]  L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao, "Multiobjective Test Problems 
+           with Degenerate Pareto Fronts," IEEE Trans. Evol. Comput., 2018.
 """
 
 # Modernized Benchmarks

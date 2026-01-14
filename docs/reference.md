@@ -169,13 +169,13 @@ prob_many = mb.mops.DTLZ2(M=10, K=20)
 ```
 
 ### **DPF Family**
-`DPF1` - `DPF5` (Disconnected Fronts).
+`DPF1` - `DPF5` (Degenerate Pareto Fronts).
 *   **Args**: `M` (Objectives), `D` (Base dims), `K` (Distance vars), `**kwargs`.
 *   **Derived**: `N = D + K - 1`.
 
 **Usage Example:**
 ```python
-# Disconnected front in 3D based on 2D manifold
+# Degenerate front in 3D based on 2D manifold
 prob = mb.mops.DPF1(M=3, D=2)
 ```
 
@@ -282,3 +282,9 @@ Prints a detailed report of installed optional dependencies (`pymoo`, `deap`, et
 
 ### **`mb.system.version()`**
 Returns the current library version string.
+
+---
+
+## **8. References**
+*   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "Scalable multi-objective optimization test problems." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
+*   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "Multiobjective test problems with degenerate Pareto fronts." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
