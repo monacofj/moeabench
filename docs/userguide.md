@@ -64,26 +64,6 @@ To ensure scientific reproducibility, MoeaBench handles random seeds determinist
 *   **Manual Seed**: If you provide a seed to the MOEA (e.g., `mb.moeas.NSGA3(seed=42)`), it will be used.
 - **Automatic Seed**: If no seed is provided, a random one is generated and saved in the results.
 - **Multi-run Logic**: When using `exp.run(repeat=N)`, MoeaBench automatically ensures each run is independent but deterministic. It uses the base `seed` for the first run and increments it for subsequent runs (`seed + i`). This ensures that a multi-run experiment is perfectly reproducible if the initial seed is fixed.
-- **Parallel Determinism**: Even when running in parallel (`workers > 1`), seeds are assigned consistently based on the run index, ensuring the same output as serial execution.
-
-#### **Parallel Execution**
-For large experiments (e.g., `repeat=30`), you can significantly speed up execution by using multiple CPU cores:
-
-```python
-# Run 30 repetitions using 4 parallel workers
-exp.run(repeat=30, workers=4)
-
-# Use safer defaults:
-exp.run(repeat=30, workers=0)  # Uses half of available CPUs (Balanced)
-exp.run(repeat=30, workers=-1) # Uses CPUs - 1 (Safe maximum, prevents UI freeze)
-```
-
-> [!TIP]
-> **New Parallel UI**: When running in parallel, MoeaBench now displays a multi-bar progress interface. You can see the global progress and the individual state of each worker in real-time.
-
-> [!CAUTION]
-> **RAM Usage**: Each parallel worker clones the experiment process. If your population size is huge or your problem loads large datasets, parallel execution might exhaust your system's RAM.
-> **Nested Parallelism**: If your MOEA or MOP already implements internal parallelism (e.g., evaluating populations in parallel), using `workers > 1` here might lead to CPU over-subscription and actually **slow down** your experiment.
 
 ---
 
@@ -290,11 +270,6 @@ For a full comparison script, see `examples/example-06.py`.
 MoeaBench includes a `system` module to monitor your environment and hardware.
 
 ```python
-# Check hardware
-mb.system.cpus()          # Total cores
-mb.system.cpus(safe=True) # Cores - 1
-mb.system.memory()        # Total and available RAM (GB)
-
 # Check library health
 mb.system.check_dependencies() # Report on installed solvers
 mb.system.version()            # Library version

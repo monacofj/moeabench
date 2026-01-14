@@ -6,8 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # This is a more complete example of using MoeaBench
-# that illustrates some moea comparison and statistics, as well as
-# the use of parallel execution.
+# that illustrates some moea comparison and statistics.
 # 
 # Notes: parameters were set for faster execution in detriment of quality
 
@@ -32,14 +31,14 @@ def main():
     exp1.name = "NSGA3"
     exp1.mop = mb.mops.DTLZ2(M=3)
     exp1.moea = mb.moeas.NSGA3(population=pop_size, generations=gens)
-    exp1.run(repeat=repeats, workers=0)
+    exp1.run(repeat=repeats)
     
     # Experiment 2: SPEA2
     exp2 = mb.experiment()
     exp2.name = "SPEA2"
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
-    exp2.run(repeat=repeats, workers=0)
+    exp2.run(repeat=repeats)
 
     # 2. Statistical Analysis ("Smart Stats")
     # Smart Stats performs extraction and uses a shared reference point automatically

@@ -34,7 +34,7 @@ def run_example():
     exp1.name = "NSGA2"
     exp1.mop = mop
     exp1.moea = mb.moeas.NSGA2deap(population=pop_size, generations=gens)
-    exp1.run(repeat=repeats, workers=0) # workers=0 uses half CPUs
+    exp1.run(repeat=repeats)
     
     # 2. Calculate Attainment Surfaces
     print("Calculating Attainment Surfaces (5%, 50%, 95%)...")
@@ -62,13 +62,20 @@ def run_example():
     exp2.name = "SPEA2"
     exp2.mop = mop
     exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
-    exp2.run(repeat=repeats, workers=0)
+    exp2.run(repeat=repeats)
     
     # We can use the attainment_diff helper
     print("Calculating and visualizing attainment difference (Median)...")
-    s1, s2 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
+    diff = mb.stats.attainment_diff(exp1, exp2, level=0.5)
     
-    mb.spaceplot(s1, s2, title="Comparison: NSGA2 vs SPEA2 (Median)")
+    # Show Smart Stats: Volume and Summary
+    print(f"Volume Attained (NSGA2 Median): {diff.surf1.volume():.4f}")
+    print(f"Volume Attained (SPEA2 Median): {diff.surf2.volume():.4f}")
+    print("\n" + diff.summary())
+    
+    # Plotting still works because 'diff' is iterable 
+    # (or we can pass its surfaces explicitly)
+    mb.spaceplot(*diff, title="Comparison: NSGA2 vs SPEA2 (Median)")
 
 if __name__ == "__main__":
     run_example()

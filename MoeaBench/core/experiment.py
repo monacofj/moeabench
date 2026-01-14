@@ -8,10 +8,10 @@ from .run import Run, SmartArray, Population
 import numpy as np
 import inspect
 import os
-import multiprocessing
-import concurrent.futures
-from ..progress import get_progress_bar, set_active_pbar, ParallelProgressManager, set_worker_config
-from ..system import cpus
+import numpy as np
+import inspect
+import os
+from ..progress import get_progress_bar, set_active_pbar
 from typing import Optional, List, Union, Any, Iterator, Dict
 
 class JoinedPopulation:
@@ -260,9 +260,8 @@ class experiment:
 
         Args:
             repeat (int): Number of independent runs to perform.
-            workers (int): Number of parallel workers to use. 
-                          If None, execution is serial. 
-                          If -1, uses all available CPU cores.
+            workers (int): [DEPRECATED] Parallel execution is no longer supported. 
+                           All runs are performed serially for stability.
         """
         if repeat < 1: repeat = 1
         
@@ -273,16 +272,8 @@ class experiment:
             if hasattr(self.moea, 'seed'):
                  self.moea.seed = base_seed
 
-        # Setup Parallelism
-        if workers == -1:
-            workers = cpus(safe=True)
-        elif workers == 0:
-            workers = max(1, cpus() // 2)
-        
-        if workers and workers > 1:
-            self._run_parallel(repeat, workers, base_seed)
-        else:
-            self._run_serial(repeat, base_seed)
+        # Execute serially
+        self._run_serial(repeat, base_seed)
 
     def _run_serial(self, repeat: int, base_seed: int) -> None:
         total_gens = getattr(self.moea, 'generations', None)
@@ -300,7 +291,7 @@ class experiment:
             set_active_pbar(inner_pbar)
 
             try:
-                run_data, _, _ = _moea_run_worker(self.moea, self.mop, seed, i+1)
+                run_data, _ = self._execute_run(self.moea, self.mop, seed, i+1)
                 new_run = Run(run_data, seed, experiment=self, index=i+1)
                 self._runs.append(new_run)
             finally:
@@ -312,35 +303,33 @@ class experiment:
         if outer_pbar:
             outer_pbar.close()
 
-    def _run_parallel(self, repeat: int, workers: int, base_seed: int) -> None:
-        # Create manager and queue for progress reporting
-        manager = multiprocessing.Manager()
-        progress_queue = manager.Queue()
-        progress_mgr = ParallelProgressManager(repeat=repeat, desc=f"Experiment: {self.name} (Parallel)", 
-                                                 workers=workers, queue=progress_queue)
-        progress_mgr.start()
-
+    def _execute_run(self, moea, mop, seed, index):
+        """Internal helper for executing a single MOEA run."""
+        # Inject context
+        moea.problem = mop 
+        if hasattr(moea, 'seed'):
+            moea.seed = seed
+        
         try:
-            with concurrent.futures.ProcessPoolExecutor(max_workers=workers) as executor:
-                # Schedule all runs
-                futures = []
-                for i in range(repeat):
-                    seed = base_seed + i
-                    futures.append(executor.submit(_moea_run_worker, self.moea, self.mop, seed, i+1, progress_queue))
+            # Execute
+            if hasattr(moea, 'evaluation'):
+                # New-style API
+                data_payload = moea.evaluation()
+            else:
+                # Legacy Flow
+                current_result = moea(mop, None, None, seed)
+                raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
                 
-                # Collect results as they finish
-                results = [None] * repeat
-                for future in concurrent.futures.as_completed(futures):
-                    data, seed, index = future.result()
-                    results[index-1] = (data, seed)
-                
-                # Build Run objects in correct order
-                for i in range(repeat):
-                    data, seed = results[i]
-                    new_run = Run(data, seed, experiment=self, index=i+1)
-                    self._runs.append(new_run)
-        finally:
-            progress_mgr.stop()
+                if hasattr(raw_result, 'edit_DATA_conf'):
+                     moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
+                     if hasattr(moea_instance, 'exec'):
+                          moea_instance.exec()
+                data_payload = raw_result
+        except Exception as e:
+            # Propagate error if needed
+            raise e
+
+        return data_payload, seed
 
     # Persistence
     def save(self, path: str) -> None:
@@ -351,40 +340,3 @@ class experiment:
     def load(self, path: str) -> None:
         from .loader import loader
         loader.IPL_loader(self, path)
-
-def _moea_run_worker(moea, mop, seed, index, queue=None):
-    """Standalone worker function for ProcessPoolExecutor."""
-    if queue:
-        set_worker_config(queue, index)
-    
-    # Inject context
-    moea.problem = mop 
-    if hasattr(moea, 'seed'):
-        moea.seed = seed
-    
-    # Progress bar for this run
-    total_gens = getattr(moea, 'generations', None)
-    # Each worker gets its own progress bar that redirects to queue
-    pbar = get_progress_bar(total=total_gens, desc=f"  Run {index}", leave=False)
-    set_active_pbar(pbar)
-
-    try:
-        # Execute
-        if hasattr(moea, 'evaluation'):
-            # New-style API
-            data_payload = moea.evaluation()
-        else:
-            # Legacy Flow
-            current_result = moea(mop, None, None, seed)
-            raw_result = current_result[0] if isinstance(current_result, tuple) else current_result
-            
-            if hasattr(raw_result, 'edit_DATA_conf'):
-                 moea_instance = raw_result.edit_DATA_conf().get_DATA_MOEA()
-                 if hasattr(moea_instance, 'exec'):
-                      moea_instance.exec()
-            data_payload = raw_result
-    finally:
-        pbar.close()
-        set_active_pbar(None)
-
-    return data_payload, seed, index

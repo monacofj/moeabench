@@ -6,6 +6,7 @@
 import numpy as np
 from ..core.run import SmartArray
 
+
 class AttainmentSurface(SmartArray):
     """
     Experimental data representing an Empirical Attainment Surface.
@@ -21,17 +22,34 @@ class AttainmentSurface(SmartArray):
         self.level = getattr(obj, 'level', 0.5)
         self.name = getattr(obj, 'name', None)
 
-def attainment(experiment, level: float = 0.5):
+    def volume(self, ref_point=None):
+        """
+        Calculates the area (2D) or hypervolume (3D+) attained by this surface.
+        """
+        from ..metrics.evaluator import hypervolume
+        from ..core.run import Run
+        
+        # Pass self directly; hypervolume() handles np.ndarray
+        hv_matrix = hypervolume(self, ref=ref_point)
+        return float(hv_matrix)
+
+def attainment(source, level: float = 0.5):
     """
-    Calculates the k-th attainment surface for a multi-run experiment.
+    Calculates the k-th attainment surface for a multi-run experiment 
+    or a list of pre-calculated Pareto fronts.
     
     The level is a probability in [0, 1].
     Example: level=0.5 returns the Median Attainment Surface.
     """
-    # 1. Collect final fronts from all runs
-    fronts = [run.front() for run in experiment.runs]
+    # 1. Collect final fronts
+    if isinstance(source, list):
+        fronts = source
+    else:
+        # Assume it's an Experiment object
+        fronts = [run.front() for run in source.runs]
+
     if not fronts:
-        raise ValueError("Experiment has no runs.")
+        raise ValueError("No fronts available for attainment calculation.")
         
     n_runs = len(fronts)
     k = int(np.ceil(level * n_runs))
@@ -98,65 +116,101 @@ def _attainment_2d(fronts, k, level):
 
 def _attainment_nd(fronts, k, level):
     """
-    Approximate N-D attainment surface calculation via point sampling.
-    For 3D, this provides the points on the boundary.
+    N-D attainment surface calculation.
+    Uses chunked vectorized counting to find points attained by at least k runs.
     """
     # A point z is in the k-attainment set if at least k runs dominate z.
-    # This is equivalent to finding points that are dominated by exactly k runs 
-    # but not by k+1 runs in a specific sense.
+    # We use the union of all points as candidates for the boundary.
+    union = np.concatenate(fronts, axis=0)
     
-    # Simplified approach: The k-th attainment surface is bounded by points
-    # formed by combinations of coordinates from different runs.
-    # For 3D+, we'll return a representative set of points.
+    attainment_counts = np.zeros(len(union), dtype=int)
+    chunk_size = 500
     
-    all_points = np.concatenate(fronts, axis=0)
-    # This is a placeholder for a more complex algorithm like 
-    # the one by Fonseca et al.
-    # For now, we return the k-th non-dominated front of the union,
-    # which is a decent proxy for the attainment boundary points.
+    for f in fronts:
+        # Front f attains point p if any q in f is <= p (all dimensions).
+        # We loop over union in chunks to keep memory usage low.        
+        for start in range(0, len(union), chunk_size):
+            end = min(start + chunk_size, len(union))
+            chunk = union[start:end]
+            
+            # Logic: exists q in f such that q <= p
+            # (chunk, 1, M) compared with (1, N_f, M) -> (chunk, N_f, M)
+            is_attained = np.any(np.all(f[np.newaxis, :, :] <= chunk[:, np.newaxis, :], axis=2), axis=1)
+            attainment_counts[start:end] += is_attained.astype(int)
     
-    from ..core.run import Run
-    # We use a dummy run to call non-dominated sort logic
-    # But we need k-th front. 
-    # MoeaBench doesn't have a k-th front extractor in 'run', 
-    # it only does 1st front.
-    
-    # Implementing a simple k-th front check:
-    # For each point in the union, count how many runs attain it.
-    union = all_points
-    counts = []
-    for p in union:
-        count = 0
-        for f in fronts:
-            # Does front f attain p?
-            if np.any(np.all(f <= p, axis=1)):
-                count += 1
-        counts.append(count)
-    
-    counts = np.array(counts)
     # Points that are attained by at least k runs
-    mask = counts >= k
+    mask = attainment_counts >= k
     candidates = union[mask]
     
-    # Extract non-dominated subset of these candidates
-    from ..core.run import _non_dominated_sort
-    indices = _non_dominated_sort(candidates)
+    if len(candidates) == 0:
+        return AttainmentSurface(np.zeros((0, union.shape[1])), level=level)
     
-    return AttainmentSurface(candidates[indices], level=level)
+    # Extract non-dominated subset of these candidates
+    from ..core.run import Population
+    pop = Population(candidates, candidates)
+    # _calc_domination is now memory-efficient (chunked)
+    indices = pop._calc_domination()
+    
+    return AttainmentSurface(candidates[~indices], level=level)
 
-def attainment_diff(exp1, exp2, level=0.5):
+class AttainmentDiff:
+    """
+    Result of a comparison between two attainment surfaces.
+    """
+    def __init__(self, surf1, surf2, level):
+        self.surf1 = surf1
+        self.surf2 = surf2
+        self.level = level
+        
+    def __iter__(self):
+        # Allow unpacking: s1, s2 = attainment_diff(...)
+        yield self.surf1
+        yield self.surf2
+
+    def delta_volume(self):
+        """Difference in volume (S1 - S2). Positive means S1 is better."""
+        return self.surf1.volume() - self.surf2.volume()
+
+    def summary(self):
+        v1 = self.surf1.volume()
+        v2 = self.surf2.volume()
+        dv = v1 - v2
+        better = self.surf1.name if dv > 0 else self.surf2.name
+        
+        lines = [
+            f"--- Attainment Comparison (Level {self.level:.2f}) ---",
+            f"  - {self.surf1.name}: {v1:.6f}",
+            f"  - {self.surf2.name}: {v2:.6f}",
+            f"  - Difference: {abs(dv):.6f} favoring {better}"
+        ]
+        return "\n".join(lines)
+
+    def __repr__(self):
+        return f"<AttainmentDiff {self.surf1.name} vs {self.surf2.name}>"
+
+def attainment_diff(exp1, exp2, level=0.5, workers=0):
     """
     Calculates the spatial difference in attainment between two experiments
     at a specific attainment level (default: 0.5/Median).
     
-    Returns a pair of AttainmentSurface objects representing the boundaries
-    of each algorithm.
+    Args:
+        exp1, exp2: Experiment objects.
+        level (float): Attainment level [0, 1].
+        workers (int): [DEPRECATED] Parallel execution is no longer supported.
+    
+    Returns:
+        AttainmentDiff object.
     """
-    surf1 = attainment(exp1, level=level)
-    surf1.name = f"{exp1.name} (L={level})"
+    # Extract fronts here to avoid detached object graph overhead
+    fronts1 = [np.array(run.front()) for run in exp1.runs]
+    fronts2 = [np.array(run.front()) for run in exp2.runs]
+
+    # Purely serial calculation
+    surf1 = attainment(fronts1, level=level)
+    surf2 = attainment(fronts2, level=level)
+
+    surf1.name = exp1.name
+    surf2.name = exp2.name
     
-    surf2 = attainment(exp2, level=level)
-    surf2.name = f"{exp2.name} (L={level})"
-    
-    return surf1, surf2
+    return AttainmentDiff(surf1, surf2, level)
 

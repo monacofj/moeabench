@@ -32,12 +32,8 @@ The top-level container.
 **Methods:**
 *   **`.run(repeat=1, workers=None, **kwargs)`**: Executes the optimization.
     *   `repeat` (*int*): Number of independent runs. 
-    *   `workers` (*int*): Number of parallel processes. 
-        *   `None` (default): Serial execution.
-        *   `-1`: Safe maximum (`CPUs - 1`) to preserve system responsiveness.
-        *   `0`: Balanced mode (Half of available CPUs).
-        *   `N`: Specific number of workers.
-    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs even in parallel mode.
+    *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
+    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
     *   `**kwargs`: Passed to the MOEA execution engine.
 
 **Usage Example:**
@@ -280,15 +276,6 @@ Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
 ## **7. System Utilities (`mb.system`)**
 
 The `system` module provides utilities for environmental inspection.
-
-### **`mb.system.cpus(safe=False)`**
-Returns the number of logical CPU cores.
-*   **Args**:
-    *   `safe` (*bool*): If `True`, returns `count - 1` (minimum 1).
-
-### **`mb.system.memory()`**
-Returns a dictionary with memory information.
-*   **Returns**: `{'total_gb': float, 'available_gb': float}`.
 
 ### **`mb.system.check_dependencies()`**
 Prints a detailed report of installed optional dependencies (`pymoo`, `deap`, etc.).

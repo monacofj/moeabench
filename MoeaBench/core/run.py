@@ -263,7 +263,8 @@ class Population:
 
     def _calc_domination(self) -> np.ndarray:
         """
-        Computes dominance status for all individuals (minimization assumed) using vectorized NumPy.
+        Computes dominance status for all individuals (minimization assumed).
+        Uses a chunked broadcasting approach to balance speed and memory usage.
         
         Returns:
             np.ndarray: Boolean mask where True means 'dominated'.
@@ -274,23 +275,30 @@ class Population:
         if N == 0:
             return np.zeros(0, dtype=bool)
             
-        # Broadcasting Approach to Non-Dominated Sort
-        # A (potential dominators): (1, N, M) - 'j'
-        # B (potential victims):    (N, 1, M) - 'i'
+        # Determine chunk size to avoid memory explosion (O(N^2))
+        # A chunk size of 500-1000 is usually a good balance.
+        # N * chunk_size * 8 bytes (float64) should fit comfortably in RAM.
+        chunk_size = 500
+        is_dominated = np.zeros(N, dtype=bool)
         
-        # We compare everyone against everyone.
-        A = objs[np.newaxis, :, :] 
-        B = objs[:, np.newaxis, :]
+        # We compare everyone against everyone, but in chunks.
+        # A (potential dominators): (1, N, M)
+        # B (potential victims):    (chunk, 1, M)
         
-        # j dominates i if (j <= i for all M) AND (j < i for at least one M)
-        dominates_all = np.all(A <= B, axis=2) # (N, N) where [i, j] is True if j <= i
-        dominates_any = np.any(A < B, axis=2)  # (N, N) where [i, j] is True if j < i (strictly better in one obj)
-        
-        # Matrix of who dominates who
-        # entry [i, j] is True if 'j' dominates 'i'
-        dominance_matrix = dominates_all & dominates_any
-        
-        # Solution 'i' is dominated if ANY 'j' dominates it
-        is_dominated = np.any(dominance_matrix, axis=1) # Collapse 'j' columns
-        
+        for start in range(0, N, chunk_size):
+            end = min(start + chunk_size, N)
+            B = objs[start:end, np.newaxis, :] # (chunk, 1, M)
+            A = objs[np.newaxis, :, :]         # (1, N, M)
+            
+            # j (from A) dominates i (from B) if (j <= i for all M) AND (j < i for at least one M)
+            dominates_all = np.all(A <= B, axis=2) 
+            dominates_any = np.any(A < B, axis=2)  
+            
+            # Matrix of who dominates who in this chunk
+            # entry [i, j] is True if 'j' dominates 'i'
+            dominance_matrix = dominates_all & dominates_any
+            
+            # Solution 'i' in the chunk is dominated if ANY 'j' in the whole population dominates it
+            is_dominated[start:end] = np.any(dominance_matrix, axis=1)
+            
         return is_dominated
