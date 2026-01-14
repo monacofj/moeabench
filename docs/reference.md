@@ -267,9 +267,24 @@ Performs the Kolmogorov-Smirnov two-sample test for distribution shape differenc
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
 *   **Args**: Same as `mann_whitney`.
 *   **Returns**: Float [0.0, 1.0].
-    *   `0.5`: Equivalent.
-    *   `>0.5`: `data1` dominates.
-    *   `<0.5`: `data2` dominates.
+
+### **`mb.stats.stratification(data, gen=-1)`**
+Performs **Population Stratification** (Dominance Layer analysis).
+*   **Args**:
+    *   `data`: `Experiment`, `Run`, or `Population`.
+    *   `gen` (*int*): Generation index.
+*   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure()`, and `.plot()`.
+
+### **`mb.stats.emd(strat1, strat2)`**
+Computes the **Earth Mover's Distance** (Wasserstein Distance) between two stratification profiles. 
+*   **Returns**: Float representing the structural difference between algorithms.
+
+### **`mb.stats.stratification_plot(*results, labels=None, title=None)`**
+Generates a **grouped bar chart** to compare multiple stratification profiles.
+*   **Args**:
+    *   `*results`: One or more `StratificationResult` objects.
+    *   `labels` (*list*): Optional names for the legend.
+    *   `title` (*str*): Plot title.
 
 ---
 

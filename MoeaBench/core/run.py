@@ -302,3 +302,57 @@ class Population:
             is_dominated[start:end] = np.any(dominance_matrix, axis=1)
             
         return is_dominated
+
+    def stratify(self) -> np.ndarray:
+        """
+        Performs full Non-Dominated Sorting (NDS) by iteratively peeling 
+        non-dominated layers.
+        
+        This implementation leverages the optimized chunked broadcasting 
+        logic from _calc_domination but applies it recursively to discover 
+        all ranks.
+        
+        Returns:
+            np.ndarray: Integer array where each entry is the rank (1-indexed) 
+                       of the corresponding individual.
+        """
+        N = len(self)
+        if N == 0:
+            return np.zeros(0, dtype=int)
+            
+        ranks = np.zeros(N, dtype=int)
+        remaining_mask = np.ones(N, dtype=bool)
+        current_rank = 1
+        
+        full_objs = self.objectives
+        
+        while np.any(remaining_mask):
+            # Indices of individuals we are still ranking
+            indices = np.where(remaining_mask)[0]
+            sub_objs = full_objs[indices]
+            
+            # Find which individuals in the remaining set are non-dominated 
+            # WITH RESPECT TO the remaining set.
+            # We reuse the logic: i is dominated if some j in ONLY THE REMAINING SET dominates it.
+            sub_N = len(indices)
+            sub_is_dominated = np.zeros(sub_N, dtype=bool)
+            
+            # Chunked check within the sub-set
+            chunk_size = 500
+            for start in range(0, sub_N, chunk_size):
+                end = min(start + chunk_size, sub_N)
+                B = sub_objs[start:end, np.newaxis, :] 
+                A = sub_objs[np.newaxis, :, :]         
+                
+                dominance_matrix = np.all(A <= B, axis=2) & np.any(A < B, axis=2)
+                sub_is_dominated[start:end] = np.any(dominance_matrix, axis=1)
+            
+            # Those NOT dominated in the sub-set are the current rank
+            current_rank_sub_indices = np.where(~sub_is_dominated)[0]
+            actual_indices = indices[current_rank_sub_indices]
+            
+            ranks[actual_indices] = current_rank
+            remaining_mask[actual_indices] = False
+            current_rank += 1
+            
+        return ranks

@@ -12,7 +12,7 @@ __pycache__/
 LICENSES/
 
 # Examples (Usually stable, can be excluded to save indexing)
-examples/
+# examples/ <- Unblocked to allow tool access
 
 # Data and Artifacts
 analysis/

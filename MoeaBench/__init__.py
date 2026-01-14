@@ -25,6 +25,7 @@ class _MB:
     """
     def __init__(self):
         self.experiment = experiment
+        self.Experiment = experiment
         self.Run = Run
         self.mops = mops
         self.moeas = moeas
@@ -40,6 +41,35 @@ class _MB:
         self.gd = metrics.gd
         self.gdplus = metrics.gdplus
         self.igdplus = metrics.igdplus
+        
+        # Stats Shortcuts
+        self.stratification = stats.stratification
+        self.stratification_plot = stats.stratification_plot
+        self.emd = stats.emd
+        self.attainment = stats.attainment
+        self.attainment_diff = stats.attainment_diff
+        
+        # Benchmark Shortcuts (for didactics)
+        self.DTLZ1 = mops.DTLZ1
+        self.DTLZ2 = mops.DTLZ2
+        self.DTLZ3 = mops.DTLZ3
+        self.DTLZ4 = mops.DTLZ4
+        self.DTLZ5 = mops.DTLZ5
+        self.DTLZ7 = mops.DTLZ7
+        self.DTLZ8 = mops.DTLZ8
+        self.DTLZ9 = mops.DTLZ9
+        self.DPF1 = mops.DPF1
+        self.DPF2 = mops.DPF2
+        self.DPF3 = mops.DPF3
+        self.DPF4 = mops.DPF4
+        self.DPF5 = mops.DPF5
+        
+        # Algorithm Shortcuts (for didactics)
+        self.NSGA2 = moeas.NSGA2deap
+        self.SPEA2 = moeas.SPEA2
+        self.MOEAD = moeas.MOEAD
+        self.RVEA = moeas.RVEA
+        self.NSGA3 = moeas.NSGA3
 
 mb = _MB()
 

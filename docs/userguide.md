@@ -270,7 +270,29 @@ res = mb.stats.mann_whitney(v1, v2)
 
 For a full comparison script, see `examples/example-06.py`.
 
-### **6. System Utilities (`mb.system`)**
+## **6. Advanced Diagnostics**
+
+MoeaBench provides deep insights into the internal "health" of your algorithm's search profile.
+
+### **Population Stratification**
+Use `mb.stratification` to analyze the distribution of individuals across all dominance ranks (layers). This helps you quantify **Selection Pressure** and detect when an algorithm has stalled or lost diversity.
+
+```python
+# Analyze the rank distribution of an experiment
+result = mb.stratification(exp)
+
+# Check the selection pressure (decay rate)
+print(f"Selection Pressure: {result.selection_pressure():.2f}")
+
+# Compare two algorithms (EMD distance) - Symmetric API
+diff = mb.stats.emd(strat1, strat2)
+print(f"Structural Difference: {diff:.2f}")
+
+# Visualize the profile
+result.plot(title="Dominance Layers")
+```
+
+### **7. System Utilities (`mb.system`)**
 
 MoeaBench includes a `system` module to monitor your environment and hardware.
 
