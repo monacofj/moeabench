@@ -64,31 +64,27 @@ print(f"Structural Difference (EMD): {dist:.4f}")
 
 # 6. Visualize the Rank Distributions side-by-side
 # Grouped bar charts allow for direct comparison of dominance depth.
-print("Plotting distributions... (Close the plot to finish)")
+print("\nPlotting distributions... (Close plot to finish)")
 mb.stratification_plot(strat_nsga2, strat_spea2, title=f"Dominance Depth at Gen {SNAPSHOT_GEN}")
+
 plt.show()
 
 # --- Interpretation of the Results ---
 #
 # Comparing the "Dominance Depth" reveals the distinct search "DNA" of each algorithm:
 #
-# 1. SPEA2: The "Elite-Driven" Specialist
-#    - Result: More solutions in Rank 1, but spread across many deeper ranks (e.g., 6+).
-#    - Meaning: SPEA2 acts as a "Sniper." Its selection mechanism is highly effective 
-#      at promoting absolute elites to the Pareto Front, but it is "tolerant" of 
-#      lower-quality solutions, allowing a long tail to persist.
-#    - Verdict: Yields a sharper front but a fragmented, unequal population.
+# 1. NSGA-II: The "Collective Wave" Generalist
+#    - Result: Usually compressed into very few ranks (e.g., only 3).
+#    - Meaning: NSGA-II acts as a "Phalanx." Its selection mechanism pulls the worst 
+#      solutions up aggressively, moving the population as a dense, unified wave.
+#    - Verdict: Yields a more robust, unified population.
 #
-# 2. NSGA-II: The "Collective Wave" Generalist
-#    - Result: Fewer solutions in Rank 1, but the entire population is compressed 
-#      into very few ranks (e.g., only 3).
-#    - Meaning: NSGA-II acts as a "Phalanx." Its tournament selection and crowding 
-#      mechanism enforce a strong "Quality Discipline." It pulls the worst solutions 
-#      up aggressively, moving the population as a dense, unified wave.
-#    - Verdict: Yields a more robust, unified population, though it may take 
-#      longer to reach the absolute peaks.
+# 2. SPEA2: The "Elite-Driven" Specialist
+#    - Result: More solutions in Rank 1, but spread across many deeper ranks (e.g., 6+).
+#    - Meaning: SPEA2 acts as a "Sniper." It effectively promotes absolute elites 
+#      to the Pareto Front but is more tolerant of lower-quality solutions elsewhere.
+#    - Verdict: Yields a sharper front but a more fragmented population architecture.
 #
 # 3. Earth Mover's Distance (EMD)
-#    - This measures the mathematical "work" required to transform one 
-#      stratification profile into the other. It quantifies how fundamentally 
-#      different their search behaviors are.
+#    - Quantifies the mathematical "work" required to transform one 
+#      population architecture into the other.
