@@ -277,14 +277,25 @@ Performs **Population Stratification** (Dominance Layer analysis).
 
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** (Wasserstein Distance) between two stratification profiles. 
-*   **Returns**: Float representing the structural difference between algorithms.
 
 ### **`mb.stats.stratification_plot(*results, labels=None, title=None)`**
 Generates a **grouped bar chart** to compare multiple stratification profiles.
+
+### **`mb.polarplot(*results, labels=None, title=None)`**
+Generates a **Polar Phase Analysis** fan. This plot maps each Pareto layer to a vector where:
+*   **Theta ($\theta$)**: Maturity Angle. Measures how 'landed' a rank is relative to its hierarchy.
+*   **Rho ($\rho$)**: Deficiency Magnitude. Measures the 'Total Search Cost' from the origin.
+
+### **`mb.profileplot(*results, labels=None, title=None, show_all=True)`**
+Generates a **Cartesian Rank-Quality Profile**.
+*   **X-axis**: Dominance Rank.
+*   **Y-axis**: Average Quality (Euclidean Norm).
 *   **Args**:
-    *   `*results`: One or more `StratificationResult` objects.
-    *   `labels` (*list*): Optional names for the legend.
-    *   `title` (*str*): Plot title.
+    *   `show_all` (*bool*): If `True` (default), plots individual solutions as translucent scatter points behind the average trend line.
+
+#### **Polar Metrics** (Available on `StratificationResult`):
+*   **`.gdi`**: Global Deficiency Index (Average $\rho$).
+*   **`.pmi`**: Population Maturity Index (Average $\theta$).
 
 ---
 

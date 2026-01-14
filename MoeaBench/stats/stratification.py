@@ -13,11 +13,14 @@ class StratificationResult:
     Provides insights into the dominance structure of a population and 
     selection pressure.
     """
-    def __init__(self, ranks_hist, raw_distributions=None, source=None, gen=-1):
+    def __init__(self, ranks_hist, raw_distributions=None, source=None, gen=-1, 
+                 objectives=None, rank_array=None):
         self.ranks = ranks_hist  # dict {rank: frequency}
         self.raw = raw_distributions # raw counts per run if applicable
         self.source = source
         self.gen = gen
+        self.objectives = objectives # (N x M) objective matrix
+        self.rank_array = rank_array # (N,) rank assigned to each row
         
     @property
     def max_rank(self) -> int:
@@ -30,6 +33,51 @@ class StratificationResult:
         for r, val in self.ranks.items():
             f[r-1] = val
         return f
+
+    def quality_profile(self) -> np.ndarray:
+        """
+        Calculates the average Quality (L2 norm) per rank.
+        
+        Returns:
+            np.ndarray: Vector of average norms for each rank [1, 2, ...].
+        """
+        if self.objectives is None or self.rank_array is None:
+            return np.array([])
+            
+        m = self.max_rank
+        q = np.zeros(m)
+        norms = np.linalg.norm(self.objectives, axis=1)
+        
+        for r in range(1, m + 1):
+            mask = (self.rank_array == r)
+            if np.any(mask):
+                q[r-1] = np.mean(norms[mask])
+            else:
+                q[r-1] = np.nan
+        return q
+
+    @property
+    def gdi(self) -> float:
+        """
+        Global Deficiency Index (GDI).
+        The average magnitude (rho) of Rank-Quality vectors.
+        """
+        q = self.quality_profile()
+        ranks = np.arange(1, len(q) + 1)
+        rho = np.sqrt(ranks**2 + q**2)
+        return float(np.nanmean(rho))
+
+    @property
+    def pmi(self) -> float:
+        """
+        Population Maturity Index (PMI).
+        The average polar angle (theta) of Rank-Quality vectors.
+        A smaller angle indicates a more 'compressed' (mature) search.
+        """
+        q = self.quality_profile()
+        ranks = np.arange(1, len(q) + 1)
+        theta = np.arctan2(q, ranks)
+        return float(np.nanmean(theta))
 
     def selection_pressure(self) -> float:
         """
@@ -56,7 +104,7 @@ class StratificationResult:
 
     def __repr__(self) -> str:
         name = getattr(self.source, 'name', 'Population')
-        return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
+        return f"<StratificationResult source='{name}' ranks={self.max_rank} GDI={self.gdi:.2f} PMI={self.pmi:.2f}>"
 
 def stratification(data, gen=-1):
     """
@@ -64,27 +112,44 @@ def stratification(data, gen=-1):
     """
     from ..core.run import Population, Run
     
+    # helper to aggregate run data
+    def _collect_run_data(run_obj, g):
+        pop = run_obj.pop(g) if isinstance(run_obj, Run) else run_obj
+        ranks = pop.stratify()
+        hist = _calc_rank_hist(ranks)
+        return hist, pop.objectives, ranks
+
     # 1. Handle Experiment (Multi-Run)
     if hasattr(data, 'runs') and hasattr(data, 'pop'):
         all_hists = []
+        all_objs = []
+        all_ranks = []
         for run in data:
-            pop = run.pop(gen)
-            ranks = pop.stratify()
-            hist = _calc_rank_hist(ranks)
-            all_hists.append(hist)
+            h, o, r = _collect_run_data(run, gen)
+            all_hists.append(h)
+            all_objs.append(o)
+            all_ranks.append(r)
             
         agg_hist = {}
         max_r = max(max(h.keys()) for h in all_hists)
         for r in range(1, max_r + 1):
             agg_hist[r] = np.mean([h.get(r, 0) for h in all_hists])
             
-        return StratificationResult(agg_hist, raw_distributions=all_hists, source=data, gen=gen)
+        # For aggregated quality, we'll keep the raw components to allow 
+        # StratificationResult to calculate means correctly.
+        # However, for simplicity and memory, we can store the concatenated 
+        # objectives and ranks as if it were one giant run for the quality profile.
+        concat_objs = np.vstack(all_objs)
+        concat_ranks = np.concatenate(all_ranks)
+            
+        return StratificationResult(agg_hist, raw_distributions=all_hists, 
+                                    source=data, gen=gen, 
+                                    objectives=concat_objs, rank_array=concat_ranks)
 
     # 2. Handle Run/Population
     if isinstance(data, (Run, Population)):
-        pop = data.pop(gen) if isinstance(data, Run) else data
-        ranks = pop.stratify()
-        return StratificationResult(_calc_rank_hist(ranks), source=data, gen=gen)
+        h, o, r = _collect_run_data(data, gen)
+        return StratificationResult(h, source=data, gen=gen, objectives=o, rank_array=r)
 
     raise TypeError(f"Unsupported data type for stratification: {type(data)}")
 

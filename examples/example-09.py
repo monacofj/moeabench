@@ -52,20 +52,26 @@ print(f"{exp_spea2.name:>7}: GDI={strat_spea2.gdi:.2f}, PMI={strat_spea2.pmi:.2f
 
 # 5. Visualize the Polar Phase Fan
 # This plot maps Rank vs Quality into a vector fan from the origin.
-print("\nPlotting Phase Fan... (Close plot to finish)")
+print("\nPlotting Phase Fan and Cartesian Profile... (Close plots to finish)")
 mb.polarplot(strat_nsga2, strat_spea2, title=f"Dominance Phase Fan (Gen {SNAPSHOT_GEN})")
+
+# 6. Cartesian Rank-Quality Profile (Scatter + Averages)
+# X = Rank, Y = Quality (Norm)
+mb.profileplot(strat_nsga2, strat_spea2, title=f"Rank-Quality Profile (Gen {SNAPSHOT_GEN})")
 
 plt.show()
 
-# --- Interpretation of the Polar Fan ---
+# --- Interpretation of the Results ---
 #
-# 1. GDI (Magnitude Rho): 
-#    A long vector means a solution is "heavy" with failure (high rank or low quality).
+# 1. Polar Fan (mb.polarplot):
+#    - Focuses on "Search DNA" and Structural Maturity.
+#    - Reveals if the algorithm is "Landed" (Mature) or "Floating" (Immature).
 #
-# 2. PMI (Angle Theta):
-#    - Small angle (Horizontal) = "Landed". High quality even in deep layers.
-#    - Large angle (Vertical)   = "Floating". Immature population with poor depth.
+# 2. Cartesian Profile (mb.profileplot):
+#    - Focuses on the raw "Gradient" of quality across ranks.
+#    - The scatter points show the individual spread, while the average line 
+#      highlights the trend (the "cliff" effect).
 #
 # 3. Algorithm Archetypes:
-#    - NSGA-II: The "Phalanx". Usually shows a narrow, horizontal fan (Mature).
-#    - SPEA2:   The "Sniper". Usually shows a wide, vertical fan (Elite-heavy).
+#    - NSGA-II: Usually a dense, shallow group (Low GDI, Low PMI).
+#    - SPEA2:   Usually a wider, steeper spread (High GDI, High PMI).

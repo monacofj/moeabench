@@ -106,3 +106,85 @@ def timeplot(*args, **kwargs):
     """
     from ..metrics.evaluator import plot_matrix
     plot_matrix(args, **kwargs)
+
+def polarplot(*args, labels=None, title=None):
+    """
+    Plots Rank-Quality vectors in a 'Polar Fan' view.
+    
+    This diagnostic reveals the algorithm's Search DNA by mapping:
+    - Theta (Angle): Structural Maturity (PMI). Small angle = mature/landed.
+    - Rho (Magnitude): Global Deficiency (GDI). Length = distance from origin.
+    """
+    import matplotlib.pyplot as plt
+    
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+    
+    for i, res in enumerate(args):
+        # Support StratificationResult 
+        if hasattr(res, 'quality_profile'):
+            q = res.quality_profile()
+            ranks = np.arange(1, len(q) + 1)
+            
+            # (Rank, Quality) -> Polar
+            theta = np.arctan2(q, ranks)
+            rho = np.sqrt(ranks**2 + q**2)
+            
+            lbl = labels[i] if labels and i < len(labels) else getattr(res.source, 'name', f"Series {i+1}")
+            
+            # Plot the "Fan" (vectors from center)
+            color = plt.cm.tab10(i)
+            for t_val, r_val in zip(theta, rho):
+                ax.plot([t_val, t_val], [0, r_val], color=color, alpha=0.5)
+                ax.scatter(t_val, r_val, color=color, label=lbl if t_val == theta[0] else "")
+    
+    ax.set_theta_zero_location("E") # East is Rank axis (Quality=0)
+    ax.set_theta_direction(1) # CCW
+    ax.set_thetamin(0)
+    ax.set_thetamax(90)
+    
+    ax.set_xlabel("\nMaturity Angle (PMI)")
+    ax.set_title(title if title else "Polar Dominance Phase Analysis")
+    ax.legend()
+    
+    return ax
+
+def profileplot(*args, labels=None, title=None, show_all=True):
+    """
+    Plots the Rank-Quality Profile in Cartesian coordinates.
+    
+    Args:
+        *args: One or more StratificationResult objects.
+        labels (list): Optional labels for the legend.
+        title (str): Title of the plot.
+        show_all (bool): If True, plots all individual solutions as a scatter.
+                        If False, plots only the average quality per rank.
+    """
+    import matplotlib.pyplot as plt
+    
+    fig, ax = plt.subplots()
+    
+    for i, res in enumerate(args):
+        if not hasattr(res, 'rank_array') or res.rank_array is None:
+            continue
+            
+        lbl = labels[i] if labels and i < len(labels) else getattr(res.source, 'name', f"Series {i+1}")
+        color = plt.cm.tab10(i)
+        
+        # 1. Individual Solutions (Scatter)
+        if show_all:
+            norms = np.linalg.norm(res.objectives, axis=1)
+            ax.scatter(res.rank_array, norms, color=color, alpha=0.3, s=10, label=lbl)
+            
+        # 2. Average Profile (Line)
+        q = res.quality_profile()
+        ranks = np.arange(1, len(q) + 1)
+        ax.plot(ranks, q, marker='o', color=color, linewidth=2, 
+                label=f"{lbl} (Avg)" if show_all else lbl)
+
+    ax.set_xlabel("Dominance Rank (1=Pareto Front)")
+    ax.set_ylabel("Quality (Euclidean Norm)")
+    ax.set_title(title if title else "Rank-Quality Profile")
+    ax.legend()
+    ax.grid(True, alpha=0.3)
+    
+    return ax

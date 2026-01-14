@@ -292,7 +292,17 @@ print(f"Structural Difference: {diff:.2f}")
 result.plot(title="Dominance Layers")
 ```
 
-### **7. System Utilities (`mb.system`)**
+### **Advanced Diagnosis: Polar Phase Analysis**
+Beyond simple distributions, MoeaBench allows you to inspect the **Phase Space** of the population. By treating each rank as a vector $(\text{Rank}, \text{Quality})$, we can calculate:
+
+*   **Global Deficiency Index (GDI)**: The magnitude $\rho$. Represents the 'Total Search Cost'.
+*   **Population Maturity Index (PMI)**: The angle $\theta$. Measures efficiency. A small angle indicates a 'landed', mature search where even laggards have high quality.
+
+MoeaBench provides two complementary views for this analysis:
+*   **`mb.polarplot(strat1, strat2)`**: Visualizes the **Search DNA** as a polar fan (Angle vs Magnitude).
+*   **`mb.profileplot(strat1, strat2)`**: Visualizes the **Rank-Quality Profile** in Cartesian coordinates (Rank vs Norm), showing the raw trend and solution spread.
+
+### **9. System Utilities (`mb.system`)**
 
 MoeaBench includes a `system` module to monitor your environment and hardware.
 

@@ -16,7 +16,7 @@ from . import stats
 from . import system
 
 # Plotting High-Level
-from .plotting.plotter import spaceplot, timeplot
+from .plotting.plotter import spaceplot, timeplot, polarplot, profileplot
 
 # MB Wrapper for Legacy Compatibility
 class _MB:
@@ -33,6 +33,8 @@ class _MB:
         self.stats = stats
         self.spaceplot = spaceplot
         self.timeplot = timeplot
+        self.polarplot = polarplot
+        self.profileplot = profileplot
         self.system = system
         
         # Metric Shortcuts
