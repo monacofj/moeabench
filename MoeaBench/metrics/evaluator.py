@@ -334,7 +334,7 @@ def igdplus(exp, ref=None):
             pass
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
-def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
+def plot_matrix(metric_matrices, mode='interactive', show_bounds=False, title=None, **kwargs):
     """
     Plots a list of MetricMatrix objects.
     mode: 'interactive' (Plotly) or 'static' (Matplotlib)
@@ -342,12 +342,18 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
     if not isinstance(metric_matrices, (list, tuple)):
         metric_matrices = [metric_matrices]
 
+    # Handle nested tuples/lists from wrappers like timeplot(*args)
+    if len(metric_matrices) == 1 and isinstance(metric_matrices[0], (list, tuple)):
+        metric_matrices = metric_matrices[0]
+
     # Determine common name
     names = sorted(list(set(m.metric_name for m in metric_matrices)))
     if len(names) == 1:
         plot_name = names[0]
     else:
         plot_name = ", ".join(names)
+
+    final_title = title if title else f"{plot_name} over Time"
 
     if mode == 'static':
         import matplotlib.pyplot as plt
@@ -374,7 +380,7 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
              else:
                 ax.plot(np.arange(1, len(data)+1), data[:, 0], label=label)
         
-        ax.set_title(f"{plot_name} over Time")
+        ax.set_title(final_title)
         ax.set_xlabel("Generation")
         ax.set_ylabel(plot_name)
         ax.legend()
@@ -386,9 +392,7 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
         fig = go.Figure()
         
         for mat in metric_matrices:
-            # mat is MetricMatrix (G x R)
-            # Calculate mean and std dev across runs (axis 1)
-            data = mat.values # (G, R)
+            data = mat.values
             label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
             
             if data.shape[1] > 1:
@@ -398,7 +402,6 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
                 v_min = np.nanmin(data, axis=1)
                 v_max = np.nanmax(data, axis=1)
                 
-                # Plot Mean
                 fig.add_trace(go.Scatter(
                     x=gens, y=mean,
                     mode='lines',
@@ -406,7 +409,6 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
                     line=dict(width=3)
                 ))
                 
-                # Add shadow/band for std dev
                 lower_bound = np.maximum(0, mean - std)
                 fig.add_trace(go.Scatter(
                     x=np.concatenate([gens, gens[::-1]]),
@@ -420,8 +422,6 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
                 ))
                 
                 if show_bounds:
-                    # v_min and v_max already calculated above
-                    
                     fig.add_trace(go.Scatter(
                         x=gens, y=v_min,
                         mode='lines',
@@ -440,7 +440,6 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
                     ))
                 
             else:
-                # Single run
                 fig.add_trace(go.Scatter(
                     x=np.arange(1, len(data)+1),
                     y=data[:, 0],
@@ -448,10 +447,7 @@ def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):
                     name=label
                 ))
                 
-        fig.update_layout(title=f"{plot_name} over Time", xaxis_title="Generation", yaxis_title=plot_name)
-        # In non-interactive environments (like verifying script), verify it doesn't block or require browser if using static?
-        # Plotly .show() opens browser.
-        # Matplotlib .show() opens window.
+        fig.update_layout(title=final_title, xaxis_title="Generation", yaxis_title=plot_name)
         fig.show()
 
 # TODO: Add IGD, GD, etc. same pattern.
