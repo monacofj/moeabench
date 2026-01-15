@@ -417,7 +417,8 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
                     x=gens, y=mean,
                     mode='lines',
                     name=label,
-                    line=dict(width=3)
+                    line=dict(width=3),
+                    hovertemplate=f"{label}<br>Gen: %{{x}}<br>Value: %{{y:.4f}}<extra></extra>"
                 ))
                 
                 lower_bound = np.maximum(0, mean - std)
@@ -439,7 +440,8 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
                         line=dict(dash='dash', width=1),
                         name=f'{label} Min',
                         showlegend=False,
-                        opacity=0.5
+                        opacity=0.5,
+                        hovertemplate=f"{label} Min<br>Gen: %{{x}}<br>Value: %{{y:.4f}}<extra></extra>"
                     ))
                     fig.add_trace(go.Scatter(
                         x=gens, y=v_max,
@@ -447,7 +449,8 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
                         line=dict(dash='dash', width=1),
                         name=f'{label} Max',
                         showlegend=False,
-                        opacity=0.5
+                        opacity=0.5,
+                        hovertemplate=f"{label} Max<br>Gen: %{{x}}<br>Value: %{{y:.4f}}<extra></extra>"
                     ))
                 
             else:
@@ -455,10 +458,16 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
                     x=np.arange(1, len(data)+1),
                     y=data[:, 0],
                     mode='lines',
-                    name=label
+                    name=label,
+                    hovertemplate=f"{label}<br>Gen: %{{x}}<br>Value: %{{y:.4f}}<extra></extra>"
                 ))
                 
-        fig.update_layout(title=final_title, xaxis_title="Generation", yaxis_title=plot_name)
+        fig.update_layout(
+            title=final_title, 
+            xaxis_title="Generation", 
+            yaxis_title=plot_name,
+            hovermode='closest'
+        )
         fig.show()
 
 # TODO: Add IGD, GD, etc. same pattern.

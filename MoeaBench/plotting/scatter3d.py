@@ -15,6 +15,8 @@ try:
     import google.colab
     from google.colab import output
     output.enable_custom_widget_manager()
+    import plotly.io as pio
+    pio.renderers.default = "colab"
 except ImportError:
     pass
 
@@ -122,13 +124,11 @@ class Scatter3D:
                      font=dict(size=16,weight='bold')
                  ),
                  legend=dict(
-                     x=1,
-                     y=0.5,
-                     xanchor='left',
-                     yanchor='middle'
-               )
+                    x=1.05,
+                    y=0.5,
+                    xanchor='left',
+                    yanchor='middle'
+                ),
+                hovermode='closest'
             )
          self.figure.show()
-
-
-     
