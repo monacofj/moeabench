@@ -87,7 +87,7 @@ class StratificationResult(StatsResult):
 
     def report(self, metric=None) -> str:
         """
-        Generates a narrative-didactic report of the population strata.
+        Generates an analytical narrative report of the population strata.
         """
         import MoeaBench.metrics.evaluator as eval_mod
         m_func = metric if metric else eval_mod.hypervolume

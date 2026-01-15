@@ -10,7 +10,7 @@ The legacy version of MoeaBench relied on a fragmented, script-based approach fo
 2.  **API Fragmentation**: The implementation of various benchmarks (DTLZ, DPF) was scattered across multiple interface files (`I_*.py`), often with conflicting logic or missing metadata, making it difficult to automate analysis.
 3.  **Visualization Gap**: Comparison with the theoretical "Ground Truth" (the Pareto Front) required external files or manual data loading, adding friction to the research workflow.
 
-## Decision: A Didactic-Narrative Journey
+## Decision: A Scientific Narrative Journey
 
 We decided to **entirely reimplement** the DTLZ and DPF families from the ground up. This was not merely a porting effort; it was a fundamental shift in how optimization data is processed within the library.
 

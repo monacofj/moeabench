@@ -4,7 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import logging
 from .GEN_hypervolume import GEN_hypervolume
+from .GEN_mc_hypervolume import GEN_mc_hypervolume
 from .GEN_igd import GEN_igd
 from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
@@ -170,10 +172,16 @@ def _extract_data(data):
     except:
         raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
 
-def hypervolume(exp, ref=None):
+def hypervolume(exp, ref=None, mode='auto', n_samples=100000):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
+
+    Args:
+        exp: Experiment, Run, or Population object.
+        ref: Reference set/experiment for normalization.
+        mode (str): 'auto' (default), 'exact', or 'fast'.
+        n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
     """
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
@@ -189,18 +197,29 @@ def hypervolume(exp, ref=None):
     mat = np.full((max_gens, n_runs), np.nan)
     
     for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-        # f_last is used to get the number of objectives (M)
         M = f_last.shape[1] if len(f_last) > 0 else 0
         if M == 0 and len(f_gen) > 0:
-             # Try to get M from f_gen history
              for f in f_gen:
                   if len(f) > 0:
                        M = f.shape[1]
                        break
         
         if M > 0:
-            metric = GEN_hypervolume(f_gen, M, min_val, max_val)
-            values = metric.evaluate() # Returns list of floats
+            # Smart Selection of Algorithm
+            use_mc = False
+            if mode == 'fast':
+                use_mc = True
+            elif mode == 'auto' and M > 6:
+                use_mc = True
+                logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
+                             f"Switching to Monte Carlo approximation (n={n_samples}).")
+            
+            if use_mc:
+                metric = GEN_mc_hypervolume(f_gen, M, min_val, max_val, n_samples=n_samples)
+            else:
+                metric = GEN_hypervolume(f_gen, M, min_val, max_val)
+                
+            values = metric.evaluate()
             
             # Fill matrix
             length = min(len(values), max_gens)
@@ -280,15 +299,39 @@ def _calc_metric(exp, ref, MetricClass, name):
     return MetricMatrix(mat, name, source_name=source_name)
 
 def gd(exp, ref=None):
+    if ref is None and hasattr(exp, 'optimal_front'):
+        try:
+            ref = exp.optimal_front()
+        except (AttributeError, NotImplementedError):
+            logging.warning(f"GD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
+            pass
     return _calc_metric(exp, ref, GEN_gd, "GD")
 
 def gdplus(exp, ref=None):
+    if ref is None and hasattr(exp, 'optimal_front'):
+        try:
+            ref = exp.optimal_front()
+        except (AttributeError, NotImplementedError):
+            logging.warning(f"GD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
+            pass
     return _calc_metric(exp, ref, GEN_gdplus, "GD+")
 
 def igd(exp, ref=None):
+    if ref is None and hasattr(exp, 'optimal_front'):
+        try:
+            ref = exp.optimal_front()
+        except (AttributeError, NotImplementedError):
+            logging.warning(f"IGD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
+            pass
     return _calc_metric(exp, ref, GEN_igd, "IGD")
 
 def igdplus(exp, ref=None):
+    if ref is None and hasattr(exp, 'optimal_front'):
+        try:
+            ref = exp.optimal_front()
+        except (AttributeError, NotImplementedError):
+            logging.warning(f"IGD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
+            pass
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
 def plot_matrix(metric_matrices, mode='interactive', show_bounds=False):

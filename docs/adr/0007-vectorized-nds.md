@@ -33,7 +33,7 @@ This binary masking ensures mathematical precision while maintaining the perform
 
 ## Rationale: Elegance through Vectorization
 
-By moving the NDS logic into the `Population` class and using this chunked-vectorized approach, we achieved an implementation that is both didactically clean and computationally robust. It avoids the complexity of manual bookkeeping while providing performance that rivals compiled languages for typical population sizes.
+By moving the NDS logic into the `Population` class and using this chunked-vectorized approach, we achieved an implementation that is both analytically elegant and computationally robust. It avoids the complexity of manual bookkeeping while providing performance that rivals compiled languages for typical population sizes.
 
 ## Consequences
 - **Positive**: Massive reduction in execution time for large populations (often 20x faster than loop-based legacy code).

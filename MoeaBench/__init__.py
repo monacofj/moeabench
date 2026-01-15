@@ -50,7 +50,7 @@ class _MB:
         self.attainment = stats.attainment
         self.attainment_diff = stats.attainment_diff
         
-        # Benchmark Shortcuts (for didactics)
+        # Benchmark Shortcuts (for usability)
         self.DTLZ1 = mops.DTLZ1
         self.DTLZ2 = mops.DTLZ2
         self.DTLZ3 = mops.DTLZ3
@@ -65,7 +65,7 @@ class _MB:
         self.DPF4 = mops.DPF4
         self.DPF5 = mops.DPF5
         
-        # Algorithm Shortcuts (for didactics)
+        # Algorithm Shortcuts (for usability)
         self.NSGA2 = moeas.NSGA2deap
         self.SPEA2 = moeas.SPEA2
         self.MOEAD = moeas.MOEAD

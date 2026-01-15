@@ -211,7 +211,12 @@ algo_tuned = mb.moeas.NSGA3(population=200,
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
 ### **Metric Calculation**
-*   **`mb.hv(data, ref=None)`**: Calculates Hypervolume.
+*   **`mb.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
+    *   `mode` (*str*): Calculation strategy. 
+        *   `'auto'`: Uses the **Exact** algorithm for $M \leq 6$ and switches to **Monte Carlo** for $M > 6$.
+        *   `'exact'`: Forces the Exact (WFG) algorithm (may be slow for high dimensions).
+        *   `'fast'`: Forces Monte Carlo approximation.
+    *   `n_samples` (*int*): Number of points for Monte Carlo sampling (default: $10^5$).
 *   **`mb.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
 *   **`mb.gd(data, ref=None)`**: Calculates GD (Generational Distance).
 

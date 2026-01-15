@@ -5,7 +5,7 @@
 
 ## Context
 
-Statistical analysis in multi-objective optimization often yields complex data (p-values, effect sizes, distributions, quality profiles). Traditionally, these are returned as raw floats or dictionaries, forcing the user to manually print and interpret them. This creates boilerplate in scripts and hides the "didactic story" of the data.
+Statistical analysis in multi-objective optimization often yields complex data (p-values, effect sizes, distributions, quality profiles). Traditionally, these are returned as raw floats or dictionaries, forcing the user to manually print and interpret them. This creates boilerplate in scripts and hides the analytical story of the data.
 
 ## Decision
 
@@ -28,6 +28,6 @@ Every metric displayed in the narrative report must be accessible as a first-cla
 
 ## Consequences
 
-- **Didactic Value**: Example scripts become much cleaner, using `print(res.report())` instead of complex manual formatting.
+- **Analytical Value**: Example scripts become much cleaner, using `print(res.report())` instead of complex manual formatting.
 - **API Consistency**: Users can expect a similar "feeling" when using any statistical tool in MoeaBench.
 - **Efficiency**: Large experiments can return result objects quickly, with expensive secondary metrics deferred until needed.

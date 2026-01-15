@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 **Welcome to MoeaBench!**
 
-MoeaBench is a comprehensive Python framework designed for moping **Multi-objective Evolutionary Algorithms (MOEAs)**. It simplifies the process of defining optimization problems, running standard algorithms, and analyzing performance through metrics and visualizations.
+MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
 
 ---
 
@@ -22,7 +22,7 @@ MoeaBench is a comprehensive Python framework designed for moping **Multi-object
 *   **Visual Analysis**: Built-in 3D plotting (`spaceplot`) and convergence tracking (`timeplot`).
 
 ### **References & Provenance**
-MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[Benchmarks Guide](file:///home/monaco/Work/moeabench/docs/benchmarks.md)**:
+MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[Benchmarks Guide](benchmarks.md)**:
 *   **DTLZ**: Scalable test problems by Deb et al. (2002).
 *   **DPF**: Degenerate Pareto Front benchmarks by Zhen et al. (2018).
 
@@ -51,8 +51,8 @@ import MoeaBench as mb
 # 1. Create an Experiment container
 exp = mb.experiment()
 
-# 2. Configure the components
-exp.mop = mb.mops.DTLZ2(M=3)  # 3-Objective DTLZ2
+# 2. Specify the MOP and MOEA to be used, and configure their parameters.
+exp.mop = mb.mops.DTLZ2(M=3)  
 exp.moea = mb.moeas.NSGA3(population=100, generations=200)
 
 # 3. Run the experiment
@@ -81,15 +81,14 @@ Use shortcuts to calculate common metrics like Hypervolume (`hv`) or Inverted Ge
 
 ```python
 # Calculate Hypervolume for the entire run history (Experiment)
+# By default, it uses 'auto' mode (switches to Monte Carlo for M > 6)
 hv_matrix = mb.hv(exp)
 
-# Calculate for a single run
-hv_run = mb.hv(exp.last_run)
+# Forcing specific modes:
+hv_exact = mb.hv(exp, mode='exact')          # Absolute precision (WFG)
+hv_fast  = mb.hv(exp, mode='fast', n_samples=10000) # Fast approximation
 
-# Calculate for a single population (returns a float-like MetricMatrix)
-hv_val = mb.hv(exp.last_pop)
-
-# Calculate IGD (requires the mop to have a known Pareto Front)
+# Calculate IGD (requires the MOP to have a known Pareto Front)
 igd_matrix = mb.igd(exp)
 ```
 
@@ -137,7 +136,7 @@ algo = mb.moeas.NSGA3(
 ```
 
 ### **Reproducibility & Seed Management**
-Scientific moping requires control over randomness. MoeaBench handles seeds explicitly to ensure reproducibility.
+Scientific benchmarking requires control over randomness. MoeaBench handles seeds explicitly to ensure reproducibility.
 
 **Single Run**:
 When you define an algorithm, you set a **base seed**.
@@ -165,48 +164,53 @@ exp.run(repeat=5)
 ```
 
 ### **Custom Extensions**
-MoeaBench is fully extensible. You can define your own MOPs and MOEAs using standard object-oriented inheritance.
+MoeaBench is designed to be easily extensible. You can plug in custom problems and algorithms by following a simple interface contract.
 
 #### **1. Custom MOPs**
-To create a new problem, inherit from `mb.mops.BaseMOP` and implement the `evaluation` method.
+Inherit from `mb.mops.BaseMop` and implement the `evaluation` method:
 
 ```python
-import numpy as np
-import MoeaBench as mb
-
-class MyParabola(mb.mops.BaseMOP):
+class MyMOP(mb.mops.BaseMop):
     def __init__(self):
-        # M=2 objectives, N=1 variable
-        super().__init__(M=2, N=1, xl=-10.0, xu=10.0)
+        super().__init__(M=2, N=5) # 2 objectives, 5 variables
+        self.xl = np.zeros(5)      # Lower bounds
+        self.xu = np.ones(5)       # Upper bounds
 
-    def evaluation(self, X, n_ieq_constr=0):
-        # X shape: (pop_size, N_vars)
-        x = X[:, 0]
-        
-        # Define objectives
-        f1 = x**2
-        f2 = (x - 2)**2
-        
-        # Return dict with 'F' (objectives stack)
+    def evaluation(self, X):
+        # Must return a dictionary with the objectives matrix 'F'
+        f1 = np.sum(X**2, axis=1)
+        f2 = np.sum((X-1)**2, axis=1)
         return {'F': np.column_stack([f1, f2])}
 
-# Use it
-exp.mop = MyParabola()
+    # Optional: Analytical Reference Front for IGD/GD
+    def ps(self, n_points):
+        # Returns decision variables (Pareto Set) to be evaluated as the PF.
+        # This is used by mb.igd() and mb.spaceplot() to show the "true" front.
+        return np.column_stack([np.linspace(0, 1, n_points)] * self.N)
 ```
 
+**Guard Mechanisms**: Analytical fronts are sampled **lazily** (only when requested). If a metric like `mb.igd` is called but the MOP does not implement `ps()`, the tool will catch the error and fall back to the best-found front across all runs.
+
 #### **2. Custom MOEAs**
-To wrap a new algorithm, inherit from `mb.core.BaseMoea`. If using a Pymoo algorithm, you can use `mb.moeas.BaseMoeaWrapper`.
+To wrap an external algorithm or implement your own, implement the `solve` interface (which receives the MOP and termination criteria). If you are adapting a Pymoo algorithm, you can use the `BaseMoeaWrapper`:
 
 ```python
-from pymoo.algorithms.soo.nonconvex.ga import GA
+# Option A: Manual Implementation
+class MyAlgorithm(mb.moeas.MOEA):
+    def solve(self, mop, termination):
+        # mop: Provides .evaluation(X)
+        # termination: Stop condition
+        ...
+        return mb.Population(obj_matrix, var_matrix)
 
-class MyGA(mb.moeas.BaseMoeaWrapper):
-    def __init__(self, population=100, generations=200, seed=1):
-        # Pass the Pymoo class (GA) to the wrapper
-        super().__init__(GA, population, generations, seed)
+# Option B: Pymoo Wrapper
+from pymoo.algorithms.moo.nsga2 import NSGA2
 
-# Use it
-exp.moea = MyGA(population=50)
+class MyNSGA2(mb.moeas.BaseMoeaWrapper):
+    def __init__(self, **kwargs):
+        super().__init__(NSGA2, **kwargs)
+
+exp.moea = MyNSGA2(pop_size=50)
 ```
 
 ---
@@ -215,9 +219,9 @@ exp.moea = MyGA(population=50)
 
 ## **5. Statistical Analysis ("Smart Stats")**
 
-Comparing algorithms requires rigorous testing. MoeaBench provides the **"Smart Stats"** API to perform these comparisons with minimal boilerplate.
+Comparing algorithms requires systematic testing. MoeaBench provides the **"Smart Stats"** API to perform these comparisons with minimal boilerplate.
 
-### **Functional Comparisons**
+### **Functional Comparisons (mann_whitney)**
 You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.hv`) objects directly to statistical tests. The library automatically handles:
 1.  **Metric Calculation**: If an experiment is passed, it uses Hypervolume (`mb.hv`) by default.
 2.  **Global Reference**: For experiments, it automatically injects a shared reference point (Global Nadir).
@@ -264,7 +268,7 @@ mb.stats.mann_whitney(exp1, exp2, metric=lambda e: mb.hv(e, ref_point=[1.2, 1.2]
 mb.stats.mann_whitney(exp1, exp2, metric=mb.gdplus, ref=true_pf)
 ```
 
-### **Backward Compatibility**
+### **Polymorphic Arguments**
 "Smart Stats" still supports raw NumPy arrays if you have pre-extracted values.
 
 ```python
@@ -274,10 +278,10 @@ res = mb.stats.mann_whitney(v1, v2)
 ```
 
 ### **Rich Results and Narrative Reporting**
-All statistical tools in `mb.stats` return **Rich Result Objects**. These objects are designed to be both programmatically powerful and human-didactic.
+All statistical tools in `mb.stats` return **Rich Result Objects**. These objects are designed to be both programmatically powerful and human-centered.
 
 1.  **Lazy Evaluation**: Results are computationally efficient. Metrics (like A12 or Selection Pressure) are only calculated when you actually access the property.
-2.  **Narrative Reports**: Every result object has a `.report()` method that prints a formatted, didactic summary of the findings, including a diagnosis.
+2.  **Narrative Reports**: Every result object has a `.report()` method that prints a formatted summary of the findings, including a diagnosis.
 3.  **Programmatic Access**: Every value in the report is available as a property for use in your scripts.
 
 ```python
@@ -287,7 +291,7 @@ res = mb.stats.mann_whitney(exp1, exp2)
 if res.significant:
     print(f"Algorithm A is better with effect size {res.a12:.2f}")
 
-# Human-didactic report
+# Human-centered report
 print(res.report()) 
 ```
 

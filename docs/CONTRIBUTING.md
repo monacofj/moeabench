@@ -1,0 +1,57 @@
+<!--
+SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
+# Contributing to MoeaBench
+
+Thank you for your interest in MoeaBench! This document outlines the process for contributing to the framework and the coding standards we maintain to ensure quality and consistency.
+
+## 1. Contributor Workflow
+
+To ensure a smooth collaboration, we follow a structured workflow for all contributions:
+
+1.  **Open an Issue**: Before implementing any significant changes, please open an issue in the [official repository](https://github.com/opensciware/moeabench) to discuss your proposal.
+2.  **Fork**: Fork the repository if you haven't already.
+3.  **Branching**: Create a new branch with the following naming pattern:
+    *   `feature|fix/<issue-number>/<short-description>`
+    *   Example: `feature/42/add-new-metric`
+4.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](docs/design.md).
+5.  **Verify**: Ensure your changes are correct by running existing examples or adding new ones. Verification should include both `.py` and `.ipynb` parity.
+6.  **Pull Request**: Submit a Pull Request targeting the `main` branch. Briefly describe your changes and link the relevant issue.
+
+---
+
+## 2. Code Conventions
+
+We strive for high-quality, "Pythonic" code that is efficient and easy to maintain.
+
+### Style and Formatting
+- **PEP 8**: We strictly follow the PEP 8 style guide. Use tools like `black` or `ruff` to ensure consistent formatting.
+- **Pythonicness**: Avoid verbose, non-idiomatic code. Use list comprehensions, decorators, and context managers where appropriate.
+
+### Type Hints
+- **Mandatory Type Hints**: All public functions and classes MUST include type hints. 
+- Use the `typing` module (or built-in types for Python 3.10+) to ensure clarity and enable better static analysis for users.
+
+### Documentation (Docstrings)
+- **Standard Format**: Use the NumPy/Google docstring format.
+- **Clarity**: Docstrings should explain parameters, return values, and any exceptions raised. 
+- **The Analytical Tone**: Since MoeaBench is an analysis-driven tool, avoid overly cryptic language. Explain the "why" in complex functions.
+
+### Performance and Data Handling
+- **Vectorization**: This is our core technical style. Never iterate over populations in Python loops. Use **NumPy** vectorized operations exclusively.
+- **Smart Containers**: Use `SmartArray` for numerical data to ensure label consistency and easy plotting integration.
+
+### Developer Documentation
+Before contributing, please read the following technical resources to understand our core principles and evolution:
+- **[Design Philosophy](docs/design.md)**: Detailed explanation of our **Technical Storytelling** (Scientific Narrative) style, the Rich Result architecture, the `fooplot` convention, and mandatory vectorization.
+- **[Architecture Decision Records (ADRs)](docs/adr/)**: Registry of the fundamental design choices that shaped the framework.
+
+---
+
+## 3. Communication
+
+Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](AUTHORS) file for contact details.

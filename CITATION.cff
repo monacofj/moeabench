@@ -1,0 +1,29 @@
+cff-version: 1.2.0
+message: "If you use this software in your research, please cite the framework idea as follows:"
+authors:
+  - family-names: "Monaco"
+    given-names: "F. J."
+    affiliation: "University of São Paulo (ICMC-USP)"
+    email: "monaco@usp.br"
+  - family-names: "Delbem"
+    given-names: "A. C. B."
+    affiliation: "University of São Paulo (ICMC-USP)"
+    email: "acbd@icmc.usp.br"
+  - family-names: "Kuruvilla"
+    given-names: "Abraham"
+    affiliation: "University of São Paulo (FMRP-USP)"
+    email: "abraham@fmrp.usp.br"
+  - family-names: "Ferreira"
+    given-names: "F. F. S."
+    affiliation: "University of São Paulo (ICMC-USP)"
+    email: "fernandoferreira.silva42@usp.br"
+title: "MoeaBench: An Extensible Analytical Toolkit for Multi-Objective Evolutionary Algorithm Research"
+version: 0.1.0
+date-released: 2026-01-15
+url: "https://github.com/opensciware/moeabench"
+repository-code: "https://github.com/opensciware/moeabench"
+license: GPL-3.0-or-later
+abstract: >-
+  MoeaBench is a Python framework designed for multi-objective optimization research.
+  It combines a high-performance vectorized engine with a Technical Storytelling
+  (Scientific Narrative) style for algorithm diagnostics and visualization.
