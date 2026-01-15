@@ -256,30 +256,30 @@ Performs the Mann-Whitney U rank test.
     *   `metric` (*callable*): Metric function to use if experiments are passed (e.g., `mb.hv`, `mb.igd`).
     *   `gen` (*int*): Generation index to extract (default is `-1`, the final generation).
     *   `**kwargs`: Arguments passed directly to the `metric` function (e.g., `ref_point`).
-*   **Returns**: object with `.statistic` and `.pvalue`.
+*   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, `.significant`, and `.report()`.
 
 ### **`mb.stats.ks_test(data1, data2, alternative='two-sided', metric=mb.hv, gen=-1, **kwargs)`**
 Performs the Kolmogorov-Smirnov two-sample test for distribution shape differences.
 *   **Args**: Same as `mann_whitney`.
-*   **Returns**: object with `.statistic` and `.pvalue`.
+*   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, and `.report()`.
 
 ### **`mb.stats.a12(data1, data2, metric=mb.hv, gen=-1, **kwargs)`**
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
 *   **Args**: Same as `mann_whitney`.
-*   **Returns**: Float [0.0, 1.0].
+*   **Returns**: `SimpleStatsValue` (float-compatible) with `.value` and `.report()`.
 
-### **`mb.stats.stratification(data, gen=-1)`**
-Performs **Population Stratification** (Dominance Layer analysis).
+### **`mb.stats.strata(data, gen=-1)`**
+Performs **Population Strata** (Dominance Layer analysis).
 *   **Args**:
     *   `data`: `Experiment`, `Run`, or `Population`.
     *   `gen` (*int*): Generation index.
-*   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure()`, and `.plot()`.
+*   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure`, `.quality_by()`, and `.report()`.
 
 ### **`mb.stats.emd(strat1, strat2)`**
-Computes the **Earth Mover's Distance** (Wasserstein Distance) between two stratification profiles. 
+Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strata profiles. 
 
-### **`mb.stats.stratification_plot(*results, labels=None, title=None)`**
-Generates a **grouped bar chart** to compare multiple stratification profiles.
+### **`mb.stats.strataplot(*results, labels=None, title=None)`**
+Generates a grouped bar chart comparing multiple strata results.
 
 ### **`mb.rankplot(*results, labels=None, title=None, metric=None)`**
 Generates a **Floating Rank Quality Profile**.

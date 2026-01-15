@@ -1,15 +1,16 @@
-# ADR 0008: Population Stratification and Dominance Layers
+# ADR 0008: Population Strata (Rank Distribution)
 
 **Status**: Accepted  
 **Date**: 2026-01-14
 
 ## Context
 
-Typical Multi-Objective Evolutionary Algorithm (MOEA) analysis focuses almost exclusively on the final Pareto Front (Rank 1). While Hypervolume and IGD provide a snapshot of success, they often fail to explain *why* an algorithm converged or stalled. In many-objective scenarios, or when selection pressure is unbalanced, the internal "health" of the population—how individuals are distributed across sub-Pareto layers—remains a black box.
+Typical Multi-Objective Evolutionary Algorithm (MOEA) analysis focuses almost exclusively on the final Pareto Front (Rank 1). While Hypervolume and IGD provide a snapshot of success, they often fail to explain *why* an algorithm converged or stalled. In many-objective scenarios, or when selection pressure is unbalanced, the internal "health"We will implement a `strata` diagnostic that analyzes the distribution of individuals across all non-domination layers.
+—remains a black box.
 
-## Decision: The "Stratification" Narrative
+## Decision: The "Strata" Narrative
 
-We decided to implement **Population Stratification** as a first-class diagnostic tool in concentrated in a dedicated module (`mb.stats.stratification`). This moves our analysis paradigm from "Surface Performance" to "Structural Depth."
+We decided to implement **Population Strata** as a first-class diagnostic tool in concentrated in a dedicated module (`mb.stats.strata`). This moves our analysis paradigm from "Surface Performance" to "Structural Depth."
 
 ### 1. The "Onion Peeling" Core
 To support this, we extended our Non-Dominated Sorting (NDS) logic. Beyond finding the first front, we implemented a recursive "layer-peeling" method (`Population.stratify()`). 

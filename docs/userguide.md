@@ -273,28 +273,45 @@ v2 = [0.75, 0.74, 0.76]
 res = mb.stats.mann_whitney(v1, v2)
 ```
 
+### **Rich Results and Narrative Reporting**
+All statistical tools in `mb.stats` return **Rich Result Objects**. These objects are designed to be both programmatically powerful and human-didactic.
+
+1.  **Lazy Evaluation**: Results are computationally efficient. Metrics (like A12 or Selection Pressure) are only calculated when you actually access the property.
+2.  **Narrative Reports**: Every result object has a `.report()` method that prints a formatted, didactic summary of the findings, including a diagnosis.
+3.  **Programmatic Access**: Every value in the report is available as a property for use in your scripts.
+
+```python
+res = mb.stats.mann_whitney(exp1, exp2)
+
+# Programmatic use
+if res.significant:
+    print(f"Algorithm A is better with effect size {res.a12:.2f}")
+
+# Human-didactic report
+print(res.report()) 
+```
+
 For a full comparison script, see `examples/example-06.py`.
 
 ## **6. Advanced Diagnostics**
 
 MoeaBench provides deep insights into the internal "health" of your algorithm's search profile.
 
-### **Population Stratification**
-Use `mb.stratification` to analyze the distribution of individuals across all dominance ranks (layers). This helps you quantify **Selection Pressure** and detect when an algorithm has stalled or lost diversity.
+### Population Strata
+Use `mb.stats.strata` to analyze the distribution of individuals across all dominance ranks (layers). This helps you quantify **Selection Pressure** and detect when an algorithm has stalled or lost diversity.
 
 ```python
 # Analyze the rank distribution of an experiment
-result = mb.stratification(exp)
+result = mb.stats.strata(exp)
 
-# Check the selection pressure (decay rate)
-print(f"Selection Pressure: {result.selection_pressure():.2f}")
+# Acesso programático (Lazy)
+pressure = result.selection_pressure # Calculado apenas aqui
 
-# Compare two algorithms (EMD distance) - Symmetric API
-diff = mb.stats.emd(strat1, strat2)
-print(f"Structural Difference: {diff:.2f}")
+# Relatório narrativo (Didático)
+print(result.report())
 
 # Visualize the profile
-result.plot(title="Dominance Layers")
+mb.stats.strataplot(result, title="Dominance Layers")
 ```
 
 ### **Advanced Diagnosis: Floating Rank Profile**

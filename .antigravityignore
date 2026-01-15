@@ -16,7 +16,7 @@ LICENSES/
 
 # Data and Artifacts
 analysis/
-*.ipynb
+# *.ipynb
 *.csv
 *.json
 *.log
