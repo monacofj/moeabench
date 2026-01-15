@@ -13,7 +13,7 @@ Thank you for your interest in MoeaBench! This document outlines the process for
 
 To ensure a smooth collaboration, we follow a structured workflow for all contributions:
 
-1.  **Open an Issue**: Before implementing any significant changes, please open an issue in the [official repository](https://github.com/opensciware/moeabench) to discuss your proposal.
+1.  **Open an Issue**: Before implementing any significant changes, please open an issue in the [official repository](https://github.com/moonacofj/moeabench) to discuss your proposal.
 2.  **Fork**: Fork the repository if you haven't already.
 3.  **Branching**: Create a new branch with the following naming pattern:
     *   `feature|fix/<issue-number>/<short-description>`

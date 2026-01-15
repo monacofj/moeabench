@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # MoeaBench - Multi-objective Evolutionary Algorithm Benchmark
 
-[![REUSE status](https://api.reuse.software/badge/github.com/opensciware/moeabench)](https://api.reuse.software/info/github.com/opensciware/moeabench)
+[![REUSE status](https://api.reuse.software/badge/github.com/moonacofj/moeabench)](https://api.reuse.software/info/github.com/moonacofj/moeabench)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
