@@ -12,7 +12,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-01-15
+
+### Added
+- **Smart Hypervolume**: Implementation of automatic Monte Carlo approximation for high-dimensional problems ($M > 6$), with vectorized NumPy computation.
+- **Rich Stats Results**: New structured output for statistical tests (`mb.stats`) featuring lazy evaluation of effect sizes (A12, structural EMD) and narrative reporting via `.report()`.
+- **Mirror Parity Architecture**: Unified plotting functions (`spaceplot`, `timeplot`) with environment-aware `mode='auto'` (uses Plotly in notebooks and Matplotlib locally).
+- **Environment Awareness**: Automated configuration for Google Colab and interactive backends.
+
+### Changed
+- **Project Identity**: Rebranded as an **Extensible Analytical Toolkit**, adopting a humble, technically-focused tone across all documentation (`design.md`, `README.md`, `userguide.md`).
+- **Standardized Examples**: Standardized all notebook examples with direct `pip install` commands and removed redundant `mb_path` imports.
+- **Repository Migration**: Moved official repository to `https://github.com/monacofj/moeabench`.
+- **Zen Cleanup**: Simplified all example scripts by removing redundant `mode='static'` manual overrides.
+
+### Fixed
+- **Robustness**: Implemented fallback guard mechanisms for metrics (IGD/GD) when analytical fronts are missing from custom MOPs.
+- **Plotting Bug**: Fixed `TypeError` in `mb.timeplot`/`plot_matrix` when handling custom titles and restored missing mean calculation logic.
+- **Packaging**: Corrected `pyproject.toml` to use automatic sub-package discovery, fixing `ModuleNotFoundError` in cloud environments.
+- **Interactive Experience**: Improved Plotly hover tooltips to show exact coordinates and configured reliable renderers for Jupyter/Colab.
 
 ### Added
 - **New Directory Structure**: `core/`, `metrics/`, `plotting/` packages established.
