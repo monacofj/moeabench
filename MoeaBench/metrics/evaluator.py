@@ -334,11 +334,22 @@ def igdplus(exp, ref=None):
             pass
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
-def plot_matrix(metric_matrices, mode='interactive', show_bounds=False, title=None, **kwargs):
+def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
     """
     Plots a list of MetricMatrix objects.
-    mode: 'interactive' (Plotly) or 'static' (Matplotlib)
+    mode: 'auto' (detects environment), 'interactive' (Plotly) or 'static' (Matplotlib)
     """
+    # Environment detection for 'auto' mode
+    if mode == 'auto':
+        try:
+            from IPython import get_ipython
+            if get_ipython() is not None:
+                mode = 'interactive'
+            else:
+                mode = 'static'
+        except (ImportError, NameError):
+            mode = 'static'
+            
     if not isinstance(metric_matrices, (list, tuple)):
         metric_matrices = [metric_matrices]
 
