@@ -107,84 +107,110 @@ def timeplot(*args, **kwargs):
     from ..metrics.evaluator import plot_matrix
     plot_matrix(args, **kwargs)
 
-def polarplot(*args, labels=None, title=None):
+def rankplot(*args, labels=None, title=None, metric=None, height_scale=0.5, **kwargs):
     """
-    Plots Rank-Quality vectors in a 'Polar Fan' view.
+    Plots the 'Floating Rank' diagnostic with global normalization.
     
-    This diagnostic reveals the algorithm's Search DNA by mapping:
-    - Theta (Angle): Structural Maturity (PMI). Small angle = mature/landed.
-    - Rho (Magnitude): Global Deficiency (GDI). Length = distance from origin.
-    """
-    import matplotlib.pyplot as plt
-    
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-    
-    for i, res in enumerate(args):
-        # Support StratificationResult 
-        if hasattr(res, 'quality_profile'):
-            q = res.quality_profile()
-            ranks = np.arange(1, len(q) + 1)
-            
-            # (Rank, Quality) -> Polar
-            theta = np.arctan2(q, ranks)
-            rho = np.sqrt(ranks**2 + q**2)
-            
-            lbl = labels[i] if labels and i < len(labels) else getattr(res.source, 'name', f"Series {i+1}")
-            
-            # Plot the "Fan" (vectors from center)
-            color = plt.cm.tab10(i)
-            for t_val, r_val in zip(theta, rho):
-                ax.plot([t_val, t_val], [0, r_val], color=color, alpha=0.5)
-                ax.scatter(t_val, r_val, color=color, label=lbl if t_val == theta[0] else "")
-    
-    ax.set_theta_zero_location("E") # East is Rank axis (Quality=0)
-    ax.set_theta_direction(1) # CCW
-    ax.set_thetamin(0)
-    ax.set_thetamax(90)
-    
-    ax.set_xlabel("\nMaturity Angle (PMI)")
-    ax.set_title(title if title else "Polar Dominance Phase Analysis")
-    ax.legend()
-    
-    return ax
-
-def profileplot(*args, labels=None, title=None, show_all=True):
-    """
-    Plots the Rank-Quality Profile in Cartesian coordinates.
+    Each dominance rank is represented by a vertical bar:
+    - Vertical Position (Center): Measured Quality (e.g. Hypervolume).
+    - Bar Height: Population Density (normalized count).
     
     Args:
-        *args: One or more StratificationResult objects.
-        labels (list): Optional labels for the legend.
-        title (str): Title of the plot.
-        show_all (bool): If True, plots all individual solutions as a scatter.
-                        If False, plots only the average quality per rank.
+        *args: StratificationResult objects.
+        labels (list): Series labels.
+        title (str): Plot title.
+        metric: Callable metric function (default: mb.hypervolume).
+        height_scale (float): Scaling factor for bar heights.
+        **kwargs: Passed to the metric function.
     """
     import matplotlib.pyplot as plt
+    from ..metrics.evaluator import hypervolume
     
+    if metric is None:
+        metric = hypervolume
+        
     fig, ax = plt.subplots()
     
+    # 0. Global Foundation: Collect all objectives to establish shared bounds
+    all_objs_list = [res.objectives for res in args if hasattr(res, 'objectives') and res.objectives is not None]
+    global_ref = np.vstack(all_objs_list) if all_objs_list else None
+    
+    # 1. Anchor Detection: Performance of the best experiment as 1.0 (Quality Scale)
+    total_qualities = []
+    for res in args:
+        if hasattr(res, 'objectives') and res.objectives is not None:
+            val = metric(res.objectives, ref=global_ref, **kwargs)
+            total_qualities.append(float(val))
+    anchor = max(total_qualities) if total_qualities else 1.0
+
+    # 2. Peak Normalization: Find the most crowded rank across all series (Density Scale)
+    # This ensures that the 'Search Effort' is visible regardless of population size.
+    global_max_count = 0
+    for res in args:
+        if hasattr(res, 'ranks'):
+            counts = res.frequencies()
+            if len(counts) > 0:
+                global_max_count = max(global_max_count, np.max(counts))
+    if global_max_count == 0: global_max_count = 1
+
+    n_series = len(args)
+    width = 0.8 / n_series
+    
     for i, res in enumerate(args):
-        if not hasattr(res, 'rank_array') or res.rank_array is None:
-            continue
-            
+        if not hasattr(res, 'ranks'): continue
+        
         lbl = labels[i] if labels and i < len(labels) else getattr(res.source, 'name', f"Series {i+1}")
         color = plt.cm.tab10(i)
         
-        # 1. Individual Solutions (Scatter)
-        if show_all:
-            norms = np.linalg.norm(res.objectives, axis=1)
-            ax.scatter(res.rank_array, norms, color=color, alpha=0.3, s=10, label=lbl)
-            
-        # 2. Average Profile (Line)
-        q = res.quality_profile()
+        # 3. Map: Calculate Quality per Rank using global foundation
+        def _scalar_metric(objs, **m_kwargs):
+            m_val = metric(objs, ref=global_ref, **m_kwargs)
+            return float(m_val)
+                
+        # 4. Scale: Apply relative anchor
+        q_raw = res.quality_by(_scalar_metric, **kwargs)
+        q = q_raw / anchor
+        
+        # 5. Density: Apply Peak Normalization
+        counts = res.frequencies()
+        # Bar height is normalized relative to the global max count
+        norm_heights = (counts / global_max_count) * height_scale
+        
         ranks = np.arange(1, len(q) + 1)
-        ax.plot(ranks, q, marker='o', color=color, linewidth=2, 
-                label=f"{lbl} (Avg)" if show_all else lbl)
+        
+        # 6. Plot: Floating Bars
+        offset = (i - (n_series - 1) / 2) * width
+        bars = ax.bar(ranks + offset, norm_heights, bottom=q - norm_heights/2, 
+                      width=width, color=color, alpha=0.7, label=lbl, zorder=3)
+        
+        # 7. Labels: Add Floating Text for exact counts and quality
+        # We try to determine the 'representative' population size to show real counts.
+        n_runs = len(res.raw) if hasattr(res, 'raw') and res.raw is not None else 1
+        pop_size = len(res.objectives) / n_runs if res.objectives is not None else 1
+        
+        for r_idx, (rank_val, quality_val, count_freq) in enumerate(zip(ranks, q, counts)):
+            if np.isnan(quality_val): continue
+            
+            # Show avg count per run - very compact format
+            real_n = int(round(count_freq * pop_size))
+            txt = f"{real_n}\n{quality_val:.2f}"
+            
+            # Position text inside or next to the bar
+            ax.text(rank_val + offset, quality_val, txt, 
+                    ha='center', va='center', fontsize=7, color='black', 
+                    weight='bold', zorder=5)
 
-    ax.set_xlabel("Dominance Rank (1=Pareto Front)")
-    ax.set_ylabel("Quality (Euclidean Norm)")
-    ax.set_title(title if title else "Rank-Quality Profile")
+    max_r = max(res.max_rank for res in args if hasattr(res, 'max_rank'))
+    ax.set_xticks(range(1, max_r + 1))
+    ax.set_xlabel("Dominance Rank")
+    ax.set_ylabel(f"Relative Strategy Efficiency ({metric.__name__ if hasattr(metric, '__name__') else 'Value'})")
+    ax.set_title(title if title else "Floating Rank Profile (Relative Visibility)")
     ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, axis='y', alpha=0.3, zorder=0)
+    
+    # Dynamic Limit: Ensure bars + labels aren't clipped
+    ax.set_ylim(bottom=0)
+    _, top_curr = ax.get_ylim()
+    ax.set_ylim(top=max(1.15, top_curr + 0.15))
     
     return ax

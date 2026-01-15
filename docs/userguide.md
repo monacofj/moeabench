@@ -233,6 +233,11 @@ hv2 = mb.hv(exp2)
 res = mb.stats.mann_whitney(hv1, hv2) # Automically extracts .gens(-1)
 ```
 
+> [!TIP]
+> **Performance Tip**: Calculating metrics like Hypervolume or IGD for large experiments can be computationally expensive.
+> **Smart Stats** are purely functional and do *not* cache results (to ensure accuracy in changing contexts).
+> **Best Practice**: Assign metric results to variables (`hv = mb.hv(exp)`) and reuse them, rather than calling `mb.hv(exp)` repeatedly.
+
 ### **Detecting Shape Differences (`ks_test`)**
 While Mann-Whitney tells you if one algorithm is generally "better," the **Kolmogorov-Smirnov (KS)** test identifies if the distributions have different **shapes**. 
 
@@ -292,17 +297,15 @@ print(f"Structural Difference: {diff:.2f}")
 result.plot(title="Dominance Layers")
 ```
 
-### **Advanced Diagnosis: Polar Phase Analysis**
-Beyond simple distributions, MoeaBench allows you to inspect the **Phase Space** of the population. By treating each rank as a vector $(\text{Rank}, \text{Quality})$, we can calculate:
+### **Advanced Diagnosis: Floating Rank Profile**
+Beyond simple distributions, MoeaBench allows you to inspect the **Floating Rank Profile**. Use `mb.rankplot(strat1, strat2)` to visualize the quality and density of each dominance level.
 
-*   **Global Deficiency Index (GDI)**: The magnitude $\rho$. Represents the 'Total Search Cost'.
-*   **Population Maturity Index (PMI)**: The angle $\theta$. Measures efficiency. A small angle indicates a 'landed', mature search where even laggards have high quality.
+*   **Vertical Position**: Represents the Quality (Default: `mb.hypervolume`).
+*   **Bar Height**: Represents the Population Density (how many solutions are in that rank).
 
-MoeaBench provides two complementary views for this analysis:
-*   **`mb.polarplot(strat1, strat2)`**: Visualizes the **Search DNA** as a polar fan (Angle vs Magnitude).
-*   **`mb.profileplot(strat1, strat2)`**: Visualizes the **Rank-Quality Profile** in Cartesian coordinates (Rank vs Norm), showing the raw trend and solution spread.
+This allows you to see both **Convergence** (is the bar high?) and **Search Effort** (is the bar tall?) at a single glance.
 
-### **9. System Utilities (`mb.system`)**
+### **8. System Utilities (`mb.system`)**
 
 MoeaBench includes a `system` module to monitor your environment and hardware.
 

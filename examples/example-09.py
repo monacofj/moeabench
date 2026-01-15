@@ -6,10 +6,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 09: Polar Dominance Phase Analysis (Search DNA).
+Example 09: Rank-Quality Profile Analysis.
 
-This example demonstrates the advanced 'Polar Phase' diagnostics to 
-uncover the structural health and maturity of an algorithm's population.
+This example demonstrates how to visualize the objective quality gradient 
+across population ranks, revealing the internal anatomy of the search.
 """
 
 import mb_path
@@ -42,36 +42,54 @@ SNAPSHOT_GEN = 5
 strat_nsga2 = mb.stratification(exp_nsga2, gen=SNAPSHOT_GEN)
 strat_spea2 = mb.stratification(exp_spea2, gen=SNAPSHOT_GEN)
 
-# 4. Phase Space Metrics (GDI: Deficiency | PMI: Maturity)
-print(f"\n--- Polar Phase Analysis (at Gen {SNAPSHOT_GEN}) ---")
-print(f"GDI (Global Deficiency Index): Measures total search cost (Magnitude Rho)")
-print(f"PMI (Population Maturity Index): Measures efficiency/landing (Angle Theta)")
+# 4. Phase Space Metrics
+print(f"\n--- Rank-Quality Analysis (at Gen {SNAPSHOT_GEN}) ---")
 print("-" * 50)
-print(f"{exp_nsga2.name:>7}: GDI={strat_nsga2.gdi:.2f}, PMI={strat_nsga2.pmi:.2f}")
-print(f"{exp_spea2.name:>7}: GDI={strat_spea2.gdi:.2f}, PMI={strat_spea2.pmi:.2f}")
+print(f"Analyzing {exp_nsga2.name} and {exp_spea2.name} profiles...")
 
-# 5. Visualize the Polar Phase Fan
-# This plot maps Rank vs Quality into a vector fan from the origin.
-print("\nPlotting Phase Fan and Cartesian Profile... (Close plots to finish)")
-mb.polarplot(strat_nsga2, strat_spea2, title=f"Dominance Phase Fan (Gen {SNAPSHOT_GEN})")
-
-# 6. Cartesian Rank-Quality Profile (Scatter + Averages)
-# X = Rank, Y = Quality (Norm)
-mb.profileplot(strat_nsga2, strat_spea2, title=f"Rank-Quality Profile (Gen {SNAPSHOT_GEN})")
+# 5. Floating Rank Quality Profile
+# X = Rank, Y = Quality (Center)
+# Bar Height = Solution Density
+print("\nPlotting Rank Profile... (Close plot to finish)")
+mb.rankplot(strat_nsga2, strat_spea2, title=f"Floating Rank Quality (Gen {SNAPSHOT_GEN})")
 
 plt.show()
 
 # --- Interpretation of the Results ---
 #
-# 1. Polar Fan (mb.polarplot):
-#    - Focuses on "Search DNA" and Structural Maturity.
-#    - Reveals if the algorithm is "Landed" (Mature) or "Floating" (Immature).
+# 1. Floating Rank Plot (mb.rankplot):
+#    - Position (Center): Shows the Quality of the rank (Default: Hypervolume).
+#    - Height (Tall/Short): Shows how many solutions are "working" at that level.
 #
-# 2. Cartesian Profile (mb.profileplot):
-#    - Focuses on the raw "Gradient" of quality across ranks.
-#    - The scatter points show the individual spread, while the average line 
-#      highlights the trend (the "cliff" effect).
+# 2. Algorithm Archetypes:
+#    - Collective Generalist (e.g. NSGA-II): Usually a few TALL bars at HIGH quality.
+#    - Elite Specialist (e.g. SPEA2): Usually a SHORT bar at Rank 1 (Top Elite), 
+#      followed by a trail of lower, scattered bars.
 #
-# 3. Algorithm Archetypes:
-#    - NSGA-II: Usually a dense, shallow group (Low GDI, Low PMI).
-#    - SPEA2:   Usually a wider, steeper spread (High GDI, High PMI).
+# 3. Diagnostic Interpretation: Layer Proximity and Search Maturity
+#
+# A frequent observation in the Floating Rank Profile is the presence of multiple 
+# early ranks (Rank 1, 2, 3...) clustered near the 1.0 Relative Efficiency ceiling.
+# This phenomenon reveals a key aspect of the "Population Geology":
+#
+# A. Spatial Overlap (The 'Onion' Effect):
+# In a maturing search, the dominance layers are not distant islands; they are 
+# thin, tightly packed "sheets" in objective space. Because Hypervolume measures 
+# the region bounded by a reference point, the Rank 2 layer—which sits mere 
+# fractions of a unit behind Rank 1—covers nearly the same objective territory. 
+# Mathematically, the "Utility Gap" between these first layers is minimal.
+#
+# B. High Selection Pressure:
+# When the first several ranks act as high-quality "platforms," it indicates 
+# that the algorithm has successfully compressed the population towards the front. 
+# There is a high concentration of competitive solutions, meaning that even 
+# if the absolute "Best" (Rank 1) were lost, the "Successor" (Rank 2) is 
+# functionally equivalent in terms of search coverage.
+#
+# C. Quality Degradation:
+# The true "Diagnostic Signal" is found where the quality begins to drop. 
+# A sudden cliff in HV values reveals the boundary between the active search 
+# frontier and the "stale" or "exploratory" individuals of the population.
+#
+# In summary, the proximity of early ranks to 1.0 is not a redundancy of data, 
+# but a visual proof of search maturity and structural robustness.

@@ -281,21 +281,14 @@ Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strat
 ### **`mb.stats.stratification_plot(*results, labels=None, title=None)`**
 Generates a **grouped bar chart** to compare multiple stratification profiles.
 
-### **`mb.polarplot(*results, labels=None, title=None)`**
-Generates a **Polar Phase Analysis** fan. This plot maps each Pareto layer to a vector where:
-*   **Theta ($\theta$)**: Maturity Angle. Measures how 'landed' a rank is relative to its hierarchy.
-*   **Rho ($\rho$)**: Deficiency Magnitude. Measures the 'Total Search Cost' from the origin.
-
-### **`mb.profileplot(*results, labels=None, title=None, show_all=True)`**
-Generates a **Cartesian Rank-Quality Profile**.
-*   **X-axis**: Dominance Rank.
-*   **Y-axis**: Average Quality (Euclidean Norm).
+### **`mb.rankplot(*results, labels=None, title=None, metric=None)`**
+Generates a **Floating Rank Quality Profile**.
+*   **Geometry**: Each dominance rank is represented by a vertical bar.
+*   **Vertical Position (Center)**: Set by the `metric` function (default: `mb.hypervolume`).
+*   **Bar Height**: Represents the solution density (normalized count) in that rank.
 *   **Args**:
-    *   `show_all` (*bool*): If `True` (default), plots individual solutions as translucent scatter points behind the average trend line.
-
-#### **Polar Metrics** (Available on `StratificationResult`):
-*   **`.gdi`**: Global Deficiency Index (Average $\rho$).
-*   **`.pmi`**: Population Maturity Index (Average $\theta$).
+    *   `metric` (*callable*): A function that takes an objective matrix and returns a quality score.
+    *   `height_scale` (*float*): Multiplier to adjust the thickness of the floating bars.
 
 ---
 

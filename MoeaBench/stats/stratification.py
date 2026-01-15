@@ -41,43 +41,33 @@ class StratificationResult:
         Returns:
             np.ndarray: Vector of average norms for each rank [1, 2, ...].
         """
+        return self.quality_by(lambda x: np.mean(np.linalg.norm(x, axis=1)))
+
+    def quality_by(self, metric_fn, **kwargs) -> np.ndarray:
+        """
+        Generic 'Map-Reduce' quality calculator per rank.
+        
+        Args:
+            metric_fn: Callable that takes objective matrix (N x M) 
+                       and returns a scalar quality measure.
+            **kwargs: Passed to metric_fn.
+            
+        Returns:
+            np.ndarray: Metric value for each rank [1, 2, ...].
+        """
         if self.objectives is None or self.rank_array is None:
             return np.array([])
             
         m = self.max_rank
-        q = np.zeros(m)
-        norms = np.linalg.norm(self.objectives, axis=1)
+        scores = np.zeros(m)
         
         for r in range(1, m + 1):
             mask = (self.rank_array == r)
             if np.any(mask):
-                q[r-1] = np.mean(norms[mask])
+                scores[r-1] = metric_fn(self.objectives[mask], **kwargs)
             else:
-                q[r-1] = np.nan
-        return q
-
-    @property
-    def gdi(self) -> float:
-        """
-        Global Deficiency Index (GDI).
-        The average magnitude (rho) of Rank-Quality vectors.
-        """
-        q = self.quality_profile()
-        ranks = np.arange(1, len(q) + 1)
-        rho = np.sqrt(ranks**2 + q**2)
-        return float(np.nanmean(rho))
-
-    @property
-    def pmi(self) -> float:
-        """
-        Population Maturity Index (PMI).
-        The average polar angle (theta) of Rank-Quality vectors.
-        A smaller angle indicates a more 'compressed' (mature) search.
-        """
-        q = self.quality_profile()
-        ranks = np.arange(1, len(q) + 1)
-        theta = np.arctan2(q, ranks)
-        return float(np.nanmean(theta))
+                scores[r-1] = np.nan
+        return scores
 
     def selection_pressure(self) -> float:
         """
@@ -104,7 +94,7 @@ class StratificationResult:
 
     def __repr__(self) -> str:
         name = getattr(self.source, 'name', 'Population')
-        return f"<StratificationResult source='{name}' ranks={self.max_rank} GDI={self.gdi:.2f} PMI={self.pmi:.2f}>"
+        return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
 
 def stratification(data, gen=-1):
     """
