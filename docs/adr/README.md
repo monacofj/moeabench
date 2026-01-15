@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Architecture Decision Records (ADR)
 
 This directory contains records of the key architectural decisions made during the evolution of MoeaBench.
