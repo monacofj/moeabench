@@ -5,57 +5,60 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# This is a more complete example of using MoeaBench
-# that illustrates how to work with multiple runs.
-# 
-# Notes: parameters were set for faster execution in detriment of quality
-
+"""
+Example 04: Multi-run Reliability and Stability
+-----------------------------------------------
+This example demonstrates how to handle stochastic variability by running 
+an experiment multiple times (multi-run) and visualizing the statistical 
+stability of the convergence.
+"""
 
 import mb_path
 from MoeaBench import mb
 
 def main():
-    
-    # 1) Create and configure an experiment
-
+    # 1. Setup: Multiple runs for NSGA-III
     exp1 = mb.experiment()
+    exp1.name = "NSGA-III (5 runs)"
+    exp1.mop = mb.mops.DTLZ2(M=3)
+    exp1.moea = mb.moeas.NSGA3(population=50, generations=50)
 
-    exp1.name = "Experiment 1"    # You can name experiments for easier identification.
-
-    exp1.mop = mb.mops.DTLZ2()
-    exp1.moea      = mb.moeas.NSGA3(population=50, generations=50)
+    # 2. Execution: Run 5 times with different seeds
+    # Running multiple times allows us to calculate confidence intervals.
+    print(f"Executing {exp1.name}...")
+    exp1.run(repeat=5)
     
-    # 2) Run the experiment several times, each time with different random seed.
-
-    exp1.run(5)  # Number of runs set to 5 for faster execution.
-    
-    # 3) Calculate the hypervolume of each run of the experiment.
-    #    This will return a matrix where each row is a generation and 
-    #    each column is a run (seed).
-
+    # 3. Aggregated Convergence (Statistical Timeplot)
+    # hv1 contains:
+    #             MetricMatrix    historical hypervolume for ALL runs
     hv1 = mb.hv(exp1)
 
-    # 4) Plot the hypervolume. The plot will show the mean hypervolume of each 
-    # run within a shadow of dispersion (standard deviation), along with the 
-    # contour of the best and the worst value of the hypervolume.
-    
-    mb.timeplot(hv1, mode='static', show_bounds=True)
+    # The timeplot automatically computes mean and standard deviation
+    print("Plotting statistical convergence...")
+    mb.timeplot(hv1, title="SStability Analysis (5-run HV)")
 
-    # 5) Plot the final pareto front.
-    #
-    # Note: if you write mb.spaceplot(exp1), that will plot the last run 
-    # of the experiment --- since exp1 is treated as exp1.front().
-    # This design choice highlights the use of exp1.superfront(), which
-    # provides the non-dominated solutions considering all runs combined.
+    # 4. Aggregated Quality (Superfront)
+    # The 'superfront' provides the combined non-dominated solutions 
+    # considering the discovery of all runs.
+    print("Plotting Superfront...")
+    mb.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)")
 
-    mb.spaceplot(exp1.superfront(), mode='static')
-
-    # 6) If you want to plot all runs independently (to check stability),
-    # you can use all_fronts(), which returns a list of individual fronts.
-    
-    mb.spaceplot(*exp1.all_fronts(), mode='static')
-
-
+    # 5. Stability Inspection (All Fronts)
+    # We can also plot each run's final front independently.
+    print("Comparing individual run stability...")
+    mb.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts")
 
 if __name__ == "__main__":
     main()
+
+# --- Interpretation ---
+#
+# Multi-objective optimization is inherently stochastic. A single run might be 
+# lucky or unlucky. By running multiple times (repeat=5), we get a 
+# "silhouette" of the algorithm's performance.
+#
+# The 'timeplot' dispersion shadow (mean +/- std) shows the reliability. 
+# A thin shadow indicates high consistency.
+#
+# The 'superfront' is the definitive result for the user: it's the best 
+# knowledge we have about the problem after several independent search attempts.

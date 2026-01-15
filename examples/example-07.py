@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 # SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 # SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
 #
@@ -9,73 +10,77 @@ Example 07: Empirical Attainment Functions (EAF)
 ----------------------------------------------
 This example demonstrates how to use attainment surfaces to analyze 
 the statistical distribution of Pareto fronts across multiple runs.
-It visualizes the "Expected" front (50%) along with the 
-"Optimistic" (5%) and "Pessimistic" (95%) boundaries.
+It visualizes the reliability bands of a search process.
 """
 
 import mb_path
-import MoeaBench as mb
+from MoeaBench import mb
 
-import numpy as np
-
-def run_example():
-    print("--- Empirical Attainment Functions Example ---")
+def main():
+    print("--- Empirical Attainment Workshop ---\n")
     
-    # Setup Problem: 2D for clear staircase visualization
-    mop = mb.mops.DTLZ2(M=2)
-    pop_size = 52
-    gens = 100
-    repeats = 10  # Multiple runs to build the distribution
+    # 1. Setup: 2D problem for clear staircase visualization
+    mop1 = mb.mops.DTLZ2(M=2)
+    repeats = 10 
     
-    print(f"Running {repeats} repetitions for NSGA2...")
-    
-    # 1. Run NSGA2
     exp1 = mb.experiment()
-    exp1.name = "NSGA2"
-    exp1.mop = mop
-    exp1.moea = mb.moeas.NSGA2deap(population=pop_size, generations=gens)
+    exp1.name = "NSGA-II"
+    exp1.mop = mop1
+    exp1.moea = mb.moeas.NSGA2deap(population=50, generations=100)
+
+    print(f"Executing {exp1.name} ({repeats} runs)...")
     exp1.run(repeat=repeats)
     
-    # 2. Calculate Attainment Surfaces
-    print("Calculating Attainment Surfaces (5%, 50%, 95%)...")
+    # 2. Attainment Surfaces (Reliability Bands)
+    print("Calculating Attainment Surfaces (Optimistic, Median, Pessimistic)...")
     
-    # Median attainment (Expected performance)
-    median = mb.stats.attainment(exp1, level=0.5)
-    median.name = "NSGA2 (Median 50%)"
+    # surf1 contains:
+    #             .level           attainment level (0.5 = median)
+    #             .objectives      surface coordinates
+    #             .volume()        attained volume
+    surf1 = mb.stats.attainment(exp1, level=0.1) # Best 10%
+    surf1.name = f"{exp1.name} (10% Best)"
     
-    # Optimistic attainment (Best 5% cases)
-    best = mb.stats.attainment(exp1, level=0.1)
-    best.name = "NSGA2 (Best 10%)"
+    surf2 = mb.stats.attainment(exp1, level=0.5) # Median
+    surf2.name = f"{exp1.name} (Median)"
     
-    # Pessimistic attainment (Worst 95% cases)
-    worst = mb.stats.attainment(exp1, level=0.9)
-    worst.name = "NSGA2 (Worst 90%)"
+    surf3 = mb.stats.attainment(exp1, level=0.9) # Worst 10%
+    surf3.name = f"{exp1.name} (90% Worst)"
     
-    # 3. Visualize the "Reliability Band"
-    # This shows the area where the algorithm's performance usually falls.
-    print("Visualizing Reliability Band...")
-    mb.spaceplot(best, median, worst, title="NSGA2 Attainment Reliability")
+    # Visualize the "Search Corridor"
+    print("Plotting reliability band...")
+    mb.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor")
     
-    # 4. Comparative Attainment
+    # 3. Comparative Attainment
     print(f"\nComparing with SPEA2...")
     exp2 = mb.experiment()
     exp2.name = "SPEA2"
-    exp2.mop = mop
-    exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
+    exp2.mop = mop1
+    exp2.moea = mb.moeas.SPEA2(population=50, generations=100)
     exp2.run(repeat=repeats)
     
-    # We can use the attainment_diff helper
-    print("Calculating and visualizing attainment difference (Median)...")
-    diff = mb.stats.attainment_diff(exp1, exp2, level=0.5)
+    # res1 contains:
+    #             .surf1           attainment surface of exp1
+    #             .surf2           attainment surface of exp2
+    #             .volume_diff     difference in attained volumes
+    #             .report()        narrative summary
+    res1 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
+    print(res1.report())
     
-    # Show Smart Stats: Volume and Summary
-    print(f"Volume Attained (NSGA2 Median): {diff.surf1.volume():.4f}")
-    print(f"Volume Attained (SPEA2 Median): {diff.surf2.volume():.4f}")
-    print("\n" + diff.summary())
-    
-    # Plotting still works because 'diff' is iterable 
-    # (or we can pass its surfaces explicitly)
-    mb.spaceplot(*diff, title="Comparison: NSGA2 vs SPEA2 (Median)")
+    # The diff object is iterable, returning (surf1, surf2) for plotting
+    mb.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2")
 
 if __name__ == "__main__":
-    run_example()
+    main()
+
+# --- Interpretation ---
+#
+# While Hypervolume gives a single number, Attainment Surfaces show *where* 
+# the algorithm succeeds or fails in objective space.
+#
+# The reliability band (10%, 50%, 90%) reveals how much you can trust your 
+# results. A wide band means high variability; a narrow band means the 
+# algorithm is very consistent.
+#
+# In the comparison, 'attainment_diff' highlights the regions where one 
+# algorithm dominates the other's typical performance.

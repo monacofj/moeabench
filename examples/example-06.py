@@ -5,73 +5,74 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# This is a more complete example of using MoeaBench
-# that illustrates some moea comparison and statistics.
-# 
-# Notes: parameters were set for faster execution in detriment of quality
+"""
+Example 06: Statistical Hypothesis Testing
+------------------------------------------
+This example demonstrates how to perform rigorous statistical comparisons 
+between two algorithms using non-parametric tests and effect size measures.
+"""
 
-import mb_path # Setup local environment
+import mb_path
 from MoeaBench import mb
-import numpy as np
 
 def main():
-    print("--- Statistical Analysis Example ---\n")
+    print("--- Statistical Analysis Workshop ---\n")
     
-    # 1. Setup Algorithm Comparison
-    # We compare NSGA3 vs SPEA2 on DTLZ2 (3 objectives)
-    # We run 10 independent seeds for statistical significance.
+    # 1. Setup: Compare NSGA-III and SPEA2 with 10 repetitions
     repeats = 10
     pop_size = 100
     gens = 50
     
-    print(f"Running {repeats} repetitions for NSGA3 and SPEA2...")
-    
-    # Experiment 1: NSGA3
     exp1 = mb.experiment()
-    exp1.name = "NSGA3"
+    exp1.name = "NSGA-III"
     exp1.mop = mb.mops.DTLZ2(M=3)
     exp1.moea = mb.moeas.NSGA3(population=pop_size, generations=gens)
-    exp1.run(repeat=repeats)
-    
-    # Experiment 2: SPEA2
+
     exp2 = mb.experiment()
     exp2.name = "SPEA2"
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
+
+    print(f"Running {repeats} repetitions for each algorithm...")
+    exp1.run(repeat=repeats)
     exp2.run(repeat=repeats)
 
-    # 2. Statistical Analysis ("Smart Stats")
-    # Smart Stats performs extraction and uses a shared reference point automatically
-    print("\n--- Statistical Tests ---")
+    # 2. Statistical Inference
+    print("\n--- Inferential Statistics ---")
     
-    # Mann-Whitney U Test (Significance)
-    # By default, it uses mb.hv and extracts the final generation.
-    res = mb.stats.mann_whitney(exp1, exp2)
-    p_value = res.pvalue
-    
-    print(f"Mann-Whitney U P-value: {p_value:.2e}")
-    if p_value < 0.05:
-        print("  -> Significant Difference (p < 0.05)!")
-    else:
-        print("  -> No Significant Difference.")
+    # res1 contains:
+    #             .statistic       test statistic (U)
+    #             .p_value         probability of observing the data by chance
+    #             .significant     boolean (p < 0.05)
+    #             .report()        narrative summary
+    res1 = mb.stats.mann_whitney(exp1, exp2)
+    print(res1.report())
 
-    # Kolmogorov-Smirnov Test (Distribution Shape)
-    ks_res = mb.stats.ks_test(exp1, exp2)
-    print(f"Kolmogorov-Smirnov P-value: {ks_res.pvalue:.2e}")
-    if ks_res.pvalue < 0.05:
-        print("  -> Distributions have different shapes/stabilities!")
+    # res2 contains:
+    #             .statistic       KS distance (D)
+    #             .p_value         probability of distribution similarity
+    #             .report()        narrative summary
+    res2 = mb.stats.ks_test(exp1, exp2)
+    print("\n" + res2.report())
         
-    # Vargha-Delaney A12 (Effect Size)
-    # Measures probability that 1 > 2.
-    effect_size = mb.stats.a12(exp1, exp2)
-    print(f"Vargha-Delaney A12 (1 vs 2): {effect_size:.4f}")
-    
-    if effect_size == 0.5:
-        print("  -> Magnitude: Negligible")
-    elif effect_size > 0.5:
-        print(f"  -> {exp1.name} is better than {exp2.name}")
-    else:
-        print(f"  -> {exp2.name} is better than {exp1.name}")
+    # res3 contains:
+    #             .value           Vargha-Delaney A12 effect size [0, 1]
+    #             .report()        narrative summary
+    res3 = mb.stats.a12(exp1, exp2)
+    print("\n" + res3.report())
 
 if __name__ == "__main__":
     main()
+
+# --- Interpretation ---
+#
+# Statistical tests avoid the trap of "visual optimization." 
+# The Mann-Whitney U test tells us if one algorithm is significantly better 
+# than the other based on the median performance.
+#
+# However, p-values can be misleading with large samples. That's why we 
+# include the A12 Effect Size. It tells us the *magnitude* of the difference: 
+# an A12 of 0.5 means they are equal; 1.0 means the first always beats the second.
+#
+# In MoeaBench, these tests are "smart": they automatically handle the 
+# extraction of metrics (like Hypervolume) and set a common reference point.

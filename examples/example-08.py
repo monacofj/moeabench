@@ -6,85 +6,88 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 08: Population Stratification (Rank Distribution) Analysis.
-
-This example demonstrates how to use the 'stratification' API to analyze 
-the internal dominance structure of a population and compare the selection 
-pressure of two different algorithms.
+Example 08: Advanced Population Diagnostics Workshop
+--------------------------------------------------
+This example demonstrates the complete diagnostic suite of MoeaBench, 
+analyzing the "Population Geology" (internal dominance structure) 
+of different search algorithms. 
 """
 
 import mb_path
 from MoeaBench import mb
 import matplotlib.pyplot as plt
 
-# 1. Setup a challenging, multi-modal benchmark (DTLZ3 with 3 objectives)
-# DTLZ3 is highly deceptive; algorithms will struggle to find even 
-# local fronts early on, leading to deep stratification.
-mop = mb.DTLZ3(M=3)
+def main():
+    print("--- Advanced Diagnostics Workshop ---\n")
 
-# 2. Configure algorithms
-# We'll use different seeds to ensure distinct search trajectories.
-nsga2 = mb.NSGA2(population=100, generations=50, seed=1)
-spea2 = mb.SPEA2(population=100, generations=50, seed=42)
+    # 1. Setup: Deceptive 3D problem (DTLZ3)
+    mop1 = mb.mops.DTLZ3(M=3)
+    repeats = 3 
 
-exp_nsga2 = mb.experiment()
-exp_nsga2.moea = nsga2
-exp_nsga2.mop = mop
-exp_nsga2.name = "NSGA-II"
+    exp1 = mb.experiment()
+    exp1.name = "NSGA-II"
+    exp1.mop = mop1
+    exp1.moea = mb.moeas.NSGA2deap(population=100, generations=52, seed=1)
 
-exp_spea2 = mb.experiment()
-exp_spea2.moea = spea2
-exp_spea2.mop = mop
-exp_spea2.name = "SPEA2"
+    exp2 = mb.experiment()
+    exp2.name = "SPEA2"
+    exp2.mop = mop1
+    exp2.moea = mb.moeas.SPEA2(population=100, generations=52, seed=42)
 
-print(f"\n[1/2] Running {exp_nsga2.name}...")
-exp_nsga2.run(repeat=3)
+    print(f"Running experiments ({repeats} repeats each)...")
+    exp1.run(repeat=repeats)
+    exp2.run(repeat=repeats)
 
-print(f"\n[2/2] Running {exp_spea2.name}...")
-exp_spea2.run(repeat=3)
+    # 2. Analysis: Snapshot at Early Search (Gen 5)
+    SNAPSHOT_GEN = 5
+    print(f"\n--- Diagnostic Snapshot at Gen {SNAPSHOT_GEN} ---")
+    
+    # strat1 and strat2 contain:
+    #             .ranks           distribution of solutions per rank
+    #             .quality         metric values per rank
+    #             .selection_pressure   diagnostic coefficient
+    #             .report()        narrative diagnosis
+    strat1 = mb.stats.strata(exp1, gen=SNAPSHOT_GEN)
+    strat2 = mb.stats.strata(exp2, gen=SNAPSHOT_GEN)
 
-# 3. Perform Population Stratification at a snapshot in EARLY search (Gen 5)
-# This is when the "internal effort" of the search is most visible.
-SNAPSHOT_GEN = 5 
-print(f"\n--- Diagnostic Analysis (at Gen {SNAPSHOT_GEN}) ---")
+    print(strat1.report())
+    print("\n" + strat2.report())
 
-strat_nsga2 = mb.stratification(exp_nsga2, gen=SNAPSHOT_GEN)
-strat_spea2 = mb.stratification(exp_spea2, gen=SNAPSHOT_GEN)
+    # 3. Statistical Contrast (EMD)
+    # res1 contains:
+    #             .value           Earth Mover's Distance
+    #             .report()        narrative summary
+    res1 = mb.stats.emd(strat1, strat2)
+    print("\n" + res1.report())
 
-# 4. Compare Selection Pressure
-# High value = aggressive (most in Rank 1/2)
-# Low value = relaxed (scattered across many ranks)
-print(f"NSGA-II Selection Pressure: {strat_nsga2.selection_pressure():.4f}")
-print(f"SPEA2 Selection Pressure:   {strat_spea2.selection_pressure():.4f}")
+    # 4. Visual Workshop
+    print("\nGenerating visual profiles... (Close plots to finish)")
+    
+    # A. Structural View (Density)
+    mb.stats.strataplot(strat1, strat2, labels=[exp1.name, exp2.name], 
+                        title=f"Structural Strata (Gen {SNAPSHOT_GEN})")
+    
+    # B. Quality View (Floating Ranks)
+    mb.rankplot(strat1, strat2, 
+                title=f"Floating Rank Quality Profile (Gen {SNAPSHOT_GEN})")
 
-# 5. Calculate Structural Difference (Earth Mover's Distance)
-# Tells us how fundamentally different their population architectures are.
-dist = mb.emd(strat_nsga2, strat_spea2)
-print(f"Structural Difference (EMD): {dist:.4f}")
+    plt.show()
 
-# 6. Visualize the Rank Distributions side-by-side
-# Grouped bar charts allow for direct comparison of dominance depth.
-print("\nPlotting distributions... (Close plot to finish)")
-mb.stratification_plot(strat_nsga2, strat_spea2, title=f"Dominance Depth at Gen {SNAPSHOT_GEN}")
+if __name__ == "__main__":
+    main()
 
-plt.show()
-
-# --- Interpretation of the Results ---
+# --- Interpretation ---
 #
-# Comparing the "Dominance Depth" reveals the distinct search "DNA" of each algorithm:
+# This analysis looks "under the hood" of the Pareto Front. 
+# We compare two archetypes:
 #
-# 1. NSGA-II: The "Collective Wave" Generalist
-#    - Result: Usually compressed into very few ranks (e.g., only 3).
-#    - Meaning: NSGA-II acts as a "Phalanx." Its selection mechanism pulls the worst 
-#      solutions up aggressively, moving the population as a dense, unified wave.
-#    - Verdict: Yields a more robust, unified population.
+# 1. NSGA-II (The Phalanx): Often moves as a unified wave with many solutions 
+#    clustered in a few ranks. This indicates high social cohesion in the search.
 #
-# 2. SPEA2: The "Elite-Driven" Specialist
-#    - Result: More solutions in Rank 1, but spread across many deeper ranks (e.g., 6+).
-#    - Meaning: SPEA2 acts as a "Sniper." It effectively promotes absolute elites 
-#      to the Pareto Front but is more tolerant of lower-quality solutions elsewhere.
-#    - Verdict: Yields a sharper front but a more fragmented population architecture.
+# 2. SPEA2 (The Sniper): Tends to promote a very sharp elite (Rank 1) while 
+#    leaving the rest of the population more scattered.
 #
-# 3. Earth Mover's Distance (EMD)
-#    - Quantifies the mathematical "work" required to transform one 
-#      population architecture into the other.
+# The 'rankplot' (floating ranks) proves that the population is robust: 
+# early ranks are often clustered near the 1.0 quality ceiling. This means 
+# that even if the absolute best solutions are lost, the "successors" are 
+# functionally equivalent.
