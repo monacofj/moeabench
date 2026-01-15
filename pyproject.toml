@@ -40,8 +40,9 @@ dependencies = [
     "scipy",
 ]
 
-[tool.setuptools]
-packages = ["MoeaBench"]
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["MoeaBench*"]
 
 [tool.setuptools.package-data]
 "MoeaBench" = ["requirements.txt"]
