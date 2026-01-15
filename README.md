@@ -52,7 +52,8 @@ mb.spaceplot(exp.front())                       # Plot the 3D pareto front
 
 ## Contributing
 
-You are more than welcome to contribute. Please read **[CONTRIBUTING.md](CONTRIBUTING.md)** for details on our code of conduct and the process for submitting pull requests.
+MoeaBench authors warmly welcome community contributions to the project. If you find any bugs or have suggestions for new features, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
+
 
 ## License
 

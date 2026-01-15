@@ -44,8 +44,8 @@ class _MB:
         self.igdplus = metrics.igdplus
         
         # Stats Shortcuts
-        self.stratification = stats.stratification
-        self.stratification_plot = stats.stratification_plot
+        self.strata = stats.strata
+        self.strataplot = stats.strataplot
         self.emd = stats.emd
         self.attainment = stats.attainment
         self.attainment_diff = stats.attainment_diff
