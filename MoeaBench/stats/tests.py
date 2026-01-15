@@ -4,7 +4,70 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from scipy.stats import mannwhitneyu
+from scipy.stats import mannwhitneyu, ks_2samp
+from functools import cached_property
+from .base import StatsResult, SimpleStatsValue
+
+class HypothesisTestResult(StatsResult):
+    """
+    Rich result for hypothesis tests (Mann-Whitney, KS, etc.)
+    """
+    def __init__(self, stat, p_value, data1, data2, name, alternative='two-sided', 
+                 metric=None, gen=-1, **kwargs):
+        self.statistic = stat
+        self.p_value = p_value
+        self.data1 = data1
+        self.data2 = data2
+        self.name = name
+        self.alternative = alternative
+        self.metric = metric
+        self.gen = gen
+        self.kwargs = kwargs
+
+    @cached_property
+    def a12(self) -> float:
+        """Vargha-Delaney A12 effect size (Lazy)."""
+        return a12(self.data1, self.data2, self.metric, self.gen, **self.kwargs).value
+
+    @property
+    def effect_size_label(self) -> str:
+        val = self.a12
+        d = abs(val - 0.5) * 2 # Map 0.5->0, 0/1->1
+        if d < 0.147: return "Negligible"
+        if d < 0.33: return "Small"
+        if d < 0.474: return "Medium"
+        return "Large"
+
+    @property
+    def significant(self) -> bool:
+        return self.p_value < 0.05 if self.p_value is not None else False
+
+    def report(self) -> str:
+        name1 = getattr(self.data1, 'name', 'Group A')
+        name2 = getattr(self.data2, 'name', 'Group B')
+        
+        lines = [
+            f"--- {self.name} Test Report ---",
+            f"  Comparison: {name1} vs {name2}",
+            f"  Alternative: {self.alternative}",
+            f"  Statistic: {self.statistic:.4f}",
+        ]
+        
+        if self.p_value is not None:
+            lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha=0.05)")
+            
+        lines.append(f"  A12 Effect Size: {self.a12:.4f} ({self.effect_size_label})")
+        
+        # Narrative interpretation
+        if self.significant:
+            better = name1 if self.a12 > 0.5 else name2
+            lines.append(f"\nConclusion: There is a statistically significant difference favoring {better}.")
+        elif self.p_value is not None:
+            lines.append(f"\nConclusion: No statistically significant difference detected.")
+        else:
+            lines.append(f"\nNote: Only Effect Size calculated (A12={self.a12:.4f}).")
+            
+        return "\n".join(lines)
 
 def _resolve_samples(data1, data2, metric=None, gen=-1, **kwargs):
     """
@@ -91,7 +154,8 @@ def a12(data1, data2, metric=None, gen=-1, **kwargs):
     for i in range(m):
         r[i] = np.sum(v1[i] > v2) + 0.5 * np.sum(v1[i] == v2)
         
-    return np.sum(r) / (m * n)
+    val = np.sum(r) / (m * n)
+    return SimpleStatsValue(val, "A12 Effect Size")
 
 def mann_whitney(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
     """
@@ -113,7 +177,9 @@ def mann_whitney(data1, data2, alternative='two-sided', metric=None, gen=-1, **k
         MannwhitneyuResult: Object containing 'statistic' and 'pvalue'.
     """
     v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
-    return mannwhitneyu(v1, v2, alternative=alternative)
+    res = mannwhitneyu(v1, v2, alternative=alternative)
+    return HypothesisTestResult(res.statistic, res.pvalue, data1, data2, 
+                                "Mann-Whitney U", alternative, metric, gen, **kwargs)
 
 def ks_test(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
     """
@@ -136,6 +202,7 @@ def ks_test(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs
     Returns:
         KstestResult: Object containing 'statistic' and 'pvalue'.
     """
-    from scipy.stats import ks_2samp
     v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
-    return ks_2samp(v1, v2, alternative=alternative)
+    res = ks_2samp(v1, v2, alternative=alternative)
+    return HypothesisTestResult(res.statistic, res.pvalue, data1, data2, 
+                                "Kolmogorov-Smirnov", alternative, metric, gen, **kwargs)

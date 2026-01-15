@@ -5,6 +5,7 @@
 
 import numpy as np
 from ..core.run import SmartArray
+from .base import StatsResult
 
 
 class AttainmentSurface(SmartArray):
@@ -153,7 +154,7 @@ def _attainment_nd(fronts, k, level):
     
     return AttainmentSurface(candidates[~indices], level=level)
 
-class AttainmentDiff:
+class AttainmentDiff(StatsResult):
     """
     Result of a comparison between two attainment surfaces.
     """
@@ -167,21 +168,23 @@ class AttainmentDiff:
         yield self.surf1
         yield self.surf2
 
-    def delta_volume(self):
+    @property
+    def volume_diff(self):
         """Difference in volume (S1 - S2). Positive means S1 is better."""
         return self.surf1.volume() - self.surf2.volume()
 
-    def summary(self):
+    def report(self) -> str:
         v1 = self.surf1.volume()
         v2 = self.surf2.volume()
         dv = v1 - v2
         better = self.surf1.name if dv > 0 else self.surf2.name
         
         lines = [
-            f"--- Attainment Comparison (Level {self.level:.2f}) ---",
-            f"  - {self.surf1.name}: {v1:.6f}",
-            f"  - {self.surf2.name}: {v2:.6f}",
-            f"  - Difference: {abs(dv):.6f} favoring {better}"
+            f"--- Attainment Comparison Report (Level {self.level:.2f}) ---",
+            f"  - {self.surf1.name} Volume: {v1:.6f}",
+            f"  - {self.surf2.name} Volume: {v2:.6f}",
+            f"  - Absolute Difference: {abs(dv):.6f}",
+            f"\nDiagnosis: {better} dominates a larger objective region at this probability level."
         ]
         return "\n".join(lines)
 

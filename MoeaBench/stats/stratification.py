@@ -5,8 +5,10 @@
 
 import numpy as np
 from scipy.stats import linregress, wasserstein_distance
+from functools import cached_property
+from .base import StatsResult, SimpleStatsValue
 
-class StratificationResult:
+class StratificationResult(StatsResult):
     """
     Results of a Population Stratification (Rank Distribution) analysis.
     
@@ -69,10 +71,11 @@ class StratificationResult:
                 scores[r-1] = np.nan
         return scores
 
+    @cached_property
     def selection_pressure(self) -> float:
         """
         Estimates the Selection Pressure as the exponential decay rate 
-        of the rank distribution.
+        of the rank distribution (Lazy calculation).
         """
         f = self.frequencies()
         if len(f) < 2: return 1.0 # Absolute pressure
@@ -81,6 +84,38 @@ class StratificationResult:
         y = np.log(f + 1e-10)
         res = linregress(x, y)
         return -res.slope
+
+    def report(self, metric=None) -> str:
+        """
+        Generates a narrative-didactic report of the population strata.
+        """
+        import MoeaBench.metrics.evaluator as eval_mod
+        m_func = metric if metric else eval_mod.hypervolume
+        
+        name = getattr(self.source, 'name', 'Population')
+        q_profile = self.quality_by(m_func)
+        f = self.frequencies()
+        
+        lines = [
+            f"--- Population Strata Report: {name} ---",
+            f"  Search Depth: {self.max_rank} non-dominated layers",
+            f"  Selection Pressure: {self.selection_pressure:.4f}",
+            "",
+            f"{'Rank':<6} | {'Pop %':<8} | {'Quality (' + m_func.__name__ + ')':<15}",
+            "-" * 40
+        ]
+        
+        for r_idx, freq in enumerate(f):
+            r = r_idx + 1
+            q = q_profile[r_idx]
+            lines.append(f"{r:<6} | {freq*100:>7.1f}% | {q:>12.4f}")
+            
+        if self.selection_pressure > 0.8:
+            lines.append("\nDiagnosis: High Selection Pressure (Phalanx-like convergence).")
+        elif self.selection_pressure < 0.2:
+            lines.append("\nDiagnosis: Low Selection Pressure (Exploratory/Scattered architecture).")
+            
+        return "\n".join(lines)
 
     def plot(self, title=None, **kwargs):
         """Generates a bar plot of the rank distribution."""
@@ -96,7 +131,7 @@ class StratificationResult:
         name = getattr(self.source, 'name', 'Population')
         return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
 
-def stratification(data, gen=-1):
+def strata(data, gen=-1):
     """
     Performs Population Stratification (Rank Distribution) analysis.
     """
@@ -159,9 +194,10 @@ def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
     v1 = np.pad(f1, (0, m - len(f1)))
     v2 = np.pad(f2, (0, m - len(f2)))
     
-    return wasserstein_distance(np.arange(m), np.arange(m), v1, v2)
+    val = wasserstein_distance(np.arange(m), np.arange(m), v1, v2)
+    return SimpleStatsValue(val, "Structural Difference (EMD)")
 
-def stratification_plot(*results: StratificationResult, labels: list = None, title: str = None, **kwargs):
+def strataplot(*results: StratificationResult, labels: list = None, title: str = None, **kwargs):
     """
     Generates a grouped bar chart to compare multiple stratification profiles.
     
