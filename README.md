@@ -1,18 +1,18 @@
 <!--
-SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # MoeaBench - Multi-objective Evolutionary Algorithm Benchmark
 
-[![REUSE status](https://api.reuse.software/badge/github.com/moonacofj/moeabench)](https://api.reuse.software/info/github.com/moonacofj/moeabench)
+[![REUSE status](https://api.reuse.software/badge/github.com/monacofj/moeabench)](https://api.reuse.software/info/github.com/monacofj/moeabench)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 
+> Copyright (c) 2025 Monaco F. J. <monaco@usp.br>  
 > Copyright (c) 2025 Silva F. F. <fernandoferreira.silva42@usp.br>  
-> Copyright (c) 2025 Monaco F. J. <monaco@usp.br>
 >
 >This project is distributed under the GNU General Public License v3.0 or later. See the file LICENSE for more information. Some third-party components or specific files may be licensed under different terms. Please, consult the SPDX identifiers in each file's header and the LICENSES/ directory for precise details. 
 

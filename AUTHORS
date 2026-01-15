@@ -1,19 +1,25 @@
 MoeaBench Authorship & Credits
 ------------------------------
 
-MoeaBench was originally developed in 2025-2026, as part of the Master's Thesis of Fernando Ferreira da Silva, under the supervision of Prof. Dr. Monaco F. J., at the Institute of Mathematical and Computer Sciences (ICMC), University of São Paulo, Brazil.
+MoeaBench software was originally developed in 2025-2026, as part of 
+the Master's Thesis of Fernando Ferreira da Silva, under the 
+supervision of Prof. Dr. Monaco F. J., at the Institute of 
+Mathematical and Computer Sciences (ICMC), University of São Paulo, 
+Brazil, in collaboration with Prof. Dr. Abraham Kuruvilla and 
+Prof. Dr. Delbem A. C. B.
+
 
 ### Software Authorship
 The source code and technical implementation are authored by:
-* Fernando Ferreira da Silva <https://github.com/ferbat40>
 * Monaco F. J. <https://github.com/monacofj>
+* Fernando Ferreira da Silva <https://github.com/ferbat40>
 
 ### Research Framework & Scientific Conception
 The underlying research project and the conceptual foundations of the MoeaBench framework are a collaborative work by:
-* Monaco F. J.
-* Delbem A. C. B.
-* Kuruvilla J.
-* Ferreira F. F. S.
+* Monaco F. J. <monaco@usp.br>
+* Delbem A. C. B.  <acbd@icmc.usp.br>
+* Kuruvilla J. <abraham@fmrp.usp.br>
+* Ferreira F. F. S. <fernandoferreira.silva42@usp.br>
 
 For formal academic citation of the research framework, please refer to the `CITATION.cff` file in the repository root.
 
