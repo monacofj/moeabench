@@ -11,6 +11,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
 
+This guide provides an introductory overview for getting started with the framework. For complete documentation of all available methods, classes, and their technical arguments, please refer to the **[API Reference](reference.md)**.
+
 ---
 
 ## **1. Key Features**
