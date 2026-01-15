@@ -7,10 +7,21 @@ from .scatter3d import Scatter3D
 from .scatter2d import Scatter2D
 import numpy as np
 
-def spaceplot(*args, objectives=None, mode='static', title=None, axis_labels=None):
+def spaceplot(*args, objectives=None, mode='auto', title=None, axis_labels=None):
     """
     Plots 3D scatter of objectives (Pareto Front).
     """
+    # Environment detection for 'auto' mode
+    if mode == 'auto':
+        try:
+            from IPython import get_ipython
+            if get_ipython() is not None:
+                mode = 'interactive'
+            else:
+                mode = 'static'
+        except (ImportError, NameError):
+            mode = 'static'
+            
     processed_args = []
     names = []
     trace_modes = [] # Store if we want markers or lines
