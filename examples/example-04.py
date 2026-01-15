@@ -35,18 +35,18 @@ def main():
 
     # The timeplot automatically computes mean and standard deviation
     print("Plotting statistical convergence...")
-    mb.timeplot(hv1, title="SStability Analysis (5-run HV)", mode='static')
+    mb.timeplot(hv1, title="SStability Analysis (5-run HV)")
 
     # 4. Aggregated Quality (Superfront)
     # The 'superfront' provides the combined non-dominated solutions 
     # considering the discovery of all runs.
     print("Plotting Superfront...")
-    mb.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)", mode='static')
+    mb.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)")
 
     # 5. Stability Inspection (All Fronts)
     # We can also plot each run's final front independently.
     print("Comparing individual run stability...")
-    mb.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts", mode='static')
+    mb.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts")
 
 if __name__ == "__main__":
     main()

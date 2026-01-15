@@ -65,11 +65,11 @@ def main():
     
     # A. Structural View (Density)
     mb.stats.strataplot(strat1, strat2, labels=[exp1.name, exp2.name], 
-                        title=f"Structural Strata (Gen {SNAPSHOT_GEN})", mode='static')
+                        title=f"Structural Strata (Gen {SNAPSHOT_GEN})")
     
     # B. Quality View (Floating Ranks)
     mb.rankplot(strat1, strat2, 
-                title=f"Floating Rank Quality Profile (Gen {SNAPSHOT_GEN})", mode='static')
+                title=f"Floating Rank Quality Profile (Gen {SNAPSHOT_GEN})")
 
     plt.show()
 

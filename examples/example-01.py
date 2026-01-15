@@ -29,13 +29,13 @@ def main():
     # 3. Visualization: Inspect the found Pareto Front
     # We plot the final non-dominated solutions in objective space.
     print("Plotting results...")
-    mb.spaceplot(exp1.front(), title="NSGA-III Final Front", mode='static')
+    mb.spaceplot(exp1.front(), title="NSGA-III Final Front")
 
     # Calculate and plot Hypervolume convergence over generations
     # hv1 contains:
     #             MetricMatrix    historical hypervolume values
     hv1 = mb.hv(exp1)
-    mb.timeplot(hv1, title="Hypervolume Convergence", mode='static')
+    mb.timeplot(hv1, title="Hypervolume Convergence")
 
 if __name__ == "__main__":
     main()
