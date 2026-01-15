@@ -37,7 +37,7 @@ def main():
     # 3. Comparative Visualization (Spatial)
     # Passing multiple experiments to spaceplot overlays their fronts.
     print("Comparing fronts...")
-    mb.spaceplot(exp1, exp2, title="Comparison: NSGA-III vs SPEA2")
+    mb.spaceplot(exp1, exp2, title="Comparison: NSGA-III vs SPEA2", mode='static')
 
     # 4. Comparative Visualization (Temporal)
     # We use a shared reference to ensure a fair hypervolume comparison.
@@ -49,7 +49,7 @@ def main():
     hv2 = mb.hv(exp2, ref=ref)
     
     print("Comparing convergence...")
-    mb.timeplot(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)")
+    mb.timeplot(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)", mode='static')
 
 if __name__ == "__main__":
     main()

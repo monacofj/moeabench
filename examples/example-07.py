@@ -49,7 +49,7 @@ def main():
     
     # Visualize the "Search Corridor"
     print("Plotting reliability band...")
-    mb.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor")
+    mb.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor", mode='static')
     
     # 3. Comparative Attainment
     print(f"\nComparing with SPEA2...")
@@ -68,7 +68,7 @@ def main():
     print(res1.report())
     
     # The diff object is iterable, returning (surf1, surf2) for plotting
-    mb.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2")
+    mb.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2", mode='static')
 
 if __name__ == "__main__":
     main()

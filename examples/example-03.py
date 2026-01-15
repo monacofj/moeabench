@@ -32,14 +32,14 @@ def main():
     print("Plotting winners vs background...")
     mb.spaceplot(exp1.front(), exp1.non_front(), 
                   labels=["Pareto Front", "Dominated"], 
-                  title="Anatomy of a Population")
+                  title="Anatomy of a Population", mode='static')
 
     # 4. Visualization: Search Trajectory
     # Compare an early snapshot (Gen 5) with the final state.
     print("Comparing snapshots...")
     mb.spaceplot(exp1.front(5), exp1.front(), 
                   labels=["Elite at Gen 5", "Final Elite"], 
-                  title="Convergence Path")
+                  title="Convergence Path", mode='static')
 
 if __name__ == "__main__":
     main()

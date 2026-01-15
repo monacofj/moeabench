@@ -54,7 +54,7 @@ def main():
 
     # 4. Visualization: Standard tools work seamlessly with custom mop
     print("Plotting results...")
-    mb.spaceplot(exp1, title="Final Front of Custom Benchmark")
+    mb.spaceplot(exp1, title="Final Front of Custom Benchmark", mode='static')
 
 if __name__ == "__main__":
     main()
