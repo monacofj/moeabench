@@ -339,5 +339,5 @@ mb.system.version()            # Library version
 ```
 
 ## **7. References**
-*   **Full API Documentation**: See `docs/reference.md` for exhaustive details on every class and method.
+*   **Full API Documentation**: See [reference.md](reference.md) for exhaustive details on every class and method.
 *   **Pymoo**: The optimization engine powering standard algorithms (https://pymoo.org).

@@ -18,7 +18,7 @@ To ensure a smooth collaboration, we follow a structured workflow for all contri
 3.  **Branching**: Create a new branch with the following naming pattern:
     *   `feature|fix/<issue-number>/<short-description>`
     *   Example: `feature/42/add-new-metric`
-4.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](docs/design.md).
+4.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](design.md).
 5.  **Verify**: Ensure your changes are correct by running existing examples or adding new ones. Verification should include both `.py` and `.ipynb` parity.
 6.  **Pull Request**: Submit a Pull Request targeting the `main` branch. Briefly describe your changes and link the relevant issue.
 
@@ -47,11 +47,11 @@ We strive for high-quality, "Pythonic" code that is efficient and easy to mainta
 
 ### Developer Documentation
 Before contributing, please read the following technical resources to understand our core principles and evolution:
-- **[Design Philosophy](docs/design.md)**: Detailed explanation of our **Technical Storytelling** (Scientific Narrative) style, the Rich Result architecture, the `fooplot` convention, and mandatory vectorization.
-- **[Architecture Decision Records (ADRs)](docs/adr/)**: Registry of the fundamental design choices that shaped the framework.
+- **[Design Philosophy](design.md)**: Detailed explanation of our **Technical Storytelling** (Scientific Narrative) style, the Rich Result architecture, the `fooplot` convention, and mandatory vectorization.
+- **[Architecture Decision Records (ADRs)](adr/)**: Registry of the fundamental design choices that shaped the framework.
 
 ---
 
 ## 3. Communication
 
-Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](AUTHORS) file for contact details.
+Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](../AUTHORS) file for contact details.

@@ -71,13 +71,13 @@ We use `SmartArray` as our primary data structure for objective matrices. It pro
 ## 5. Architectural Integrity and Reproducibility
 
 ### Architecture Decision Records (ADRs)
-We use ADRs to document the "DNA" of the project's evolution. Any significant design change (like the removal of parallelism or the implementation of Rich Results) must be recorded in `docs/adr/`. This ensures that the rationale behind our choices is never lost.
+We use ADRs to document the "DNA" of the project's evolution. Any significant design change (like the removal of parallelism or the implementation of Rich Results) must be recorded in [adr/](adr/). This ensures that the rationale behind our choices is never lost.
 
 ### Determinism by Design
 Reproducibility is non-negotiable. The library maintains strict management of random seeds across single and multi-run experiments to ensure that every experiment can be reconstructed exactly.
 
 ### Mirror Parity
-For every narrative script in `examples/`, there must be a corresponding Jupyter Notebook (`.ipynb`). This ensures that the library's features are accessible both as production-ready scripts and as interactive research environments.
+For every narrative script in [examples/](../examples/), there must be a corresponding Jupyter Notebook (`.ipynb`). This ensures that the library's features are accessible both as production-ready scripts and as interactive research environments.
 
 ---
 
