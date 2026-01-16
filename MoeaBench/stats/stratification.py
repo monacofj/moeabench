@@ -117,16 +117,6 @@ class StratificationResult(StatsResult):
             
         return "\n".join(lines)
 
-    def plot(self, title=None, **kwargs):
-        """Generates a bar plot of the rank distribution."""
-        import matplotlib.pyplot as plt
-        f = self.frequencies()
-        plt.bar(np.arange(1, len(f) + 1), f, **kwargs)
-        plt.xlabel("Dominance Rank (1=Pareto Front)")
-        plt.ylabel("Frequency (%)")
-        if title: plt.title(title)
-        return plt.gca()
-
     def __repr__(self) -> str:
         name = getattr(self.source, 'name', 'Population')
         return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
@@ -178,6 +168,13 @@ def strata(data, gen=-1):
 
     raise TypeError(f"Unsupported data type for stratification: {type(data)}")
 
+def _calc_rank_hist(ranks):
+    """Internal helper to calculate rank frequency distribution."""
+    if len(ranks) == 0: return {}
+    u, counts = np.unique(ranks, return_counts=True)
+    total = len(ranks)
+    return {int(r): c/total for r, c in zip(u, counts)}
+
 def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
     """
     Computes the Earth Mover's Distance (Wasserstein Distance) between 
@@ -197,55 +194,106 @@ def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
     val = wasserstein_distance(np.arange(m), np.arange(m), v1, v2)
     return SimpleStatsValue(val, "Structural Difference (EMD)")
 
-def strataplot(*results: StratificationResult, labels: list = None, title: str = None, **kwargs):
-    """
-    Generates a grouped bar chart to compare multiple stratification profiles.
-    
-    Args:
-        *results: One or more StratificationResult objects.
-        labels (list): Optional labels for the legend.
-        title (str): Plot title.
-        **kwargs: Passed to plt.bar.
-    """
-    import matplotlib.pyplot as plt
-    
-    if not results:
-        return
-        
-    m = max(r.max_rank for r in results)
-    ranks = np.arange(1, m + 1)
-    n_series = len(results)
-    width = 0.8 / n_series
-    
-    fig, ax = plt.subplots()
-    
-    for i, res in enumerate(results):
-        f = res.frequencies()
-        # Pad frequencies to match max rank
-        f_padded = np.pad(f, (0, m - len(f)))
-        
-        lbl = labels[i] if labels and i < len(labels) else getattr(res.source, 'name', f"Series {i+1}")
-        
-        pos = ranks - 0.4 + (i + 0.5) * width
-        ax.bar(pos, f_padded, width, label=lbl, **kwargs)
 
-    ax.set_xlabel("Dominance Rank (1=Pareto Front)")
-    ax.set_ylabel("Frequency (%)")
-    ax.set_xticks(ranks)
-    ax.legend()
-    if title: ax.set_title(title)
-    
-    return ax
 
-def _calc_rank_hist(ranks):
+class ArenaResult(StratificationResult):
     """
-    Helper to convert rank array to frequency distribution.
+    Results of a Joint Stratification (Arena) analysis between two groups.
     
-    Note: Ranks are 1-indexed. Rank 1 is the Pareto Front. 
-    Rank 2 is the Pareto Front of the population remaining after 
-    removing Rank 1, and so on.
+    Inherits from StratificationResult, adding support for relative 
+    dominance comparison (proportions) between groups.
     """
-    if len(ranks) == 0: return {}
-    unique, counts = np.unique(ranks, return_counts=True)
-    freqs = counts / len(ranks)
-    return dict(zip(unique.astype(int), freqs))
+    def __init__(self, agg_hist, raw_distributions=None, source=None, gen=-1, 
+                 objectives=None, rank_array=None, group_labels=None, 
+                 joint_frequencies=None):
+        super().__init__(agg_hist, raw_distributions, source, gen, objectives, rank_array)
+        self.group_labels = group_labels # list of names [A, B]
+        self.joint_frequencies = joint_frequencies # dict {rank: [propA, propB]}
+
+    @property
+    def dominance_ratio(self) -> np.ndarray:
+        """Returns the [A, B] proportion in the first rank (Elite)."""
+        return self.joint_frequencies.get(1, np.array([0.5, 0.5]))
+
+    @property
+    def displacement_depth(self) -> int:
+        """Finds the first rank where the relative proportion of B is > 0.1."""
+        # This is a heuristic for when the 'loser' starts to appear.
+        for r in range(1, self.max_rank + 1):
+            if self.joint_frequencies[r][1] > 0.1:
+                return r
+        return self.max_rank
+
+    def report(self, metric=None) -> str:
+        """Generates a competitive narrative report for the Duel."""
+        nameA, nameB = self.group_labels
+        ratioA, ratioB = self.dominance_ratio
+        
+        lines = [
+            f"--- Arena Duel Report: {nameA} vs {nameB} ---",
+            f"  Search Depth: {self.max_rank} global levels",
+            f"  Elite Dominance (Rank 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
+            f"  Displacement Depth: {self.displacement_depth}",
+            "",
+            f"{'Rank':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
+            "-" * 35
+        ]
+        
+        for r in range(1, self.max_rank + 1):
+            propA, propB = self.joint_frequencies.get(r, [0, 0])
+            lines.append(f"{r:<6} | {propA*100:>8.1f}% | {propB*100:>8.1f}%")
+            
+        better = nameA if ratioA > 0.5 else nameB
+        lines.append(f"\nDiagnosis: {better} dominates the elite objective space.")
+        if self.displacement_depth > 2:
+            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival.")
+            
+        return "\n".join(lines)
+
+def arena(exp1, exp2, gen=-1):
+    """
+    Performs Joint Stratification (Arena) between two experiments.
+    """
+    from ..core.run import SmartArray
+    # 1. Collect all final fronts (or specific gen)
+    def _get_objs_with_src(exp, label):
+        objs = []
+        if hasattr(exp, 'runs'):
+            for run in exp:
+                objs.append(run.front(gen))
+        else:
+            objs.append(exp.objectives)
+        return np.vstack(objs), np.full(sum(len(o) for o in objs), label)
+
+    objsA, labelsA = _get_objs_with_src(exp1, 0)
+    objsB, labelsB = _get_objs_with_src(exp2, 1)
+    
+    combined_objs = np.vstack([objsA, objsB])
+    combined_labels = np.concatenate([labelsA, labelsB])
+    
+    # 2. Perform Global NDS
+    from ..core.run import Population
+    pop = Population(combined_objs, combined_objs)
+    global_ranks = pop.stratify()
+    
+    # 3. Calculate Joint Frequencies
+    unique_ranks = np.unique(global_ranks)
+    joint_freqs = {}
+    agg_hist = {}
+    
+    for r in unique_ranks:
+        mask = (global_ranks == r)
+        total_in_rank = np.sum(mask)
+        # Proportions of A and B in this rank
+        propA = np.sum((combined_labels[mask] == 0)) / total_in_rank
+        propB = np.sum((combined_labels[mask] == 1)) / total_in_rank
+        joint_freqs[int(r)] = np.array([propA, propB])
+        agg_hist[int(r)] = total_in_rank / len(combined_objs)
+        
+    nameA = getattr(exp1, 'name', 'Algorithm A')
+    nameB = getattr(exp2, 'name', 'Algorithm B')
+    
+    return ArenaResult(agg_hist, source=(exp1, exp2), gen=gen, 
+                       objectives=combined_objs, rank_array=global_ranks,
+                       group_labels=[nameA, nameB],
+                       joint_frequencies=joint_freqs)

@@ -26,7 +26,7 @@ def main():
     exp1 = mb.experiment()
     exp1.name = "NSGA-II"
     exp1.mop = mop1
-    exp1.moea = mb.moeas.NSGA2deap(population=50, generations=100)
+    exp1.moea = mb.moeas.NSGA2deap(population=100, generations=100)
 
     print(f"Executing {exp1.name} ({repeats} runs)...")
     exp1.run(repeat=repeats)
@@ -47,9 +47,9 @@ def main():
     surf3 = mb.stats.attainment(exp1, level=0.9) # Worst 10%
     surf3.name = f"{exp1.name} (90% Worst)"
     
-    # Visualize the "Search Corridor"
+    # Visualize the "Search Corridor" (Spatial Perspective)
     print("Plotting reliability band...")
-    mb.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor")
+    mb.view.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor")
     
     # 3. Comparative Attainment
     print(f"\nComparing with SPEA2...")
@@ -67,8 +67,8 @@ def main():
     res1 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
     print(res1.report())
     
-    # The diff object is iterable, returning (surf1, surf2) for plotting
-    mb.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2")
+    # The diff object is iterable, returning (surf1, surf2) for plotting (Spatial Perspective)
+    mb.view.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2")
 
 if __name__ == "__main__":
     main()

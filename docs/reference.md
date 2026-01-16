@@ -119,36 +119,44 @@ A NumPy array subclass (`np.ndarray`) that carries metadata.
 
 ---
 
-## **2. Visualization (`mb.spaceplot`, `mb.timeplot`)**
+## **2. Scientific Perspectives (`mb.view`)**
 
-High-level plotting functions with **Smart Input Resolution**.
+MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
-### **`mb.spaceplot(*args, ...)`**
-Plots solutions in Objective Space (3D Scatter).
+### **2.1. Spatial Perspective (`mb.view.spaceplot`)**
+Plots solutions in Objective Space (2D or 3D Scatter).
+*   **Args**:
+    *   `*args`: experiments, runs, populations, or arrays.
+    *   `objectives` (*list*): Indices of objectives to plot (default: `[0, 1]` or `[0, 1, 2]`).
+    *   `mode` (*str*): `'auto'` (detects environment), `'static'`, or `'interactive'`.
+*   **Smart Resolution**: Automatically extracts the non-dominated front from experiments.
 
-**Input Resolution Rules:**
-The function automatically detects what to plot based on the input type:
-1.  **If `args[i]` is an `experiment`**:
-    *   Default Behavior: Plots `exp.last_run.front()` (The Pareto front of the last run).
-    *   *Note*: To plot all runs, use `*exp.all_fronts()`.
-2.  **If `args[i]` is a `Run`**:
-    *   Default Behavior: Plots `run.front()` (The final Pareto front of that run).
-3.  **If `args[i]` is a `Population`**:
-    *   Default Behavior: Plots `pop.objectives` (All solutions in that population).
-4.  **If `args[i]` is an Array**:
-    *   Plots the array directly.
+### **2.2. Historic Perspective (`mb.view.timeplot`)**
+Plots the evolution of scalar metrics over time.
+*   **Args**:
+    *   `*args`: experiments or `MetricMatrix` objects.
+    *   `metric` (*callable*): The metric to calculate (default: `mb.metrics.hv`).
+*   **Smart Resolution**: Automatically calculates the metric for experiments.
 
-**Usage Example:**
-```python
-# Quick plot of last result
-mb.spaceplot(exp)               
+### **2.3. Structural Perspective (`mb.view.rankplot`)**
+Plots the frequency distribution of dominance ranks (selection pressure).
+*   **Args**:
+    *   `*args`: experiments, runs, or `StratificationResult` objects.
+*   **Smart Resolution**: Calls `mb.stats.strata()` internally for raw objects.
 
-# Comparing Initial vs Final
-mb.spaceplot(exp.pop(0), exp.last_pop, title="Evolution")
+### **2.4. Hierarchical Perspective (`mb.view.casteplot`)**
+Plots the **Caste Profile** (Floating bars showing Quality vs. Density per rank).
+*   **Geometry**: Center = Quality; Height = Density (Population %).
+*   **Args**:
+    *   `*args`: experiments or `StratificationResult` objects.
+    *   `metric` (*callable*): Quality measure (default: `mb.metrics.hv`).
+    *   `height_scale` (*float*): Adjusts the thickness of the bars.
 
-# Visualizing Dominance
-mb.spaceplot(exp.dominated(), exp.non_dominated())
-```
+### **2.5. Competitive Perspective (`mb.view.domplot`)**
+Plots the **Dominance Duel** (Stacked bars showing contribution per rank).
+*   **Args**:
+    *   `exp1`, `exp2`: The two experiments to compare.
+*   **Smart Resolution**: Calls `mb.stats.arena(exp1, exp2)` internally to build the `mb.view.domplot` input.
 
 ---
 
@@ -211,14 +219,14 @@ algo_tuned = mb.moeas.NSGA3(population=200,
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
 ### **Metric Calculation**
-*   **`mb.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
+*   **`mb.metrics.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
     *   `mode` (*str*): Calculation strategy. 
         *   `'auto'`: Uses the **Exact** algorithm for $M \leq 6$ and switches to **Monte Carlo** for $M > 6$.
         *   `'exact'`: Forces the Exact (WFG) algorithm (may be slow for high dimensions).
         *   `'fast'`: Forces Monte Carlo approximation.
     *   `n_samples` (*int*): Number of points for Monte Carlo sampling (default: $10^5$).
-*   **`mb.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
-*   **`mb.gd(data, ref=None)`**: Calculates GD (Generational Distance).
+*   **`mb.metrics.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
+*   **`mb.metrics.gd(data, ref=None)`**: Calculates GD (Generational Distance).
 
 **Returns**: `MetricMatrix` object.
 
@@ -237,12 +245,12 @@ A matrix of metric values (Generations x Runs).
 
 **Example:**
 ```python
-hv = mb.hv(exp)
+hv = mb.metrics.hv(exp)
 final_gen_dist = hv.gens() # Distribution at final generation
 first_run_traj = hv.runs(0) # Trajectory of first run
 
 # Single value case
-val = mb.hv(exp.last_pop)
+val = mb.metrics.hv(exp.last_pop)
 print(f"Final HV: {val:.4f}") 
 ```
 
@@ -254,21 +262,21 @@ print(f"Final HV: {val:.4f}")
 
 Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
 
-### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided', metric=mb.hv, gen=-1, **kwargs)`**
+### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Performs the Mann-Whitney U rank test.
 *   **Args**:
     *   `data1`, `data2`: Arrays, `Experiment` objects, or `MetricMatrix` objects.
-    *   `metric` (*callable*): Metric function to use if experiments are passed (e.g., `mb.hv`, `mb.igd`).
+    *   `metric` (*callable*): Metric function to use if experiments are passed (e.g., `mb.metrics.hv`, `mb.metrics.igd`).
     *   `gen` (*int*): Generation index to extract (default is `-1`, the final generation).
     *   `**kwargs`: Arguments passed directly to the `metric` function (e.g., `ref_point`).
 *   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, `.significant`, and `.report()`.
 
-### **`mb.stats.ks_test(data1, data2, alternative='two-sided', metric=mb.hv, gen=-1, **kwargs)`**
+### **`mb.stats.ks_test(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Performs the Kolmogorov-Smirnov two-sample test for distribution shape differences.
 *   **Args**: Same as `mann_whitney`.
 *   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, and `.report()`.
 
-### **`mb.stats.a12(data1, data2, metric=mb.hv, gen=-1, **kwargs)`**
+### **`mb.stats.a12(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
 *   **Args**: Same as `mann_whitney`.
 *   **Returns**: `SimpleStatsValue` (float-compatible) with `.value` and `.report()`.
@@ -280,20 +288,13 @@ Performs **Population Strata** (Dominance Layer analysis).
     *   `gen` (*int*): Generation index.
 *   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure`, `.quality_by()`, and `.report()`.
 
+### **`mb.stats.arena(exp1, exp2, gen=-1)`**
+Performs **Joint Stratification** analysis between two groups.
+*   **Returns**: `ArenaResult` object with `.joint_frequencies`, `.dominance_ratio`, and competitive `.report()`.
+
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strata profiles. 
 
-### **`mb.stats.strataplot(*results, labels=None, title=None)`**
-Generates a grouped bar chart comparing multiple strata results.
-
-### **`mb.rankplot(*results, labels=None, title=None, metric=None)`**
-Generates a **Floating Rank Quality Profile**.
-*   **Geometry**: Each dominance rank is represented by a vertical bar.
-*   **Vertical Position (Center)**: Set by the `metric` function (default: `mb.hypervolume`).
-*   **Bar Height**: Represents the solution density (normalized count) in that rank.
-*   **Args**:
-    *   `metric` (*callable*): A function that takes an objective matrix and returns a quality score.
-    *   `height_scale` (*float*): Multiplier to adjust the thickness of the floating bars.
 
 ---
 

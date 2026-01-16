@@ -27,19 +27,19 @@ def main():
     print("Running experiment...")
     exp1.run()
     
-    # 3. Visualization: Front vs. Background Population
+    # 3. Visualization: Front vs. Background Population (Spatial Perspective)
     # We can distinguish the "winners" (Rank 1) from the rest of the search.
     print("Plotting winners vs background...")
-    mb.spaceplot(exp1.front(), exp1.non_front(), 
-                  labels=["Pareto Front", "Dominated"], 
-                  title="Anatomy of a Population")
+    mb.view.spaceplot(exp1.front(), exp1.non_front(), 
+                      labels=["Pareto Front", "Dominated"], 
+                      title="Anatomy of a Population")
 
-    # 4. Visualization: Search Trajectory
+    # 4. Visualization: Search Trajectory (Spatial Perspective)
     # Compare an early snapshot (Gen 5) with the final state.
     print("Comparing snapshots...")
-    mb.spaceplot(exp1.front(5), exp1.front(), 
-                  labels=["Elite at Gen 5", "Final Elite"], 
-                  title="Convergence Path")
+    mb.view.spaceplot(exp1.front(5), exp1, 
+                      labels=["Elite at Gen 5", "Final Elite"], 
+                      title="Convergence Path")
 
 if __name__ == "__main__":
     main()

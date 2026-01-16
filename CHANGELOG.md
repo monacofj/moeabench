@@ -12,6 +12,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-15
+
+### Changed
+- **Break The World (Alpha Policy)**: Refactored the core architecture to enforce strict namespaced API usage.
+- **Top-Level Shortcuts Deprecated**: All top-level shortcuts (e.g., `mb.spaceplot`, `mb.hv`, `mb.DTLZ2`) now issue a `UserWarning` and will be removed in the Beta release.
+    - Plotting: `mb.spaceplot` $\to$ `mb.view.spaceplot`
+    - Metrics: `mb.hv` $\to$ `mb.metrics.hv`
+    - Stats: `mb.strata` $\to$ `mb.stats.strata`
+    - Benchmarks: `mb.DTLZ2` $\to$ `mb.mops.DTLZ2`
+    - Algorithms: `mb.NSGA3` $\to$ `mb.moeas.NSGA3`
+- **Documentation Overhaul**: All examples (scripts and notebooks) and documentation guides (`userguide.md`, `reference.md`, `design.md`) have been updated to exclusively use the new namespaced API.
+- **Tutorial Narrative**: Examples now present the namespaced API as the standard, removing references to "new" or "changed" APIs for a cleaner learning curve.
+
+### Added
+- **Metric Alias**: Added `hv` alias in `mb.metrics` (`mb.metrics.hv`) to streamline the most common metric call.
+
 ## [0.2.0] - 2026-01-15
 
 ### Added
@@ -21,7 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Environment Awareness**: Automated configuration for Google Colab and interactive backends.
 
 ### Changed
-- **Project Identity**: Rebranded as an **Extensible Analytical Toolkit**, adopting a humble, technically-focused tone across all documentation (`design.md`, `README.md`, `userguide.md`).
 - **Standardized Examples**: Standardized all notebook examples with direct `pip install` commands and removed redundant `mb_path` imports.
 - **Repository Migration**: Moved official repository to `https://github.com/monacofj/moeabench`.
 - **Zen Cleanup**: Simplified all example scripts by removing redundant `mode='static'` manual overrides.

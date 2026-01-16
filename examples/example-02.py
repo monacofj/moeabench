@@ -34,22 +34,21 @@ def main():
     print(f"Running {exp2.name}...")
     exp2.run()
     
-    # 3. Comparative Visualization (Spatial)
+    # 3. Comparative Visualization (Spatial Perspective)
     # Passing multiple experiments to spaceplot overlays their fronts.
     print("Comparing fronts...")
-    mb.spaceplot(exp1, exp2, title="Comparison: NSGA-III vs SPEA2")
+    mb.view.spaceplot(exp1, exp2, title="Comparison: NSGA-III vs SPEA2")
 
-    # 4. Comparative Visualization (Temporal)
+    # 4. Comparative Visualization (Historic Perspective)
     # We use a shared reference to ensure a fair hypervolume comparison.
     ref = [exp1, exp2] 
 
-    # hv1 and hv2 contain:
-    #             MetricMatrix    historical hypervolume values
-    hv1 = mb.hv(exp1, ref=ref)
-    hv2 = mb.hv(exp2, ref=ref)
+    # hv1 and hv2 contain MetricMatrix objects with historical values.
+    hv1 = mb.metrics.hv(exp1, ref=ref)
+    hv2 = mb.metrics.hv(exp2, ref=ref)
     
     print("Comparing convergence...")
-    mb.timeplot(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)")
+    mb.view.timeplot(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)")
 
 if __name__ == "__main__":
     main()

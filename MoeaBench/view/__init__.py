@@ -3,15 +3,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .evaluator import (
-    hypervolume, 
-    igd, 
-    gd,
-    gdplus,
-    igdplus,
-    plot_matrix,
-    MetricMatrix
-)
+from .plotters import spaceplot, timeplot, rankplot, casteplot, domplot
 
-# Aliases for convenience
-hv = hypervolume
+__all__ = ["spaceplot", "timeplot", "rankplot", "casteplot", "domplot"]

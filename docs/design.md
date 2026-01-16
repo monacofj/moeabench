@@ -44,13 +44,17 @@ To maintain high performance without sacrificing detail, all secondary metrics (
 
 Visualization is a first-class citizen. A good plot is often the "Wow" moment that confirms a successful optimization.
 
-### Compact Naming
-High-level plotting functions use the `fooplot` pattern (e.g., `mb.spaceplot`, `mb.timeplot`, `mb.rankplot`). We avoid underscores in these high-level exports to provide a clean, modern API that feels unified with the rest of the framework.
+### Compact Naming & Namespace
+Direct plotting functions belong **exclusively** to the `mb.view` namespace and follow the `fooplot` pattern (e.g., `mb.view.spaceplot`, `mb.view.rankplot`). 
+
+> [!IMPORTANT]
+> **Alpha Deprecation Policy**: 
+> During the current Alpha release, we are enforcing a strict "Break the World" approach. Top-level shortcuts for plotting (e.g., `mb.spaceplot()`) are considered legacy and will issue a `UserWarning`. They are scheduled for removal in the Beta release.
 
 ### Aesthetic Excellence
 - **Static by Default**: We prioritize readable, publication-quality static plots.
 - **Curated Palettes**: We use harmonious, non-generic color palettes (often derived from HSL space) to represent different algorithms or population ranks.
-- **Visual Intelligence**: Functions like `mb.spaceplot` are context-aware, automatically choosing 2D or 3D projections based on the problem dimensionality.
+- **Visual Intelligence**: Functions like `mb.view.spaceplot` are context-aware, automatically choosing 2D or 3D projections based on the problem dimensionality.
 
 ---
 
@@ -95,7 +99,8 @@ graph TD
     D --> E["Evaluation (Metrics)"]
     D --> F["Diagnostics (Stats)"]
     F --> G["Presentation (RichResult/.report)"]
-    D --> H["Visualization (fooplot)"]
+    D --> H["Scientific Perspectives (mb.view)"]
+    F --> H
 ```
 
 ### The Component Layers
@@ -109,8 +114,8 @@ At the heart of the library lies the Vectorized Engine, a strictly procedural an
 #### C. The Diagnostic Pipeline (`mb.stats`)
 Building upon the vectorized engine, the Diagnostic Pipeline introduces the library's unique approach to data interpretation. When a researcher passes an experiment to a statistical function, such as `mb.stats.strata`, the pipeline initiates a transformation: it extracts the objective data and applies descriptive algorithms to generate a Rich Result Object. This process moves beyond raw numbers, offering an analytical diagnosis that explains the internal "geology" of the search, such as detecting unusual selection pressure or identifying mature dominance structures.
 
-#### D. The Visual Presentation Layer (`plotting`)
-The final stage of the pipeline is the Visual Presentation Layer, which translates abstract data into a spatial story. Functions like `spaceplot` and `rankplot` are polymorphic by design, allowing them to accept various core objects and intelligently extract the information needed for a publication-quality visualization. This layer provides a clear, static, and informative representation of the algorithm's achievements and trade-offs.
+#### D. The Scientific View Layer (`view`)
+The final stage of the pipeline is the Scientific View Layer, which translates abstract data into a spatial story. Functions like `mb.view.spaceplot`, `mb.view.rankplot`, `mb.view.casteplot`, and `mb.view.domplot` are polymorphic by design, allowing them to accept various core objects (Experiments, Runs) or pre-calculated Rich Results. This layer ensures that the mathematical truth discovered by the stats module is rendered with aesthetic excellence and narrative clarity.
 
 ### Why this matters
 By integrating these layers, MoeaBench ensures that logic, state, and visualization remain decoupled and consistent. This allows researchers to extend the framework—by adding new metrics or visualizers—without disrupting the existing analytical flow, maintaining a system that is both technically robust and analytically elegant.

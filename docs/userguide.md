@@ -21,7 +21,7 @@ This guide provides an introductory overview for getting started with the framew
 *   **Standard Library**: Built-in support for classic mops (**DTLZ**, **DPF**) and state-of-the-art algorithms (**NSGA-III**, **MOEA/D**, **SPEA2**, **RVEA**) powered by Pymoo.
 *   **High Performance**: Vectorized metric calculations and non-dominated sorting using NumPy.
 *   **Extensible**: Easily plug in your own custom problems or algorithms.
-*   **Visual Analysis**: Built-in 3D plotting (`spaceplot`) and convergence tracking (`timeplot`).
+*   **Visual Analysis**: Built-in perspectives through the `mb.view` layer: spatial (`spaceplot`), historic (`timeplot`), structural (`rankplot`), hierarchical (`casteplot`), and competitive (`domplot`).
 
 ### **References & Provenance**
 MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[Benchmarks Guide](benchmarks.md)**:
@@ -61,9 +61,9 @@ exp.moea = mb.moeas.NSGA3(population=100, generations=200)
 # This executes one run and stores the result
 exp.run()
 
-# 4. Visualize the result
+# 4. Visualize the result (Spatial Perspective)
 # Plots the Pareto Front of the last run
-mb.spaceplot(exp, title="My First Pareto Front")
+mb.view.spaceplot(exp, title="My First Pareto Front")
 ```
 
 #### **Reproducibility & Seeds**
@@ -84,32 +84,31 @@ Use shortcuts to calculate common metrics like Hypervolume (`hv`) or Inverted Ge
 ```python
 # Calculate Hypervolume for the entire run history (Experiment)
 # By default, it uses 'auto' mode (switches to Monte Carlo for M > 6)
-hv_matrix = mb.hv(exp)
+hv_matrix = mb.metrics.hv(exp)
 
 # Forcing specific modes:
-hv_exact = mb.hv(exp, mode='exact')          # Absolute precision (WFG)
-hv_fast  = mb.hv(exp, mode='fast', n_samples=10000) # Fast approximation
+hv_exact = mb.metrics.hv(exp, mode='exact')          # Absolute precision (WFG)
+hv_fast  = mb.metrics.hv(exp, mode='fast', n_samples=10000) # Fast approximation
 
 # Calculate IGD (requires the MOP to have a known Pareto Front)
-igd_matrix = mb.igd(exp)
+igd_matrix = mb.metrics.igd(exp)
 ```
 
-### **Visualizing Progress (`timeplot`)**
+### **Visualizing Progress (`mb.view.timeplot`)**
 See how the algorithm converges over time.
 
-```python
-# Plot Hypervolume evolution over generations
-mb.timeplot(hv_matrix, title="Convergence History")
+# Plot Hypervolume evolution (Historic Perspective)
+mb.view.timeplot(hv_matrix, title="Convergence History")
 ```
 
-### **Visualizing Solutions (`spaceplot`)**
+### **Visualizing Solutions (`mb.view.spaceplot`)**
 Inspect the final trade-offs found by the algorithm.
 
 ```python
 # Compare the Initial Population vs. Final Population
 # exp.pop(0) -> Initial
 # exp.last_pop -> Final
-mb.spaceplot(exp.pop(0), exp.last_pop, title="Evolution")
+mb.view.spaceplot(exp.pop(0), exp.last_pop, title="Evolution")
 ```
 
 ### **Comparing with the Theoretical Limit**
@@ -117,7 +116,7 @@ For analytical benchmarks, you can easily plot the **True Pareto Front** to visu
 
 ```python
 # exp.optimal() samples the theoretical true PF/PS
-mb.spaceplot(exp.optimal(), exp, title="Proximity to Optimal")
+mb.view.spaceplot(exp.optimal(), exp, title="Proximity to Optimal")
 ```
 
 ---
@@ -187,11 +186,11 @@ class MyMOP(mb.mops.BaseMop):
     # Optional: Analytical Reference Front for IGD/GD
     def ps(self, n_points):
         # Returns decision variables (Pareto Set) to be evaluated as the PF.
-        # This is used by mb.igd() and mb.spaceplot() to show the "true" front.
+        # This is used by mb.metrics.igd() and mb.view.spaceplot() to show the "true" front.
         return np.column_stack([np.linspace(0, 1, n_points)] * self.N)
 ```
 
-**Guard Mechanisms**: Analytical fronts are sampled **lazily** (only when requested). If a metric like `mb.igd` is called but the MOP does not implement `ps()`, the tool will catch the error and fall back to the best-found front across all runs.
+**Guard Mechanisms**: Analytical fronts are sampled **lazily** (only when requested). If a metric like `mb.metrics.igd` is called but the MOP does not implement `ps()`, the tool will catch the error and fall back to the best-found front across all runs.
 
 #### **2. Custom MOEAs**
 To wrap an external algorithm or implement your own, implement the `solve` interface (which receives the MOP and termination criteria). If you are adapting a Pymoo algorithm, you can use the `BaseMoeaWrapper`:
@@ -224,8 +223,8 @@ exp.moea = MyNSGA2(pop_size=50)
 Comparing algorithms requires systematic testing. MoeaBench provides the **"Smart Stats"** API to perform these comparisons with minimal boilerplate.
 
 ### **Functional Comparisons (mann_whitney)**
-You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.hv`) objects directly to statistical tests. The library automatically handles:
-1.  **Metric Calculation**: If an experiment is passed, it uses Hypervolume (`mb.hv`) by default.
+You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.metrics.hv`) objects directly to statistical tests. The library automatically handles:
+1.  **Metric Calculation**: If an experiment is passed, it uses Hypervolume (`mb.metrics.hv`) by default.
 2.  **Global Reference**: For experiments, it automatically injects a shared reference point (Global Nadir).
 3.  **Extraction**: For both experiments and matrices, it extracts the final generation's distribution for testing.
 
@@ -234,15 +233,15 @@ You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.hv`) objects 
 res = mb.stats.mann_whitney(exp1, exp2)
 
 # Comparing pre-calculated matrices
-hv1 = mb.hv(exp1)
-hv2 = mb.hv(exp2)
+hv1 = mb.metrics.hv(exp1)
+hv2 = mb.metrics.hv(exp2)
 res = mb.stats.mann_whitney(hv1, hv2) # Automically extracts .gens(-1)
 ```
 
 > [!TIP]
 > **Performance Tip**: Calculating metrics like Hypervolume or IGD for large experiments can be computationally expensive.
 > **Smart Stats** are purely functional and do *not* cache results (to ensure accuracy in changing contexts).
-> **Best Practice**: Assign metric results to variables (`hv = mb.hv(exp)`) and reuse them, rather than calling `mb.hv(exp)` repeatedly.
+> **Best Practice**: Assign metric results to variables (`hv = mb.metrics.hv(exp)`) and reuse them, rather than calling `mb.metrics.hv(exp)` repeatedly.
 
 ### **Detecting Shape Differences (`ks_test`)**
 While Mann-Whitney tells you if one algorithm is generally "better," the **Kolmogorov-Smirnov (KS)** test identifies if the distributions have different **shapes**. 
@@ -261,10 +260,10 @@ You can specify which metric to use by passing the function or a lambda.
 
 ```python
 # Using IGD (injects common PF automatically)
-mb.stats.mann_whitney(exp1, exp2, metric=mb.igd)
+mb.stats.mann_whitney(exp1, exp2, metric=mb.metrics.igd)
 
 # Using a lambda for custom logic
-mb.stats.mann_whitney(exp1, exp2, metric=lambda e: mb.hv(e, ref_point=[1.2, 1.2]))
+mb.stats.mann_whitney(exp1, exp2, metric=lambda e: mb.metrics.hv(e, ref_point=[1.2, 1.2]))
 
 # Passing arguments to the metric directly
 mb.stats.mann_whitney(exp1, exp2, metric=mb.gdplus, ref=true_pf)
@@ -310,23 +309,28 @@ Use `mb.stats.strata` to analyze the distribution of individuals across all domi
 # Analyze the rank distribution of an experiment
 result = mb.stats.strata(exp)
 
-# Acesso programático (Lazy)
-pressure = result.selection_pressure # Calculado apenas aqui
+# Programmative access (Lazy)
+pressure = result.selection_pressure 
 
-# Relatório narrativo (Didático)
+# Narrative report (Didatic)
 print(result.report())
 
-# Visualize the profile
-mb.stats.strataplot(result, title="Dominance Layers")
+# Visualize the rank structure (Structural Perspective)
+mb.view.rankplot(exp)
 ```
 
-### **Advanced Diagnosis: Floating Rank Profile**
-Beyond simple distributions, MoeaBench allows you to inspect the **Floating Rank Profile**. Use `mb.rankplot(strat1, strat2)` to visualize the quality and density of each dominance level.
+### **Advanced Diagnosis: Caste Profile**
+Beyond simple distributions, MoeaBench allows you to inspect the **Caste Profile** (Hierarchical Perspective). Use `mb.view.casteplot(exp1, exp2)` to visualize the quality and density of each dominance level.
 
 *   **Vertical Position**: Represents the Quality (Default: `mb.hypervolume`).
 *   **Bar Height**: Represents the Population Density (how many solutions are in that rank).
 
 This allows you to see both **Convergence** (is the bar high?) and **Search Effort** (is the bar tall?) at a single glance.
+
+### **Competitive Stratification: The Arena**
+To witness the direct confrontation between two algorithms, use `mb.view.domplot(exp1, exp2)`. This generates the "Arena" view:
+- A stacked bar chart showing the proportion of solutions each algorithm contributed to each global dominance rank.
+- It reveals who is truly "infiltrating" the elite Pareto levels.
 
 ### **8. System Utilities (`mb.system`)**
 

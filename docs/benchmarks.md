@@ -56,7 +56,7 @@ MoeaBench was born from the need to move away from fragmented script-based bench
 
 We consolidated everything into a clean, object-oriented structure:
 1.  **Base Classes**: All problems now inherit from `BaseMop`, ensuring consistent metadata handling.
-2.  **Analytical Optimals**: We implemented `.optimal()`, `.optimal_front()`, and `.optimal_set()` for all DTLZ and DPF problems. This allows you to visualize your results against the theoretical truth with a single command: `mb.spaceplot(exp.optimal(), exp)`.
+2.  **Analytical Optimals**: We implemented `.optimal()`, `.optimal_front()`, and `.optimal_set()` for all DTLZ and DPF problems. This allows you to visualize your results against the theoretical truth with a single command: `mb.view.spaceplot(exp.optimal(), exp)`.
 3.  **Independence & Seeds**: We ensured that every run is mathematically unique by tying the problem's random states to the Experiment's seed logic.
 
 This documentation serves not just as a manual, but as a record of our commitment to technical rigor and high-performance analysis.

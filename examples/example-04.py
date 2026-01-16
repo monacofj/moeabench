@@ -28,25 +28,24 @@ def main():
     print(f"Executing {exp1.name}...")
     exp1.run(repeat=5)
     
-    # 3. Aggregated Convergence (Statistical Timeplot)
-    # hv1 contains:
-    #             MetricMatrix    historical hypervolume for ALL runs
-    hv1 = mb.hv(exp1)
+    # 3. Aggregated Convergence (Historic Perspective)
+    # hv1 contains the historical hypervolume for ALL runs.
+    hv1 = mb.metrics.hv(exp1)
 
     # The timeplot automatically computes mean and standard deviation
     print("Plotting statistical convergence...")
-    mb.timeplot(hv1, title="SStability Analysis (5-run HV)")
+    mb.view.timeplot(hv1, title="Stability Analysis (5-run HV)")
 
-    # 4. Aggregated Quality (Superfront)
+    # 4. Aggregated Quality (Spatial Perspective)
     # The 'superfront' provides the combined non-dominated solutions 
     # considering the discovery of all runs.
     print("Plotting Superfront...")
-    mb.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)")
+    mb.view.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)")
 
-    # 5. Stability Inspection (All Fronts)
+    # 5. Stability Inspection (Spatial Perspective)
     # We can also plot each run's final front independently.
     print("Comparing individual run stability...")
-    mb.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts")
+    mb.view.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts")
 
 if __name__ == "__main__":
     main()

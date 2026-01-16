@@ -63,13 +63,20 @@ def main():
     # 4. Visual Workshop
     print("\nGenerating visual profiles... (Close plots to finish)")
     
-    # A. Structural View (Density)
-    mb.stats.strataplot(strat1, strat2, labels=[exp1.name, exp2.name], 
-                        title=f"Structural Strata (Gen {SNAPSHOT_GEN})")
+    # A. Structural View (Density/Selection Pressure)
+    # Formerly 'strataplot', now 'rankplot' to emphasize the rank structure.
+    mb.view.rankplot(strat1, strat2, labels=[exp1.name, exp2.name], 
+                title=f"Structural Perspective (Gen {SNAPSHOT_GEN})")
     
-    # B. Quality View (Floating Ranks)
-    mb.rankplot(strat1, strat2, 
-                title=f"Floating Rank Quality Profile (Gen {SNAPSHOT_GEN})")
+    # B. Hierarchical View (Floating Ranks/Quality)
+    # Re-named to 'casteplot' to avoid confusion with the structural rankplot.
+    mb.view.casteplot(strat1, strat2, 
+                 title=f"Hierarchical Perspective: Caste Profile (Gen {SNAPSHOT_GEN})")
+
+    # C. Competitive View (The Arena Duel)
+    # New analysis: joint stratification to see cross-dominance.
+    print(f"\n--- Competitive Duel (Arena) ---")
+    mb.view.domplot(exp1, exp2, title="Competitive Perspective: Arena Duel")
 
     plt.show()
 
@@ -87,7 +94,12 @@ if __name__ == "__main__":
 # 2. SPEA2 (The Sniper): Tends to promote a very sharp elite (Rank 1) while 
 #    leaving the rest of the population more scattered.
 #
-# The 'rankplot' (floating ranks) proves that the population is robust: 
+# Scientific Perspectives (mb.view):
+# - 'rankplot' (Structural): Shows the global frequency of each rank.
+# - 'casteplot' (Hierarchical): Shows quality and density per rank.
+# - 'domplot' (Competitive): The Arena view for direct algorithm duels.
+#
+# The 'casteplot' (floating ranks) proves that the population is robust: 
 # early ranks are often clustered near the 1.0 quality ceiling. This means 
 # that even if the absolute best solutions are lost, the "successors" are 
 # functionally equivalent.

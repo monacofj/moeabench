@@ -34,7 +34,7 @@ This "Object-Awareness" is what enables our **Smart Stats** and **Smart Plots**.
 ### 3. Closing the Gap with "Analytical Truth"
 We identified that researchers spend a disproportionate amount of time seeking and loading reference fronts ($PF_{true}$). To solve this, we integrated the analytical truth directly into the benchmark classes.
 
-In our reimbursement, every DTLZ and DPF class implements its own `.ps()` and `.pf()` sampling logic based on the original publications. This means that comparison is no longer an external task; it is a native method. You can now execute `mb.spaceplot(exp.optimal(), exp)` and see your performance against the theoretical limit instantly.
+In our reimbursement, every DTLZ and DPF class implements its own `.ps()` and `.pf()` sampling logic based on the original publications. This means that comparison is no longer an external task; it is a native method. You can now execute `mb.view.spaceplot(exp.optimal(), exp)` and see your performance against the theoretical limit instantly.
 
 ### 4. Deterministic Reproducibility
 Finally, we addressed the "Ghost in the Machine": non-deterministic randomness. In legacy MoeaBench, problems shared global random states with the solvers, leading to "leaky" seeds. Our reimplementation decoupling these states. Every benchmark instance now manages its internal state in coordination with the `Experiment` seed logic. If you run the same experiment twice, the vectorized mathematical engine will produce bit-identical results, ensuring absolute scientific rigor.

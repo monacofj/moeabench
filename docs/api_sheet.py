@@ -64,8 +64,8 @@ exp1.optimal_front()      # Known Pareto Front (SmartArray)
 # ---------------------------------------------------------
 
 # Metric Evaluators
-hv1 = mb.hv(exp1)         # Hypervolume convergence
-igd1 = mb.igd(exp1)       # Inverted Generational Distance
+hv1 = mb.metrics.hv(exp1)         # Hypervolume convergence
+igd1 = mb.metrics.igd(exp1)       # Inverted Generational Distance
 
 # Statistical Diagnostics (Rich Results)
 # Every result object provides a .report() method and lazy properties.
@@ -74,7 +74,7 @@ print(res1.report())      # Narrative statistical diagnosis
 res1.p_value              # Access programmatic p-value
 
 # Population Strata (Geology)
-strat1 = mb.strata(exp1)
+strat1 = mb.stats.strata(exp1)
 strat1.report()           # Maturity and density diagnosis
 strat1.selection_pressure  # Lazy-evaluated diagnostic metric
 
@@ -85,13 +85,14 @@ dist1 = mb.stats.emd(strat1, strat2)
 diff1 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
 
 # ---------------------------------------------------------
-# 6. Visualization (fooplot convention)
+# 6. Visualization (Scientifc Perspectives: mb.view)
 # ---------------------------------------------------------
 
-mb.timeplot(hv1)                         # Convergence plot
-mb.spaceplot(exp1)                       # Pareto Front plot (2D/3D)
-mb.rankplot(strat1)                      # Quality profile plot
-mb.strataplot(strat1, strat2)            # Distribution comparison
+mb.view.timeplot(hv1)                         # Historic: Convergence plot
+mb.view.spaceplot(exp1)                       # Spatial: Pareto Front plot (2D/3D)
+mb.view.rankplot(exp1)                        # Structural: Selection pressure (counts)
+mb.view.casteplot(exp1)                       # Hierarchical: Quality/Density profile
+mb.view.domplot(exp1, exp2)                   # Competitive: Arena duel 
 
 # ---------------------------------------------------------
 # 7. Custom Extensions
