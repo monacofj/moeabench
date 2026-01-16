@@ -18,8 +18,8 @@ from MoeaBench import mb
 import numpy as np
 
 # 1. Component: Custom Problem Logic
-# Inheriting from BaseBenchmark ensures integration with the framework.
-class MyProblem(mb.benchmarks.BaseBenchmark):
+# Inheriting from BaseMop ensures integration with the framework.
+class MyProblem(mb.mops.BaseMop):
     """
     A custom bi-objective problem (ZDT1-like) implemented with NumPy.
     """
@@ -65,5 +65,5 @@ if __name__ == "__main__":
 # Because MoeaBench expects a vectorized input (X), you can leverage 
 # the full speed of NumPy.
 #
-# Once defined, your custom benchmark becomes a "first-class citizen" 
+# Once defined, your custom mops becomes a "first-class citizen" 
 # in the library, compatible with all plotting tools and statistical measures.
