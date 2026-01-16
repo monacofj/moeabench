@@ -315,3 +315,41 @@ For a detailed technical narrative on the implementation history and mathematica
 
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "Scalable multi-objective optimization test problems." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "Multiobjective test problems with degenerate Pareto fronts." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
+
+# Deprecated API
+
+The following API is deprecated and will be removed in a future release. Use the new API instead.
+
+| Deprecated (Old) | Replacement (New) | Type |
+| :--- | :--- | :--- |
+| `mb.spaceplot()` | `mb.view.spaceplot()` | Plotting |
+| `mb.timeplot()` | `mb.view.timeplot()` | Plotting |
+| `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
+| `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
+| `mb.domplot()` | `mb.view.domplot()` | Plotting |
+| `mb.hv()` | `mb.metrics.hv()` | Metric |
+| `mb.igd()` | `mb.metrics.igd()` | Metric |
+| `mb.gd()` | `mb.metrics.gd()` | Metric |
+| `mb.strata()` | `mb.stats.strata()` | Stats |
+| `mb.arena()` | `mb.stats.arena()` | Stats |
+| `mb.emd()` | `mb.stats.emd()` | Stats |
+| `mb.attainment()` | `mb.stats.attainment()` | Stats |
+| `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
+| `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
+
+| Deprecated (Old) | Replacement (New) | Type |
+| :--- | :--- | :--- |
+| `mb.spaceplot()` | `mb.view.spaceplot()` | Plotting |
+| `mb.timeplot()` | `mb.view.timeplot()` | Plotting |
+| `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
+| `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
+| `mb.domplot()` | `mb.view.domplot()` | Plotting |
+| `mb.hv()` | `mb.metrics.hv()` | Metric |
+| `mb.igd()` | `mb.metrics.igd()` | Metric |
+| `mb.gd()` | `mb.metrics.gd()` | Metric |
+| `mb.strata()` | `mb.stats.strata()` | Stats |
+| `mb.arena()` | `mb.stats.arena()` | Stats |
+| `mb.emd()` | `mb.stats.emd()` | Stats |
+| `mb.attainment()` | `mb.stats.attainment()` | Stats |
+| `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
+| `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
