@@ -243,8 +243,8 @@ class TierResult(StratificationResult):
         lines = [
             f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
             f"  Search Depth: {self.max_rank} global levels",
-            f"  Pole Position (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-            f"  Gap (Displacement Depth): {self.gap}",
+            f"  Dominance Ratio (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
+            f"  Displacement Depth: {self.gap}",
             "",
             f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
             "-" * 35
