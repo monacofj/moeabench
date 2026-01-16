@@ -42,7 +42,7 @@ exp.moea = mb.moeas.NSGA3()                     # Select which MOEA to run
 
 exp.run()                                       # Run the optimization process
 
-mb.spaceplot(exp.front())                       # Plot the 3D pareto front
+mb.view.spaceplot(exp.front())                  # Plot the 3D pareto front
 ```
 
 ## Documentation

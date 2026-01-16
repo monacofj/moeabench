@@ -31,3 +31,8 @@ analysis/
 env/
 venv/
 node_modules/
+
+# Custom
+.wish.md
+.ext_strat.md
+
