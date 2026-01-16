@@ -21,7 +21,7 @@ This guide provides an introductory overview for getting started with the framew
 *   **Standard Library**: Built-in support for classic mops (**DTLZ**, **DPF**) and state-of-the-art algorithms (**NSGA-III**, **MOEA/D**, **SPEA2**, **RVEA**) powered by Pymoo.
 *   **High Performance**: Vectorized metric calculations and non-dominated sorting using NumPy.
 *   **Extensible**: Easily plug in your own custom problems or algorithms.
-*   **Visual Analysis**: Built-in perspectives through the `mb.view` layer: spatial (`spaceplot`), historic (`timeplot`), structural (`rankplot`), hierarchical (`casteplot`), and competitive (`domplot`).
+*   **Visual Analysis**: Built-in perspectives through the `mb.view` layer: spatial (`spaceplot`), historic (`timeplot`), structural (`rankplot`), hierarchical (`casteplot`), and competitive (`tierplot`).
 
 ### **References & Provenance**
 MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[Benchmarks Guide](benchmarks.md)**:
@@ -338,11 +338,12 @@ print(res.report())
 # Plot the distribution of algorithms across tiers
 mb.view.tierplot(res)
 ```
-The **Tier Plot** shows the proportion of each algorithm in each global non-domination rank.
+The **Tier Plot** shows the proportion of each algorithm in each global non-domination rank, visualized through **absolute population counts**.
 
+*   **Vertical Height**: Represents the total number of individuals in that tier across both algorithm populations.
 *   **Pole Position**: The percentage of the first tier (Rank 1) belonging to an algorithm.
 *   **Gap**: How many tiers deep you have to go before the rival algorithm starts to appear.
-- It reveals who is truly "infiltrating" the elite Pareto levels.
+- It reveals who is truly "infiltrating" the elite Pareto levels and the density of those levels.
 
 ### **8. System Utilities (`mb.system`)**
 

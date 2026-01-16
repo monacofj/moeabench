@@ -153,7 +153,8 @@ Plots the **Caste Profile** (Floating bars showing Quality vs. Density per rank)
     *   `height_scale` (*float*): Adjusts the thickness of the bars.
 
 ### **2.5. Competitive Perspective (`mb.view.tierplot`)**
-Plots the **Competitive Tier Duel** (Stacked bars showing contribution per tier).
+Plots the **Competitive Tier Duel** (Stacked bars showing absolute population contribution per tier).
+*   **Visualization**: The y-axis represents the **absolute population count** in each tier. Segment heights represent the contribution of each algorithm.
 *   **Args**:
     *   `exp1`, `exp2`: The two experiments to compare.
 *   **Smart Resolution**: Calls `mb.stats.tier(exp1, exp2)` internally to build the `mb.view.tierplot` input.
@@ -335,13 +336,11 @@ The following API is deprecated and will be removed in a future release. Use the
 | `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
 | `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
 | `mb.tierplot()` | `mb.view.tierplot()` | Plotting |
-| `mb.domplot()` | `mb.view.tierplot()` | Plotting |
 | `mb.hv()` | `mb.metrics.hv()` | Metric |
 | `mb.igd()` | `mb.metrics.igd()` | Metric |
 | `mb.gd()` | `mb.metrics.gd()` | Metric |
 | `mb.strata()` | `mb.stats.strata()` | Stats |
 | `mb.tier()` | `mb.stats.tier()` | Stats |
-| `mb.arena()` | `mb.stats.tier()` | Stats |
 | `mb.emd()` | `mb.stats.emd()` | Stats |
 | `mb.attainment()` | `mb.stats.attainment()` | Stats |
 | `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |

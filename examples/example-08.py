@@ -96,7 +96,7 @@ if __name__ == "__main__":
 # Scientific Perspectives (mb.view):
 # - 'rankplot' (Structural): Shows the global frequency of each rank.
 # - 'casteplot' (Hierarchical): Shows quality and density per rank.
-# - 'domplot' (Competitive): The Arena view for direct algorithm duels.
+# - 'tierplot' (Competitive): The Tier Duel view for direct algorithm duels.
 #
 # The 'casteplot' (floating ranks) proves that the population is robust: 
 # early ranks are often clustered near the 1.0 quality ceiling. This means 
