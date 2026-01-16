@@ -16,14 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Break The World (Alpha Policy)**: Refactored the core architecture to enforce strict namespaced API usage.
-- **Top-Level Shortcuts Deprecated**: All top-level shortcuts (e.g., `mb.spaceplot`, `mb.hv`, `mb.DTLZ2`) now issue a `UserWarning` and will be removed in the Beta release.
-    - Plotting: `mb.spaceplot` $\to$ `mb.view.spaceplot`
-    - Metrics: `mb.hv` $\to$ `mb.metrics.hv`
-    - Stats: `mb.strata` $\to$ `mb.stats.strata`
-    - Benchmarks: `mb.DTLZ2` $\to$ `mb.mops.DTLZ2`
-    - Algorithms: `mb.NSGA3` $\to$ `mb.moeas.NSGA3`
-- **Documentation Overhaul**: All examples (scripts and notebooks) and documentation guides (`userguide.md`, `reference.md`, `design.md`) have been updated to exclusively use the new namespaced API.
-- **Tutorial Narrative**: Examples now present the namespaced API as the standard, removing references to "new" or "changed" APIs for a cleaner learning curve.
+- **Tier Nomenclature Refactor**: Standardized all competitive analysis terminology on **"Tier"**.
+    - Replaced `arena` with `tier` and `domplot` with `tierplot`.
+    - Updated reporting to use **"Dominance Ratio"** and **"Displacement Depth"** as primary metrics.
+    - **Tabula Rasa**: Removed all legacy aliases (`mb.arena`, `mb.domplot`) and backward compatibility notes ("formerly known as") across the entire codebase and documentation.
+- **Advanced Tier Plot**: Improved `tierplot` to display **absolute population counts** on the y-axis, providing a dual view of dominance proportions and rank density.
+- **Documentation Overhaul**: All documentation guides (`userguide.md`, `reference.md`, `design.md`), scripts, and notebooks (`example-06.ipynb`) have been updated to exclusively use the new namespaced API and Tier nomenclature.
 
 ### Added
 - **Metric Alias**: Added `hv` alias in `mb.metrics` (`mb.metrics.hv`) to streamline the most common metric call.
