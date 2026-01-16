@@ -28,7 +28,7 @@ def _resolve_to_result(args, target_type, resolve_fn):
             labels.append(getattr(arg, 'name', getattr(arg, 'label', 'Data')))
     return results, labels
 
-def spaceplot(*args, objectives=None, mode='auto', title=None, axis_labels=None):
+def spaceplot(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None):
     """
     [mb.view.spaceplot] Perspectiva Espacial.
     Plots 2D/3D scatter of objectives (Pareto Front).
@@ -57,10 +57,14 @@ def spaceplot(*args, objectives=None, mode='auto', title=None, axis_labels=None)
         name = None
         t_mode = 'markers'
         
-        # Unwrap standard MoeaBench objects
+        # 1. Use explicit labels if provided
+        if labels and i < len(labels):
+            name = labels[i]
+
+        # 2. Unwrap standard MoeaBench objects
         if isinstance(arg, AttainmentSurface):
              val = arg
-             name = arg.name
+             if not name: name = arg.name
              t_mode = 'lines+markers'
         elif hasattr(arg, 'front') and callable(getattr(arg, 'front')):
              val = arg.front()
