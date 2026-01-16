@@ -4,5 +4,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .tests import a12, mann_whitney, ks_test
-from .stratification import strata, emd, StratificationResult, arena, ArenaResult
+from .stratification import strata, emd, StratificationResult, tier, TierResult
 from .attainment import attainment, attainment_diff, AttainmentSurface

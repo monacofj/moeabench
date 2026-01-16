@@ -152,11 +152,11 @@ Plots the **Caste Profile** (Floating bars showing Quality vs. Density per rank)
     *   `metric` (*callable*): Quality measure (default: `mb.metrics.hv`).
     *   `height_scale` (*float*): Adjusts the thickness of the bars.
 
-### **2.5. Competitive Perspective (`mb.view.domplot`)**
-Plots the **Dominance Duel** (Stacked bars showing contribution per rank).
+### **2.5. Competitive Perspective (`mb.view.tierplot`)**
+Plots the **Competitive Tier Duel** (Stacked bars showing contribution per tier).
 *   **Args**:
     *   `exp1`, `exp2`: The two experiments to compare.
-*   **Smart Resolution**: Calls `mb.stats.arena(exp1, exp2)` internally to build the `mb.view.domplot` input.
+*   **Smart Resolution**: Calls `mb.stats.tier(exp1, exp2)` internally to build the `mb.view.tierplot` input.
 
 ---
 
@@ -296,9 +296,9 @@ Performs **Population Strata** (Dominance Layer analysis).
     *   `gen` (*int*): Generation index.
 *   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure`, `.quality_by()`, and `.report()`.
 
-### **`mb.stats.arena(exp1, exp2, gen=-1)`**
-Performs **Joint Stratification** analysis between two groups.
-*   **Returns**: `ArenaResult` object with `.joint_frequencies`, `.dominance_ratio`, and competitive `.report()`.
+### **`mb.stats.tier(exp1, exp2, gen=-1)`**
+Performs **Joint Stratification** analysis (Tier analysis) between two groups.
+*   **Returns**: `TierResult` object with `.joint_frequencies`, `.pole`, `.gap`, and competitive `.report()`.
 
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strata profiles. 
@@ -334,12 +334,14 @@ The following API is deprecated and will be removed in a future release. Use the
 | `mb.timeplot()` | `mb.view.timeplot()` | Plotting |
 | `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
 | `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
-| `mb.domplot()` | `mb.view.domplot()` | Plotting |
+| `mb.tierplot()` | `mb.view.tierplot()` | Plotting |
+| `mb.domplot()` | `mb.view.tierplot()` | Plotting |
 | `mb.hv()` | `mb.metrics.hv()` | Metric |
 | `mb.igd()` | `mb.metrics.igd()` | Metric |
 | `mb.gd()` | `mb.metrics.gd()` | Metric |
 | `mb.strata()` | `mb.stats.strata()` | Stats |
-| `mb.arena()` | `mb.stats.arena()` | Stats |
+| `mb.tier()` | `mb.stats.tier()` | Stats |
+| `mb.arena()` | `mb.stats.tier()` | Stats |
 | `mb.emd()` | `mb.stats.emd()` | Stats |
 | `mb.attainment()` | `mb.stats.attainment()` | Stats |
 | `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |

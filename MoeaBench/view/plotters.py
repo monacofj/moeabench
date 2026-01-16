@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..metrics.evaluator import plot_matrix, hypervolume
-from ..stats.stratification import strata, StratificationResult, ArenaResult, arena
+from ..stats.stratification import strata, StratificationResult, TierResult, tier
 from ..stats.attainment import AttainmentSurface
 
 def _resolve_to_result(args, target_type, resolve_fn):
@@ -233,39 +233,43 @@ def casteplot(*args, labels=None, title=None, metric=None, height_scale=0.5, **k
     plt.show()
     return ax
 
-def domplot(exp1, exp2=None, title=None, **kwargs):
+def tierplot(exp1, exp2=None, title=None, **kwargs):
     """
-    [mb.view.domplot] Perspectiva Competitiva (Arena/Duel).
+    [mb.view.tierplot] Perspectiva Competitiva (Tier/Duel).
     Plots relative dominance proportion between two experiments (Stacked Bars).
     """
-    if isinstance(exp1, ArenaResult):
+    if isinstance(exp1, TierResult):
         res = exp1
     else:
-        res = arena(exp1, exp2)
+        res = tier(exp1, exp2)
         
     fig, ax = plt.subplots()
     nameA, nameB = res.group_labels
     
     ranks = np.arange(1, res.max_rank + 1)
-    propsA = [res.joint_frequencies[r][0] for r in ranks]
-    propsB = [res.joint_frequencies[r][1] for r in ranks]
+    counts = np.array([res.tier_counts.get(r, 0) for r in ranks])
+    propsA = np.array([res.joint_frequencies[r][0] for r in ranks])
+    propsB = np.array([res.joint_frequencies[r][1] for r in ranks])
     
-    ax.bar(ranks, propsA, label=nameA, color='C0', alpha=0.8)
-    ax.bar(ranks, propsB, bottom=propsA, label=nameB, color='C1', alpha=0.8)
+    valsA = counts * propsA
+    valsB = counts * propsB
+    
+    ax.bar(ranks, valsA, label=nameA, color='C0', alpha=0.8)
+    ax.bar(ranks, valsB, bottom=valsA, label=nameB, color='C1', alpha=0.8)
     
     ax.set_xticks(ranks)
-    ax.set_xlabel("Global Dominance Rank")
-    ax.set_ylabel("Infiltration Proportion (%)")
-    ax.set_title(title if title else f"Dominance Duel: {nameA} vs {nameB}")
+    ax.set_xlabel("Global Tier Level")
+    ax.set_ylabel("Population Count")
+    ax.set_title(title if title else f"Competitive Tier Duel: {nameA} vs {nameB}")
     ax.legend()
     ax.grid(True, axis='y', alpha=0.3)
     
     # Add labels for proportions if clear
-    for i, (pA, pB) in enumerate(zip(propsA, propsB)):
+    for i, (pA, pB, vA, vB) in enumerate(zip(propsA, propsB, valsA, valsB)):
         if pA > 0.05:
-            ax.text(i+1, pA/2, f"{pA*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
+            ax.text(i+1, vA/2, f"{pA*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
         if pB > 0.05:
-            ax.text(i+1, pA + pB/2, f"{pB*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
+            ax.text(i+1, vA + vB/2, f"{pB*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
 
     plt.show()
     return ax

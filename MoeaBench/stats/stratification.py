@@ -196,24 +196,30 @@ def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
 
 
 
-class ArenaResult(StratificationResult):
+class TierResult(StratificationResult):
     """
-    Results of a Joint Stratification (Arena) analysis between two groups.
+    Results of a Joint Stratification (Tier) analysis between two groups.
     
     Inherits from StratificationResult, adding support for relative 
     dominance comparison (proportions) between groups.
     """
     def __init__(self, agg_hist, raw_distributions=None, source=None, gen=-1, 
                  objectives=None, rank_array=None, group_labels=None, 
-                 joint_frequencies=None):
+                 joint_frequencies=None, tier_counts=None):
         super().__init__(agg_hist, raw_distributions, source, gen, objectives, rank_array)
         self.group_labels = group_labels # list of names [A, B]
         self.joint_frequencies = joint_frequencies # dict {rank: [propA, propB]}
+        self.tier_counts = tier_counts # dict {rank: absolute_count}
 
     @property
     def dominance_ratio(self) -> np.ndarray:
         """Returns the [A, B] proportion in the first rank (Elite)."""
         return self.joint_frequencies.get(1, np.array([0.5, 0.5]))
+
+    @property
+    def pole(self) -> np.ndarray:
+        """F1 Metaphor: Returns the proportion in the first rank (Elite)."""
+        return self.dominance_ratio
 
     @property
     def displacement_depth(self) -> int:
@@ -224,18 +230,23 @@ class ArenaResult(StratificationResult):
                 return r
         return self.max_rank
 
+    @property
+    def gap(self) -> int:
+        """F1 Metaphor: Displacement depth (where the rival starts to appear)."""
+        return self.displacement_depth
+
     def report(self, metric=None) -> str:
-        """Generates a competitive narrative report for the Duel."""
+        """Generates a competitive narrative report using Tier/F1 metaphors."""
         nameA, nameB = self.group_labels
-        ratioA, ratioB = self.dominance_ratio
+        ratioA, ratioB = self.pole
         
         lines = [
-            f"--- Arena Duel Report: {nameA} vs {nameB} ---",
+            f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
             f"  Search Depth: {self.max_rank} global levels",
-            f"  Elite Dominance (Rank 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-            f"  Displacement Depth: {self.displacement_depth}",
+            f"  Pole Position (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
+            f"  Gap (Displacement Depth): {self.gap}",
             "",
-            f"{'Rank':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
+            f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
             "-" * 35
         ]
         
@@ -244,15 +255,15 @@ class ArenaResult(StratificationResult):
             lines.append(f"{r:<6} | {propA*100:>8.1f}% | {propB*100:>8.1f}%")
             
         better = nameA if ratioA > 0.5 else nameB
-        lines.append(f"\nDiagnosis: {better} dominates the elite objective space.")
-        if self.displacement_depth > 2:
-            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival.")
+        lines.append(f"\nDiagnosis: {better} occupies the Pole Position.")
+        if self.gap > 2:
+            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival (Large Gap).")
             
         return "\n".join(lines)
 
-def arena(exp1, exp2, gen=-1):
+def tier(exp1, exp2, gen=-1):
     """
-    Performs Joint Stratification (Arena) between two experiments.
+    Performs Joint Stratification (Tier Analysis) between two experiments.
     """
     from ..core.run import SmartArray
     # 1. Collect all final fronts (or specific gen)
@@ -280,6 +291,7 @@ def arena(exp1, exp2, gen=-1):
     unique_ranks = np.unique(global_ranks)
     joint_freqs = {}
     agg_hist = {}
+    agg_counts = {}
     
     for r in unique_ranks:
         mask = (global_ranks == r)
@@ -289,11 +301,13 @@ def arena(exp1, exp2, gen=-1):
         propB = np.sum((combined_labels[mask] == 1)) / total_in_rank
         joint_freqs[int(r)] = np.array([propA, propB])
         agg_hist[int(r)] = total_in_rank / len(combined_objs)
+        agg_counts[int(r)] = int(total_in_rank)
         
     nameA = getattr(exp1, 'name', 'Algorithm A')
     nameB = getattr(exp2, 'name', 'Algorithm B')
     
-    return ArenaResult(agg_hist, source=(exp1, exp2), gen=gen, 
+    return TierResult(agg_hist, source=(exp1, exp2), gen=gen, 
                        objectives=combined_objs, rank_array=global_ranks,
                        group_labels=[nameA, nameB],
-                       joint_frequencies=joint_freqs)
+                       joint_frequencies=joint_freqs,
+                       tier_counts=agg_counts)

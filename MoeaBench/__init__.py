@@ -17,7 +17,7 @@ from . import view
 from . import system
 
 # View Shortcuts (Exposed at top level for convenience)
-from .view.plotters import spaceplot, timeplot, rankplot, casteplot, domplot
+from .view.plotters import spaceplot, timeplot, rankplot, casteplot, tierplot
 import warnings
 
 # MB Wrapper for Legacy Compatibility
@@ -52,7 +52,8 @@ class _MB:
         self.timeplot = _warn_shortcut("timeplot", view.timeplot, "view")
         self.rankplot = _warn_shortcut("rankplot", view.rankplot, "view")
         self.casteplot = _warn_shortcut("casteplot", view.casteplot, "view")
-        self.domplot = _warn_shortcut("domplot", view.domplot, "view")
+        self.tierplot = _warn_shortcut("tierplot", view.tierplot, "view")
+        self.domplot = _warn_shortcut("tierplot", view.tierplot, "view") # Deprecated domplot -> tierplot
         
         # 2. Metric Shortcuts (Legacy Deprecated)
         self.hv = _warn_shortcut("hypervolume", metrics.hypervolume, "metrics")
@@ -66,7 +67,8 @@ class _MB:
         self.emd = _warn_shortcut("emd", stats.emd, "stats")
         self.attainment = _warn_shortcut("attainment", stats.attainment, "stats")
         self.attainment_diff = _warn_shortcut("attainment_diff", stats.attainment_diff, "stats")
-        self.arena = _warn_shortcut("arena", stats.arena, "stats")
+        self.tier = _warn_shortcut("tier", stats.tier, "stats")
+        self.arena = _warn_shortcut("tier", stats.tier, "stats") # Deprecated arena -> tier
         
         # 4. Benchmark Shortcuts (Legacy Deprecated)
         for mop_name in ["DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6", "DTLZ7", "DTLZ8", "DTLZ9",

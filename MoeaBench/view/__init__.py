@@ -3,6 +3,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .plotters import spaceplot, timeplot, rankplot, casteplot, domplot
+from .plotters import spaceplot, timeplot, rankplot, casteplot, tierplot
 
-__all__ = ["spaceplot", "timeplot", "rankplot", "casteplot", "domplot"]
+__all__ = ["spaceplot", "timeplot", "rankplot", "casteplot", "tierplot"]

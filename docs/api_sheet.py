@@ -81,6 +81,11 @@ strat1.selection_pressure  # Lazy-evaluated diagnostic metric
 # Comparison via EMD (Earth Mover's Distance)
 dist1 = mb.stats.emd(strat1, strat2)
 
+# Competitive Tier Analysis (F1 Metaphor)
+res_tier = mb.stats.tier(exp1, exp2)
+res_tier.pole            # Dominance ratio at Tier 1
+res_tier.gap             # Displacement depth
+
 # Attainment Comparison
 diff1 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
 
@@ -92,7 +97,7 @@ mb.view.timeplot(hv1)                         # Historic: Convergence plot
 mb.view.spaceplot(exp1)                       # Spatial: Pareto Front plot (2D/3D)
 mb.view.rankplot(exp1)                        # Structural: Selection pressure (counts)
 mb.view.casteplot(exp1)                       # Hierarchical: Quality/Density profile
-mb.view.domplot(exp1, exp2)                   # Competitive: Arena duel 
+mb.view.tierplot(exp1, exp2)                  # Competitive: Tier duel (F1 Pole/Gap)
 
 # ---------------------------------------------------------
 # 7. Custom Extensions

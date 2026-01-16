@@ -63,20 +63,19 @@ def main():
     # 4. Visual Workshop
     print("\nGenerating visual profiles... (Close plots to finish)")
     
-    # A. Structural View (Density/Selection Pressure)
-    # Formerly 'strataplot', now 'rankplot' to emphasize the rank structure.
     mb.view.rankplot(strat1, strat2, labels=[exp1.name, exp2.name], 
                 title=f"Structural Perspective (Gen {SNAPSHOT_GEN})")
     
     # B. Hierarchical View (Floating Ranks/Quality)
-    # Re-named to 'casteplot' to avoid confusion with the structural rankplot.
     mb.view.casteplot(strat1, strat2, 
                  title=f"Hierarchical Perspective: Caste Profile (Gen {SNAPSHOT_GEN})")
 
-    # C. Competitive View (The Arena Duel)
-    # New analysis: joint stratification to see cross-dominance.
-    print(f"\n--- Competitive Duel (Arena) ---")
-    mb.view.domplot(exp1, exp2, title="Competitive Perspective: Arena Duel")
+    # C. Competitive View (The Tier Duel)
+    # New analysis: joint stratification to see cross-dominance (F1 Metaphor).
+    print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
+    res_tier = mb.stats.tier(exp1, exp2)
+    print(res_tier.report())
+    mb.view.tierplot(res_tier, title="Competitive Perspective: Tier Duel")
 
     plt.show()
 

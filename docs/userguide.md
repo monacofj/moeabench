@@ -327,9 +327,21 @@ Beyond simple distributions, MoeaBench allows you to inspect the **Caste Profile
 
 This allows you to see both **Convergence** (is the bar high?) and **Search Effort** (is the bar tall?) at a single glance.
 
-### **Competitive Stratification: The Arena**
-To witness the direct confrontation between two algorithms, use `mb.view.domplot(exp1, exp2)`. This generates the "Arena" view:
-- A stacked bar chart showing the proportion of solutions each algorithm contributed to each global dominance rank.
+### 3.3 Competitive Perspective: The Tier Duel
+When comparing two algorithms, we often want to know which one dominates the elite "Tiers" of the population.
+
+```python
+# The 'tier' analysis merges both populations and re-stratifies them
+res = mb.stats.tier(exp1, exp2)
+print(res.report())
+
+# Plot the distribution of algorithms across tiers
+mb.view.tierplot(res)
+```
+The **Tier Plot** shows the proportion of each algorithm in each global non-domination rank.
+
+*   **Pole Position**: The percentage of the first tier (Rank 1) belonging to an algorithm.
+*   **Gap**: How many tiers deep you have to go before the rival algorithm starts to appear.
 - It reveals who is truly "infiltrating" the elite Pareto levels.
 
 ### **8. System Utilities (`mb.system`)**
