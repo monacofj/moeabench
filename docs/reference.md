@@ -220,13 +220,21 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
 
 ### **Metric Calculation**
 *   **`mb.metrics.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
+    *   `ref`: Reference Point helper.
+        *   `None` (default): Calculates the reference point automatically from the input `data` (Nadir + offset).
+        *   `list[Experiment]`: Uses the joint range of all provided experiments to calculate a common reference point (Recommended for comparing algorithms).
+        *   `np.ndarray`: Uses the provided array as the explicit reference point.
     *   `mode` (*str*): Calculation strategy. 
         *   `'auto'`: Uses the **Exact** algorithm for $M \leq 6$ and switches to **Monte Carlo** for $M > 6$.
         *   `'exact'`: Forces the Exact (WFG) algorithm (may be slow for high dimensions).
         *   `'fast'`: Forces Monte Carlo approximation.
     *   `n_samples` (*int*): Number of points for Monte Carlo sampling (default: $10^5$).
 *   **`mb.metrics.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
+    *   `ref`: True Pareto Front.
+        *   `None` (default): Attempts to load the analytical optimal front from the MOP (`exp.optimal_front()`).
+        *   `np.ndarray`: Uses the provided array as the True Pareto Front.
 *   **`mb.metrics.gd(data, ref=None)`**: Calculates GD (Generational Distance).
+    *   `ref`: Usage identical to `mb.metrics.igd`.
 
 **Returns**: `MetricMatrix` object.
 
@@ -337,19 +345,3 @@ The following API is deprecated and will be removed in a future release. Use the
 | `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
 | `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
 
-| Deprecated (Old) | Replacement (New) | Type |
-| :--- | :--- | :--- |
-| `mb.spaceplot()` | `mb.view.spaceplot()` | Plotting |
-| `mb.timeplot()` | `mb.view.timeplot()` | Plotting |
-| `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
-| `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
-| `mb.domplot()` | `mb.view.domplot()` | Plotting |
-| `mb.hv()` | `mb.metrics.hv()` | Metric |
-| `mb.igd()` | `mb.metrics.igd()` | Metric |
-| `mb.gd()` | `mb.metrics.gd()` | Metric |
-| `mb.strata()` | `mb.stats.strata()` | Stats |
-| `mb.arena()` | `mb.stats.arena()` | Stats |
-| `mb.emd()` | `mb.stats.emd()` | Stats |
-| `mb.attainment()` | `mb.stats.attainment()` | Stats |
-| `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
-| `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
