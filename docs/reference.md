@@ -35,6 +35,10 @@ The top-level container.
     *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
     *   `**kwargs`: Passed to the MOEA execution engine.
+*   **`.save(path, mode='all')`**: Persists the experiment to a compressed ZIP file.
+    *   `path` (*str*): Filename or folder.
+    *   `mode` (*str*): `'all'`, `'config'`, or `'data'`.
+*   **`.load(path, mode='all')`**: Restores the experiment state from a ZIP file.
 
 **Usage Example:**
 ```python

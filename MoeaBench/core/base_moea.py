@@ -115,3 +115,11 @@ class BaseMoea(ABC):
             dict: Evaluation results containing 'F' (objectives) and optionally 'G' (constraints).
         """
         return self.get_problem().evaluation(np.array([X]), self.get_n_ieq_constr())
+
+    def __getstate__(self) -> Dict[str, Any]:
+        """Custom state for pickling to avoid non-picklable attributes."""
+        state = self.__dict__.copy()
+        # DEAP toolbox is not picklable and should be recreated on demand or after loading
+        if 'toolbox' in state:
+            state['toolbox'] = None
+        return state

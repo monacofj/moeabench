@@ -345,7 +345,32 @@ The **Tier Plot** shows the proportion of each algorithm in each global non-domi
 *   **Gap**: How many tiers deep you have to go before the rival algorithm starts to appear.
 - It reveals who is truly "infiltrating" the elite Pareto levels and the density of those levels.
 
-### **8. System Utilities (`mb.system`)**
+### **8. Persistence (`save` and `load`)**
+
+MoeaBench allows you to persist experiments to disk using compressed ZIP files. This is essential for long-running studies, reproducibility, and cross-tool analysis.
+
+Both `save()` and `load()` support a `mode` argument to provide selective persistence:
+
+- **`mode='all'`** (Default): Saves or loads the entire state, including all execution trajectories (`runs`).
+- **`mode='config'`**: Focuses on metadata. Saves only the experiment setup (MOP and MOEA parameters) or loads only the configuration into an existing object.
+- **`mode='data'`**: Focuses on results. Saves trajectories and CSV data, or loads only the `runs` into an already configured experiment object.
+
+```python
+# Save only the setup (Small file, great for GitHub)
+exp.save("setup_study_A", mode="config")
+
+# Save everything (Complete history for analysis)
+exp.save("full_study_A", mode="all")
+
+# Load data into a pre-configured script
+new_exp = mb.experiment()
+new_exp.mop = mb.mops.DTLZ2() 
+new_exp.load("full_study_A", mode="data") 
+```
+
+The generated ZIP file includes a `result.csv` (Superfront) and a `problem.txt` summary for easy inspection outside Python.
+
+### **9. System Utilities (`mb.system`)**
 
 MoeaBench includes a `system` module to monitor your environment and hardware.
 

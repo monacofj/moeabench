@@ -3,33 +3,47 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .file import file
 from joblib import load
 import zipfile
 from io import BytesIO
-import os
-import sys
+import pathlib
 
-
-class loader(file):
-     
-    def IPL_loader(self, folder):
-      
-        dir = os.path.dirname(__file__)
-       
-        if dir not in sys.path:
-            sys.path.append(dir)
-
-        path_z = loader.DATA(folder)
+class loader:
+    @staticmethod
+    def IPL_loader(target_obj, folder, mode='all'):
+        path_z = pathlib.Path(folder)
+        if path_z.suffix != '.zip':
+            path_z = path_z.with_suffix('.zip')
+            
         if not path_z.exists():
-            raise FileExistsError("folder not found")
+            raise FileNotFoundError(f"Experiment file not found: {path_z}")
        
-        obj = None
         with zipfile.ZipFile(path_z, 'r') as zf:
-            bytes = zf.read('Moeabench.joblib')
-            obj = load(  BytesIO(bytes))
+            bytes_data = zf.read('Moeabench.joblib')
+            loaded_obj = load(BytesIO(bytes_data))
 
-        self.__dict__.update(obj.__dict__)
+        # Handle selective loading based on mode
+        if mode == 'config':
+            # Keep existing runs if any, only update config
+            # But usually load('config') means you want a clean slate with that config
+            # However, the user said "carregar so a configuração"
+            # We'll update everything except runs
+            original_runs = target_obj._runs
+            target_obj.__dict__.update(loaded_obj.__dict__)
+            target_obj._runs = original_runs
+            
+        elif mode == 'data':
+            # Only update runs from the loaded object
+            target_obj._runs = loaded_obj._runs
+            # We might want to update the result pointer too if used
+            if hasattr(loaded_obj, 'result'):
+                target_obj.result = loaded_obj.result
+        else:
+            # Default 'all': full update
+            target_obj.__dict__.update(loaded_obj.__dict__)
+            
+        return target_obj
+
 
 
        

@@ -332,11 +332,10 @@ class experiment:
         return data_payload, seed
 
     # Persistence
-    def save(self, path: str) -> None:
-        # Reuse legacy save if possible, or implement simple pickle
+    def save(self, path: str, mode: str = 'all') -> str:
         from .save import save as legacy_save
-        legacy_save.IPL_save(self, path)
+        return legacy_save.IPL_save(self, path, mode=mode)
 
-    def load(self, path: str) -> None:
+    def load(self, path: str, mode: str = 'all') -> None:
         from .loader import loader
-        loader.IPL_loader(self, path)
+        loader.IPL_loader(self, path, mode=mode)
