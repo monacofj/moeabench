@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Ocean Palette**: Implemented a new custom categorical color palette for all visualizations. The 9-color sequence (Indigo → Emerald → Plum → Jade → Bordeaux → Deep Teal → Orange → Red → Yellow) provides a premium, high-contrast visual identity.
 - **Centralized Style System**: Infrastructure for global theme management added in `MoeaBench/view/style.py`, ensuring consistent aesthetics between Matplotlib and Plotly backends.
+- **Selective Persistence (Save/Load)**: Implemented a new, robust persistence system for experiments.
+    - Added `mode` argument (`all`, `config`, `data`) to `exp.save()` and `exp.load()`.
+    - ZIP-based archive format containing standardized CSVs (`result.csv`), metadata (`problem.txt`), and serialized trajectories (`Moeabench.joblib`).
+    - Integrated with `joblib` for high-performance NumPy-aware serialization.
 
 ### Changed
 - **Automatic Branding**: The new "Ocean" visual identity is now automatically applied upon importing `MoeaBench.view`.
@@ -25,6 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Notebook Robustness**: Fixed a critical literal newline encoding issue in `examples/example-08.ipynb` that caused syntax errors in certain cloud execution environments (Google Colab/GitHub).
+- **Pickling Stability**: Resolved a critical `PicklingError` affecting DEAP-based algorithms. Implemented `__getstate__` in `BaseMoea` to automatically strip non-serializable attributes (like the `toolbox`) before saving, ensuring stability across standard and selective save modes.
+- **Save/Load restoration**: Restored the broken persistence functionality, removing legacy dependencies on internal file modules and the defunct `CACHE` system.
 
 ## [0.3.0] - 2026-01-15
 
