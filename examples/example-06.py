@@ -61,25 +61,6 @@ def main():
     res3 = mb.stats.a12(exp1, exp2)
     print("\n" + res3.report())
 
-    # 3. New Perspectives (Visualization)
-    print("\n--- Scientific Perspectives (mb.view) ---")
-    
-    # Caste Perspective (Floating quality/density)
-    # Automatically extracts ranks and quality from Experiments
-    print("Generating Caste Profile...")
-    mb.view.casteplot(exp1, exp2)
-
-    # Structural Perspective (Selection pressure)
-    print("Generating Rank Structure...")
-    mb.view.rankplot(exp1, exp2)
-    
-    # Competitive Perspective (Tier Duel)
-    # The ultimate confrontation between two algorithms
-    print("Generating Tier Duel (Competitive Stratification)...")
-    res_tier = mb.stats.tier(exp1, exp2)
-    print(res_tier.report())
-    mb.view.tierplot(res_tier)
-
 if __name__ == "__main__":
     main()
 
@@ -89,8 +70,3 @@ if __name__ == "__main__":
 #
 # In MoeaBench, these tests are highly integrated: they automatically handle the 
 # extraction of metrics (like Hypervolume) and set a common reference point.
-#
-# The view layer translates these statistics into scientific perspectives:
-# 1. Caste Plot: Visualizes Quality vs Density per dominance rank.
-# 2. Rank Plot: Visualizes the global frequency of each rank (selection pressure).
-# 3. Tier Plot: Shows the competitive proportions of each algorithm per rank.

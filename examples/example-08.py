@@ -73,7 +73,7 @@ def main():
     # C. Competitive View (The Tier Duel)
     # New analysis: joint stratification to see cross-dominance (F1 Metaphor).
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
-    res_tier = mb.stats.tier(exp1, exp2)
+    res_tier = mb.stats.tier(exp1, exp2, gen=SNAPSHOT_GEN)
     print(res_tier.report())
     mb.view.tierplot(res_tier, title="Competitive Perspective: Tier Duel")
 
