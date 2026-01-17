@@ -322,8 +322,8 @@ Returns the current library version string.
 ## **8. References**
 For a detailed technical narrative on the implementation history and mathematical nuances of our MOPs, see the **[MOPs Guide](mops.md)**.
 
-*   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "Scalable multi-objective optimization test problems." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
-*   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "Multiobjective test problems with degenerate Pareto fronts." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
+*   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
+*   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
 
 # Deprecated API
 

@@ -25,8 +25,8 @@ This guide provides an introductory overview for getting started with the framew
 
 ### **References & Provenance**
 MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[MOPs Guide](mops.md)**:
-*   **DTLZ**: Scalable test problems by Deb et al. (2002).
-*   **DPF**: Degenerate Pareto Front benchmarks by Zhen et al. (2018).
+*   **DTLZ**: Scalable test problems by [Deb et al. (2002)](https://doi.org/10.1109/CEC.2002.1007032).
+*   **DPF**: Degenerate Pareto Front benchmarks by [Zhen et al. (2018)](https://doi.org/10.48550/arXiv.1806.02706).
 
 ### **Requirements**
 *   Python 3.9+

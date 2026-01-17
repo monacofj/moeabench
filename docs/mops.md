@@ -29,7 +29,7 @@ $$g = 100 \left[ K + \sum_{i \in M} (x_i - 0.5)^2 - \cos(20\pi(x_i - 0.5)) \righ
 In our `DTLZ1.py`, this is calculated for the entire population in a single NumPy call, bypassing Python's slow iteration layer. This optimization allows researchers to run 30+ repetitions of massive experiments without their hardware grinding to a halt.
 
 **Reference:**
-*   K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "Scalable multi-objective optimization test problems." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
+*   K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
 
 ---
 
@@ -46,7 +46,7 @@ Implementing DPF was significantly more complex than DTLZ. The core logic involv
 We spent significant effort ensuring that our `BaseDPF` implementation matched the mathematical nuances of the original paper, specifically the nuances of the chaotic weight generation. We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
 
 **Reference:**
-*   L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "Multiobjective test problems with degenerate Pareto fronts." *IEEE Transactions on Evolutionary Computation*, vol. 22, no. 5, 2018.
+*   L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." *IEEE Transactions on Evolutionary Computation*, vol. 22, no. 5, 2018.
 
 ---
 

@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Automatic Branding**: The new "Ocean" visual identity is now automatically applied upon importing `MoeaBench.view`.
 - **Documentation Audit**: Completed a thorough audit of all guides (`userguide.md`, `reference.md`, `design.md`), renaming the benchmarks technical guide to `docs/mops.md` and standardizing all references to the namespaced API.
+- **Reference Provenance**: Added formal DOI and arXiv links for DTLZ and DPF references across all documentation guides.
 
 ### Fixed
 - **Notebook Robustness**: Fixed a critical literal newline encoding issue in `examples/example-08.ipynb` that caused syntax errors in certain cloud execution environments (Google Colab/GitHub).
