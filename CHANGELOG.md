@@ -12,6 +12,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Ocean Palette**: Implemented a new custom categorical color palette for all visualizations. The 9-color sequence (Indigo → Emerald → Plum → Jade → Bordeaux → Deep Teal → Orange → Red → Yellow) provides a premium, high-contrast visual identity.
+- **Centralized Style System**: Infrastructure for global theme management added in `MoeaBench/view/style.py`, ensuring consistent aesthetics between Matplotlib and Plotly backends.
+
+### Changed
+- **Automatic Branding**: The new "Ocean" visual identity is now automatically applied upon importing `MoeaBench.view`.
+- **Documentation Audit**: Completed a thorough audit of all guides (`userguide.md`, `reference.md`, `design.md`), renaming the benchmarks technical guide to `docs/mops.md` and standardizing all references to the namespaced API.
+
+### Fixed
+- **Notebook Robustness**: Fixed a critical literal newline encoding issue in `examples/example-08.ipynb` that caused syntax errors in certain cloud execution environments (Google Colab/GitHub).
+
 ## [0.3.0] - 2026-01-15
 
 ### Changed
