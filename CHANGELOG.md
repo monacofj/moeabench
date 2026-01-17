@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Updated reporting to use **"Dominance Ratio"** and **"Displacement Depth"** as primary metrics.
     - **Tabula Rasa**: Removed all legacy aliases (`mb.arena`, `mb.domplot`) and backward compatibility notes ("formerly known as") across the entire codebase and documentation.
 - **Advanced Tier Plot**: Improved `tierplot` to display **absolute population counts** on the y-axis, providing a dual view of dominance proportions and rank density.
-- **Documentation Overhaul**: All documentation guides (`userguide.md`, `reference.md`, `design.md`), scripts, and notebooks (`example-06.ipynb`) have been updated to exclusively use the new namespaced API and Tier nomenclature.
+- **Documentation Overhaul**: All documentation guides (`userguide.md`, `reference.md`, `design.md`, `mops.md`), scripts, and notebooks have been updated to exclusively use the new namespaced API and Tier nomenclature.
 
 ### Added
 - **Metric Alias**: Added `hv` alias in `mb.metrics` (`mb.metrics.hv`) to streamline the most common metric call.

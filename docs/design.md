@@ -93,7 +93,7 @@ The MoeaBench architecture is designed as a pipeline that transforms raw evoluti
 
 ```mermaid
 graph TD
-    A["Problem (Benchmarks)"] --> C["Controller (Experiment/MOEA)"]
+    A["Problem (MOPs)"] --> C["Controller (Experiment/MOEA)"]
     B["Algorithms (MOEAs)"] --> C
     C --> D["Data (Run/Population)"]
     D --> E["Evaluation (Metrics)"]
@@ -108,7 +108,7 @@ graph TD
 #### A. The Semantic Model (`core`)
 The architecture begins with the Semantic Model, embodied by the `experiment`, `Run`, and `Population` classes. These entities represent the fundamental components of the scientific method, where an experiment serves as a container for multiple stochastic search attempts (runs), and each run tracks the detailed evolution of solution populations. Technically, these are object-oriented wrappers that manage state and metadata—such as random seeds and generation counters—while providing the semantic hooks that our analytical and visual tools use to interpret raw data.
 
-#### B. The Vectorized Engine (`benchmarks`, `metrics`, `stats`)
+#### B. The Vectorized Engine (`mops`, `metrics`, `stats`)
 At the heart of the library lies the Vectorized Engine, a strictly procedural and stateless layer designed for extreme performance. This module encapsulates the mathematical theorems and performance measures of multi-objective optimization, transforming them into highly optimized NumPy operations. By avoiding native Python loops and operating directly on decision and objective matrices, the engine leverages low-level BLAS/LAPACK optimizations, ensuring that the library remains responsive even as complexity scales.
 
 #### C. The Diagnostic Pipeline (`mb.stats`)

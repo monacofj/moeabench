@@ -5,7 +5,7 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Benchmarking the Future: DTLZ and DPF in MoeaBench
+# Multi-Objective Problems (MOPs): DTLZ and DPF in MoeaBench
 
 In the world of Multi-Objective Evolutionary Algorithms (MOEAs), benchmarks are not just sets of equations—they are the proving grounds where performance distributions are mapped and algorithmic limits are tested.
 

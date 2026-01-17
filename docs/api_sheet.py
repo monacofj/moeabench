@@ -104,7 +104,7 @@ mb.view.tierplot(exp1, exp2)                  # Competitive: Tier duel
 # ---------------------------------------------------------
 
 # Create custom problems using NumPy vectorization
-class CustomMOP(mb.benchmarks.BaseBenchmark):
+class CustomMOP(mb.mops.BaseMop):
     def __init__(self):
         super().__init__(M=2, N=10)
 
