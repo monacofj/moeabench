@@ -121,6 +121,6 @@ class Scatter2D:
                 yanchor='middle'
             ),
             hovermode='closest',
-            template="plotly_white"
+            template="moeabench"
         )
         self.figure.show()

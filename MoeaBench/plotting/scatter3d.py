@@ -103,6 +103,7 @@ class Scatter3D:
        
       
          self.figure.update_layout(
+                template="moeabench",
                 scene = dict(
                     xaxis=dict(title=f"{self.axis_label} {self.axis[0]+1}", showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
                     yaxis=dict(title=f"{self.axis_label} {self.axis[1]+1}", showbackground=True, backgroundcolor="aliceblue", showgrid=True, gridcolor="#C3BDBD"),
