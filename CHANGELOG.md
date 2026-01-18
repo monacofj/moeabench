@@ -28,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reference Provenance**: Added formal DOI and arXiv links for DTLZ and DPF references across all documentation guides.
 
 ### Fixed
-- **Notebook Robustness**: Fixed a critical literal newline encoding issue in `examples/example-08.ipynb` that caused syntax errors in certain cloud execution environments (Google Colab/GitHub).
+- **Notebook Robustness**: Fixed a critical literal newline encoding issue in `examples/example_08.ipynb` that caused syntax errors in certain cloud execution environments (Google Colab/GitHub).
 - **Pickling Stability**: Resolved a critical `PicklingError` affecting DEAP-based algorithms. Implemented `__getstate__` in `BaseMoea` to automatically strip non-serializable attributes (like the `toolbox`) before saving, ensuring stability across standard and selective save modes.
 - **Save/Load restoration**: Restored the broken persistence functionality, removing legacy dependencies on internal file modules and the defunct `CACHE` system.
 
@@ -71,10 +71,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Type Hints**: Comprehensive Python typing added to all Core and Benchmark components.
 - Static plotting support for `timeplot` and `spaceplot` via `mode='static'` argument.
 - `verify_api.py` regression test to validate API functionality.
-- New `example-01.py` demonstrating the updated API usage.
+- New `example_01.py` demonstrating the updated API usage.
 - **Statistical Analysis**: Created `mb.stats` module featuring **"Smart Stats"** API, allowing direct comparison of `Experiment` and `MetricMatrix` objects. Supported tests: **Mann-Whitney U**, **Vargha-Delaney A12**, and **Kolmogorov-Smirnov (KS)**.
 - **Analytical Optimals**: Implemented `exp.optimal()`, `exp.optimal_front()`, and `exp.optimal_set()` for theoretical result sampling on standard MOPs.
-- `example-06.py` demonstrating statistical comparison and Pareto testing.
+- `example_06.py` demonstrating statistical comparison and Pareto testing.
 - Comprehensive `docs/reference.md` (API) and `docs/userguide.md` (How-to) created.
 - **Improved Metrics**: `MetricMatrix` now features `.gens()` and `.runs()` robust selectors.
 - **System Module**: Added `mb.system` for environmental awareness (`version`, `check_dependencies`).
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Major API Refactoring**: Restructured `MoeaBench` to follow a new object-oriented design (e.g., `mb.experiment`, `mb.moeas`, `mb.mops`).
 - **Clean Namespace**: Standardized filenames to `snake_case` and removed 20+ legacy interface files (`I_*.py`, `H_*.py`) and the `CACHE` system.
 - **Dependency Hygiene**: Pruned unused packages (`ordered_set`, `deepdiff`, `PyGithub`) from `requirements.txt`.
-- `example-01.py` updated to use the new `MoeaBench` API and `DTLZ2` benchmark.
+- `example_01.py` updated to use the new `MoeaBench` API and `DTLZ2` benchmark.
 - `README.md` Quick Start example updated to match the new API.
 
 ### Removed
@@ -96,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Plotting**: Fixed static 3D plots to use standard Matplotlib color cycle (`prop_cycle`), preventing identical colors for multiple runs.
 - **API**: Restored missing metric shortcuts (`mb.hv`, `mb.igd`, `mb.gd`, `mb.gdplus`, `mb.igdplus`).
 - Fixed plotting backends to correctly propagate the `mode` argument.
-- Fixed typo "Vizualize" in `example-01.py` comments.
+- Fixed typo "Vizualize" in `example_01.py` comments.
 - **Fixed Parallel Reporting**: Resolved issue where workers failed to report progress due to missing local instantiation.
 
 ## [0.1.0] - 2025-01-10

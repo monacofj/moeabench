@@ -28,7 +28,7 @@ The package offers facilities to programmatically create benchmark programs and 
 
 * Handle many-objective problems with an unlimited number of decision variables and optimization objectives.
 * Includes standard built-in mops (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
-* Plug in custom mops and algorithms programmatically by inheriting from base classes (see `examples/example-05.py`).
+* Plug in custom mops and algorithms programmatically by inheriting from base classes (see `examples/example_05.py`).
 
 ## Quick Start
 
@@ -56,7 +56,7 @@ mb.view.spaceplot(exp.front())                  # Plot the 3D pareto front
 MoeaBench provides a collection of documented scripts and Jupyter Notebooks demonstrating various features, from basic runs to advanced population diagnostics:
 
 *   **[Examples Directory](examples/)**: Access all `.py` and `.ipynb` files.
-*   Core Examples: `example-01.py` to `example-08.py` cover the essential analytical and diagnostic journey.
+*   Core Examples: `example_01.py` to `example_09.py` cover the essential analytical and diagnostic journey.
 
 ## Research & Citation
 

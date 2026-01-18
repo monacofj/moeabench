@@ -296,7 +296,7 @@ if res.significant:
 print(res.report()) 
 ```
 
-For a full comparison script, see `examples/example-06.py`.
+For a full comparison script, see `examples/example_06.py`.
 
 ## **6. Advanced Diagnostics**
 
