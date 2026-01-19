@@ -12,6 +12,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 
 ---
 
+<a name="data-model"></a>
 ## **1. Data Model**
 
 MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
@@ -88,6 +89,7 @@ initial_pop = run.pop(0)
 final_front = run.front() # Last generation
 ```
 
+<a name="smartarray-and-population"></a>
 ### **1.3. Population (`mb.core.run.Population`)**
 A container for a set of solutions at a specific moment.
 
@@ -123,10 +125,13 @@ A NumPy array subclass (`np.ndarray`) that carries metadata.
 
 ---
 
+<a name="view"></a>
 ## **2. Scientific Perspectives (`mb.view`)**
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
+<a name="spaceplot"></a>
+<a name="viewspaceplot"></a>
 ### **2.1. Spatial Perspective (`mb.view.spaceplot`)**
 Plots solutions in Objective Space (2D or 3D Scatter).
 *   **Args**:
@@ -219,6 +224,7 @@ algo_tuned = mb.moeas.NSGA3(population=200,
 
 ---
 
+<a name="metrics"></a>
 ## **5. Metrics (`mb.metrics`)**
 
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
@@ -271,6 +277,7 @@ print(f"Final HV: {val:.4f}")
 
 ---
 
+<a name="stats"></a>
 ## **6. Statistics (`mb.stats`)**
 
 Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
@@ -323,7 +330,41 @@ Returns the current library version string.
 
 ---
 
-## **8. References**
+<a name="persistence"></a>
+## **8. Persistence & Data Format**
+
+MoeaBench uses a standardized ZIP-based persistence format.
+
+### **Experiment Interface**
+*   **`.save(path, mode='all')`**:
+    *   `all`: Saves everything.
+    *   `config`: Saves only MOP/MOEA setup.
+    *   `data`: Saves only execution histories.
+*   **`.load(path, mode='all')`**: Reverse of save.
+
+### **File Structure (inside ZIP)**
+1.  `Moeabench.joblib`: The binary state of the Python objects.
+2.  `result.csv`: The Global Non-Dominated Front.
+3.  `problem.txt`: Human-readable summary of the MOP and MOEA parameters.
+
+---
+
+<a name="extensibility"></a>
+## **9. Extensibility (Plugin API)**
+
+To implement your own components, follow these base classes:
+
+### **Custom MOPs (`mb.mops.BaseMop`)**
+*   **Required**: `evaluation(X) -> {'F': objectives}`.
+*   **Optional**: `ps(n) -> Pareto Set` (for IGD calculation).
+
+### **Custom MOEAs (`mb.moeas.MOEA`)**
+*   **Required**: `solve(mop, termination) -> Population`. 
+*   **Integration**: Inheriting from `MOEA` allows your algorithm to be managed by `Experiment.run()` and automatically handles state persistence.
+
+---
+
+## **10. References**
 For a detailed technical narrative on the implementation history and mathematical nuances of our MOPs, see the **[MOPs Guide](mops.md)**.
 
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.

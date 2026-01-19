@@ -9,377 +9,300 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 **Welcome to MoeaBench!**
 
-MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
+MoeaBench is an **extensible analytical toolkit** designed to host and evaluate multi-objective optimization algorithms. Rather than just a library of pre-built solvers, its central philosophy is to serve as a **scientific laboratory** where users can "plug in" their own MOEAs and MOPs. 
 
-This guide provides an introductory overview for getting started with the framework. For complete documentation of all available methods, classes, and their technical arguments, please refer to the **[API Reference](reference.md)**.
+By providing a decoupled architecture, MoeaBench allows you to treat your own algorithm as a modular plugin, benefiting from all built-in metrics, statistical tests, and visualizations without modifying the core framework.
 
----
+The framework achieves this by organizing stochastic search data into a **structured semantic model**, transforming raw numerical trajectories into **intuitive programmatic access**, narrative-driven results, and professional visualizations.
 
-## **1. Key Features**
-
-*   **Simple Object-Oriented API**: Intuitive structure using `experiment`, `mop`, and `moea` objects.
-*   **Standard Library**: Built-in support for classic mops (**DTLZ**, **DPF**) and state-of-the-art algorithms (**NSGA-III**, **MOEA/D**, **SPEA2**, **RVEA**) powered by Pymoo.
-*   **High Performance**: Vectorized metric calculations and non-dominated sorting using NumPy.
-*   **Extensible**: Easily plug in your own custom problems or algorithms.
-*   **Visual Analysis**: Built-in perspectives through the `mb.view` layer: spatial (`spaceplot`), historic (`timeplot`), structural (`rankplot`), hierarchical (`casteplot`), and competitive (`tierplot`).
-
-### **References & Provenance**
-MoeaBench implements standard community benchmarks. For a detailed technical narrative of their implementation, see the **[MOPs Guide](mops.md)**:
-*   **DTLZ**: Scalable test problems by [Deb et al. (2002)](https://doi.org/10.1109/CEC.2002.1007032).
-*   **DPF**: Degenerate Pareto Front benchmarks by [Zhen et al. (2018)](https://doi.org/10.48550/arXiv.1806.02706).
-
-### **Requirements**
-*   Python 3.9+
-*   NumPy, SciPy, Matplotlib
-*   Pymoo (for core algorithm engines)
+This guide provides a pedagogical journey through the framework. For exhaustive technical specifications of every method and class, please consult the **[API Reference](reference.md)**.
 
 ---
 
-## **2. Quick Start**
+## **1. Introduction: The Laboratory Philosophy**
 
-### **Installation**
-MoeaBench is a standard Python package. You can install it directly from the source:
+MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
 
-```bash
-pip install .
-```
+### **Key Features**
+*   **Central Extensibility**: Seamlessly plug in custom problems or algorithms. Your code is the guest, MoeaBench is the host.
+*   **Semantic Data Model**: A strict hierarchy (Experiment → Run → Population) that makes data access surgically precise.
+*   **High-Level Delegation**: Powerful shortcuts that bridge the gap between structural data and scientific results.
+*   **Polymorphic Visualization**: Plotting tools that "understand" the complex objects you pass to them.
+*   **Statistical Rigor**: Built-in support for multi-run aggregation and standard non-parametric tests.
 
-### **Hello World: Your First Experiment**
-Let's solve a simple 3-objective problem (`DTLZ2`) using `NSGA-III`.
+---
+
+## **2. Quick Start: The "Hello World" Path**
+
+The smallest meaningful unit in MoeaBench is the **Experiment**. An experiment establishes the link between a problem (MOP) and an algorithm (MOEA).
+
+### **Hello MoeaBench!**
+Let's solve the DTLZ2 benchmark (3 objectives) using the NSGA-III algorithm:
 
 ```python
 import MoeaBench as mb
 
-# 1. Create an Experiment container
+# 1. Setup laboratory
 exp = mb.experiment()
+exp.mop = mb.mops.DTLZ2(M=3) # Standard 3-objective problem
+exp.moea = mb.moeas.NSGA3()
 
-# 2. Specify the MOP and MOEA to be used, and configure their parameters.
-exp.mop = mb.mops.DTLZ2(M=3)  
-exp.moea = mb.moeas.NSGA3(population=100, generations=200)
-
-# 3. Run the experiment
-# This executes one run and stores the result
+# 2. Start search process
 exp.run()
 
-# 4. Visualize the result (Spatial Perspective)
-# Plots the Pareto Front of the last run
-mb.view.spaceplot(exp, title="My First Pareto Front")
+# 3. View instant reward
+mb.view.spaceplot(exp)
+mb.view.timeplot(exp)
 ```
 
-#### **Reproducibility & Seeds**
-To ensure scientific reproducibility, MoeaBench handles random seeds deterministically:
-*   **Manual Seed**: If you provide a seed to the MOEA (e.g., `mb.moeas.NSGA3(seed=42)`), it will be used.
-- **Automatic Seed**: If no seed is provided, a random one is generated and saved in the results.
-- **Multi-run Logic**: When using `exp.run(repeat=N)`, MoeaBench automatically ensures each run is independent but deterministic. It uses the base `seed` for the first run and increments it for subsequent runs (`seed + i`). This ensures that a multi-run experiment is perfectly reproducible if the initial seed is fixed.
+| Pareto Front (3D) | Convergence History |
+| :---: | :---: |
+| ![Pareto Front](images/hello_space.png) | ![Convergence](images/hello_time.png) |
+| *Spatial Perspective: Final Population* | *Temporal Perspective: Hypervolume Evolution* |
+
+*Note: In this example, `mb.view.spaceplot(exp)` automatically identifies and projects the **final population snapshot** (the state of the search at the last generation).*
 
 ---
 
-## **3. Analyzing Results**
+## **3. Scientific Rigor: Multi-Run Experiments**
 
-MoeaBench provides powerful tools to inspect your optimization data.
+In evolutionary optimization, a single run is rarely representative. Stochastic algorithms require multiple independent trials to provide statistically significant conclusions.
 
-### **Calculating Metrics**
-Use shortcuts to calculate common metrics like Hypervolume (`hv`) or Inverted Generational Distance (`igd`).
-
-```python
-# Calculate Hypervolume for the entire run history (Experiment)
-# By default, it uses 'auto' mode (switches to Monte Carlo for M > 6)
-hv_matrix = mb.metrics.hv(exp)
-
-# Forcing specific modes:
-hv_exact = mb.metrics.hv(exp, mode='exact')          # Absolute precision (WFG)
-hv_fast  = mb.metrics.hv(exp, mode='fast', n_samples=10000) # Fast approximation
-
-# Calculate IGD (requires the MOP to have a known Pareto Front)
-igd_matrix = mb.metrics.igd(exp)
-```
-
-### **Visualizing Progress (`mb.view.timeplot`)**
-See how the algorithm converges over time.
-
-# Plot Hypervolume evolution (Historic Perspective)
-mb.view.timeplot(hv_matrix, title="Convergence History")
-```
-
-### **Visualizing Solutions (`mb.view.spaceplot`)**
-Inspect the final trade-offs found by the algorithm.
+### **Repeated Executions**
+To execute multiple trials (repeating the experiment with different seeds), use the `repeat` argument:
 
 ```python
-# Compare the Initial Population vs. Final Population
-# exp.pop(0) -> Initial
-# exp.last_pop -> Final
-mb.view.spaceplot(exp.pop(0), exp.last_pop, title="Evolution")
+# Execute 10 independent trials
+exp.run(repeat=10)
 ```
 
-### **Comparing with the Theoretical Limit**
-For analytical benchmarks, you can easily plot the **True Pareto Front** to visualize how close your algorithm got to the global optimum.
+### **Cloud Aggregation**
+When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
+
+For instance, visualizing a multi-run experiment showing the mean performance and variance:
+```python
+mb.view.timeplot(exp)
+```
+
+| Convergence History |
+| :---: |
+| ![Convergence History](images/timeplot.png) |
+| *Temporal Perspective: Mean Hypervolume with Variance Cloud* |
+
+To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
+```python
+mb.view.timeplot(exp[4])
+```
+
+For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy](#4-mastery-the-data-hierarchy)**.
+
+---
+
+## **4. Mastery: The Data Hierarchy**
+
+MoeaBench organizes data in a strict hierarchy that mirrors the structure of a scientific study. Understanding this architecture allows for surgical precision in data extraction.
+
+### **The Canonical Selector**
+Data access is a journey from the "Manager" down to the raw numbers:
+
+```text
+  LAYER:     Experiment  -->     Run     -->     Filter    -->     Space
+  OBJECT:      [exp]     -->    [run]    -->    [.pop()]   -->  [.objectives]
+  ROLE:      Manager         Trajectory      Snapshot           Numbers
+```
+
+Using standard indexing and methods, you can navigate these layers:
+
+*   **Layer 1: Experiment (`exp`)**: The root container holding all executions.
+*   **Layer 2: Run (`exp[i]`)**: A specific stochastic trajectory identified by its seed.
+*   **Layer 3: Population (`exp[i].pop(gen)`)**: A snapshot of the search at a specific generation.
+*   **Layer 4: Data Space (`.objectives` or `.variables`)**: The raw numerical performance matrix (NumPy arrays).
+
+#### **Surgical Access Example**
+MoeaBench uses **1-based** indexing for generations in `.pop()`, while `0` refers to the initial population and `-1` refers to the final generation.
 
 ```python
-# exp.optimal() samples the theoretical true PF/PS
-mb.view.spaceplot(exp.optimal(), exp, title="Proximity to Optimal")
+# A. Get the population at exactly generation 100
+pop_100 = exp[0].pop(100)
+
+# B. Get the final generation (explicit index -1)
+final_pop = exp[0].pop(-1)
+
+# C. Deep extraction: ND variables from final gen of the third run
+# [Run 2] -> [Last Pop] -> [ND Filter] -> [Space]
+data = exp[2].pop().non_dominated().variables
 ```
 
 ---
 
-## **4. Advanced Usage**
+## **5. Scientific Filters: Purity in Data**
 
-### **Parameter Tuning (`**kwargs`)**
-MoeaBench wrappers are designed to be simple, but they don't block access to power features. You can pass **any** advanced parameter (supported by the underlying engine) directly to the algorithm constructor.
+Instead of manual array slicing, MoeaBench provides **Scientific Filters** (Semantic Operators). When called directly from an `Experiment` or `Run`, these filters act as shortcuts that navigate to a specific generation and refine the data using multi-objective criteria:
+
+*   **`.pop(n)`**: Retrieves the full population snapshot.
+*   **`.non_dominated(n)`**: Returns the mutually non-dominated individuals (the "Elite").
+*   **`.dominated(n)`**: Returns individuals surpassed by at least one other solution.
+*   *Note: In the filters above, `n` represents the generation index; leave it empty to retrieve the **final** state by default.*
+
+*   **`.optimal(n_points=1000)`**: Returns an analytical **sampling** of the theoretical reference truth.
+
+### **Filtering Example**
+You can combine these filters to visually inspect the health of the search. For instance, contrast the progress of the current search against both its own dominated solutions and the external theoretical truth:
 
 ```python
-# Tuning Pymoo's NSGA3 internals
-algo = mb.moeas.NSGA3(
-    population=200, 
-    generations=500,
-    n_neighbors=15,             # Custom neighbor size
-    eliminate_duplicates=True   # Pymoo specific flag
-)
+# A. Get diverse data subsets (using default gen=-1)
+nd  = exp.non_dominated()
+dom = exp.dominated()
+ref = exp.optimal()
+
+# B. Comparative visualization (Search vs. Truth)
+mb.view.spaceplot(nd, dom, ref)
 ```
 
-### **Reproducibility & Seed Management**
-Scientific benchmarking requires control over randomness. MoeaBench handles seeds explicitly to ensure reproducibility.
+---
 
-**Single Run**:
-When you define an algorithm, you set a **base seed**.
+## **6. The Power of Delegation: Master Reference**
+
+MoeaBench uses **Delegation** to provide intuitive shortcuts, allowing you to bypass multiple levels of the hierarchy for a cleaner, more ergonomic syntax.
+
+| Command | Perspective | Technical Equivalent (Structural Access) |
+| :--- | :--- | :--- |
+| **`exp.last_run`** | The most recent trajectory. | `exp.runs[-1]` |
+| **`exp.last_pop`** | Final population of the last run. | `exp.last_run.pop(-1)` |
+| **`exp.pop()`**    | **Aggregate Cloud**: All final populations combined. | `[Aggregation of all runs]` |
+| **`exp.front()`**  | Pareto Front (Objectives) of the last run. | `exp.last_run.pop().non_dominated().objs` |
+| **`exp.set()`**    | Pareto Set (Variables) of the last run. | `exp.last_run.pop().non_dominated().vars` |
+| **`exp.non_front()`**| Dominated Objectives of the last run. | `exp.last_run.pop().dominated().objs` |
+| **`exp.superfront`**| **Global Pareto Front**: ND front across *all* runs. | `exp.pop().non_dominated().objs` |
+| **`exp.superset`**  | **Global Pareto Set**: ND variables across *all* runs. | `exp.pop().non_dominated().vars` |
+| **`exp.objectives`**| Raw cloud objectives (all final runs combined). | `exp.pop().objs` |
+| **`exp.variables`** | Raw cloud variables (all final runs combined).| `exp.pop().vars` |
+| **`exp.optimal_front()`**| The True (Analytical) Pareto Front. | `exp.optimal().objs` |
+
+### **Ergonomic Aliases (Layer 4)**
+Regardless of the delegation level, you can always use short aliases to access the raw NumPy data:
+*   **`.objs`** $\to$ `.objectives`
+*   **`.vars`** $\to$ `.variables`
+
+---
+
+## **6. Visual Perspectives: Plotting Made Easy**
+
+The `mb.view` system is **Polymorphic**. Plotting functions are designed to accept complex objects (like an `Experiment`) and automatically extract the relevant scientific data.
+
+### **Spatial Perspective (`spaceplot`)**
+Visualizes the distribution of solutions in the objective space.
 ```python
-# Base seed = 10
-algo = mb.moeas.NSGA3(seed=10) 
-exp.run(repeat=1) 
-# Result: One run using seed 10.
+mb.view.spaceplot(exp) 
+```
+*Note: Supports 2D and 3D plotting. Refer to [Reference: spaceplot](reference.md#spaceplot) for advanced options ($interactive$, $title$, etc.).*
+
+### **Temporal Perspective (`timeplot`)**
+Visualizes the evolution of metrics over generations.
+```python
+mb.view.timeplot(exp) # Uses Hypervolume by default
 ```
 
-**Multi-Run (Statistical Repeats)**:
-When running multiple repetitions for statistical significance, the seed is **automatically incremented** for each run starting from the base seed. This ensures that every run is independent but fully reproducible.
+### **Structural & Competitive Perspectives**
+For deep diagnostics on algorithm behavior:
+*   **`rankplot`**: ![Rank Plot](images/rankplot.png) 
+    *   Shows how individuals are distributed across dominance ranks.
+*   **`casteplot`**: ![Caste Plot](images/casteplot.png)
+    *   Visualizes the "Quality vs. Density" profile of population layers.
+*   **`tierplot`**: ![Tier Plot](images/tierplot.png)
+    *   A comparative "Duel" between two algorithms to see who dominates the elite tiers.
+
+---
+
+## **7. Statistical Analysis ("Smart Stats")**
+
+The `mb.stats` module follows the same polymorphic philosophy. Statistical tests need sample distributions, and MoeaBench extracts them automatically from your experiments.
+
+### **Narrative Reporting**
+Statistical tools return **Rich Result Objects** that provide human-readable narratives.
 
 ```python
-# Base seed = 10
-algo = mb.moeas.NSGA3(seed=10)
-exp.run(repeat=5)
+# Compare two algorithms
+res = mb.stats.mann_whitney(exp1, exp2)
 
-# Execution Plan:
-# Run 1: seed = 10
-# Run 2: seed = 11
-# Run 3: seed = 12
-# ...
-# Run 5: seed = 14
+# Print the narrative report
+print(res.report())
 ```
 
-### **Custom Extensions**
-MoeaBench is designed to be easily extensible. You can plug in custom problems and algorithms by following a simple interface contract.
+The report explains significance, provides effect sizes (A12), and offers a diagnostic interpretation. For technical details on the underlying tests, see **[Reference: Stats](reference.md#stats)**.
 
-#### **1. Custom MOPs**
-Inherit from `mb.mops.BaseMop` and implement the `evaluation` method:
+---
+
+## **8. Advanced Diagnostics: Caste and Tier**
+
+Beyond simple averages, MoeaBench allows you to inspect the "internal health" of the search profile.
+
+### **Stratification & Selection Pressure**
+Use `mb.stats.strata(exp)` to analyze how individuals are distributed across non-domination layers.
+*   **Selection Pressure**: Quantifies if the algorithm is focusing correctly on the elite.
+*   **Caste Profile**: A hierarchical view that reveals the trade-off between **Convergence** and **Search Effort**.
+
+### **The Tier Duel**
+The `tierplot` is the definitive way to compare two MOEAs. It reveals which algorithm is truly "infiltrating" the best global ranks and where the rival starts to lose ground.
+
+---
+
+## **9. Extensibility: Plugging your Algorithm**
+
+Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
+
+### **Custom MOP Plugin**
+To add a new problem, inherit from `mb.mops.BaseMop` and implement the `evaluation` method:
 
 ```python
-class MyMOP(mb.mops.BaseMop):
+class MyProblem(mb.mops.BaseMop):
     def __init__(self):
-        super().__init__(M=2, N=5) # 2 objectives, 5 variables
-        self.xl = np.zeros(5)      # Lower bounds
-        self.xu = np.ones(5)       # Upper bounds
+        super().__init__(M=2, N=10) # 2 objectives, 10 variables
+        self.xl = np.zeros(10)      # Decision variable lower bounds
+        self.xu = np.ones(10)       # Decision variable upper bounds
 
     def evaluation(self, X):
         # Must return a dictionary with the objectives matrix 'F'
-        f1 = np.sum(X**2, axis=1)
-        f2 = np.sum((X-1)**2, axis=1)
+        # Optional: include constraints matrix 'G'
+        f1 = ...
+        f2 = ...
         return {'F': np.column_stack([f1, f2])}
-
-    # Optional: Analytical Reference Front for IGD/GD
-    def ps(self, n_points):
-        # Returns decision variables (Pareto Set) to be evaluated as the PF.
-        # This is used by mb.metrics.igd() and mb.view.spaceplot() to show the "true" front.
-        return np.column_stack([np.linspace(0, 1, n_points)] * self.N)
 ```
 
-**Guard Mechanisms**: Analytical fronts are sampled **lazily** (only when requested). If a metric like `mb.metrics.igd` is called but the MOP does not implement `ps()`, the tool will catch the error and fall back to the best-found front across all runs.
+### **Custom MOEA Plugin**
+To wrap your own algorithm, inherit from `mb.moeas.MOEA`. By implementing the `solve(mop)` interface, your algorithm gains access to all of MoeaBench's infrastructure, including multi-run management, persistence, and all plotting perspectives.
 
-#### **2. Custom MOEAs**
-To wrap an external algorithm or implement your own, implement the `solve` interface (which receives the MOP and termination criteria). If you are adapting a Pymoo algorithm, you can use the `BaseMoeaWrapper`:
-
-```python
-# Option A: Manual Implementation
-class MyAlgorithm(mb.moeas.MOEA):
-    def solve(self, mop, termination):
-        # mop: Provides .evaluation(X)
-        # termination: Stop condition
-        ...
-        return mb.Population(obj_matrix, var_matrix)
-
-# Option B: Pymoo Wrapper
-from pymoo.algorithms.moo.nsga2 import NSGA2
-
-class MyNSGA2(mb.moeas.BaseMoeaWrapper):
-    def __init__(self, **kwargs):
-        super().__init__(NSGA2, **kwargs)
-
-exp.moea = MyNSGA2(pop_size=50)
-```
+*For a step-by-step tutorial on building plugins, see the [Reference: Extensibility](reference.md#extensibility).*
 
 ---
 
+## **10. Precision: Reproducibility & Seeds**
+
+Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata.
+
+*   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
+*   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
+*   **Traceability**: Every `Run` object stores the exact seed used for its execution, ensuring any result can be perfectly replicated.
+
 ---
 
-## **5. Statistical Analysis ("Smart Stats")**
+## **11. Persistence (`save` and `load`)**
 
-Comparing algorithms requires systematic testing. MoeaBench provides the **"Smart Stats"** API to perform these comparisons with minimal boilerplate.
-
-### **Functional Comparisons (mann_whitney)**
-You can pass `Experiment` or `MetricMatrix` (e.g., returned by `mb.metrics.hv`) objects directly to statistical tests. The library automatically handles:
-1.  **Metric Calculation**: If an experiment is passed, it uses Hypervolume (`mb.metrics.hv`) by default.
-2.  **Global Reference**: For experiments, it automatically injects a shared reference point (Global Nadir).
-3.  **Extraction**: For both experiments and matrices, it extracts the final generation's distribution for testing.
+MoeaBench allows you to persist experiments to disk as compressed ZIP files. This is essential for long-running studies and cross-tool analysis.
 
 ```python
-# The one-liner comparison (Experiments)
-res = mb.stats.mann_whitney(exp1, exp2)
+# Save everything (Trajectories + Config)
+exp.save("study_A", mode="all")
 
-# Comparing pre-calculated matrices
-hv1 = mb.metrics.hv(exp1)
-hv2 = mb.metrics.hv(exp2)
-res = mb.stats.mann_whitney(hv1, hv2) # Automically extracts .gens(-1)
+# Load only the configuration (to replicate a study with new runs)
+new_exp = mb.experiment().load("study_A", mode="config")
 ```
+Supported modes: `all`, `config` (metadata), and `data` (results). For details on the file format, see **[Reference: Persistence](reference.md#persistence)**.
 
-> [!TIP]
-> **Performance Tip**: Calculating metrics like Hypervolume or IGD for large experiments can be computationally expensive.
-> **Smart Stats** are purely functional and do *not* cache results (to ensure accuracy in changing contexts).
-> **Best Practice**: Assign metric results to variables (`hv = mb.metrics.hv(exp)`) and reuse them, rather than calling `mb.metrics.hv(exp)` repeatedly.
+---
 
-### **Detecting Shape Differences (`ks_test`)**
-While Mann-Whitney tells you if one algorithm is generally "better," the **Kolmogorov-Smirnov (KS)** test identifies if the distributions have different **shapes**. 
+## **12. References**
 
-This is useful for spotting:
-*   **Stability**: If one algorithm has much higher variance (is less stable).
-*   **Bimodality**: If an algorithm has distinct "success" and "failure" modes.
-
-```python
-# Check if the performance distributions have different "silhouettes"
-res_ks = mb.stats.ks_test(exp1, exp2)
-```
-
-### **Customizing the Metric**
-You can specify which metric to use by passing the function or a lambda.
-
-```python
-# Using IGD (injects common PF automatically)
-mb.stats.mann_whitney(exp1, exp2, metric=mb.metrics.igd)
-
-# Using a lambda for custom logic
-mb.stats.mann_whitney(exp1, exp2, metric=lambda e: mb.metrics.hv(e, ref_point=[1.2, 1.2]))
-
-# Passing arguments to the metric directly
-mb.stats.mann_whitney(exp1, exp2, metric=mb.gdplus, ref=true_pf)
-```
-
-### **Polymorphic Arguments**
-"Smart Stats" still supports raw NumPy arrays if you have pre-extracted values.
-
-```python
-v1 = [0.81, 0.82, 0.83]
-v2 = [0.75, 0.74, 0.76]
-res = mb.stats.mann_whitney(v1, v2)
-```
-
-### **Rich Results and Narrative Reporting**
-All statistical tools in `mb.stats` return **Rich Result Objects**. These objects are designed to be both programmatically powerful and human-centered.
-
-1.  **Lazy Evaluation**: Results are computationally efficient. Metrics (like A12 or Selection Pressure) are only calculated when you actually access the property.
-2.  **Narrative Reports**: Every result object has a `.report()` method that prints a formatted summary of the findings, including a diagnosis.
-3.  **Programmatic Access**: Every value in the report is available as a property for use in your scripts.
-
-```python
-res = mb.stats.mann_whitney(exp1, exp2)
-
-# Programmatic use
-if res.significant:
-    print(f"Algorithm A is better with effect size {res.a12:.2f}")
-
-# Human-centered report
-print(res.report()) 
-```
-
-For a full comparison script, see `examples/example_06.py`.
-
-## **6. Advanced Diagnostics**
-
-MoeaBench provides deep insights into the internal "health" of your algorithm's search profile.
-
-### Population Strata
-Use `mb.stats.strata` to analyze the distribution of individuals across all dominance ranks (layers). This helps you quantify **Selection Pressure** and detect when an algorithm has stalled or lost diversity.
-
-```python
-# Analyze the rank distribution of an experiment
-result = mb.stats.strata(exp)
-
-# Programmative access (Lazy)
-pressure = result.selection_pressure 
-
-# Narrative report (Didatic)
-print(result.report())
-
-# Visualize the rank structure (Structural Perspective)
-mb.view.rankplot(exp)
-```
-
-### **Advanced Diagnosis: Caste Profile**
-Beyond simple distributions, MoeaBench allows you to inspect the **Caste Profile** (Hierarchical Perspective). Use `mb.view.casteplot(exp1, exp2)` to visualize the quality and density of each dominance level.
-
-*   **Vertical Position**: Represents the Quality (Default: `mb.hypervolume`).
-*   **Bar Height**: Represents the Population Density (how many solutions are in that rank).
-
-This allows you to see both **Convergence** (is the bar high?) and **Search Effort** (is the bar tall?) at a single glance.
-
-### 3.3 Competitive Perspective: The Tier Duel
-When comparing two algorithms, we often want to know which one dominates the elite "Tiers" of the population.
-
-```python
-# The 'tier' analysis merges both populations and re-stratifies them
-res = mb.stats.tier(exp1, exp2)
-print(res.report())
-
-# Plot the distribution of algorithms across tiers
-mb.view.tierplot(res)
-```
-The **Tier Plot** shows the proportion of each algorithm in each global non-domination rank, visualized through **absolute population counts**.
-
-*   **Vertical Height**: Represents the total number of individuals in that tier across both algorithm populations.
-*   **Pole Position**: The percentage of the first tier (Rank 1) belonging to an algorithm.
-*   **Gap**: How many tiers deep you have to go before the rival algorithm starts to appear.
-- It reveals who is truly "infiltrating" the elite Pareto levels and the density of those levels.
-
-### **8. Persistence (`save` and `load`)**
-
-MoeaBench allows you to persist experiments to disk using compressed ZIP files. This is essential for long-running studies, reproducibility, and cross-tool analysis.
-
-Both `save()` and `load()` support a `mode` argument to provide selective persistence:
-
-- **`mode='all'`** (Default): Saves or loads the entire state, including all execution trajectories (`runs`).
-- **`mode='config'`**: Focuses on metadata. Saves only the experiment setup (MOP and MOEA parameters) or loads only the configuration into an existing object.
-- **`mode='data'`**: Focuses on results. Saves trajectories and CSV data, or loads only the `runs` into an already configured experiment object.
-
-```python
-# Save only the setup (Small file, great for GitHub)
-exp.save("setup_study_A", mode="config")
-
-# Save everything (Complete history for analysis)
-exp.save("full_study_A", mode="all")
-
-# Load data into a pre-configured script
-new_exp = mb.experiment()
-new_exp.mop = mb.mops.DTLZ2() 
-new_exp.load("full_study_A", mode="data") 
-```
-
-The generated ZIP file includes a `result.csv` (Superfront) and a `problem.txt` summary for easy inspection outside Python.
-
-### **9. System Utilities (`mb.system`)**
-
-MoeaBench includes a `system` module to monitor your environment and hardware.
-
-```python
-# Check library health
-mb.system.check_dependencies() # Report on installed solvers
-mb.system.version()            # Library version
-```
-
-## **7. References**
-*   **Full API Documentation**: See [reference.md](reference.md) for exhaustive details on every class and method.
-*   **Pymoo**: The optimization engine powering standard algorithms (https://pymoo.org).
+*   **[API Reference](reference.md)**: Total technical mapping of the library.
+*   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
+*   **[MOPs Manual](mops.md)**: Detailed history and mathematics of built-in benchmarks.
