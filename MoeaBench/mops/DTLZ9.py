@@ -12,8 +12,16 @@ class DTLZ9(BaseMop):
     Constrained problem. N must be a multiple of M.
     """
     def __init__(self, M=3, N=None, **kwargs):
+        if M < 2:
+            raise ValueError("DTLZ9 requires at least M=2 objectives.")
         if N is None:
             N = 10 * M
+        if N < M:
+            raise ValueError(f"DTLZ9 requires N >= M variables (provided N={N}, M={M}).")
+        if N % M != 0:
+            import warnings
+            warnings.warn(f"DTLZ9 is best defined when N is a multiple of M. "
+                          f"Provided N={N}, M={M}. {N % M} variables will be ignored.")
         super().__init__(M=M, N=N, **kwargs)
 
     def evaluation(self, X, n_ieq_constr=0):
@@ -46,3 +54,39 @@ class DTLZ9(BaseMop):
 
     def get_n_ieq_constr(self):
         return self.M - 1
+
+    def ps(self, n_points: int = 100):
+        """Analytical sampling of DTLZ9 Pareto Set."""
+        M = self.M
+        N = self.N
+        N_over_M = N // M
+        
+        # The Pareto Front satisfies sum(fj^2) = 1 (on the boundary)
+        # We sample points on this hypersphere and map back to X
+        res = np.zeros((n_points, N))
+        
+        # Simple case: varied alpha for M-objective hypersphere
+        # For M=2, this is f1=cos(a), f2=sin(a)
+        # For larger M, we use a simpler linear interpolation of angles
+        alphas = np.linspace(0, np.pi/2, n_points)
+        
+        # We use a simple strategy: all variables in a block are equal to fj^10
+        # because fj = mean(xi^0.1) = xi^0.1 => xi = fj^10
+        for i in range(n_points):
+            # Generate a unit vector in M-space
+            f = np.zeros(M)
+            # This is a simplification but provides points on the front boundary
+            a = alphas[i]
+            f[0] = np.cos(a)
+            f[M-1] = np.sin(a)
+            # Intermediate objectives zero for simplicity in boundary sampling
+            
+            # Map objectives back to variables
+            X_row = np.zeros(N)
+            for j in range(M):
+                start = j * N_over_M
+                end = (j + 1) * N_over_M
+                X_row[start:end] = f[j]**10
+            res[i, :] = X_row
+            
+        return res

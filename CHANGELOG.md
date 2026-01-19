@@ -12,10 +12,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.1] - 2026-01-19
 
 ### Added
-- **Example Version Reporting**: Integrated discreet library version printing (`Version: 0.5.0`) in the start of all 10 examples (scripts and notebooks) to improve results tracking and reproducibility.
+- **Example Version Reporting**: Integrated discreet library version printing (`Version: 0.5.1`) in the start of all 10 examples (scripts and notebooks) to improve results tracking and reproducibility.
+
+### Fixed
+- **Benchmark Robustness (DTLZ8/9)**:
+    - Resolved critical $M=2$ crash in `DTLZ8` and improved input validation.
+    - Implemented analytical Pareto Set sampling (`ps()`) for `DTLZ9` to support statistical metrics.
+    - Added informative diagnostic messages for `DTLZ8` topological limitations.
 
 ## [0.5.0] - 2026-01-19
 

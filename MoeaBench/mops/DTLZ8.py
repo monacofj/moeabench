@@ -14,8 +14,16 @@ class DTLZ8(BaseMop):
     N must be a multiple of M.
     """
     def __init__(self, M=3, N=None, **kwargs):
+        if M < 2:
+            raise ValueError("DTLZ8 requires at least M=2 objectives.")
         if N is None:
             N = 10 * M
+        if N < M:
+            raise ValueError(f"DTLZ8 requires N >= M variables (provided N={N}, M={M}).")
+        if N % M != 0:
+            import warnings
+            warnings.warn(f"DTLZ8 is best defined when N is a multiple of M. "
+                          f"Provided N={N}, M={M}. {N % M} variables will be ignored.")
         super().__init__(M=M, N=N, **kwargs)
 
     def evaluation(self, X, n_ieq_constr=0):
@@ -42,17 +50,28 @@ class DTLZ8(BaseMop):
 
     def _calc_constraints(self, F):
         M = self.M
-        N_samples = F.shape[0]
-        
         # gj = fM + 4fj - 1 >= 0
         Gj = F[:, M-1:M] + 4 * F[:, :M-1] - 1
         
-        # gM = 2fM + min(fi+fj) - 1 >= 0
-        comb = list(combinations(range(M - 1), 2))
-        min_sum = np.min(np.column_stack([F[:, c[0]] + F[:, c[1]] for c in comb]), axis=1).reshape(-1, 1)
-        Gm = 2 * F[:, M-1:M] + min_sum - 1
+        if M >= 3:
+            # gM = 2fM + min(fi+fj) - 1 >= 0
+            comb = list(combinations(range(M - 1), 2))
+            min_sum = np.min(np.column_stack([F[:, c[0]] + F[:, c[1]] for c in comb]), axis=1).reshape(-1, 1)
+            Gm = 2 * F[:, M-1:M] + min_sum - 1
+            return np.concatenate((Gj, Gm), axis=1)
         
-        return np.concatenate((Gj, Gm), axis=1)
+        return Gj
 
     def get_n_ieq_constr(self):
+        if self.M < 3:
+            return 1
         return self.M
+
+    def ps(self, n_points: int = 100):
+        """
+        Analytical sampling of DTLZ8 Pareto Set.
+        Note: DTLZ8 has a complex, constrained topology featuring mixed linear 
+        and curved segments. Analytical sampling is not supported in this version.
+        """
+        raise NotImplementedError("Analytical ps() sampling is not supported for DTLZ8 "
+                                  "due to its complex constrained topology.")
