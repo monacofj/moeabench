@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.1] - 2026-01-19
 
 ### Added
+- **Scientific Distribution Plot (`mb.view.distplot`)**: High-quality academic visualization for probability densities (KDE), integrated with statistical matching results. Supports grid and independent layouts.
 - **Example Version Reporting**: Integrated discreet library version printing (`Version: 0.5.1`) in the start of all 10 examples (scripts and notebooks) to improve results tracking and reproducibility.
 
 ### Fixed

@@ -277,3 +277,104 @@ def tierplot(exp1, exp2=None, title=None, **kwargs):
 
     plt.show()
     return ax
+
+def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=None, show=True, **kwargs):
+    """
+    [mb.view.distplot] Perspectiva de Distribuição Acumulada.
+    Plots Probability Density Estimates (KDE) and statistical matching.
+    
+    Args:
+        *args: Experiments, Runs, Populations or arrays to compare.
+        axes (list): Specific objective/variable indices to plot.
+        layout (str): 'grid' (default) or 'independent'.
+        alpha (float): Significance level for Match/Mismatch verdict (default 0.05).
+        space (str): 'objs' or 'vars' if Experiment objects are passed.
+        title (str): Global title.
+        show (bool): Whether to call plt.show() (default True).
+    """
+    from scipy.stats import gaussian_kde
+    from ..stats.tests import dist_match, DistMatchResult
+    
+    # 1. Resolve Data and Labels
+    buffers = []
+    names = []
+    
+    # Identify objects to extract data
+    for arg in args:
+        if hasattr(arg, 'runs') and hasattr(arg, 'pop'):
+            # Experiment
+            data = arg.front(**kwargs) if space == 'objs' else arg.set(**kwargs)
+        else:
+            # Array or SmartArray
+            data = arg
+        buffers.append(np.asarray(data))
+        names.append(getattr(arg, 'name', 'unnamed'))
+
+    n_dims = buffers[0].shape[1]
+    if axes is None:
+        axes = list(range(min(n_dims, 4)))
+    
+    # 2. Statistical Analysis
+    match_res = dist_match(*args, space=space, axes=axes, method='ks', **kwargs)
+    
+    # 3. Plotting Logic
+    if layout == 'grid':
+        n_plots = len(axes)
+        cols = 2 if n_plots > 1 else 1
+        rows = (n_plots + 1) // 2
+        fig, ax_grid = plt.subplots(rows, cols, figsize=(10, 4*rows), constrained_layout=True)
+        axes_objs = np.atleast_1d(ax_grid).flatten()
+    else:
+        figures = []
+        axes_objs = [None] * len(axes) 
+
+    for i, ax_idx in enumerate(axes):
+        if layout == 'independent':
+            cur_fig, cur_ax = plt.subplots(figsize=(6, 4))
+            figures.append(cur_fig)
+        else:
+            cur_ax = axes_objs[i]
+            cur_fig = fig
+            
+        axis_name = "Objective" if space == 'objs' else "Variable"
+        cur_ax.set_xlabel(f"{axis_name} {ax_idx}")
+        cur_ax.set_ylabel("Density (KDE)")
+        
+        ax_stats = match_res.results.get(ax_idx)
+        p_val = getattr(ax_stats, 'p_value', 1.0) if ax_stats else 1.0
+        d_stat = getattr(ax_stats, 'statistic', 0.0) if hasattr(ax_stats, 'statistic') else 0.0
+        verdict = "Match ✅" if p_val > alpha else "Mismatch ❌"
+        
+        for b_idx, buffer in enumerate(buffers):
+            sample = buffer[:, ax_idx]
+            color = f"C{b_idx % 10}"
+            
+            sample = sample[np.isfinite(sample)]
+            if len(np.unique(sample)) > 1:
+                kde = gaussian_kde(sample)
+                x_range = np.linspace(np.min(sample), np.max(sample), 100)
+                y_vals = kde(x_range)
+                
+                lbl = f"{names[b_idx]}"
+                if b_idx == 0: 
+                     lbl += f"\n(D={d_stat:.2f}, p={p_val:.3f})\nVerdict: {verdict}"
+                
+                cur_ax.plot(x_range, y_vals, color=color, label=lbl, lw=2)
+                cur_ax.fill_between(x_range, y_vals, color=color, alpha=0.2)
+            else:
+                val = sample[0]
+                cur_ax.axvline(val, color=color, label=names[b_idx], lw=2)
+        
+        cur_ax.set_title(f"Distribution Analysis: {axis_name} {ax_idx}")
+        cur_ax.legend(fontsize=8, frameon=True, facecolor='white', framealpha=0.9)
+        cur_ax.grid(True, alpha=0.2, linestyle='--')
+        
+    if title:
+        plt.suptitle(title, fontsize=14)
+
+    if show:
+        plt.show()
+    
+    if layout == 'independent':
+        return figures
+    return fig

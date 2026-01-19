@@ -17,7 +17,7 @@ from . import view
 from . import system
 
 # View Shortcuts (Exposed at top level for convenience)
-from .view.plotters import spaceplot, timeplot, rankplot, casteplot, tierplot
+from .view.plotters import spaceplot, timeplot, rankplot, casteplot, tierplot, distplot
 import warnings
 
 # MB Wrapper for Legacy Compatibility
@@ -53,6 +53,7 @@ class _MB:
         self.rankplot = _warn_shortcut("rankplot", view.rankplot, "view")
         self.casteplot = _warn_shortcut("casteplot", view.casteplot, "view")
         self.tierplot = _warn_shortcut("tierplot", view.tierplot, "view")
+        self.distplot = _warn_shortcut("distplot", view.distplot, "view")
         
         # 2. Metric Shortcuts (Legacy Deprecated)
         self.hv = _warn_shortcut("hypervolume", metrics.hypervolume, "metrics")
