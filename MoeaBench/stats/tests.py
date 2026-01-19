@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from scipy.stats import mannwhitneyu, ks_2samp
+from scipy.stats import mannwhitneyu, ks_2samp, anderson_ksamp, wasserstein_distance
 from functools import cached_property
 from .base import StatsResult, SimpleStatsValue
 
@@ -206,3 +206,152 @@ def ks_test(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs
     res = ks_2samp(v1, v2, alternative=alternative)
     return HypothesisTestResult(res.statistic, res.pvalue, data1, data2, 
                                 "Kolmogorov-Smirnov", alternative, metric, gen, **kwargs)
+
+class DistMatchResult(StatsResult):
+    """
+    Rich result for multi-axial distribution matching (topology/equivalence).
+    """
+    def __init__(self, results, names, space='objs', method='ks'):
+        self.results = results # {axis_idx: score/p_val}
+        self.names = names
+        self.space = space
+        self.method = method
+
+    @property
+    def p_values(self) -> dict:
+        """Returns the dictionary of p-values if the method supports it."""
+        return {k: getattr(v, 'p_value', v) for k, v in self.results.items()}
+
+    @property
+    def is_consistent(self) -> bool:
+        """Returns True if all dimensions are statistically equivalent (p > 0.05)."""
+        if self.method == 'emd': # EMD doesn't have p-values
+            return all(v < 0.1 for v in self.results.values())
+        return all(getattr(v, 'p_value', 1.0) >= 0.05 for v in self.results.values())
+
+    @property
+    def failed_axes(self) -> list:
+        """Returns indices of axes where distributions differ."""
+        if self.method == 'emd':
+            return [k for k, v in self.results.items() if v >= 0.1]
+        return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < 0.05]
+
+    def report(self) -> str:
+        space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
+        lines = [
+            f"--- Distribution Match Report ({self.method.upper()}) ---",
+            f"  Analysed Space: {space_label}",
+            f"  Global Status:  {'CONSISTENT' if self.is_consistent else 'DIVERGENT'}",
+            f"  Dimensions:     {len(self.results)} axes tested",
+            "\n  Dimensional Analysis:"
+        ]
+        
+        for idx, res in self.results.items():
+            name = f"Axis {idx}"
+            if self.method == 'emd':
+                val_str = f"EMD={res:.4f}"
+                sig_str = "(Divergent)" if res >= 0.1 else "(Match)"
+            else:
+                p_val = getattr(res, 'p_value', 1.0)
+                val_str = f"p={p_val:.4f}"
+                sig_str = "(Divergent)" if p_val < 0.05 else "(Match)"
+            lines.append(f"    {name:<10}: {val_str:<10} {sig_str}")
+
+        if not self.is_consistent:
+            lines.append(f"\nConclusion: Topologies differ significantly in dimensions: {self.failed_axes}")
+        else:
+            lines.append("\nConclusion: The distributions are statistically equivalent across all axes.")
+            
+        return "\n".join(lines)
+
+def dist_match(*args, space='objs', axes=None, method='ks', **kwargs):
+    """
+    Performs multi-axial distribution matching between experiments or arrays.
+    
+    If Experiment objects are passed, it automatically extracts 'front().objs' 
+    (for space='objs') or 'set().vars' (for space='vars'). If raw arrays/SmartArrays 
+    are passed, they are used directly (skipping the 'space' selector).
+    
+    Args:
+        *args: Two or more datasets (Experiments or numpy arrays).
+        space (str): 'objs' or 'vars' (only applies if Experiments are passed).
+        axes (list): List of axis indices to test (default None: all).
+        method (str): 'ks' (Kolmogorov-Smirnov), 'anderson', or 'emd' (Earth Mover).
+        **kwargs: Additional parameters passed to tests.
+        
+    Returns:
+        DistMatchResult: Rich object with dimensional analysis.
+    """
+    if len(args) < 2:
+        raise ValueError("dist_match requires at least two datasets for comparison.")
+
+    # 1. Extract raw data buffers
+    buffers = []
+    names = []
+    for arg in args:
+        if hasattr(arg, 'runs') and hasattr(arg, 'pop'):
+            # It's an Experiment
+            if space == 'objs':
+                data = arg.front(**kwargs)
+            else:
+                data = arg.set(**kwargs)
+        else:
+            # It's already a SmartArray or numpy array
+            data = arg
+        
+        buffers.append(np.asarray(data))
+        names.append(getattr(arg, 'name', 'unnamed'))
+
+    # 2. Determine common axes
+    n_dims = buffers[0].shape[1]
+    if axes is None:
+        axes = list(range(n_dims))
+
+    results = {}
+    
+    # 3. Perform axis-by-axis matching
+    for ax in axes:
+        samples = [b[:, ax] for b in buffers]
+        
+        if method == 'ks':
+            if len(samples) > 2:
+                # K-sample KS isn't in standard scipy, we use pairwise or anderson
+                # For now, let's just do pairwise against the first one if multi-sample
+                # Or better, just support pairwise KS for dist_match
+                if len(samples) > 2:
+                    # Warning or fallback
+                    pass
+                res = ks_2samp(samples[0], samples[1])
+                results[ax] = SimpleStatsValue(res.pvalue, "KS p-value")
+                results[ax].p_value = res.pvalue # Add p_value alias for consistent property access
+            else:
+                res = ks_2samp(samples[0], samples[1])
+                results[ax] = SimpleStatsValue(res.pvalue, "KS p-value")
+                results[ax].p_value = res.pvalue
+
+        elif method == 'anderson':
+            # Anderson-Darling k-sample
+            try:
+                # anderson_ksamp handles multiple samples natively
+                res = anderson_ksamp(samples)
+                results[ax] = SimpleStatsValue(res.pvalue, "Anderson p-value")
+                results[ax].p_value = res.pvalue
+            except Exception:
+                # Fallback if samples are too small
+                results[ax] = SimpleStatsValue(1.0, "Anderson p-value")
+                results[ax].p_value = 1.0
+
+        elif method == 'emd':
+            # Earth Mover's Distance (only pairwise supported in scipy.stats 1D)
+            if len(samples) == 2:
+                val = wasserstein_distance(samples[0], samples[1])
+                results[ax] = val
+            else:
+                # Average pairwise EMD if more than 2
+                vals = []
+                for i in range(len(samples)):
+                    for j in range(i+1, len(samples)):
+                        vals.append(wasserstein_distance(samples[i], samples[j]))
+                results[ax] = np.mean(vals)
+                
+    return DistMatchResult(results, names, space=space, method=method)

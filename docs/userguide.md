@@ -344,10 +344,52 @@ The object `res` contains the following values that can be accessed directly:
 res = mb.stats.ks_test(exp1, exp2, metric=mb.metrics.hv)
 print(res.report()) 
 # (equiv: samples from mb.metrics.hv(exp1.pop().objs) vs mb.metrics.hv(exp2.pop().objs))
+```
 
-# Deep access to the results for automated decision logic
-if res.significant:
-    print(f"Significant difference detected with A12: {res.a12:.4f}")
+### **8.3 Topological Matching (`dist_match`)**
+
+While hypothesis tests (Section 8.2) determine "who is better" by comparing scalar performance metrics like Hypervolume, the laboratory often requires a different inquiry: **"Did these algorithms find the same thing?"**.
+
+The `mb.stats.dist_match(*args)` function is designed for this topological inquiry. It performs multi-axial distribution matching to verify if the populations found by different solvers are statistically equivalent in their spatial distribution. This is essential for detecting **multimodality** (different paths to the same result) or verifying the **consistency** of new algorithms against established baselines.
+
+#### **Performance vs. Topology**
+It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `dist_match` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
+
+#### **Cascading Hierarchy in Matching**
+Following the MoeaBench abstraction hierarchy, `dist_match` automatically resolves the data context based on the input:
+
+```python
+# 1. Level 1: Direct Array Matching
+# The most granular form: compares two raw matrices axis-by-axis.
+res_raw = mb.stats.dist_match(matrix_a, matrix_b)
+
+# 2. Level 4: Explicit Snapshot Matching
+# Uses 'front()' for objective space or 'set()' for decision space.
+# It resolves the "Cloud" among all runs before matching.
+res_front = mb.stats.dist_match(exp1.front(), exp2.front()) # Objectives
+res_set   = mb.stats.dist_match(exp1.set(),   exp2.set())   # Variables
+
+# 3. Level 5: The Experiment Manager (Total Abstraction)
+# Automatically extracts exp.front().objs by default (space='objs').
+res = mb.stats.dist_match(exp1, exp2) 
+
+# You can change the focus of the Manager comparison via the 'space' selector:
+res_vars = mb.stats.dist_match(exp1, exp2, space='vars') # (equiv: exp.set().vars)
+```
+
+#### **Analyzing the Match Result**
+The function returns a `DistMatchResult` object that provides a dimensional breakdown of the convergence:
+*   **`.is_consistent`**: A global boolean indicating if **all** tested axes (objectives or variables) are equivalent.
+*   **`.failed_axes`**: A list of indices identifying exactly where the algorithms diverged.
+*   **`.p_values`**: A dictionary providing the specific p-value for each dimension.
+*   **`.report()`**: A quantitative analysis report that lists each axis and its match status.
+
+```python
+res = mb.stats.dist_match(exp1, exp2, method='ks')
+print(res.report())
+
+if not res.is_consistent:
+    print(f"Divergence detected in dimensions: {res.failed_axes}")
 ```
 
 ---

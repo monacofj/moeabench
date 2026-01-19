@@ -325,6 +325,21 @@ Performs **Joint Stratification** analysis (Tier analysis) between two groups.
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strata profiles. 
 
+### **`mb.stats.dist_match(*args, space='objs', axes=None, method='ks', **kwargs)`**
+Performs multi-axial distribution matching to verify topological equivalence.
+*   **Args**:
+    *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).
+    *   `space` (*str*): `'objs'` or `'vars'`. Only applies if `Experiment` objects are passed. Defaults to `'objs'` (Pareto Front).
+    *   `axes` (*list*): Specific indices of objectives or variables to test.
+    *   `method` (*str*): `'ks'` (Kolmogorov-Smirnov), `'anderson'` (Anderson-Darling), or `'emd'` (Wasserstein).
+*   **Returns**: `DistMatchResult` object.
+
+#### **`DistMatchResult` Properties**
+*   `.is_consistent` (*bool*): `True` if all tested axes are statistically equivalent.
+*   `.failed_axes` (*list*): Indices of axes where distributions differ.
+*   `.p_values` (*dict*): Dictionary mapping axis index to the calculated p-value.
+*   `.report()` (*str*): Generates a quantitative dimensional analysis report.
+
 
 ---
 

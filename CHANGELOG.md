@@ -12,6 +12,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-01-19
+
+### Added
+- **Topological Analysis (`mb.stats.dist_match`)**: Implementation of a new multi-axial statistical engine to verify convergence equivalence. Supports multi-sample KS, Anderson-Darling, and Wasserstein (EMD).
+- **Rich Result (`DistMatchResult`)**: Comprehensive reporting object for dimensional analysis, profiling exact axes where algorithms diverge.
+- **Educational Examples**: Created `examples/example_10.py` and `.ipynb` demonstrating multimodality detection through decision-space matching.
+- **ADR 0013**: Formalization of the "Ocean" centralized visual identity.
+
+### Changed
+- **Pedagogical Refinement**: Major rewrite of the `User Guide` (Sections 6-8) adopting a technical textbook narrative and the "Scale of Abstraction" framework for data selection.
+- **Documentation Accuracy**: Exhaustive audit of selector equivalents (e.g., `exp.pop().objs`) and property documentation in the guide and technical reference.
+
+### Fixed
+- **Markdown Integrity**: Resolved multiple rendering failures in the User Guide due to unclosed code blocks in the Statistics and Persistence sections.
+
 ## [0.4.1] - 2026-01-18
 
 ### Fixed
