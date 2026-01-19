@@ -383,5 +383,3 @@ def topo_dist(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=N
     if layout == 'independent':
         return figures
     return fig
-
-        return fig
