@@ -24,6 +24,7 @@ This directory contains records of the key architectural decisions made during t
 | [0011](0011-selective-persistence.md) | Selective Persistence (Save/Load) | Accepted | 2026-01-17 |
 | [0012](0012-manager-mode.md) | Manager Mode Delegation | Accepted | 2026-01-18 |
 | [0013](0013-visual-identity.md) | Centralized Visual Identity (Ocean) | Accepted | 2026-01-18 |
+| [0014](0014-semantic-taxonomy.md) | Semantic Taxonomy (Performance vs. Topology) | Accepted | 2026-01-19 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*

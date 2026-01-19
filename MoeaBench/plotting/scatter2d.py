@@ -62,7 +62,7 @@ class Scatter2D:
                 y_sorted = ay_data[msk][indices]
 
                 if 'lines' in t_mode:
-                    # For attainment/Pareto, draw_style='steps-post' is often better
+                    # For topo_attain/Pareto, draw_style='steps-post' is often better
                     ax.plot(x_sorted, y_sorted, label=label, color=current_color, drawstyle='steps-post')
                 
                 if 'markers' in t_mode:

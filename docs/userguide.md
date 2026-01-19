@@ -322,59 +322,91 @@ mb.view.tierplot(res_tier) # Joint dominance of (exp1.pop().objs + exp2.pop().ob
 
 Beyond structural profiles, the laboratory requires rigorous evidence to determine if performance differences are statistically significant across independent trials. The `mb.stats` module provides a suite of stochastic inference tools designed to handle the non-parametric nature of multi-objective performance data.
 
-The `mb.stats.mann_whitney(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.ks_test(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.a12(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
+The `mb.stats.perf_evidence(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.perf_dist(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.perf_prob(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
 
 #### **Accessing Inference Meta-data**
 Hypothesis test functions return a `HypothesisTestResult` object that encapsulates the scientific findings:
 
 ```python
 # Perform the inference test
-res = mb.stats.ks_test(exp1, exp2)
-# (equiv: mb.stats.ks_test(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
+res = mb.stats.perf_dist(exp1, exp2)
+# (equiv: mb.stats.perf_dist(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
 ```
 
-The object `res` contains the following values that can be accessed directly:
-*   **`.p_value`**: The calculated probability of the observed results under the null hypothesis.
-*   **`.significant`**: A boolean flag that is `True` if the p-value is below the 0.05 significance threshold.
-*   **`.a12`**: The effect size statistic (Vargha-Delaney A12), representing the probability of superiority.
-*   **`.report()`**: A method that generates a human-readable narrative report ready for research publications.
+## **8. Advanced Analytics: Significance & Robustness**
+
+MoeaBench provides a rich set of non-parametric statistical tools to transform execution data into scientific evidence. In this library, we distinguish between two fundamental types of inquiry:
+
+1.  **Performance Analysis**: Evaluates "who is better" in terms of objective quality (HV, IGD).
+2.  **Topologic Analysis**: Evaluates "what was found" in terms of spatial distribution and coverage.
+
+### **8.1. Performance Analysis (`mb.stats.perf_*`)**
+
+These tools operate on scalar performance metrics (usually from a multi-run experiment) to determine the merit and confidence of an algorithm's results.
+
+#### **Statistical Significance (`mb.stats.perf_evidence`)**
+This is the primary tool for hypothesis testing in experimental scenarios. It performs the **Mann-Whitney U** rank test (also known as the Wilcoxon rank-sum test) to answer: *"Is the observed difference in performance statistically significant, or could it be due to random variation?"* By focusing on the ranks of the data rather than mean values, it provides a robust measure against non-normal distributions common in evolutionary optimization.
 
 ```python
-# Smart Stats: Direct comparison between experiment outcome distributions
-res = mb.stats.ks_test(exp1, exp2, metric=mb.metrics.hv)
+# Returns a HypothesisTestResult object
+res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
 print(res.report()) 
-# (equiv: samples from mb.metrics.hv(exp1.pop().objs) vs mb.metrics.hv(exp2.pop().objs))
+
+if res.p_value < 0.05:
+    print(f"Confidence confirmed for {res.name}")
 ```
 
-### **8.3 Topological Matching (`dist_match`)**
+#### **Win Probability (`mb.stats.perf_prob`)**
+While significance tells us if we can trust the results, it doesn't describe the "strength" of the superiority. The `perf_prob` tool calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B. This provides a pragmatic, human-readable indicator of practical superiority.
 
-While hypothesis tests (Section 8.2) determine "who is better" by comparing scalar performance metrics like Hypervolume, the laboratory often requires a different inquiry: **"Did these algorithms find the same thing?"**.
+*   **A12 > 0.5**: Algorithm A is likely better.
+*   **A12 = 0.5**: They are equivalent.
+*   **A12 < 0.5**: Algorithm B is likely better.
 
-The `mb.stats.dist_match(*args)` function is designed for this topological inquiry. It performs multi-axial distribution matching to verify if the populations found by different solvers are statistically equivalent in their spatial distribution. This is essential for detecting **multimodality** (different paths to the same result) or verifying the **consistency** of new algorithms against established baselines.
+```python
+prob = mb.stats.perf_prob(exp1, exp2, metric=mb.metrics.hv)
+print(f"Probability of Exp1 beating Exp2: {prob:.2f}")
+```
+
+#### **Distribution Shape (`mb.stats.perf_dist`)**
+Sometimes two algorithms have the same average performance but different "stability". The `perf_dist` tool uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is more prone to outliers).
+
+```python
+# Returns a HypothesisTestResult object
+res = mb.stats.perf_dist(exp1, exp2, metric=mb.metrics.hv)
+print(res.report())
+```
+
+### **8.2. Topological Analysis (`mb.stats.topo_*`)**
+
+These tools are designed to answer: *"Did these algorithms find the same thing?"* They perform multi-axial distribution matching to verify if the populations found by different solvers are statistically equivalent in their spatial distribution.
+
+#### **Spatial Distribution Matching (`mb.stats.topo_dist`)**
+The `mb.stats.topo_dist(*args)` function is designed for this topological inquiry. It operates as a multi-axial engine, verifying if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
+
+This tool is foundational for detecting **multimodality** (identifying if different search paths lead to different regions) or verifying the **consistency** of new algorithms against established benchmarks. Users can select the mathematical soul of this comparison through the `method` argument:
+
+*   **`method='ks'` (Default)**: Employs the **Kolmogorov-Smirnov** test per axis. Ideal for detecting any kind of shift, scaling, or shape difference.
+*   **`method='anderson'`**: Uses the **Anderson-Darling k-sample** test, which is more sensitive to differences in the tails of the distributions—critical for analyzing corner cases in Pareto fronts.
+*   **`method='emd'`**: Calculates the **Earth Mover's Distance** (Wasserstein Metric), providing a purely geometric measure of how much "work" would be required to transform one cloud into the other.
 
 #### **Performance vs. Topology**
-It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `dist_match` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
+It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `topo_dist` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
 
 #### **Cascading Hierarchy in Matching**
-Following the MoeaBench abstraction hierarchy, `dist_match` automatically resolves the data context based on the input:
+Following the MoeaBench abstraction hierarchy, `topo_dist` automatically resolves the data context based on the input:
 
 ```python
 # 1. Level 1: Direct Array Matching
-# The most granular form: compares two raw matrices axis-by-axis.
-res_raw = mb.stats.dist_match(matrix_a, matrix_b)
+res_raw = mb.stats.topo_dist(matrix_a, matrix_b)
 
 # 2. Level 4: Explicit Snapshot Matching
-# Uses 'front()' for objective space or 'set()' for decision space.
-# It resolves the "Cloud" among all runs before matching.
-res_front = mb.stats.dist_match(exp1.front(), exp2.front()) # Objectives
-res_set   = mb.stats.dist_match(exp1.set(),   exp2.set())   # Variables
+res_front = mb.stats.topo_dist(exp1.front(), exp2.front()) 
+res_set   = mb.stats.topo_dist(exp1.set(),   exp2.set())   
 
 # 3. Level 5: The Experiment Manager (Total Abstraction)
-# Automatically extracts exp.front().objs by default (space='objs').
-res = mb.stats.dist_match(exp1, exp2) 
-
-# You can change the focus of the Manager comparison via the 'space' selector:
-res_vars = mb.stats.dist_match(exp1, exp2, space='vars') # (equiv: exp.set().vars)
+res = mb.stats.topo_dist(exp1, exp2) 
+res_vars = mb.stats.topo_dist(exp1, exp2, space='vars') 
 ```
 
 #### **Analyzing the Match Result**
@@ -389,36 +421,22 @@ if not res.is_consistent:
     print(f"Divergence detected in dimensions: {res.failed_axes}")
 ```
 
-#### **8.3.1. Visual Distribution Matching (`mb.view.distplot`)**
+#### **8.3.1. Visual Distribution Matching (`mb.view.topo_dist`)**
 
-Statistical reports are legally sufficient but often intuitively incomplete. To bridge the gap between "what the p-value says" and "what the researcher sees," MoeaBench provides the **Distribution Perspective** via `mb.view.distplot()`.
+Statistical reports are legally sufficient but often intuitively incomplete. MoeaBench provides the **Distribution Perspective** via `mb.view.topo_dist()`. This employs **Kernel Density Estimation (KDE)** to generate smooth density curves, embedding the statistical verdict directly into the canvas.
 
-This perspective employs **Kernel Density Estimation (KDE)** to generate smooth, continuous probability density curves for each algorithm. It is the visual companion to `dist_match()`, embedding the statistical verdict directly into the plotting canvas.
+Topologic analysis also includes the study of **attianment surfaces**—the boundaries in objective space that an algorithm can "reach" with a certain probability (e.g., the Median Attainment Surface). This logic is grounded in the theory of **Empirical Attainment Functions (EAF)**.
 
-#### **Academic Aesthetics & Layout**
-
-The `distplot()` is engineered for academic publication. It utilizes a clean white background and the high-contrast **Ocean Palette** to ensure that density envelopes are clearly distinguishable even in print. 
-
-One powerful feature is the **Layout Manager**:
-*   **`layout='grid'` (Default)**: Clusters the analyzed dimensions into a single figure. It intelligently handles non-perfect square counts (e.g., for 3 objectives, it creates a 2x2 grid and hides the empty axes to maintain a professional look).
-*   **`layout='independent'`**: Returns a list of separate Figure objects. This allows researchers to save specific axes individually for different sections of a paper or adjust specific labels without affecting other plots.
-
-#### **Statistical Legends**
-
-Every plot generated by `distplot()` features an intelligent legend that synchronizes with the `dist_match` engine. For the first group in the plot, the legend automatically includes:
-1.  The **D-statistic** (Kolmogorov-Smirnov distance).
-2.  The **p-value** of the comparison for that specific axis.
-3.  A clear `Match` or `Mismatch` verdict.
-
-#### **1-Based Indexing**
-In accordance with standard multi-objective literature, all axis labels in `distplot` follow 1-based indexing. Objectives are labeled as $f_1, f_2, \dots$ and decision variables as $x_1, x_2, \dots$, ensuring that your visual output is "Submission-Ready" without further post-processing.
+*   **`mb.stats.topo_attain`**: Calculates the surface reached by $k\%$ of the runs using the **EAF** methodology.
+*   **`mb.stats.topo_gap`**: Compares the EAFs of two experiments to identify where one algorithm has a coverage "gap" (regions it cannot reach that the competitor can), effectively mapping the **EAF Difference**.
 
 ```python
-# Quick analysis grid for the first 4 objectives
-mb.view.distplot(exp1, exp2, title="Comparison of Converged Fronts")
+# Calculate median surface
+surf = mb.stats.topo_attain(exp1, level=0.5)
 
-# Independent variable analysis for f1 specifically
-mb.view.distplot(exp1, exp2, space='vars', axes=[0], layout='independent')
+# Calculate spatial gap between algorithms
+gap = mb.stats.topo_gap(exp1, exp2)
+print(gap.report())
 ```
 
 ---

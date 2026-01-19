@@ -69,25 +69,30 @@ igd1 = mb.metrics.igd(exp1)       # Inverted Generational Distance
 
 # Statistical Diagnostics (Rich Results)
 # Every result object provides a .report() method and lazy properties.
-res1 = mb.stats.mann_whitney(exp1, exp2)
+res1 = mb.stats.perf_evidence(exp1, exp2) # [Mann-Whitney U] Wins Evidence
 print(res1.report())      # Narrative statistical diagnosis
 res1.p_value              # Access programmatic p-value
 
+# Comparison via Win Probability (Effect Size)
+prob1 = mb.stats.perf_prob(exp1, exp2)    # [Vargha-Delaney A12] Win Prob
+
 # Population Strata (Geology)
-strat1 = mb.stats.strata(exp1)
+strat1 = mb.stats.strata(exp1)            # [Pareto Dominance Layers]
 strat1.report()           # Maturity and density diagnosis
 strat1.selection_pressure  # Lazy-evaluated diagnostic metric
 
-# Comparison via EMD (Earth Mover's Distance)
-dist1 = mb.stats.emd(strat1, strat2)
+# Comparison via EMD (Geometric Distance)
+dist1 = mb.stats.emd(strat1, strat2)      # [Earth Mover's Distance]
 
-# Competitive Tier Analysis
+# Competitive Tier Analysis (Joint Stratification)
 res_tier = mb.stats.tier(exp1, exp2)
 res_tier.dominance_ratio  # Ratio at Tier 1
 res_tier.displacement_depth # Depth of infiltration
 
-# Attainment Comparison
-diff1 = mb.stats.attainment_diff(exp1, exp2, level=0.5)
+# Attainment & Gap Analysis (Topologic)
+# Based on Empirical Attainment Functions (EAF Theory)
+surf_med = mb.stats.topo_attain(exp1, level=0.5) # [EAF] Median Surface
+diff1 = mb.stats.topo_gap(exp1, exp2, level=0.5) # [EAF Diff] Spatial Gap
 
 # ---------------------------------------------------------
 # 6. Visualization (Scientifc Perspectives: mb.view)
@@ -98,13 +103,13 @@ mb.view.spaceplot(exp1)                       # Spatial: Pareto Front plot (2D/3
 mb.view.rankplot(exp1)                        # Structural: Selection pressure (counts)
 mb.view.casteplot(exp1)                       # Hierarchical: Quality/Density profile
 mb.view.tierplot(exp1, exp2)                  # Competitive: Tier duel
-mb.view.distplot(exp1, exp2)                  # Distribution: Probability density (KDE)
+mb.view.topo_dist(exp1, exp2)                 # Topologic: Distribution (KDE)
 
 # ---------------------------------------------------------
-# 7. Distribution Matching (v0.6.0)
+# 7. Topologic Matching (v0.6.0)
 # ---------------------------------------------------------
 
-res_match = mb.stats.dist_match(exp1, exp2)   # Topological Equivalence
+res_match = mb.stats.topo_dist(exp1, exp2)    # Topologic Equivalence
 res_match.is_consistent                       # boolean result
 res_match.report()                            # Dimensional analysis
 

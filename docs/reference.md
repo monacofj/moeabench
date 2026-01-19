@@ -178,8 +178,8 @@ Plots the **Competitive Tier Duel** (Stacked bars showing absolute population co
     *   `exp1`, `exp2`: The two experiments to compare.
 *   **Smart Resolution**: Calls `mb.stats.tier(exp1, exp2)` internally to build the `mb.view.tierplot` input.
 
-<a name="distplot"></a>
-### **2.6. Distribution Perspective (`mb.view.distplot`)**
+<a name="topo_dist"></a>
+### **2.6. Topologic Distribution Perspective (`mb.view.topo_dist`)**
 Plots smooth Probability Density Estimates (KDE) and comparative statistical verdicts.
 *   **Args**:
     *   `*args`: experiments, runs, populations, or arrays.
@@ -304,53 +304,47 @@ print(f"Final HV: {val:.4f}")
 
 Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
 
-### **`mb.stats.mann_whitney(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Performs the Mann-Whitney U rank test.
-*   **Args**:
-    *   `data1`, `data2`: Arrays, `Experiment` objects, or `MetricMatrix` objects.
-    *   `metric` (*callable*): Metric function to use if experiments are passed (e.g., `mb.metrics.hv`, `mb.metrics.igd`).
-    *   `gen` (*int*): Generation index to extract (default is `-1`, the final generation).
-    *   `**kwargs`: Arguments passed directly to the `metric` function (e.g., `ref_point`).
-*   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, `.significant`, and `.report()`.
+### **`mb.stats.perf_evidence(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
+Performs the **Mann-Whitney U** rank-sum test (Win Evidence). Returns a `HypothesisTestResult`.
 
-### **`mb.stats.ks_test(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Performs the Kolmogorov-Smirnov two-sample test for distribution shape differences.
-*   **Args**: Same as `mann_whitney`.
-*   **Returns**: `HypothesisTestResult` with `.statistic`, `.p_value`, `.a12`, and `.report()`.
+### **`mb.stats.perf_dist(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
+Performs the **Kolmogorov-Smirnov (KS)** two-sample test (Performance Distribution). Returns a `HypothesisTestResult`.
 
-### **`mb.stats.a12(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size.
-*   **Args**: Same as `mann_whitney`.
-*   **Returns**: `SimpleStatsValue` (float-compatible) with `.value` and `.report()`.
+### **`mb.stats.perf_prob(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
+Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size (Win Probability). Returns a `SimpleStatsValue`.
 
-### **`mb.stats.strata(data, gen=-1)`**
-Performs **Population Strata** (Dominance Layer analysis).
-*   **Args**:
-    *   `data`: `Experiment`, `Run`, or `Population`.
-    *   `gen` (*int*): Generation index.
-*   **Returns**: `StratificationResult` object with `.ranks`, `.frequencies()`, `.selection_pressure`, `.quality_by()`, and `.report()`.
-
-### **`mb.stats.tier(exp1, exp2, gen=-1)`**
-Performs **Joint Stratification** analysis (Tier analysis) between two groups.
-*   **Returns**: `TierResult` object with `.joint_frequencies`, `.pole`, `.gap`, and competitive `.report()`.
-
-### **`mb.stats.emd(strat1, strat2)`**
-Computes the **Earth Mover's Distance** (Wasserstein Distance) between two strata profiles. 
-
-### **`mb.stats.dist_match(*args, space='objs', axes=None, method='ks', **kwargs)`**
-Performs multi-axial distribution matching to verify topological equivalence.
+### **`mb.stats.topo_dist(*args, space='objs', axes=None, method='ks', **kwargs)`**
+Performs multi-axial distribution matching (Topologic Equivalence).
 *   **Args**:
     *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).
-    *   `space` (*str*): `'objs'` or `'vars'`. Only applies if `Experiment` objects are passed. Defaults to `'objs'` (Pareto Front).
-    *   `axes` (*list*): Specific indices of objectives or variables to test.
-    *   `method` (*str*): `'ks'` (Kolmogorov-Smirnov), `'anderson'` (Anderson-Darling), or `'emd'` (Wasserstein).
-*   **Returns**: `DistMatchResult` object.
+    *   `space` (*str*): `'objs'` or `'vars'`. Defaults to `'objs'`.
+    *   `axes` (*list*): Specific indices to test.
+    *   `method` (*str*): 
+        *   `'ks'`: **Kolmogorov-Smirnov** test (Default).
+        *   `'anderson'`: **Anderson-Darling k-sample** test.
+        *   `'emd'`: **Earth Mover's Distance** (Wasserstein Metric).
+*   **Returns**: `DistMatchResult`.
 
-#### **`DistMatchResult` Properties**
-*   `.is_consistent` (*bool*): `True` if all tested axes are statistically equivalent.
-*   `.failed_axes` (*list*): Indices of axes where distributions differ.
-*   `.p_values` (*dict*): Dictionary mapping axis index to the calculated p-value.
-*   `.report()` (*str*): Generates a quantitative dimensional analysis report.
+### **`mb.stats.topo_attain(source, level=0.5)`**
+Calculates the attainment surface reached by $k\%$ of the runs.
+*   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
+*   **Returns**: `AttainmentSurface` (SmartArray subclass).
+
+### **`mb.stats.topo_gap(exp1, exp2, level=0.5)`**
+Calculates the spatial Gap in attainment between two groups.
+*   **Methodology**: Based on **EAF Difference** analysis.
+*   **Returns**: `AttainmentDiff` object.
+
+### **`mb.stats.strata(data, gen=-1)`**
+Performs **Population Strata** (Dominance Layer analysis) based on Pareto dominance.
+*   **Returns**: `StratificationResult`.
+
+### **`mb.stats.tier(exp1, exp2, gen=-1)`**
+Performs **Joint Stratification** analysis (Tier analysis).
+*   **Returns**: `TierResult`.
+
+### **`mb.stats.emd(strat1, strat2)`**
+Computes the **Earth Mover's Distance** between two strata profiles.
 
 
 ---
@@ -406,28 +400,4 @@ For a detailed technical narrative on the implementation history and mathematica
 
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
-
-# Deprecated API
-
-The following API is deprecated and will be removed in a future release. Use the new API instead.
-
-| Deprecated (Old) | Replacement (New) | Type |
-| :--- | :--- | :--- |
-| `mb.spaceplot()` | `mb.view.spaceplot()` | Plotting |
-| `mb.timeplot()` | `mb.view.timeplot()` | Plotting |
-| `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
-| `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
-| `mb.tierplot()` | `mb.view.tierplot()` | Plotting |
-| `mb.distplot()` | `mb.view.distplot()` | Plotting |
-| `mb.hv()` | `mb.metrics.hv()` | Metric |
-| `mb.igd()` | `mb.metrics.igd()` | Metric |
-| `mb.gd()` | `mb.metrics.gd()` | Metric |
-| `mb.strata()` | `mb.stats.strata()` | Stats |
-| `mb.tier()` | `mb.stats.tier()` | Stats |
-| `mb.emd()` | `mb.stats.emd()` | Stats |
-| `mb.attainment()` | `mb.stats.attainment()` | Stats |
-| `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
-| `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
-| `exp.superfront()` | `exp.front()` | Delegation |
-| `exp.superset()` | `exp.set()` | Delegation |
 

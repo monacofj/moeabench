@@ -3,10 +3,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .plotters import spaceplot, timeplot, rankplot, casteplot, tierplot, distplot
+from .plotters import (spaceplot, timeplot, rankplot, casteplot, tierplot,
+                        topo_dist)
 from .style import apply_style
 
 # Initialize the MoeaBench visual identity (Ocean Palette)
 apply_style()
 
-__all__ = ["spaceplot", "timeplot", "rankplot", "casteplot", "tierplot", "distplot"]
+__all__ = ["spaceplot", "timeplot", "rankplot", "casteplot", "tierplot",
+           "topo_dist"]

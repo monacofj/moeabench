@@ -9,7 +9,7 @@ from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..metrics.evaluator import plot_matrix, hypervolume
 from ..stats.stratification import strata, StratificationResult, TierResult, tier
-from ..stats.attainment import AttainmentSurface
+from ..stats.topo_attain import AttainmentSurface
 
 def _resolve_to_result(args, target_type, resolve_fn):
     """
@@ -278,10 +278,11 @@ def tierplot(exp1, exp2=None, title=None, **kwargs):
     plt.show()
     return ax
 
-def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=None, show=True, **kwargs):
+def topo_dist(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=None, show=True, **kwargs):
     """
-    [mb.view.distplot] Perspectiva de Distribuição Acumulada.
-    Plots Probability Density Estimates (KDE) and statistical matching.
+    [mb.view.topo_dist] Distribution Perspective.
+    Plots smooth Probability Density Estimates via Kernel Density Estimation (KDE)
+    and indicates statistical matching results for each axis.
     
     Args:
         *args: Experiments, Runs, Populations or arrays to compare.
@@ -293,7 +294,7 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
         show (bool): Whether to call plt.show() (default True).
     """
     from scipy.stats import gaussian_kde
-    from ..stats.tests import dist_match, DistMatchResult
+    from ..stats.tests import topo_dist as stats_topo_dist, DistMatchResult
     
     # 1. Resolve Data and Labels
     buffers = []
@@ -315,7 +316,7 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
         axes = list(range(min(n_dims, 4)))
     
     # 2. Statistical Analysis
-    match_res = dist_match(*args, space=space, axes=axes, method='ks', **kwargs)
+    match_res = stats_topo_dist(*args, space=space, axes=axes, method='ks', **kwargs)
     
     # 3. Plotting Logic
     if layout == 'grid':
@@ -382,3 +383,5 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
     if layout == 'independent':
         return figures
     return fig
+
+        return fig

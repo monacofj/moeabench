@@ -24,9 +24,9 @@ This workflow is fragmented, error-prone, and requires a lot of "boilerplate" co
 We decided to specialize MoeaBench as an **Analysis-First platform**. The library is designed to facilitate the "End Game" of a research paper: the statistical validation and visualization of results.
 
 ### Implementation Pillars
-1.  **Smart Stats API**: We integrated statistical tests (`mann_whitney`, `ks_test`, `a12`) directly into the `Experiment` and `MetricMatrix` objects. The library knows how to extract the correct distribution from an experiment automatically, removing the need for manual data extraction.
-2.  **Attainment as a First-Class Citizen**: We implemented Empirical Attainment Functions (EAF) and Surfaces (`attainment`, `attainment_diff`) natively. This allows users to visualize not just the "best" front, but the 5%, 50%, and 95% boundaries of their algorithm's performance distribution.
-3.  **Visualization Integration**: Plots in MoeaBench (via `spaceplot` and `timeplot`) are "Smart Aware." They automatically detect if they are plotting a single solution set, a time series of metrics, or a statistical attainment surface, adjusting labels and legends accordingly.
+1.  **Smart Stats API**: We integrated statistical tests (`perf_evidence`, `perf_dist`, `perf_prob`) directly into the `Experiment` and `MetricMatrix` objects. The library knows how to extract the correct distribution from an experiment automatically, removing the need for manual data extraction.
+2.  **Attainment as a First-Class Citizen**: We implemented Empirical Attainment Functions (EAF) and Surfaces (`topo_attain`, `topo_gap`) natively. This allows users to visualize not just the "best" front, but the 5%, 50%, and 95% boundaries of their algorithm's performance distribution.
+3.  **Visualization Integration**: Plots in MoeaBench (via `spaceplot` and `timeplot`) are "Smart Aware." They automatically detect if they are plotting a single solution set, a time series of metrics, or a statistical topo_attain surface, adjusting labels and legends accordingly.
 
 ## Rationale
 By focusing on analysis, MoeaBench becomes more than just another optimizer—it becomes a laboratory. We prioritize "Statistical Rigor" by automating the steps that researchers often skip or perform incorrectly (like ensuring a common reference point for Hypervolume before comparison).

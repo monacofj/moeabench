@@ -44,23 +44,18 @@ def main():
     # res1 contains:
     #             .statistic       test statistic (U)
     #             .p_value         probability of observing the data by chance
-    #             .significant     boolean (p < 0.05)
-    #             .report()        narrative summary
-    res1 = mb.stats.mann_whitney(exp1, exp2)
+    #             .significant    # 4. Statistical Analysis
+    # [mb.stats.perf_evidence] Uses Mann-Whitney U test to check for significant differences
+    res1 = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
     print(res1.report())
-
-    # res2 contains:
-    #             .statistic       KS distance (D)
-    #             .p_value         probability of distribution similarity
-    #             .report()        narrative summary
-    res2 = mb.stats.ks_test(exp1, exp2)
-    print("\n" + res2.report())
-        
-    # res3 contains:
-    #             .value           Vargha-Delaney A12 effect size [0, 1]
-    #             .report()        narrative summary
-    res3 = mb.stats.a12(exp1, exp2)
-    print("\n" + res3.report())
+    
+    # [mb.stats.perf_dist] Uses Kolmogorov-Smirnov (KS) test to compare distribution shapes
+    res2 = mb.stats.perf_dist(exp1, exp2, metric=mb.metrics.hv)
+    print(res2.report())
+    
+    # [mb.stats.perf_prob] Uses Vargha-Delaney A12 effect size to calculate win probability
+    res3 = mb.stats.perf_prob(exp1, exp2, metric=mb.metrics.hv)
+    print(res3.report())
 
 if __name__ == "__main__":
     main()

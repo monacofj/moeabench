@@ -26,7 +26,7 @@ Instead of writing our own solvers, we developed a robust **Wrapper Pattern** (`
 
 ## Rationale: Why not implement from scratch?
 - **Validation**: Established libraries have been tested against thousands of MOPs. A custom implementation would require massive benchmarking just to prove it matches the original papers.
-- **Focus**: MoeaBench's unique value is the "post-processing" (metrics, stats, attainment). By externalizing the search engine, we can dedicate 100% of our focus to these analytical tools.
+- **Focus**: MoeaBench's unique value is the "post-processing" (metrics, stats, topo_attain). By externalizing the search engine, we can dedicate 100% of our focus to these analytical tools.
 
 ## The Distinction: What we Hand-Craft instead
 While we wrap the *Searching Engines* (MOEAs), we deliberately re-implement the following components for performance and specialized utility:

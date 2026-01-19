@@ -24,7 +24,7 @@ Spawning even 4 workers would effectively quadruple the RAM footprint of the lib
 
 ## Decision
 We decided to **completely remove all parallel execution support** from the library core.
-1.  **Pure Serial Execution**: `experiment.run` and `attainment_diff` now execute serially, performing one run after another. 
+1.  **Pure Serial Execution**: `experiment.run` and `topo_gap` now execute serially, performing one run after another. 
 2.  **Suppression of Logic**: We removed all `multiprocessing`, `concurrent.futures`, and `Manager().Queue()` logic to simplify the code.
 3.  **Deprecation of `workers`**: The `workers` parameter is preserved in API signatures for backward compatibility but is explicitly marked as deprecated and ignored.
 

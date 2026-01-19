@@ -15,8 +15,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.6.0] - 2026-01-19
 
 ### Added
-- **Scientific Distribution Plot (`mb.view.distplot`)**: High-quality academic visualization for probability densities (KDE), integrated with statistical matching results. Supports grid and independent layouts.
-- **Example Version Reporting**: Integrated discreet library version printing (`Version: 0.5.1`) in the start of all 10 examples (scripts and notebooks) to improve results tracking and reproducibility.
+- **Final Semantic Taxonomy**: Standardized researcher-centric nomenclature for all analysis tools:
+    - Performance Domain (`perf_*`): `perf_evidence` (Mann-Whitney U), `perf_prob` (Vargha-Delaney A12), `perf_dist` (Kolmogorov-Smirnov).
+    - Topologic Domain (`topo_*`): `topo_dist` (Multi-axial KS/Anderson/EMD matching), `topo_attain` (Empirical Attainment Functions), `topo_gap` (EAF Differences).
+- **API Symmetry**: Unified naming between statistics and visualization (e.g., `mb.view.topo_dist`).
+- **Explicit Methodology**: All documentation and internal docstrings now explicitly state the underlying statistical methods (Mann-Whitney, KS, A12, EAF).
+- **Scientific Distribution Plot (`mb.view.topo_dist`)**: High-quality academic visualization for probability densities (KDE), integrated with statistical matching results. Supports grid and independent layouts.
+- **Example Version Reporting**: Integrated discreet library version printing (`Version: 0.6.0`) in the start of all 10 examples to improve reproducibility.
+
+### Changed
+- **Clean Slate Policy**: Removed all legacy aliases and deprecated shortcuts (formerly `mann_whitney`, `a12`, `ks_test`, `dist_match`, `attainment`, `distplot`). v0.6.0 establishes a clean break focused on semantic clarity.
+- **Documentation**: Major rewrite of `userguide.md` and `reference.md` to establish the new taxonomy and remove all legacy cross-references.
 
 ### Fixed
 - **Benchmark Robustness (DTLZ8/9)**:
@@ -27,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.5.0] - 2026-01-19
 
 ### Added
-- **Topological Analysis (`mb.stats.dist_match`)**: Implementation of a new multi-axial statistical engine to verify convergence equivalence. Supports multi-sample KS, Anderson-Darling, and Wasserstein (EMD).
+- **Topological Analysis (`mb.stats.topo_dist`)**: Implementation of a new multi-axial statistical engine to verify convergence equivalence. Supports multi-sample KS, Anderson-Darling, and Wasserstein (EMD).
 - **Rich Result (`DistMatchResult`)**: Comprehensive reporting object for dimensional analysis, profiling exact axes where algorithms diverge.
 - **Educational Examples**: Created `examples/example_10.py` and `.ipynb` demonstrating multimodality detection through decision-space matching.
 - **ADR 0013**: Formalization of the "Ocean" centralized visual identity.
@@ -123,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `README.md` Quick Start example updated to match the new API.
 
 ### Removed
-- **Parallel Execution Support**: All support for parallel execution (`multiprocessing`, `concurrent.futures`) has been removed from the library core (`experiment.run`, `attainment_diff`).
+- **Parallel Execution Support**: All support for parallel execution (`multiprocessing`, `concurrent.futures`) has been removed from the library core (`experiment.run`, `topo_gap`).
 - **Rationale**: The overhead of Python's process-based parallelism (especially `spawn` mode required for stability) often exceeded the computational gains for typical MOEA runs. On standard hardware (e.g., 8GB RAM), the memory pressure from multiple worker processes proved unstable. Serial execution is now prioritized for robustness and simplicity.
 
 ### Fixed

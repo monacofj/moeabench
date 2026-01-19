@@ -34,15 +34,14 @@ class AttainmentSurface(SmartArray):
         hv_matrix = hypervolume(self, ref=ref_point)
         return float(hv_matrix)
 
-def attainment(source, level: float = 0.5):
+def topo_attain(source, level: float = 0.5):
     """
-    Calculates the k-th attainment surface for a multi-run experiment 
-    or a list of pre-calculated Pareto fronts.
+    [mb.stats.topo_attain] Calculates the k-th attainment surface.
+    Based on the theory of Empirical Attainment Functions (EAF).
     
     The level is a probability in [0, 1].
     Example: level=0.5 returns the Median Attainment Surface.
     """
-    # 1. Collect final fronts
     if isinstance(source, list):
         fronts = source
     else:
@@ -50,21 +49,12 @@ def attainment(source, level: float = 0.5):
         fronts = [run.front() for run in source.runs]
 
     if not fronts:
-        raise ValueError("No fronts available for attainment calculation.")
+        raise ValueError("No fronts available for topo_attain calculation.")
         
     n_runs = len(fronts)
     k = int(np.ceil(level * n_runs))
     # Clamp k
     k = max(1, min(n_runs, k))
-    
-    # Simple algorithm for attainment surfaces:
-    # We want the boundary where at least k runs "attain" the region.
-    # For a point z, it is attained by run i if exists p in front_i such that p <= z.
-    
-    # Practical implementation via "Non-dominated Sorting" of the union:
-    # Note: This is a complex geometric problem. 
-    # For 2D, we can use the exact staircase.
-    # For 3D, we'll return the points that define the boundary.
     
     all_points = np.concatenate(fronts, axis=0)
     m = all_points.shape[1]
@@ -72,13 +62,11 @@ def attainment(source, level: float = 0.5):
     if m == 2:
         return _attainment_2d(fronts, k, level)
     else:
-        # Fallback for 3D+: Return a high-quality point-based representation
-        # using a k-domination logic.
         return _attainment_nd(fronts, k, level)
 
 def _attainment_2d(fronts, k, level):
-    """Exact 2D attainment surface calculation (staircase)."""
-    # For 2D, the attainment surface is defined by the coordinates 
+    """Exact 2D topo_attain surface calculation (staircase)."""
+    # For 2D, the topo_attain surface is defined by the coordinates 
     # of the points in the fronts.
     all_x = []
     all_y = []
@@ -89,7 +77,7 @@ def _attainment_2d(fronts, k, level):
     unique_x = np.unique(all_x)
     unique_y = np.unique(all_y)
     
-    # We evaluate the attainment function on the grid defined by these coordinates
+    # We evaluate the topo_attain function on the grid defined by these coordinates
     # Actually, we just need to find for each unique_x, the y such that 
     # exactly k runs have a point (px, py) with px <= unique_x and py <= y.
     
@@ -117,10 +105,10 @@ def _attainment_2d(fronts, k, level):
 
 def _attainment_nd(fronts, k, level):
     """
-    N-D attainment surface calculation.
+    N-D topo_attain surface calculation.
     Uses chunked vectorized counting to find points attained by at least k runs.
     """
-    # A point z is in the k-attainment set if at least k runs dominate z.
+    # A point z is in the k-topo_attain set if at least k runs dominate z.
     # We use the union of all points as candidates for the boundary.
     union = np.concatenate(fronts, axis=0)
     
@@ -156,7 +144,7 @@ def _attainment_nd(fronts, k, level):
 
 class AttainmentDiff(StatsResult):
     """
-    Result of a comparison between two attainment surfaces.
+    Result of a comparison between two topo_attain surfaces.
     """
     def __init__(self, surf1, surf2, level):
         self.surf1 = surf1
@@ -164,7 +152,7 @@ class AttainmentDiff(StatsResult):
         self.level = level
         
     def __iter__(self):
-        # Allow unpacking: s1, s2 = attainment_diff(...)
+        # Allow unpacking: s1, s2 = topo_gap(...)
         yield self.surf1
         yield self.surf2
 
@@ -191,26 +179,18 @@ class AttainmentDiff(StatsResult):
     def __repr__(self):
         return f"<AttainmentDiff {self.surf1.name} vs {self.surf2.name}>"
 
-def attainment_diff(exp1, exp2, level=0.5, workers=0):
+def topo_gap(exp1, exp2, level=0.5, workers=0):
     """
-    Calculates the spatial difference in attainment between two experiments
-    at a specific attainment level (default: 0.5/Median).
-    
-    Args:
-        exp1, exp2: Experiment objects.
-        level (float): Attainment level [0, 1].
-        workers (int): [DEPRECATED] Parallel execution is no longer supported.
-    
-    Returns:
-        AttainmentDiff object.
+    [mb.stats.topo_gap] Calculates the spatial Gap in topo_attain (Topologic Gap).
+    Identifies regions where one algorithm outperforms the other based on EAF differences.
     """
     # Extract fronts here to avoid detached object graph overhead
     fronts1 = [np.array(run.front()) for run in exp1.runs]
     fronts2 = [np.array(run.front()) for run in exp2.runs]
 
     # Purely serial calculation
-    surf1 = attainment(fronts1, level=level)
-    surf2 = attainment(fronts2, level=level)
+    surf1 = topo_attain(fronts1, level=level)
+    surf2 = topo_attain(fronts2, level=level)
 
     surf1.name = exp1.name
     surf2.name = exp2.name

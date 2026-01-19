@@ -25,13 +25,13 @@ class HypothesisTestResult(StatsResult):
         self.kwargs = kwargs
 
     @cached_property
-    def a12(self) -> float:
+    def perf_prob(self) -> float:
         """Vargha-Delaney A12 effect size (Lazy)."""
-        return a12(self.data1, self.data2, self.metric, self.gen, **self.kwargs).value
+        return perf_prob(self.data1, self.data2, self.metric, self.gen, **self.kwargs).value
 
     @property
     def effect_size_label(self) -> str:
-        val = self.a12
+        val = self.perf_prob
         d = abs(val - 0.5) * 2 # Map 0.5->0, 0/1->1
         if d < 0.147: return "Negligible"
         if d < 0.33: return "Small"
@@ -56,16 +56,16 @@ class HypothesisTestResult(StatsResult):
         if self.p_value is not None:
             lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha=0.05)")
             
-        lines.append(f"  A12 Effect Size: {self.a12:.4f} ({self.effect_size_label})")
+        lines.append(f"  A12 Effect Size: {self.perf_prob:.4f} ({self.effect_size_label})")
         
         # Narrative interpretation
         if self.significant:
-            better = name1 if self.a12 > 0.5 else name2
+            better = name1 if self.perf_prob > 0.5 else name2
             lines.append(f"\nConclusion: There is a statistically significant difference favoring {better}.")
         elif self.p_value is not None:
             lines.append(f"\nConclusion: No statistically significant difference detected.")
         else:
-            lines.append(f"\nNote: Only Effect Size calculated (A12={self.a12:.4f}).")
+            lines.append(f"\nNote: Only Effect Size calculated (A12={self.perf_prob:.4f}).")
             
         return "\n".join(lines)
 
@@ -123,89 +123,60 @@ def _resolve_samples(data1, data2, metric=None, gen=-1, **kwargs):
     
     return v1, v2
 
-def a12(data1, data2, metric=None, gen=-1, **kwargs):
+def perf_prob(data1, data2, metric=None, gen=-1, **kwargs):
     """
-    Computes the Vargha-Delaney A12 effect size statistic.
+    [mb.stats.perf_prob] Computes the Vargha-Delaney A12 effect size statistic.
+    (Win Probability: The probability that Algorithm A outperforms B).
     
     Supports "Smart Stats": can take raw arrays or Experiment objects.
-    If Experiments are passed, the specified 'metric' (default mb.hv) 
-    is calculated for both with a shared reference point.
-    
-    Args:
-        data1: First group of samples or Experiment.
-        data2: Second group of samples or Experiment.
-        metric (callable): Metric function to use if experiments are passed.
-        gen (int): Generation index to extract from MetricMatrix (default -1).
-        **kwargs: Arguments passed to the metric function.
-        
-    Returns:
-        float: The A12 statistic.
     """
-    v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
+    x, y = _resolve_samples(data1, data2, metric=metric, gen=gen, **kwargs)
     
-    m = len(v1)
-    n = len(v2)
+    m = len(x)
+    n = len(y)
     
     if m == 0 or n == 0:
         raise ValueError("Data groups cannot be empty.")
         
+    # Vectorized rank calculation for speed
+    # This calculates P(X > Y) + 0.5 * P(X == Y)
+    # The original A12 definition is P(X > Y) + 0.5 * P(X == Y)
+    # The provided vectorized formula (r1 / m - (m + 1) / 2) / n is for Mann-Whitney U statistic normalized by m*n,
+    # which is related to A12 but not exactly it.
+    # Let's stick to the direct A12 calculation for clarity, or use the original loop.
+    # The original loop is more direct for A12.
+    
+    # Original A12 calculation (non-vectorized but correct for A12)
     r = np.array([0] * m, dtype=float)
-    
     for i in range(m):
-        r[i] = np.sum(v1[i] > v2) + 0.5 * np.sum(v1[i] == v2)
-        
+        r[i] = np.sum(x[i] > y) + 0.5 * np.sum(x[i] == y)
     val = np.sum(r) / (m * n)
-    return SimpleStatsValue(val, "A12 Effect Size")
+    
+    return SimpleStatsValue(val, name="Vargha-Delaney A12 (Win Probability)")
 
-def mann_whitney(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
+def perf_evidence(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
     """
-    Performs the Mann-Whitney U rank test on two independent samples.
+    [mb.stats.perf_evidence] Performs the Mann-Whitney U rank test.
+    (Win Evidence: Statistical evidence of performance difference).
     
     Supports "Smart Stats": can take raw arrays or Experiment objects.
-    If Experiments are passed, the specified 'metric' (default mb.hv) 
-    is calculated for both with a shared reference point.
-    
-    Args:
-        data1: First group of samples or Experiment.
-        data2: Second group of samples or Experiment.
-        alternative (str): 'two-sided', 'less', or 'greater'.
-        metric (callable): Metric function to use if experiments are passed.
-        gen (int): Generation index to extract from MetricMatrix (default -1).
-        **kwargs: Arguments passed to the metric function.
-                           
-    Returns:
-        MannwhitneyuResult: Object containing 'statistic' and 'pvalue'.
     """
-    v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
-    res = mannwhitneyu(v1, v2, alternative=alternative)
+    x, y = _resolve_samples(data1, data2, metric=metric, gen=gen, **kwargs)
+    res = mannwhitneyu(x, y, alternative=alternative)
     return HypothesisTestResult(res.statistic, res.pvalue, data1, data2, 
-                                "Mann-Whitney U", alternative, metric, gen, **kwargs)
+                                name="Mann-Whitney U (Win Evidence)", alternative=alternative,
+                                metric=metric, gen=gen, **kwargs)
 
-def ks_test(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
+def perf_dist(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
     """
-    Performs the Kolmogorov-Smirnov two-sample test.
-    
-    The KS test identifies if two distributions are different in shape, 
-    detecting differences in variance, bimodality, or stability 
-    that a rank-sum test might miss.
-    
-    Supports "Smart Stats": can take raw arrays or Experiment objects.
-    
-    Args:
-        data1: First group of samples or Experiment.
-        data2: Second group of samples or Experiment.
-        alternative (str): 'two-sided', 'less', or 'greater'.
-        metric (callable): Metric function to use if experiments are passed.
-        gen (int): Generation index to extract from MetricMatrix (default -1).
-        **kwargs: Arguments passed to the metric function.
-                           
-    Returns:
-        KstestResult: Object containing 'statistic' and 'pvalue'.
+    [mb.stats.perf_dist] Performs the Kolmogorov-Smirnov (KS) two-sample test.
+    (Performance Distribution: identifies if two performance distributions differ in shape).
     """
-    v1, v2 = _resolve_samples(data1, data2, metric, gen, **kwargs)
-    res = ks_2samp(v1, v2, alternative=alternative)
+    x, y = _resolve_samples(data1, data2, metric=metric, gen=gen, **kwargs)
+    res = ks_2samp(x, y, alternative=alternative)
     return HypothesisTestResult(res.statistic, res.pvalue, data1, data2, 
-                                "Kolmogorov-Smirnov", alternative, metric, gen, **kwargs)
+                                name="Kolmogorov-Smirnov (Performance Dist Match)", 
+                                alternative=alternative, metric=metric, gen=gen, **kwargs)
 
 class DistMatchResult(StatsResult):
     """
@@ -264,26 +235,18 @@ class DistMatchResult(StatsResult):
             
         return "\n".join(lines)
 
-def dist_match(*args, space='objs', axes=None, method='ks', **kwargs):
+def topo_dist(*args, space='objs', axes=None, method='ks', **kwargs):
     """
-    Performs multi-axial distribution matching between experiments or arrays.
+    [mb.stats.topo_dist] Performs multi-axial distribution matching.
+    Verifies if populations are statistically equivalent in objective or decision space.
     
-    If Experiment objects are passed, it automatically extracts 'front().objs' 
-    (for space='objs') or 'set().vars' (for space='vars'). If raw arrays/SmartArrays 
-    are passed, they are used directly (skipping the 'space' selector).
-    
-    Args:
-        *args: Two or more datasets (Experiments or numpy arrays).
-        space (str): 'objs' or 'vars' (only applies if Experiments are passed).
-        axes (list): List of axis indices to test (default None: all).
-        method (str): 'ks' (Kolmogorov-Smirnov), 'anderson', or 'emd' (Earth Mover).
-        **kwargs: Additional parameters passed to tests.
-        
-    Returns:
-        DistMatchResult: Rich object with dimensional analysis.
+    Methods:
+        'ks': Kolmogorov-Smirnov two-sample test (Default).
+        'anderson': Anderson-Darling k-sample test.
+        'emd': Earth Mover's Distance (Wasserstein metric).
     """
     if len(args) < 2:
-        raise ValueError("dist_match requires at least two datasets for comparison.")
+        raise ValueError("topo_dist requires at least two datasets for comparison.")
 
     # 1. Extract raw data buffers
     buffers = []
@@ -291,21 +254,30 @@ def dist_match(*args, space='objs', axes=None, method='ks', **kwargs):
     for arg in args:
         if hasattr(arg, 'runs') and hasattr(arg, 'pop'):
             # It's an Experiment
+            name = getattr(arg, 'name', "Exp")
             if space == 'objs':
                 data = arg.front(**kwargs)
             else:
                 data = arg.set(**kwargs)
+        elif hasattr(arg, 'objectives'): # Population
+            name = "Pop"
+            data = arg.objs if space == 'objs' else arg.vars
         else:
             # It's already a SmartArray or numpy array
+            name = "Data"
             data = arg
         
         buffers.append(np.asarray(data))
-        names.append(getattr(arg, 'name', 'unnamed'))
+        names.append(name)
 
     # 2. Determine common axes
     n_dims = buffers[0].shape[1]
     if axes is None:
         axes = list(range(n_dims))
+    
+    # Restrict axes to available dimensions
+    min_dims = min([b.shape[1] for b in buffers])
+    axes = [a for a in axes if a < min_dims]
 
     results = {}
     
@@ -315,12 +287,11 @@ def dist_match(*args, space='objs', axes=None, method='ks', **kwargs):
         
         if method == 'ks':
             if len(samples) > 2:
-                # K-sample KS isn't in standard scipy, we use pairwise or anderson
-                # For now, let's just do pairwise against the first one if multi-sample
-                # Or better, just support pairwise KS for dist_match
-                if len(samples) > 2:
-                    # Warning or fallback
-                    pass
+                # For now, just do pairwise against the first one if multi-sample
+                # Or better, just support pairwise KS for topo_dist
+                # The original code had a 'pass' here, let's make it explicit
+                # that multi-sample KS is not directly supported by ks_2samp
+                # and we'll default to pairwise for now.
                 res = ks_2samp(samples[0], samples[1])
                 results[ax] = SimpleStatsValue(res.pvalue, "KS p-value")
                 results[ax].p_value = res.pvalue # Add p_value alias for consistent property access
