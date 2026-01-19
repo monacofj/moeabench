@@ -3,26 +3,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from pymoo.algorithms.moo.nsga3 import NSGA3
-from pymoo.optimize import minimize
-import numpy as np
+from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
-from pymoo.core.problem import Problem
-from pymoo.core.callback import Callback
-from MoeaBench.progress import get_active_pbar
+from ._base_pymoo import BasePymoo
 
-
-from pymoo.algorithms.moo.nsga3 import NSGA3
-from pymoo.util.ref_dirs import get_reference_directions
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PolynomialMutation
-from .base_pymoo import BasePymoo
-
-class NSGA_pymoo(BasePymoo):
+class SPEA_pymoo(BasePymoo):
     """
-    Wrapper for Pymoo's NSGA-III algorithm.
+    Wrapper for Pymoo's SPEA2 algorithm.
     """
     def evaluation(self):
         """Standard MoeaBench evaluation entry point."""
@@ -30,12 +19,11 @@ class NSGA_pymoo(BasePymoo):
         mutation = PolynomialMutation(prob=1/self.Nvar, eta=20)
         crossover = SBX(prob=1.0, eta=15)
         
-        algorithm = NSGA3(ref_dirs=ref_dirs, pop_size=self.population, 
+        algorithm = SPEA2(ref_dirs=ref_dirs, pop_size=self.population, 
                           crossover=crossover, mutation=mutation, **self.kwargs)
         
         return self.run_minimize(algorithm)
-
-    
+        
 
 
     

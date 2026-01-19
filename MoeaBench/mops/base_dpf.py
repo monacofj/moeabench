@@ -22,39 +22,40 @@ class BaseDPF(BaseMop):
         self.K = K
         N = D + K - 1
         super().__init__(M=M, N=N, **kwargs)
-        self._chaos_weights = self._calc_chaos_weights()
+        # Static chaos pool: (M-D) projection columns, each needing weights if DPF1/2
+        # For DPF1/2: N_weights = (M-D) * D
+        # For DPF3/4: N_weights = (M-D)
+        # We generate a large enough pool to cover all cases.
+        self._chaos_pool = self._generate_chaos(max((M - D) * D, M - D))
 
-    def _calc_chaos_weights(self):
-        U = 1
-        factor = (self.M - self.D) * self.D
-        P = factor
-        VET = list(accumulate(repeat(None, factor), lambda acc, _: 3.8 * acc * (1 - acc), initial=0.1))[1:]
-        V_CYCLE = cycle(VET)
-        CHAOS = np.array(sorted(list(islice(V_CYCLE, P * U))))
-        return CHAOS.reshape(P, U)
-
-    def _calc_dynamic_chaos(self, n_samples):
-        U = self.M - self.D
-        P = n_samples
-        if U <= 0: return np.zeros((P, 0))
-        
-        # Logistic map logic matching NU_chaos exactly
-        # Note: NU_chaos uses a factor for VET size, but here we just need P*U samples
-        VET = list(accumulate(repeat(None, P*U), lambda acc, _: 3.8 * acc * (1 - acc), initial=0.1))[1:]
-        # NU_chaos sorts them!
-        CHAOS = np.array(sorted(VET))
-        return CHAOS.reshape(P, U)
+    def _generate_chaos(self, size):
+        """Generates a static chaotic sequence using the Logistic Map (x0=0.1, r=3.8)."""
+        res = []
+        x = 0.1
+        for _ in range(size):
+            x = 3.8 * x * (1 - x)
+            res.append(x)
+        return np.array(res)
 
     def _project(self, F_base, square=False):
+        """Standard DPF1/2 projection logic using static chaos."""
         if self.M == self.D:
             return F_base
+        
+        M_D = self.M - self.D
+        D = self.D
         redundant = []
-        for row in range(0, self._chaos_weights.shape[0], self.D):
-            weights = self._chaos_weights[row : row + self.D, :]
-            proj = np.dot(F_base, weights)
+        
+        # Reshape chaos pool for DPF1/2: (M-D) columns of weights (each of size D)
+        weights_matrix = self._chaos_pool[:M_D * D].reshape(M_D, D)
+        
+        for i in range(M_D):
+            w = weights_matrix[i, :]
+            proj = np.dot(F_base, w)
             if square:
                 proj = proj**2
             redundant.append(proj)
+            
         return np.concatenate((F_base, np.column_stack(redundant)), axis=1)
 
     def ps(self, n_points=100):

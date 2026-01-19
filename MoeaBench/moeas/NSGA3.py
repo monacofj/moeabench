@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .base_moea_wrapper import BaseMoeaWrapper
-from .kernel_moea.NSGA_pymoo import NSGA_pymoo
+from ._nsga_pymoo import NSGA_pymoo
 
 class NSGA3(BaseMoeaWrapper):
     """

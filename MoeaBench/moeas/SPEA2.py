@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .base_moea_wrapper import BaseMoeaWrapper
-from .kernel_moea.SPEA_pymoo import SPEA_pymoo
+from ._spea_pymoo import SPEA_pymoo
 
 class SPEA2(BaseMoeaWrapper):
     """

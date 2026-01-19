@@ -32,14 +32,3 @@ from .DPF2 import DPF2
 from .DPF3 import DPF3
 from .DPF4 import DPF4
 from .DPF5 import DPF5
-
-# Legacy Compatibility Adapters - Removed as CACHE is deleted
-# from MoeaBench.CACHE import CACHE
-# from MoeaBench.CACHE_bk_user import CACHE_bk_user
-
-# Enum for problems
-from .E_problems import E_problems
-from .E_problems_bk import E_problems_bk
-
-# Legacy dynamic loading for user plugins could be re-added here if strictly necessary,
-# but for core benchmarks we prefer explicit imports.

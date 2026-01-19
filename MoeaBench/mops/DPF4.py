@@ -39,11 +39,8 @@ class DPF4(BaseDPF):
         X = np.atleast_2d(X)
         D, K, M = self.D, self.K, self.M
         
-        # g = sum(xi - 0.5)^2 for variables D-1 onwards (Standard)
+        # g = Rastrigin-like DTLZ1/3 style g
         g = 100 * (K + np.sum((X[:, D-1:] - 0.5)**2 - np.cos(20 * np.pi * (X[:, D-1:] - 0.5)), axis=1)).reshape(-1, 1)
-        # Wait, I need to check K_DPF4 g definition (Step 2568)
-        # 66: 100*(K+np.sum(((Xi-0.5)**2)-np.cos(20*np.pi*(Xi-0.5))))
-        # Yes, it's Rastrigin-like DTLZ1/3 style g.
         
         # Calculate base objectives Y (D objectives)
         Y = self.eval_base_functions(X, g, D)
@@ -53,33 +50,25 @@ class DPF4(BaseDPF):
         if M == D:
             return {'F': Y}
             
-        # Dynamic chaos generation (M-D columns per sample)
-        vet_chaos = self._calc_dynamic_chaos(X.shape[0]) # (Samples, M-D)
+        # Use static chaos pool from BaseDPF
+        U = M - D
+        chaos = self._chaos_pool[:U]
         
         redundant = []
-        for row in range(X.shape[0]):
-            row_vals = []
-            yd_val = Yd[row, 0]
-            chaos_row = vet_chaos[row]
-            
-            # FD: min(Yd, chaos[0])**2
-            row_vals.append(min(yd_val, chaos_row[0])**2)
-            
-            # FD1: min(max(Yd, C[i]), C[i+1])**2
-            for col in range(0, M-D-1):
-                val = min(max(yd_val, chaos_row[col]), chaos_row[col+1])**2
-                row_vals.append(val)
-            
-            # FM: max(Yd, C[last])**2
-            row_vals.append(max(yd_val, chaos_row[M-D-1])**2)
-            
-            redundant.append(row_vals)
-            
-        F_redundant = np.array(redundant)
+        # FD (first redundant): min(Yd, chaos[0])**2
+        redundant.append(np.minimum(Yd, chaos[0])**2)
+        
+        # FD1 (middle): min(max(Yd, chaos[i]), chaos[i+1])**2
+        for i in range(U - 1):
+            val = np.minimum(np.maximum(Yd, chaos[i]), chaos[i+1])**2
+            redundant.append(val)
+        
+        # FM (last redundant): max(Yd, chaos[U-1])**2
+        redundant.append(np.maximum(Yd, chaos[U-1])**2)
+        
+        F_redundant = np.column_stack(redundant)
         
         # Combine: Y[:, :D-1] + F_redundant
-        # Note: Base objectives Y1..Yd-1 are NOT squared in eval_base.
-        # Only the redundant projections are squared.
         F = np.concatenate((Y[:, :D-1], F_redundant), axis=1)
         
         return {'F': F}

@@ -43,7 +43,10 @@ The **DPF** (Degenerate Pareto Front) benchmarks, introduced by Zhen et al., add
 ### Our Narrative: Implementing the Chaotic Projection
 Implementing DPF was significantly more complex than DTLZ. The core logic involves a "Projector" that uses chaotic weights (based on the Logistic Map) to ensure the degenerate front is distributed in a complex, non-trivial way across the $M$-dimensional space.
 
-We spent significant effort ensuring that our `BaseDPF` implementation matched the mathematical nuances of the original paper, specifically the nuances of the chaotic weight generation. We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
+> [!IMPORTANT]
+> **Mathematical Restoration (v0.4.1)**: We identified and fixed a critical discrepancy in the refactored DPF implementations. The chaotic weights are now **static and unsorted**, generated once per problem instance. This restores the characteristic "stepped" geometry of the degenerate fronts, ensuring full parity with the original results by Zhen et al. (2018).
+
+We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
 
 **Reference:**
 *   L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." *IEEE Transactions on Evolutionary Computation*, vol. 22, no. 5, 2018.

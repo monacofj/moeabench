@@ -40,19 +40,12 @@
                  ...          
 """
 
-import os, importlib
-import MoeaBench.moeas.my_new_moea as my_moea
+from .NSGA2deap import NSGA2deap
+from .NSGA3 import NSGA3
+from .U_NSGA3 import U_NSGA3
+from .SPEA2 import SPEA2
+from .MOEAD import MOEAD
+from .RVEA import RVEA
 
-_dir = os.path.dirname(__file__)
-
-for root, dirs , files in os.walk(_dir):
-    for fl in files:
-        if fl.endswith(".py") and fl not in ("__init__.py",):
-            path  = os.path.relpath(os.path.join(root,fl),_dir)
-            name_module = path.replace(os.sep,".")[:-3]
-            module = importlib.import_module(f'{__name__}.{name_module}')
-            cls_name = fl[:-3]
-            if hasattr(module, cls_name):
-                globals()[cls_name] = getattr(module, cls_name)
-
-globals()['register_moea'] = my_moea.register_moea
+# Optional: Convenience alias for NSGA2
+NSGA2 = NSGA2deap

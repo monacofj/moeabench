@@ -3,15 +3,16 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from pymoo.algorithms.moo.rvea import RVEA
+from pymoo.algorithms.moo.moead import MOEAD
+from pymoo.decomposition.pbi import PBI
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.operators.crossover.sbx import SBX
 from pymoo.operators.mutation.pm import PolynomialMutation
-from .base_pymoo import BasePymoo
+from ._base_pymoo import BasePymoo
 
-class RVEA_pymoo(BasePymoo):
+class MOEAD_pymoo(BasePymoo):
     """
-    Wrapper for Pymoo's RVEA algorithm.
+    Wrapper for Pymoo's MOEA/D algorithm.
     """
     def evaluation(self):
         """Standard MoeaBench evaluation entry point."""
@@ -19,9 +20,9 @@ class RVEA_pymoo(BasePymoo):
         mutation = PolynomialMutation(prob=1/self.Nvar, eta=20)
         crossover = SBX(prob=1.0, eta=15)
         
-        algorithm = RVEA(ref_dirs, pop_size=self.population, 
-                         crossover=crossover, mutation=mutation, **self.kwargs)
+        algorithm = MOEAD(ref_dirs, crossover=crossover, mutation=mutation, 
+                          decomposition=PBI(eps=0.0, theta=5), **self.kwargs)
         
         return self.run_minimize(algorithm)
-
-      
+       
+    

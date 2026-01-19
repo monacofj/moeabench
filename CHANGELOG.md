@@ -12,22 +12,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.0] - 2026-01-18
-
-### Added
-- **Manager Mode Architecture**: Implemented a unified delegation model for the `Experiment` class. Top-level methods now consistently provide a global perspective of the research by targeting the aggregated cloud (union of all runs).
-- **JoinedPopulation Enhancements**: Added `.objs` and `.vars` properties and `__len__` support to the `JoinedPopulation` class, ensuring structural parity with standard `Population` objects.
-- **Exhaustive Master Table**: Added `optimal_set()`, `non_front()`, and `non_set()` shortcuts to the `Experiment` delegation table in the User Guide.
-
-### Changed
-- **Global API Alignment**: Completed a project-wide audit and update of all documentation (`userguide.md`, `reference.md`, `api_sheet.py`), example scripts (`.py`), and Jupyter Notebooks (`.ipynb`) to adopt the new cloud-centric semantics.
-- **Terminology Refinement**: Replaced "Surgical Access" with **"Single-run access"** throughout the documentation to improve didactic clarity.
-- **Persistence (Manager-Aware)**: Updated `exp.save()` to utilize the unified `front()` method, ensuring that exported `result.csv` files always contain the global non-dominated elite of the experiment.
+## [0.4.1] - 2026-01-18
 
 ### Fixed
-- **Casteplot Aesthetics**: Resolved a visual inconsistency where `mb.view.casteplot` hardcoded colors; it now strictly adheres to the **Ocean Palette** via the standard Matplotlib property cycle.
+- **DPF Mathematical Restoration**: Corrected a fundamental error in the Degenerate Pareto Front (DPF) benchmark engine. Chaotic weights are now **static and unsorted** (stored in `__init__`), restoring the characteristic "stepped" front geometry in DPF1-5.
+- **Tabula Rasa v2 (Code Cleanup)**: Permanently removed the legacy code graveyard, including `problem_benchmark/`, `kernel_moea/`, and multiple orphan factory files (`problems.py`, `I_problems.py`, etc.).
+- **Architecture Integrity**: Refactored `mops` and `moeas` module initializers to use explicit, modern imports, eliminating unsafe dynamic loading loops (`os.walk`).
+- **Algorithm Reorganization**: Migrated essential `pymoo` kernels directly into `MoeaBench/moeas/` as internal helpers (`_*.py`), streamlining the internal execution layer.
 
-## [Unreleased]
+## [0.4.0] - 2026-01-18
 
 ### Added
 - **Ocean Palette**: Implemented a new custom categorical color palette for all visualizations. The 9-color sequence (Indigo → Emerald → Plum → Jade → Bordeaux → Deep Teal → Orange → Red → Yellow) provides a premium, high-contrast visual identity.
