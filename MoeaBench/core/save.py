@@ -51,9 +51,9 @@ class save:
             
             # 2. Export CSVs (only if we have runs and mode allows data)
             if save_data and len(obj.runs) > 0:
-                # Superfront
+                # Save the Global Non-Dominated Front (Superfront)
                 try:
-                    sf = obj.superfront()
+                    sf = obj.front()
                     header = ",".join([f'objective_{i+1}' for i in range(sf.shape[1])])
                     mem_csv = StringIO()
                     np.savetxt(mem_csv, sf, delimiter=",", fmt="%.16f", header=header, comments='')

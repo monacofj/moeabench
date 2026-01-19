@@ -20,18 +20,27 @@ class JoinedPopulation:
         
     @property
     def objectives(self) -> SmartArray:
-        # Concatenate 
         if not self.pops:
              return SmartArray(np.array([]), label="Population (Objectives)", axis_label="Objective")
         data = np.vstack([p.objectives for p in self.pops])
         return SmartArray(data, label="Population (Objectives)", axis_label="Objective")
-        
+
     @property
     def variables(self) -> SmartArray:
         if not self.pops:
              return SmartArray(np.array([]), label="Population (Variables)", axis_label="Variable")
         data = np.vstack([p.variables for p in self.pops])
         return SmartArray(data, label="Population (Variables)", axis_label="Variable")
+
+    @property
+    def objs(self) -> SmartArray: return self.objectives
+
+    @property
+    def vars(self) -> SmartArray: return self.variables
+
+    def __len__(self) -> int:
+        if not self.pops: return 0
+        return sum(len(p) for p in self.pops)
 
 class experiment:
     def __init__(self, imports: Optional[Any] = None) -> None:
@@ -123,23 +132,13 @@ class experiment:
         return JoinedPopulation([run.pop(gen) for run in self._runs])
 
     def front(self, gen: int = -1) -> SmartArray:
-         # Helper for single run case or aggregate?
-         # API.py: exp.front() # Front of the last run (the unique run)
-         # If multiple runs, what is exp.front()? 
-         # Likely the front of the LAST run (shortcut).
-         res = self.last_run.front(gen)
-         if hasattr(res, 'name'): res.name = self.name
-         # Attach source for name inference
-         if hasattr(res, 'label'): res.source = self 
-         if hasattr(res, 'gen'): res.gen = res.gen # Already set by last_run.front(gen)
-         return res
+         """Returns the non-dominated front (objectives) from the aggregate cloud (all runs)."""
+         # To get the front of a single run, use: exp.last_run.front()
+         return self.superfront(gen)
 
     def set(self, gen: int = -1) -> SmartArray:
-         res = self.last_run.set(gen)
-         if hasattr(res, 'name'): res.name = self.name
-         if hasattr(res, 'label'): res.source = self
-         if hasattr(res, 'gen'): res.gen = res.gen # Already set
-         return res
+         """Returns the non-dominated decision set (variables) from the aggregate cloud (all runs)."""
+         return self.superset(gen)
 
     def all_fronts(self, gen: int = -1) -> List[SmartArray]:
         """Returns a list of Pareto fronts from all runs."""
@@ -150,57 +149,43 @@ class experiment:
         return [run.set(gen) for run in self._runs]
 
     def superfront(self, gen: int = -1) -> SmartArray:
-        """Returns the non-dominated front considering all runs combined."""
+        """[Deprecated] Returns the non-dominated front considering all runs combined. Use exp.front() instead."""
         p = self.pop(gen)
         # Create a combined population to apply global filtering
         combined = Population(p.objectives, p.variables, source=self, label="Superfront")
-        return combined.non_dominated().objectives
+        res = combined.non_dominated().objectives
+        if hasattr(res, 'name'): res.name = self.name
+        return res
 
     def superset(self, gen: int = -1) -> SmartArray:
-        """Returns the non-dominated decision set considering all runs combined."""
+        """[Deprecated] Returns the non-dominated decision set considering all runs combined. Use exp.set() instead."""
         p = self.pop(gen)
         combined = Population(p.objectives, p.variables, source=self, label="Superset")
-        return combined.non_dominated().variables
+        res = combined.non_dominated().variables
+        if hasattr(res, 'name'): res.name = self.name
+        return res
 
     def non_front(self, gen: int = -1) -> SmartArray:
-         res = self.last_run.non_front(gen)
-         if hasattr(res, 'name'): res.name = self.name
-         if hasattr(res, 'label'): res.source = self
-         return res
+         """Returns the dominated objectives (non-front) from the aggregate cloud."""
+         return self.dominated(gen).objectives
 
     def non_set(self, gen: int = -1) -> SmartArray:
-         res = self.last_run.non_set(gen)
-         if hasattr(res, 'name'): res.name = self.name
-         if hasattr(res, 'label'): res.source = self
-         return res
+         """Returns the dominated decision set from the aggregate cloud."""
+         return self.dominated(gen).variables
 
     def dominated(self, gen: int = -1) -> Population:
-         """Returns the dominated Population at gen."""
-         pop = self.last_run.dominated(gen)
-         pop.label = "Dominated"
-         
-         # Inject metadata for automatic naming
-         for arr in [pop.objectives, pop.variables]:
-             if hasattr(arr, 'name'): arr.name = self.name
-             if hasattr(arr, 'source'): arr.source = self
-             arr.label = "Dominated"
-             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
-             
-         return pop
+         """Returns the dominated Population from the aggregate cloud at gen."""
+         p = self.pop(gen)
+         # Filter global cloud for dominated individuals
+         pop = Population(p.objectives, p.variables, source=self, label="Dominated", gen=gen)
+         return pop.dominated()
 
     def non_dominated(self, gen: int = -1) -> Population:
-         """Returns the non-dominated Population at gen."""
-         pop = self.last_run.non_dominated(gen)
-         pop.label = "Non-dominated"
-
-         # Inject metadata for automatic naming
-         for arr in [pop.objectives, pop.variables]:
-             if hasattr(arr, 'name'): arr.name = self.name
-             if hasattr(arr, 'source'): arr.source = self
-             arr.label = "Non-dominated"
-             if hasattr(arr, 'gen'): arr.gen = pop.gen # Propagate
-             
-         return pop
+         """Returns the non-dominated Population from the aggregate cloud at gen."""
+         p = self.pop(gen)
+         # Filter global cloud for non-dominated individuals
+         pop = Population(p.objectives, p.variables, source=self, label="Non-dominated", gen=gen)
+         return pop.non_dominated()
 
     def optimal(self, n_points: int = 500) -> Population:
         """Returns a sampling of the true Pareto optimal set and front."""

@@ -37,10 +37,10 @@ def main():
     mb.view.timeplot(hv1, title="Stability Analysis (5-run HV)")
 
     # 4. Aggregated Quality (Spatial Perspective)
-    # The 'superfront' provides the combined non-dominated solutions 
-    # considering the discovery of all runs.
+    # The 'front()' method provides the combined non-dominated solutions 
+    # considering the discovery of all runs (The Superfront).
     print("Plotting Superfront...")
-    mb.view.spaceplot(exp1.superfront(), title="Combined Global Front (Superfront)")
+    mb.view.spaceplot(exp1.front(), title="Combined Global Front (Superfront)")
 
     # 5. Stability Inspection (Spatial Perspective)
     # We can also plot each run's final front independently.

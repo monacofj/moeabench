@@ -196,7 +196,7 @@ def casteplot(*args, labels=None, title=None, metric=None, height_scale=0.5, **k
     
     for i, res in enumerate(results):
         lbl = labels[i]
-        color = plt.cm.tab10(i)
+        color = f"C{i % 10}"
         
         def _scalar_metric(objs, **m_kwargs):
             m_val = metric(objs, ref=global_ref, **m_kwargs)

@@ -26,9 +26,19 @@ The top-level container.
 *   `runs` (*List[Run]*): Access to all execution results.
 *   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
 *   `last_pop` (*Population*): Shortcut to the final population of the last run.
+*   `.pop(n=-1)` (*JoinedPopulation*): Access the aggregate cloud at generation `n`.
 *   `.optimal(n=500)` (*Population*): Analytical sampling of the true Pareto optimal set and front.
 *   `.optimal_front(n=500)` (*SmartArray*): Shortcut to the analytical true PF.
 *   `.optimal_set(n=500)` (*SmartArray*): Shortcut to the analytical true PS.
+
+**Cloud-centric Delegation (Aggregate Results):**
+These methods operate on the **union of all runs** (The Cloud).
+*   `.front(n=-1)` (*SmartArray*): ND objectives from all runs (Superfront).
+*   `.set(n=-1)` (*SmartArray*): ND variables from all runs (Superset).
+*   `.non_front(n=-1)` (*SmartArray*): Dominated objectives from the cloud.
+*   `.non_set(n=-1)` (*SmartArray*): Dominated variables from the cloud.
+*   `.non_dominated(n=-1)` (*Population*): Aggregate ND population.
+*   `.dominated(n=-1)` (*Population*): Aggregate dominated population.
 
 **Methods:**
 *   **`.run(repeat=1, workers=None, **kwargs)`**: Executes the optimization.
@@ -390,4 +400,6 @@ The following API is deprecated and will be removed in a future release. Use the
 | `mb.attainment()` | `mb.stats.attainment()` | Stats |
 | `mb.DTLZ*()` | `mb.mops.DTLZ*()` | Benchmark |
 | `mb.NSGA3()` | `mb.moeas.NSGA3()` | Algorithm |
+| `exp.superfront()` | `exp.front()` | Delegation |
+| `exp.superset()` | `exp.set()` | Delegation |
 

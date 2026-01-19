@@ -115,69 +115,69 @@ Using standard indexing and methods, you can navigate these layers:
 
 *   **Layer 1: Experiment (`exp`)**: The root container holding all executions.
 *   **Layer 2: Run (`exp[i]`)**: A specific stochastic trajectory identified by its seed.
-*   **Layer 3: Population (`exp[i].pop(gen)`)**: A snapshot of the search at a specific generation.
-*   **Layer 4: Data Space (`.objectives` or `.variables`)**: The raw numerical performance matrix (NumPy arrays).
+*   **Layer 3: Population (`exp.pop(n)`)**: A snapshot of the search at a generation `n`.
+*   **Layer 4: Data Space (`exp.pop(n).objs` or `.vars`)**: The raw numerical performance matrix (NumPy arrays).
 
-#### **Surgical Access Example**
+#### **Single-run access Example**
 MoeaBench uses **1-based** indexing for generations in `.pop()`, while `0` refers to the initial population and `-1` refers to the final generation.
 
 ```python
-# A. Get the population at exactly generation 100
-pop_100 = exp[0].pop(100)
+# A. Get objectives at generation 100 of the first trial
+objs_100 = exp[0].pop(100).objectives
 
-# B. Get the final generation (explicit index -1)
-final_pop = exp[0].pop(-1)
+# B. Get final decision variables (explicit index -1)
+vars_final = exp[0].pop(-1).variables
 
 # C. Deep extraction: ND variables from final gen of the third run
 # [Run 2] -> [Last Pop] -> [ND Filter] -> [Space]
-data = exp[2].pop().non_dominated().variables
+nd_vars = exp[2].pop().non_dominated().variables
 ```
 
 ---
 
-## **5. Scientific Filters: Purity in Data**
+## **5. Solution Filters**
 
-Instead of manual array slicing, MoeaBench provides **Scientific Filters** (Semantic Operators). When called directly from an `Experiment` or `Run`, these filters act as shortcuts that navigate to a specific generation and refine the data using multi-objective criteria:
-
-*   **`.pop(n)`**: Retrieves the full population snapshot.
-*   **`.non_dominated(n)`**: Returns the mutually non-dominated individuals (the "Elite").
-*   **`.dominated(n)`**: Returns individuals surpassed by at least one other solution.
-*   *Note: In the filters above, `n` represents the generation index; leave it empty to retrieve the **final** state by default.*
-
-*   **`.optimal(n_points=1000)`**: Returns an analytical **sampling** of the theoretical reference truth.
-
-### **Filtering Example**
-You can combine these filters to visually inspect the health of the search. For instance, contrast the progress of the current search against both its own dominated solutions and the external theoretical truth:
+Instead of manual array slicing, MoeaBench provides **Solution Filters** (Semantic Operators). These filters adjust their scope automatically: when called from an **`Experiment`**, they aggregate results from all runs; when called from a **`Run`**, they target that specific trajectory.
 
 ```python
-# A. Get diverse data subsets (using default gen=-1)
-nd  = exp.non_dominated()
-dom = exp.dominated()
-ref = exp.optimal()
+# --- Manager Context (Aggregation Cloud) ---
+nd   = exp.non_dominated()    # Elite among ALL runs (Superfront)
+dom  = exp.dominated()        # Solutions surpassed by at least one in the cloud
+ref  = exp.optimal()          # Analytical reference (Truth)
 
-# B. Comparative visualization (Search vs. Truth)
-mb.view.spaceplot(nd, dom, ref)
+# --- Single-run access (Specific Trajectory) ---
+nd_1 = exp[0].non_dominated() # Elite of the first run only
+nd_n = exp.pop(50).non_dominated() # Elite of generation 50 across all runs
+
+# --- Visualization (Extracting Space) ---
+mb.view.spaceplot(nd.objs, ref.objs)
 ```
+
+*Note: In the methods above, you can pass an optional generation index `n` (e.g., `exp.non_dominated(50)`); leave it empty to retrieve the **final** state by default.*
 
 ---
 
 ## **6. The Power of Delegation: Master Reference**
 
-MoeaBench uses **Delegation** to provide intuitive shortcuts, allowing you to bypass multiple levels of the hierarchy for a cleaner, more ergonomic syntax.
+MoeaBench uses **Delegation** to provide intuitive shortcuts. The `Experiment` manager provides a global perspective by default, while individual `Run` objects provide surgical access.
 
 | Command | Perspective | Technical Equivalent (Structural Access) |
 | :--- | :--- | :--- |
 | **`exp.last_run`** | The most recent trajectory. | `exp.runs[-1]` |
 | **`exp.last_pop`** | Final population of the last run. | `exp.last_run.pop(-1)` |
-| **`exp.pop()`**    | **Aggregate Cloud**: All final populations combined. | `[Aggregation of all runs]` |
-| **`exp.front()`**  | Pareto Front (Objectives) of the last run. | `exp.last_run.pop().non_dominated().objs` |
-| **`exp.set()`**    | Pareto Set (Variables) of the last run. | `exp.last_run.pop().non_dominated().vars` |
-| **`exp.non_front()`**| Dominated Objectives of the last run. | `exp.last_run.pop().dominated().objs` |
-| **`exp.superfront`**| **Global Pareto Front**: ND front across *all* runs. | `exp.pop().non_dominated().objs` |
-| **`exp.superset`**  | **Global Pareto Set**: ND variables across *all* runs. | `exp.pop().non_dominated().vars` |
+| **`exp.front()`**  | **Superfront**: ND objectives across *all* runs. | `exp.pop().non_dominated().objs` |
+| **`exp.set()`**    | **Superset**: ND variables across *all* runs. | `exp.pop().non_dominated().vars` |
+| **`exp.non_front()`**| **Dominance Cloud**: Concatenated dominated objectives. | `exp.pop().dominated().objs` |
+| **`exp.non_set()`**  | **Inverse Cloud**: Concatenated dominated variables. | `exp.pop().dominated().vars` |
 | **`exp.objectives`**| Raw cloud objectives (all final runs combined). | `exp.pop().objs` |
 | **`exp.variables`** | Raw cloud variables (all final runs combined).| `exp.pop().vars` |
 | **`exp.optimal_front()`**| The True (Analytical) Pareto Front. | `exp.optimal().objs` |
+| **`exp.optimal_set()`**  | The True (Analytical) Pareto Set. | `exp.optimal().vars` |
+
+### **Single-run access**
+To access the same metrics for a specific trial, simply navigate to the run level:
+*   `exp.last_run.front()` $\to$ Front of the last run only.
+*   `exp[i].non_dominated()` $\to$ Elite of the $i$-th run only.
 
 ### **Ergonomic Aliases (Layer 4)**
 Regardless of the delegation level, you can always use short aliases to access the raw NumPy data:

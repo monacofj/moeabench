@@ -50,10 +50,10 @@ pop1.vars                 # Alias
 # 4. Indicators and Frontiers
 # ---------------------------------------------------------
 
-# Shortcuts from Experiment (delegates to last_run)
-exp1.front()              # Objectives of the non-dominated solutions
-exp1.set()                # Variables of the non-dominated solutions
-exp1.superfront()         # Global front merging all runs
+# Shortcuts from Experiment (Delegates to the Aggregate Cloud/Superfront)
+exp1.front()              # ND objectives across ALL runs (Superfront)
+exp1.set()                # ND variables across ALL runs (Superset)
+exp1.last_run.front()     # Surgical access to the last run only
 
 # Analytical optima
 exp1.optimal()            # Known Pareto Front (Population object)
