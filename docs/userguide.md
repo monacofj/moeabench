@@ -186,64 +186,169 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 ---
 
-## **6. Visual Perspectives: Plotting Made Easy**
+## **7. Visual Perspectives: Plotting Made Easy**
 
-The `mb.view` system is **Polymorphic**. Plotting functions are designed to accept complex objects (like an `Experiment`) and automatically extract the relevant scientific data.
+The `mb.view` system is **Polymorphic**. Plotting functions are designed to accept complex objects and automatically "climb" the data hierarchy to extract the relevant scientific information.
 
 ### **Spatial Perspective (`spaceplot`)**
-Visualizes the distribution of solutions in the objective space.
+Visualizes the distribution of solutions in the objective space (2D or 3D). The `spaceplot` function is a polymorphic chameleon that understands your intention based on the "state" of the data you pass to it.
+
+#### **Level 1: The Raw Values (The Atom)**
+At the most fundamental level, you can pass a raw numerical matrix ($N \times M$ NumPy array). In this state, the graph is a purely mathematical representation without research context.
 ```python
-mb.view.spaceplot(exp) 
+mb.view.spaceplot(my_numpy_array) 
 ```
-*Note: Supports 2D and 3D plotting. Refer to [Reference: spaceplot](reference.md#spaceplot) for advanced options ($interactive$, $title$, etc.).*
+
+#### **Level 2: Explicit Extraction (Manager Mode)**
+You can use the **Manager Mode** to build precise chains that terminate in the numerical space (`.objectives` or `.vars`). This allows for surgical comparisons of specific subsets:
+*   `exp.pop().non_dominated().objectives`: A didactic chain representing the total cloud, filtered by elite status, extracted as numbers.
+*   `exp.dominated().objectives`: Visualizes the "shadow" of the experiment—those individuals that were surpassed.
+*   `exp.non_dominated().objectives`: The aggregated elite among all independent runs.
+*   `exp.non_dominated(100).objectives`: A historical snapshot of the elite at generation 100.
+
+```python
+# Multiple explicit extracts in one plot
+mb.view.spaceplot(
+    exp.non_dominated().objs, 
+    exp.dominated(50).objs
+)
+```
+
+#### **Level 3: The Data Container (The Parent Object)**
+Here the polimorphism begins. Instead of requesting the numbers explicitly, you pass the object that contains them:
+*   `mb.view.spaceplot(exp.non_dominated())`
+*   **The Intelligence**: The method detects that it received a `Population` object and automatically infers that the spatial interest lies in its objectives. It performs the access to `.objectives` internally.
+
+```python
+# Passing the population object directly
+elite = exp.non_dominated()
+mb.view.spaceplot(elite)
+```
+
+#### **Level 4: Shortcuts and Canonical Equivalents**
+For high productivity, MoeaBench provides shortcuts that serve as stable, research-oriented equivalents to the technical chains above:
+*   **`exp.front()`**: The canonical equivalent of `exp.non_dominated().objectives`. It is the primary tool for seeing the research outcome.
+*   **`exp.optimal_front()`**: The canonical equivalent of `exp.optimal().objectives`, representing the theoretical truth from the literature.
+
+```python
+# The standard "research view"
+mb.view.spaceplot(exp.front(), exp.optimal_front())
+```
+
+#### **Level 5: The Experiment Manager (The Total Abstraction)**
+At the highest level of the hierarchy, you pass the `exp` object directly.
+*   `mb.view.spaceplot(exp)`
+*   **Interpretation**: In this state, the framework interprets your request as a desire to see the **current state of the search**, which is equivalent to calling `exp.pop()`. 
+*   **A Critical Distinction**: Since `exp` represents the "total cloud" (all individuals in the state they are), this plot will show the entire population, including dominated points. If you wish to see only the filtered elite, you must be more specific by passing `exp.front()` or `exp.non_dominated()`.
+
+```python
+# Quick look at the search cloud
+mb.view.spaceplot(exp)
+```
+
+#### **Practical Examples with `exp`**
+By leveraging these abstractions, you can compose complex scientific comparisons with minimal code:
+*   Compare current progress against perfection: `mb.view.spaceplot(exp, exp.optimal())`
+*   Highlight the elite over the search mass: `mb.view.spaceplot(exp, exp.front())` (this creates two visual layers, making the Pareto front stand out from the population cloud).
+
+---
 
 ### **Temporal Perspective (`timeplot`)**
-Visualizes the evolution of metrics over generations.
-```python
-mb.view.timeplot(exp) # Uses Hypervolume by default
-```
+The `timeplot` follows strictly the same symmetry of abstraction and "intent detection" to visualize the evolution of performance.
 
-### **Structural & Competitive Perspectives**
-For deep diagnostics on algorithm behavior:
-*   **`rankplot`**: ![Rank Plot](images/rankplot.png) 
-    *   Shows how individuals are distributed across dominance ranks.
-*   **`casteplot`**: ![Caste Plot](images/casteplot.png)
-    *   Visualizes the "Quality vs. Density" profile of population layers.
-*   **`tierplot`**: ![Tier Plot](images/tierplot.png)
-    *   A comparative "Duel" between two algorithms to see who dominates the elite tiers.
+1.  **Metric Matrix**: `mb.view.timeplot(my_hv_matrix)` — plots raw performance data.
+2.  **Explicit Series Extraction**: `mb.view.timeplot(mb.metrics.hypervolume(exp.non_dominated()))`.
+3.  **The Parent Object**: `mb.view.timeplot(exp.non_dominated())` — the function understands it should apply the default metric (Hypervolume) over the generation series of that population.
+4.  **The Total Manager**: `mb.view.timeplot(exp)` — the highest abstraction. The function orchestrates the entire statistical analysis: it calculates the performance of every run, computes the mean and variance, and plots the progress of the research across time automatically.
+
+```python
+# Abstraction climbing with timeplot
+mb.view.timeplot(exp)                    # Aggregate cloud (statistical)
+mb.view.timeplot(exp[0])                 # Specific run trajectory
+mb.view.timeplot(exp, metric=mb.stats.igd) # Automatic IGD over experiment
+```
 
 ---
 
-## **7. Statistical Analysis ("Smart Stats")**
+## **8. Statistical and Structural Analysis (`mb.stats`)**
 
-The `mb.stats` module follows the same polymorphic philosophy. Statistical tests need sample distributions, and MoeaBench extracts them automatically from your experiments.
+The `mb.stats` module is the analytical engine of MoeaBench. It transforms raw stochastic trajectories into structural insights and scientific evidence, operating with the same polymorphic intelligence as the visualization system.
 
-### **Narrative Reporting**
-Statistical tools return **Rich Result Objects** that provide human-readable narratives.
+### **8.1 Stratification and Dominance Analysis**
+
+Stratification is the definitive process of organizing a population into discrete non-domination layers, or Pareto ranks. In MoeaBench, every structural analysis—whether it evaluates the selection pressure of a single solver or the competitive infiltration between two rivals—is rooted in the concept of stratification.
+
+At the core of this analysis are the `strata` and `tier` functions. While `mb.stats.strata(data)` dissects the internal layers of a specific population context, the `mb.stats.tier(exp1, exp2)` function orchestrates a joint-stratification duel. By merging the state of two competitors and ranking them as a unified set, the framework establishes global tiers that reveal the relative dominance in the objective space.
+
+#### **Accessing Structural Data**
+The result of a stratification analysis is stored in a `StratificationResult` (or `TierResult` for competitive duels). These objects provide programmatic access to the following properties:
 
 ```python
-# Compare two algorithms
-res = mb.stats.mann_whitney(exp1, exp2)
-
-# Print the narrative report
-print(res.report())
+# Perform the analysis
+res = mb.stats.strata(exp)
 ```
 
-The report explains significance, provides effect sizes (A12), and offers a diagnostic interpretation. For technical details on the underlying tests, see **[Reference: Stats](reference.md#stats)**.
+The object `res` contains the following metrics and data structures:
+*   **`.max_rank`**: The total number of non-domination layers found (search depth).
+*   **`.frequencies()`**: A NumPy array representing the distribution percentage of the population across ranks.
+*   **`.selection_pressure()`**: A numeric value (0 to 1) estimating the convergence focus based on rank decay.
+*   **`.quality_by(metric)`**: A vector of quality values (e.g., IGD or Hypervolume) mapped to each dominance layer.
+*   **`.dominance_ratio()`** *(Tier only)*: The relative proportion of each group in the first global rank (the elite).
+*   **`.displacement_depth()`** *(Tier only)*: The specific rank index where the rival group begins to appear significantly.
 
----
+#### **Visualizing the Dominance Hierarchy**
+The structural plots are polymorphic lenses that visualize these results. Because stratification metrics typically evaluate the entire search state, they operate over the population cloud.
 
-## **8. Advanced Diagnostics: Caste and Tier**
+```python
+# 1. Structural Analysis of a single experiment
+res = mb.stats.strata(exp)
+mb.view.rankplot(res)    # Operates over the cloud (equiv: exp.pop().objs)
+mb.view.casteplot(res)   # Operates over the cloud (equiv: exp.pop().objs)
 
-Beyond simple averages, MoeaBench allows you to inspect the "internal health" of the search profile.
+# 2. Competitive Tier Analysis (Joint Strata)
+res_tier = mb.stats.tier(exp1, exp2)
+mb.view.tierplot(res_tier) # Joint dominance of (exp1.pop().objs + exp2.pop().objs)
+```
 
-### **Stratification & Selection Pressure**
-Use `mb.stats.strata(exp)` to analyze how individuals are distributed across non-domination layers.
-*   **Selection Pressure**: Quantifies if the algorithm is focusing correctly on the elite.
-*   **Caste Profile**: A hierarchical view that reveals the trade-off between **Convergence** and **Search Effort**.
+| Dominance Distribution (`rankplot`) | Relative Efficiency (`casteplot`) |
+| :---: | :---: |
+| ![Rank Plot](images/rankplot.png) | ![Caste Plot](images/casteplot.png) |
 
-### **The Tier Duel**
-The `tierplot` is the definitive way to compare two MOEAs. It reveals which algorithm is truly "infiltrating" the best global ranks and where the rival starts to lose ground.
+| Competitive Duel (`tierplot`) |
+| :---: |
+| ![Tier Plot](images/tierplot.png) |
+
+### **8.2 Stochastic Inference (Hypothesis Tests)**
+
+Beyond structural profiles, the laboratory requires rigorous evidence to determine if performance differences are statistically significant across independent trials. The `mb.stats` module provides a suite of stochastic inference tools designed to handle the non-parametric nature of multi-objective performance data.
+
+The `mb.stats.mann_whitney(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.ks_test(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.a12(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
+
+#### **Accessing Inference Meta-data**
+Hypothesis test functions return a `HypothesisTestResult` object that encapsulates the scientific findings:
+
+```python
+# Perform the inference test
+res = mb.stats.ks_test(exp1, exp2)
+# (equiv: mb.stats.ks_test(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
+```
+
+The object `res` contains the following values that can be accessed directly:
+*   **`.p_value`**: The calculated probability of the observed results under the null hypothesis.
+*   **`.significant`**: A boolean flag that is `True` if the p-value is below the 0.05 significance threshold.
+*   **`.a12`**: The effect size statistic (Vargha-Delaney A12), representing the probability of superiority.
+*   **`.report()`**: A method that generates a human-readable narrative report ready for research publications.
+
+```python
+# Smart Stats: Direct comparison between experiment outcome distributions
+res = mb.stats.ks_test(exp1, exp2, metric=mb.metrics.hv)
+print(res.report()) 
+# (equiv: samples from mb.metrics.hv(exp1.pop().objs) vs mb.metrics.hv(exp2.pop().objs))
+
+# Deep access to the results for automated decision logic
+if res.significant:
+    print(f"Significant difference detected with A12: {res.a12:.4f}")
+```
 
 ---
 
@@ -288,16 +393,32 @@ Scientific benchmarking requires absolute control over randomness. MoeaBench tre
 
 ## **11. Persistence (`save` and `load`)**
 
-MoeaBench allows you to persist experiments to disk as compressed ZIP files. This is essential for long-running studies and cross-tool analysis.
+MoeaBench allows you to persist experiments to disk as compressed ZIP files. This is essential for long-running studies, cross-tool analysis, and sharing experimental protocols. The persistence system supports selective modes to optimize file size and workflow:
 
 ```python
-# Save everything (Trajectories + Config)
-exp.save("study_A", mode="all")
+# 1. Save the complete state (Config + All Runs)
+exp.save("full_study", mode="all")
 
-# Load only the configuration (to replicate a study with new runs)
-new_exp = mb.experiment().load("study_A", mode="config")
+# 2. Save only the 'Recipe' (No data)
+exp.save("protocol", mode="config")
+
+# 3. Load results into an existing setup
+exp.load("results", mode="data")
 ```
-Supported modes: `all`, `config` (metadata), and `data` (results). For details on the file format, see **[Reference: Persistence](reference.md#persistence)**.
+
+#### **Persistence Modes**
+
+*   **`all` (Default)**:
+    *   **Behavior**: Persists the entire state, including the problem definition, algorithm configuration, and every execution trajectory (`runs`).
+    *   **Utility**: Full project backups or archiving final research results for peer review and total reproducibility.
+*   **`config`**:
+    *   **Behavior**: Records only the "experimental protocol"—what problem was solved and with which algorithm settings—stripping away all gathered data.
+    *   **Utility**: Sharing compact "recipes" of an experiment. On Loading, it updates your experiment's configuration (MOP/MOEA) while **preserving any existing runs**, allowing you to keep your current results while adopting a new protocol.
+*   **`data`**:
+    *   **Behavior**: Focuses on the results of the execution.
+    *   **Utility**: Merging results from different machines or sessions. On Loading, it imports the **execution runs** from the file but **preserves your current configuration**, ensuring you don't overwrite your problem settings with those from the data file.
+
+For details on the underlying file format (CSVs and joblib serialization), see **[Reference: Persistence](reference.md#persistence)**.
 
 ---
 
