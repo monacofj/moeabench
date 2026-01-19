@@ -324,6 +324,10 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
         rows = (n_plots + 1) // 2
         fig, ax_grid = plt.subplots(rows, cols, figsize=(10, 4*rows), constrained_layout=True)
         axes_objs = np.atleast_1d(ax_grid).flatten()
+        
+        # Hide extra axes in grid
+        for j in range(len(axes), len(axes_objs)):
+            axes_objs[j].axis('off')
     else:
         figures = []
         axes_objs = [None] * len(axes) 
@@ -336,14 +340,14 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
             cur_ax = axes_objs[i]
             cur_fig = fig
             
-        axis_name = "Objective" if space == 'objs' else "Variable"
-        cur_ax.set_xlabel(f"{axis_name} {ax_idx}")
+        axis_name = "f" if space == 'objs' else "x"
+        cur_ax.set_xlabel(f"{axis_name}${ax_idx + 1}$")
         cur_ax.set_ylabel("Density (KDE)")
         
         ax_stats = match_res.results.get(ax_idx)
         p_val = getattr(ax_stats, 'p_value', 1.0) if ax_stats else 1.0
         d_stat = getattr(ax_stats, 'statistic', 0.0) if hasattr(ax_stats, 'statistic') else 0.0
-        verdict = "Match ✅" if p_val > alpha else "Mismatch ❌"
+        verdict = "Match" if p_val > alpha else "Mismatch"
         
         for b_idx, buffer in enumerate(buffers):
             sample = buffer[:, ax_idx]
@@ -357,7 +361,7 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
                 
                 lbl = f"{names[b_idx]}"
                 if b_idx == 0: 
-                     lbl += f"\n(D={d_stat:.2f}, p={p_val:.3f})\nVerdict: {verdict}"
+                     lbl += f"\n(D={d_stat:.2f}, p={p_val:.3f})\n{verdict}"
                 
                 cur_ax.plot(x_range, y_vals, color=color, label=lbl, lw=2)
                 cur_ax.fill_between(x_range, y_vals, color=color, alpha=0.2)
@@ -365,7 +369,7 @@ def distplot(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=No
                 val = sample[0]
                 cur_ax.axvline(val, color=color, label=names[b_idx], lw=2)
         
-        cur_ax.set_title(f"Distribution Analysis: {axis_name} {ax_idx}")
+        cur_ax.set_title(f"Distribution Analysis: {axis_name}{ax_idx + 1}")
         cur_ax.legend(fontsize=8, frameon=True, facecolor='white', framealpha=0.9)
         cur_ax.grid(True, alpha=0.2, linestyle='--')
         

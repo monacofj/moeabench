@@ -98,9 +98,18 @@ mb.view.spaceplot(exp1)                       # Spatial: Pareto Front plot (2D/3
 mb.view.rankplot(exp1)                        # Structural: Selection pressure (counts)
 mb.view.casteplot(exp1)                       # Hierarchical: Quality/Density profile
 mb.view.tierplot(exp1, exp2)                  # Competitive: Tier duel
+mb.view.distplot(exp1, exp2)                  # Distribution: Probability density (KDE)
 
 # ---------------------------------------------------------
-# 7. Custom Extensions
+# 7. Distribution Matching (v0.6.0)
+# ---------------------------------------------------------
+
+res_match = mb.stats.dist_match(exp1, exp2)   # Topological Equivalence
+res_match.is_consistent                       # boolean result
+res_match.report()                            # Dimensional analysis
+
+# ---------------------------------------------------------
+# 8. Custom Extensions
 # ---------------------------------------------------------
 
 # Create custom problems using NumPy vectorization

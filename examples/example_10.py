@@ -55,6 +55,16 @@ def main():
     res_emd = mb.stats.dist_match(exp1, exp2, method='emd')
     print(f"Global Status: {res_emd.is_consistent}")
     print(f"Failed Axes (Divergent): {res_emd.failed_axes}")
+    
+    # 6. Visual Verification: Distribution Plots (distplot)
+    # We now visualize the probability densities to understand the statistical verdict
+    print("\n--- [Visual 1] Density Comparison (Objective Space) ---")
+    # Plotting first 3 objectives in a grid
+    mb.view.distplot(exp1, exp2, title="Comparison of Pareto Front Distributions")
+
+    print("\n--- [Visual 2] Strategy Comparison (Decision Space - Axis 0) ---")
+    # Plotting only the first variable independently for publication-ready export
+    mb.view.distplot(exp1, exp2, space='vars', axes=[0], layout='independent')
 
 if __name__ == "__main__":
     main()

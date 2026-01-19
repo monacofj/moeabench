@@ -56,7 +56,7 @@ mb.view.spaceplot(exp.front())                  # Plot the 3D pareto front
 MoeaBench provides a collection of documented scripts and Jupyter Notebooks demonstrating various features, from basic runs to advanced population diagnostics:
 
 *   **[Examples Directory](examples/)**: Access all `.py` and `.ipynb` files.
-*   Core Examples: `example_01.py` to `example_09.py` cover the essential analytical and diagnostic journey.
+*   Core Examples: `example_01.py` to `example_10.py` cover the essential analytical and diagnostic journey.
 
 ## Research & Citation
 

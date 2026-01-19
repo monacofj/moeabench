@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # MoeaBench API Reference Guide
-**Version 1.0.0**
+**Version 0.6.0**
 
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
@@ -177,6 +177,18 @@ Plots the **Competitive Tier Duel** (Stacked bars showing absolute population co
 *   **Args**:
     *   `exp1`, `exp2`: The two experiments to compare.
 *   **Smart Resolution**: Calls `mb.stats.tier(exp1, exp2)` internally to build the `mb.view.tierplot` input.
+
+<a name="distplot"></a>
+### **2.6. Distribution Perspective (`mb.view.distplot`)**
+Plots smooth Probability Density Estimates (KDE) and comparative statistical verdicts.
+*   **Args**:
+    *   `*args`: experiments, runs, populations, or arrays.
+    *   `axes` (*list*): Indices of objectives/variables.
+    *   `layout` (*str*): `'grid'` (default) or `'independent'`.
+    *   `space` (*str*): `'objs'` (Pareto Front) or `'vars'` (Pareto Set). 
+    *   `show` (*bool*): Whether to call `plt.show()` (default: `True`).
+*   **Legend Intelligence**: Automatically displays the Experiment Name, $D$-statistic, $p$-value, and the `Match`/`Mismatch` verdict.
+*   **Aesthetics**: 1-based indexing ($f_1, x_1$) and "Paper-Ready" white background.
 
 ---
 
@@ -406,6 +418,7 @@ The following API is deprecated and will be removed in a future release. Use the
 | `mb.rankplot()` | `mb.view.rankplot()` | Plotting |
 | `mb.casteplot()` | `mb.view.casteplot()` | Plotting |
 | `mb.tierplot()` | `mb.view.tierplot()` | Plotting |
+| `mb.distplot()` | `mb.view.distplot()` | Plotting |
 | `mb.hv()` | `mb.metrics.hv()` | Metric |
 | `mb.igd()` | `mb.metrics.igd()` | Metric |
 | `mb.gd()` | `mb.metrics.gd()` | Metric |
