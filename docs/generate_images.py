@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-FileCopyrightText: 2026 Silva F. F. <fernandoferreira.silva42@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import matplotlib
 matplotlib.use('Agg') # Headless backend
 import matplotlib.pyplot as plt
