@@ -17,6 +17,7 @@ import mb_path
 from MoeaBench import mb
 
 def main():
+    print(f"Version: {mb.system.version()}")
     # 1. Setup: Run a longer experiment to see convergence
     exp1 = mb.experiment()
     exp1.name = "NSGA-III"

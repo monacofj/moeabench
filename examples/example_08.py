@@ -18,6 +18,7 @@ from MoeaBench import mb
 import matplotlib.pyplot as plt
 
 def main():
+    print(f"Version: {mb.system.version()}")
     print("--- Advanced Diagnostics Workshop ---\n")
 
     # 1. Setup: Deceptive 3D problem (DTLZ3)

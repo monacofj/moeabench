@@ -40,6 +40,7 @@ class MyProblem(mb.mops.BaseMop):
         return {'F': np.column_stack([f1, f2])}
 
 def main():
+    print(f"Version: {mb.system.version()}")
     # 2. Setup: Instantiate and use the custom benchmark
     mop1 = MyProblem()
 
