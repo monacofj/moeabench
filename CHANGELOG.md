@@ -12,6 +12,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.2] - 2026-01-20
+
+### Added
+- **Integrated Testing Infrastructure**:
+    - `test/test.py`: Unified CLI orchestrator with granular control (`--unit`, `--scripts`, `--notebooks`).
+    - `test/nb_runner.py`: Headless Jupyter execution engine for validating notebooks in CI/CD.
+    - `test/unit/`: Dedicated directory for unit tests, including initial system checks (`test_system.py`).
+    - **Self-Healing**: Automated dependency checking and kernel registration prompts for notebook environment setup.
+
+### Fixed
+- **Notebook Regression**: Fixed legacy function call `topo_attain_diff` in `examples/example_07.ipynb` (renamed to `topo_gap`), restoring pass/fail integrity.
+
 ## [0.6.1] - 2026-01-20
 
 ### Changed
