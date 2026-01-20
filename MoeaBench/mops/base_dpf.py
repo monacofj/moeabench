@@ -33,7 +33,7 @@ class BaseDPF(BaseMop):
         # For DPF1/2: N_weights = (M-D) * D
         # For DPF3/4: N_weights = (M-D)
         # We generate a large enough pool to cover all cases.
-        self._chaos_pool = self._generate_chaos(max((M - D) * D, M - D))
+        self._chaos_pool = self._generate_chaos(max((self.M - self.D) * self.D, self.M - self.D))
 
     def validate(self):
         """

@@ -21,6 +21,17 @@ def test_dpf_dimension_validation():
     assert "cannot be greater than dimensionality" in str(excinfo.value)
     print("\n[PASS] DPF5 dimension validation caught invalid M > N.")
 
+def test_dpf_initialization_success():
+    """Verify that DPF problems initialize correctly with valid parameters."""
+    try:
+        mop = mb.mops.DPF1(M=3, D=2)
+        assert mop.M == 3
+        assert mop.D == 2
+        assert mop._chaos_pool is not None
+    except NameError as e:
+        pytest.fail(f"DPF1 failed with NameError: {e}")
+    print("[PASS] DPF1 initialized successfully.")
+
 def test_custom_mop_signature():
     """Reproduce error_02.py: Custom MOP should handle **kwargs to be flexible."""
     class MyProblem(mb.mops.BaseMop):
