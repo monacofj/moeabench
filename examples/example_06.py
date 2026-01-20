@@ -49,12 +49,12 @@ def main():
     res1 = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
     print(res1.report())
     
-    # [mb.stats.perf_dist] Uses Kolmogorov-Smirnov (KS) test to compare distribution shapes
-    res2 = mb.stats.perf_dist(exp1, exp2, metric=mb.metrics.hv)
+    # [mb.stats.perf_distribution] Uses Kolmogorov-Smirnov (KS) test to compare distribution shapes
+    res2 = mb.stats.perf_distribution(exp1, exp2, metric=mb.metrics.hv)
     print(res2.report())
     
-    # [mb.stats.perf_prob] Uses Vargha-Delaney A12 effect size to calculate win probability
-    res3 = mb.stats.perf_prob(exp1, exp2, metric=mb.metrics.hv)
+    # [mb.stats.perf_probability] Uses Vargha-Delaney A12 effect size to calculate win probability
+    res3 = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
     print(res3.report())
 
 if __name__ == "__main__":

@@ -64,11 +64,11 @@ def main():
     # 4. Visual Workshop
     print("\nGenerating visual profiles... (Close plots to finish)")
     
-    mb.view.rankplot(strat1, strat2, labels=[exp1.name, exp2.name], 
+    mb.view.strat_ranks(strat1, strat2, labels=[exp1.name, exp2.name], 
                 title=f"Structural Perspective (Gen {SNAPSHOT_GEN})")
     
-    # B. Hierarchical View (Floating Ranks/Quality)
-    mb.view.casteplot(strat1, strat2, 
+    # B. Hierarchical View (Quality vs Density)
+    mb.view.strat_caste(strat1, strat2, 
                  title=f"Hierarchical Perspective: Caste Profile (Gen {SNAPSHOT_GEN})")
 
     # C. Competitive View (The Tier Duel)
@@ -76,7 +76,7 @@ def main():
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
     res_tier = mb.stats.tier(exp1, exp2, gen=SNAPSHOT_GEN)
     print(res_tier.report())
-    mb.view.tierplot(res_tier, title="Competitive Perspective: Tier Duel")
+    mb.view.strat_tiers(res_tier, title="Competitive Perspective: Tier Duel")
 
     plt.show()
 
@@ -95,11 +95,11 @@ if __name__ == "__main__":
 #    leaving the rest of the population more scattered.
 #
 # Scientific Perspectives (mb.view):
-# - 'rankplot' (Structural): Shows the global frequency of each rank.
-# - 'casteplot' (Hierarchical): Shows quality and density per rank.
-# - 'tierplot' (Competitive): The Tier Duel view for direct algorithm duels.
+# - 'strat_ranks' (Structural): Shows the global frequency of each rank.
+# - 'strat_caste' (Hierarchical): Shows quality and density per rank.
+# - 'strat_tiers' (Competitive): The Tier Duel view for direct algorithm duels.
 #
-# The 'casteplot' (floating ranks) proves that the population is robust: 
+# The 'strat_caste' view proves that the population is robust: 
 # early ranks are often clustered near the 1.0 quality ceiling. This means 
 # that even if the absolute best solutions are lost, the "successors" are 
 # functionally equivalent.

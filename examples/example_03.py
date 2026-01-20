@@ -28,17 +28,17 @@ def main():
     print("Running experiment...")
     exp1.run()
     
-    # 3. Visualization: Front vs. Background Population (Spatial Perspective)
+    # 3. Visualization: Front vs. Background Population (Topographic Domain)
     # We can distinguish the "winners" (Rank 1) from the rest of the search.
     print("Plotting winners vs background...")
-    mb.view.spaceplot(exp1.front(), exp1.non_front(), 
+    mb.view.topo_shape(exp1.front(), exp1.non_front(), 
                       labels=["Pareto Front", "Dominated"], 
                       title="Anatomy of a Population")
 
-    # 4. Visualization: Search Trajectory (Spatial Perspective)
+    # 4. Visualization: Search Trajectory (Topographic Domain)
     # Compare an early snapshot (Gen 5) with the final state.
     print("Comparing snapshots...")
-    mb.view.spaceplot(exp1.front(5), exp1, 
+    mb.view.topo_shape(exp1.front(5), exp1, 
                       labels=["Elite at Gen 5", "Final Elite"], 
                       title="Convergence Path")
 

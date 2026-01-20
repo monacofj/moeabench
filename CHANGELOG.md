@@ -12,6 +12,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-01-20
+
+### Added
+- **Permanent Aliases**: Promoted `mb.spaceplot`, `mb.timeplot`, and `mb.rankplot` to permanent status due to their stability and widespread use in the literature.
+- **Full Example Migration**: Updated all official examples (`examples/*.py` and `examples/*.ipynb`) to use the new **Scientific Domains** taxonomy as the standard nomenclature.
+- **Policy Formalization**: Established the "Soft Deprecation" vs "Permanent Alias" tiers in the documentation.
+- **Taxonomy Refinement**: Renamed `strat_hierarchy` to `strat_caste` for better conceptual alignment with population geology.
+
+### Changed
+- **Version Bump**: Updated library version to `0.7.1`.
+- **Documentation Cleanup**: Purged all legacy breadcrumbs ("Successor to...") from the User Guide to focus exclusively on the Scientific Taxonomy.
+
+## [0.7.0] - 2026-01-20
+
+### Added
+- **Scientific Domains Taxonomy**: Established a three-factor analytical framework for all visualizations and statistics:
+  - **Topography (`topo_`)**: Focus on "Where solutions are". New views: `topo_shape` (successor to `spaceplot`), `topo_bands` (Search Corridors/EAF), `topo_gap` (Topologic Gap/EAF Difference), and `topo_density` (Spatial Density/KDE).
+  - **Performance (`perf_`)**: Focus on "How well algorithms perform". New views: `perf_history` (successor to `timeplot`), `perf_spread` (Performance Contrast/A12 Boxplots), and `perf_density` (Quality Distribution/KDE).
+  - **Stratification (`strat_`)**: Focus on "How population is organized". New views: `strat_ranks`, `strat_caste`, and `strat_tiers`.
+- **Full Word Statistics API**: Renamed statistical functions for clarity and taxonomic consistency:
+
+| Legacy Name | New Name | Analytical Domain |
+| :--- | :--- | :--- |
+| `perf_prob` | `perf_probability` | Performance (A12) |
+| `perf_dist` | `perf_distribution` | Performance (KS) |
+| `topo_dist` | `topo_distribution` | Topography (Match) |
+| `topo_attain` | `topo_attainment` | Topography (EAF) |
+
+### Changed
+- **Modular Architecture**: Visualization layer refactored into domain-specific modules (`MoeaBench/view/topo.py`, `perf.py`, `strat.py`).
+- **Stability Policy (Legacy Support)**: Established a two-tier support system:
+  - **Permanent Aliases**: `spaceplot`, `timeplot`, and `rankplot` are maintained as first-class citizens.
+  - **Soft-Deprecated**: Other legacy functions (`casteplot`, `tierplot`, `topo_dist`, `perf_prob`, etc.) are maintained for compatibility but will be restricted in future major releases.
+
+### Fixed
+- Fixed internal `AttributeError` in `HypothesisTestResult` reporting when calling renamed statistical methods.
+
 ## [0.6.3] - 2026-01-20
 ### Added
 - Robust input validation guards for DPF problems to prevent mathematical inconsistencies.

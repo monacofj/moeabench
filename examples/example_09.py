@@ -70,7 +70,7 @@ def main():
 
     # 4. Final Verification Plot
     print("\n--- Phase 4: Visualizing Loaded Data ---")
-    mb.view.spaceplot(exp_c, title="Recovered Pareto Front (from Object C)")
+    mb.view.topo_shape(exp_c, title="Recovered Pareto Front (from Object C)")
 
     # Note: We are leaving the generated ZIP files (study_full.zip, study_config.zip) 
     # in the directory so you can inspect their internal CSV and manifest files.

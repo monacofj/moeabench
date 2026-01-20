@@ -29,24 +29,24 @@ def main():
     print(f"Executing {exp1.name}...")
     exp1.run(repeat=5)
     
-    # 3. Aggregated Convergence (Historic Perspective)
+    # 3. Aggregated Convergence (Performance Domain)
     # hv1 contains the historical hypervolume for ALL runs.
     hv1 = mb.metrics.hv(exp1)
 
-    # The timeplot automatically computes mean and standard deviation
+    # The perf_history automatically computes mean and standard deviation
     print("Plotting statistical convergence...")
-    mb.view.timeplot(hv1, title="Stability Analysis (5-run HV)")
+    mb.view.perf_history(hv1, title="Stability Analysis (5-run HV)")
 
-    # 4. Aggregated Quality (Spatial Perspective)
+    # 4. Aggregated Quality (Topographic Domain)
     # The 'front()' method provides the combined non-dominated solutions 
     # considering the discovery of all runs (The Superfront).
     print("Plotting Superfront...")
-    mb.view.spaceplot(exp1.front(), title="Combined Global Front (Superfront)")
+    mb.view.topo_shape(exp1.front(), title="Combined Global Front (Superfront)")
 
-    # 5. Stability Inspection (Spatial Perspective)
+    # 5. Stability Inspection (Topographic Domain)
     # We can also plot each run's final front independently.
     print("Comparing individual run stability...")
-    mb.view.spaceplot(*exp1.all_fronts(), title="Individual Run Fronts")
+    mb.view.topo_shape(*exp1.all_fronts(), title="Individual Run Fronts")
 
 if __name__ == "__main__":
     main()
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 # lucky or unlucky. By running multiple times (repeat=5), we get a 
 # "silhouette" of the algorithm's performance.
 #
-# The 'timeplot' dispersion shadow (mean +/- std) shows the reliability. 
+# The 'perf_history' dispersion shadow (mean +/- std) shows the reliability. 
 # A thin shadow indicates high consistency.
 #
 # The 'superfront' is the definitive result for the user: it's the best 

@@ -38,33 +38,33 @@ def main():
     exp2.run()
 
     # 3. Topological Analysis: Objective Space
-    # By default, topo_dist(exp1, exp2) uses space='objs' (the elite front)
+    # By default, topo_distribution(exp1, exp2) uses space='objs' (the elite front)
     print("\n--- [Analysis 1] Convergence Equivalence (Objective Space) ---")
-    res_objs = mb.stats.topo_dist(exp1, exp2)
+    res_objs = mb.stats.topo_distribution(exp1, exp2)
     print(res_objs.report())
 
     # 4. Topological Analysis: Decision Space
     # We can also check if they found the same solutions in the decision space
     print("\n--- [Analysis 2] Strategy Equivalence (Decision Space) ---")
-    res_vars = mb.stats.topo_dist(exp1, exp2, space='vars')
+    res_vars = mb.stats.topo_distribution(exp1, exp2, space='vars')
     print(res_vars.report())
 
     # 5. Advanced: Earth Mover Distance (Geometric Distance)
     # Quantify "how far" the distributions are from each other
     print("\n--- [Analysis 3] Geometric Distance (EMD) ---")
-    res_emd = mb.stats.topo_dist(exp1, exp2, method='emd')
+    res_emd = mb.stats.topo_distribution(exp1, exp2, method='emd')
     print(f"Global Status: {res_emd.is_consistent}")
     print(f"Failed Axes (Divergent): {res_emd.failed_axes}")
     
-    # 6. Visual Verification: Distribution Plots (topo_dist)
+    # 6. Visual Verification: Distribution Plots (topo_density)
     # We now visualize the probability densities to understand the statistical verdict
     print("\n--- [Visual 1] Density Comparison (Objective Space) ---")
     # Plotting first 3 objectives in a grid
-    mb.view.topo_dist(exp1, exp2, title="Comparison of Pareto Front Distributions")
+    mb.view.topo_density(exp1, exp2, title="Comparison of Pareto Front Distributions")
 
     print("\n--- [Visual 2] Strategy Comparison (Decision Space - Axis 0) ---")
     # Plotting only the first variable independently for publication-ready export
-    mb.view.topo_dist(exp1, exp2, space='vars', axes=[0], layout='independent')
+    mb.view.topo_density(exp1, exp2, space='vars', axes=[0], layout='independent')
 
 if __name__ == "__main__":
     main()
@@ -72,9 +72,9 @@ if __name__ == "__main__":
 # --- Interpretation ---
 #
 # Unlike performance metrics (Hypervolume), which tell us "who is better", 
-# 'topo_dist' tells us "are they finding the same thing?".
+# 'topo_distribution' tells us "are they finding the same thing?".
 #
-# 1. Objective Space Match: If 'topo_dist' reports a match in objective space,
+# 1. Objective Space Match: If 'topo_distribution' reports a match in objective space,
 #    it means both algorithms provided a statistically similar approximation 
 #    of the Pareto Front.
 #

@@ -239,7 +239,7 @@ class experiment:
         return self.mop.evaluation(X, n_ieq_constr)
          
     # Execution
-    def run(self, repeat: int = 1, workers: Optional[int] = None) -> None:
+    def run(self, repeat: int = 1, workers: Optional[int] = None, **kwargs) -> None:
         """
         Executes the optimization experiment for one or more runs.
 
@@ -247,8 +247,14 @@ class experiment:
             repeat (int): Number of independent runs to perform.
             workers (int): [DEPRECATED] Parallel execution is no longer supported. 
                            All runs are performed serially for stability.
+            **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
         if repeat < 1: repeat = 1
+        
+        # Propagate overrides to the MOEA
+        for key, val in kwargs.items():
+            if hasattr(self.moea, key):
+                setattr(self.moea, key, val)
         
         # Determine base seed
         base_seed = getattr(self.moea, 'seed', None)

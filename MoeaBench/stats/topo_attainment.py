@@ -34,9 +34,9 @@ class AttainmentSurface(SmartArray):
         hv_matrix = hypervolume(self, ref=ref_point)
         return float(hv_matrix)
 
-def topo_attain(source, level: float = 0.5):
+def topo_attainment(source, level: float = 0.5):
     """
-    [mb.stats.topo_attain] Calculates the k-th attainment surface.
+    [mb.stats.topo_attainment] Calculates the k-th attainment surface.
     Based on the theory of Empirical Attainment Functions (EAF).
     
     The level is a probability in [0, 1].
@@ -49,7 +49,7 @@ def topo_attain(source, level: float = 0.5):
         fronts = [run.front() for run in source.runs]
 
     if not fronts:
-        raise ValueError("No fronts available for topo_attain calculation.")
+        raise ValueError("No fronts available for topo_attainment calculation.")
         
     n_runs = len(fronts)
     k = int(np.ceil(level * n_runs))
@@ -65,7 +65,7 @@ def topo_attain(source, level: float = 0.5):
         return _attainment_nd(fronts, k, level)
 
 def _attainment_2d(fronts, k, level):
-    """Exact 2D topo_attain surface calculation (staircase)."""
+    """Exact 2D topo_attainment surface calculation (staircase)."""
     # For 2D, the topo_attain surface is defined by the coordinates 
     # of the points in the fronts.
     all_x = []
@@ -105,7 +105,7 @@ def _attainment_2d(fronts, k, level):
 
 def _attainment_nd(fronts, k, level):
     """
-    N-D topo_attain surface calculation.
+    N-D topo_attainment surface calculation.
     Uses chunked vectorized counting to find points attained by at least k runs.
     """
     # A point z is in the k-topo_attain set if at least k runs dominate z.
@@ -144,7 +144,7 @@ def _attainment_nd(fronts, k, level):
 
 class AttainmentDiff(StatsResult):
     """
-    Result of a comparison between two topo_attain surfaces.
+    Result of a comparison between two topo_attainment surfaces.
     """
     def __init__(self, surf1, surf2, level):
         self.surf1 = surf1
@@ -181,7 +181,7 @@ class AttainmentDiff(StatsResult):
 
 def topo_gap(exp1, exp2, level=0.5, workers=0):
     """
-    [mb.stats.topo_gap] Calculates the spatial Gap in topo_attain (Topologic Gap).
+    [mb.stats.topo_gap] Calculates the spatial Gap in topo_attainment (Topologic Gap).
     Identifies regions where one algorithm outperforms the other based on EAF differences.
     """
     # Extract fronts here to avoid detached object graph overhead
@@ -189,8 +189,8 @@ def topo_gap(exp1, exp2, level=0.5, workers=0):
     fronts2 = [np.array(run.front()) for run in exp2.runs]
 
     # Purely serial calculation
-    surf1 = topo_attain(fronts1, level=level)
-    surf2 = topo_attain(fronts2, level=level)
+    surf1 = topo_attainment(fronts1, level=level)
+    surf2 = topo_attainment(fronts2, level=level)
 
     surf1.name = exp1.name
     surf2.name = exp2.name

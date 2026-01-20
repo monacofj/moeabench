@@ -53,9 +53,9 @@ def main():
     print(f"Optimizing {exp1.name}...")
     exp1.run()
 
-    # 4. Visualization: Standard tools work seamlessly with custom mop (Spatial Perspective)
+    # 4. Visualization: Standard tools work seamlessly with custom mop (Topographic Domain)
     print("Plotting results...")
-    mb.view.spaceplot(exp1, title="Final Front of Custom Benchmark")
+    mb.view.topo_shape(exp1, title="Final Front of Custom Benchmark")
 
 if __name__ == "__main__":
     main()

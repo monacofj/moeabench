@@ -51,11 +51,19 @@ class Scatter3D:
              ax = fig.add_subplot(111, projection='3d')
          except (ValueError, KeyError) as e:
              plt.close(fig)
-             raise RuntimeError(
-                 "MoeaBench Error: Matplotlib 3D projection '3d' is not available on this system. "
-                 "This often happens due to broken Matplotlib installations or missing 'mplot3d' toolkit. "
-                 "Try re-installing matplotlib or check your environment configuration."
-             ) from e
+             print("\n[WARNING] MoeaBench: Matplotlib '3d' projection not available. Falling back to 2D visualization (f1, f2).")
+             try:
+                 from .scatter2d import Scatter2D
+                 s2d = Scatter2D(self.experiments, self.vet_pts, self.axis[:2], 
+                                type=self.type, mode=self.mode, 
+                                axis_label=self.axis_label, trace_modes=self.trace_modes)
+                 s2d.show()
+                 return
+             except Exception as e2:
+                 raise RuntimeError(
+                     "MoeaBench Error: Matplotlib 3D projection '3d' is not available and 2D fallback failed. "
+                     "This often happens due to broken Matplotlib installations."
+                 ) from e2
          
          # Use standard property cycle for distinct categorical colors
          prop_cycle = plt.rcParams['axes.prop_cycle']

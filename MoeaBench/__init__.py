@@ -32,17 +32,33 @@ class _MB:
         self.view = view
         self.system = system
         
-        # Taxonomy: Performance | Topography | Stratification (v0.6.3)
+        # Taxonomy: Performance | Topography | Stratification (v0.7.0)
         self.perf_evidence = stats.perf_evidence
-        self.perf_prob = stats.perf_prob
-        self.perf_dist = stats.perf_dist
-        self.topo_dist = stats.topo_dist # Note: this is the stats version. 
-        self.topo_attain = stats.topo_attain
+        self.perf_probability = stats.perf_probability
+        self.perf_distribution = stats.perf_distribution
+        self.topo_distribution = stats.topo_distribution
+        self.topo_attainment = stats.topo_attainment
         self.topo_gap = stats.topo_gap
+        
+        # Aliases for legacy support (v0.6.x)
+        self.perf_prob = stats.perf_probability
+        self.perf_dist = stats.perf_distribution
+        self.topo_dist = stats.topo_distribution
+        self.topo_attain = stats.topo_attainment
 
-        # Space/Time Plot Shortcuts (keeping basic non-taxonomy shortcuts)
+        # Semantic View Shortcuts
+        self.topo_shape = view.topo_shape
+        self.topo_bands = view.topo_bands
+        self.perf_history = view.perf_history
+        self.perf_spread = view.perf_spread
+        self.strat_caste = view.strat_caste
+        
+        # Legacy Delegates
         self.spaceplot = view.spaceplot
         self.timeplot = view.timeplot
+        self.rankplot = view.rankplot
+        self.casteplot = view.strat_caste
+        self.tierplot = view.tierplot
 
 mb = _MB()
 

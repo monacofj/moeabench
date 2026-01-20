@@ -35,19 +35,19 @@ def main():
     # 2. Attainment Surfaces (Reliability Bands)
     print("Calculating Attainment Surfaces (Optimistic, Median, Pessimistic)...")
     
-    # [mb.stats.topo_attain] Based on Empirical Attainment Functions (EAF)
+    # [mb.stats.topo_attainment] Based on Empirical Attainment Functions (EAF)
     # surf contains:
     #             .level           attainment level (0.5 = median)
     #             .objectives      surface coordinates
     #             .volume()        attained volume
-    surf1 = mb.stats.topo_attain(exp1, level=0.1) # Best 10%
-    surf2 = mb.stats.topo_attain(exp1, level=0.5) # Median
-    surf3 = mb.stats.topo_attain(exp1, level=0.9) # Worst 10%
+    surf1 = mb.stats.topo_attainment(exp1, level=0.1) # Best 10%
+    surf2 = mb.stats.topo_attainment(exp1, level=0.5) # Median
+    surf3 = mb.stats.topo_attainment(exp1, level=0.9) # Worst 10%
     surf3.name = f"{exp1.name} (90% Worst)"
     
-    # Visualize the "Search Corridor" (Spatial Perspective)
+    # Visualize the "Search Corridor" (Topographic Domain)
     print("Plotting reliability band...")
-    mb.view.spaceplot(surf1, surf2, surf3, title="NSGA-II Search Corridor")
+    mb.view.topo_shape(surf1, surf2, surf3, title="NSGA-II Search Corridor")
     
     # 3. Comparative Attainment (Topologic Gap)
     print(f"\nComparing with SPEA2...")
@@ -66,8 +66,8 @@ def main():
     res1 = mb.stats.topo_gap(exp1, exp2, level=0.5)
     print(res1.report())
     
-    # The diff object is iterable, returning (surf1, surf2) for plotting (Spatial Perspective)
-    mb.view.spaceplot(*res1, title="Median Attainment: NSGA-II vs SPEA2")
+    # The diff object is iterable, returning (surf1, surf2) for plotting (Topographic Domain)
+    mb.view.topo_shape(*res1, title="Median Attainment: NSGA-II vs SPEA2")
 
 if __name__ == "__main__":
     main()

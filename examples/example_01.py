@@ -30,12 +30,12 @@ def main():
     # 3. Visualization: Inspect the found Pareto Front (Spatial Perspective)
     # We plot the final non-dominated solutions in objective space.
     print("Plotting results...")
-    mb.view.spaceplot(exp1, title="NSGA-III Final Front")
+    mb.view.topo_shape(exp1, title="NSGA-III Final Front")
 
     # Calculate and plot Hypervolume convergence (Historic Perspective)
     # hv1 contains a MetricMatrix with historical values.
     hv1 = mb.metrics.hv(exp1)
-    mb.view.timeplot(hv1, title="Hypervolume Convergence")
+    mb.view.perf_history(hv1, title="Hypervolume Convergence")
 
 if __name__ == "__main__":
     main()
@@ -45,9 +45,9 @@ if __name__ == "__main__":
 # In this first example, we see how MoeaBench encapsulates the optimization cycle.
 # The 'mb.view' layer provides scientific perspectives on the results.
 # 
-# 1. 'spaceplot' (Spatial): Shows the distribution of non-dominated solutions.
+# 1. 'topo_shape' (Topography): Shows the distribution of non-dominated solutions.
 #    Even with a small population (50), NSGA-III begins to approximate the 
 #    spherical nature of the DTLZ2 front.
 #
-# 2. 'timeplot' (Historic): Reveals the convergence behavior. We expect a steep 
+# 2. 'perf_history' (Performance): Reveals the convergence behavior. We expect a steep 
 #    initial curve that plateaus once the algorithm reaches the true Pareto surface.

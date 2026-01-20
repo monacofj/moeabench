@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # MoeaBench API Reference Guide
-**Version 0.6.0**
+**Version 0.7.0 (Scientific Domains Edition)**
 
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
@@ -140,55 +140,35 @@ A NumPy array subclass (`np.ndarray`) that carries metadata.
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
-<a name="spaceplot"></a>
-<a name="viewspaceplot"></a>
-### **2.1. Spatial Perspective (`mb.view.spaceplot`)**
-Plots solutions in Objective Space (2D or 3D Scatter).
-*   **Args**:
-    *   `*args`: experiments, runs, populations, or arrays.
-    *   `objectives` (*list*): Indices of objectives to plot (default: `[0, 1]` or `[0, 1, 2]`).
-    *   `mode` (*str*): `'auto'` (detects environment), `'static'`, or `'interactive'`.
-*   **Smart Resolution**: Automatically extracts the non-dominated front from experiments.
+### **2.1. Topography (`mb.view.topo_*`)**
 
-### **2.2. Historic Perspective (`mb.view.timeplot`)**
-Plots the evolution of scalar metrics over time.
-*   **Args**:
-    *   `*args`: experiments or `MetricMatrix` objects.
-    *   `metric` (*callable*): The metric to calculate (default: `mb.metrics.hv`).
-*   **Smart Resolution**: Automatically calculates the metric for experiments.
+*   **`topo_shape(*args, objectives=None, mode='auto', ...)`**:
+    *   **Permanent Alias**: `spaceplot`. Visualizes solutions in Objective Space (2D or 3D). 
+    *   **Smart Resolution**: Extracts the non-dominated front from experiments.
+*   **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**:
+    *   Visualizes reliability bands using **Empirical Attainment Functions (EAF)**.
+*   **`topo_gap(exp1, exp2, level=0.5, ...)`**:
+    *   Highlights the **Topologic Gap** (coverage difference) between two algorithms.
+*   **`topo_density(*args, axes=None, space='objs', ...)`**:
+    *   Plots Spatial Probability Density via KDE.
 
-### **2.3. Structural Perspective (`mb.view.rankplot`)**
-Plots the frequency distribution of dominance ranks (selection pressure).
-*   **Args**:
-    *   `*args`: experiments, runs, or `StratificationResult` objects.
-*   **Smart Resolution**: Calls `mb.stats.strata()` internally for raw objects.
+### **2.2. Performance (`mb.view.perf_*`)**
 
-### **2.4. Hierarchical Perspective (`mb.view.casteplot`)**
-Plots the **Caste Profile** (Floating bars showing Quality vs. Density per rank).
-*   **Geometry**: Center = Quality; Height = Density (Population %).
-*   **Args**:
-    *   `*args`: experiments or `StratificationResult` objects.
-    *   `metric` (*callable*): Quality measure (default: `mb.metrics.hv`).
-    *   `height_scale` (*float*): Adjusts the thickness of the bars.
+*   **`perf_history(*args, metric=None, ...)`**:
+    *   **Permanent Alias**: `timeplot`. Plots the evolution of a scalar metric over time.
+*   **`perf_spread(*args, metric=None, gen=-1, ...)`**:
+    *   Visualizes **Performance Contrast** using Boxplots with A12/p-value annotations.
+*   **`perf_density(*args, metric=None, gen=-1, ...)`**:
+    *   Plots the probability distribution of a performance metric via KDE.
 
-### **2.5. Competitive Perspective (`mb.view.tierplot`)**
-Plots the **Competitive Tier Duel** (Stacked bars showing absolute population contribution per tier).
-*   **Visualization**: The y-axis represents the **absolute population count** in each tier. Segment heights represent the contribution of each algorithm.
-*   **Args**:
-    *   `exp1`, `exp2`: The two experiments to compare.
-*   **Smart Resolution**: Calls `mb.stats.tier(exp1, exp2)` internally to build the `mb.view.tierplot` input.
+### **2.3. Stratification (`mb.view.strat_*`)**
 
-<a name="topo_dist"></a>
-### **2.6. Topologic Distribution Perspective (`mb.view.topo_dist`)**
-Plots smooth Probability Density Estimates (KDE) and comparative statistical verdicts.
-*   **Args**:
-    *   `*args`: experiments, runs, populations, or arrays.
-    *   `axes` (*list*): Indices of objectives/variables.
-    *   `layout` (*str*): `'grid'` (default) or `'independent'`.
-    *   `space` (*str*): `'objs'` (Pareto Front) or `'vars'` (Pareto Set). 
-    *   `show` (*bool*): Whether to call `plt.show()` (default: `True`).
-*   **Legend Intelligence**: Automatically displays the Experiment Name, $D$-statistic, $p$-value, and the `Match`/`Mismatch` verdict.
-*   **Aesthetics**: 1-based indexing ($f_1, x_1$) and "Paper-Ready" white background.
+*   **`strat_ranks(*args, ...)`**:
+    *   Permanent Alias: `rankplot`. Shows frequency distribution across dominance ranks.
+*   **`strat_caste(*args, metric=None, ...)`**:
+    *   Maps Quality vs Density per dominance layer.
+*   **`strat_tiers(exp1, exp2=None, ...)`**:
+    *   Competitive Duel: joint dominance proportion per global tier.
 
 ---
 
@@ -307,13 +287,13 @@ Utilities for robust non-parametric statistical analysis. Fully supports **"Smar
 ### **`mb.stats.perf_evidence(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Performs the **Mann-Whitney U** rank-sum test (Win Evidence). Returns a `HypothesisTestResult`.
 
-### **`mb.stats.perf_dist(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
+### **`mb.stats.perf_distribution(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Performs the **Kolmogorov-Smirnov (KS)** two-sample test (Performance Distribution). Returns a `HypothesisTestResult`.
 
-### **`mb.stats.perf_prob(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
+### **`mb.stats.perf_probability(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size (Win Probability). Returns a `SimpleStatsValue`.
 
-### **`mb.stats.topo_dist(*args, space='objs', axes=None, method='ks', **kwargs)`**
+### **`mb.stats.topo_distribution(*args, space='objs', axes=None, method='ks', **kwargs)`**
 Performs multi-axial distribution matching (Topologic Equivalence).
 *   **Args**:
     *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).
@@ -325,7 +305,7 @@ Performs multi-axial distribution matching (Topologic Equivalence).
         *   `'emd'`: **Earth Mover's Distance** (Wasserstein Metric).
 *   **Returns**: `DistMatchResult`.
 
-### **`mb.stats.topo_attain(source, level=0.5)`**
+### **`mb.stats.topo_attainment(source, level=0.5)`**
 Calculates the attainment surface reached by $k\%$ of the runs.
 *   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
 *   **Returns**: `AttainmentSurface` (SmartArray subclass).
@@ -400,4 +380,33 @@ For a detailed technical narrative on the implementation history and mathematica
 
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
+
+## **11. Legacy Support & Depletion Schedule**
+
+MoeaBench maintains backward compatibility for its evolutionary analytical layer through two tiers of support.
+
+### **11.1. Permanent Aliases**
+The following functions have been promoted to permanent status due to their widespread use in the standard optimization literature. They function identically to their taxonomical successors.
+
+| New Full Name | Permanent Alias | Scientific Domain |
+| :--- | :--- | :--- |
+| `mb.view.topo_shape` | `mb.spaceplot` | Topography |
+| `mb.view.perf_history` | `mb.timeplot` | Performance |
+| `mb.view.strat_ranks` | `mb.rankplot` | Stratification |
+
+### **11.2. Soft-Deprecated Aliases**
+These functions are maintained for compatibility with versions `v0.6.x` but are scheduled for formal deprecation. They currently act as active delegates but will be replaced by informational stubs (warnings without functionality) in future major releases.
+
+| Legacy Alias | Taxonomical Successor | Domain |
+| :--- | :--- | :--- |
+| `mb.casteplot` | `mb.view.strat_caste` | Stratification |
+| `mb.tierplot` | `mb.view.strat_tiers` | Stratification |
+| `mb.view.topo_dist` | `mb.view.topo_density` | Topography |
+| `mb.stats.perf_prob` | `mb.stats.perf_probability` | Performance |
+| `mb.stats.perf_dist` | `mb.stats.perf_distribution` | Performance |
+| `mb.stats.topo_dist` | `mb.stats.topo_distribution` | Topography |
+| `mb.stats.topo_attain` | `mb.stats.topo_attainment` | Topography |
+
+> [!IMPORTANT]
+> **Hard Deprecation Policy**: In future versions, the soft-deprecated items above will only produce a `UserWarning` and will no longer execute logic. We strongly recommend updating your research pipelines to the new nomenclature.
 

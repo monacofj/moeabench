@@ -44,12 +44,12 @@ To maintain high performance without sacrificing detail, all secondary metrics (
 
 Visualization is a first-class citizen. A good plot is often the "Wow" moment that confirms a successful optimization.
 
-### Compact Naming & Namespace
-Direct plotting functions belong **exclusively** to the `mb.view` namespace and follow the `fooplot` pattern (e.g., `mb.view.spaceplot`, `mb.view.rankplot`). 
+### Scientific Domains Taxonomy
+Direct plotting functions belong **exclusively** to the `mb.view` namespace and are organized into three domains: `topo_` (Topography), `perf_` (Performance), and `strat_` (Stratification).
 
 > [!IMPORTANT]
-> **Alpha Deprecation Policy**: 
-> During the current Alpha release, we are enforcing a strict "Break the World" approach. Top-level shortcuts for plotting (e.g., `mb.spaceplot()`) are considered legacy and will issue a `UserWarning`. They are scheduled for removal in the Beta release.
+> **Stability Policy**: 
+> Starting with v0.7.0, we maintain a strict stability policy for the Alpha phase. While we introduce a refined Scientific Taxonomy, all legacy names and aliases are preserved to ensure that existing research scripts and notebooks remain functional while users transition to the new nomenclature.
 
 ### Aesthetic Excellence
 - **Static by Default**: We prioritize readable, publication-quality static plots.

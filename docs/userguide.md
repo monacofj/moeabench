@@ -51,8 +51,8 @@ exp.moea = mb.moeas.NSGA3()
 exp.run()
 
 # 3. View instant reward
-mb.view.spaceplot(exp)
-mb.view.timeplot(exp)
+mb.view.topo_shape(exp)     
+mb.view.perf_history(exp)   
 ```
 
 | Pareto Front (3D) | Convergence History |
@@ -60,7 +60,7 @@ mb.view.timeplot(exp)
 | ![Pareto Front](images/hello_space.png) | ![Convergence](images/hello_time.png) |
 | *Spatial Perspective: Final Population* | *Temporal Perspective: Hypervolume Evolution* |
 
-*Note: In this example, `mb.view.spaceplot(exp)` automatically identifies and projects the **final population snapshot** (the state of the search at the last generation).*
+*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the **final population snapshot** (the state of the search at the last generation).*
 
 ---
 
@@ -81,7 +81,7 @@ When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This mean
 
 For instance, visualizing a multi-run experiment showing the mean performance and variance:
 ```python
-mb.view.timeplot(exp)
+mb.view.perf_history(exp)
 ```
 
 | Convergence History |
@@ -91,7 +91,7 @@ mb.view.timeplot(exp)
 
 To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
 ```python
-mb.view.timeplot(exp[4])
+mb.view.perf_history(exp[4])
 ```
 
 For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy](#4-mastery-the-data-hierarchy)**.
@@ -150,7 +150,7 @@ nd_1 = exp[0].non_dominated() # Elite of the first run only
 nd_n = exp.pop(50).non_dominated() # Elite of generation 50 across all runs
 
 # --- Visualization (Extracting Space) ---
-mb.view.spaceplot(nd.objs, ref.objs)
+mb.view.topo_shape(nd.objs, ref.objs)
 ```
 
 *Note: In the methods above, you can pass an optional generation index `n` (e.g., `exp.non_dominated(50)`); leave it empty to retrieve the **final** state by default.*
@@ -186,86 +186,57 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 ---
 
-## **7. Visual Perspectives: Plotting Made Easy**
+## **7. Scientific Perspectives: The Three Domains**
 
-The `mb.view` system is **Polymorphic**. Plotting functions are designed to accept complex objects and automatically "climb" the data hierarchy to extract the relevant scientific information.
+MoeaBench organizes all analytical tools into three fundamental scientific domains. This taxonomy helps you choose the right "lens" to observe your search process.
 
-### **Spatial Perspective (`spaceplot`)**
-Visualizes the distribution of solutions in the objective space (2D or 3D). The `spaceplot` function is a polymorphic chameleon that understands your intention based on the "state" of the data you pass to it.
+### **7.1 Topography (`topo_`)**
+> **Focus: The Geography.** "Where are the solutions in the space of objectives?"
 
-#### **Level 1: The Raw Values (The Atom)**
-At the most fundamental level, you can pass a raw numerical matrix ($N \times M$ NumPy array). In this state, the graph is a purely mathematical representation without research context.
+This domain treats the search outcomes as physical coordinates. It is used to analyze coverage, convergence, and spatial diversity.
+
+*   **`topo_shape`**: Visualizes the geometry of the Pareto front or the entire population cloud in 2D or 3D.
+*   **`topo_bands`**: Visualizes **Search Corridors**. It uses Empirical Attainment Functions (EAF) to show the reliability bands (e.g., the region reached by 50% or 90% of the runs).
+*   **`topo_gap`**: Highlights the **Topologic Gap**. Identifies exactly which regions of the objective space one algorithm covers that the other does not.
+*   **`topo_density`**: Employs Kernel Density Estimation (KDE) to show the spatial probability of solutions along each axis.
+
 ```python
-mb.view.spaceplot(my_numpy_array) 
+# The "Research Standard" View
+mb.view.topo_shape(exp.front(), exp.optimal_front())
+
+# Analyzing Search Reliability (50% and 90% bands)
+mb.view.topo_bands(exp, levels=[0.5, 0.9])
 ```
 
-#### **Level 2: Explicit Extraction (Manager Mode)**
-You can use the **Manager Mode** to build precise chains that terminate in the numerical space (`.objectives` or `.vars`). This allows for surgical comparisons of specific subsets:
-*   `exp.pop().non_dominated().objectives`: A didactic chain representing the total cloud, filtered by elite status, extracted as numbers.
-*   `exp.dominated().objectives`: Visualizes the "shadow" of the experiment—those individuals that were surpassed.
-*   `exp.non_dominated().objectives`: The aggregated elite among all independent runs.
-*   `exp.non_dominated(100).objectives`: A historical snapshot of the elite at generation 100.
+### **7.2 Performance (`perf_`)**
+> **Focus: The Utility.** "How well did the algorithms perform according to scalar metrics?"
+
+This domain reduces high-dimensional outcomes into scalar scores (Hypervolume, IGD) to build leaderboards and verify statistical significance.
+
+*   **`perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and variance cloud.
+*   **`perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values.
+*   **`perf_density`**: Shows the "Form of Luck"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
 
 ```python
-# Multiple explicit extracts in one plot
-mb.view.spaceplot(
-    exp.non_dominated().objs, 
-    exp.dominated(50).objs
-)
+# Statistical contrast between two methods
+mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hv)
+
+# Metric evolution over time
+mb.view.perf_history(exp)
 ```
 
-#### **Level 3: The Data Container (The Parent Object)**
-Here the polimorphism begins. Instead of requesting the numbers explicitly, you pass the object that contains them:
-*   `mb.view.spaceplot(exp.non_dominated())`
-*   **The Intelligence**: The method detects that it received a `Population` object and automatically infers that the spatial interest lies in its objectives. It performs the access to `.objectives` internally.
+### **7.3 Stratification (`strat_`)**
+> **Focus: The Geology.** "How is the population organized internally?"
+
+Internal structure analysis looks "under the hood" of the Pareto front to understand selection pressure and dominance hierarchies.
+
+*   **`strat_ranks`**: Shows the distribution of individuals across non-domination layers (Ranks).
+*   **`strat_caste`**: Maps the relationship between quality and class membership, revealing how the elite differs from the rest of the population.
+*   **`strat_tiers`**: A "Duel of Proportions" that merges two algorithms into global tiers to see who dominates whom in direct competition.
 
 ```python
-# Passing the population object directly
-elite = exp.non_dominated()
-mb.view.spaceplot(elite)
-```
-
-#### **Level 4: Shortcuts and Canonical Equivalents**
-For high productivity, MoeaBench provides shortcuts that serve as stable, research-oriented equivalents to the technical chains above:
-*   **`exp.front()`**: The canonical equivalent of `exp.non_dominated().objectives`. It is the primary tool for seeing the research outcome.
-*   **`exp.optimal_front()`**: The canonical equivalent of `exp.optimal().objectives`, representing the theoretical truth from the literature.
-
-```python
-# The standard "research view"
-mb.view.spaceplot(exp.front(), exp.optimal_front())
-```
-
-#### **Level 5: The Experiment Manager (The Total Abstraction)**
-At the highest level of the hierarchy, you pass the `exp` object directly.
-*   `mb.view.spaceplot(exp)`
-*   **Interpretation**: In this state, the framework interprets your request as a desire to see the **current state of the search**, which is equivalent to calling `exp.pop()`. 
-*   **A Critical Distinction**: Since `exp` represents the "total cloud" (all individuals in the state they are), this plot will show the entire population, including dominated points. If you wish to see only the filtered elite, you must be more specific by passing `exp.front()` or `exp.non_dominated()`.
-
-```python
-# Quick look at the search cloud
-mb.view.spaceplot(exp)
-```
-
-#### **Practical Examples with `exp`**
-By leveraging these abstractions, you can compose complex scientific comparisons with minimal code:
-*   Compare current progress against perfection: `mb.view.spaceplot(exp, exp.optimal())`
-*   Highlight the elite over the search mass: `mb.view.spaceplot(exp, exp.front())` (this creates two visual layers, making the Pareto front stand out from the population cloud).
-
----
-
-### **Temporal Perspective (`timeplot`)**
-The `timeplot` follows strictly the same symmetry of abstraction and "intent detection" to visualize the evolution of performance.
-
-1.  **Metric Matrix**: `mb.view.timeplot(my_hv_matrix)` — plots raw performance data.
-2.  **Explicit Series Extraction**: `mb.view.timeplot(mb.metrics.hypervolume(exp.non_dominated()))`.
-3.  **The Parent Object**: `mb.view.timeplot(exp.non_dominated())` — the function understands it should apply the default metric (Hypervolume) over the generation series of that population.
-4.  **The Total Manager**: `mb.view.timeplot(exp)` — the highest abstraction. The function orchestrates the entire statistical analysis: it calculates the performance of every run, computes the mean and variance, and plots the progress of the research across time automatically.
-
-```python
-# Abstraction climbing with timeplot
-mb.view.timeplot(exp)                    # Aggregate cloud (statistical)
-mb.view.timeplot(exp[0])                 # Specific run trajectory
-mb.view.timeplot(exp, metric=mb.stats.igd) # Automatic IGD over experiment
+# Competitive Tier Analysis
+mb.view.strat_tiers(exp1, exp2)
 ```
 
 ---
@@ -302,15 +273,15 @@ The structural plots are polymorphic lenses that visualize these results. Becaus
 ```python
 # 1. Structural Analysis of a single experiment
 res = mb.stats.strata(exp)
-mb.view.rankplot(res)    # Operates over the cloud (equiv: exp.pop().objs)
-mb.view.casteplot(res)   # Operates over the cloud (equiv: exp.pop().objs)
+mb.view.strat_ranks(res)      
+mb.view.strat_caste(res)  
 
 # 2. Competitive Tier Analysis (Joint Strata)
 res_tier = mb.stats.tier(exp1, exp2)
-mb.view.tierplot(res_tier) # Joint dominance of (exp1.pop().objs + exp2.pop().objs)
+mb.view.strat_tiers(res_tier) # Joint dominance duel
 ```
 
-| Dominance Distribution (`rankplot`) | Relative Efficiency (`casteplot`) |
+| Dominance Distribution (`strat_ranks`) | Relative Efficiency (`strat_caste`) |
 | :---: | :---: |
 | ![Rank Plot](images/rankplot.png) | ![Caste Plot](images/casteplot.png) |
 
@@ -318,19 +289,17 @@ mb.view.tierplot(res_tier) # Joint dominance of (exp1.pop().objs + exp2.pop().ob
 | :---: |
 | ![Tier Plot](images/tierplot.png) |
 
-### **8.2 Stochastic Inference (Hypothesis Tests)**
-
 Beyond structural profiles, the laboratory requires rigorous evidence to determine if performance differences are statistically significant across independent trials. The `mb.stats` module provides a suite of stochastic inference tools designed to handle the non-parametric nature of multi-objective performance data.
 
-The `mb.stats.perf_evidence(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.perf_dist(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.perf_prob(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
+The `mb.stats.perf_evidence(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.perf_distribution(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.perf_probability(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
 
 #### **Accessing Inference Meta-data**
 Hypothesis test functions return a `HypothesisTestResult` object that encapsulates the scientific findings:
 
 ```python
 # Perform the inference test
-res = mb.stats.perf_dist(exp1, exp2)
-# (equiv: mb.stats.perf_dist(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
+res = mb.stats.perf_distribution(exp1, exp2)
+# (equiv: mb.stats.perf_distribution(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
 ```
 
 ## **8. Advanced Analytics: Significance & Robustness**
@@ -356,24 +325,24 @@ if res.p_value < 0.05:
     print(f"Confidence confirmed for {res.name}")
 ```
 
-#### **Win Probability (`mb.stats.perf_prob`)**
-While significance tells us if we can trust the results, it doesn't describe the "strength" of the superiority. The `perf_prob` tool calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B. This provides a pragmatic, human-readable indicator of practical superiority.
+#### **Win Probability (`mb.stats.perf_probability`)**
+While significance tells us if we can trust the results, it doesn't describe the "strength" of the superiority. The `perf_probability` tool calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B. This provides a pragmatic, human-readable indicator of practical superiority.
 
 *   **A12 > 0.5**: Algorithm A is likely better.
 *   **A12 = 0.5**: They are equivalent.
 *   **A12 < 0.5**: Algorithm B is likely better.
 
 ```python
-prob = mb.stats.perf_prob(exp1, exp2, metric=mb.metrics.hv)
+prob = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
 print(f"Probability of Exp1 beating Exp2: {prob:.2f}")
 ```
 
-#### **Distribution Shape (`mb.stats.perf_dist`)**
-Sometimes two algorithms have the same average performance but different "stability". The `perf_dist` tool uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is more prone to outliers).
+#### **Distribution Shape (`mb.stats.perf_distribution`)**
+Sometimes two algorithms have the same average performance but different "stability". The `perf_distribution` tool uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is more prone to outliers).
 
 ```python
 # Returns a HypothesisTestResult object
-res = mb.stats.perf_dist(exp1, exp2, metric=mb.metrics.hv)
+res = mb.stats.perf_distribution(exp1, exp2, metric=mb.metrics.hv)
 print(res.report())
 ```
 
@@ -381,8 +350,8 @@ print(res.report())
 
 These tools are designed to answer: *"Did these algorithms find the same thing?"* They perform multi-axial distribution matching to verify if the populations found by different solvers are statistically equivalent in their spatial distribution.
 
-#### **Spatial Distribution Matching (`mb.stats.topo_dist`)**
-The `mb.stats.topo_dist(*args)` function is designed for this topological inquiry. It operates as a multi-axial engine, verifying if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
+#### **Spatial Distribution Matching (`mb.stats.topo_distribution`)**
+The `mb.stats.topo_distribution(*args)` function is designed for this topological inquiry. It operates as a multi-axial engine, verifying if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
 
 This tool is foundational for detecting **multimodality** (identifying if different search paths lead to different regions) or verifying the **consistency** of new algorithms against established benchmarks. Users can select the mathematical soul of this comparison through the `method` argument:
 
@@ -391,22 +360,22 @@ This tool is foundational for detecting **multimodality** (identifying if differ
 *   **`method='emd'`**: Calculates the **Earth Mover's Distance** (Wasserstein Metric), providing a purely geometric measure of how much "work" would be required to transform one cloud into the other.
 
 #### **Performance vs. Topology**
-It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `topo_dist` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
+It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `topo_distribution` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
 
 #### **Cascading Hierarchy in Matching**
-Following the MoeaBench abstraction hierarchy, `topo_dist` automatically resolves the data context based on the input:
+Following the MoeaBench abstraction hierarchy, `topo_distribution` automatically resolves the data context based on the input:
 
 ```python
 # 1. Level 1: Direct Array Matching
-res_raw = mb.stats.topo_dist(matrix_a, matrix_b)
+res_raw = mb.stats.topo_distribution(matrix_a, matrix_b)
 
 # 2. Level 4: Explicit Snapshot Matching
-res_front = mb.stats.topo_dist(exp1.front(), exp2.front()) 
-res_set   = mb.stats.topo_dist(exp1.set(),   exp2.set())   
+res_front = mb.stats.topo_distribution(exp1.front(), exp2.front()) 
+res_set   = mb.stats.topo_distribution(exp1.set(),   exp2.set())   
 
 # 3. Level 5: The Experiment Manager (Total Abstraction)
-res = mb.stats.topo_dist(exp1, exp2) 
-res_vars = mb.stats.topo_dist(exp1, exp2, space='vars') 
+res = mb.stats.topo_distribution(exp1, exp2) 
+res_vars = mb.stats.topo_distribution(exp1, exp2, space='vars') 
 ```
 
 #### **Analyzing the Match Result**
@@ -421,18 +390,18 @@ if not res.is_consistent:
     print(f"Divergence detected in dimensions: {res.failed_axes}")
 ```
 
-#### **8.3.1. Visual Distribution Matching (`mb.view.topo_dist`)**
+#### **8.3.1. Visual Distribution Matching (`mb.view.topo_density`)**
 
-Statistical reports are legally sufficient but often intuitively incomplete. MoeaBench provides the **Distribution Perspective** via `mb.view.topo_dist()`. This employs **Kernel Density Estimation (KDE)** to generate smooth density curves, embedding the statistical verdict directly into the canvas.
+Statistical reports are legally sufficient but often intuitively incomplete. MoeaBench provides the **Spatial Density Perspective** via `mb.view.topo_density()`. This employs **Kernel Density Estimation (KDE)** to generate smooth density curves, embedding the statistical verdict directly into the canvas.
 
-Topologic analysis also includes the study of **attianment surfaces**—the boundaries in objective space that an algorithm can "reach" with a certain probability (e.g., the Median Attainment Surface). This logic is grounded in the theory of **Empirical Attainment Functions (EAF)**.
+Topologic analysis also includes the study of **attainment surfaces**—the boundaries in objective space that an algorithm can "reach" with a certain probability (e.g., the Median Attainment Surface). This logic is grounded in the theory of **Empirical Attainment Functions (EAF)**.
 
-*   **`mb.stats.topo_attain`**: Calculates the surface reached by $k\%$ of the runs using the **EAF** methodology.
+*   **`mb.stats.topo_attainment`**: Calculates the surface reached by $k\%$ of the runs using the **EAF** methodology.
 *   **`mb.stats.topo_gap`**: Compares the EAFs of two experiments to identify where one algorithm has a coverage "gap" (regions it cannot reach that the competitor can), effectively mapping the **EAF Difference**.
 
 ```python
 # Calculate median surface
-surf = mb.stats.topo_attain(exp1, level=0.5)
+surf = mb.stats.topo_attainment(exp1, level=0.5)
 
 # Calculate spatial gap between algorithms
 gap = mb.stats.topo_gap(exp1, exp2)

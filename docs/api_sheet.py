@@ -74,7 +74,7 @@ print(res1.report())      # Narrative statistical diagnosis
 res1.p_value              # Access programmatic p-value
 
 # Comparison via Win Probability (Effect Size)
-prob1 = mb.stats.perf_prob(exp1, exp2)    # [Vargha-Delaney A12] Win Prob
+prob1 = mb.stats.perf_probability(exp1, exp2)    # [Vargha-Delaney A12] Win Prob
 
 # Population Strata (Geology)
 strat1 = mb.stats.strata(exp1)            # [Pareto Dominance Layers]
@@ -91,25 +91,25 @@ res_tier.displacement_depth # Depth of infiltration
 
 # Attainment & Gap Analysis (Topologic)
 # Based on Empirical Attainment Functions (EAF Theory)
-surf_med = mb.stats.topo_attain(exp1, level=0.5) # [EAF] Median Surface
+surf_med = mb.stats.topo_attainment(exp1, level=0.5) # [EAF] Median Surface
 diff1 = mb.stats.topo_gap(exp1, exp2, level=0.5) # [EAF Diff] Spatial Gap
 
 # ---------------------------------------------------------
 # 6. Visualization (Scientifc Perspectives: mb.view)
 # ---------------------------------------------------------
 
-mb.view.timeplot(hv1)                         # Historic: Convergence plot
-mb.view.spaceplot(exp1)                       # Spatial: Pareto Front plot (2D/3D)
-mb.view.rankplot(exp1)                        # Structural: Selection pressure (counts)
-mb.view.casteplot(exp1)                       # Hierarchical: Quality/Density profile
-mb.view.tierplot(exp1, exp2)                  # Competitive: Tier duel
-mb.view.topo_dist(exp1, exp2)                 # Topologic: Distribution (KDE)
+mb.view.perf_history(hv1)                      # [perf_] Convergence plot
+mb.view.topo_shape(exp1)                        # [topo_] Pareto Front plot (2D/3D)
+mb.view.strat_ranks(exp1)                       # [strat_] Selection pressure (counts)
+mb.view.strat_caste(exp1)                   # [strat_] Quality/Density profile
+mb.view.strat_tiers(exp1, exp2)                 # [strat_] Tier duel
+mb.view.topo_density(exp1, exp2)                # [topo_] Distribution (KDE)
 
 # ---------------------------------------------------------
 # 7. Topologic Matching (v0.6.0)
 # ---------------------------------------------------------
 
-res_match = mb.stats.topo_dist(exp1, exp2)    # Topologic Equivalence
+res_match = mb.stats.topo_distribution(exp1, exp2) # Topologic Equivalence
 res_match.is_consistent                       # boolean result
 res_match.report()                            # Dimensional analysis
 

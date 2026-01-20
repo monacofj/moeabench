@@ -3,6 +3,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from .tests import (perf_prob, perf_evidence, perf_dist, topo_dist)
+from .tests import (perf_probability, perf_evidence, perf_distribution, topo_distribution)
 from .stratification import strata, emd, StratificationResult, tier, TierResult
-from .topo_attain import (AttainmentSurface, topo_attain, topo_gap)
+from .topo_attainment import (AttainmentSurface, topo_attainment, topo_gap)
+
+# Aliases for legacy support (v0.6.0 -> v0.7.0)
+perf_prob = perf_probability
+perf_dist = perf_distribution
+topo_dist = topo_distribution
+topo_attain = topo_attainment

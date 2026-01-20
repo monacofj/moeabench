@@ -25,13 +25,13 @@ class HypothesisTestResult(StatsResult):
         self.kwargs = kwargs
 
     @cached_property
-    def perf_prob(self) -> float:
+    def perf_probability(self) -> float:
         """Vargha-Delaney A12 effect size (Lazy)."""
-        return perf_prob(self.data1, self.data2, self.metric, self.gen, **self.kwargs).value
+        return perf_probability(self.data1, self.data2, self.metric, self.gen, **self.kwargs).value
 
     @property
     def effect_size_label(self) -> str:
-        val = self.perf_prob
+        val = self.perf_probability
         d = abs(val - 0.5) * 2 # Map 0.5->0, 0/1->1
         if d < 0.147: return "Negligible"
         if d < 0.33: return "Small"
@@ -56,11 +56,11 @@ class HypothesisTestResult(StatsResult):
         if self.p_value is not None:
             lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha=0.05)")
             
-        lines.append(f"  A12 Effect Size: {self.perf_prob:.4f} ({self.effect_size_label})")
+        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label})")
         
         # Narrative interpretation
         if self.significant:
-            better = name1 if self.perf_prob > 0.5 else name2
+            better = name1 if self.perf_probability > 0.5 else name2
             lines.append(f"\nConclusion: There is a statistically significant difference favoring {better}.")
         elif self.p_value is not None:
             lines.append(f"\nConclusion: No statistically significant difference detected.")
@@ -123,9 +123,9 @@ def _resolve_samples(data1, data2, metric=None, gen=-1, **kwargs):
     
     return v1, v2
 
-def perf_prob(data1, data2, metric=None, gen=-1, **kwargs):
+def perf_probability(data1, data2, metric=None, gen=-1, **kwargs):
     """
-    [mb.stats.perf_prob] Computes the Vargha-Delaney A12 effect size statistic.
+    [mb.stats.perf_probability] Computes the Vargha-Delaney A12 effect size statistic.
     (Win Probability: The probability that Algorithm A outperforms B).
     
     Supports "Smart Stats": can take raw arrays or Experiment objects.
@@ -167,9 +167,9 @@ def perf_evidence(data1, data2, alternative='two-sided', metric=None, gen=-1, **
                                 name="Mann-Whitney U (Win Evidence)", alternative=alternative,
                                 metric=metric, gen=gen, **kwargs)
 
-def perf_dist(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
+def perf_distribution(data1, data2, alternative='two-sided', metric=None, gen=-1, **kwargs):
     """
-    [mb.stats.perf_dist] Performs the Kolmogorov-Smirnov (KS) two-sample test.
+    [mb.stats.perf_distribution] Performs the Kolmogorov-Smirnov (KS) two-sample test.
     (Performance Distribution: identifies if two performance distributions differ in shape).
     """
     x, y = _resolve_samples(data1, data2, metric=metric, gen=gen, **kwargs)
@@ -235,9 +235,9 @@ class DistMatchResult(StatsResult):
             
         return "\n".join(lines)
 
-def topo_dist(*args, space='objs', axes=None, method='ks', **kwargs):
+def topo_distribution(*args, space='objs', axes=None, method='ks', **kwargs):
     """
-    [mb.stats.topo_dist] Performs multi-axial distribution matching.
+    [mb.stats.topo_distribution] Performs multi-axial distribution matching.
     Verifies if populations are statistically equivalent in objective or decision space.
     
     Methods:
