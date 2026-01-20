@@ -143,6 +143,13 @@ class NSGA2deap(BaseMoea):
             pop = self.toolbox.select(pop + offspring, len(pop))
             capture_stats(pop)
 
+            # Custom Stop Criteria
+            # We expose the current population for the check
+            self.pop = pop 
+            self.n_gen = gen # Expose current generation
+            if callable(self.stop) and self.stop(self):
+                break
+
         F_final = np.array([ind.fitness.values for ind in pop])
         
         return F_gen_all, X_gen_all, F_final, \

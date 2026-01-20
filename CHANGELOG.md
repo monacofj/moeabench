@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Full Example Migration**: Updated all official examples (`examples/*.py` and `examples/*.ipynb`) to use the new **Scientific Domains** taxonomy as the standard nomenclature.
 - **Policy Formalization**: Established the "Soft Deprecation" vs "Permanent Alias" tiers in the documentation.
 - **Taxonomy Refinement**: Renamed `strat_hierarchy` to `strat_caste` for better conceptual alignment with population geology.
+- **Custom Stop Criteria**: Restored and standardized the ability to inject custom termination logic (`exp.stop` or `exp.run(stop=lambda...)`) into any algorithm (Legacy/Pymoo), receiving the algorithm instance as context.
 
 ### Changed
 - **Version Bump**: Updated library version to `0.7.1`.

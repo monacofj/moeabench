@@ -96,7 +96,28 @@ mb.view.perf_history(exp[4])
 
 For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy](#4-mastery-the-data-hierarchy)**.
 
+### **Control: Custom Stop Criteria**
+
+MoeaBench allows you to inject custom logic to halt the search process based on dynamic conditions (e.g., convergence, time limits, or specific targets). This can be set globally for the experiment or per execution.
+
+The stop function receives the **Algorithm Instance** as its context, allowing access to the current generation (`algo.n_gen`), population (`algo.pop`), and problem (`algo.problem`).
+
+```python
+# 1. Define a global criteria (applies to all future runs)
+# Stop if we reach generation 50 (ignoring the default max)
+exp.stop = lambda algo: algo.n_gen >= 50
+exp.run()
+
+# 2. Override for a specific run (e.g., debug mode)
+# Check if the first objective of the best solution is negative
+exp.run(stop=lambda algo: algo.pop.best_obj[0] < 0.0)
+
+# 3. Disable custom criteria (revert to standard generations)
+exp.stop = None
+```
+
 ---
+
 
 ## **4. Mastery: The Data Hierarchy**
 

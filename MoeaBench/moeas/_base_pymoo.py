@@ -57,7 +57,8 @@ class PymooHistoryCallback(Callback):
         if pbar:
             progress = algorithm.n_gen
             if callable(self.stop_func):
-                stop_val = self.stop_func(self.experiment)
+                # Pass the algorithm instance as context
+                stop_val = self.stop_func(algorithm)
                 if isinstance(stop_val, bool) and stop_val:
                     progress = 1.0
                     algorithm.termination.force_termination = True
@@ -66,7 +67,7 @@ class PymooHistoryCallback(Callback):
                     if stop_val >= 1.0:
                         algorithm.termination.force_termination = True
             pbar.update_to(progress)
-        elif callable(self.stop_func) and self.stop_func(self.experiment):
+        elif callable(self.stop_func) and self.stop_func(algorithm):
             algorithm.termination.force_termination = True
 
 class BasePymoo(BaseMoea, Problem):

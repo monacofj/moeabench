@@ -13,6 +13,7 @@ class BaseMoeaWrapper:
         self._initial_population = population
         self._initial_generations = generations
         self._initial_seed = seed
+        self._stop = None
         self._kwargs = kwargs # Store user parameters
         self._instance = None
         self.problem = None # Set by Experiment
@@ -41,7 +42,8 @@ class BaseMoeaWrapper:
                 raise RuntimeError("MOEA wrapper has no experiment assigned.")
             # Use current seed property if set
             current_seed = getattr(self, 'seed', self._initial_seed)
-            self.__call__(self.problem, seed=current_seed)
+            current_stop = getattr(self, 'stop', None)
+            self.__call__(self.problem, seed=current_seed, stop=current_stop)
         else:
             # Re-initialize if seed changed? Ideally yes, but for now assuming one-shot or manual re-call
             pass
@@ -77,3 +79,13 @@ class BaseMoeaWrapper:
         self._initial_seed = value
         if self._instance and hasattr(self._instance, 'seed'):
              self._instance.seed = value
+
+    @property
+    def stop(self):
+        return self._stop
+    
+    @stop.setter
+    def stop(self, value):
+        self._stop = value
+        if self._instance and hasattr(self._instance, 'stop'):
+             self._instance.stop = value

@@ -23,6 +23,7 @@ The top-level container.
 **Properties:**
 *   `mop` (*Any*): The problem instance.
 *   `moea` (*Any*): The algorithm instance.
+*   `stop` (*callable*, optional): Global custom stop criteria function.
 *   `runs` (*List[Run]*): Access to all execution results.
 *   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
 *   `last_pop` (*Population*): Shortcut to the final population of the last run.
@@ -45,6 +46,7 @@ These methods operate on the **union of all runs** (The Cloud).
     *   `repeat` (*int*): Number of independent runs. 
     *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
+    *   `stop` (*callable*, optional): Custom stop criteria function. Receives the MOEA instance as context. Returns `True` to halt execution.
     *   `**kwargs`: Passed to the MOEA execution engine.
 *   **`.save(path, mode='all')`**: Persists the experiment to a compressed ZIP file.
     *   `path` (*str*): Filename or folder.

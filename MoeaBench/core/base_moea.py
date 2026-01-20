@@ -29,6 +29,7 @@ class BaseMoea(ABC):
         self.population = population
         self.generations = generations
         self.seed = seed
+        self.stop = None
 
     @abstractmethod
     def evaluation(self) -> Any:

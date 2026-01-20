@@ -261,7 +261,12 @@ class experiment:
         if base_seed is None:
             base_seed = np.random.randint(0, 1000000)
             if hasattr(self.moea, 'seed'):
-                 self.moea.seed = base_seed
+                self.moea.seed = base_seed
+
+        # Stop criteria handling
+        stop_criteria = kwargs.get('stop', self.stop)
+        if hasattr(self.moea, 'stop') and (stop_criteria is not None or 'stop' in kwargs):
+            self.moea.stop = stop_criteria
 
         # Execute serially
         self._run_serial(repeat, base_seed)
@@ -300,6 +305,7 @@ class experiment:
         moea.problem = mop 
         if hasattr(moea, 'seed'):
             moea.seed = seed
+
         
         try:
             # Execute
