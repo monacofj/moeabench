@@ -13,18 +13,24 @@ class DTLZ8(BaseMop):
     Constrained problem with objective-based constraints. 
     N must be a multiple of M.
     """
-    def __init__(self, M=3, N=None, **kwargs):
-        if M < 2:
+    def __init__(self, **kwargs):
+        m_val = kwargs.get('M', 3)
+        if m_val < 2:
             raise ValueError("DTLZ8 requires at least M=2 objectives.")
-        if N is None:
-            N = 10 * M
-        if N < M:
-            raise ValueError(f"DTLZ8 requires N >= M variables (provided N={N}, M={M}).")
-        if N % M != 0:
+        
+        n_val = kwargs.get('N', None)
+        if n_val is None:
+            n_val = 10 * m_val
+            kwargs['N'] = n_val
+        
+        if n_val < m_val:
+            raise ValueError(f"DTLZ8 requires N >= M variables (provided N={n_val}, M={m_val}).")
+        
+        if n_val % m_val != 0:
             import warnings
             warnings.warn(f"DTLZ8 is best defined when N is a multiple of M. "
-                          f"Provided N={N}, M={M}. {N % M} variables will be ignored.")
-        super().__init__(M=M, N=N, **kwargs)
+                          f"Provided N={n_val}, M={m_val}. {n_val % m_val} variables will be ignored.")
+        super().__init__(**kwargs)
 
     def evaluation(self, X, n_ieq_constr=0):
         X = np.atleast_2d(X)

@@ -213,4 +213,6 @@ __marimo__/
 
 # MoeaBench specific
 analysis/
-inconsistency/
+inconsistency/*
+study_config.zip  
+study_full.zip

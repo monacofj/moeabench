@@ -7,7 +7,7 @@ import importlib.util
 
 def version() -> str:
     """Returns the current MoeaBench version."""
-    return "0.6.2"
+    return "0.6.3"
 
 def check_dependencies():
     """Prints a report of installed optional dependencies."""

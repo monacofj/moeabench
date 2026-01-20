@@ -32,7 +32,7 @@ class _MB:
         self.view = view
         self.system = system
         
-        # New Semantic Taxonomy (v0.6.2)
+        # Taxonomy: Performance | Topography | Stratification (v0.6.3)
         self.perf_evidence = stats.perf_evidence
         self.perf_prob = stats.perf_prob
         self.perf_dist = stats.perf_dist

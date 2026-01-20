@@ -10,10 +10,12 @@ class DTLZ2(BaseMop):
     """
     DTLZ2 benchmark problem.
     """
-    def __init__(self, M=3, K=10, **kwargs):
-        self.K = K
-        N = M + K - 1
-        super().__init__(M=M, N=N, **kwargs)
+    def __init__(self, **kwargs):
+        self.K = kwargs.pop('K', 10)
+        m_val = kwargs.get('M', 3)
+        if 'N' not in kwargs:
+            kwargs['N'] = m_val + self.K - 1
+        super().__init__(**kwargs)
 
     def evaluation(self, X, n_ieq_constr=0):
         """

@@ -15,18 +15,42 @@ class BaseDPF(BaseMop):
         Zhen, L., Li, M., Cheng, R., Peng, D., & Yao, X. (2018). "Multiobjective Test 
         Problems with Degenerate Pareto Fronts." IEEE Trans. Evol. Comput.
     """
-    def __init__(self, M=3, D=2, K=5, **kwargs):
-        if D < 2 or D >= M:
-            D = 2
-        self.D = D
-        self.K = K
-        N = D + K - 1
-        super().__init__(M=M, N=N, **kwargs)
+    def __init__(self, **kwargs):
+        d_val = kwargs.pop('D', 2)
+        m_val = kwargs.get('M', 3)
+        if d_val < 2 or d_val >= m_val:
+            d_val = 2
+        self.D = d_val
+        
+        self.K = kwargs.pop('K', 5)
+        
+        # Calculate N if not provided
+        if 'N' not in kwargs:
+            kwargs['N'] = self.D + self.K - 1
+            
+        super().__init__(**kwargs)
         # Static chaos pool: (M-D) projection columns, each needing weights if DPF1/2
         # For DPF1/2: N_weights = (M-D) * D
         # For DPF3/4: N_weights = (M-D)
         # We generate a large enough pool to cover all cases.
         self._chaos_pool = self._generate_chaos(max((M - D) * D, M - D))
+
+    def validate(self):
+        """
+        DPF specific validation: ensures that the projection 
+        from D to M objectives is mathematically possible given N.
+        """
+        super().validate()
+        # N = D + K - 1.
+        # But for DPF calculation, we must have M <= N for proper broadcasting
+        # and non-singular projections in many cases.
+        # Specifically, the user-reported broadcast error occurs when M > N.
+        if self.M > self.N:
+            raise ValueError(
+                f"Invalid DPF configuration: Number of objectives (M={self.M}) "
+                f"cannot be greater than dimensionality (N={self.N}).\n"
+                f"Note: For DPF, N = D + K - 1. Increase D or K to support more objectives."
+            )
 
     def _generate_chaos(self, size):
         """Generates a static chaotic sequence using the Logistic Map (x0=0.1, r=3.8)."""

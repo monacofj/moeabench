@@ -11,21 +11,36 @@ class BaseMop(ABC):
     """
     Abstract Base Class for all Multi-Objective Problems (MOPs) in MoeaBench.
     """
-    def __init__(self, M: int = 3, N: Optional[int] = None, 
-                 xl: Optional[Any] = None, xu: Optional[Any] = None, **kwargs: Any) -> None:
-        self.M = M
-        self.N = N
+    def __init__(self, **kwargs: Any) -> None:
+        self.M = kwargs.pop('M', 3)
+        self.N = kwargs.pop('N', None)
+        self.kwargs = kwargs
         
         # Lower and upper bounds
+        xl = kwargs.pop('xl', None)
         if xl is not None:
             self.xl = np.array(xl)
         else:
             self.xl = np.zeros(self.N) if self.N else None
             
+        xu = kwargs.pop('xu', None)
         if xu is not None:
             self.xu = np.array(xu)
         else:
             self.xu = np.ones(self.N) if self.N else None
+
+        # Validation hook
+        self.validate()
+
+    def validate(self):
+        """
+        Validation hook to be overridden by subclasses to ensure 
+        mathematical consistency of input parameters.
+        """
+        if self.N is not None and self.N < 1:
+            raise ValueError(f"Number of variables (N) must be at least 1, got {self.N}")
+        if self.M < 2:
+            raise ValueError(f"Number of objectives (M) must be at least 2, got {self.M}")
 
     @abstractmethod
     def evaluation(self, X: np.ndarray, n_ieq_constr: int = 0) -> Dict[str, np.ndarray]:

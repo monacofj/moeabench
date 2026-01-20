@@ -47,7 +47,15 @@ class Scatter3D:
          import matplotlib.cm as cm
          
          fig = plt.figure(figsize=(10, 8))
-         ax = fig.add_subplot(111, projection='3d')
+         try:
+             ax = fig.add_subplot(111, projection='3d')
+         except (ValueError, KeyError) as e:
+             plt.close(fig)
+             raise RuntimeError(
+                 "MoeaBench Error: Matplotlib 3D projection '3d' is not available on this system. "
+                 "This often happens due to broken Matplotlib installations or missing 'mplot3d' toolkit. "
+                 "Try re-installing matplotlib or check your environment configuration."
+             ) from e
          
          # Use standard property cycle for distinct categorical colors
          prop_cycle = plt.rcParams['axes.prop_cycle']

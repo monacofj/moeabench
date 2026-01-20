@@ -37,6 +37,12 @@ class NSGA2deap(BaseMoea):
         if not hasattr(creator, "Individual"):
             creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)   
         
+        if self.get_population() % 4 != 0:
+            raise ValueError(
+                f"NSGA2deap error: Population size ({self.get_population()}) must be a multiple of 4 "
+                "to satisfy the requirements of the selTournamentDCD operator."
+            )
+
         self.toolbox = base.Toolbox()
         self.toolbox.register("attr_float", self.uniform, 0, 1, self.get_N())
         self.toolbox.register("individual", tools.initIterate, creator.Individual, self.toolbox.attr_float)

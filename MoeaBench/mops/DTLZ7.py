@@ -11,10 +11,12 @@ class DTLZ7(BaseMop):
     DTLZ7 benchmark problem. 
     Disconnected Pareto front.
     """
-    def __init__(self, M=3, K=20, **kwargs):
-        self.K = K
-        N = M + K - 1
-        super().__init__(M=M, N=N, **kwargs)
+    def __init__(self, **kwargs):
+        self.K = kwargs.pop('K', 20)
+        m_val = kwargs.get('M', 3)
+        if 'N' not in kwargs:
+            kwargs['N'] = m_val + self.K - 1
+        super().__init__(**kwargs)
 
     def evaluation(self, X, n_ieq_constr=0):
         X = np.atleast_2d(X)
