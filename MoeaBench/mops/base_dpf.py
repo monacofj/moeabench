@@ -42,15 +42,8 @@ class BaseDPF(BaseMop):
         """
         super().validate()
         # N = D + K - 1.
-        # But for DPF calculation, we must have M <= N for proper broadcasting
-        # and non-singular projections in many cases.
-        # Specifically, the user-reported broadcast error occurs when M > N.
-        if self.M > self.N:
-            raise ValueError(
-                f"Invalid DPF configuration: Number of objectives (M={self.M}) "
-                f"cannot be greater than dimensionality (N={self.N}).\n"
-                f"Note: For DPF, N = D + K - 1. Increase D or K to support more objectives."
-            )
+        # Removing legacy M <= N constraint to support any number of objectives
+        # as per the original degenerate front design.
 
     def _generate_chaos(self, size):
         """Generates a static chaotic sequence using the Logistic Map (x0=0.1, r=3.8)."""

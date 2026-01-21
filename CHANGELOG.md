@@ -12,6 +12,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-01-21
+
+### Added
+- **Many-Objective Support**: Removed artificial constraints on the maximum number of objectives ($M$) and variables ($N$) across the framework.
+- **Didactic Error Messages**: Replaced generic `ValueError` or `IndexError` in DTLZ problems with detailed, textbook-style explanations of theoretical variable requirements (position vs. distance variables), including references to foundational literature.
+- **Performance Guards**: Implemented `UserWarning` indicators for high-complexity operations (e.g., exact Hypervolume for $M > 8$), suggesting more efficient alternatives for many-objective scenarios.
+
+### Changed
+- **DPF Unlimited**: Removed the $M \le N$ constraint from the DPF (Degenerate Pareto Front) problem family, enabling high-dimensional objective mapping as originally intended.
+- **Robust Metrics**: Updated the `normalize` function in the metrics evaluator to dynamically handle any number of objectives, preventing dimension fallback mismatches.
+
 ## [0.7.1] - 2026-01-20
 
 ### Added

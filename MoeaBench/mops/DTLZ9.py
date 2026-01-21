@@ -22,7 +22,11 @@ class DTLZ9(BaseMop):
             kwargs['N'] = n_val
             
         if n_val < m_val:
-            raise ValueError(f"DTLZ9 requires N >= M variables (provided N={n_val}, M={m_val}).")
+            raise ValueError(
+                f"DTLZ9 requires N >= M variables to maintain its block-based mathematical structure.\n"
+                f"The problem divides decision variables into M blocks, assigning one block per objective. "
+                f"Provided N={n_val}, M={m_val}."
+            )
         
         if n_val % m_val != 0:
             import warnings

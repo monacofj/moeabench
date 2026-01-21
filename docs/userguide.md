@@ -24,7 +24,9 @@ This guide provides a pedagogical journey through the framework. For exhaustive 
 MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
 
 ### **Key Features**
-*   **Central Extensibility**: Seamlessly plug in custom problems or algorithms. Your code is the guest, MoeaBench is the host.
+*   **Central Extensibility**: Seamlessly plug in custom problems or algorithms. Your code is the guest, MoeaBench is the host—zero modifications to the core library required.
+*   **Many-Objective Support**: Optimized for high-dimensional objective spaces with no artificial numerical traps on $M$ or $N$.
+*   **Hybrid Evaluation**: Intelligent metrics that automatically utilize exact methods for standard problems and efficient fallbacks (like Monte Carlo) for many-objective scenarios.
 *   **Semantic Data Model**: A strict hierarchy (Experiment → Run → Population) that makes data access surgically precise.
 *   **High-Level Delegation**: Powerful shortcuts that bridge the gap between structural data and scientific results.
 *   **Polymorphic Visualization**: Plotting tools that "understand" the complex objects you pass to them.

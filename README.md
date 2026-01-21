@@ -26,9 +26,11 @@ The package offers facilities to programmatically create benchmark programs and 
 
 ## Key Features
 
-* Handle many-objective problems with an unlimited number of decision variables and optimization objectives.
-* Includes standard built-in mops (DTLZ and DPF series) and known MOEAs (NSGA-III, SPEA, etc.).
-* Plug in custom mops and algorithms programmatically by inheriting from base classes (see `examples/example_05.py`).
+*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
+*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
+*   **Performance Stability**: Built-in specialized evaluators that switch between exact metrics and efficient approximations (e.g., Monte Carlo) as complexity increases.
+*   **Scientific Taxonomy**: Organized analytical perspectives (Topography, Performance, Stratification) for a deep understanding of search dynamics.
+*   **Built-in Suite**: Includes standard DTLZ and DPF problem sets and state-of-the-art algorithms via Pymoo integration.
 
 ## Quick Start
 

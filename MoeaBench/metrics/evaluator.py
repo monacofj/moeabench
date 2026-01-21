@@ -54,7 +54,16 @@ def normalize(ref_exps, all_current_objs_list):
             maxs.append(np.max(f, axis=0))
             
     if not mins:
-        return np.zeros(3), np.ones(3) # Fallback
+        # Fallback to zeros/ones but with correct dimensionality M
+        # We try to infer M from current fronts if possible
+        M = 0
+        for f in all_current_objs_list:
+            if len(f) > 0:
+                M = f.shape[1]
+                break
+        if M == 0:
+            M = 3 # Absolute default if nothing is found
+        return np.zeros(M), np.ones(M)
         
     global_min = np.min(np.vstack(mins), axis=0)
     global_max = np.max(np.vstack(maxs), axis=0)
@@ -213,6 +222,10 @@ def hypervolume(exp, ref=None, mode='auto', n_samples=100000):
                 use_mc = True
                 logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
                              f"Switching to Monte Carlo approximation (n={n_samples}).")
+            elif mode == 'exact' and M > 8:
+                import warnings
+                warnings.warn(f"Exact Hypervolume calculation for M={M} objectives has exponential complexity O(2^M) "
+                              f"and may be extremely slow. Consider using mode='auto' or mode='fast'.")
             
             if use_mc:
                 metric = GEN_mc_hypervolume(f_gen, M, min_val, max_val, n_samples=n_samples)

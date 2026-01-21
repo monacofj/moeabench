@@ -17,6 +17,20 @@ class DTLZ2(BaseMop):
             kwargs['N'] = m_val + self.K - 1
         super().__init__(**kwargs)
 
+    def validate(self):
+        """
+        DTLZ2 requires M-1 variables for position on the manifold 
+        and at least 1 variable (K) for the distance function g.
+        Reference: Deb et al. (2002) 'Scalable multi-objective optimization test problems'.
+        """
+        super().validate()
+        if self.N < self.M:
+            raise ValueError(
+                f"DTLZ2 requires N >= M variables to maintain its mathematical structure.\n"
+                f"M-1 variables are needed for position on the (M-1)-dimensional manifold, "
+                f"and at least 1 variable is required for the distance function g (provided N={self.N}, M={self.M})."
+            )
+
     def evaluation(self, X, n_ieq_constr=0):
         """
         Standard DTLZ2 evaluation.
