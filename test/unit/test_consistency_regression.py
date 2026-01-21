@@ -12,14 +12,33 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from MoeaBench import mb
 
-def test_dpf_dimension_validation():
-    """Reproduce error_01.py: M > N should fail gracefully with ValueError."""
-    # M=10, K=5, d=2 => N = 2+5-1 = 6. M > N should raise ValueError.
-    with pytest.raises(ValueError) as excinfo:
-        mop = mb.mops.DPF5(M=10, K=5, d=2)
+def test_dpf_unlimited_dimensions():
+    """Verify 'DPF Unlimited' (v0.7.2+): M > N should now be permitted."""
+    # M=10, K=5, D=2 => N = 2+5-1 = 6.
+    try:
+        mop = mb.mops.DPF5(M=10, K=5, D=2)
+        assert mop.M == 10
+        assert mop.N == 6
+    except ValueError as e:
+        pytest.fail(f"DPF Unlimited failed: M > N raised ValueError: {e}")
+    print("\n[PASS] DPF Unlimited allows M > N as intended.")
+
+def test_optimal_synchronization():
+    """Verify that experiment.optimal() maintains row-by-row correspondence (v0.7.3)."""
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=3)
     
-    assert "cannot be greater than dimensionality" in str(excinfo.value)
-    print("\n[PASS] DPF5 dimension validation caught invalid M > N.")
+    # Get optimal Population
+    opt = exp.optimal(n_points=50)
+    
+    # Map variables (X) manually using the problem evaluation
+    res = exp.mop.evaluation(opt.variables)
+    manual_F = res['F']
+    
+    # Compare with the objectives (F) stored in the population
+    # They should be identical due to the new synchronized refactor
+    assert np.allclose(opt.objectives, manual_F, atol=1e-10)
+    print("[PASS] optimal() synchronization confirmed.")
 
 def test_dpf_initialization_success():
     """Verify that DPF problems initialize correctly with valid parameters."""

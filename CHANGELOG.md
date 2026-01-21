@@ -12,6 +12,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2026-01-21
+
+### Fixed
+- **Synchronized Optimal Sampling**: Refactored `exp.optimal()` to ensure a strict row-by-row correspondence between the Pareto Set ($X$) and the Pareto Front ($F$).
+- **Theoretical Manifold Filtering**: Implemented automatic non-dominance filtering in `optimal()` to handle benchmarks where $g=min$ amonts to a super-set of the Pareto front (e.g., DTLZ7).
+- **Corrected DTLZ9 Manifold**: Updated the DTLZ9 analytical Pareto Set sampling to correctly represent the $(M-1)$-dimensional hypersphere manifold for $M > 2$ objectives.
+
 ## [0.7.2] - 2026-01-21
 
 ### Added

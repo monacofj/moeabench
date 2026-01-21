@@ -189,19 +189,24 @@ class experiment:
 
     def optimal(self, n_points: int = 500) -> Population:
         """Returns a sampling of the true Pareto optimal set and front."""
-        if not hasattr(self.mop, 'pf'):
-             raise AttributeError(f"MOP {self.mop.__class__.__name__} does not implement pf() sampling.")
+        if not hasattr(self.mop, 'ps'):
+             raise AttributeError(f"MOP {self.mop.__class__.__name__} does not implement ps() sampling.")
         
-        objs = self.mop.pf(n_points)
+        # 1. Synchronized Sampling: Get the Pareto Set first
         vars = self.mop.ps(n_points)
         
-        # Create Population with "Optimal" label
-        # We pass self as source so metadata (like experiment name) is available,
-        # and label="Optimal" to indicate this is the theoretical PF/PS.
+        # 2. Evaluation: Map the Set to the Front using the problem's own logic
+        # This ensures row-by-row correspondence between X and F.
+        res = self.mop.evaluation(vars)
+        objs = res['F']
+        
+        # 3. Filtering: Apply non-dominance purely over the theoretical samples
+        # This handles cases like DTLZ7 where the condition g=min is not sufficient.
         pop = Population(objs, vars, source=self, label="Optimal")
+        pop = pop.non_dominated()
         
         # For analytical optimal fronts, we want the name to be "Optimal" 
-        # instead of the experiment name (NSGA3, etc.)
+        # instead of the experiment name.
         pop.objectives.name = "Optimal"
         pop.variables.name = "Optimal"
         
