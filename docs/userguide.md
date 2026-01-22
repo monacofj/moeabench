@@ -503,7 +503,38 @@ For details on the underlying file format (CSVs and joblib serialization), see *
 
 ---
 
-## **12. References**
+## **12. Data Export (CSV)**
+
+While the persistence system (`save`/`load`) is designed for internal library state, you may often need to export raw numerical results for external analysis in tools like Excel, R, or Origin. 
+
+MoeaBench provides a dedicated **Export API** in the `mb.system` module for this purpose. These methods automatically handle different types of input data (Experiments, Populations, or raw arrays) and generate formatted CSV files.
+
+### **Exporting Objectives and Variables**
+
+*   **`mb.system.export_objectives(data)`**: extracts the Pareto front from an experiment (or objectives from a population) and saves them as a CSV.
+*   **`mb.system.export_variables(data)`**: extracts the Pareto set from an experiment (or decision variables from a population).
+
+```python
+# 1. Export results from a named experiment
+exp.name = "my_study"
+mb.system.export_objectives(exp) # Saves to "my_study_objectives.csv"
+
+# 2. Export with a custom name
+mb.system.export_variables(exp, "final_vars.csv")
+
+# 3. Export data from a specific population snapshot
+pop = exp.last_pop
+mb.system.export_objectives(pop, "final_pop_objs.csv")
+```
+
+### **Features and Defaults**
+
+*   **Intelligent Naming**: If no filename is provided, the system uses the `data.name` or `data.label` as a prefix. If neither is available, it defaults to `experiment`.
+*   **Column Headers**: If `pandas` is installed, the CSV files will include headers like `f1, f2...` for objectives and `x1, x2...` for variables. If not, it falls back to a headerless NumPy format.
+
+---
+
+## **13. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.

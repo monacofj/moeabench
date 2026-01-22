@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # MoeaBench API Reference Guide
-**Version 0.7.0 (Scientific Domains Edition)**
+**Version 0.7.5 (Scientific Domains Edition)**
 
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
@@ -337,6 +337,16 @@ The `system` module provides utilities for environmental inspection.
 
 ### **`mb.system.check_dependencies()`**
 Prints a detailed report of installed optional dependencies (`pymoo`, `deap`, etc.).
+
+### **`mb.system.export_objectives(data, filename=None)`**
+Exports objectives to a CSV file.
+*   **data**: `Experiment`, `Population`, or raw array.
+*   **filename**: Optional custom filename.
+
+### **`mb.system.export_variables(data, filename=None)`**
+Exports decision variables to a CSV file.
+*   **data**: `Experiment`, `Population`, or raw array.
+*   **filename**: Optional custom filename.
 
 ### **`mb.system.version()`**
 Returns the current library version string.

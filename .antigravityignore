@@ -35,4 +35,5 @@ node_modules/
 # Custom
 .wish.md
 .ext_strat.md
+data_truth
 
