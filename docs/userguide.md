@@ -15,7 +15,15 @@ By providing a decoupled architecture, MoeaBench allows you to treat your own al
 
 The framework achieves this by organizing stochastic search data into a **structured semantic model**, transforming raw numerical trajectories into **intuitive programmatic access**, narrative-driven results, and professional visualizations.
 
+MoeaBench's analytical integrity is anchored in the native, high-performance implementations of foundational benchmarks
+
+*   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
+*   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
+
+For mathematical implementation details, see the **[MOPs Guide](mops.md)**
+
 This guide provides a pedagogical journey through the framework. For exhaustive technical specifications of every method and class, please consult the **[API Reference](reference.md)**.
+
 
 ---
 
@@ -31,6 +39,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **High-Level Delegation**: Powerful shortcuts that bridge the gap between structural data and scientific results.
 *   **Polymorphic Visualization**: Plotting tools that "understand" the complex objects you pass to them.
 *   **Statistical Rigor**: Built-in support for multi-run aggregation and standard non-parametric tests.
+
 
 ---
 

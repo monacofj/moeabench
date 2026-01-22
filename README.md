@@ -31,6 +31,7 @@ The package offers facilities to programmatically create benchmark programs and 
 *   **Performance Stability**: Built-in specialized evaluators that switch between exact metrics and efficient approximations (e.g., Monte Carlo) as complexity increases.
 *   **Scientific Taxonomy**: Organized analytical perspectives (Topography, Performance, Stratification) for a deep understanding of search dynamics.
 *   **Built-in Suite**: Includes standard DTLZ and DPF problem sets and state-of-the-art algorithms via Pymoo integration.
+*   **Scientific Rigor**: Native, high-performance implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
 
 ## Quick Start
 
@@ -66,6 +67,7 @@ If you use MoeaBench in your research, please cite the framework using the follo
 
 *   **[Citation File (CITATION.cff)](CITATION.cff)**: Modern machine-readable citation format.
 
+
 ## Contributing
 
 MoeaBench authors warmly welcome community contributions to the project. If you find any bugs or have suggestions for new features, please refer to the **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** file for more information.
@@ -74,3 +76,8 @@ MoeaBench authors warmly welcome community contributions to the project. If you 
 ## Contact
 
 For contacting the authors, see file `AUTHORS`.
+
+## References
+
+*   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
+*   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." *IEEE Transactions on Evolutionary Computation*, vol. 22, no. 5, 2018.
