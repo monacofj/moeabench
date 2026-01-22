@@ -218,7 +218,7 @@ class DistMatchResult(StatsResult):
         ]
         
         for idx, res in self.results.items():
-            name = f"Axis {idx}"
+            name = f"Axis {idx + 1}"
             if self.method == 'emd':
                 val_str = f"EMD={res:.4f}"
                 sig_str = "(Divergent)" if res >= 0.1 else "(Match)"

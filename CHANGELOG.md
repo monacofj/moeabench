@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-01-22
+
+### Changed
+- **Axis Nomenclature Standardization**: Unified all user-facing reports and visualizations to follow a **1-indexed** axis nomenclature (e.g., "Axis 1", "f1"). 
+- **Fixed Inconsistency**: Updated `DistMatchResult.report()` in the statistics engine to match the visualization layer's convention, ensuring a consistent didactic experience across the entire framework.
+
 ## [0.7.3] - 2026-01-21
 
 ### Fixed
