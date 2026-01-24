@@ -73,7 +73,7 @@ class DPF4(BaseDPF):
         # Combine: Y[:, :D-1] + F_redundant
         F = np.concatenate((Y[:, :D-1], F_redundant), axis=1)
         
-        return {'F': F}
+        return {'F': F**2}
 
     def get_K(self):
         return self.K

@@ -30,4 +30,4 @@ class DPF2(BaseDPF):
         h = D - np.sum((F_base[:, :D-1] / (1 + g)) * (1 + np.sin(3 * np.pi * F_base[:, :D-1])), axis=1).reshape(-1, 1)
         F_base[:, D-1:] = (1 + g) * h
         
-        return {'F': self._project(F_base, square=False)}
+        return {'F': self._project(F_base, square=True)}
