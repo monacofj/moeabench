@@ -57,16 +57,16 @@ class DPF4(BaseDPF):
         chaos = self._chaos_pool[:U]
         
         redundant = []
-        # FD (first redundant): min(Yd, chaos[0])**2
-        redundant.append(np.minimum(Yd, chaos[0])**2)
+        # FD (first redundant): min(Yd, chaos[0])
+        redundant.append(np.minimum(Yd, chaos[0]))
         
-        # FD1 (middle): min(max(Yd, chaos[i]), chaos[i+1])**2
+        # FD1 (middle): min(max(Yd, chaos[i]), chaos[i+1])
         for i in range(U - 1):
-            val = np.minimum(np.maximum(Yd, chaos[i]), chaos[i+1])**2
+            val = np.minimum(np.maximum(Yd, chaos[i]), chaos[i+1])
             redundant.append(val)
         
-        # FM (last redundant): max(Yd, chaos[U-1])**2
-        redundant.append(np.maximum(Yd, chaos[U-1])**2)
+        # FM (last redundant): max(Yd, chaos[U-1])
+        redundant.append(np.maximum(Yd, chaos[U-1]))
         
         F_redundant = np.column_stack(redundant)
         

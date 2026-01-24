@@ -75,13 +75,30 @@ class BaseDPF(BaseMop):
             
         return np.concatenate((F_base, np.column_stack(redundant)), axis=1)
 
-    def ps(self, n_points=100):
-        """Analytical sampling of DPF Pareto Set."""
+    def ps(self, n_points: int = 100):
+        """
+        Analytical sampling of DPF Pareto Set.
+        Uses structured sampling for D=2 to ensure sharp geometric curves.
+        """
         D = self.D
         N = self.N
         res = np.zeros((n_points, N))
-        res[:, :D-1] = np.random.random((n_points, D - 1))
-        res[:, D-1:] = 0.5
+        
+        # 1. Structure the position variables (the first D-1 ones)
+        if D == 2:
+            # For D=2, we have a 1D manifold (a line in base space)
+            res[:, 0] = np.linspace(0, 1, n_points)
+        else:
+            # For D > 2, we use a uniform distribution for now 
+            # (In the future, a grid approach could be used)
+            res[:, :D-1] = np.random.random((n_points, D - 1))
+        
+        # 2. Assign the optimal trailing variables (that minimize g)
+        # Default is 0.5 (DTLZ1/3/Rastrigin/Sphere styles)
+        # Subclasses (like DPF2) may override _optimal_g_val to 0.0
+        g_val = getattr(self, '_optimal_g_val', 0.5)
+        res[:, D-1:] = g_val
+        
         return res
 
     def get_D(self):

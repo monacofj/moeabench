@@ -112,16 +112,33 @@ class DPF5(BaseDPF):
         return self.K
 
     def ps(self, n_points: int = 100):
-        """Analytical sampling of DPF5 Pareto Set (Requires xM = x1)."""
+        """
+        Analytical sampling of DPF5 Pareto Set (Requires xM = x1).
+        Uses grid sampling for M=3 to ensure a sharp, dense surface.
+        """
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
-        # Variables x1..xM-1 are position-like but x1 also drives g
-        # Standard ps for DPF5: x_i in [0, 1] for i < M, x_M = x_1, x_i = 0.5 for i > M
-        # Wait, indexing: x_1 is index 0. x_M is index M-1.
-        X_pos = np.random.random((n_points, M - 1))
+        
+        # 1. Structure the position variables (M-1 degrees of freedom)
+        if M == 3:
+            # Create a 2D grid for the manifold variables (x1, x2)
+            side = int(np.sqrt(n_points))
+            grid_val = np.linspace(0, 1, side)
+            xv, yv = np.meshgrid(grid_val, grid_val)
+            X_pos = np.column_stack([xv.ravel(), yv.ravel()])
+            # Adjust res size if points don't match exactly
+            actual_n = X_pos.shape[0]
+            if actual_n != n_points:
+                res = np.zeros((actual_n, N))
+        else:
+            X_pos = np.random.random((n_points, M - 1))
+            
         res[:, :M-1] = X_pos
-        res[:, M-1] = X_pos[:, 0] # x_M = x_1
+        res[:, M-1] = res[:, 0] # constraint x_M = x_1
+        
+        # 2. Optimal trailing variables (xi = 0.5 for i > M)
         if N > M:
             res[:, M:] = 0.5
+            
         return res
