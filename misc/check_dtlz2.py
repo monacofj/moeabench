@@ -27,7 +27,7 @@ def run_diagnostic():
 
     # 2. Dados Envelopados em SmartArray (Idiomático)
     gt_smart = SmartArray(F_gt, name="v0.7.5 Ground Truth", label="Analítico (Invariante SOS=1.0)")
-    leg_smart = SmartArray(F_leg, name="v0.6.x Legado", label="Heurístico (Invariante SOS≈0.88)")
+    leg_smart = SmartArray(F_leg, name="Legado (MoeaBench/legacy)", label="Heurístico (Invariante SOS≈0.88)")
 
     # 3. Uso direto do topo_shape em modo Interativo
     # O Matplotlib 3D está quebrado neste ambiente (conflito User/System). 
