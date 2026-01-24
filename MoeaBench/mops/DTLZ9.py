@@ -71,22 +71,29 @@ class DTLZ9(BaseMop):
         N = self.N
         N_over_M = N // M
         
-        # The Pareto Front is on the boundary FJ^2 + FM^2 = 1.
-        # To sample the manifold effectively for M objectives:
+        # The Pareto Front is a 1D curve on the boundary FJ^2 + FM^2 = 1.
+        # This implies F1 = F2 = ... = F_{M-1} = sqrt(1 - FM^2).
         res = np.zeros((n_points, N))
         
+        # Sample f_M from 0 to 1
+        f_M = np.linspace(0, 1, n_points)
+        f_others = np.sqrt(1 - f_M**2)
+        
         for i in range(n_points):
-            # 1. Generate a unit vector in the positive quadrant of the M-hypersphere
-            # We sample from a normal distribution and take absolute values.
-            v = np.abs(np.random.normal(0, 1, M))
-            f = v / np.sqrt(np.sum(v**2))
-            
-            # 2. Map objectives back to decision variables (x = f^10)
+            # Map objectives back to decision variables (x = f^10)
             X_row = np.zeros(N)
-            for j in range(M):
+            
+            # First M-1 blocks
+            for j in range(M - 1):
                 start = j * N_over_M
                 end = (j + 1) * N_over_M
-                X_row[start:end] = f[j]**10
+                X_row[start:end] = f_others[i]**10
+                
+            # Last block
+            start = (M - 1) * N_over_M
+            end = M * N_over_M
+            X_row[start:end] = f_M[i]**10
+            
             res[i, :] = X_row
             
         return res

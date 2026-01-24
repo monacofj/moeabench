@@ -42,9 +42,10 @@ class DTLZ1(BaseMop):
         X = np.atleast_2d(X)
         M = self.M
         
-        # g = 100 * (K + sum((xi - 0.5)**2 - cos(20 * pi * (xi - 0.5))))
+        # g = 100 * (|k| + sum((xi - 0.5)**2 - cos(20 * pi * (xi - 0.5))))
         X_m = X[:, M-1:]
-        g = 100 * (self.K + np.sum((X_m - 0.5)**2 - np.cos(20 * np.pi * (X_m - 0.5)), axis=1)).reshape(-1, 1)
+        k = X_m.shape[1]
+        g = 100 * (k + np.sum((X_m - 0.5)**2 - np.cos(20 * np.pi * (X_m - 0.5)), axis=1)).reshape(-1, 1)
         
         F = np.zeros((X.shape[0], M))
         

@@ -10,11 +10,14 @@
 
 # Bytecode
 __pycache__/
+*.py[codz]
+*$py.class
 
 # Documentation (Static/Heavy)
 # Documentation (Static/Heavy - excluded from high-level indexing, but visible)
 # docs/ <- Removed from total ignore to allow tools to work
 LICENSES/
+site/
 
 # Examples (Usually stable, can be excluded to save indexing)
 # examples/ <- Unblocked to allow tool access
@@ -25,12 +28,45 @@ analysis/
 *.csv
 *.json
 *.log
+*.zip
+inconsistency/
 
 # Environments (Already in .gitignore, but being explicit)
 .venv/
 env/
 venv/
+ENV/
 node_modules/
+
+# Build and Packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Testing and Coverage
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.hypothesis/
+htmlcov/
+
+# Linter and Type Checker Caches
+.mypy_cache/
+.ruff_cache/
+.pyre/
+.pytype/
+
+# IDE and Editor
+.vscode/
+.idea/
+.spyderproject
+.spyproject
+.ropeproject
+.cursorignore
+.cursorindexingignore
 
 # Custom
 .wish.md

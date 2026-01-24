@@ -43,13 +43,18 @@ class JoinedPopulation:
         return sum(len(p) for p in self.pops)
 
 class experiment:
-    def __init__(self, imports: Optional[Any] = None) -> None:
-        self.imports = imports # Keep for compatibility if needed
+    def __init__(self, mop: Optional[Any] = None, moea: Optional[Any] = None) -> None:
         self._runs: List[Run] = []
         self._mop: Any = None
         self._moea: Any = None
         self._stop: Any = None
         self._name: str = "experiment"
+        
+        # Use properties for auto-instantiation and validation
+        if mop is not None:
+            self.mop = mop
+        if moea is not None:
+            self.moea = moea
         
         # Internal state for execution
         self.result: Any = None 

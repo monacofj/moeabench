@@ -110,3 +110,18 @@ class DPF5(BaseDPF):
 
     def get_K(self):
         return self.K
+
+    def ps(self, n_points: int = 100):
+        """Analytical sampling of DPF5 Pareto Set (Requires xM = x1)."""
+        M = self.M
+        N = self.N
+        res = np.zeros((n_points, N))
+        # Variables x1..xM-1 are position-like but x1 also drives g
+        # Standard ps for DPF5: x_i in [0, 1] for i < M, x_M = x_1, x_i = 0.5 for i > M
+        # Wait, indexing: x_1 is index 0. x_M is index M-1.
+        X_pos = np.random.random((n_points, M - 1))
+        res[:, :M-1] = X_pos
+        res[:, M-1] = X_pos[:, 0] # x_M = x_1
+        if N > M:
+            res[:, M:] = 0.5
+        return res

@@ -17,7 +17,8 @@ class DPF1(BaseDPF):
         
         # g factor (DTLZ1-like)
         X_m = X[:, D-1:]
-        g = 100 * (K + np.sum((X_m - 0.5)**2 - np.cos(20 * np.pi * (X_m - 0.5)), axis=1)).reshape(-1, 1)
+        k = X_m.shape[1]
+        g = 100 * (k + np.sum((X_m - 0.5)**2 - np.cos(20 * np.pi * (X_m - 0.5)), axis=1)).reshape(-1, 1)
         
         # Base F (D objectives)
         F_base = np.zeros((X.shape[0], D))

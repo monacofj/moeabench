@@ -17,7 +17,8 @@ class DPF2(BaseDPF):
         
         # g factor (DTLZ7-like)
         X_m = X[:, D-1:]
-        g = 1 + 9/K * np.sum(X_m, axis=1).reshape(-1, 1)
+        k = X_m.shape[1]
+        g = 1 + 9/k * np.sum(X_m, axis=1).reshape(-1, 1)
         
         # Base F (D objectives)
         F_base = np.zeros((X.shape[0], D))
@@ -28,3 +29,13 @@ class DPF2(BaseDPF):
         F_base[:, D-1:] = (1 + g) * h
         
         return {'F': self._project(F_base, square=True)}
+
+    def ps(self, n_points=100):
+        """Analytical sampling of DPF2 Pareto Set (DTLZ7-like g=1)."""
+        D = self.D
+        N = self.N
+        res = np.zeros((n_points, N))
+        res[:, :D-1] = np.random.random((n_points, D - 1))
+        # Optimal g=1 when xi=0 for i >= D-1
+        res[:, D-1:] = 0.0
+        return res
