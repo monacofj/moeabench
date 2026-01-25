@@ -79,9 +79,33 @@ class DTLZ8(BaseMop):
 
     def ps(self, n_points: int = 100):
         """
-        Analytical sampling of DTLZ8 Pareto Set.
-        Note: DTLZ8 has a complex, constrained topology featuring mixed linear 
-        and curved segments. Analytical sampling is not supported in this version.
+        Loads Ground Truth data for M=3, 5, 10.
+        Note: DTLZ8 has a complex topology. Precomputed high-fidelity files 
+        are used as the reference set for standard objective counts.
         """
-        raise NotImplementedError("Analytical ps() sampling is not supported for DTLZ8 "
-                                  "due to its complex constrained topology.")
+        M = self.M
+        if M not in [3, 5, 10]:
+             raise NotImplementedError(f"Analytical ps() sampling is not supported for DTLZ8 with M={M}.\n"
+                                       f"Dynamic guided solver (Phase X2) is required for non-standard M.")
+        
+        import os
+        import pandas as pd
+        
+        # Determine path to the data directory within the package
+        base_path = os.path.dirname(__file__)
+        x_file = os.path.join(base_path, "data", f"DTLZ8_{M}_optimal_x.csv")
+        
+        if not os.path.exists(x_file):
+            raise FileNotFoundError(f"Ground Truth file not found for DTLZ8 M={M}: {x_file}")
+            
+        # Load decision variables
+        df_x = pd.read_csv(x_file, header=None)
+        X = df_x.values
+        
+        # If n_points is requested, we might need to downsample or just return the whole set
+        # Since these are high-fidelity "Gold Standard" points, we return them all or a subset.
+        if n_points < X.shape[0]:
+            idx = np.linspace(0, X.shape[0] - 1, n_points).astype(int)
+            X = X[idx]
+            
+        return X
