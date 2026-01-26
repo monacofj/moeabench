@@ -72,4 +72,5 @@ htmlcov/
 .wish.md
 .ext_strat.md
 data_truth
+legacy_optimal
 

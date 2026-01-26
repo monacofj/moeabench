@@ -79,33 +79,75 @@ class DTLZ8(BaseMop):
 
     def ps(self, n_points: int = 100):
         """
-        Loads Ground Truth data for M=3, 5, 10.
-        Note: DTLZ8 has a complex topology. Precomputed high-fidelity files 
-        are used as the reference set for standard objective counts.
+        Analytical sampling of DTLZ8 Pareto Set.
+        Supports static high-fidelity files for M=3, 5, 10 (Phase X1)
+        and Guided Analytical Solver for dynamic M (Phase X2).
         """
         M = self.M
-        if M not in [3, 5, 10]:
-             raise NotImplementedError(f"Analytical ps() sampling is not supported for DTLZ8 with M={M}.\n"
-                                       f"Dynamic guided solver (Phase X2) is required for non-standard M.")
+        N = self.N
         
-        import os
-        import pandas as pd
+        # Phase X1: Static High-Fidelity lookup
+        if M in [3, 5, 10]:
+            try:
+                import os
+                import pandas as pd
+                base_path = os.path.dirname(__file__)
+                x_file = os.path.join(base_path, "data", f"DTLZ8_{M}_optimal_x.csv")
+                if os.path.exists(x_file):
+                    df_x = pd.read_csv(x_file, header=None)
+                    X = df_x.values
+                    if n_points < X.shape[0]:
+                        idx = np.linspace(0, X.shape[0] - 1, n_points).astype(int)
+                        return X[idx]
+                    return X
+            except (ImportError, FileNotFoundError):
+                pass # Fallback to analytical solver if files missing or pandas unavailable
+
+        # Phase X2: Guided Analytical Solver
+        # DTLZ8 Pareto Set is formed by:
+        # 1. Symmetric central curve: f_M >= 1/3, f_i = (1 - f_M) / 4
+        # 2. Branching arms: f_M < 1/3, where f_i + f_j >= 1 - 2*f_M is active.
+        # We sample f_M in [0, 1] and derive other objectives.
         
-        # Determine path to the data directory within the package
-        base_path = os.path.dirname(__file__)
-        x_file = os.path.join(base_path, "data", f"DTLZ8_{M}_optimal_x.csv")
+        points_per_arm = n_points // M
+        if points_per_arm < 1: points_per_arm = 1
         
-        if not os.path.exists(x_file):
-            raise FileNotFoundError(f"Ground Truth file not found for DTLZ8 M={M}: {x_file}")
+        F_list = []
+        
+        # 1. Sample Central Curve (f_M from 1/3 to 1)
+        fm_central = np.linspace(1/3, 1.0, points_per_arm)
+        fi_central = (1.0 - fm_central) / 4.0
+        F_central = np.tile(fi_central[:, None], (1, M-1))
+        F_central = np.column_stack((F_central, fm_central))
+        F_list.append(F_central)
+        
+        # 2. Sample Branching Arms (f_M from 0 to 1/3)
+        # Each arm k (from 0 to M-2) has f_k varying while others compensate.
+        fm_arms = np.linspace(0.0, 1/3, points_per_arm, endpoint=False)
+        for k in range(M - 1):
+            alpha = (1.0 - fm_arms) / 4.0
+            beta = (1.0 - 2.0 * fm_arms)
             
-        # Load decision variables
-        df_x = pd.read_csv(x_file, header=None)
-        X = df_x.values
+            # Sub-sample f_k between alpha and beta/2
+            fk = np.linspace(alpha, beta / 2.0, points_per_arm)
+            fj = beta - fk
+            
+            F_arm = np.zeros((points_per_arm, M))
+            F_arm[:, M-1] = fm_arms
+            # In arm k, f_k varies, and f_j (j != k, M-1) are identical
+            for j in range(M - 1):
+                F_arm[:, j] = fk if j == k else fj
+            F_list.append(F_arm)
+
+        F = np.concatenate(F_list, axis=0)
         
-        # If n_points is requested, we might need to downsample or just return the whole set
-        # Since these are high-fidelity "Gold Standard" points, we return them all or a subset.
-        if n_points < X.shape[0]:
-            idx = np.linspace(0, X.shape[0] - 1, n_points).astype(int)
-            X = X[idx]
+        # 3. Map F -> X
+        # In DTLZ8, fi = mean(X_block_i). Minimal norm solution is constant block.
+        N_over_M = N // M
+        X = np.zeros((F.shape[0], N))
+        for i in range(M):
+            start = i * N_over_M
+            end = (i + 1) * N_over_M
+            X[:, start:end] = F[:, i:i+1]
             
         return X
