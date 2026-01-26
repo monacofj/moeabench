@@ -21,3 +21,21 @@ class DTLZ4(DTLZ2):
         theta = (X[:, :M-1]**100) * (np.pi / 2)
         
         return self._spherical_evaluation(X, g, theta=theta)
+
+    def ps(self, n_points=100):
+        """
+        Improved sampling for DTLZ4.
+        Instead of uniform X, we sample theta uniformly to cover the sphere triangle densely.
+        """
+        M = self.M
+        N = self.N
+        res = np.zeros((n_points, N))
+        
+        # 1. Sample theta uniformly in [0, pi/2]
+        # X**100 * (pi/2) = theta  => X = (2*theta/pi)**(1/100)
+        theta = np.random.random((n_points, M - 1)) * (np.pi / 2)
+        res[:, :M-1] = (theta / (np.pi / 2))**(1/100)
+        
+        # 2. Distance function variables
+        res[:, M-1:] = 0.5
+        return res

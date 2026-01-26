@@ -12,6 +12,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.6] - 2026-01-25
+
+### Added
+- **Scientific Audit Suite (`Legacy2_optimal`)**: Implemented a comprehensive confrontation suite to validate v0.7.5 ground truth against high-precision legacy data.
+- **Textbook-Style Reporting**: Introduced a new didactic narrative format for scientific reports (`docs/legacy2_optimal_report.md`) prioritizing technical depth over bulleted summaries.
+- **DTLZ8 Analytical Solver**: Implemented a guided analytical manifold solver for the DTLZ8 problem, ensuring strictly feasible theoretical ground truth for any $M$.
+
+### Changed
+- **DTLZ4 Geometric Rectification**: Replaced uniform decision-space sampling with uniform angular ($\Theta$) sampling to resolve spatial sparsity and "floating points" caused by extreme mapping bias ($x^{100}$).
+- **Repository Sanitization**: Purged legacy v1 audit artifacts (`audit_data`, `shadow_data`) and outdated reports to maintain repository focus and scientific integrity.
+- **Nomenclature Standardization**: Promoted the term `Legacy2_optimal` for high-precision reference data across the framework.
+
+### Fixed
+- **DTLZ9 Parity**: Fixed per-objective sampling logic to strictly satisfy spherical parities in high dimensions.
+
 ## [0.7.5] - 2026-01-22
 
 ### Added

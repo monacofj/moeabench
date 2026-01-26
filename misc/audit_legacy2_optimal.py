@@ -37,8 +37,8 @@ def parse_filename(filename):
             
     return mop_name, params
 
-def audit_delgado2():
-    data_dir = os.path.join(PROJECT_ROOT, "tests/legacy_optimal")
+def audit_legacy2_optimal():
+    data_dir = os.path.join(PROJECT_ROOT, "tests/legacy2_optimal")
     if not os.path.exists(data_dir):
         print(f"[ERROR] Directory not found: {data_dir}")
         return
@@ -57,7 +57,7 @@ def audit_delgado2():
         mop_name, params = parsed
         M = params.get('M', 3)
         
-        # Load Delgado2 Data using numpy
+        # Load Legacy2_optimal Data using numpy
         file_path = os.path.join(data_dir, f)
         try:
             F = np.loadtxt(file_path, delimiter=",")
@@ -106,4 +106,4 @@ def audit_delgado2():
             print(f"{mop_name:<10} | {M:<2} | {params.get('N'):<3} | {label:<10} | {'-':<12} | MANUAL")
 
 if __name__ == "__main__":
-    audit_delgado2()
+    audit_legacy2_optimal()
