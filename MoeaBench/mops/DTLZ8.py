@@ -122,21 +122,31 @@ class DTLZ8(BaseMop):
         F_list.append(F_central)
         
         # 2. Sample Branching Arms (f_M from 0 to 1/3)
-        # Each arm k (from 0 to M-2) has f_k varying while others compensate.
-        fm_arms = np.linspace(0.0, 1/3, points_per_arm, endpoint=False)
+        # Each arm k (from 0 to M-2) has a 2D surface where g_M = 0 is active.
+        # We split the remaining points between arms, and use a sqrt resolution for (fm, fk).
+        num_fm_steps = int(np.sqrt(points_per_arm))
+        num_fk_steps = points_per_arm // num_fm_steps
+        
+        fm_arms = np.linspace(0.0, 1/3, num_fm_steps, endpoint=False)
         for k in range(M - 1):
             alpha = (1.0 - fm_arms) / 4.0
             beta = (1.0 - 2.0 * fm_arms)
             
-            # Sub-sample f_k between alpha and beta/2
-            fk = np.linspace(alpha, beta / 2.0, points_per_arm)
-            fj = beta - fk
+            # Use broadcasting to generate a 2D grid of (fm, fk) for this arm
+            fk_rel = np.linspace(0.0, 1.0, num_fk_steps) 
+            fk_mesh = alpha[:, None] + fk_rel[None, :] * (beta[:, None]/2.0 - alpha[:, None])
+            fj_mesh = beta[:, None] - fk_mesh
+            fm_mesh = np.tile(fm_arms[:, None], (1, num_fk_steps))
             
-            F_arm = np.zeros((points_per_arm, M))
-            F_arm[:, M-1] = fm_arms
-            # In arm k, f_k varies, and f_j (j != k, M-1) are identical
+            # Flatten to 1D arrays for population construction
+            fk_flat = fk_mesh.flatten()
+            fj_flat = fj_mesh.flatten()
+            fm_flat = fm_mesh.flatten()
+            
+            F_arm = np.zeros((len(fk_flat), M))
+            F_arm[:, M-1] = fm_flat
             for j in range(M - 1):
-                F_arm[:, j] = fk if j == k else fj
+                F_arm[:, j] = fk_flat if j == k else fj_flat
             F_list.append(F_arm)
 
         F = np.concatenate(F_list, axis=0)
