@@ -1,7 +1,7 @@
 # ADR 0015: Scientific Ground Truth and Numerical Integrity
 
 ## Status
-Proposed
+Superado (Ver [ADR 0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) para a v0.7.6)
 
 ## Context
 MoeaBench requires a definitive "Ground Truth" for auditing multi-objective optimization algorithms. Numerical floating-point arithmetic (IEEE 754) introduces non-deterministic noise across CPU architectures (Intel vs ARM) and linear algebra backends (MKL, OpenBLAS). To mitigate this and ensure scientific reproducibility, we establish a rigorous "Tabula Rasa" ground truth protocol.
@@ -19,10 +19,7 @@ Applied to: **DTLZ1-7, DTLZ9, DPF1-5**.
 *   **Degeneracy (DPF)**: Reference dimension $D$ is fixed at $2$ to maintain extreme manifold degeneracy in high objective spaces ($M \in \{3, 5, 10, 31\}$).
 
 #### Tier B: Heuristic Ground Truth Proxy (Probabilistic)
-Applied to: **DTLZ8** (Constraint-dominated problem lacking a closed-form analytical sampler).
-*   **Algorithm**: NSGA-III (Reference-point based) for high-dimensional coverage.
-*   **Population Size**: $200$ for $M < 10$; $400$ for $M \ge 10$.
-*   **Search Depth**: $500$ generations per run.
+*Obs: Na v0.7.6, o DTLZ8 foi promovido ao Tier A via Solvers Guiados (ver ADR 0016).*
 *   **Aggregation Strategy**: High-Fidelity Multi-Seed Union. 
     *   Executed over 5 independent seeds: $\{1, 2, 3, 4, 5\}$.
     *   Resulting fronts ($F_{seed}$) are vertically stacked ($F_{pool} \in \mathbb{R}^{5PN \times M}$).
