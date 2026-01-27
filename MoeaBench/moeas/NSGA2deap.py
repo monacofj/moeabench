@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from MoeaBench.core.base_moea import BaseMoea
+from MoeaBench.progress import get_active_pbar
 import random
 from deap import base, creator, tools
 import array
@@ -142,6 +143,11 @@ class NSGA2deap(BaseMoea):
             
             pop = self.toolbox.select(pop + offspring, len(pop))
             capture_stats(pop)
+
+            # Update Progress Bar
+            pbar = get_active_pbar()
+            if pbar:
+                pbar.update_to(gen)
 
             # Custom Stop Criteria
             # We expose the current population for the check
