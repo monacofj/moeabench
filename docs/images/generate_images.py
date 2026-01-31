@@ -11,18 +11,20 @@ import sys
 import numpy as np
 
 # Ensure project root is in path
-sys.path.append(os.getcwd())
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if ROOT_DIR not in sys.path:
+    sys.path.append(ROOT_DIR)
 
 from MoeaBench import mb
-from MoeaBench.view.style import apply_style, OCEAN_PALETTE
+from MoeaBench.view.style import apply_style
 
 # Mock plt.show to prevent it from clearing the figure
 plt.show = lambda: None
 apply_style()
 
 def generate():
-    img_dir = "docs/images"
-    os.makedirs(img_dir, exist_ok=True)
+    # Save images in the current directory (docs/images/)
+    img_dir = os.path.dirname(__file__)
     
     # --- 1. HELLO WORLD (Single Run Accuracy) ---
     print("Generating HELLO WORLD scenarios (repeat=1)...")

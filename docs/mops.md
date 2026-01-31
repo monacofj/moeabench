@@ -28,6 +28,10 @@ $$g = 100 \left[ K + \sum_{i \in M} (x_i - 0.5)^2 - \cos(20\pi(x_i - 0.5)) \righ
 
 In our `DTLZ1.py`, this is calculated for the entire population in a single NumPy call, bypassing Python's slow iteration layer. This optimization allows researchers to run 30+ repetitions of massive experiments without their hardware grinding to a halt.
 
+
+**The DTLZ8 Constraint Challenge (v0.7.6)**: 
+Unlike its siblings, DTLZ8 is a constrained problem where the Pareto optimal solutions are governed by objective-based inequalities. Finding these theoretical points dynamically for any $M$ is non-trivial. In v0.7.6, we implemented a **Guided Analytical Solver** that samples both the symmetric central curve and the branching arms where constraints become active. This ensures that researchers have a strictly feasible, high-fidelity reference front for auditing, moving beyond static data files.
+
 **Reference:**
 *   K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
 
@@ -43,8 +47,12 @@ The **DPF** (Degenerate Pareto Front) benchmarks, introduced by Zhen et al., add
 ### Our Narrative: Implementing the Chaotic Projection
 Implementing DPF was significantly more complex than DTLZ. The core logic involves a "Projector" that uses chaotic weights (based on the Logistic Map) to ensure the degenerate front is distributed in a complex, non-trivial way across the $M$-dimensional space.
 
+
 > [!IMPORTANT]
-> **Mathematical Restoration (v0.4.1)**: We identified and fixed a critical discrepancy in the refactored DPF implementations. The chaotic weights are now **static and unsorted**, generated once per problem instance. This restores the characteristic "stepped" geometry of the degenerate fronts, ensuring full parity with the original results by Zhen et al. (2018).
+> **Mathematical Restoration (v0.4.1 - v0.7.6)**: 
+> We identified and fixed a critical discrepancy in the DPF implementations. The chaotic weights are now **static and unsorted**, restoring the characteristic "stepped" geometry. 
+> 
+> Furthermore, in **v0.7.6**, we transitioned from random Monte Carlo sampling to **Structured Analytical Sampling** in `ps()`. Instead of "clouds" of points, MoeaBench now generates perfectly geometric reference fronts. For instance, in DPF2, the ground truth is now a precise spherical curve, allowing for surgical precision in IGD and distribution audits.
 
 We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
 

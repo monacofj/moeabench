@@ -16,11 +16,11 @@ exp1 = mb.experiment()
 
 # Assign benchmarks (MOPs) and algorithms (MOEAs)
 exp1.mop = mb.mops.DTLZ2(M=3)
-exp1.moea = mb.moeas.NSGA3(population=100, generations=200)
+exp1.moea = mb.moeas.NSGA3(population=150, generations=600)
 
 # Custom parameters
-exp1.name = "My Experiment"
-exp1.moea = mb.moeas.NSGA2(population=100, seed=42)
+exp1.name = "Scientific Audit Run"
+exp1.moea.seed = 42
 
 # ---------------------------------------------------------
 # 2. Execution
