@@ -20,8 +20,18 @@ class MOEAD_pymoo(BasePymoo):
         mutation = PolynomialMutation(prob=1/self.Nvar, eta=20)
         crossover = SBX(prob=1.0, eta=15)
         
-        algorithm = MOEAD(ref_dirs, crossover=crossover, mutation=mutation, 
-                          decomposition=PBI(eps=0.0, theta=5), **self.kwargs)
+        # Extract MOEAD params from kwargs if present, else use v0.7.6 defaults
+        decomposition = self.kwargs.pop('decomposition', PBI(eps=0.0, theta=5))
+        n_neighbors = self.kwargs.pop('n_neighbors', 15)
+        prob_neighbor_mating = self.kwargs.pop('prob_neighbor_mating', 0.9)
+
+        algorithm = MOEAD(ref_dirs, 
+                          crossover=crossover, 
+                          mutation=mutation, 
+                          decomposition=decomposition,
+                          n_neighbors=n_neighbors,
+                          prob_neighbor_mating=prob_neighbor_mating,
+                          **self.kwargs)
         
         return self.run_minimize(algorithm)
        
