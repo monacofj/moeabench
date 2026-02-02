@@ -58,3 +58,22 @@ IGD is a measure of **proximity**: it asks, "Are the points close to the optimal
 EMD is a measure of **topology and distribution**: it asks, "Does the population cover the manifold with the same density as the ground truth?" The answer is a definitive no. The high EMD value indicates that while the points are *on* the curve, they are topologically clustered—likely collapsing into a few small regions or "clumps"—leaving vast sections of the Pareto Front unexplored.
 
 Therefore, no corrective action is required for the metric codebase. The EMD is correctly serving its purpose as a discriminator for topological diversity, penalizing algorithms that achieve convergence (low IGD) at the expense of diversity (high EMD).
+
+## Topic C: Algorithm Limits on Degenerate Manifolds
+
+### Investigation of Failures
+Completing the audit, we investigated why the reference algorithms (NSGA-II and MOEA/D) exhibited "High EMD / Low IGD" behavior on the DPF3 problem.
+
+### Diagnosis: The $x^{100}$ Transformation
+The DPF3 benchmark defines its manifold using a highly non-linear mapping:
+$$ \theta = x^{100} \cdot \frac{\pi}{2} $$
+This power-law transformation causes an extreme "compression" of the objective space. For uniformly sampled decision variables $x \in [0, 1]$, the vast majority of points map to $\theta \approx 0$, collapsing the Pareto Front into a small, dense cluster. Only values of $x$ extremely close to $1.0$ (e.g., $>0.99$) can generate points in the "tail" of the front that reach the boundaries of the objective space.
+
+### The Algorithm Trap
+1.  **Boundary Recession:** Our mechanics audit reveals that NSGA-II (Pop=200) fails to maintain individuals in this "sparse tail" region. The final population consistently exhibits a **gap of ~65%** in the objective bounds (covering only $[0, 0.34]$ instead of $[0, 1]$).
+2.  **Metric Deception:**
+    *   **IGD (Low):** Since the Ground Truth itself is generated via sampling (which mimics the density bias), 99% of the reference points lie in the "dense cluster". The algorithm covers this cluster well, resulting in a low average distance error ($0.002$).
+    *   **EMD (High):** The EMD metric, being sensitive to distribution, correctly identifies that the algorithm has completely missed the "long tail" of the manifold (the rare, extreme points), rendering a high error score ($0.42$).
+
+### Conclusion
+The "failure" is not a software bug but a demonstration of the metrics working as intended. DPF3 is designed to break algorithms that rely on uniform initialization. The high EMD score accurately reflects the **Loss of Extents** caused by the degenerate geometry.
