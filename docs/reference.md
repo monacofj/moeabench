@@ -22,7 +22,10 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **GT** | Ground Truth | The analytical or high-density discrete Pareto optimal set/front. |
 | **PF** | Pareto Front | The image of non-dominated solutions in **Objective Space**. |
 | **PS** | Pareto Set | The values of decision variables in **Decision Space**. |
-| **HV** | Hypervolume | The volume of the objective space dominated by a solution set. |
+| **HV** | Hypervolume | The volume of the objective space dominated by a solution set. Reported as tripartite (_raw, _ratio, _rel). |
+| **_raw** | Raw Metric Suffix | The absolute numerical value in physical units (e.g., $HV_{raw} = 1.15$). |
+| **_ratio** | Coverage Suffix | The value normalized by the **Reference Box** (Ideal to Nadir+Offset). Measures exploration. |
+| **_rel** | Relative Suffix | The value normalized by the **Ground Truth** performance. Measures convergence. |
 | **IGD** | Inverted Generational Distance | Meassure of proximity/convergence to the Ground Truth. |
 | **EMD** | Earth Mover's Distance | Wasserstein metric measuring topological/distributional similarity. |
 | **ADR** | Architecture Decision Record | Document capturing a significant architectural decision. |

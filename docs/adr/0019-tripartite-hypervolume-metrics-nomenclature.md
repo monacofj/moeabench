@@ -18,9 +18,14 @@ Previous versions of MoeaBench reported a single "Hypervolume" value. During the
 
 We decided to decompose the Hypervolume metric into three distinct physical interpretations:
 
-1.  **HV_raw (Physical Volume)**: The absolute volume dominated by the solution set relative to a specified reference point (e.g., $(1.1, 1.1, 1.1)$).
-2.  **HV_ratio (Coverage)**: The fraction of the **Reference Box** (defined from Ideal to Nadir+Offset) covered by the solution. Formula: $HV_{raw} / \text{Volume}(\text{RefBox})$. This indicates how well the algorithm explored the defined search area.
-3.  **HV_rel (Convergence)**: The fraction of the **Ground Truth Hypervolume** achieved by the solution. Formula: $HV_{sol} / HV_{GT}$. This is the primary indicator of how close the algorithm got to the optimal front.
+1.  **HV_raw (Physical Volume)**: The absolute volume dominated by the solution set relative to the reference point $\vec{r} = [1.1, \dots, 1.1]$.
+    *   *Unit*: $Obj_1 \cdot Obj_2 \cdot \dots \cdot Obj_M$.
+2.  **HV_ratio (Exploration/Coverage)**: Scaled by the volume of the search area (Reference Box).
+    *   *Formula*: $\frac{HV_{raw}}{V_{RefBox}}$ where $V_{RefBox} = \prod (r_i - Ideal_i)$.
+    *   *Interpretation*: 0.0 (nothing found) to 1.0 (perfect coverage of the box).
+3.  **HV_rel (Convergence/Truth)**: Scaled by the volume of the optimal set.
+    *   *Formula*: $\frac{HV_{sol}}{HV_{GT}}$.
+    *   *Interpretation*: 1.0 means the algorithm matched the Ground Truth hypervolume. > 1.0 indicates sampling saturation (filling GT gaps).
 
 ## Consequences
 
