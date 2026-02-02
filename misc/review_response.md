@@ -77,3 +77,14 @@ This power-law transformation causes an extreme "compression" of the objective s
 
 ### Conclusion
 The "failure" is not a software bug but a demonstration of the metrics working as intended. DPF3 is designed to break algorithms that rely on uniform initialization. The high EMD score accurately reflects the **Loss of Extents** caused by the degenerate geometry.
+
+## Topic D: Precision Certification
+
+### Audit of Numerical Integrity
+To ensure that the reported metrics (e.g., IGD differences of $10^{-4}$) are not artifacts of floating-point truncation, we performed a full datatype audit of the pipeline (`tests/calibration/audit_precision.py`).
+
+**Certification:**
+*   **Data Ingestion:** Confirmed that all CSV parsers explicitly load objective values as `float64` (Double Precision).
+*   **Metric Engine:** The `normalize` and `hypervolume` functions were verified to maintain 64-bit precision throughout their execution. No downcasting to `float32` was detected.
+
+The values reported in the baselines (e.g., $IGD \approx 0.0021$) are numerically stable and significant.
