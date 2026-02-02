@@ -252,11 +252,11 @@ This domain reduces high-dimensional outcomes into scalar scores (Hypervolume, I
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
 
-*   **Tripartite Hypervolume Reporting**: Starting with v0.7.6, HV is no longer a single number. We report:
-    1.  **HV Raw**: The physical dominated volume.
-    2.  **HV Ratio**: Search area coverage (normalized to 1.1 reference).
-    3.  **HV Rel**: Convergence to the truth.
-*   **Performance Saturation (HV_rel > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
+*   **Tripartite Hypervolume Reporting**: Starting with v0.7.6, Hypervolume is reported using three standardized measures:
+    1.  **H_raw**: The physical dominated volume.
+    2.  **H_ratio**: Search area coverage (normalized to 1.1 reference).
+    3.  **H_rel**: Convergence to the truth.
+*   **Performance Saturation (H_rel > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
 *   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
 ```python
