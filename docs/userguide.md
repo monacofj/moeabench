@@ -249,6 +249,13 @@ This domain reduces high-dimensional outcomes into scalar scores (Hypervolume, I
 *   **`perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values.
 *   **`perf_density`**: Shows the "Form of Luck"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
 
+#### **Metric Rigor and Interpretation**
+MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
+
+*   **Sampled Reference HV**: We avoid the term "Theoretical Maximum" because Ground Truths are often discrete samples (usually 2,000 points for surfaces or 10,000 for curves). The reference hypervolume is thus the volume of the *sampled grid*, not the analytical continuum.
+*   **Performance Saturation (HV > 100%)**: It is mathematically possible for an algorithm to achieve an HV Ratio > 100%. This occurs when the algorithm's population fills the spatial gaps within the discrete reference sampling. In MoeaBench, this is not considered a bug, but a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
+*   **Hybrid Density Policy**: For problems with degenerate manifolds (like the DPF family), MoeaBench employs high-density Ground Truths (10,000 points) to minimize these discretization artifacts, while maintaining 2,000 points for standard problems to preserve computational efficiency.
+
 ```python
 # Statistical contrast between two methods
 mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hv)

@@ -97,9 +97,9 @@ def generate_visual_report():
 
         "<div class='note-box'>",
         "<strong>Scientific Note: The Discretization Effect & Negative HV Diff</strong><br>",
-        "In cases of near-perfect convergence, you may observe an HV Ratio slightly exceeding 100% (or a negative HV Diff in legacy reports).<br>",
-        "<ul><li><b>Cause:</b> The 'Mathematical Truth' (Ground Truth) is represented by a discrete sample of 2000 points. If an algorithm's distribution (e.g., 200 points) fills the gaps within this discrete reference grid more efficiently, the calculated hypervolume can mathematically exceed the reference sample's volume.</li>",
-        "<li><b>Interpretation:</b> This indicates <b>performance saturation</b>. The algorithm has reached the maximum possible precision allowed by the current metric discretization.</li></ul>",
+        "In cases of near-perfect convergence, you may observe an HV Ratio exceeding 100%.<br>",
+        "<ul><li><b>Cause:</b> The 'Ground Truth' is a discrete sample (2k points for DTLZ, 10k for DPF). If an algorithm fills the gaps between these reference points, its volume can mathematically exceed the reference's volume.</li>",
+        "<li><b>Interpretation:</b> This indicates <b>performance saturation</b>. The algorithm has found a distribution that is strictly numerically superior to the discrete baseline.</li></ul>",
         "</div>",
         "</div>"
     ]
@@ -340,7 +340,7 @@ def generate_visual_report():
         ideal_str = "(" + ", ".join([f"{v:.3f}" for v in ideal]) + ")"
         nadir_str = "(" + ", ".join([f"{v:.3f}" for v in nadir]) + ")"
         
-        html_content.append(f"<div class='metrics-footer'><strong>Theoretical Reference:</strong><br>Ideal Point: {ideal_str}<br>Nadir Point: {nadir_str}<br>Max Theoretical Hypervolume: {hv_opt:.6f}</div>")
+        html_content.append(f"<div class='metrics-footer'><strong>Theoretical Reference:</strong><br>Ideal Point: {ideal_str}<br>Nadir Point: {nadir_str}<br>Sampled Reference HV: {hv_opt:.6f}</div>")
         html_content.append(div)
         html_content.append(f"</div>")
 

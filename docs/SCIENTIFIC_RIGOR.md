@@ -35,5 +35,11 @@ This document establishes the binding rules for development and experimentation 
 - Filenames must be unique and descriptive, and metadata (durations, seeds) must be recorded for every run.
 - Resumability must be verified manually by simulating an interruption (`KeyboardInterrupt`) during the Micro-Audit phase.
 
----
+## 6. Metric Terminology & Discretization Rigor
+**"Precision in Definition."**
+- Avoid absolute terms like "Optimal" or "Theoretical Max" when referring to sampled reference sets. Use **"Sampled Reference"** or **"GT Baseline"**.
+- Ground Truth density must be adjusted based on the manifold dimensionality:
+    - **1D Manifolds (Curves)**: Require high-density (e.g., 10k points) to avoid discretization artifacts.
+    - **2D+ Manifolds (Surfaces)**: Require standard-density (e.g., 2k points).
+- Every metric report must explicitly mention the sampling nature of the reference set to prevent misinterpretation of "Performance Saturation" (HV > 100%).
 *Failure to comply with these rules constitutes a regression in scientific quality and must be addressed immediately.*

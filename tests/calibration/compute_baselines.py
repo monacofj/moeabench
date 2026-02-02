@@ -89,8 +89,12 @@ def compute_baselines():
             except TypeError:
                 mop = getattr(mb.mops, mop_name)(M=3, D=2)
             
+            # Increase GT density for DPF curves to avoid "HV > 100%" artifact
+            # DPF fronts are 1D curves in 3D space, requiring higher density than DTLZ surfaces.
+            n_gt_points = 10000 if "DPF" in mop_name else 2000
+            
             exp_ref = mb.experiment(mop=mop)
-            F_opt = exp_ref.optimal(n_points=2000).objs
+            F_opt = exp_ref.optimal(n_points=n_gt_points).objs
             
             # Load all runs in the group first to determine bounds
             all_fronts = []

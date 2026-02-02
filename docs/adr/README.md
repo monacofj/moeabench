@@ -25,6 +25,10 @@ This directory contains records of the key architectural decisions made during t
 | [0012](0012-manager-mode.md) | Manager Mode Delegation | Accepted | 2026-01-18 |
 | [0013](0013-visual-identity.md) | Centralized Visual Identity (Ocean) | Accepted | 2026-01-18 |
 | [0014](0014-semantic-taxonomy.md) | Semantic Taxonomy (Performance vs. Topology) | Accepted | 2026-01-19 |
+| [0015](0015-scientific-ground-truth-and-numerical-integrity.md) | Ground Truth Integrity | Superceded | 2026-01-20 |
+| [0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Guided Geometric Solvers | Accepted | 2026-01-25 |
+| [0017](0017-comprehensive-calibration-and-testing-framework.md) | Calibration & Testing Framework | Accepted | 2026-02-01 |
+| [0018](0018-consolidated-scientific-report-and-gt-density-refinement.md) | Consolidated Report & GT Density | Accepted | 2026-02-02 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*
