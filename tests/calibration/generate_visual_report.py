@@ -95,9 +95,9 @@ def generate_visual_report():
         "<ul>",
         "<li><b>IGD (Inverted Generational Distance):</b> Measures both convergence (proximity) and diversity (spread). <i>Lower is strictly better.</i></li>",
         "<li><b>EMD (Topological Error):</b> Earth Mover's Distance (Wasserstein metric). It quantifies the 'transport cost' required to map the algorithm's distribution onto the Ground Truth. <code>EMD < 0.1</code> represents a high-fidelity topological match.</li>",
-        "<li><b>HV Raw (Absolute):</b> The hypervolume calculated with Reference Point 1.1. Can exceed 1.0 (e.g. 1.15) due to the reference boundary buffer.</li>",
-        r"<li><b>HV Ratio (Coverage):</b> $HV_{raw} / RefBox$. Measures how much of the reference box volume ($1.1^3$) is covered. Strictly $\le 1.0$.</li>",
-        r"<li><b>HV Rel (Convergence):</b> $HV_{raw} / HV_{GT}$. Measures convergence to the known optimum. Can slightly exceed 100% if the algorithm fills gaps in the discrete Ground Truth.</li>",
+        "<li><b>H_raw (Absolute):</b> The hypervolume calculated with Reference Point 1.1. Can exceed 1.0 (e.g. 1.15) due to the reference boundary buffer.</li>",
+        r"<li><b>H_ratio (Coverage):</b> $H_{raw} / RefBox$. Measures how much of the reference box volume ($1.1^3$) is covered. Strictly $\le 1.0$.</li>",
+        r"<li><b>H_rel (Convergence):</b> $H_{raw} / H_{GT}$. Measures convergence to the known optimum. Can slightly exceed 100% if the algorithm fills gaps in the discrete Ground Truth.</li>",
         "<li><b>T-conv (Stabilization):</b> The generation where the algorithm reaches a stable state (within 5% of its final IGD value).</li>",
         "<li><b>Time (s):</b> Average wall-clock execution time per run on the reference hardware.</li>",
         "</ul>",
@@ -200,9 +200,9 @@ def generate_visual_report():
                 igd_mean = row['IGD_mean']
                 igd_std = row['IGD_std']
                 # Updated keys from compute_baselines.py
-                hv_raw = row['HV_raw'] 
-                hv_ratio = row['HV_ratio']
-                hv_rel_stat = row['HV_rel']
+                hv_raw = row['H_raw'] 
+                hv_ratio = row['H_ratio']
+                hv_rel_stat = row['H_rel']
                 time_avg = row['Time_sec']
             
             # Note: We re-calculate dynamic HV (rel) from the final snapshot (Gen 1000) for strictness
@@ -291,9 +291,9 @@ def generate_visual_report():
                 "alg": alg,
                 "igd": f"{igd_mean:.4e} &plusmn; {igd_std:.1e}",
                 "emd": f"{emd_val:.4f}",
-                "hv_raw": f"{hv_raw:.4f}",
-                "hv_ratio": f"{hv_ratio:.4f}",
-                "hv_rel": f"{hv_rel_stat * 100:.2f}%", 
+                "h_raw": f"{hv_raw:.4f}",
+                "h_ratio": f"{hv_ratio:.4f}",
+                "h_rel": f"{hv_rel_stat * 100:.2f}%", 
                 "time": f"{time_avg:.2f}",
                 "t_conv": t_conv
             })
@@ -371,9 +371,9 @@ def generate_visual_report():
             table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             table.append(f"<td>{m['igd']}</td>")
             table.append(f"<td>{m['emd']}</td>")
-            table.append(f"<td>{m['hv_raw']}</td>")
-            table.append(f"<td>{m['hv_ratio']}</td>")
-            table.append(f"<td>{m['hv_rel']}</td>")
+            table.append(f"<td>{m['h_raw']}</td>")
+            table.append(f"<td>{m['h_ratio']}</td>")
+            table.append(f"<td>{m['h_rel']}</td>")
             table.append(f"<td>{m['time']}</td>")
             table.append(f"<td>Gen {m['t_conv']}</td></tr>")
         table.append("</table>")
