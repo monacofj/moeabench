@@ -12,6 +12,24 @@ This document provides the exhaustive technical specification for the MoeaBench 
 
 ---
 
+<a name="nomenclature"></a>
+## **Nomenclature & Abbreviations**
+
+| Abbreviation | Full Term | Description |
+| :--- | :--- | :--- |
+| **MOP** | Multi-objective Optimization Problem | The benchmark or real-world problem being solved. |
+| **MOEA** | Multi-objective Evolutionary Algorithm | The solver or stochastic search engine. |
+| **GT** | Ground Truth | The analytical or high-density discrete Pareto optimal set/front. |
+| **PF** | Pareto Front | The image of non-dominated solutions in **Objective Space**. |
+| **PS** | Pareto Set | The values of decision variables in **Decision Space**. |
+| **HV** | Hypervolume | The volume of the objective space dominated by a solution set. |
+| **IGD** | Inverted Generational Distance | Meassure of proximity/convergence to the Ground Truth. |
+| **EMD** | Earth Mover's Distance | Wasserstein metric measuring topological/distributional similarity. |
+| **ADR** | Architecture Decision Record | Document capturing a significant architectural decision. |
+| **EAF** | Empirical Attainment Function | Statistical description of the outcomes of stochastic solvers. |
+
+---
+
 <a name="data-model"></a>
 ## **1. Data Model**
 
@@ -235,6 +253,10 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
 
 ### **Metric Calculation**
 *   **`mb.metrics.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
+    *   **Tripartite Output**: Starting with v0.7.6, HV is reported as three distinct measures:
+        1.  **HV Raw**: The physical volume calculated relative to the Reference Point (e.g., $1.15$).
+        2.  **HV Ratio**: Percentage of the Reference Box covered ($HV_{raw} / RefBox_{vol}$). Represents **Coverage**.
+        3.  **HV Rel**: Relative convergence to the Ground Truth ($HV_{sol} / HV_{GT}$). Represents **Convergence**.
     *   `ref`: Reference Point helper.
         *   `None` (default): Calculates the reference point automatically from the input `data` (Nadir + offset).
         *   `list[Experiment]`: Uses the joint range of all provided experiments to calculate a common reference point (Recommended for comparing algorithms).

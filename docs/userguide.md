@@ -252,9 +252,12 @@ This domain reduces high-dimensional outcomes into scalar scores (Hypervolume, I
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
 
-*   **Sampled Reference HV**: We avoid the term "Theoretical Maximum" because Ground Truths are often discrete samples (usually 2,000 points for surfaces or 10,000 for curves). The reference hypervolume is thus the volume of the *sampled grid*, not the analytical continuum.
-*   **Performance Saturation (HV > 100%)**: It is mathematically possible for an algorithm to achieve an HV Ratio > 100%. This occurs when the algorithm's population fills the spatial gaps within the discrete reference sampling. In MoeaBench, this is not considered a bug, but a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
-*   **Hybrid Density Policy**: For problems with degenerate manifolds (like the DPF family), MoeaBench employs high-density Ground Truths (10,000 points) to minimize these discretization artifacts, while maintaining 2,000 points for standard problems to preserve computational efficiency.
+*   **Tripartite Hypervolume Reporting**: Starting with v0.7.6, HV is no longer a single number. We report:
+    1.  **HV Raw**: The physical dominated volume.
+    2.  **HV Ratio**: Search area coverage (normalized to 1.1 reference).
+    3.  **HV Rel**: Convergence to the truth.
+*   **Performance Saturation (HV_rel > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
+*   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
 ```python
 # Statistical contrast between two methods
