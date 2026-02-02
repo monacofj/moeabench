@@ -16,6 +16,12 @@ This document provides the exhaustive technical specification for the MoeaBench 
 ## **Nomenclature & Abbreviations**
 
 | Abbreviation | Full Term | Description |
+| :--- | :--- | :--- |
+| **MOP** | Multi-objective Optimization Problem | The benchmark or real-world problem being solved. |
+| **MOEA** | Multi-objective Evolutionary Algorithm | The solver or stochastic search engine. |
+| **GT** | Ground Truth | The analytical or high-density discrete Pareto optimal set/front. |
+| **PF** | Pareto Front | The image of non-dominated solutions in **Objective Space**. |
+| **PS** | Pareto Set | The values of decision variables in **Decision Space**. |
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
 | **H_raw** | Raw Hypervolume | The absolute numerical value in physical units (e.g., $H_{raw} = 1.15$). |
 | **H_ratio** | Hypervolume Ratio | Normalized by the **Reference Box** (Ideal to Nadir+Offset). Measures exploration. |
