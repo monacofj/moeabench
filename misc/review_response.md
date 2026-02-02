@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Peer Review Response: Calibration Audit (v0.7.6)
 
 ## Topic A: Hypervolume Integrity & Normalization Standards

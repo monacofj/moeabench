@@ -1,3 +1,19 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+"""
+Audit: Precision Integrity (Topic D)
+====================================
+
+Verifies that the calibration pipeline maintains 64-bit floating point precision (Float64).
+Audits:
+1. Data Ingestion (pd.read_csv dtypes).
+2. Metric Internals (evaluator.normalize).
+
+Usage:
+    python3 tests/calibration/audit_precision.py
+"""
 
 import os
 import sys

@@ -1,3 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+"""
+Audit: Algorithm Mechanics (Topic C)
+====================================
+
+Investigates the failure of standard MOEAs (NSGA2, MOEAD) on degenerate manifolds (e.g., DPF3).
+Checks for:
+1. Boundary Recession (Gap at min/max extents).
+2. Population Clumping (Loss of diversity).
+3. Duplicate individuals.
+
+Usage:
+    PYTHONPATH=. python3 tests/calibration/audit_alg_mechanics.py
+"""
 
 import sys
 import os
