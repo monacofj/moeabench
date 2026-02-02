@@ -89,3 +89,13 @@ class BaseMoeaWrapper:
         self._stop = value
         if self._instance and hasattr(self._instance, 'stop'):
              self._instance.stop = value
+
+    @property
+    def F_gen_all(self):
+        """Delegates generational objectives history from the internal engine."""
+        return getattr(self._instance, 'F_gen_all', None)
+
+    @property
+    def X_gen_all(self):
+        """Delegates generational decision variables history from the internal engine."""
+        return getattr(self._instance, 'X_gen_all', None)

@@ -112,6 +112,10 @@ class BasePymoo(BaseMoea, Problem):
             callback=callback
         )
         
+        # Store history on self for external access (e.g., snapshots)
+        self.F_gen_all = callback.hist_f_pop
+        self.X_gen_all = callback.hist_x_pop
+        
         return callback.hist_f_pop, callback.hist_x_pop, res.F, \
                callback.hist_f_nd, callback.hist_x_nd, \
                callback.hist_f_dom, callback.hist_x_dom

@@ -158,6 +158,10 @@ class NSGA2deap(BaseMoea):
 
         F_final = np.array([ind.fitness.values for ind in pop])
         
+        # Store history on self for external access
+        self.F_gen_all = F_gen_all
+        self.X_gen_all = X_gen_all
+
         return F_gen_all, X_gen_all, F_final, \
                hist_F_non_dominate, hist_X_non_dominate, \
                hist_F_dominate, hist_X_dominate
