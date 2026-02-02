@@ -66,12 +66,13 @@ mb.view.topo_shape(exp)
 mb.view.perf_history(exp)   
 ```
 
-| Pareto Front (3D) | Convergence History |
-| :---: | :---: |
-| ![Pareto Front](images/hello_space.png) | ![Convergence](images/hello_time.png) |
-| *Spatial Perspective: Final Population* | *Temporal Perspective: Hypervolume Evolution* |
+![Pareto Front](images/hello_space.png)
+*Spatial Perspective: Final Population snapshot projected in 3D.*
 
-*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the **final population snapshot** (the state of the search at the last generation).*
+![Convergence](images/hello_time.png)
+*Temporal Perspective: Hypervolume evolution showcasing convergence.*
+
+*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the **final population snapshot**.*
 
 ---
 
@@ -95,10 +96,8 @@ For instance, visualizing a multi-run experiment showing the mean performance an
 mb.view.perf_history(exp)
 ```
 
-| Convergence History |
-| :---: |
-| ![Convergence History](images/timeplot.png) |
-| *Temporal Perspective: Mean Hypervolume with Variance Cloud* |
+![Convergence History](images/timeplot.png)
+*Temporal Perspective: Mean Hypervolume trajectory with shaded Variance Cloud across multiple runs.*
 
 To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
 ```python
@@ -238,7 +237,20 @@ mb.view.topo_shape(exp.front(), exp.optimal_front())
 
 # Analyzing Search Reliability (50% and 90% bands)
 mb.view.topo_bands(exp, levels=[0.5, 0.9])
+
+# Analyzing Spatial Density and Gaps
+mb.view.topo_density(exp1, exp2)
+mb.view.topo_gap(exp1, exp2)
 ```
+
+![Reliability Bands](images/topo_bands.png)
+*Figure 1: Search Reliability Corridor showing 50% and 90% attainment bands.*
+
+![Spatial Density](images/topo_density.png)
+*Figure 2: Topologic Match analysis using axis-by-axis Kernel Density Estimation.*
+
+![Topologic Gap](images/topo_gap.png)
+*Figure 3: Topologic Gap visualizing the spatial coverage difference between two solvers.*
 
 ### **7.2 Performance (`perf_`)**
 > **Focus: The Utility.** "How well did the algorithms perform according to scalar metrics?"
@@ -265,7 +277,16 @@ mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hv)
 
 # Metric evolution over time
 mb.view.perf_history(exp)
+
+# Probability Distribution (Luck Stability)
+mb.view.perf_density(exp1, exp2)
 ```
+
+![Performance Contrast](images/perf_spread.png)
+*Figure 4: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
+
+![Performance Density](images/perf_density.png)
+*Figure 5: Performance Distribution (KDE) identifying algorithm stability and outlier sensitivity.*
 
 ### **7.3 Stratification (`strat_`)**
 > **Focus: The Geology.** "How is the population organized internally?"
@@ -293,21 +314,24 @@ Stratification is the definitive process of organizing a population into discret
 
 At the core of this analysis are the `strata` and `tier` functions. While `mb.stats.strata(data)` dissects the internal layers of a specific population context, the `mb.stats.tier(exp1, exp2)` function orchestrates a joint-stratification duel. By merging the state of two competitors and ranking them as a unified set, the framework establishes global tiers that reveal the relative dominance in the objective space.
 
-#### **Accessing Structural Data**
-The result of a stratification analysis is stored in a `StratificationResult` (or `TierResult` for competitive duels). These objects provide programmatic access to the following properties:
+
+### **8.2 Structural Data Access**
+
+The result of a stratification analysis is stored in a `StratificationResult` (or `TierResult` for competitive duels). These objects provide programmatic access to the structural properties of the population:
 
 ```python
 # Perform the analysis
 res = mb.stats.strata(exp)
+
+print(f"Search Depth: {res.max_rank}")
+print(f"Selection Pressure: {res.selection_pressure():.2f}")
 ```
 
-The object `res` contains the following metrics and data structures:
-*   **`.max_rank`**: The total number of non-domination layers found (search depth).
-*   **`.frequencies()`**: A NumPy array representing the distribution percentage of the population across ranks.
-*   **`.selection_pressure()`**: A numeric value (0 to 1) estimating the convergence focus based on rank decay.
-*   **`.quality_by(metric)`**: A vector of quality values (e.g., IGD or Hypervolume) mapped to each dominance layer.
-*   **`.dominance_ratio()`** *(Tier only)*: The relative proportion of each group in the first global rank (the elite).
-*   **`.displacement_depth()`** *(Tier only)*: The specific rank index where the rival group begins to appear significantly.
+#### **Key Properties:**
+*   **`.max_rank`**: The total number of non-domination layers found.
+*   **`.frequencies()`**: Distribution percentage of the population across ranks.
+*   **`.selection_pressure()`**: Numeric value (0 to 1) estimating convergence focus.
+*   **`.dominance_ratio()`** *(Tier only)*: Relative proportion of each group in the elite rank.
 
 #### **Visualizing the Dominance Hierarchy**
 The structural plots are polymorphic lenses that visualize these results. Because stratification metrics typically evaluate the entire search state, they operate over the population cloud.
@@ -323,40 +347,30 @@ res_tier = mb.stats.tier(exp1, exp2)
 mb.view.strat_tiers(res_tier) # Joint dominance duel
 ```
 
-| Dominance Distribution (`strat_ranks`) | Relative Efficiency (`strat_caste`) |
-| :---: | :---: |
-| ![Rank Plot](images/rankplot.png) | ![Caste Plot](images/casteplot.png) |
+![Rank Plot](images/rankplot.png)
+*Figure 6: Dominance Distribution showing the internal stratification of the population.*
 
-| Competitive Duel (`tierplot`) |
-| :---: |
-| ![Tier Plot](images/tierplot.png) |
+![Caste Plot](images/casteplot.png)
+*Figure 7: Relative Efficiency (Caste) mapping solution quality to objective space.*
 
-Beyond structural profiles, the laboratory requires rigorous evidence to determine if performance differences are statistically significant across independent trials. The `mb.stats` module provides a suite of stochastic inference tools designed to handle the non-parametric nature of multi-objective performance data.
+![Tier Plot](images/tierplot.png)
+*Figure 8: Competitive Duel visualizing joint-stratification between two rival solvers.*
 
-The `mb.stats.perf_evidence(exp1, exp2)` function serves as the standard rank-sum test for differences in the center of location (median). In addition, the `mb.stats.perf_distribution(exp1, exp2)` implements the Kolmogorov-Smirnov test to identify disparities in the overall shape of the distributions, such as variance, stability, or bimodality. To quantify the magnitude of these differences, the `mb.stats.perf_probability(exp1, exp2)` function calculates the Vargha-Delaney effect size statistic.
+---
 
-#### **Accessing Inference Meta-data**
-Hypothesis test functions return a `HypothesisTestResult` object that encapsulates the scientific findings:
-
-```python
-# Perform the inference test
-res = mb.stats.perf_distribution(exp1, exp2)
-# (equiv: mb.stats.perf_distribution(mb.hv(exp1.pop().objs), mb.hv(exp2.pop().objs)))
-```
-
-## **8. Advanced Analytics: Significance & Robustness**
+## **9. Advanced Analytics: Significance & Robustness**
 
 MoeaBench provides a rich set of non-parametric statistical tools to transform execution data into scientific evidence. In this library, we distinguish between two fundamental types of inquiry:
 
 1.  **Performance Analysis**: Evaluates "who is better" in terms of objective quality (HV, IGD).
 2.  **Topologic Analysis**: Evaluates "what was found" in terms of spatial distribution and coverage.
 
-### **8.1. Performance Analysis (`mb.stats.perf_*`)**
+### **9.1. Performance Analysis (`mb.stats.perf_*`)**
 
 These tools operate on scalar performance metrics (usually from a multi-run experiment) to determine the merit and confidence of an algorithm's results.
 
 #### **Statistical Significance (`mb.stats.perf_evidence`)**
-This is the primary tool for hypothesis testing in experimental scenarios. It performs the **Mann-Whitney U** rank test (also known as the Wilcoxon rank-sum test) to answer: *"Is the observed difference in performance statistically significant, or could it be due to random variation?"* By focusing on the ranks of the data rather than mean values, it provides a robust measure against non-normal distributions common in evolutionary optimization.
+This is the primary tool for hypothesis testing. It performs the **Mann-Whitney U** rank test to answer: *"Is the observed difference in performance statistically significant?"*
 
 ```python
 # Returns a HypothesisTestResult object
@@ -368,7 +382,7 @@ if res.p_value < 0.05:
 ```
 
 #### **Win Probability (`mb.stats.perf_probability`)**
-While significance tells us if we can trust the results, it doesn't describe the "strength" of the superiority. The `perf_probability` tool calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B. This provides a pragmatic, human-readable indicator of practical superiority.
+Calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B.
 
 *   **A12 > 0.5**: Algorithm A is likely better.
 *   **A12 = 0.5**: They are equivalent.
@@ -380,79 +394,54 @@ print(f"Probability of Exp1 beating Exp2: {prob:.2f}")
 ```
 
 #### **Distribution Shape (`mb.stats.perf_distribution`)**
-Sometimes two algorithms have the same average performance but different "stability". The `perf_distribution` tool uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is more prone to outliers).
+Uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is unstable).
+
+#### **Example: Proving Superiority**
+The following protocol identifies if an improvement is statistically significant and describes its magnitude:
 
 ```python
-# Returns a HypothesisTestResult object
-res = mb.stats.perf_distribution(exp1, exp2, metric=mb.metrics.hv)
-print(res.report())
+# 1. Test for Significance (Mann-Whitney U)
+res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
+
+# 2. Interpret the Science
+if res.is_significant(alpha=0.05):
+    print(f"Evidence supports {res.winner} (p={res.p_value:.4f})")
+    
+    # 3. Calculate Practical Effect (Win Probability)
+    a12 = mb.stats.perf_probability(exp1, exp2)
+    print(f"Win Probability (A12): {a12:.2f}")
+else:
+    print("Null Hypothesis cannot be rejected: Algorithms are equivalent.")
 ```
 
-### **8.2. Topological Analysis (`mb.stats.topo_*`)**
+### **9.2. Topological Analysis (`mb.stats.topo_*`)**
 
-These tools are designed to answer: *"Did these algorithms find the same thing?"* They perform multi-axial distribution matching to verify if the populations found by different solvers are statistically equivalent in their spatial distribution.
+These tools are designed to answer: *"Did these algorithms find the same thing?"* 
 
 #### **Spatial Distribution Matching (`mb.stats.topo_distribution`)**
-The `mb.stats.topo_distribution(*args)` function is designed for this topological inquiry. It operates as a multi-axial engine, verifying if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
+Verifies if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
 
-This tool is foundational for detecting **multimodality** (identifying if different search paths lead to different regions) or verifying the **consistency** of new algorithms against established benchmarks. Users can select the mathematical soul of this comparison through the `method` argument:
+*   **`method='ks'` (Default)**: Employs the **Kolmogorov-Smirnov** test per axis.
+*   **`method='anderson'`**: Uses the **Anderson-Darling k-sample** test (sensitive to tails).
+*   **`method='emd'`**: Calculates the **Earth Mover's Distance** (Purely geometric).
 
-*   **`method='ks'` (Default)**: Employs the **Kolmogorov-Smirnov** test per axis. Ideal for detecting any kind of shift, scaling, or shape difference.
-*   **`method='anderson'`**: Uses the **Anderson-Darling k-sample** test, which is more sensitive to differences in the tails of the distributions—critical for analyzing corner cases in Pareto fronts.
-*   **`method='emd'`**: Calculates the **Earth Mover's Distance** (Wasserstein Metric), providing a purely geometric measure of how much "work" would be required to transform one cloud into the other.
-
-#### **Performance vs. Topology**
-It is scientifically possible for two algorithms to have identical Hypervolume (Performance Equivalence) but converge to completely different regions of the objective space (Topological Divergence). Conversely, they might find the same Pareto Front (**`exp.front()`**) but through different sets of decision variables (**`exp.set()`**). `topo_distribution` allows you to dissect these nuances by comparing distributions axis-by-axis across both spaces.
-
-#### **Cascading Hierarchy in Matching**
-Following the MoeaBench abstraction hierarchy, `topo_distribution` automatically resolves the data context based on the input:
+#### **Example: Topological Consistency**
+Verify if a new "optimized" version of an algorithm is still converging to the correct manifold regions:
 
 ```python
-# 1. Level 1: Direct Array Matching
-res_raw = mb.stats.topo_distribution(matrix_a, matrix_b)
+# Verify spatial matching across all objectives
+res_topo = mb.stats.topo_distribution(exp_baseline, exp_optimized)
 
-# 2. Level 4: Explicit Snapshot Matching
-res_front = mb.stats.topo_distribution(exp1.front(), exp2.front()) 
-res_set   = mb.stats.topo_distribution(exp1.set(),   exp2.set())   
-
-# 3. Level 5: The Experiment Manager (Total Abstraction)
-res = mb.stats.topo_distribution(exp1, exp2) 
-res_vars = mb.stats.topo_distribution(exp1, exp2, space='vars') 
-```
-
-#### **Analyzing the Match Result**
-The function returns a `DistMatchResult` object that provides a dimensional breakdown of the convergence:
-*   **`.is_consistent`**: A global boolean indicating if **all** tested axes (objectives or variables) are equivalent.
-*   **`.failed_axes`**: A list of indices identifying exactly where the algorithms diverged.
-*   **`.p_values`**: A dictionary providing the specific p-value for each dimension.
-*   **`.report()`**: A quantitative analysis report that lists each axis and its match status.
-
-```python
-if not res.is_consistent:
-    print(f"Divergence detected in dimensions: {res.failed_axes}")
-```
-
-#### **8.3.1. Visual Distribution Matching (`mb.view.topo_density`)**
-
-Statistical reports are legally sufficient but often intuitively incomplete. MoeaBench provides the **Spatial Density Perspective** via `mb.view.topo_density()`. This employs **Kernel Density Estimation (KDE)** to generate smooth density curves, embedding the statistical verdict directly into the canvas.
-
-Topologic analysis also includes the study of **attainment surfaces**—the boundaries in objective space that an algorithm can "reach" with a certain probability (e.g., the Median Attainment Surface). This logic is grounded in the theory of **Empirical Attainment Functions (EAF)**.
-
-*   **`mb.stats.topo_attainment`**: Calculates the surface reached by $k\%$ of the runs using the **EAF** methodology.
-*   **`mb.stats.topo_gap`**: Compares the EAFs of two experiments to identify where one algorithm has a coverage "gap" (regions it cannot reach that the competitor can), effectively mapping the **EAF Difference**.
-
-```python
-# Calculate median surface
-surf = mb.stats.topo_attainment(exp1, level=0.5)
-
-# Calculate spatial gap between algorithms
-gap = mb.stats.topo_gap(exp1, exp2)
-print(gap.report())
+if res_topo.is_consistent:
+    print("Optimization preserved topological integrity.")
+else:
+    print(f"Structural collapse detected in axes: {res_topo.failed_axes}")
+    print(res_topo.report())
 ```
 
 ---
 
-## **9. Extensibility: Plugging your Algorithm**
+## **10. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -475,13 +464,11 @@ class MyProblem(mb.mops.BaseMop):
 ```
 
 ### **Custom MOEA Plugin**
-To wrap your own algorithm, inherit from `mb.moeas.MOEA`. By implementing the `solve(mop)` interface, your algorithm gains access to all of MoeaBench's infrastructure, including multi-run management, persistence, and all plotting perspectives.
-
-*For a step-by-step tutorial on building plugins, see the [Reference: Extensibility](reference.md#extensibility).*
+To wrap your own algorithm, inherit from `mb.moeas.MOEA`. By implementing the `solve(mop)` interface, your algorithm gains access to all of MoeaBench's infrastructure.
 
 ---
 
-## **10. Precision: Reproducibility & Seeds**
+## **11. Precision: Reproducibility & Seeds**
 
 Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata.
 
@@ -491,9 +478,9 @@ Scientific benchmarking requires absolute control over randomness. MoeaBench tre
 
 ---
 
-## **11. Persistence (`save` and `load`)**
+## **12. Persistence (`save` and `load`)**
 
-MoeaBench allows you to persist experiments to disk as compressed ZIP files. This is essential for long-running studies, cross-tool analysis, and sharing experimental protocols. The persistence system supports selective modes to optimize file size and workflow:
+MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
 ```python
 # 1. Save the complete state (Config + All Runs)
@@ -508,30 +495,15 @@ exp.load("results", mode="data")
 
 #### **Persistence Modes**
 
-*   **`all` (Default)**:
-    *   **Behavior**: Persists the entire state, including the problem definition, algorithm configuration, and every execution trajectory (`runs`).
-    *   **Utility**: Full project backups or archiving final research results for peer review and total reproducibility.
-*   **`config`**:
-    *   **Behavior**: Records only the "experimental protocol"—what problem was solved and with which algorithm settings—stripping away all gathered data.
-    *   **Utility**: Sharing compact "recipes" of an experiment. On Loading, it updates your experiment's configuration (MOP/MOEA) while **preserving any existing runs**, allowing you to keep your current results while adopting a new protocol.
-*   **`data`**:
-    *   **Behavior**: Focuses on the results of the execution.
-    *   **Utility**: Merging results from different machines or sessions. On Loading, it imports the **execution runs** from the file but **preserves your current configuration**, ensuring you don't overwrite your problem settings with those from the data file.
-
-For details on the underlying file format (CSVs and joblib serialization), see **[Reference: Persistence](reference.md#persistence)**.
+*   **`all` (Default)**: Persists the entire state (Problem + Algorithm + Runs).
+*   **`config`**: Records only the "experimental protocol" (MOP/MOEA settings).
+*   **`data`**: Focuses on the results of the execution (Runs).
 
 ---
 
-## **12. Data Export (CSV)**
+## **13. Data Export (CSV)**
 
-While the persistence system (`save`/`load`) is designed for internal library state, you may often need to export raw numerical results for external analysis in tools like Excel, R, or Origin. 
-
-MoeaBench provides a dedicated **Export API** in the `mb.system` module for this purpose. These methods automatically handle different types of input data (Experiments, Populations, or raw arrays) and generate formatted CSV files.
-
-### **Exporting Objectives and Variables**
-
-*   **`mb.system.export_objectives(data)`**: extracts the Pareto front from an experiment (or objectives from a population) and saves them as a CSV.
-*   **`mb.system.export_variables(data)`**: extracts the Pareto set from an experiment (or decision variables from a population).
+MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
 ```python
 # 1. Export results from a named experiment
@@ -546,14 +518,9 @@ pop = exp.last_pop
 mb.system.export_objectives(pop, "final_pop_objs.csv")
 ```
 
-### **Features and Defaults**
-
-*   **Intelligent Naming**: If no filename is provided, the system uses the `data.name` or `data.label` as a prefix. If neither is available, it defaults to `experiment`.
-*   **Column Headers**: If `pandas` is installed, the CSV files will include headers like `f1, f2...` for objectives and `x1, x2...` for variables. If not, it falls back to a headerless NumPy format.
-
 ---
 
-## **13. References**
+## **14. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
