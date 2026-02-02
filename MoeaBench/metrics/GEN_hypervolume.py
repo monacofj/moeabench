@@ -9,16 +9,21 @@ import numpy as np
 
 class GEN_hypervolume:
 
-    def __init__(self,hist_F,M,approx_ideal,approx_nadir,**kwargs):
+    def __init__(self,hist_F,M,approx_ideal,approx_nadir,ref_point=1.1,**kwargs):
         self.hist_F=hist_F
         self.M=M
         self.approx_ideal=approx_ideal
         self.approx_nadir=approx_nadir
+        self.ref_point_val = ref_point
         super().__init__(**kwargs)
 
 
     def evaluate(self):
-        metric = Hypervolume(ref_point= np.array([1.1 for i in range(0,self.M)]),
+        # We construct the reference point array based on the single scalar value provided
+        # This assumes the reference point is symmetric in the normalized space
+        ref_arr = np.array([self.ref_point_val for i in range(0,self.M)])
+        
+        metric = Hypervolume(ref_point=ref_arr,
                      norm_ref_point=False,
                      zero_to_one=True,
                      ideal=self.approx_ideal,

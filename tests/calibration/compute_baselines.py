@@ -113,8 +113,17 @@ def compute_baselines():
             min_val, max_val = normalize([F_opt], all_fronts)
             
             # Theoretical max HV
-            hv_opt_engine = GEN_hypervolume([F_opt], 3, min_val, max_val)
+            # We use a Reference Point of 1.1 (Normalized Space) to ensure boundary points contribution
+            ref_point_norm = 1.1
+            hv_opt_engine = GEN_hypervolume([F_opt], 3, min_val, max_val, ref_point=ref_point_norm)
             hv_opt = float(hv_opt_engine.evaluate()[0])
+
+            # Sanity Warning for Topic A (HV > 100%)
+            # If Ref Point is 1.1, the bounding box volume is 1.1^3 ~ 1.331.
+            # HV can lawfully be > 1.0. We verify if it exceeds the bounding box.
+            max_theoretical_vol = ref_point_norm ** 3
+            if hv_opt > max_theoretical_vol:
+                 print(f"  WARNING: HV_opt ({hv_opt:.4f}) > Max Theoretical Volume ({max_theoretical_vol:.4f})! Normalization Error?")
             
             # 1. IGD Metrics
             # We need to compute IGD for each run against F_opt
@@ -138,10 +147,21 @@ def compute_baselines():
             ks_p_val = np.mean(list(topo_match.p_values.values()))
             
             # 3. HV Metrics
-            hv_engine = GEN_hypervolume(all_fronts, 3, min_val, max_val)
+            hv_engine = GEN_hypervolume(all_fronts, 3, min_val, max_val, ref_point=ref_point_norm)
             hv_results = hv_engine.evaluate()
-            hv_mean = np.mean(hv_results)
-            hv_diff = hv_opt - hv_mean
+            hv_mean_raw = np.mean(hv_results)
+            hv_diff = hv_opt - hv_mean_raw
+            
+            # --- Nomenclature Standardization ---
+            # HV Raw: The absolute value (Ref Point 1.1)
+            # HV Ratio: Raw / Volume of Ref Cube (1.1^3). The "Math" Normalization.
+            # HV Rel: Raw / HV(Ground Truth). The "Convergence" Efficiency.
+            
+            ref_cube_vol = ref_point_norm ** 3
+            
+            # Calculate metrics
+            hv_ratio = hv_mean_raw / ref_cube_vol
+            hv_rel = hv_mean_raw / hv_opt if hv_opt > 0 else 0
             
             # 4. Meta
             avg_duration = np.mean(group_durations) if group_durations else 0
@@ -159,8 +179,10 @@ def compute_baselines():
                 "IGD_mean": igd_mean,
                 "IGD_std": igd_std,
                 "KS_p_val": ks_p_val,
-                "HV_mean": hv_mean,
-                "HV_opt": hv_opt,
+                "HV_raw": hv_mean_raw,      # Was "HV_mean"
+                "HV_opt": hv_opt,           # The GT raw value
+                "HV_ratio": hv_ratio,       # NEW: Math [0,1]
+                "HV_rel": hv_rel,           # NEW: Convergence [0,%]
                 "HV_diff": hv_diff,
                 "Ideal_1": min_val[0], "Ideal_2": min_val[1], "Ideal_3": min_val[2],
                 "Nadir_1": max_val[0], "Nadir_2": max_val[1], "Nadir_3": max_val[2],
