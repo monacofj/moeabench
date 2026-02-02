@@ -1,9 +1,9 @@
 
 """
-MoeaBench Heavy Tier Testing Suite (Deep Certification)
+MoeaBench Heavy Tier Testing Suite (Deep Calibration)
 =======================================================
 
-Este é o nível mais profundo da pirâmide de testes, destinado à **Certificação Científica**.
+Este é o nível mais profundo da pirâmide de testes, destinado à **Calibração Científica**.
 Ele é utilizado para validar se novas implementações de algoritmos ou problemas
 são estatisticamente equivalentes aos padrões de referência.
 

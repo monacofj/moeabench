@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.7.6] - 2026-01-31
 
 ### Added
-- **Consolidated Interactive Dashboard**: Replaced legacy Markdown reports with a unified HTML Certification Dashboard featuring interactive topography, statistical tables, and stabilization efficiency analysis.
+- **Consolidated Interactive Dashboard**: Replaced legacy Markdown reports with a unified HTML Calibration Dashboard featuring interactive topography, statistical tables, and stabilization efficiency analysis.
 - **Metric Terminology Refinement**: Transitioned from "Max Theoretical HV" to **"Sampled Reference HV"** to accurately reflect the discrete nature of Ground Truth reference sets.
 - **DPF High-Density Policy**: Increased Ground Truth density to **10,000 points** for 1D degenerate curves (DPF family) to eliminate Hypervolume discretization artifacts.
 - **Discretization Rigor Documentation**: Codified the interpretation of "Performance Saturation" (HV > 100%) in scientific reports.

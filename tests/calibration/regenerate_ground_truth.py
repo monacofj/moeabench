@@ -18,7 +18,7 @@ def regenerate_ground_truth():
     print("=== Regenerating Static Ground Truth Files ===")
     print(f"Target Directory: {GT_DIR}")
     
-    # We only care about M=3 for the certification report visualizer
+    # We only care about M=3 for the calibration report visualizer
     # But checking the directory listing, there are files for 3, 5, 10, 31 objectives.
     # We should probably update at least the M=3 ones which are used for the report.
     # Let's target what is currently there.
@@ -29,7 +29,7 @@ def regenerate_ground_truth():
     # Objectives found in directory listing
     # {"name":"DPF1_10_optimal.csv".. "DPF1_3_optimal.csv"...}
     # It seems baseline generates for 3, 5, 10, 31?
-    # For certification visual report we strictly use M=3.
+    # For calibration visual report we strictly use M=3.
     # Let's update M=3 first and foremost.
     
     m_values = [3] 

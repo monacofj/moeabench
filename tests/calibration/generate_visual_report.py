@@ -1,5 +1,5 @@
 """
-MoeaBench v0.7.6 Visual Certification Generator
+MoeaBench v0.7.6 Visual Calibration Generator
 ===============================================
 
 Este script processa o rastro completo da calibração para criar um relatório 
@@ -15,7 +15,7 @@ Principais Funcionalidades:
 
 Saída:
 ------
-- docs/CERTIFICATION_v0.7.6.html
+- tests/CALIBRATION_v0.7.6.html
 
 Uso:
 ----
@@ -41,7 +41,7 @@ from MoeaBench.metrics.GEN_igd import GEN_igd
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
 BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.6.csv")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CERTIFICATION_v0.7.6.html")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.7.6.html")
 
 def generate_visual_report():
     if not os.path.exists(BASELINE_FILE):
@@ -52,7 +52,7 @@ def generate_visual_report():
     mops = sorted(df_base['MOP'].unique())
     
     html_content = [
-        "<html><head><title>MoeaBench v0.7.6 Certification</title>",
+        "<html><head><title>MoeaBench v0.7.6 Calibration</title>",
         "<style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f4f7f9; line-height: 1.6; color: #333; }",
         "h1 { color: #1a2a3a; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-bottom: 30px; }",
         "h2 { color: #2c3e50; margin-top: 60px; border-left: 6px solid #3498db; padding-left: 15px; background: #ebf5fb; padding-top: 10px; padding-bottom: 10px; }",
@@ -70,11 +70,11 @@ def generate_visual_report():
         "ul { padding-left: 20px; }",
         "li { margin-bottom: 8px; }",
         "</style></head><body>",
-        "<h1>MoeaBench v0.7.6 Technical Certification Report</h1>",
+        "<h1>MoeaBench v0.7.6 Technical Calibration Report</h1>",
         
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.7.6</b>. The objective is to certify the numerical integrity and topological fidelity of the framework's core algorithms against established mathematical benchmarks (Ground Truth).</p>",
+        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.7.6</b>. The objective is to validate and calibrate the numerical integrity and topological fidelity of the framework's core algorithms against established mathematical benchmarks (Ground Truth).</p>",
         
         "<h3>Experimental Setup</h3>",
         "<ul>",
@@ -147,8 +147,11 @@ def generate_visual_report():
                 fig.add_trace(go.Scatter3d(
                     x=F_opt[:,0], y=F_opt[:,1], z=F_opt[:,2],
                     mode='markers',
-                    marker=dict(size=3, color='#000000'),
-                    opacity=0.7,
+                    marker=dict(
+                        size=2.5, 
+                        color='rgba(0, 0, 0, 0.25)', # Translucent Black Cloud
+                        line=dict(width=0)
+                    ),
                     name='Ground Truth',
                     legendgroup='GT',
                     showlegend=True
@@ -157,7 +160,17 @@ def generate_visual_report():
                 print(f"      ERROR adding GT trace: {e}")
 
         algs = sorted(mop_df['Algorithm'].unique())
-        colors = {'NSGA2': '#e74c3c', 'NSGA3': '#3498db', 'MOEAD': '#f1c40f'}
+        # Final Zen Mode: Clean organic look, 0.75 opacity, borderless
+        colors_rgba = {
+            'NSGA2': 'rgba(231, 76, 60, 0.75)',  # Red
+            'NSGA3': 'rgba(52, 152, 219, 0.75)', # Blue
+            'MOEAD': 'rgba(212, 172, 13, 0.75)'  # Deeper Yellow (Amber)
+        }
+        colors_solid = {
+            'NSGA2': '#e74c3c', 
+            'NSGA3': '#3498db', 
+            'MOEAD': '#d4ac0d'  # Deeper Yellow
+        }
         
         # Store metrics for HTML table
         mop_metrics = []
@@ -197,7 +210,11 @@ def generate_visual_report():
                     fig.add_trace(go.Scatter3d(
                         x=F_obs[:,0], y=F_obs[:,1], z=F_obs[:,2],
                         mode='markers',
-                        marker=dict(size=4, color=colors.get(alg, '#000000')),
+                        marker=dict(
+                            size=3.0, 
+                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
+                            line=dict(width=0) # Final Zen: No border
+                        ),
                         name=f'{alg} (Final)',
                         legendgroup=alg,
                         showlegend=True
@@ -275,7 +292,12 @@ def generate_visual_report():
                     fig.add_trace(go.Scatter(
                         x=gens, y=igd_vals,
                         mode='lines+markers',
-                        line=dict(color=colors.get(alg, 'black')),
+                        line=dict(color=colors_solid.get(alg, 'black'), shape='spline'),
+                        marker=dict(
+                            size=6,
+                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
+                            line=dict(width=0) # Final Zen: No border
+                        ),
                         name=f'{alg} IGD',
                         legendgroup=alg,
                         showlegend=False
@@ -285,7 +307,13 @@ def generate_visual_report():
                     fig.add_trace(go.Scatter(
                         x=gens, y=hv_ratios,
                         mode='lines+markers',
-                        line=dict(color=colors.get(alg, 'black'), dash='dash'),
+                        line=dict(color=colors_solid.get(alg, 'black'), dash='dash', shape='spline'),
+                        marker=dict(
+                            size=6,
+                            symbol='diamond',
+                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
+                            line=dict(width=0) # Final Zen: No border
+                        ),
                         name=f'{alg} HV %',
                         legendgroup=alg,
                         showlegend=False
@@ -299,7 +327,8 @@ def generate_visual_report():
             template='plotly_white',
             scene=dict(
                 xaxis_title='f1', yaxis_title='f2', zaxis_title='f3',
-                camera=dict(eye=dict(x=1.5, y=1.5, z=1.5))
+                camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)),
+                aspectmode='cube' # Prevent squeezing for asymmetric ranges (e.g. DTLZ7)
             ),
             margin=dict(l=0, r=0, b=0, t=40)
         )
@@ -325,7 +354,7 @@ def generate_visual_report():
                  "<th>Stabilization</th></tr>"]
         
         for m in mop_metrics:
-            table.append(f"<tr><td style='font-weight: bold; color: {colors.get(m['alg'], 'black')}'>{m['alg']}</td>")
+            table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             table.append(f"<td>{m['igd']}</td>")
             table.append(f"<td>{m['emd']}</td>")
             table.append(f"<td>{m['hv_stat']}</td>")
