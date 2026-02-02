@@ -126,27 +126,46 @@ def compute_baselines():
                  print(f"  WARNING: HV_opt ({hv_opt:.4f}) > Max Theoretical Volume ({max_theoretical_vol:.4f})! Normalization Error?")
             
             # 1. IGD Metrics
-            # We need to compute IGD for each run against F_opt
             igd_values = []
             for F_obs in all_fronts:
-                #mb.metrics.igd expects an experiment or front. 
-                #Let's use a simpler way since we have the raw arrays.
-                #Actually, mb.metrics.igd is a convenience wrapper.
-                #We'll calculate it manually or use mb.metrics.evaluator
                 from MoeaBench.metrics.GEN_igd import GEN_igd
                 engine = GEN_igd([F_obs], F_opt)
                 igd_values.append(engine.evaluate()[0])
             
             igd_mean = np.mean(igd_values)
             igd_std = np.std(igd_values)
+
+            # 2. GD Metrics
+            gd_values = []
+            for F_obs in all_fronts:
+                from MoeaBench.metrics.GEN_gd import GEN_gd
+                engine = GEN_gd([F_obs], F_opt)
+                gd_values.append(engine.evaluate()[0])
             
-            # 2. KS Metrics (Topology)
+            gd_mean = np.mean(gd_values)
+            gd_std = np.std(gd_values)
+
+            # 3. SP (Spacing) Metrics
+            def calc_spacing(F):
+                if len(F) < 2: return 0.0
+                from scipy.spatial.distance import cdist
+                d = cdist(F, F)
+                np.fill_diagonal(d, np.inf)
+                d_min = np.min(d, axis=1)
+                d_mean = np.mean(d_min)
+                return np.sqrt(np.mean((d_min - d_mean)**2))
+
+            sp_values = [calc_spacing(F_obs) for F_obs in all_fronts]
+            sp_mean = np.mean(sp_values)
+            sp_std = np.std(sp_values)
+            
+            # 4. KS Metrics (Topology)
             # Combine all fronts for a high-fidelity distribution check
             combined_front = np.vstack(all_fronts)
             topo_match = mb.stats.topo_distribution(combined_front, F_opt)
             ks_p_val = np.mean(list(topo_match.p_values.values()))
             
-            # 3. HV Metrics
+            # 5. HV Metrics
             hv_engine = GEN_hypervolume(all_fronts, 3, min_val, max_val, ref_point=ref_point_norm)
             hv_results = hv_engine.evaluate()
             hv_mean_raw = np.mean(hv_results)
@@ -163,7 +182,7 @@ def compute_baselines():
             h_ratio = hv_mean_raw / ref_cube_vol
             h_rel = hv_mean_raw / hv_opt if hv_opt > 0 else 0
             
-            # 4. Meta
+            # 6. Meta
             avg_duration = np.mean(group_durations) if group_durations else 0
             
             # Detect Pop/Gen from filename or metadata (we know the defaults)
@@ -178,6 +197,10 @@ def compute_baselines():
                 "Gen": gen,
                 "IGD_mean": igd_mean,
                 "IGD_std": igd_std,
+                "GD_mean": gd_mean,
+                "GD_std": gd_std,
+                "SP_mean": sp_mean,
+                "SP_std": sp_std,
                 "KS_p_val": ks_p_val,
                 "H_raw": hv_mean_raw,      # Was "HV_mean"
                 "H_opt": hv_opt,           # The GT raw value

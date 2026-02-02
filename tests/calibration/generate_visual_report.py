@@ -199,7 +199,10 @@ def generate_visual_report():
                 row = alg_stats.iloc[0]
                 igd_mean = row['IGD_mean']
                 igd_std = row['IGD_std']
-                # Updated keys from compute_baselines.py
+                gd_mean = row['GD_mean']
+                gd_std = row['GD_std']
+                sp_mean = row['SP_mean']
+                sp_std = row['SP_std']
                 hv_raw = row['H_raw'] 
                 hv_ratio = row['H_ratio']
                 hv_rel_stat = row['H_rel']
@@ -290,6 +293,8 @@ def generate_visual_report():
             mop_metrics.append({
                 "alg": alg,
                 "igd": f"{igd_mean:.4e} &plusmn; {igd_std:.1e}",
+                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
+                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
                 "emd": f"{emd_val:.4f}",
                 "h_raw": f"{hv_raw:.4f}",
                 "h_ratio": f"{hv_ratio:.4f}",
@@ -370,6 +375,8 @@ def generate_visual_report():
         for m in mop_metrics:
             table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             table.append(f"<td>{m['igd']}</td>")
+            table.append(f"<td>{m['gd']}</td>")
+            table.append(f"<td>{m['sp']}</td>")
             table.append(f"<td>{m['emd']}</td>")
             table.append(f"<td>{m['h_raw']}</td>")
             table.append(f"<td>{m['h_ratio']}</td>")
