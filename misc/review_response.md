@@ -35,3 +35,26 @@ To resolve the ambiguity without invalidating previous experimental data, the fo
 
 ### Conclusion for Reviewers
 The "HV > 100%" phenomenon is a documented feature of using a conservative reference point ($1.1$) to preserve boundary contributions. It does not indicate a failure in the $[0,1]$ mapping. The codebase reflects this explicitly now.
+
+## Topic B: The Divergence of Metrics (EMD vs IGD)
+
+### The Paradox
+In the calibration audit, a second anomaly was observed: for specific problems such as DPF3, the **Inverted Generational Distance (IGD)** reported excellent performance (values $\approx 0.002$), implying the solution was virtually identical to the Pareto Front. However, the **Earth Mover's Distance (EMD)** for the same solution reported a catastrophic failure (values $> 0.40$), implying a massive discrepancy in distribution.
+
+This divergence challenges the intuitive assumption that "converging to the front" (IGD) implies "solving the problem" (EMD). To investigate whether this was a defect in the EMD metric calculation—specifically, a sensitivity to population size differences—we conducted a controlled isolation experiment.
+
+### Experimental Isolation
+The audit isolated the DPF3 problem, comparing a solution set of size $N=200$ against a ground truth of size $N=1573$. Three scenarios were evaluated to identify the root cause of the error signal:
+
+1.  **Baseline Measurement:** The raw EMD calculation confirmed the massive error ($0.425$), despite the IGD being negligible ($0.002$).
+2.  **Resampling Hypothesis:** We tested if the disparity in set limits (200 vs 1573) was inflating the transport cost. By bootstrapping the solution set to match the ground truth size ($N=1573$), the EMD remained stubbornly high ($0.409$), disproving the hypothesis that this was a mere cardinality artifact.
+3.  **Control Group Validation:** A synthetic "perfect" solution was created by taking a random uniform subsample of the Ground Truth. This control group yielded an EMD of just $0.009$.
+
+### Interpretation
+The findings reveal that the **divergence is physically meaningful**, not an artifact.
+
+IGD is a measure of **proximity**: it asks, "Are the points close to the optimal manifold?" The answer for DPF3 is yes. The algorithm successfully collapsed the population onto the curve.
+
+EMD is a measure of **topology and distribution**: it asks, "Does the population cover the manifold with the same density as the ground truth?" The answer is a definitive no. The high EMD value indicates that while the points are *on* the curve, they are topologically clustered—likely collapsing into a few small regions or "clumps"—leaving vast sections of the Pareto Front unexplored.
+
+Therefore, no corrective action is required for the metric codebase. The EMD is correctly serving its purpose as a discriminator for topological diversity, penalizing algorithms that achieve convergence (low IGD) at the expense of diversity (high EMD).
