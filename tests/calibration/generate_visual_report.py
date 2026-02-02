@@ -94,17 +94,17 @@ def generate_visual_report():
         "<h2>2. Metric Glossary & Interpretation</h2>",
         "<ul>",
         "<li><b>IGD (Inverted Generational Distance):</b> Measures both convergence (proximity) and diversity (spread). <i>Lower is strictly better.</i></li>",
-        "<li><b>EMD (Topological Error):</b> Earth Mover's Distance (Wasserstein metric). It quantifies the 'transport cost' required to map the algorithm's distribution onto the Ground Truth. <code>EMD < 0.1</code> represents a high-fidelity topological match.</li>",
-        "<li><b>H_raw (Absolute):</b> The hypervolume calculated with Reference Point 1.1. Can exceed 1.0 (e.g. 1.15) due to the reference boundary buffer.</li>",
-        r"<li><b>H_ratio (Coverage):</b> $H_{raw} / RefBox$. Measures how much of the reference box volume ($1.1^3$) is covered. Strictly $\le 1.0$.</li>",
-        r"<li><b>H_rel (Convergence):</b> $H_{raw} / H_{GT}$. Measures convergence to the known optimum. Can slightly exceed 100% if the algorithm fills gaps in the discrete Ground Truth.</li>",
+        "<li><b>EMD:</b> Earth Mover's Distance. Quantifies topological match. <code>EMD < 0.1</code> represents high-fidelity recovery of the manifold.</li>",
+        "<li><b>H_raw:</b> The absolute hypervolume calculated with Reference Point 1.1.</li>",
+        r"<li><b>H_ratio:</b> $H_{raw} / RefBox$. Search area coverage (volume). Strictly $\le 1.0$.</li>",
+        r"<li><b>H_rel:</b> $H_{raw} / H_{GT}$. Convergence to optimal front. Can exceed 100% due to saturation.</li>",
         "<li><b>T-conv (Stabilization):</b> The generation where the algorithm reaches a stable state (within 5% of its final IGD value).</li>",
         "<li><b>Time (s):</b> Average wall-clock execution time per run on the reference hardware.</li>",
         "</ul>",
 
         "<div class='note-box'>",
-        "<strong>Scientific Note: The Discretization Effect & Negative HV Diff</strong><br>",
-        "In cases of near-perfect convergence, you may observe an HV Rel exceeding 100%.<br>",
+        "<strong>Scientific Note: The Discretization Effect & Negative H_diff</strong><br>",
+        "In cases of near-perfect convergence, you may observe an H_rel exceeding 100%.<br>",
         "<ul><li><b>Cause:</b> The 'Ground Truth' is a discrete sample (2k points for DTLZ, 10k for DPF). If an algorithm fills the gaps between these reference points, its volume can mathematically exceed the reference's volume.</li>",
         "<li><b>Interpretation:</b> This indicates <b>performance saturation</b>. The algorithm has found a distribution that is strictly numerically superior to the discrete baseline.</li></ul>",
         "</div>",
@@ -144,7 +144,7 @@ def generate_visual_report():
             rows=1, cols=2,
             column_widths=[0.6, 0.4],
             specs=[[{'type': 'scene'}, {'type': 'xy', 'secondary_y': True}]],
-            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & HV Rel)")
+            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & H_rel)")
         )
 
         # 1. Add Ground Truth to 3D plot
@@ -351,7 +351,7 @@ def generate_visual_report():
             margin=dict(l=0, r=0, b=0, t=40)
         )
         fig.update_yaxes(title_text="IGD (Log Scale)", secondary_y=False, row=1, col=2, type="log")
-        fig.update_yaxes(title_text="HV Rel % (Convergence)", secondary_y=True, row=1, col=2, range=[0, 115])
+        fig.update_yaxes(title_text="H_rel % (Convergence)", secondary_y=True, row=1, col=2, range=[0, 115])
         fig.update_xaxes(title_text="Generations", row=1, col=2)
 
         # Convert to HTML
@@ -365,10 +365,12 @@ def generate_visual_report():
                  "<tr>",
                  "<th>Algorithm</th>",
                  "<th>IGD (Mean &plusmn; Std)</th>",
-                 "<th>EMD (Topo Error)</th>",
-                 "<th>HV Raw (Abs)</th>",
-                 "<th>HV Ratio (Vol)</th>",
-                 "<th>HV Rel (% GT)</th>",
+                 "<th>GD (Mean &plusmn; Std)</th>",
+                 "<th>SP (Mean &plusmn; Std)</th>",
+                 "<th>EMD</th>",
+                 "<th>H_raw</th>",
+                 "<th>H_ratio</th>",
+                 "<th>H_rel</th>",
                  "<th>Time (s)</th>",
                  "<th>Stabilization</th></tr>"]
         
