@@ -1,36 +1,36 @@
-# ADR 0016: Evolução da Validação Científica e Solvers Geométricos Guiados
+# ADR 0016: Evolution of Scientific Validation and Guided Geometric Solvers
 
 ## Status
-Aceito (Implementado na v0.7.6)
+Accepted (Implemented in v0.7.6)
 
-## Contexto
-Durante a consolidação da v0.7.5 (ADR 0015), identificamos que a dependência de "Proxies Heurísticos" (Tier B) para problemas restritos como o DTLZ8 e a amostragem uniforme no espaço de decisão para problemas enviesados como o DTLZ4 introduziam artefatos geométricos inaceitáveis. O confronto com os dados de alta precisão do **Legacy2_optimal** revelou que a "verdade" baseada em buscas estocásticas sofria de viés de convergência e dispersão espacial, comprometendo métricas sensíveis à densidade (IGD e Hypervolume).
+## Context
+During the consolidation of v0.7.5 (ADR 0015), we identified that relying on "Heuristic Proxies" (Tier B) for constrained problems like DTLZ8 and uniform sampling in the decision space for biased problems like DTLZ4 introduced unacceptable geometric artifacts. Comparison with high-precision data from **Legacy2_optimal** revealed that "truth" based on stochastic searches suffered from convergence bias and spatial dispersion, compromising density-sensitive metrics (IGD and Hypervolume).
 
-## Decisões Técnicas
+## Technical Decisions
 
-### 1. Migração para Solvers Analíticos Guiados (DTLZ8)
-Abandonamos a abordagem de "União de Múltiplas Sementes" do NSGA-III para o DTLZ8. 
-*   **Decisão**: Implementamos um motor de reconstrução de variedade que inverte as restrições lineares do problema. 
-*   **Lógica**: O solver amostra a curva central e as "hastes" laterais do DTLZ8 de forma determinística, garantindo que cada ponto gerado pertença estritamente à interseção das restrições ativas. 
-*   **Resultado**: O DTLZ8 passa do Tier B (Probabilístico) para o Tier A (Analítico), eliminando o ruído estocástico na definição do Ground Truth.
+### 1. Migration to Guided Analytical Solvers (DTLZ8)
+We abandoned the "Union of Multiple Seeds" approach of NSGA-III for DTLZ8. 
+*   **Decision**: We implemented a manifold reconstruction engine that inverts the problem's linear constraints. 
+*   **Logic**: The solver samples the central curve and lateral "probes" of DTLZ8 deterministically, ensuring that every generated point strictly belongs to the intersection of active constraints. 
+*   **Result**: DTLZ8 moves from Tier B (Probabilistic) to Tier A (Analytical), eliminating stochastic noise in the Ground Truth definition.
 
-### 2. Retificação Angular das Variedades Enviesadas (DTLZ4)
-O DTLZ4 utiliza uma potência $x^{100}$ que colapsa amostras uniformes do espaço de decisão para os eixos da esfera.
-*   **Decisão**: Substituímos a amostragem em $X$ pela amostragem uniforme no espaço angular ($\Theta$).
-*   **Lógica**: O gerador sorteia ângulos uniformemente no triângulo esférico ($\Theta \in [0, \pi/2]$) e realiza a inversão matemática ($x = \sqrt[100]{2\theta/\pi}$) para encontrar os parâmetros de decisão. 
-*   **Consequência**: Garantimos uma densidade de pontos visualmente íntegra e estatisticamente justa, eliminando os "pontos flutuantes" isolados que distorciam auditorias de performance.
+### 2. Angular Rectification of Biased Manifolds (DTLZ4)
+DTLZ4 uses a power $x^{100}$ that collapses uniform samples of the decision space onto the axes of the sphere.
+*   **Decision**: We replaced sampling in $X$ with uniform sampling in the angular space ($\Theta$).
+*   **Logic**: The generator draws angles uniformly in the spherical triangle ($\Theta \in [0, \pi/2]$) and performs mathematical inversion ($x = \sqrt[100]{2\theta/\pi}$) to find decision parameters. 
+*   **Consequence**: We ensure visually intact and statistically fair point density, eliminating the isolated "outliers" that distorted performance audits.
 
-### 3. Protocolo de Confronto Legado (VBar-Audit)
-Estabelecemos a auditoria contra o `legacy2_optimal` como uma barreira de validação científica.
-*   **Decisão**: Toda mudança no motor matemático de um MOP deve ser validada por um "Confronto Triplo" (v0.7.5 vs Legado1 vs Legado2) via `topo_shape`.
-*   **Rigor**: Invariantes de paridade ($\sum f = c$ ou $\sum f^2 = c$) são verificados em cada auditoria para garantir que a precisão numérica mantenha um erro residual inferior a $10^{-8}$.
+### 3. Legacy Benchmark Audit Protocol (VBar-Audit)
+We established the audit against the `legacy2_optimal` as a scientific validation barrier.
+*   **Decision**: Every change in a MOP's mathematical engine must be validated by a "Triple Benchmark" (v0.7.5 vs Legacy1 vs Legacy2) via `topo_shape`.
+*   **Rigor**: Parity invariants ($\sum f = c$ or $\sum f^2 = c$) are verified in each audit to ensure that numerical precision maintains a residual error of less than $10^{-8}$.
 
-## Interpretacão Narrativa e Consequências
-Esta mudança marca a transição do MoeaBench de um "Framework de Otimização" para um "Instrumento de Metrologia Científica". 
+## Narrative Interpretation and Consequences
+This change marks the transition of MoeaBench from an "Optimization Framework" to a "Scientific Metrology Instrument". 
 
-*   **Rigor Superior**: A v0.7.6 agora impõe uma verdade matemática que é, em muitos casos, superior aos dados produzidos por algoritmos de estado da arte rodando por milhares de gerações.
-*   **Estabilidade de Métricas**: Métricas de convergência agora operam sobre alvos de densidade uniforme, reduzindo variações espúrias nos resultados de IGD e HV causadas por amostragens pobres da frente ótima.
-*   **Auditabilidade**: A substituição de arquivos CSV "congelados" por solvers analíticos aumenta a transparência do framework, permitindo que qualquer pesquisador reproduza a frente ideal sem depender de sementes aleatórias ou dados externos.
+*   **Superior Rigor**: v0.7.6 now imposes a mathematical truth that is, in many cases, superior to data produced by state-of-the-art algorithms running for thousands of generations.
+*   **Metric Stability**: Convergence metrics now operate on uniform density targets, reducing spurious variations in IGD and HV results caused by poor sampling of the optimal front.
+*   **Auditability**: Replacing "frozen" CSV files with analytical solvers increases the framework's transparency, allowing any researcher to reproduce the ideal front without relying on random seeds or external data.
 
 ---
-*Documentado em 2026-01-25 para refletir a consolidação da Fase Z/Z2.*
+*Documented in 2026-01-25 to reflect the consolidation of the Z/Z2 Phase.*

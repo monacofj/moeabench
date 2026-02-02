@@ -1,25 +1,29 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 MoeaBench Fast Tier Testing Suite
 =================================
 
-Este é o primeiro nível da pirâmide de testes do MoeaBench.
-O objetivo deste tier é validar **invariantes matemáticos** e propriedades
-geométricas fundamentais dos problemas (MOPs) sem depender de algoritmos estocásticos.
+This is the first level of the MoeaBench testing pyramid.
+The goal of this tier is to validate **mathematical invariants** and fundamental
+geometric properties of the problems (MOPs) without relying on stochastic algorithms.
 
-O que é testado:
+What is tested:
+---------------
+- Continuity and bounds of objectives ($f_i$).
+- Sum and SOS (Sum of Squares) properties on the optimal frontiers.
+- Consistency of the `optimal()` and `ps()` (Pareto Set) methods.
+
+Characteristics:
 ----------------
-- Continuidade e limites dos objetivos ($f_i$).
-- Propriedades de soma e SOS (Sum of Squares) nas fronteiras ótimas.
-- Consistência dos métodos `optimal()` e `ps()` (Pareto Set).
+- **Speed**: Execution in milliseconds.
+- **Determinism**: 100% deterministic.
+- **Usage**: Ideal to be executed on every "save" by the developer.
 
-Características:
-----------------
-- **Velocidade**: Execução em milissegundos.
-- **Determinismo**: 100% determinístico.
-- **Uso**: Ideal para ser executado em cada "save" do desenvolvedor.
-
-Execução:
----------
+Execution:
+----------
 pytest tests/test_fast_tier.py
 """
 import pytest

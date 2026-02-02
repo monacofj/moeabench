@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 import os
 import sys
@@ -22,35 +25,15 @@ def main():
         
         # To get g=0 in DPF4 (Rastrigin-like), x_m should be 0.5
         # The variables associated with 'g' are from D onwards.
-        # But wait, D=3 means x[0], x[1] are position, x[2:] are distance?
-        # Let's check the class.
-        # D is usually number of objectives in DTLZ, but in DPF?
-        # In DPF4.py: D, K, M = self.D, self.K, self.M
-        # X_m = X[:, D-1:]
-        # So x[0]...x[D-2] are position?
-        
-        # Let's look at BaseDPF to be sure about K and D relation.
-        # DPF4 default: M=3.
-        # If D is not passed, what is it?
-        # This script assumes we can inspect the instance.
         
         print(f"  Target: M={problem.M}, D={problem.D}, K={problem.K}")
         
         # Generate PF points:
         # We need samples where X_m = 0.5 (to make g=0)
-        # And vary X_p (x[0]...x[D-2])
-        
-        n_samples = 100
-        X_p = np.random.rand(n_samples, problem.D - 1) # Unsafe random just for check? No, let's span.
-        X_p = np.linspace(0, 1, n_samples).reshape(-1, 1) # Simplify for 1 freq variable (D=2?)
-        # Wait, if D=3, we have 2 position variables?
-        # No, D is usually objectives count in standard definition, but here D is likely "k" related?
-        # Let's blindly trust the problem.N based on BaseMop logic
         
         n_var = problem.N
         X_test = np.full((10, n_var), 0.5)
         # Set g-vars (from D-1 onwards) to 0.5 -> g=0
-        # Vary the first variable
         X_test[:, 0] = np.linspace(0, 1, 10)
         
         res = problem.evaluation(X_test)
@@ -74,7 +57,6 @@ def main():
         print(f"  Frozen Nadir: {nadir}")
         
         # Check if F_code roughly fits in F_frozen range
-        # (This is a coarse check)
         in_range = np.all((F_code >= ideal - 0.1) & (F_code <= nadir + 0.1))
         print(f"  Code-generated (g=0) points fall within Frozen bounds? {in_range}")
         
@@ -88,24 +70,7 @@ def main():
     print("\n3. Analyzing MOEA Final Populations for Trap Depth...")
     data_dir = os.path.join(PROJ_ROOT, "tests/calibration_data")
     
-    # Check NSGA2/NSGA3/MOEAD
-    for alg in ["NSGA2", "NSGA3", "MOEAD"]:
-        pop_file = f"DPF4_{alg}_standard_run00_X.csv" # Do we have X? 
-        # Wait, the calibration runner saves F, but does it save X?
-        # generate_baselines.py: saves *_gen{g}.csv (F only usually)
-        # Let's check if we have standard_run00.csv (F) and if we have X.
-        # The prompt said "Implement persistence for Shadow Data (F & X)".
-        # Let's check one file.
-        
-        # Assuming we might only have F in the CSVs used for report.
-        # If we don't have X, we can't calc g.
-        # Let's check file existence first.
-        pass
-
-    # Actually, let's verify if X files exist in calibration_data
-    # If not, we cannot calculate g.
-    
-    # Search for X files
+    # Search for X files in calibration_data
     found_X = False
     for f in os.listdir(data_dir):
         if "DPF4" in f and "_X.csv" in f:
@@ -114,7 +79,6 @@ def main():
              X_pop = pd.read_csv(os.path.join(data_dir, f)).values
              
              # Calculate g manually
-             # DPF4 logic:
              D = problem.D
              X_m = X_pop[:, D-1:]
              k = X_m.shape[1]

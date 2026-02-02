@@ -1,7 +1,8 @@
 # ADR 0015: Scientific Ground Truth and Numerical Integrity
 
 ## Status
-Superado (Ver [ADR 0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) para a v0.7.6)
+
+Superseded (See [ADR 0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) for v0.7.6)
 
 ## Context
 MoeaBench requires a definitive "Ground Truth" for auditing multi-objective optimization algorithms. Numerical floating-point arithmetic (IEEE 754) introduces non-deterministic noise across CPU architectures (Intel vs ARM) and linear algebra backends (MKL, OpenBLAS). To mitigate this and ensure scientific reproducibility, we establish a rigorous "Tabula Rasa" ground truth protocol.

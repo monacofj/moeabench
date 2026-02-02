@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # ADR 0018: Consolidated Scientific Calibration Report and Ground Truth Density Refinement
 
 ## Status

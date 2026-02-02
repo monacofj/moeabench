@@ -33,9 +33,22 @@ SPDX-FileCopyrightText = [
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
-path = ["inconsistency/**/*", "docs/.dpf_problem.md", "verify_dpf.py"]
-SPDX-FileCopyrightText = [
-    "2026 Monaco F. J. <monaco@usp.br>",
-    "2026 Silva F. F. <fernandoferreira.silva42@usp.br>"
+path = [
+    "inconsistency/**/*", 
+    "docs/.dpf_problem.md", 
+    "verify_dpf.py",
+    "docs/adr/0015-scientific-ground-truth-and-numerical-integrity.md",
+    "docs/adr/0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md",
+    "docs/adr/0017-comprehensive-calibration-and-testing-framework.md",
+    "docs/adr/0018-consolidated-scientific-report-and-gt-density-refinement.md",
+    "docs/SCIENTIFIC_RIGOR.md",
+    "misc/sandbox.ipynb",
+    "MoeaBench/mops/data/*.csv",
+    "tests/calibration_data/*.csv",
+    "tests/ground_truth/*.csv",
+    "tests/convergence_analysis.csv",
+    "tests/baselines_v0.7.6.csv",
+    ".agent/**/*"
 ]
+SPDX-FileCopyrightText = "2026 Monaco F. J. <monaco@usp.br>"
 SPDX-License-Identifier = "GPL-3.0-or-later"

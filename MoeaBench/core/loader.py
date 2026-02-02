@@ -26,7 +26,7 @@ class loader:
         if mode == 'config':
             # Keep existing runs if any, only update config
             # But usually load('config') means you want a clean slate with that config
-            # However, the user said "carregar so a configuração"
+            # However, the user said "load configuration only"
             # We'll update everything except runs
             original_runs = target_obj._runs
             target_obj.__dict__.update(loaded_obj.__dict__)

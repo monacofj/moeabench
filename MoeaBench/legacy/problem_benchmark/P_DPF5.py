@@ -32,10 +32,10 @@ class P_DPF5(K_DPF5):
 
     def POFsamples(self):
         """  
-        - Método: dtlz1.samples().
-        - Gera amostras dentro da frente ótima de Pareto.
+        - Method: dtlz1.samples().
+        - Generates samples within the optimal Pareto front.
         - NOTES:
-         - Para obter informações detalhadas sobre a método:
+         - For detailed information about the method:
          https://evobench.github.io/benchmark/problems/DPF5/inPOF/
 
         """  

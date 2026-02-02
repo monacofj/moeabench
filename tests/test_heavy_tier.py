@@ -1,24 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
 """
 MoeaBench Heavy Tier Testing Suite (Deep Calibration)
 =======================================================
 
-Este é o nível mais profundo da pirâmide de testes, destinado à **Calibração Científica**.
-Ele é utilizado para validar se novas implementações de algoritmos ou problemas
-são estatisticamente equivalentes aos padrões de referência.
+This is the deepest level of the testing pyramid, intended for **Scientific Calibration**.
+It is used to validate if new algorithm or problem implementations
+are statistically equivalent to the reference standards.
 
-O que é testado:
+What is tested:
 ----------------
-- Execução de múltiplas repetições estatísticas.
-- Aplicação de testes de hipótese (t-test) e métricas de tamanho de efeito (Cohen's d).
-- Validação profunda de convergência e topologia.
+- Execution of multiple statistical repetitions.
+- Application of hypothesis tests (t-test) and effect size metrics (Cohen's d).
+- Deep validation of convergence and topology.
 
-Características:
+Characteristics:
 ----------------
-- **Custo**: Computacionalmente caro (pode levar horas).
-- **Rigor**: Destinado a releases maiores ou validação de novos métodos de pesquisa.
+- **Cost**: Computationally expensive (can take hours).
+- **Rigor**: Intended for major releases or validation of new research methods.
 
-Execução:
+Execution:
 ---------
 pytest tests/test_heavy_tier.py
 """

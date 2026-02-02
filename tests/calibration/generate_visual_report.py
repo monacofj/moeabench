@@ -1,23 +1,27 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 MoeaBench v0.7.6 Visual Calibration Generator
 ===============================================
 
-Este script processa o rastro completo da calibração para criar um relatório 
-interativo em HTML. Ele combina visualização tridimensional frentes de Pareto 
-com curvas de convergência dinâmica (IGD/HV) baseadas em snapshots.
+This script processes the full calibration trace to create an interactive 
+HTML report. It combines 3D Pareto front visualizations with dynamic 
+convergence curves (IGD/HV) based on snapshots.
 
-Principais Funcionalidades:
+Key Features:
 ---------------------------
-- Overlays 3D: Projeção dos algoritmos sobre a "Verdade Matemática" (Ground Truth).
-- Timeplots de Convergência: Gráficos de IGD e HV Evolutivo ao longo das gerações.
-- Interatividade Plotly: Zoom, rotação e inspeção de pontos direto no navegador.
-- Normalização Consistente: Utiliza os mesmos limites Ideal/Nadir da v0.7.6.
+- 3D Overlays: Projection of algorithms onto the "Mathematical Truth" (Ground Truth).
+- Convergence Timeplots: IGD and Evolutive HV graphs throughout generations.
+- Plotly Interactivity: Zoom, rotation, and point inspection directly in the browser.
+- Consistent Normalization: Uses the same Ideal/Nadir bounds as v0.7.6.
 
-Saída:
+Output:
 ------
 - tests/CALIBRATION_v0.7.6.html
 
-Uso:
+Usage:
 ----
 python tests/calibration/generate_visual_report.py
 """

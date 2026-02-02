@@ -1,24 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 MoeaBench Smoke Tier Testing Suite (Regression)
 ===============================================
 
-Este é o segundo nível da pirâmide de testes, focado em **convergência básica**.
-O objetivo é garantir que mudanças no código não degradem o desempenho dos algoritmos
-ou quebrem a reprodutibilidade numérica da v0.7.6.
+This is the second level of the testing pyramid, focused on **basic convergence**.
+The goal is to ensure that code changes do not degrade algorithm performance
+or break the numerical reproducibility of v0.7.6.
 
-Metodologia de Reprodutibilidade:
----------------------------------
-Diferente de testes estocásticos comuns, este Smoke Test utiliza o motor de
-**Hashing Determinístico** para rodar com a semente exata (`run00`) da calibração original.
-Isso permite uma comparação bit-a-bit (ou quase exata) com o baseline oficial.
+Reproducibility Methodology:
+----------------------------
+Unlike common stochastic tests, this Smoke Test utilizes the **Deterministic Hashing** 
+engine to run with the exact seed (`run00`) of the original calibration.
+This allows for a bit-by-bit (or nearly exact) comparison with the official baseline.
 
-O que é testado:
-----------------
-- Convergência de 42 combinações (MOP x Algoritmo) em intensidade `light`.
-- Comparação do IGD observado contra o `baseline_mean + 3-sigma` (com margem de segurança).
+What is tested:
+---------------
+- Convergence of 42 combinations (MOP x Algorithm) in `light` intensity.
+- Comparison of observed IGD against the `baseline_mean + 3-sigma` (with safety margin).
 
-Execução:
----------
+Execution:
+----------
 pytest tests/test_smoke_tier.py
 """
 import pytest

@@ -1,26 +1,30 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """
 MoeaBench Baseline Generation Engine
 ====================================
 
-Este script é o motor de execução responsável pela coleta de dados empíricos do MoeaBench v0.7.6.
-Sua função é executar uma grade sistemática de experimentos (MOP x Algoritmo x Intensidade)
-e persistir as frentes de Pareto resultantes para análise posterior.
+This script is the execution engine responsible for collecting empirical data for MoeaBench v0.7.6.
+Its role is to execute a systematic grid of experiments (MOP x Algorithm x Intensity)
+and persist the resulting Pareto fronts for later analysis.
 
-Racional Científico:
+Scientific Rationale:
 --------------------
-Para garantir a reprodutibilidade absoluta, este script utiliza um sistema de sementes (seeds)
-baseado em hashing determinístico da configuração (MOP, Algoritmo, Intensidade, ID da Run).
-Isso elimina a dependência do relógio do sistema e garante que os mesmos resultados
-sejam obtidos em diferentes plataformas.
+To ensure absolute reproducibility, this script uses a seeding system
+based on deterministic hashing of the configuration (MOP, Algorithm, Intensity, Run ID).
+This eliminates dependency on the system clock and ensures the same results
+are obtained across different platforms.
 
-Funcionalidades:
+Features:
 ----------------
-- Execução determinística via hashing (CRC32).
-- Checkpoints de gerações intermediárias para análise de convergência.
-- Monitoramento "On-the-Fly": Aborta a execução se detectar variância zero.
-- Persistência atômica: Salva resultados run-a-run para tolerância a falhas.
+- Deterministic execution via hashing (CRC32).
+- Intermediate generation checkpoints for convergence analysis.
+- On-the-Fly Monitoring: Aborts execution if zero variance is detected.
+- Atomic Persistence: Saves results run-by-run for fault tolerance.
 
-Uso:
+Usage:
 ----
 python tests/calibration/generate_baselines.py
 """
