@@ -6,7 +6,40 @@
 import numpy as np
 from scipy.stats import linregress, wasserstein_distance
 from functools import cached_property
+from typing import Dict, Any
 from .base import StatsResult, SimpleStatsValue
+
+class CasteSummary:
+    """
+    Helper object to access caste statistics using intuitive methods.
+    """
+    def __init__(self, data: Dict[int, Dict]):
+        self._data = data
+        
+    def n(self, rank: int) -> int:
+        """Returns the population count for the given rank."""
+        return self._data.get(rank, {}).get('n', 0)
+        
+    def q(self, rank: int, level: float = 50) -> float:
+        """
+        Returns the quality (merit) level for the given rank.
+        level=50 (default) is Median.
+        level=25 is Q1.
+        level=75 is Q3.
+        """
+        keyMap = {50: 'q', 25: 'q1', 75: 'q3'}
+        return self._data.get(rank, {}).get(keyMap.get(level, 'q'), 0.0)
+
+    def min(self, rank: int) -> float:
+        """Returns the lower statistical whisker limit."""
+        return self._data.get(rank, {}).get('min_w', 0.0)
+        
+    def max(self, rank: int) -> float:
+        """Returns the upper statistical whisker limit."""
+        return self._data.get(rank, {}).get('max_w', 0.0)
+
+    def __repr__(self):
+        return f"<CasteSummary: {list(self._data.keys())} ranks>"
 
 class StratificationResult(StatsResult):
     """
@@ -16,13 +49,14 @@ class StratificationResult(StatsResult):
     selection pressure.
     """
     def __init__(self, ranks_hist, raw_distributions=None, source=None, gen=-1, 
-                 objectives=None, rank_array=None):
+                 objectives=None, rank_array=None, sub_results=None):
         self.ranks = ranks_hist  # dict {rank: frequency}
         self.raw = raw_distributions # raw counts per run if applicable
         self.source = source
         self.gen = gen
         self.objectives = objectives # (N x M) objective matrix
         self.rank_array = rank_array # (N,) rank assigned to each row
+        self.sub_results = sub_results # list of StratificationResult for sub-components
         
     @property
     def max_rank(self) -> int:
@@ -85,6 +119,63 @@ class StratificationResult(StatsResult):
         res = linregress(x, y)
         return -res.slope
 
+    def caste_summary(self, mode='individual', metric_fn=None, anchor=1.0, **m_kwargs) -> 'CasteSummary':
+        """
+        Extracts the exact statistical summary for each rank (as seen in strat_caste2).
+        
+        Args:
+            mode (str): 'individual' or 'collective'.
+            metric_fn: Metric to evaluate quality (default: hypervolume).
+            anchor (float): Normalization constant.
+            **m_kwargs: Passed to metric_fn.
+            
+        Returns:
+            CasteSummary: Object with methods like .n(rank), .q(rank), .min(rank), .max(rank).
+        """
+        import MoeaBench.metrics.evaluator as eval_mod
+        m_func = metric_fn if metric_fn else eval_mod.hypervolume
+        
+        stats = {}
+        for r in range(1, self.max_rank + 1):
+            mask = (self.rank_array == r)
+            if not np.any(mask): continue
+            
+            sub_objs = self.objectives[mask]
+            
+            if mode == 'collective':
+                if self.sub_results:
+                    samples = []
+                    for sub in self.sub_results:
+                        s_mask = (sub.rank_array == r)
+                        val = m_func(sub.objectives[s_mask], **m_kwargs) if np.any(s_mask) else 0.0
+                        samples.append(float(val) / anchor)
+                else:
+                    samples = [float(m_func(sub_objs, **m_kwargs)) / anchor]
+            else:
+                samples = [float(m_func(sub_objs[j:j+1], **m_kwargs)) / anchor for j in range(len(sub_objs))]
+                
+            q_stats = np.percentile(samples, [25, 50, 75])
+            q25, q50, q75 = q_stats
+            iqr = q75 - q25
+            
+            up_w = q75 + 1.5 * iqr
+            lo_w = q25 - 1.5 * iqr
+            
+            max_w = np.max([s for s in samples if s <= up_w]) if any(s <= up_w for s in samples) else q75
+            min_w = np.min([s for s in samples if s >= lo_w]) if any(s >= lo_w for s in samples) else q25
+            
+            avg_n = np.mean([np.sum(s.rank_array == r) for s in self.sub_results]) if self.sub_results else len(sub_objs)
+            
+            stats[r] = {
+                'n': int(round(avg_n)),
+                'q': float(q50),
+                'q1': float(q25),
+                'q3': float(q75),
+                'min_w': float(min_w),
+                'max_w': float(max_w)
+            }
+        return CasteSummary(stats)
+
     def report(self, metric=None) -> str:
         """
         Generates an analytical narrative report of the population strata.
@@ -134,32 +225,36 @@ def strata(data, gen=-1):
         hist = _calc_rank_hist(ranks)
         return hist, pop.objectives, ranks
 
-    # 1. Handle Experiment (Multi-Run)
-    if hasattr(data, 'runs') and hasattr(data, 'pop'):
-        all_hists = []
-        all_objs = []
-        all_ranks = []
-        for run in data:
-            h, o, r = _collect_run_data(run, gen)
-            all_hists.append(h)
-            all_objs.append(o)
-            all_ranks.append(r)
+    # 1. Handle Experiment (Multi-Run) or JoinedPopulation (Aggregated Snapshot)
+    is_joined = False
+    try:
+        from ..core.experiment import JoinedPopulation
+        if isinstance(data, JoinedPopulation):
+            is_joined = True
+    except ImportError:
+        pass
+
+    if (hasattr(data, 'runs') and hasattr(data, 'pop')) or is_joined:
+        all_res = []
+        
+        # Determine iterator
+        items = data.pops if is_joined else data
+        
+        for item in items:
+            all_res.append(strata(item, gen))
             
         agg_hist = {}
-        max_r = max(max(h.keys()) for h in all_hists)
+        max_r = max(r.max_rank for r in all_res) if all_res else 0
         for r in range(1, max_r + 1):
-            agg_hist[r] = np.mean([h.get(r, 0) for h in all_hists])
+            agg_hist[r] = np.mean([res.ranks.get(r, 0) for res in all_res])
             
-        # For aggregated quality, we'll keep the raw components to allow 
-        # StratificationResult to calculate means correctly.
-        # However, for simplicity and memory, we can store the concatenated 
-        # objectives and ranks as if it were one giant run for the quality profile.
-        concat_objs = np.vstack(all_objs)
-        concat_ranks = np.concatenate(all_ranks)
+        concat_objs = np.vstack([res.objectives for res in all_res])
+        concat_ranks = np.concatenate([res.rank_array for res in all_res])
             
-        return StratificationResult(agg_hist, raw_distributions=all_hists, 
+        return StratificationResult(agg_hist, raw_distributions=[res.ranks for res in all_res], 
                                     source=data, gen=gen, 
-                                    objectives=concat_objs, rank_array=concat_ranks)
+                                    objectives=concat_objs, rank_array=concat_ranks,
+                                    sub_results=all_res)
 
     # 2. Handle Run/Population
     if isinstance(data, (Run, Population)):

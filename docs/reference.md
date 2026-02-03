@@ -190,8 +190,10 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 *   **`strat_ranks(*args, ...)`**:
     *   Permanent Alias: `rankplot`. Shows frequency distribution across dominance ranks.
-*   **`strat_caste(*args, metric=None, ...)`**:
-    *   Maps Quality vs Density per dominance layer.
+*   **`strat_caste(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
+    *   Maps Quality vs Density using parametric modes ('collective' vs 'individual').
+*   **`strat_caste_deprecated(*args, ...)`**:
+    *   [DEPRECATED] Original visualizer. Maps Quality vs Density per dominance layer.
 *   **`strat_tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
@@ -438,7 +440,7 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 
 | Legacy Alias | Taxonomical Successor | Domain |
 | :--- | :--- | :--- |
-| `mb.casteplot` | `mb.view.strat_caste` | Stratification |
+| `mb.casteplot` | `mb.view.strat_caste_deprecated` | Stratification |
 | `mb.tierplot` | `mb.view.strat_tiers` | Stratification |
 | `mb.view.topo_dist` | `mb.view.topo_density` | Topography |
 | `mb.stats.perf_prob` | `mb.stats.perf_probability` | Performance |

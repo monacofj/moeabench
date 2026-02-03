@@ -24,6 +24,7 @@ class MOEAD_pymoo(BasePymoo):
         decomposition = self.kwargs.pop('decomposition', PBI(eps=0.0, theta=5))
         n_neighbors = self.kwargs.pop('n_neighbors', 15)
         prob_neighbor_mating = self.kwargs.pop('prob_neighbor_mating', 0.9)
+        
 
         algorithm = MOEAD(ref_dirs, 
                           crossover=crossover, 

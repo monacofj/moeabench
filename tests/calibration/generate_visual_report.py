@@ -147,7 +147,7 @@ def generate_visual_report():
             subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & H_rel)")
         )
 
-        # 1. Add Ground Truth to 3D plot
+        # 1. Add Ground Truth to 3D plot (Lowest Priority, subtle)
         if F_opt is not None:
             print(f"    - Trace: Ground Truth Group (GT)")
             try:
@@ -155,8 +155,8 @@ def generate_visual_report():
                     x=F_opt[:,0], y=F_opt[:,1], z=F_opt[:,2],
                     mode='markers',
                     marker=dict(
-                        size=2.5, 
-                        color='rgba(0, 0, 0, 0.25)', # Translucent Black Cloud
+                        size=2.0, 
+                        color='rgba(0, 0, 0, 0.2)', # Restored: Transparent Black Cloud
                         line=dict(width=0)
                     ),
                     name='Ground Truth',
@@ -167,16 +167,16 @@ def generate_visual_report():
                 print(f"      ERROR adding GT trace: {e}")
 
         algs = sorted(mop_df['Algorithm'].unique())
-        # Final Zen Mode: Clean organic look, 0.75 opacity, borderless
+        # Balanced Color Palette (Scientific Tones)
         colors_rgba = {
-            'NSGA2': 'rgba(231, 76, 60, 0.75)',  # Red
-            'NSGA3': 'rgba(52, 152, 219, 0.75)', # Blue
-            'MOEAD': 'rgba(212, 172, 13, 0.75)'  # Deeper Yellow (Amber)
+            'NSGA2': 'rgba(231, 76, 60, 0.85)',  # Soft Red
+            'NSGA3': 'rgba(52, 152, 219, 0.85)', # Soft Blue
+            'MOEAD': 'rgba(255, 152, 0, 1.0)'   # Amber/Orange (Converged points)
         }
         colors_solid = {
             'NSGA2': '#e74c3c', 
             'NSGA3': '#3498db', 
-            'MOEAD': '#d4ac0d'  # Deeper Yellow
+            'MOEAD': '#ff9800'  # Solid Amber
         }
         
         # Store metrics for HTML table
@@ -225,9 +225,9 @@ def generate_visual_report():
                         x=F_obs[:,0], y=F_obs[:,1], z=F_obs[:,2],
                         mode='markers',
                         marker=dict(
-                            size=3.0, 
-                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
-                            line=dict(width=0) # Final Zen: No border
+                            size=4.5, # Significantly larger to avoid occlusion by stay cloud
+                            color=colors_rgba.get(alg, 'rgba(0,0,0,1.0)'),
+                            line=dict(width=0.5, color='white') # Added hair-thin white border for contrast
                         ),
                         name=f'{alg} (Final)',
                         legendgroup=alg,

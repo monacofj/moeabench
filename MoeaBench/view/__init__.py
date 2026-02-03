@@ -5,7 +5,7 @@
 
 from .topo import (topo_shape, topo_bands, topo_gap, topo_density)
 from .perf import (perf_history, perf_spread, perf_density)
-from .strat import (strat_ranks, strat_caste, strat_tiers)
+from .strat import (strat_ranks, strat_caste_deprecated, strat_caste, strat_tiers)
 
 from .style import apply_style
 
@@ -21,6 +21,7 @@ topo_dist = topo_density
 rankplot = strat_ranks
 casteplot = strat_caste
 tierplot = strat_tiers
+rank_caste2 = strat_caste
 
 # Note: strat legacy aliases (rankplot, casteplot, tierplot) are maintained 
 # for backward compatibility as permanent or soft-deprecated members.
@@ -28,7 +29,7 @@ tierplot = strat_tiers
 __all__ = [
     "topo_shape", "topo_bands", "topo_gap", "topo_density",
     "perf_history", "perf_spread", "perf_density",
-    "strat_ranks", "strat_caste", "strat_tiers",
+    "strat_ranks", "strat_caste_deprecated", "strat_caste", "strat_tiers",
     "spaceplot", "timeplot", "topo_dist",
-    "rankplot", "casteplot", "tierplot"
+    "rankplot", "casteplot", "tierplot", "rank_caste2"
 ]

@@ -6,6 +6,8 @@
 from .base_moea_wrapper import BaseMoeaWrapper
 from ._moead_pymoo import MOEAD_pymoo
 
+from .moead_configs import get_moead_params
+
 class MOEAD(BaseMoeaWrapper):
     """
     Multi-objective Evolutionary Algorithm based on Decomposition (MOEA/D).
@@ -19,3 +21,19 @@ class MOEAD(BaseMoeaWrapper):
     """
     def __init__(self, population=150, generations=300, seed=1, **kwargs):
         super().__init__(MOEAD_pymoo, population, generations, seed, **kwargs)
+
+    def __call__(self, experiment, **kwargs):
+        """Overrides base call to inject problem-specific parameters."""
+        # Get problem name from experiment (mop object)
+        problem_name = experiment.__class__.__name__
+        
+        # Look up tuned params
+        tuned_params = get_moead_params(problem_name)
+        
+        # Merge: kwargs (explicit user) > tuned_params (registry) > defaults
+        # We update self._kwargs so the engine receives them
+        for k, v in tuned_params.items():
+            if k not in self._kwargs:
+                self._kwargs[k] = v
+                
+        return super().__call__(experiment, **kwargs)

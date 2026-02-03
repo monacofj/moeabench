@@ -333,18 +333,82 @@ print(f"Selection Pressure: {res.selection_pressure():.2f}")
 *   **`.selection_pressure()`**: Numeric value (0 to 1) estimating convergence focus.
 *   **`.dominance_ratio()`** *(Tier only)*: Relative proportion of each group in the elite rank.
 
-#### **Visualizing the Dominance Hierarchy**
-The structural plots are polymorphic lenses that visualize these results. Because stratification metrics typically evaluate the entire search state, they operate over the population cloud.
+#### **Visualizing the Dominance Hierarchy (`strat_caste`)**
+
+The `strat_caste` visualization is the most sophisticated tool in the stratification suite. It maps the biological concept of "caste" to the objective space, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
+
+Starting with version `0.8.0`, this tool offers two parametric modes that answer fundamentally different scientific questions.
 
 ```python
 # 1. Structural Analysis of a single experiment
 res = mb.stats.strata(exp)
 mb.view.strat_ranks(res)      
-mb.view.strat_caste(res)  
 
-# 2. Competitive Tier Analysis (Joint Strata)
+# 2. Caste Analysis (The Hierarchy)
+mb.view.strat_caste(res, mode='collective')  # Default: The Macro View (Robustness)
+mb.view.strat_caste(res, mode='individual')  # The Micro View (Diversity)
+
+# 3. Competitive Tier Analysis (Joint Strata)
 res_tier = mb.stats.tier(exp1, exp2)
-mb.view.strat_tiers(res_tier) # Joint dominance duel
+mb.view.strat_tiers(res_tier) 
+```
+
+### **1. The "Collective" View (`mode='collective'`) (Robustness)**
+> *"What is the Gross Domestic Product (GDP) of each caste across history?"*
+
+This mode is designed to measure **Stochastic Robustness**. 
+*   **The Data Point**: Each point in the distribution represents the **Total Quality** (e.g., Hypervolume) of an entire rank for a *single independent run*.
+*   **The Interpretation**:
+    *   **Box Height**: Represents variance between runs. A short, flattened box means the algorithm is highly reliable—it delivers the same total quality every time, even if the individual solutions differ.
+    *   **Outliers**: In this mode, an outlier represents a **failed run** (a catastrophic event where the whole population collapsed compared to other seeds).
+    *   **Usage**: The primary plot for paper reporting, as it proves your method's stability.
+
+### **2. The "Individual" View (`mode='individual'`) (Diversity)**
+> *"What is the Per Capita merit of the citizens?"*
+
+This mode is designed to measure **Internal Diversity**.
+*   **The Data Point**: Each point represents a **Single Solution** within the population.
+*   **The Interpretation**:
+    *   **Box Height**: Represents the diversity of quality within the elite. A tall box means the front includes both "super-solutions" and "marginal solutions".
+    *   **Statistics (Example: NSGA3 vs SPEA2)**:
+        *   **Top Label ($n \approx 94$)**: The average count. Means the algorithm consistently places 94 solutions in the Rank 1 elite.
+        *   **Median ($q \approx 0.37$)**: The "center gravity" of the front. 50% of solutions are better than this merit.
+        *   **Whiskers (e.g., $0.10 - 0.57$)**: The effective range of the front. The outliers beyond this range are rare "mutant" checks that extend the front.
+    *   **Usage**: Debugging and algorithm design. Helps you understand if your algorithm is producing a uniform front or depending on a few "super-individuals".
+
+### **8.3 Programmatic Access to Quantitative Data**
+
+While the `view` functions provide biological and sociological metaphors (Caste, Tiers), the underlying data consists of standard statistical distributions. You can extract these values directly from the result objects:
+
+#### **Extracting Rank and Caste Data**
+```python
+res = mb.stats.strata(exp)
+
+# 1. Distribution of frequencies (used in strat_ranks)
+freqs = res.frequencies()  # [Rank1%, Rank2%, ...]
+
+# 2. Quality profiles (used in strat_caste)
+q_vals = res.quality_profile() # Average HV per rank
+
+# 3. Comprehensive Caste Summary (Method-based API)
+# This returns exactly the numbers shown in strat_caste2
+summary = res.caste_summary(mode='individual')
+
+print(summary.n(1))          # Population count in Rank 1
+print(summary.q(1))          # Median quality (level=50)
+print(summary.q(1, level=25))# Q1 quality
+print(summary.min(1))        # Lower whisker
+print(summary.max(1))        # Upper whisker
+```
+
+By default, quality metrics are normalized to an `anchor=1.0`. For comparative studies, you should set the anchor to the maximum HV of the best performing algorithm.
+
+#### **Extracting Competitive Metrics (Tiers)**
+```python
+t_res = mb.stats.tier(exp1, exp2)
+
+print(f"Prop. in Elite (Pole): {t_res.dominance_ratio}") # [PropA, PropB]
+print(f"Stochastic Gap: {t_res.gap}")                   # Rank depth of competition
 ```
 
 ![Rank Plot](images/rankplot.png)

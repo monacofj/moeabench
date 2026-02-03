@@ -46,6 +46,7 @@ def generate():
     # --- 2. ADVANCED ANALYSIS (Scientific Scenarios - 5 Runs) ---
     print("\nGenerating ADVANCED scenarios (repeat=5)...")
     exp = mb.experiment()
+    exp.name = "NSGA3"
     exp.mop = mb.mops.DTLZ2(M=3)
     exp.moea = mb.moeas.NSGA3(population=100, generations=30)
     exp.run(repeat=5)
@@ -72,11 +73,44 @@ def generate():
     # Tier Duel
     print("Saving tierplot.png...")
     exp2 = mb.experiment()
+    exp2.name = "SPEA2"
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=100, generations=30)
     exp2.run(repeat=5)
     mb.view.tierplot(exp, exp2, gen=10)
     plt.savefig(os.path.join(img_dir, "tierplot.png"), bbox_inches='tight', dpi=150)
+    plt.close('all')
+
+    # --- 3. MISSING ILLUSTRATIONS (Added v0.7.6+) ---
+    
+    # topo_bands
+    print("Saving topo_bands.png...")
+    mb.view.topo_bands(exp, levels=[0.5, 0.9])
+    plt.savefig(os.path.join(img_dir, "topo_bands.png"), bbox_inches='tight', dpi=150)
+    plt.close('all')
+
+    # topo_gap
+    print("Saving topo_gap.png...")
+    mb.view.topo_gap(exp, exp2, level=0.5)
+    plt.savefig(os.path.join(img_dir, "topo_gap.png"), bbox_inches='tight', dpi=150)
+    plt.close('all')
+
+    # topo_density (Axes 0 and 1)
+    print("Saving topo_density.png...")
+    mb.view.topo_density(exp, exp2, axes=[0, 1])
+    plt.savefig(os.path.join(img_dir, "topo_density.png"), bbox_inches='tight', dpi=150)
+    plt.close('all')
+
+    # perf_spread (Hypervolume)
+    print("Saving perf_spread.png...")
+    mb.view.perf_spread(exp, exp2, metric=mb.metrics.hv)
+    plt.savefig(os.path.join(img_dir, "perf_spread.png"), bbox_inches='tight', dpi=150)
+    plt.close('all')
+
+    # perf_density (Hypervolume)
+    print("Saving perf_density.png...")
+    mb.view.perf_density(exp, exp2, metric=mb.metrics.hv)
+    plt.savefig(os.path.join(img_dir, "perf_density.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
     print("\nAll assets generated successfully (Single vs. Multi-run distinction applied).")

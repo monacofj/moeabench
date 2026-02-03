@@ -15,8 +15,11 @@ from ..progress import get_progress_bar, set_active_pbar
 from typing import Optional, List, Union, Any, Iterator, Dict
 
 class JoinedPopulation:
-    def __init__(self, pops: List[Population]) -> None:
+    def __init__(self, pops: List[Population], source: Any = None) -> None:
         self.pops = pops
+        self.source = source
+        self.label = "Population"
+        self.name = getattr(source, 'name', 'Population') if source else 'Population'
         
     @property
     def objectives(self) -> SmartArray:
@@ -134,7 +137,7 @@ class experiment:
         # But "exp.pop().objectives" implies aggregation.
         
         # Let's create a JoinedPopulation
-        return JoinedPopulation([run.pop(gen) for run in self._runs])
+        return JoinedPopulation([run.pop(gen) for run in self._runs], source=self)
 
     def front(self, gen: int = -1) -> SmartArray:
          """Returns the non-dominated front (objectives) from the aggregate cloud (all runs)."""
