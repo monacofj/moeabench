@@ -74,7 +74,7 @@ def main():
     #    Mutants or Outliers—solutions so unique they break the distribution.
     ax_ind = mb.view.strat_caste(strat1, strat2, mode='individual', 
                  title=f"Individual Perspective: Solution Merit - Gen {SNAPSHOT_GEN}")
-    ax_ind.figure.savefig("strat_caste_individual.png", dpi=300, bbox_inches='tight')
+    ax_ind.figure.savefig("caste_individual.png", dpi=300, bbox_inches='tight')
 
     # B. Macro-Analysis: Stochastic Robustness (Collective Mode)
     # Scientific Inquiry: "What is the aggregate performance distribution across runs?"
@@ -88,7 +88,7 @@ def main():
     #   deviations within the sample.
     ax_coll = mb.view.strat_caste(strat1, strat2, mode='collective', 
                  title=f"Macro View: Stochastic Robustness - Gen {SNAPSHOT_GEN}")
-    ax_coll.figure.savefig("strat_caste_collective.png", dpi=300, bbox_inches='tight')
+    ax_coll.figure.savefig("caste_collective.png", dpi=300, bbox_inches='tight')
     
     # C. Competitive View (The Tier Duel)
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
