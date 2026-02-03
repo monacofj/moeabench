@@ -182,11 +182,13 @@ class DistMatchResult(StatsResult):
     """
     Rich result for multi-axial distribution matching (topology/equivalence).
     """
-    def __init__(self, results, names, space='objs', method='ks'):
+    def __init__(self, results, names, space='objs', method='ks', alpha=0.05, threshold=0.1):
         self.results = results # {axis_idx: score/p_val}
         self.names = names
         self.space = space
         self.method = method
+        self.alpha = alpha
+        self.threshold = threshold
 
     @property
     def p_values(self) -> dict:
@@ -195,17 +197,17 @@ class DistMatchResult(StatsResult):
 
     @property
     def is_consistent(self) -> bool:
-        """Returns True if all dimensions are statistically equivalent (p > 0.05)."""
-        if self.method == 'emd': # EMD doesn't have p-values
-            return all(v < 0.1 for v in self.results.values())
-        return all(getattr(v, 'p_value', 1.0) >= 0.05 for v in self.results.values())
+        """Returns True if all dimensions are statistically equivalent based on alpha/threshold."""
+        if self.method == 'emd':
+            return all(v < self.threshold for v in self.results.values())
+        return all(getattr(v, 'p_value', 1.0) >= self.alpha for v in self.results.values())
 
     @property
     def failed_axes(self) -> list:
         """Returns indices of axes where distributions differ."""
         if self.method == 'emd':
-            return [k for k, v in self.results.items() if v >= 0.1]
-        return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < 0.05]
+            return [k for k, v in self.results.items() if v >= self.threshold]
+        return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < self.alpha]
 
     def report(self) -> str:
         space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
@@ -213,6 +215,7 @@ class DistMatchResult(StatsResult):
             f"--- Distribution Match Report ({self.method.upper()}) ---",
             f"  Analysed Space: {space_label}",
             f"  Global Status:  {'CONSISTENT' if self.is_consistent else 'DIVERGENT'}",
+            f"  Criteria:       {'alpha=' + str(self.alpha) if self.method != 'emd' else 'threshold=' + str(self.threshold)}",
             f"  Dimensions:     {len(self.results)} axes tested",
             "\n  Dimensional Analysis:"
         ]
@@ -221,11 +224,11 @@ class DistMatchResult(StatsResult):
             name = f"Axis {idx + 1}"
             if self.method == 'emd':
                 val_str = f"EMD={res:.4f}"
-                sig_str = "(Divergent)" if res >= 0.1 else "(Match)"
+                sig_str = "(Divergent)" if res >= self.threshold else "(Match)"
             else:
                 p_val = getattr(res, 'p_value', 1.0)
                 val_str = f"p={p_val:.4f}"
-                sig_str = "(Divergent)" if p_val < 0.05 else "(Match)"
+                sig_str = "(Divergent)" if p_val < self.alpha else "(Match)"
             lines.append(f"    {name:<10}: {val_str:<10} {sig_str}")
 
         if not self.is_consistent:
@@ -235,7 +238,7 @@ class DistMatchResult(StatsResult):
             
         return "\n".join(lines)
 
-def topo_distribution(*args, space='objs', axes=None, method='ks', **kwargs):
+def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs):
     """
     [mb.stats.topo_distribution] Performs multi-axial distribution matching.
     Verifies if populations are statistically equivalent in objective or decision space.
@@ -325,4 +328,4 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', **kwargs):
                         vals.append(wasserstein_distance(samples[i], samples[j]))
                 results[ax] = np.mean(vals)
                 
-    return DistMatchResult(results, names, space=space, method=method)
+    return DistMatchResult(results, names, space=space, method=method, alpha=alpha, threshold=threshold)

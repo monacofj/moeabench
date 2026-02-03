@@ -9,20 +9,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 **Welcome to MoeaBench!**
 
-MoeaBench is an **extensible analytical toolkit** designed to host and evaluate multi-objective optimization algorithms. Rather than just a library of pre-built solvers, its central philosophy is to serve as a **scientific laboratory** where users can "plug in" their own MOEAs and MOPs. 
+MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 
-By providing a decoupled architecture, MoeaBench allows you to treat your own algorithm as a modular plugin, benefiting from all built-in metrics, statistical tests, and visualizations without modifying the core framework.
+To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
-The framework achieves this by organizing stochastic search data into a **structured semantic model**, transforming raw numerical trajectories into **intuitive programmatic access**, narrative-driven results, and professional visualizations.
-
-MoeaBench's analytical integrity is anchored in the native, high-performance implementations of foundational benchmarks
+For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guide](mops.md)**.
 
 *   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
 *   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
 
-For mathematical implementation details, see the **[MOPs Guide](mops.md)**
 
-This guide provides a pedagogical journey through the framework. For exhaustive technical specifications of every method and class, please consult the **[API Reference](reference.md)**.
+
+This document provides an introductory guide through the framework. For detailed technical specifications of every method and class, please consult the **[API Reference](reference.md)**.
 
 
 ---
@@ -32,14 +30,14 @@ This guide provides a pedagogical journey through the framework. For exhaustive 
 MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
 
 ### **Key Features**
-*   **Central Extensibility**: Seamlessly plug in custom problems or algorithms. Your code is the guest, MoeaBench is the host—zero modifications to the core library required.
-*   **Many-Objective Support**: Optimized for high-dimensional objective spaces with no artificial numerical traps on $M$ or $N$.
-*   **Hybrid Evaluation**: Intelligent metrics that automatically utilize exact methods for standard problems and efficient fallbacks (like Monte Carlo) for many-objective scenarios.
-*   **Semantic Data Model**: A strict hierarchy (Experiment → Run → Population) that makes data access surgically precise.
-*   **High-Level Delegation**: Powerful shortcuts that bridge the gap between structural data and scientific results.
-*   **Polymorphic Visualization**: Plotting tools that "understand" the complex objects you pass to them.
-*   **Statistical Rigor**: Built-in support for multi-run aggregation and standard non-parametric tests.
-
+*   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
+*   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
+*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
+*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
+*   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
+*   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
+*   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
+*   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 
 ---
 
@@ -53,17 +51,17 @@ Let's solve the DTLZ2 benchmark (3 objectives) using the NSGA-III algorithm:
 ```python
 import MoeaBench as mb
 
-# 1. Setup laboratory
-exp = mb.experiment()
-exp.mop = mb.mops.DTLZ2(M=3) # Standard 3-objective problem
-exp.moea = mb.moeas.NSGA3()
+# 1. Configure an experiment
+exp = mb.experiment()                   # Instantiate an experiment
+exp.mop = mb.mops.DTLZ2()               # Choose a benchmark problem
+exp.moea = mb.moeas.NSGA3()             # Choose an optimization algorithm
 
-# 2. Start search process
+# 2. Run the experiment
 exp.run()
 
 # 3. View instant reward
-mb.view.topo_shape(exp)     
-mb.view.perf_history(exp)   
+mb.view.topo_shape(exp)                 # View the resulting Pareto front  
+mb.view.perf_history(exp)               # View the hypervomume convergence
 ```
 
 ![Pareto Front](images/hello_space.png)
@@ -101,56 +99,84 @@ mb.view.perf_history(exp)
 
 To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
 ```python
-mb.view.perf_history(exp[4])
+mb.view.perf_history(exp[4])   # Run number is 0-indexed
 ```
 
 For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy](#4-mastery-the-data-hierarchy)**.
 
 ### **Control: Custom Stop Criteria**
 
+Usually, an experiment runs for a given number of generations (default 300)
+
 MoeaBench allows you to inject custom logic to halt the search process based on dynamic conditions (e.g., convergence, time limits, or specific targets). This can be set globally for the experiment or per execution.
 
-The stop function receives the **Algorithm Instance** as its context, allowing access to the current generation (`algo.n_gen`), population (`algo.pop`), and problem (`algo.problem`).
+The stop function receives a reference to the **Active Solver** as its context, allowing access to the current state of the optimization, including the generation count (`solver.n_gen`), the current population (`solver.pop`), and the problem definition (`solver.problem`). For an exhaustive list of accessible properties, consult the **[API Reference](reference.md#solver-state)**.
 
 ```python
 # 1. Define a global criteria (applies to all future runs)
 # Stop if we reach generation 50 (ignoring the default max)
-exp.stop = lambda algo: algo.n_gen >= 50
+exp.stop = lambda solver: solver.n_gen >= 50
 exp.run()
 
 # 2. Override for a specific run (e.g., debug mode)
 # Check if the first objective of the best solution is negative
-exp.run(stop=lambda algo: algo.pop.best_obj[0] < 0.0)
+exp.run(stop=lambda solver: solver.pop.best_obj[0] < 0.0)
 
 # 3. Disable custom criteria (revert to standard generations)
 exp.stop = None
 ```
 
----
+The `stop` callback is invoked by the solver at the end of every generation. If the function returns `True`, the search process is immediately terminated.
+
+> [!TIP]
+> **Efficiency and Periodicity**: Computing complex stop conditions (such as convergence metrics or hypervolume stability) at every iteration can be computationally expensive. It is often advisable to perform the actual evaluation within a periodic conditional block to minimize overhead.
+
+```python
+# Evaluate the stop condition only every 10 generations
+def periodic_stop(solver):
+    if solver.n_gen % 10 == 0:
+        # Perform expensive analysis here
+        return check_convergence(solver)
+    return False
+
+exp.stop = periodic_stop
+exp.run()
+```
 
 
-## **4. Mastery: The Data Hierarchy**
+## **4. The Data Hierarchy**
 
-MoeaBench organizes data in a strict hierarchy that mirrors the structure of a scientific study. Understanding this architecture allows for surgical precision in data extraction.
+MoeaBench implements a structured data hierarchy designed to facilitate granular access to simulation results. This architecture defines four abstraction layers, ranging from the high-level experiment container down to the raw numerical arrays.
 
-### **The Canonical Selector**
-Data access is a journey from the "Manager" down to the raw numbers:
+### **The Data Abstraction Layers**
+Data access follows a strictly defined path from the management context to the low-level data structures:
 
 ```text
-  LAYER:     Experiment  -->     Run     -->     Filter    -->     Space
-  OBJECT:      [exp]     -->    [run]    -->    [.pop()]   -->  [.objectives]
-  ROLE:      Manager         Trajectory      Snapshot           Numbers
+  LAYER:     Experiment  -->     Run     -->     Filter     -->    Space
+  OBJECT:    [exp]       -->     [run]    -->    [.pop()]   -->    [.objectives]
+  ROLE:      Manager             Trajectory      Snapshot          Numbers
 ```
 
 Using standard indexing and methods, you can navigate these layers:
 
 *   **Layer 1: Experiment (`exp`)**: The root container holding all executions.
-*   **Layer 2: Run (`exp[i]`)**: A specific stochastic trajectory identified by its seed.
+*   **Layer 2: Run (`exp[i]`)**: A specific stochastic trajectory (a run) identified by its seed.
 *   **Layer 3: Population (`exp.pop(n)`)**: A snapshot of the search at a generation `n`.
 *   **Layer 4: Data Space (`exp.pop(n).objs` or `.vars`)**: The raw numerical performance matrix (NumPy arrays).
 
+#### **Topological Consistency Example**
+To verify if an optimized version of an algorithm covers the same objective regions as the baseline (Manifold Integrity):
+
+```python
+# Check spatial matching with a strict alpha (match if p > 0.01)
+res = mb.stats.topo_distribution(exp_baseline, exp_opt, alpha=0.01)
+
+if res.is_consistent:
+    print("Optimization preserved topological integrity.")
+```
+
 #### **Single-run access Example**
-MoeaBench uses **1-based** indexing for generations in `.pop()`, while `0` refers to the initial population and `-1` refers to the final generation.
+MoeaBench uses **standard 0-based** indexing for generations in `.pop()`, where `0` refers to the first recorded generation (or initial population) and `-1` refers to the final generation.
 
 ```python
 # A. Get objectives at generation 100 of the first trial
@@ -168,7 +194,7 @@ nd_vars = exp[2].pop().non_dominated().variables
 
 ## **5. Solution Filters**
 
-Instead of manual array slicing, MoeaBench provides **Solution Filters** (Semantic Operators). These filters adjust their scope automatically: when called from an **`Experiment`**, they aggregate results from all runs; when called from a **`Run`**, they target that specific trajectory.
+To simplify data extraction, MoeaBench implements **Solution Filters**. These methods automatically adjust their scope based on the calling context: when invoked from an **`Experiment`**, they aggregate results from all runs (Cloud context); when invoked from a **`Run`**, they target that specific trajectory (Local context).
 
 ```python
 # --- Manager Context (Aggregation Cloud) ---
@@ -188,9 +214,9 @@ mb.view.topo_shape(nd.objs, ref.objs)
 
 ---
 
-## **6. The Power of Delegation: Master Reference**
-
-MoeaBench uses **Delegation** to provide intuitive shortcuts. The `Experiment` manager provides a global perspective by default, while individual `Run` objects provide surgical access.
+## **6. Data Delegation and Shortcuts**
+ 
+MoeaBench employs a delegation mechanism to streamline access to nested data. Attributes accessed at the `Experiment` level are automatically resolved to their logical aggregates (e.g., the superfront of all runs) or to the most recent instance.
 
 | Command | Perspective | Technical Equivalent (Structural Access) |
 | :--- | :--- | :--- |
@@ -221,10 +247,8 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 MoeaBench organizes all analytical tools into three fundamental scientific domains. This taxonomy helps you choose the right "lens" to observe your search process.
 
-### **7.1 Topography (`topo_`)**
-> **Focus: The Geography.** "Where are the solutions in the space of objectives?"
-
-This domain treats the search outcomes as physical coordinates. It is used to analyze coverage, convergence, and spatial diversity.
+### **7.1. Topography (Metric Space Analysis)**
+This domain analyzes the spatial properties of the solution set within the objective space, focusing on coverage, convergence, and diversity.
 
 *   **`topo_shape`**: Visualizes the geometry of the Pareto front or the entire population cloud in 2D or 3D.
 *   **`topo_bands`**: Visualizes **Search Corridors**. It uses Empirical Attainment Functions (EAF) to show the reliability bands (e.g., the region reached by 50% or 90% of the runs).
@@ -239,7 +263,13 @@ mb.view.topo_shape(exp.front(), exp.optimal_front())
 mb.view.topo_bands(exp, levels=[0.5, 0.9])
 
 # Analyzing Spatial Density and Gaps
-mb.view.topo_density(exp1, exp2)
+# 1. Verification of Convergence (Match)
+# Do they cover the same Objective Space?
+mb.view.topo_density(exp1, exp2, space='objs', title="Pareto Front Topology (Match)")
+
+# 2. Verification of Strategy (Mismatch)
+# Do they use the same variables to get there?
+mb.view.topo_density(exp1, exp2, space='vars', title="Search Strategy (Mismatch)")
 mb.view.topo_gap(exp1, exp2)
 ```
 
@@ -247,17 +277,15 @@ mb.view.topo_gap(exp1, exp2)
 *Figure 1: Search Reliability Corridor showing 50% and 90% attainment bands.*
 
 ![Spatial Density](images/topo_density.png)
-*Figure 2: Topologic Match analysis using axis-by-axis Kernel Density Estimation.*
+*Figure 2: Topological Equivalence Analysis (Generated by `examples/example_10.py`). LEFT: A "Match" in objective space indicates similar convergence. RIGHT: A "Mismatch" in decision space reveals distinct search strategies.*
 
 ![Topologic Gap](images/topo_gap.png)
 *Figure 3: Topologic Gap visualizing the spatial coverage difference between two solvers.*
 
-### **7.2 Performance (`perf_`)**
-> **Focus: The Utility.** "How well did the algorithms perform according to scalar metrics?"
+### **7.2. Performance (Scalar Metrics)**
+This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
 
-This domain reduces high-dimensional outcomes into scalar scores (Hypervolume, IGD) to build leaderboards and verify statistical significance.
-
-*   **`perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and variance cloud.
+*   **`perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud.
 *   **`perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values.
 *   **`perf_density`**: Shows the "Form of Luck"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
 
@@ -288,10 +316,8 @@ mb.view.perf_density(exp1, exp2)
 ![Performance Density](images/perf_density.png)
 *Figure 5: Performance Distribution (KDE) identifying algorithm stability and outlier sensitivity.*
 
-### **7.3 Stratification (`strat_`)**
-> **Focus: The Geology.** "How is the population organized internally?"
-
-Internal structure analysis looks "under the hood" of the Pareto front to understand selection pressure and dominance hierarchies.
+### **7.3. Stratification (Population Structure)**
+This domain examines the internal organization of the population, analyzing selection pressure and non-domination levels (Pareto ranks).
 
 *   **`strat_ranks`**: Shows the distribution of individuals across non-domination layers (Ranks).
 *   **`strat_caste`**: Maps the relationship between quality and class membership, revealing how the elite differs from the rest of the population.
@@ -302,210 +328,93 @@ Internal structure analysis looks "under the hood" of the Pareto front to unders
 mb.view.strat_tiers(exp1, exp2)
 ```
 
+![Rank Distribution](images/rankplot.png)
+*Figure 6: Global Rank Distribution showing population density across non-domination layers.*
+
 ---
 
 ## **8. Statistical and Structural Analysis (`mb.stats`)**
 
-The `mb.stats` module is the analytical engine of MoeaBench. It transforms raw stochastic trajectories into structural insights and scientific evidence, operating with the same polymorphic intelligence as the visualization system.
+The `mb.stats` module is the analytical engine of MoeaBench. It transforms raw stochastic trajectories into structural insights and scientific evidence, maintaining the same polymorphic interface design as the visualization module.
 
 ### **8.1 Stratification and Dominance Analysis**
 
-Stratification is the definitive process of organizing a population into discrete non-domination layers, or Pareto ranks. In MoeaBench, every structural analysis—whether it evaluates the selection pressure of a single solver or the competitive infiltration between two rivals—is rooted in the concept of stratification.
+## **8. Statistical Analysis (`mb.stats`)**
 
-At the core of this analysis are the `strata` and `tier` functions. While `mb.stats.strata(data)` dissects the internal layers of a specific population context, the `mb.stats.tier(exp1, exp2)` function orchestrates a joint-stratification duel. By merging the state of two competitors and ranking them as a unified set, the framework establishes global tiers that reveal the relative dominance in the objective space.
+The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. It operates on two main axes: **Population Structure** (how solutions are organized) and **Hypothesis Testing** (statistical validation of performance).
 
+### **8.1. Stratification and Structure**
+Stratification organizes a population into discrete non-domination layers (ranks). This analysis reveals the selection pressure and internal hierarchy of the search process.
 
-### **8.2 Structural Data Access**
-
-The result of a stratification analysis is stored in a `StratificationResult` (or `TierResult` for competitive duels). These objects provide programmatic access to the structural properties of the population:
-
+#### **Analyzing Population Layers (`strata`)**
 ```python
-# Perform the analysis
+# Analyze the internal structure of a single experiment
 res = mb.stats.strata(exp)
-
-print(f"Search Depth: {res.max_rank}")
-print(f"Selection Pressure: {res.selection_pressure():.2f}")
+print(f"Deepest Rank: {res.max_rank}")
+print(f"Selection Pressure: {res.selection_pressure():.2f}") # (0.0 to 1.0)
 ```
 
-#### **Key Properties:**
-*   **`.max_rank`**: The total number of non-domination layers found.
-*   **`.frequencies()`**: Distribution percentage of the population across ranks.
-*   **`.selection_pressure()`**: Numeric value (0 to 1) estimating convergence focus.
-*   **`.dominance_ratio()`** *(Tier only)*: Relative proportion of each group in the elite rank.
-
-#### **Visualizing the Dominance Hierarchy (`strat_caste`)**
-
-The `strat_caste` visualization is the most sophisticated tool in the stratification suite. It maps the biological concept of "caste" to the objective space, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
-
-Starting with version `0.8.0`, this tool offers two parametric modes that answer fundamentally different scientific questions.
+#### **Visualizing the Hierarchy (`strat_caste`)**
+The `strat_caste` plot maps the "Caste System" of the population, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
 
 ```python
-# 1. Structural Analysis of a single experiment
-res = mb.stats.strata(exp)
-mb.view.strat_ranks(res)      
+# 1. Individual Merit (Micro View): Diversity distribution within ranks
+mb.view.strat_caste(res, mode='individual', title="Population Merit")
 
-# 2. Caste Analysis (The Hierarchy)
-mb.view.strat_caste(res, mode='collective')  # Default: The Macro View (Robustness)
-mb.view.strat_caste(res, mode='individual')  # The Micro View (Diversity)
-
-# 3. Competitive Tier Analysis (Joint Strata)
-res_tier = mb.stats.tier(exp1, exp2)
-mb.view.strat_tiers(res_tier) 
+# 2. Stochastic Stability (Macro View): Robustness across multiple runs
+mb.view.strat_caste(res, mode='collective', title="Stochastic Robustness")
 ```
 
-### **1. The "Collective" View (`mode='collective'`) (Robustness)**
-> *"What is the Gross Domestic Product (GDP) of each caste across history?"*
-
-This mode is designed to measure **Stochastic Robustness**. 
-*   **The Data Point**: Each point in the distribution represents the **Total Quality** (e.g., Hypervolume) of an entire rank for a *single independent run*.
-*   **The Interpretation**:
-    *   **Box Height**: Represents variance between runs. A short, flattened box means the algorithm is highly reliable—it delivers the same total quality every time, even if the individual solutions differ.
-    *   **Outliers**: In this mode, an outlier represents a **failed run** (a catastrophic event where the whole population collapsed compared to other seeds).
-    *   **Usage**: The primary plot for paper reporting, as it proves your method's stability.
-
-### **2. The "Individual" View (`mode='individual'`) (Diversity)**
-> *"What is the Per Capita merit of the citizens?"*
-
-This mode is designed to measure **Internal Diversity**.
-*   **The Data Point**: Each point represents a **Single Solution** within the population.
-*   **The Interpretation**:
-    *   **Box Height**: Represents the diversity of quality within the elite. A tall box means the front includes both "super-solutions" and "marginal solutions".
-    *   **Statistics (Example: NSGA3 vs SPEA2)**:
-        *   **Top Label ($n \approx 94$)**: The average count. Means the algorithm consistently places 94 solutions in the Rank 1 elite.
-        *   **Median ($q \approx 0.37$)**: The "center gravity" of the front. 50% of solutions are better than this merit.
-        *   **Whiskers (e.g., $0.10 - 0.57$)**: The effective range of the front. The outliers beyond this range are rare "mutant" checks that extend the front.
-    *   **Usage**: Debugging and algorithm design. Helps you understand if your algorithm is producing a uniform front or depending on a few "super-individuals".
-
-### **8.3 Programmatic Access to Quantitative Data**
-
-While the `view` functions provide biological and sociological metaphors (Caste, Tiers), the underlying data consists of standard statistical distributions. You can extract these values directly from the result objects:
-
-#### **Extracting Rank and Caste Data**
+#### **Competitive Analysis (`tier`)**
+The `tier` function merges two algorithms into a single set to determine global dominance.
 ```python
-res = mb.stats.strata(exp)
-
-# 1. Distribution of frequencies (used in strat_ranks)
-freqs = res.frequencies()  # [Rank1%, Rank2%, ...]
-
-# 2. Quality profiles (used in strat_caste)
-q_vals = res.quality_profile() # Average HV per rank
-
-# 3. Comprehensive Caste Summary (Method-based API)
-# This returns exactly the numbers shown in strat_caste2
-summary = res.caste_summary(mode='individual')
-
-print(summary.n(1))          # Population count in Rank 1
-print(summary.q(1))          # Median quality (level=50)
-print(summary.q(1, level=25))# Q1 quality
-print(summary.min(1))        # Lower whisker
-print(summary.max(1))        # Upper whisker
-```
-
-By default, quality metrics are normalized to an `anchor=1.0`. For comparative studies, you should set the anchor to the maximum HV of the best performing algorithm.
-
-#### **Extracting Competitive Metrics (Tiers)**
-```python
+# Who dominates whom?
 t_res = mb.stats.tier(exp1, exp2)
-
-print(f"Prop. in Elite (Pole): {t_res.dominance_ratio}") # [PropA, PropB]
-print(f"Stochastic Gap: {t_res.gap}")                   # Rank depth of competition
+print(f"Dominance Ratio: {t_res.dominance_ratio}") 
 ```
 
-![Rank Plot](images/rankplot.png)
-*Figure 6: Dominance Distribution showing the internal stratification of the population.*
+### **8.2. Hypothesis Testing & Significance**
+These tools answer the critical question: *"Is the difference purely due to luck?"*
 
-![Caste Plot](images/casteplot.png)
-*Figure 7: Relative Efficiency (Caste) mapping solution quality to objective space.*
-
-![Tier Plot](images/tierplot.png)
-*Figure 8: Competitive Duel visualizing joint-stratification between two rival solvers.*
-
----
-
-## **9. Advanced Analytics: Significance & Robustness**
-
-MoeaBench provides a rich set of non-parametric statistical tools to transform execution data into scientific evidence. In this library, we distinguish between two fundamental types of inquiry:
-
-1.  **Performance Analysis**: Evaluates "who is better" in terms of objective quality (HV, IGD).
-2.  **Topologic Analysis**: Evaluates "what was found" in terms of spatial distribution and coverage.
-
-### **9.1. Performance Analysis (`mb.stats.perf_*`)**
-
-These tools operate on scalar performance metrics (usually from a multi-run experiment) to determine the merit and confidence of an algorithm's results.
-
-#### **Statistical Significance (`mb.stats.perf_evidence`)**
-This is the primary tool for hypothesis testing. It performs the **Mann-Whitney U** rank test to answer: *"Is the observed difference in performance statistically significant?"*
+#### **Proving Superiority (Performance Analysis)**
+To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g., Hypervolume):
 
 ```python
-# Returns a HypothesisTestResult object
-res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
-print(res.report()) 
-
-if res.p_value < 0.05:
-    print(f"Confidence confirmed for {res.name}")
-```
-
-#### **Win Probability (`mb.stats.perf_probability`)**
-Calculates the **Vargha-Delaney $\hat{A}_{12}$** effect size. Mathematically, this captures the "Win Probability": the likelihood that a randomly selected execution of Algorithm A will outperform Algorithm B.
-
-*   **A12 > 0.5**: Algorithm A is likely better.
-*   **A12 = 0.5**: They are equivalent.
-*   **A12 < 0.5**: Algorithm B is likely better.
-
-```python
-prob = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
-print(f"Probability of Exp1 beating Exp2: {prob:.2f}")
-```
-
-#### **Distribution Shape (`mb.stats.perf_distribution`)**
-Uses the **Kolmogorov-Smirnov (KS)** test to identify if the *shape* of the performance distributions is different (e.g., detecting if one algorithm is unstable).
-
-#### **Example: Proving Superiority**
-The following protocol identifies if an improvement is statistically significant and describes its magnitude:
-
-```python
-# 1. Test for Significance (Mann-Whitney U)
+# 1. Test for Statistical Significance (Mann-Whitney U)
+# Answers: "Is the difference real?"
 res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
 
-# 2. Interpret the Science
 if res.is_significant(alpha=0.05):
-    print(f"Evidence supports {res.winner} (p={res.p_value:.4f})")
+    print(f"Confirmed: {res.winner} outperforms (p={res.p_value:.4f})")
     
-    # 3. Calculate Practical Effect (Win Probability)
-    a12 = mb.stats.perf_probability(exp1, exp2)
-    print(f"Win Probability (A12): {a12:.2f}")
+    # 2. Measure Effect Size (Vargha-Delaney A12)
+    # Answers: "How often does it win?"
+    # A12 > 0.5 indicates exp1 wins; A12 < 0.5 indicates exp2 wins.
+    prob = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
+    print(f"Win Probability: {prob:.2f}")
 else:
-    print("Null Hypothesis cannot be rejected: Algorithms are equivalent.")
+    print("Result Inconclusive: Algorithms are statistically equivalent.")
 ```
 
-### **9.2. Topological Analysis (`mb.stats.topo_*`)**
-
-These tools are designed to answer: *"Did these algorithms find the same thing?"* 
-
-#### **Spatial Distribution Matching (`mb.stats.topo_distribution`)**
-Verifies if the clouds of solutions found by different solvers are statistically equivalent in their spatial distribution across each dimension.
-
-*   **`method='ks'` (Default)**: Employs the **Kolmogorov-Smirnov** test per axis.
-*   **`method='anderson'`**: Uses the **Anderson-Darling k-sample** test (sensitive to tails).
-*   **`method='emd'`**: Calculates the **Earth Mover's Distance** (Purely geometric).
-
-#### **Example: Topological Consistency**
-Verify if a new "optimized" version of an algorithm is still converging to the correct manifold regions:
+#### **Testing Topological Consistency**
+To verify if two algorithms found the same regions of the objective space (e.g., comparing a baseline against an optimized version):
 
 ```python
-# Verify spatial matching across all objectives
-res_topo = mb.stats.topo_distribution(exp_baseline, exp_optimized)
+# Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
+topo_res = mb.stats.topo_distribution(exp_baseline, exp_optimized)
 
-if res_topo.is_consistent:
-    print("Optimization preserved topological integrity.")
+if topo_res.is_consistent:
+    print("Topological Integrity Preserved.")
 else:
-    print(f"Structural collapse detected in axes: {res_topo.failed_axes}")
-    print(res_topo.report())
+    print(f"Structural Deviation detected in axes: {topo_res.failed_axes}")
 ```
+
+> [!NOTE]
+> **Further Reading**: MoeaBench supports a wide array of statistical tests, including Anderson-Darling, Earth Mover's Distance (EMD), and Kolmogorov-Smirnov for distribution shapes. For a complete list of available tests and their mathematical definitions, consult the **[API Reference](reference.md#stats)**.
 
 ---
 
-## **10. Extensibility: Plugging your Algorithm**
+## **9. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -532,7 +441,7 @@ To wrap your own algorithm, inherit from `mb.moeas.MOEA`. By implementing the `s
 
 ---
 
-## **11. Precision: Reproducibility & Seeds**
+## **10. Precision: Reproducibility & Seeds**
 
 Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata.
 
@@ -542,7 +451,7 @@ Scientific benchmarking requires absolute control over randomness. MoeaBench tre
 
 ---
 
-## **12. Persistence (`save` and `load`)**
+## **11. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -565,7 +474,7 @@ exp.load("results", mode="data")
 
 ---
 
-## **13. Data Export (CSV)**
+## **12. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -584,8 +493,28 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **14. References**
+## **13. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
 *   **[MOPs Manual](mops.md)**: Detailed history and mathematics of built-in benchmarks.
+
+---
+
+## **14. Architecture Decision Records (ADR)**
+
+This section documents critical architectural decisions and optimization strategies employed by the framework's default configurations.
+
+### ADR 003: Hybrid Decomposition Strategy for MOEA/D
+* **Status**: Accepted
+* **Context**: The standard Penalty-based Boundary Intersection (PBI) decomposition function in MOEA/D relies heavily on the penalty parameter $\theta$ to balance convergence and diversity. On degenerate (DTLZ5, DTLZ6), disconnected (DPF series), or biased (DTLZ4) manifolds, PBI with low $\theta$ forces convergence but causes "diversity collapse," where the entire population clusters into a few optimal points or a low-dimensional arc. Increasing $\theta$ prevents collapse but hinders convergence on these complex geometries.
+* **Decision**: We adopted a **Hybrid Decomposition Architecture**.
+    *   **Standard PBI ($\theta=5.0$)**: Used for well-behaved problems (DTLZ1, DTLZ2) where PBI's efficiency is superior.
+    *   **Tchebycheff (TCH)**: Used for degenerate, biased, and disconnected problems (DTLZ3, DTLZ4, DTLZ5, DTLZ6, DPF3). Tchebycheff decomposition naturally prioritizes diversity by minimizing the maximum weighted distance, acting as a "hard constraint" on the direction of search and effectively preventing population collapse without sensitive tuning.
+* **Consequences**: MOEA/D now achieves robust manifold coverage on degenerate problems (significant improvement in spread/IGD) at the cost of slightly slower convergence speed compared to aggressive PBI.
+
+### ADR 004: Visual Micro-Jitter for Comparative Isomorphism
+* **Status**: Accepted
+* **Context**: In high-performance calibration scenarios, modern MOEAs (like NSGA-III and MOEA/D) often converge to near-identical locations on the Pareto front. When plotting these solutions in 3D, the points from the last-plotted algorithm perfectly occlude the points of previous algorithms, creating the false impression that the underlying algorithms failed or are invisible (e.g., NSGA-III "disappearing" behind MOEA/D in DTLZ2).
+* **Decision**: We implemented a **Gaussian Micro-Jitter** ($\epsilon \sim N(0, 0.003)$) in the visual reporting engine (`generate_visual_report.py`). This jitter is applied only to the visualization coordinates, not the numerical data.
+* **Consequences**: Overlapping populations now appear as a mixed "cloud" of colors rather than a single dominant color, allowing visual confirmation of co-existence and competitive dominance without distorting the global shape of the front.

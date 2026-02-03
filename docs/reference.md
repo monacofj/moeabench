@@ -69,7 +69,7 @@ These methods operate on the **union of all runs** (The Cloud).
     *   `repeat` (*int*): Number of independent runs. 
     *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
-    *   `stop` (*callable*, optional): Custom stop criteria function. Receives the MOEA instance as context. Returns `True` to halt execution.
+    *   `stop` (*callable*, optional): Custom stop criteria function. Receives a reference to the active **solver** as its context. Returns `True` to halt execution.
     *   `**kwargs`: Passed to the MOEA execution engine.
 *   **`.save(path, mode='all')`**: Persists the experiment to a compressed ZIP file.
     *   `path` (*str*): Filename or folder.
@@ -251,7 +251,28 @@ algo_tuned = mb.moeas.NSGA3(population=200,
                             eliminate_duplicates=True)
 ```
 
+<a name="solver-state"></a>
+### **4.1. Solver Runtime State (Stop Criteria Context)**
+
+When a custom `stop` function is executed, it receives a reference to the active solver instance. The following properties are available for inspection:
+
+*   **`solver.n_gen`** (*int*): The current generation index (starts at 1).
+*   **`solver.pop`** (*Pymoo Population*): The current population of the search. Use `.get("F")` for objectives and `.get("X")` for variables.
+*   **`solver.problem`** (*Experiment*): Reference back to the parent experiment instance.
+
+**Usage in Stop Criteria:**
+```python
+# Stop if more than 50% of the population is in the first rank
+def custom_stop(solver):
+    exp = solver.problem
+    return exp.last_pop.non_dominated_count > 50
+
+exp.stop = custom_stop
+exp.run()
+```
+
 ---
+
 
 <a name="metrics"></a>
 ## **5. Metrics (`mb.metrics`)**
@@ -324,7 +345,7 @@ Performs the **Kolmogorov-Smirnov (KS)** two-sample test (Performance Distributi
 ### **`mb.stats.perf_probability(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size (Win Probability). Returns a `SimpleStatsValue`.
 
-### **`mb.stats.topo_distribution(*args, space='objs', axes=None, method='ks', **kwargs)`**
+### **`mb.stats.topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs)`**
 Performs multi-axial distribution matching (Topologic Equivalence).
 *   **Args**:
     *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).

@@ -90,7 +90,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
     s.show()
     return s
 
-def topo_density(*args, axes=None, layout='grid', alpha=0.05, space='objs', title=None, show=True, **kwargs):
+def topo_density(*args, axes=None, layout='grid', alpha=0.05, threshold=0.1, space='objs', title=None, show=True, ax=None, **kwargs):
     """
     [mb.view.topo_density] Spatial Distribution Perspective.
     Plots smooth Probability Density Estimates via Kernel Density Estimation (KDE)
@@ -115,10 +115,18 @@ def topo_density(*args, axes=None, layout='grid', alpha=0.05, space='objs', titl
         axes = list(range(min(n_dims, 4)))
     
     # 2. Statistical Analysis
-    match_res = stats_topo_distribution(*args, space=space, axes=axes, method='ks', **kwargs)
+    match_res = stats_topo_distribution(*args, space=space, axes=axes, method=kwargs.get('method', 'ks'), 
+                                        alpha=alpha, threshold=threshold, **kwargs)
     
     # 3. Plotting Logic
-    if layout == 'grid':
+    # 3. Plotting Logic
+    if ax is not None:
+        # Single axis injection mode
+        if len(axes) != 1:
+            raise ValueError("When 'ax' is provided, 'axes' must specify exactly one dimension.")
+        axes_objs = [ax]
+        layout = 'external'
+    elif layout == 'grid':
         n_plots = len(axes)
         cols = 2 if n_plots > 1 else 1
         rows = (n_plots + 1) // 2
@@ -134,6 +142,9 @@ def topo_density(*args, axes=None, layout='grid', alpha=0.05, space='objs', titl
         if layout == 'independent':
             cur_fig, cur_ax = plt.subplots(figsize=(6, 4))
             figures.append(cur_fig)
+        elif layout == 'external':
+            cur_ax = axes_objs[i]
+            cur_fig = cur_ax.figure
         else:
             cur_ax = axes_objs[i]
             cur_fig = fig
@@ -157,7 +168,7 @@ def topo_density(*args, axes=None, layout='grid', alpha=0.05, space='objs', titl
                 y_vals = kde(x_range)
                 lbl = f"{names[b_idx]}"
                 if b_idx == 0: 
-                     lbl += f"\n(D={d_stat:.2f}, p={p_val:.3f})\n{verdict}"
+                     lbl += f" [{verdict}, p={p_val:.3f}]"
                 cur_ax.plot(x_range, y_vals, color=color, label=lbl, lw=2)
                 cur_ax.fill_between(x_range, y_vals, color=color, alpha=0.2)
             else:
@@ -168,9 +179,14 @@ def topo_density(*args, axes=None, layout='grid', alpha=0.05, space='objs', titl
         cur_ax.legend(fontsize=8, frameon=True, facecolor='white', framealpha=0.9)
         cur_ax.grid(True, alpha=0.2, linestyle='--')
         
-    if title: fig.suptitle(title, fontsize=14)
-    if show: plt.show()
-    return figures if layout == 'independent' else fig
+    if title: 
+        if layout == 'external':
+            pass # Title managed externally usually, or set specifically on ax
+        else:
+            fig.suptitle(title, fontsize=14)
+            
+    if show and layout != 'external': plt.show()
+    return figures if layout == 'independent' else (ax if layout == 'external' else fig)
 
 def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, **kwargs):
     """
