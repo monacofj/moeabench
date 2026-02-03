@@ -365,6 +365,13 @@ mb.view.strat_caste(res, mode='individual', title="Population Merit")
 mb.view.strat_caste(res, mode='collective', title="Stochastic Robustness")
 ```
 
+![Caste Individual](images/caste_individual.png)
+*Figure 7: Micro-view of the population hierarchy. The box reflects quality distribution (Per Capita), while 'n' indicates the average headcount of each rank.*
+
+![Caste Collective](images/caste_collective.png)
+*Figure 8: Macro-view (Stochastic Robustness). The vertical stability of the boxes indicates the algorithm's determinism across independent runs.*
+
+
 #### **Competitive Analysis (`tier`)**
 The `tier` function merges two algorithms into a single set to determine global dominance.
 ```python
