@@ -56,12 +56,12 @@ class HypothesisTestResult(StatsResult):
         if self.p_value is not None:
             lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha=0.05)")
             
-        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label})")
+        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label} [>0.474 Large])")
         
         # Narrative interpretation
         if self.significant:
             better = name1 if self.perf_probability > 0.5 else name2
-            lines.append(f"\nConclusion: There is a statistically significant difference favoring {better}.")
+            lines.append(f"\nConclusion: There is a statistically significant difference (p < 0.05) favoring {better}.")
         elif self.p_value is not None:
             lines.append(f"\nConclusion: No statistically significant difference detected.")
         else:

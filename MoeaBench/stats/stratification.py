@@ -339,7 +339,7 @@ class TierResult(StratificationResult):
             f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
             f"  Search Depth: {self.max_rank} global levels",
             f"  Dominance Ratio (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-            f"  Displacement Depth: {self.gap}",
+            f"  Displacement Depth: {self.gap} (Rank where rival > 10%)",
             "",
             f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
             "-" * 35
@@ -352,7 +352,7 @@ class TierResult(StratificationResult):
         better = nameA if ratioA > 0.5 else nameB
         lines.append(f"\nDiagnosis: {better} occupies the Pole Position.")
         if self.gap > 2:
-            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival (Large Gap).")
+            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival (Large Gap > 2 ranks).")
             
         return "\n".join(lines)
 

@@ -115,8 +115,13 @@ class MetricMatrix(Reportable):
         if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
             best = np.min(valid_final)
 
-        stability = "High" if (std / (abs(mean) + 1e-9)) < 0.05 else "Moderate"
-        if (std / (abs(mean) + 1e-9)) > 0.15: stability = "Low (Stochastic)"
+        cv = std / (abs(mean) + 1e-9)
+        if cv < 0.05:
+            stability = f"High (CV={cv:.2f} < 0.05)"
+        elif cv > 0.15:
+            stability = f"Low (CV={cv:.2f} > 0.15)"
+        else:
+            stability = f"Moderate (0.05 <= CV={cv:.2f} <= 0.15)"
 
         source_info = f" ({self.source_name})" if self.source_name else ""
         
