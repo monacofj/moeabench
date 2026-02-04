@@ -3,8 +3,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Fast Tier Testing Suite
-=================================
+MoeaBench Light Tier Testing Suite
+==================================
 
 This is the first level of the MoeaBench testing pyramid.
 The goal of this tier is to validate **mathematical invariants** and fundamental

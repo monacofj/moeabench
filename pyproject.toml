@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MoeaBench"
-version = "0.7.6"
+version = "0.8.0"
 authors = [
   { name = "Silva F. F.", email = "fernandoferreira.silva42@usp.br" },
   { name = "Monaco F. J.", email = "monaco@usp.br" },

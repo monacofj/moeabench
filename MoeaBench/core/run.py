@@ -222,7 +222,7 @@ class Population:
     
     Provides methods for non-dominance filtering and data access.
     """
-    def __init__(self, objectives: np.ndarray, variables: np.ndarray, 
+    def __init__(self, objectives: np.ndarray, variables: Optional[np.ndarray] = None, 
                  source: Any = None, label: str = "Population", gen: Optional[int] = None) -> None:
         """
         Initializes a Population.
@@ -234,6 +234,13 @@ class Population:
             label (str): Label for plotting.
             gen (int): Generation index.
         """
+        if isinstance(objectives, list): objectives = np.array(objectives)
+        if isinstance(variables, list): variables = np.array(variables)
+        
+        # Auto-create empty vars if only objectives provided (unit test convenience)
+        if variables is None:
+            variables = np.zeros((objectives.shape[0], 0))
+
         self.objectives = SmartArray(objectives, label=label, axis_label="Objective", source=source, gen=gen)
         self.variables = SmartArray(variables, label=label, axis_label="Variable", source=source, gen=gen)
         self.source = source
@@ -248,6 +255,32 @@ class Population:
 
     def __len__(self) -> int:
         return self.objectives.shape[0]
+
+    def __getitem__(self, key: Union[int, slice, np.ndarray]) -> 'Population':
+        """Supports slicing, integer indexing, and boolean masks."""
+        if isinstance(key, int):
+            # Return a Population of size 1 for consistency
+            key = slice(key, key+1)
+            
+        return Population(self.objectives[key], self.variables[key], 
+                          source=self.source, label=self.label, gen=self.gen)
+
+    def __add__(self, other: 'Population') -> 'Population':
+        """Supports concatenation: pop3 = pop1 + pop2"""
+        if not isinstance(other, Population):
+            return NotImplemented
+            
+        new_objs = np.vstack((self.objectives, other.objectives))
+        # Handle variable dimension mismatch if necessary, but here assuming match
+        if self.variables.shape[1] == other.variables.shape[1]:
+            new_vars = np.vstack((self.variables, other.variables))
+        else:
+             # Basic fallback if vars don't match (e.g. empty vars)
+            max_d = max(self.variables.shape[1], other.variables.shape[1])
+            new_vars = np.zeros((new_objs.shape[0], max_d))
+            
+        return Population(new_objs, new_vars, source=self.source, label=self.label)
+
 
     def non_dominated(self) -> 'Population':
         """Returns a new Population containing only non-dominated solutions."""

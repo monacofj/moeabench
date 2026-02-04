@@ -18,9 +18,9 @@ To ensure a smooth collaboration, we follow a structured workflow for all contri
 3.  **Branching**: Create a new branch with the following naming pattern:
     *   `feature|fix/<issue-number>/<short-description>`
     *   Example: `feature/42/add-new-metric`
-4.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](design.md).
-5.  **Verify**: Ensure your changes are correct by running existing examples or adding new ones. Verification should include both `.py` and `.ipynb` parity.
-6.  **Pull Request**: Submit a Pull Request targeting the `main` branch. Briefly describe your changes and link the relevant issue.
+5.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](design.md).
+6.  **Verify (Mandatory)**: Ensure your changes satisfy the automated test suite. See [Verification and Testing](#3-verification-and-testing) for details.
+7.  **Pull Request**: Submit a Pull Request targeting the `main` branch. Briefly describe your changes and link the relevant issue.
 
 ---
 
@@ -52,6 +52,31 @@ Before contributing, please read the following technical resources to understand
 
 ---
 
-## 3. Communication
+## 3. Verification and Testing
+
+We maintain a rigorous testing pyramid using `pytest` and a central orchestrator. No contribution will be accepted if it breaks the core logic or mathematical invariants.
+
+### Test Orchestrator
+Use the `test.py` script in the root directory to run the test suite. 
+
+**Always run the base tests before committing:**
+```bash
+./test.py  # Runs Unit Tests + Light Tier
+```
+
+### Testing Tiers
+- **Unit Tests (`--unit`)**: Functional validation of core classes (`Population`, `Experiment`), metrics, and persistence.
+- **Light Tier (`--light`)**: Mathematical invariants of benchmarks (e.g., DTLZ/DPF geometry) without stochastic execution.
+- **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the v0.8.0 release baselines (IGD thresholds).
+- **Heavy Tier (`--heavy`)**: Full statistical calibration (N=30) and hypothesis testing for large-scale performance verification.
+
+### Contribution Rules for Tests
+- If you add a new benchmark, you MUST add corresponding tests in `tests/test_light_tier.py`.
+- If you modify core logic, ensure `tests/unit/` remains at 100% pass rate.
+- Avoid adding tests that depend on heavy CPU usage or GUI backends.
+
+---
+
+## 4. Communication
 
 Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](../AUTHORS) file for contact details.

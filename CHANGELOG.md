@@ -11,23 +11,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [0.7.7] - 2026-02-04
+## [0.8.0] - 2026-02-04
 
 ### Added
-- **Universal Reporting Contract**: Implemented a unified `Reportable` interface across the entire library. Now, `Experiment`, `MetricMatrix`, and `StatsResult` all share the `.report()` and `.report_show()` methods for consistent narrative diagnostics.
-- **Explainable Verdicts (Transparency)**: All narrative reports now explicitly expose their decision criteria:
-  - **Stability**: Displays Coefficient of Variation thresholds (e.g., `CV=0.01 < 0.05`).
-  - **Stratification**: Explicitly states displacement depth triggers (`> 10%`) and Gap definitions (`> 2 ranks`).
-  - **Hypothesis Tests**: Clarifies significance levels (`p < 0.05`) and effect size magnitude thresholds (e.g., `> 0.474 Large`).
-- **REUSE Compliance Restoration**: Migrated binary licensing rules (png, html, csv) from the deprecated `.reuse/dep5` to the modern `REUSE.toml` standard.
-
-### Changed
-- **Report Standard**: Standardized report outputs to use pure alphanumeric indicators (e.g., `[OK]`, `[EMPTY]`) instead of graphical icons, ensuring compatibility with all terminal environments.
-- **Example Synchronization**: Synchronized all example scripts (`01`, `04`, `08`, `10`) and their Jupyter Notebook counterparts to utilize the new reporting system.
+- **Multi-Tier Testing Pyramid**: Implemented a comprehensive testing infrastructure with a central orchestrator (`test.py`).
+  - **Unit Tier**: Functional validation of core components, including new algebraic support for `Population` objects (slicing, indexing, addition).
+  - **Light Tier**: Fast validation of mathematical and geometric invariants for non-stochastic benchmarks.
+  - **Smoke Tier**: Automatic regression checking against release-grade baselines.
+  - **Heavy Tier**: Full statistical calibration and hypothesis testing suite.
+- **Hybrid MOEA/D Strategy**: Implemented a problem-aware decomposition registry. MOEA/D now automatically switches between PBI and Tchebicheff (TCH) for problems prone to diversity collapse (e.g., DTLZ3, DTLZ6).
+- **Visual Fidelity & Safety**:
+  - **Micro-Jitter**: Added controlled noise to 3D scatter plots to prevent visual occlusion of overlapping solutions.
+  - **Scale Auditing**: Automated "Out-of-Scale" detection in calibration reports to flag exploded or non-converged populations.
+- **Universal Reporting Contract**: Implemented a unified `Reportable` interface across the entire library. Now, `Experiment`, `MetricMatrix`, and `StatsResult` all share consistent narrative diagnostic methods.
 
 ### Fixed
-- **Notebook Generation**: Corrected `misc/py2ipynb.py` to strip SPDX headers from generated notebook source code, resolving `reuse lint` parsing errors.
-- **Compliance Audit**: Applied missing license headers to `moead_configs.py`, `find_ranks_v2.py`, and `audit_dpf3.py`.
+- **Diversity Collapse**: Resolved the "Diversity Collapse" bug in MOEA/D on multimodal problems by enforcing TCH decomposition where analytically necessary.
+- **Population Algebra**: Fixed lack of robust indexing and concatenation in the `Population` class.
+- **Sync Parity**: Synchronized all example scripts and notebooks to match the latest reporting and visual standards.
 
 
 ## [0.7.6] - 2026-01-31

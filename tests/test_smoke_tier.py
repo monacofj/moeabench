@@ -34,7 +34,7 @@ sys.path.append(os.path.abspath("."))
 import MoeaBench as mb
 from MoeaBench.metrics.GEN_igd import GEN_igd
 
-BASELINE_FILE = "tests/baselines_v0.7.6.csv"
+BASELINE_FILE = "tests/baselines_v0.7.7.csv"
 
 def get_smoke_configs():
     """
