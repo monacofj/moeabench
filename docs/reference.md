@@ -47,6 +47,7 @@ The top-level container.
 *   `mop` (*Any*): The problem instance.
 *   `moea` (*Any*): The algorithm instance.
 *   `stop` (*callable*, optional): Global custom stop criteria function.
+*   `repeat` (*int*): Default number of repetitions (default: 1).
 *   `runs` (*List[Run]*): Access to all execution results.
 *   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
 *   `last_pop` (*Population*): Shortcut to the final population of the last run.
@@ -65,8 +66,8 @@ These methods operate on the **union of all runs** (The Cloud).
 *   `.dominated(n=-1)` (*Population*): Aggregate dominated population.
 
 **Methods:**
-*   **`.run(repeat=1, workers=None, **kwargs)`**: Executes the optimization.
-    *   `repeat` (*int*): Number of independent runs. 
+*   **`.run(repeat=None, workers=None, **kwargs)`**: Executes the optimization.
+    *   `repeat` (*int*, optional): Number of independent runs. Defaults to `exp.repeat`.
     *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
     *   `stop` (*callable*, optional): Custom stop criteria function. Receives a reference to the active **solver** as its context. Returns `True` to halt execution.
@@ -336,6 +337,31 @@ print(f"Final HV: {val:.4f}")
 
 Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
 
+### **The Rich Result Interface (`StatsResult`)**
+All statistical functions in MoeaBench return objects inheriting from `StatsResult`. These objects provide:
+*   **`.report()` $\to$ `str`**: Returns a detailed narrative string. Useful for logging or file output.
+*   **`.report_show()`**: Displays the report appropriately for the environment.
+    *   **Terminal**: Automatically calls `print(res.report())`.
+    *   **Jupyter**: Renders a formatted **Markdown** block using `display(Markdown(...))`.
+
+The output is something like:
+
+```text
+--- Population Strata Report: NSGA-II on DTLZ2 ---
+  Search Depth: 3 non-dominated layers
+  Selection Pressure: 0.9412
+
+Rank   | Pop %    | Quality (hypervolume)
+----------------------------------------
+1      |    85.0% |       0.8200
+2      |    12.0% |       0.4500
+3      |     3.0% |       0.1200
+
+Diagnosis: High Selection Pressure (Phalanx-like convergence).
+```
+
+---
+
 ### **`mb.stats.perf_evidence(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
 Performs the **Mann-Whitney U** rank-sum test (Win Evidence). Returns a `HypothesisTestResult`.
 
@@ -425,15 +451,66 @@ MoeaBench uses a standardized ZIP-based persistence format.
 <a name="extensibility"></a>
 ## **9. Extensibility (Plugin API)**
 
-To implement your own components, follow these base classes:
+MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots).
 
-### **Custom MOPs (`mb.mops.BaseMop`)**
-*   **Required**: `evaluation(X) -> {'F': objectives}`.
-*   **Optional**: `ps(n) -> Pareto Set` (for IGD calculation).
+### **9.1. Custom MOPs (`mb.mops.BaseMop`)**
+The contract for problems requires implementing a **vectorized** evaluation function. This allows the framework to process entire populations using NumPy's high-performance broadcasting.
 
-### **Custom MOEAs (`mb.moeas.MOEA`)**
-*   **Required**: `solve(mop, termination) -> Population`. 
-*   **Integration**: Inheriting from `MOEA` allows your algorithm to be managed by `Experiment.run()` and automatically handles state persistence.
+**The Contract:**
+*   **`__init__(self, M, N, ...)`**: Call `super().__init__` to register the number of objectives ($M$) and variables ($N$).
+*   **`evaluation(self, X)`**: Receives a population matrix $X$ ($PopSize \times N$). Must return a dictionary containing the objectives matrix `F` ($PopSize \times M$).
+
+**Example: A Simple Convex Problem**
+```python
+import numpy as np
+from MoeaBench import mb
+
+class MyConvexProblem(mb.mops.BaseMop):
+    def __init__(self):
+        # 2 Objectives, 10 Variables, variables in range [0, 1]
+        super().__init__(M=2, N=10, xl=0.0, xu=1.0)
+
+    def evaluation(self, X):
+        # f1: simply the first variable
+        f1 = X[:, 0]
+        # f2: convex transformation (ZDT1-style)
+        g = 1 + 9 * np.mean(X[:, 1:], axis=1)
+        f2 = g * (1 - np.sqrt(f1 / g))
+        
+        return {'F': np.column_stack([f1, f2])}
+```
+
+### **9.2. Custom MOEAs (`mb.moeas.BaseMoea`)**
+To wrap your own search algorithm, inherit from `BaseMoea`. This ensures that your solver integrates with the `Experiment.run()` lifecycle, including automatic seed management and result persistence.
+
+**The Contract:**
+*   **`evaluation(self)`**: This is the entry point for the search. When `exp.run()` is called, it triggers this method.
+*   **Data Return**: For full compatibility with MoeaBench's history tools, the method should return the final population and, ideally, the objective/variable trajectories.
+*   **Narrative Reporting**: If your algorithm provides internal diagnostics, consider returning a `StatsResult` object (or subclass) to leverage the `.report_show()` system.
+
+**Example: A Random Search Skeleton**
+```python
+from MoeaBench import mb
+import numpy as np
+
+class RandomSearch(mb.moeas.BaseMoea):
+    def evaluation(self):
+        # Access problem via self.get_problem()
+        mop = self.get_problem()
+        
+        # 1. Generate random solutions
+        X = np.random.uniform(mop.xl, mop.xu, (self.population, mop.N))
+        
+        # 2. Evaluate using the framework's helper
+        res = self.evaluation_benchmark(X)
+        
+        # 3. Return final objectives (F) and variables (X)
+        # For simple plugins, returning the final population suffice.
+        # More advanced wrapping allows for generational history.
+        return res['F'], X, res['F'], None, None, None, None
+```
+> [!TIP]
+> For a detailed walkthrough on implementing and using custom plugins, see **`examples/example_05.py`**.
 
 ---
 

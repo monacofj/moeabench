@@ -20,18 +20,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Introduction
 
-MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
+MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 
-The package offers facilities to programmatically create benchmark programs and extract standard performance measurements. Additionally, it provides graphical capabilities to produce time-plots of algorithm convergence and 3D visualizations of Pareto fronts.
-
-## Key Features
-
-*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
-*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
-*   **Performance Stability**: Built-in specialized evaluators that switch between exact metrics and efficient approximations (e.g., Monte Carlo) as complexity increases.
-*   **Scientific Taxonomy**: Organized analytical perspectives (Topography, Performance, Stratification) for a deep understanding of search dynamics.
-*   **Built-in Suite**: Includes standard DTLZ and DPF problem sets and state-of-the-art algorithms via Pymoo integration.
-*   **Scientific Rigor**: Native, high-performance implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
+To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
 ## Quick Start
 
@@ -45,21 +36,29 @@ exp.moea = mb.moeas.NSGA3()                     # Select which MOEA to run
 
 exp.run()                                       # Run the optimization process
 
-mb.view.spaceplot(exp.front())                  # Plot the 3D pareto front
+mb.view.spaceplot(exp)                          # Plot the 3D pareto front
+mb.view.timeplot(exp)                           # Plot Hypervolume convergence
 ```
+
+
+
+## Key Features
+
+*   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
+*   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
+*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
+*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
+*   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
+*   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
+*   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
+*   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 
 ## Documentation
 
 *   **[User Guide](docs/userguide.md)**: A comprehensive "How-to" guide covering installation, basic usage, advanced configuration, and custom extensions.
 *   **[API Reference](docs/reference.md)**: Exhaustive technical specification of the Data Model, Classes, and Functions.
 *   **[API Sheet](docs/api_sheet.py)**: A concise sheet demonstrating syntax and common workflows.
-
-## Examples
-
-MoeaBench provides a collection of documented scripts and Jupyter Notebooks demonstrating various features, from basic runs to advanced population diagnostics:
-
-*   **[Examples Directory](examples/)**: Access all `.py` and `.ipynb` files.
-*   Core Examples: `example_01.py` to `example_10.py` cover the essential analytical and diagnostic journey.
+*   **[Examples Directory](examples/)**: Access all `.py` and `.ipynb` files. `example_01.py` to `example_10.py` cover the essential analytical and diagnostic journey.
 
 ## Research & Citation
 
@@ -75,7 +74,7 @@ MoeaBench authors warmly welcome community contributions to the project. If you 
 
 ## Contact
 
-For contacting the authors, see file `AUTHORS`.
+For contacting the authors, see file **[AUTHORS](AUTHORS)**.
 
 ## References
 

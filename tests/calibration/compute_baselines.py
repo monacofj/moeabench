@@ -43,7 +43,7 @@ import re
 
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 STATS_FILE = os.path.join(DATA_DIR, "generation_stats.csv")
-OUTPUT_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.6.csv")
+OUTPUT_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.7.csv")
 
 def compute_baselines():
     if not os.path.exists(DATA_DIR):

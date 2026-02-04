@@ -44,8 +44,8 @@ from MoeaBench.metrics.GEN_igd import GEN_igd
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.6.csv")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.7.6.html")
+BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.7.csv")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.7.7.html")
 
 def generate_visual_report():
     if not os.path.exists(BASELINE_FILE):
@@ -56,7 +56,7 @@ def generate_visual_report():
     mops = sorted(df_base['MOP'].unique())
     
     html_content = [
-        "<html><head><title>MoeaBench v0.7.6 Calibration</title>",
+        "<html><head><title>MoeaBench v0.7.7 Calibration</title>",
         "<script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}});</script>",
         "<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML'></script>",
         "<style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f4f7f9; line-height: 1.6; color: #333; }",
@@ -221,15 +221,22 @@ def generate_visual_report():
                     # Trim to 3 obj if needed
                     if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
                     
+                    # Micro-Jitter to avoid perfect occlusion (e.g. DTLZ2)
+                    jitter_scale = 0.003
+                    F_jitter = F_obs + np.random.normal(0, jitter_scale, F_obs.shape)
+
+                    # Outlier Detection (Scale Warning)
+                    is_out_of_scale = np.any(np.abs(F_obs) > 5.0)
+                    tag_warning = " [OUT OF SCALE]" if is_out_of_scale else ""
                     fig.add_trace(go.Scatter3d(
-                        x=F_obs[:,0], y=F_obs[:,1], z=F_obs[:,2],
+                        x=F_jitter[:,0], y=F_jitter[:,1], z=F_jitter[:,2],
                         mode='markers',
                         marker=dict(
                             size=4.5, # Significantly larger to avoid occlusion by stay cloud
                             color=colors_rgba.get(alg, 'rgba(0,0,0,1.0)'),
                             line=dict(width=0.5, color='white') # Added hair-thin white border for contrast
                         ),
-                        name=f'{alg} (Final)',
+                        name=f'{alg} (Final){tag_warning}',
                         legendgroup=alg,
                         showlegend=True
                     ), row=1, col=1)

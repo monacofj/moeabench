@@ -52,6 +52,8 @@ class experiment:
         self._moea: Any = None
         self._stop: Any = None
         self._name: str = "experiment"
+        self._repeat: int = 1
+
         
         # Use properties for auto-instantiation and validation
         if mop is not None:
@@ -75,6 +77,17 @@ class experiment:
     def name(self) -> str: return self._name
     @name.setter
     def name(self, value: str) -> None: self._name = value
+    
+    @property
+    def repeat(self) -> int:
+        """Returns the default number of repetitions for this experiment."""
+        return self._repeat
+    @repeat.setter
+    def repeat(self, value: int) -> None:
+        """Sets the default number of repetitions for this experiment."""
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("Repeat must be a positive integer.")
+        self._repeat = value
     
     @property
     def mop(self) -> Any: return self._mop
@@ -252,16 +265,18 @@ class experiment:
         return self.mop.evaluation(X, n_ieq_constr)
          
     # Execution
-    def run(self, repeat: int = 1, workers: Optional[int] = None, **kwargs) -> None:
+    def run(self, repeat: Optional[int] = None, workers: Optional[int] = None, **kwargs) -> None:
         """
         Executes the optimization experiment for one or more runs.
 
         Args:
-            repeat (int): Number of independent runs to perform.
+            repeat (int): Number of independent runs to perform. Defaults to self.repeat.
             workers (int): [DEPRECATED] Parallel execution is no longer supported. 
                            All runs are performed serially for stability.
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
+        if repeat is None:
+            repeat = self.repeat
         if repeat < 1: repeat = 1
         
         # Propagate overrides to the MOEA

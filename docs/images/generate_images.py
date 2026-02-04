@@ -48,18 +48,20 @@ def generate():
     exp = mb.experiment()
     exp.name = "NSGA3"
     exp.mop = mb.mops.DTLZ2(M=3)
-    exp.moea = mb.moeas.NSGA3(population=100, generations=30)
+    exp.moea = mb.moeas.NSGA3(population=100, generations=30, seed=2)
     exp.run(repeat=5)
     
     # Convergence cloud for more advanced sections if needed
     print("Saving timeplot.png (Cloud)...")
     mb.view.timeplot(exp, mode='static')
-    plt.savefig(os.path.join(img_dir, "timeplot.png"), bbox_inches='tight', dpi=150)
-    plt.close('all')
-    
-    # Diagnostics at G=10
-    run = exp.last_run
-    res_strata = mb.stats.strata(run.pop(10))
+    # Diagnostics: Use MOEA/D on DTLZ1 to show interesting rank structures
+    # (NSGA-III converges too fast on DTLZ2, collapsing ranks)
+    print("Generating rankplot scenario (MOEA/D on DTLZ1)...")
+    exp_rank = mb.experiment()
+    exp_rank.mop = mb.mops.DTLZ1(M=3)
+    exp_rank.moea = mb.moeas.MOEAD(population=100, generations=20, seed=1)
+    exp_rank.run(repeat=1)
+    res_strata = mb.stats.strata(exp_rank.last_run.pop(14))
     
     print("Saving diagnostics (rank/caste)...")
     mb.view.rankplot(res_strata)

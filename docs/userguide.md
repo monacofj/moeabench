@@ -63,14 +63,17 @@ exp.run()
 mb.view.topo_shape(exp)                 # View the resulting Pareto front  
 mb.view.perf_history(exp)               # View the hypervomume convergence
 ```
+The `view.perf_shape` function will produce a plot showing the topography of the resulting Pareto front.
 
 ![Pareto Front](images/hello_space.png)
-*Spatial Perspective: Final Population snapshot projected in 3D.*
+*Figure 1: Spatial Perspective: Final Population snapshot projected in 3D.*
+
+And the `view.perf_history` function will produce a plot showing the hypervolume convergence along generations.
 
 ![Convergence](images/hello_time.png)
-*Temporal Perspective: Hypervolume evolution showcasing convergence.*
+*Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
 
-*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the **final population snapshot**.*
+*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.perf_history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
 
 ---
 
@@ -79,12 +82,26 @@ mb.view.perf_history(exp)               # View the hypervomume convergence
 In evolutionary optimization, a single run is rarely representative. Stochastic algorithms require multiple independent trials to provide statistically significant conclusions.
 
 ### **Repeated Executions**
-To execute multiple trials (repeating the experiment with different seeds), use the `repeat` argument:
+To execute multiple trials (repeating the experiment with different seeds), you can specify the `repeat` argument directly in `run()`, or set the default `repeat` property:
 
 ```python
-# Execute 10 independent trials
+# Option A: Explicit argument
 exp.run(repeat=10)
+
+# Option B: Set default property
+exp.repeat = 10
+exp.run()
 ```
+
+### **Reproducibility & Seeds**
+Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata to ensure experiments are perfectly replicable.
+
+*   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
+*   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
+*   **Traceability**: Every `Run` object stores the exact seed used for its execution.
+*   **Automatic Seed Generation**: If you do not provide a seed, MoeaBench automatically generates a random one for you. This seed is then fixed and stored in the experiment metadata, ensuring that even "random" executions can be traced and reproduced later.
+
+---
 
 ### **Cloud Aggregation**
 When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
@@ -95,14 +112,14 @@ mb.view.perf_history(exp)
 ```
 
 ![Convergence History](images/timeplot.png)
-*Temporal Perspective: Mean Hypervolume trajectory with shaded Variance Cloud across multiple runs.*
+*Figure 3: Temporal Perspective: Mean Hypervolume trajectory with shaded Variance Cloud across multiple runs.*
 
 To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
 ```python
 mb.view.perf_history(exp[4])   # Run number is 0-indexed
 ```
 
-For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy](#4-mastery-the-data-hierarchy)**.
+For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.
 
 ### **Control: Custom Stop Criteria**
 
@@ -144,7 +161,7 @@ exp.run()
 ```
 
 
-## **4. The Data Hierarchy**
+## **4. The Data Hierarchy: accessing results**
 
 MoeaBench implements a structured data hierarchy designed to facilitate granular access to simulation results. This architecture defines four abstraction layers, ranging from the high-level experiment container down to the raw numerical arrays.
 
@@ -164,15 +181,25 @@ Using standard indexing and methods, you can navigate these layers:
 *   **Layer 3: Population (`exp.pop(n)`)**: A snapshot of the search at a generation `n`.
 *   **Layer 4: Data Space (`exp.pop(n).objs` or `.vars`)**: The raw numerical performance matrix (NumPy arrays).
 
-#### **Topological Consistency Example**
-To verify if an optimized version of an algorithm covers the same objective regions as the baseline (Manifold Integrity):
+#### **Example:**
+
 
 ```python
-# Check spatial matching with a strict alpha (match if p > 0.01)
-res = mb.stats.topo_distribution(exp_baseline, exp_opt, alpha=0.01)
+# 1. Layer 1: The experiment itself
+# (assuming 'exp' is already configured and executed)
 
-if res.is_consistent:
-    print("Optimization preserved topological integrity.")
+# 2. Layer 2: Select specific runs (Trajectory)
+run_0 = exp[0]          # First run, with all generations.
+run_1 = exp[1]          # Second run
+
+# 3. Layer 3: Extract Population
+pop   = exp.pop()       # The last generation across all runs (Cloud)
+pop_a = exp[0].pop()    # Last generation of 1st run (Local)
+pop_b = exp[1].pop(9)   # 10th generation of 2nd run
+
+# 4. Layer 4: Access raw numerical matrices (Space)
+obj = exp[2].pop().objs # The objectives in the final generation of the 3rd run 
+var = exp[2].pop().vars # The variables in the final generation of the 3rd run
 ```
 
 #### **Single-run access Example**
@@ -180,14 +207,14 @@ MoeaBench uses **standard 0-based** indexing for generations in `.pop()`, where 
 
 ```python
 # A. Get objectives at generation 100 of the first trial
-objs_100 = exp[0].pop(100).objectives
+objs_100 = exp[0].pop(100).objs
 
 # B. Get final decision variables (explicit index -1)
-vars_final = exp[0].pop(-1).variables
+vars_final = exp[0].pop(-1).vars
 
 # C. Deep extraction: ND variables from final gen of the third run
 # [Run 2] -> [Last Pop] -> [ND Filter] -> [Space]
-nd_vars = exp[2].pop().non_dominated().variables
+nd_vars = exp[2].pop().non_dominated().vars
 ```
 
 ---
@@ -203,7 +230,7 @@ dom  = exp.dominated()        # Solutions surpassed by at least one in the cloud
 ref  = exp.optimal()          # Analytical reference (Truth)
 
 # --- Single-run access (Specific Trajectory) ---
-nd_1 = exp[0].non_dominated() # Elite of the first run only
+nd_1 = exp[0].non_dominated()      # Elite of the first run only
 nd_n = exp.pop(50).non_dominated() # Elite of generation 50 across all runs
 
 # --- Visualization (Extracting Space) ---
@@ -273,14 +300,21 @@ mb.view.topo_density(exp1, exp2, space='vars', title="Search Strategy (Mismatch)
 mb.view.topo_gap(exp1, exp2)
 ```
 
+
 ![Reliability Bands](images/topo_bands.png)
-*Figure 1: Search Reliability Corridor showing 50% and 90% attainment bands.*
+*Figure 4: Search Reliability Corridor showing 50% and 90% attainment bands.*
+*Interpretation: In this plot, the narrow dark band represents the median behavior (50% probability), while the lighter band shows the 90% confidence interval. A narrow 90% band (as seen here) indicates high run-to-run consistency, meaning the algorithm is reliable.*
+
 
 ![Spatial Density](images/topo_density.png)
-*Figure 2: Topological Equivalence Analysis (Generated by `examples/example_10.py`). LEFT: A "Match" in objective space indicates similar convergence. RIGHT: A "Mismatch" in decision space reveals distinct search strategies.*
+*Figure 5: Topological Equivalence Analysis (Generated by `examples/example_10.py`). LEFT: A "Match" in objective space indicates similar convergence. RIGHT: A "Mismatch" in decision space reveals distinct search strategies.*
+*Interpretation: Left: The blue and orange points overlap perfectly in objective space, meaning both algorithms achieved the same performance. Right: In decision space, however, they form distinct clusters, revealing that they arrived at similar solutions using completely different variable configurations. This is a classic example of "functional redundancy" or multimodal convergence.*
+
 
 ![Topologic Gap](images/topo_gap.png)
-*Figure 3: Topologic Gap visualizing the spatial coverage difference between two solvers.*
+*Figure 6: Topologic Gap visualizing the spatial coverage difference between two solvers.*
+*Interpretation: The highlighted red regions indicate areas of the Pareto front that Algo A found but Algo B missed completely. This reveals a "blind spot" in Algo B's search strategy despite exhibiting similar overall hypervolume values.*
+
 
 ### **7.2. Performance (Scalar Metrics)**
 This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
@@ -311,10 +345,31 @@ mb.view.perf_density(exp1, exp2)
 ```
 
 ![Performance Contrast](images/perf_spread.png)
-*Figure 4: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
+*Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
+*Interpretation: The boxplot confirms that NSGA-III (Blue) significantly outperforms MOEA/D (Orange). The annotation `A12=1.00` and `p=0.00e+00` statistically proves that NSGA-III wins in 100% of the pairwise comparisons with extremely high confidence.*
+
 
 ![Performance Density](images/perf_density.png)
-*Figure 5: Performance Distribution (KDE) identifying algorithm stability and outlier sensitivity.*
+*Figure 8: Performance Distribution (KDE) identifying algorithm stability and outlier sensitivity.*
+*Interpretation: The sharp peak of Algorithm B (Orange) indicates highly stable, predictable performance centered around 0.65. Algorithm A (Blue), despite having a similar mean, shows a "fat tail" distribution extending to 0.45, indicating a higher risk of occasional poor quality runs.*
+
+
+#### **Programmatic Access**
+You can access the raw metric data displayed in these plots using the `mb.metrics` module.
+
+```python
+# 1. Calculate metric history (returns a MetricMatrix)
+hv_matrix = mb.metrics.hypervolume(exp)
+
+# 2. Access raw data (Generations x Runs)
+raw_data = hv_matrix.values     # (Gen x Run) Numpy array
+run_0 = hv_matrix.runs(0)       # Trajectory of the first run (All generations)
+final_dist = hv_matrix.gens(-1) # Distribution at the final generation (All runs)
+
+# 3. Statistical computations (Standard Numpy)
+mean_traj = raw_data.mean(axis=1) # Average trajectory across runs
+std_dev = raw_data.std(axis=1)    # Standard deviation over time
+```
 
 ### **7.3. Stratification (Population Structure)**
 This domain examines the internal organization of the population, analyzing selection pressure and non-domination levels (Pareto ranks).
@@ -328,60 +383,90 @@ This domain examines the internal organization of the population, analyzing sele
 mb.view.strat_tiers(exp1, exp2)
 ```
 
+
 ![Rank Distribution](images/rankplot.png)
-*Figure 6: Global Rank Distribution showing population density across non-domination layers.*
-
----
-
-## **8. Statistical and Structural Analysis (`mb.stats`)**
-
-The `mb.stats` module is the analytical engine of MoeaBench. It transforms raw stochastic trajectories into structural insights and scientific evidence, maintaining the same polymorphic interface design as the visualization module.
-
-### **8.1 Stratification and Dominance Analysis**
-
-## **8. Statistical Analysis (`mb.stats`)**
-
-The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. It operates on two main axes: **Population Structure** (how solutions are organized) and **Hypothesis Testing** (statistical validation of performance).
-
-### **8.1. Stratification and Structure**
-Stratification organizes a population into discrete non-domination layers (ranks). This analysis reveals the selection pressure and internal hierarchy of the search process.
-
-#### **Analyzing Population Layers (`strata`)**
-```python
-# Analyze the internal structure of a single experiment
-res = mb.stats.strata(exp)
-print(f"Deepest Rank: {res.max_rank}")
-print(f"Selection Pressure: {res.selection_pressure():.2f}") # (0.0 to 1.0)
-```
+*Figure 9: Global Rank Distribution showing population density across non-domination layers.*
+*Interpretation: This plot reveals a scenario where the population is stratified into multiple layers (5 ranks). While the majority (~50%) are in Rank 0, a significant portion lags in deeper ranks, indicating that the algorithm (MOEA/D on DTLZ1) is struggling to push the entire population to the Pareto front at this stage (Gen 14).*
 
 #### **Visualizing the Hierarchy (`strat_caste`)**
 The `strat_caste` plot maps the "Caste System" of the population, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
 
 ```python
 # 1. Individual Merit (Micro View): Diversity distribution within ranks
-mb.view.strat_caste(res, mode='individual', title="Population Merit")
+mb.view.strat_caste(exp, mode='individual', title="Population Merit")
 
 # 2. Stochastic Stability (Macro View): Robustness across multiple runs
-mb.view.strat_caste(res, mode='collective', title="Stochastic Robustness")
+mb.view.strat_caste(exp, mode='collective', title="Stochastic Robustness")
 ```
 
 ![Caste Individual](images/caste_individual.png)
-*Figure 7: Micro-view of the population hierarchy (Generated by `examples/example_08.py`). The box reflects quality distribution (Per Capita), while 'n' indicates the average headcount of each rank.*
+*Figure 10: Micro-view "Per Capita" (Individual Merit). This plot uses **Boxplots** to visualize the internal diversity within each social class (Rank).*
+*Interpretation: The Y-axis measures the quality (Crowding Distance) of individual citizens. The numbers on the box represent the **Quartiles** (Q1, Median, Q3). Rank 1 (The Elite) is the most populous (`n=94`, or 94%) and features a tall box. This indicates a "Healthy Elite": a highly diverse population ranging from specialized outliers (top whisker) to crowded averages (median), ensuring genetic richness.*
 
 ![Caste Collective](images/caste_collective.png)
-*Figure 8: Macro-view (Stochastic Robustness - Generated by `examples/example_08.py`). The vertical stability of the boxes indicates the algorithm's determinism across independent runs.*
+*Figure 11: Macro-view "GDP" (Gross Domain Product). Unlike the previous plot, this visualizes the **Aggregate Power** of the population across 10 independent runs.*
+*Interpretation: Here, the Y-axis represents the total quality sum per run. The extreme vertical stability of the Rank 1 box (very short whiskers) visually proves that the algorithm is deterministically reliable. It consistently delivers ~94% of its "GDP" into the elite rank across all repeats, with negligible variance due to random seeds.*
 
 
+---
 
-#### **Competitive Analysis (`tier`)**
-The `tier` function merges two algorithms into a single set to determine global dominance.
+#### **Programmatic Access**
+To inspect the population structure without plotting, use the `mb.stats.strata` object.
+
 ```python
-# Who dominates whom?
-t_res = mb.stats.tier(exp1, exp2)
-print(f"Dominance Ratio: {t_res.dominance_ratio}") 
+# Analyze the experiment (or a specific population)
+res = mb.stats.strata(exp)
+
+# 0. Quick Diagnosis
+# Generates a narrative summary (Markdown in notebooks, print in console)
+res.report_show()
+
+# 1. Basic Properties
+dist = res.frequencies()        # [0.5, 0.3, ...]: Proportion per rank
+depth = res.max_rank            # Total number of layers found (e.g. 5)
+press = res.selection_pressure  # Estimated selection pressure (slope)
 ```
 
-### **8.2. Hypothesis Testing & Significance**
+The output is something like:
+
+```text
+--- Population Strata Report: Population ---
+  Search Depth: 5 non-dominated layers
+  Selection Pressure: 0.9612
+
+Rank   | Pop %    | Quality (hypervolume)
+----------------------------------------
+1      |    50.0% |       0.7812
+...
+```
+
+#### **2. Caste Inspection (Raw Data)**
+
+To dive deeper into the metrics of a specific rank:
+
+```python
+mask = (res.rank_array == 1)      # Boolean mask for the Elite Caste (Rank 1)
+elite_pop = res.objectives[mask]  # (N_elite x M) Objective values of Rank 1
+
+# 3. Statistical Summary (Boxplot equivalents)
+stats = res.caste_summary()      # Helper object for stats
+n_elite = stats.n(rank=1)        # Headcount for Rank 1
+q_median = stats.q(rank=1)       # Median quality for Rank 1
+
+# 4. Competitive Analysis (Tier Duel)
+# Merge two experiments to see who dominates whom
+t_res = mb.stats.tier(exp1, exp2)
+ratio = t_res.dominance_ratio      # [0.6, 0.4] means Exp1 holds 60% of Rank 1
+```
+
+---
+
+## **8. Statistical Analysis (`mb.stats`)**
+
+The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. 
+A core philosophy of MoeaBench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report_show()` method that handles display for you.
+
+### **8.1. Hypothesis Testing & Significance**
 These tools answer the critical question: *"Is the difference purely due to luck?"*
 
 #### **Proving Superiority (Performance Analysis)**
@@ -392,16 +477,33 @@ To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g.,
 # Answers: "Is the difference real?"
 res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
 
-if res.is_significant(alpha=0.05):
-    print(f"Confirmed: {res.winner} outperforms (p={res.p_value:.4f})")
-    
-    # 2. Measure Effect Size (Vargha-Delaney A12)
+# 2. Get a narrative diagnosis
+# Automatically prints or renders Markdown
+res.report_show() 
+```
+
+The output is something like:
+
+```text
+--- Mann-Whitney U (Win Evidence) Test Report ---
+  Comparison: exp1 vs exp2
+  Alternative: two-sided
+  Statistic: 1450.0000
+  P-Value:   0.001204 (Significant at alpha=0.05)
+  A12 Effect Size: 0.8200 (Large)
+
+Conclusion: There is a statistically significant difference favoring exp1.
+```
+
+#### **Accessing Raw Data**
+
+Most result objects also allow programmatic access to the underlying metrics:
+
+```python
+if res.is_significant:
+    # Measure Effect Size (Vargha-Delaney A12)
     # Answers: "How often does it win?"
-    # A12 > 0.5 indicates exp1 wins; A12 < 0.5 indicates exp2 wins.
     prob = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
-    print(f"Win Probability: {prob:.2f}")
-else:
-    print("Result Inconclusive: Algorithms are statistically equivalent.")
 ```
 
 #### **Testing Topological Consistency**
@@ -411,10 +513,8 @@ To verify if two algorithms found the same regions of the objective space (e.g.,
 # Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
 topo_res = mb.stats.topo_distribution(exp_baseline, exp_optimized)
 
-if topo_res.is_consistent:
-    print("Topological Integrity Preserved.")
-else:
-    print(f"Structural Deviation detected in axes: {topo_res.failed_axes}")
+# Hybrid Output: renders Markdown in notebooks, prints in terminal
+topo_res.report_show()
 ```
 
 > [!NOTE]
@@ -427,7 +527,10 @@ else:
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
 ### **Custom MOP Plugin**
-To add a new problem, inherit from `mb.mops.BaseMop` and implement the `evaluation` method:
+To add a new problem, inherit from `mb.mops.BaseMop` and implement the `evaluation` method. 
+
+> [!TIP]
+> **See it in action**: A complete demonstration of a custom MOP is available in **`examples/example_05.py`**. For detailed technical requirements of the `evaluation` contract, see [Reference Guide: Section 9.1](reference.md#extensibility).
 
 ```python
 class MyProblem(mb.mops.BaseMop):
@@ -445,21 +548,13 @@ class MyProblem(mb.mops.BaseMop):
 ```
 
 ### **Custom MOEA Plugin**
-To wrap your own algorithm, inherit from `mb.moeas.MOEA`. By implementing the `solve(mop)` interface, your algorithm gains access to all of MoeaBench's infrastructure.
+To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
----
+> [!NOTE]
+> **Consistent Design**: Custom algorithms follow the **same architectural pattern** as custom MOPs. Refer to [Reference Guide: Section 9.2](reference.md#extensibility) for the technical contract and a code skeleton.
 
-## **10. Precision: Reproducibility & Seeds**
 
-Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata.
-
-*   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
-*   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
-*   **Traceability**: Every `Run` object stores the exact seed used for its execution, ensuring any result can be perfectly replicated.
-
----
-
-## **11. Persistence (`save` and `load`)**
+## **10. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -482,7 +577,7 @@ exp.load("results", mode="data")
 
 ---
 
-## **12. Data Export (CSV)**
+## **11. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -501,7 +596,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **13. References**
+## **12. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
@@ -509,20 +604,16 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **14. Architecture Decision Records (ADR)**
+## **13. Architectural Philosophy (ADR)**
 
-This section documents critical architectural decisions and optimization strategies employed by the framework's default configurations.
+MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
-### ADR 003: Hybrid Decomposition Strategy for MOEA/D
-* **Status**: Accepted
-* **Context**: The standard Penalty-based Boundary Intersection (PBI) decomposition function in MOEA/D relies heavily on the penalty parameter $\theta$ to balance convergence and diversity. On degenerate (DTLZ5, DTLZ6), disconnected (DPF series), or biased (DTLZ4) manifolds, PBI with low $\theta$ forces convergence but causes "diversity collapse," where the entire population clusters into a few optimal points or a low-dimensional arc. Increasing $\theta$ prevents collapse but hinders convergence on these complex geometries.
-* **Decision**: We adopted a **Hybrid Decomposition Architecture**.
-    *   **Standard PBI ($\theta=5.0$)**: Used for well-behaved problems (DTLZ1, DTLZ2) where PBI's efficiency is superior.
-    *   **Tchebycheff (TCH)**: Used for degenerate, biased, and disconnected problems (DTLZ3, DTLZ4, DTLZ5, DTLZ6, DPF3). Tchebycheff decomposition naturally prioritizes diversity by minimizing the maximum weighted distance, acting as a "hard constraint" on the direction of search and effectively preventing population collapse without sensitive tuning.
-* **Consequences**: MOEA/D now achieves robust manifold coverage on degenerate problems (significant improvement in spread/IGD) at the cost of slightly slower convergence speed compared to aggressive PBI.
+*   **Scientific Narrative (Storytelling)**: We believe code should tell a story. The library avoids 'black boxes' by structuring every result as a **Rich Object** that offers diagnostic narratives (via `.report_show()`), augmenting raw numbers with descriptive insights to help researchers streamline the interpretation of quantitative data.
 
-### ADR 004: Visual Micro-Jitter for Comparative Isomorphism
-* **Status**: Accepted
-* **Context**: In high-performance calibration scenarios, modern MOEAs (like NSGA-III and MOEA/D) often converge to near-identical locations on the Pareto front. When plotting these solutions in 3D, the points from the last-plotted algorithm perfectly occlude the points of previous algorithms, creating the false impression that the underlying algorithms failed or are invisible (e.g., NSGA-III "disappearing" behind MOEA/D in DTLZ2).
-* **Decision**: We implemented a **Gaussian Micro-Jitter** ($\epsilon \sim N(0, 0.003)$) in the visual reporting engine (`generate_visual_report.py`). This jitter is applied only to the visualization coordinates, not the numerical data.
-* **Consequences**: Overlapping populations now appear as a mixed "cloud" of colors rather than a single dominant color, allowing visual confirmation of co-existence and competitive dominance without distorting the global shape of the front.
+*   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
+
+*   **Rigor & Calibration**: Reliability is certified through regular **Calibration Reports** that audit metric precision. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
+
+*   **Reproducibility**: We enforce **Determinism by Design** through strict seed management, ensuring every run can be reconstructed exactly. Additionally, our **Mirror Parity** policy ensures that every production script in `examples/` has a corresponding interactive Notebook (`.ipynb`), making research both deployable and explorable.
+
+*   **Usability & Aesthetics**: Visualization is a first-class citizen. Features like **Visual Micro-Jitter (ADR 004)** illustrate our commitment to clarity—by applying minute gaussian noise to plots, we ensure that overlapping algorithms remain visually distinguishable ("Comparative Isomorphism") without compromising the numerical exactness of the underlying statistical tests.

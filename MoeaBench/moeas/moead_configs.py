@@ -1,13 +1,5 @@
-# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
-"""
-Problem-specific tuning registry for MOEA/D.
-Maps problem names to optimal decomposition and neighborhood parameters.
-"""
-
 from pymoo.decomposition.pbi import PBI
+from pymoo.decomposition.tchebicheff import Tchebicheff
 
 MOEAD_CONFIGS = {
     "DTLZ1": {
@@ -15,19 +7,19 @@ MOEAD_CONFIGS = {
         "n_neighbors": 20,
     },
     "DTLZ3": {
-        "decomposition": PBI(eps=0.0, theta=0.2), # Balanced for convergence and spread
-        "n_neighbors": 30, # Increased for diversity
+        "decomposition": Tchebicheff(), # Robust against multimodal diversity collapse
+        "n_neighbors": 30, 
     },
     "DTLZ4": {
-        "decomposition": PBI(eps=0.0, theta=5.0), 
+        "decomposition": Tchebicheff(), # Neutralizes density bias
         "n_neighbors": 30, 
     },
     "DTLZ5": {
-        "decomposition": PBI(eps=0.0, theta=0.5),
+        "decomposition": Tchebicheff(), # Stable for degenerate manifolds
         "n_neighbors": 20,
     },
     "DTLZ6": {
-        "decomposition": PBI(eps=0.0, theta=0.2), # Balanced for biased degenerate
+        "decomposition": Tchebicheff(), # Forces spread on biased degenerate
         "n_neighbors": 30, 
     },
     "DPF1": {
@@ -39,7 +31,7 @@ MOEAD_CONFIGS = {
         "n_neighbors": 30,
     },
     "DPF3": {
-        "decomposition": PBI(eps=0.0, theta=0.5),
+        "decomposition": Tchebicheff(), # Prevents clustering in curved front
         "n_neighbors": 30,
     },
     "DPF4": {
@@ -48,6 +40,15 @@ MOEAD_CONFIGS = {
     },
 }
 
-def get_moead_params(problem_name):
-    """Returns specialized params or empty dict for default behavior."""
-    return MOEAD_CONFIGS.get(problem_name, {})
+def get_moead_params(mop_name):
+    """
+    Returns a dictionary of tuned parameters for a given MOP name.
+    """
+    # Use problem-specific config if available, otherwise fallback to defaults
+    if mop_name in MOEAD_CONFIGS:
+        return MOEAD_CONFIGS[mop_name]
+    
+    return {
+        "decomposition": PBI(eps=0.0, theta=5.0), # Standard MOEA/D-PBI
+        "n_neighbors": 15,
+    }

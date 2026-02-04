@@ -12,6 +12,22 @@ class StatsResult:
         """Returns a human-readable narrative report of the results."""
         raise NotImplementedError("Subclasses must implement .report()")
 
+    def report_show(self, **kwargs):
+        """
+        Displays the report appropriately for the environment.
+        Prints to console in scripts, renders Markdown in Notebooks.
+        """
+        content = self.report(**kwargs)
+        
+        # Check if running in Jupyter/IPython
+        try:
+            from IPython.display import display, Markdown
+            # This check is a common way to detect if we're actually in a shell/notebook
+            get_ipython() 
+            display(Markdown(content))
+        except (ImportError, NameError):
+            print(content)
+
     def __repr__(self):
         # We don't automatically call report() in __repr__ to avoid 
         # overwhelming the REPL, but we mention it.
