@@ -1,0 +1,6 @@
+# Exclude HTML test reports from GitHub language statistics
+tests/**/*.html linguist-generated=true
+tests/*.html linguist-generated=true
+
+# Mark documentation HTML as documentation
+docs/**/*.html linguist-documentation=true
