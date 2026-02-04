@@ -7,6 +7,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
+from ..defaults import defaults
 
 try:
     import google.colab
@@ -33,7 +34,14 @@ class Scatter2D:
         self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
 
     def show(self):
-        if self.mode == 'static':
+        # Honor global backend override
+        mode = self.mode
+        if defaults.backend == 'matplotlib':
+            mode = 'static'
+        elif defaults.backend == 'plotly':
+            mode = 'interactive'
+
+        if mode == 'static':
             self.configure_static()
         else:
             self.configure_interactive()
@@ -41,7 +49,7 @@ class Scatter2D:
     def configure_static(self):
         import matplotlib.pyplot as plt
         
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig, ax = plt.subplots(figsize=defaults.figsize)
         
         prop_cycle = plt.rcParams['axes.prop_cycle']
         cycle_colors = prop_cycle.by_key()['color']
@@ -71,8 +79,14 @@ class Scatter2D:
         ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
         ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
         ax.set_title(f"2D Chart for {self.type}")
-        ax.grid(True, linestyle='--', alpha=0.7)
+        ax.grid(True, linestyle='--', alpha=0.7) # Grid density is standard
         ax.legend()
+        
+        if defaults.save_format:
+            filename = f"mb_plot_{self.type.replace(' ', '_')}.{defaults.save_format}"
+            plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
+            # print(f"[MoeaBench] Plot saved as {filename}")
+
         plt.show()
 
     def configure_interactive(self):
@@ -107,8 +121,8 @@ class Scatter2D:
         self.figure.update_layout(
             xaxis=dict(title=f"{self.axis_label} {self.axis[0]+1}", showgrid=True, gridcolor="LightGray"),
             yaxis=dict(title=f"{self.axis_label} {self.axis[1]+1}", showgrid=True, gridcolor="LightGray"),
-            width=900,
-            height=800,
+            width=defaults.plot_width,
+            height=defaults.plot_height,
             title=dict(
                 text=f'2D Chart for {self.type}',
                 x=0.5,
@@ -121,6 +135,6 @@ class Scatter2D:
                 yanchor='middle'
             ),
             hovermode='closest',
-            template="moeabench"
+            template=defaults.theme if defaults.theme != 'moeabench' else 'moeabench'
         )
         self.figure.show()

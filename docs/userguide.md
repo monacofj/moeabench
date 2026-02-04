@@ -98,6 +98,9 @@ Scientific benchmarking requires absolute control over randomness. MoeaBench tre
 
 *   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
 *   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
+
+> [!TIP]
+> **Global Defaults**: You can define default values for population, generations, seeds, and statistical thresholds globally using `mb.defaults`. This allows you to set a baseline for your entire project in a single place. See the **[API Reference](reference.md#defaults)** for the complete list of parameters.
 *   **Traceability**: Every `Run` object stores the exact seed used for its execution.
 *   **Automatic Seed Generation**: If you do not provide a seed, MoeaBench automatically generates a random one for you. This seed is then fixed and stored in the experiment metadata, ensuring that even "random" executions can be traced and reproduced later.
 
@@ -120,6 +123,48 @@ mb.view.perf_history(exp[4])   # Run number is 0-indexed
 ```
 
 For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.
+
+### **Normalization and Fairness**
+
+When comparing algorithms, a critical (and often overlooked) detail is **Normalization**. Objectives usually vary wildly in scale (e.g., $f_1 \in [0, 1]$ vs $f_2 \in [0, 1000]$). Without normalization, metrics like Hypervolume would be completely dominated by the objective with the largest magnitude.
+
+MoeaBench handles this automatically through its **"Joint Universe"** logic.
+
+#### **The `ref` Argument: Defining the Universe**
+
+The `ref` argument tells MoeaBench **"What is the world?"** for the purpose of normalization. It defines the Ideal and Nadir points (the bounding box) used to scale objective values. Your choice of `ref` depends entirely on your analytical goal:
+
+**1. Self-Reference (Default)**
+If you are analyzing a single experiment in isolation, you might not strictly need `ref`.
+*   `mb.metrics.hv(exp1)`: Calculates HV based on `exp1`'s own min/max values. Valid for checking convergence *of that specific run*, but the value is dimensionless and isolated.
+
+**2. Comparative Reference (The "Joint Universe")**
+When comparing two algorithms ($A$ and $B$), they must be judged against the same ruler.
+*   **Automatic**: High-level tools like `perf_spread(expA, expB)` automatically calculate the union ($A \cup B$) as the reference.
+*   **Manual**: If calculating manually, you **must** enforce this union: `hv(expA, ref=expB)`.
+
+**3. External Reference (Fixed Benchmark)**
+Sometimes, you want to compare $A$ and $B$, but scale them against a third, absolute baseline $C$ (e.g., a "State of the Art" result that isn't being plotted, or the True Pareto Front).
+*   Even in automatic tools, you can inject this external context: `perf_spread(expA, expB, ref=expC)`. This forces $A$ and $B$ to be normalized against the ranges of $C$, ensuring consistency across different studies.
+
+```python
+# Scenario A: Isolation (Internal consistency only)
+hv = mb.metrics.hv(exp1)
+
+# Scenario B: Direct Comparison (Fairness between A and B)
+# Note: high-level plots do this automatically!
+hv_a = mb.metrics.hv(expA, ref=expB)
+hv_b = mb.metrics.hv(expB, ref=expA)
+
+# Scenario C: Absolute consistency (Global Standard)
+# Compare A and B, but keep the scale fixed to the "True Front" (exp_truth)
+# Useful so that HV values don't change if you add/remove algorithms later.
+hv_a = mb.metrics.hv(expA, ref=exp_truth)
+hv_b = mb.metrics.hv(expB, ref=exp_truth)
+```
+
+> [!TIP]
+> **Best Practice**: For academic studies, it is often best to use the **External Reference** approach (Scenario C) by passing `exp.optimal_front()` or a large collection of all algorithms as `ref`. This ensures that your metric values are absolute and don't fluctuate depending on which subset of algorithms you are currently plotting.
 
 ### **Control: Custom Stop Criteria**
 

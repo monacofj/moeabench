@@ -40,7 +40,41 @@ This document provides the exhaustive technical specification for the MoeaBench 
 
 MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
 
-### **1.1. Experiment**
+<a name="defaults"></a>
+### **1.2. Global Defaults (`mb.defaults`)**
+The `mb.defaults` object allows centralized control over the library's behavior. These values act as fallback "Honest Defaults"—they are used whenever an explicit value is not provided to a method or constructor.
+
+**Execution Parameters:**
+*   `population`: Default population size (default: `150`).
+*   `generations`: Default generation count (default: `300`).
+*   `seed`: Default base random seed (default: `1`).
+
+**Statistics & Rigor:**
+*   `alpha`: Significance level for hypothesis tests (default: `0.05`).
+*   `cv_tolerance`: Coef. of Variation threshold for "High" stability (default: `0.05`).
+*   `cv_moderate`: Coef. of Variation threshold for "Low" stability (default: `0.15`).
+*   `displacement_threshold`: Relative frequency threshold for rank displacement (default: `0.1`, i.e., 10%).
+*   `large_gap_threshold`: Number of rank levels considered a "Large Gap" (default: `2`).
+
+**Narrative & Presentation:**
+*   `precision`: Float precision in reports (default: `4`).
+*   `theme`: Visual identity template (default: `'moeabench'`).
+*   `backend`: Graphical backend (default: `'auto'`). Supports `'plotly'` or `'matplotlib'`.
+*   `save_format`: Automatic export format for plots (default: `None`). Supports `'pdf'`, `'png'`, `'svg'`.
+*   `figsize`: Default dimensions for static plots (default: `(10, 8)`).
+*   `plot_width`: Default width for interactive plots (default: `900`).
+*   `plot_height`: Default height for interactive plots (default: `800`).
+
+**Usage Example:**
+```python
+import MoeaBench as mb
+
+mb.defaults.population = 500  # Set global default
+exp = mb.experiment()        # Will use population=500
+exp.run()                    # Executes with 500
+```
+
+### **1.3. Experiment**
 The top-level container.
 
 **Properties:**
@@ -64,6 +98,12 @@ These methods operate on the **union of all runs** (The Cloud).
 *   `.non_set(n=-1)` (*SmartArray*): Dominated variables from the cloud.
 *   `.non_dominated(n=-1)` (*Population*): Aggregate ND population.
 *   `.dominated(n=-1)` (*Population*): Aggregate dominated population.
+*   `.all_fronts(n=-1)` (*List[SmartArray]*): List of Pareto fronts from all runs.
+*   `.all_sets(n=-1)` (*List[SmartArray]*): List of decision sets from all runs.
+
+**Shortcuts:**
+*   `.objectives` (*SmartArray*): Shortcut for the final aggregate objectives (`.pop().objectives`).
+*   `.variables` (*SmartArray*): Shortcut for the final aggregate variables (`.pop().variables`).
 
 **Methods:**
 *   **`.run(repeat=None, workers=None, **kwargs)`**: Executes the optimization.
@@ -76,6 +116,9 @@ These methods operate on the **union of all runs** (The Cloud).
     *   `path` (*str*): Filename or folder.
     *   `mode` (*str*): `'all'`, `'config'`, or `'data'`.
 *   **`.load(path, mode='all')`**: Restores the experiment state from a ZIP file.
+*   **`.get_M()`**: Returns the number of objectives.
+*   **`.get_Nvar()`**: Returns the number of decision variables.
+*   **`.get_n_ieq_constr()`**: Returns the number of inequality constraints.
 
 **Usage Example:**
 ```python
@@ -94,7 +137,7 @@ Represents a single optimization trajectory (history of one seed).
 
 **History Access:**
 *   `.history(type='nd')`: Returns the raw list of arrays for the entire run.
-    *   Types: `'f'` (all objectives), `'x'` (all variables), `'nd'` (non-dominated objectives), `'nd_x'` (non-dominated variables).
+    *   Types: `'f'` (all objectives), `'x'` (all variables), `'nd'` (non-dominated objectives), `'nd_x'` (non-dominated variables), `'dom'` (dominated objectives), `'dom_x'` (dominated variables).
 
 **Filters & Snapshots:**
 *   `.pop(gen=-1)`: Returns the **Population** object at generation `gen`.
@@ -140,6 +183,9 @@ A container for a set of solutions at a specific moment.
 **Filtering Methods:**
 *   `.non_dominated()` $\to$ Returns a new *Population* with only non-dominated individuals.
 *   `.dominated()` $\to$ Returns a new *Population* with only dominated individuals.
+
+**Analysis Methods:**
+*   **`.stratify()`** $\to$ *np.ndarray*: Performs Non-Dominated Sorting (NDS) and returns the integer rank array (1-based) for all individuals.
 
 **Usage Example:**
 ```python
@@ -301,6 +347,10 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
         *   `np.ndarray`: Uses the provided array as the True Pareto Front.
 *   **`mb.metrics.gd(data, ref=None)`**: Calculates GD (Generational Distance).
     *   `ref`: Usage identical to `mb.metrics.igd`.
+*   **`mb.metrics.gdplus(data, ref=None)`**: Calculates GD+ (modified Generational Distance).
+    *   `ref`: Usage identical to `mb.metrics.igd`.
+*   **`mb.metrics.igdplus(data, ref=None)`**: Calculates IGD+ (modified Inverted Generational Distance).
+    *   `ref`: Usage identical to `mb.metrics.igd`.
 
 **Returns**: `MetricMatrix` object.
 
@@ -326,7 +376,16 @@ first_run_traj = hv.runs(0) # Trajectory of first run
 # Single value case
 val = mb.metrics.hv(exp.last_pop)
 print(f"Final HV: {val:.4f}") 
+
+# Plotting Metrics
+mb.metrics.plot_matrix(hv, mode='auto', show_bounds=True)
 ```
+
+### **Metric Visualization (`mb.metrics.plot_matrix`)**
+*   **`plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs)`**:
+    *   Visualizes one or more `MetricMatrix` objects.
+    *   `mode`: `'auto'` (default), `'interactive'` (Plotly), or `'static'` (Matplotlib).
+    *   `show_bounds`: If `True`, displays min/max bounds as dashed lines.
 
 ---
 
@@ -409,7 +468,8 @@ Performs multi-axial distribution matching (Topologic Equivalence).
 ### **`mb.stats.topo_attainment(source, level=0.5)`**
 Calculates the attainment surface reached by $k\%$ of the runs.
 *   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
-*   **Returns**: `AttainmentSurface` (SmartArray subclass).
+*   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
+*   **Returns**: `AttainmentSurface` (SmartArray subclass). Can be plotted using `mb.spaceplot`.
 
 ### **`mb.stats.topo_gap(exp1, exp2, level=0.5)`**
 Calculates the spatial Gap in attainment between two groups.
@@ -421,8 +481,12 @@ Performs **Population Strata** (Dominance Layer analysis) based on Pareto domina
 *   **Returns**: `StratificationResult`.
 
 ### **`mb.stats.tier(exp1, exp2, gen=-1)`**
-Performs **Joint Stratification** analysis (Tier analysis).
+Performs **Joint Stratification** (Tier analysis) between two experiments.
 *   **Returns**: `TierResult`.
+    *   `.pole` (*np.ndarray*): Proportion of each algorithm in the first rank (Elite).
+    *   `.gap` (*int*): Displacement depth (rank where the loser starts to appear significantly).
+    *   `.dominance_ratio` (*np.ndarray*): Same as `.pole`.
+    *   `.report()`: Generates a competitive narrative ("Pole Position", "Displacement Depth").
 
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** between two strata profiles.

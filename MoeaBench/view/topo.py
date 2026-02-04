@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from ..defaults import defaults
 from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
@@ -90,7 +91,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
     s.show()
     return s
 
-def topo_density(*args, axes=None, layout='grid', alpha=0.05, threshold=0.1, space='objs', title=None, show=True, ax=None, **kwargs):
+def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='objs', title=None, show=True, ax=None, **kwargs):
     """
     [mb.view.topo_density] Spatial Distribution Perspective.
     Plots smooth Probability Density Estimates via Kernel Density Estimation (KDE)
@@ -114,6 +115,9 @@ def topo_density(*args, axes=None, layout='grid', alpha=0.05, threshold=0.1, spa
     if axes is None:
         axes = list(range(min(n_dims, 4)))
     
+    alpha = alpha if alpha is not None else defaults.alpha
+    threshold = threshold if threshold is not None else defaults.displacement_threshold
+
     # 2. Statistical Analysis
     match_res = stats_topo_distribution(*args, space=space, axes=axes, method=kwargs.get('method', 'ks'), 
                                         alpha=alpha, threshold=threshold, **kwargs)

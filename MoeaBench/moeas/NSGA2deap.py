@@ -18,7 +18,7 @@ class NSGA2deap(BaseMoea):
     returning generational history directly.
     """
 
-    def __init__(self, problem=None, population=160, generations=300, seed=1):
+    def __init__(self, problem=None, population=None, generations=None, seed=None):
         """
         Initializes NSGA2deap.
         

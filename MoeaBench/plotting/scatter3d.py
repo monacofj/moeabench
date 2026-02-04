@@ -7,6 +7,7 @@ import ipywidgets as widgets
 from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
+from ..defaults import defaults
 
 # Remove legacy inheritance
 # from .analyse_pareto import analyse_pareto
@@ -37,7 +38,14 @@ class Scatter3D:
          self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
            
      def show(self):
-         if self.mode == 'static':
+         # Honor global backend override
+         mode = self.mode
+         if defaults.backend == 'matplotlib':
+             mode = 'static'
+         elif defaults.backend == 'plotly':
+             mode = 'interactive'
+
+         if mode == 'static':
              self.configure_static()
          else:
              self.configure_interactive()
@@ -46,7 +54,7 @@ class Scatter3D:
          import matplotlib.pyplot as plt
          import matplotlib.cm as cm
          
-         fig = plt.figure(figsize=(10, 8))
+         fig = plt.figure(figsize=defaults.figsize)
          try:
              ax = fig.add_subplot(111, projection='3d')
          except (ValueError, KeyError) as e:
@@ -95,6 +103,11 @@ class Scatter3D:
          ax.set_zlabel(f"{self.axis_label} {self.axis[2]+1}")
          ax.set_title(f"3D Chart for {self.type}")
          ax.legend()
+         
+         if defaults.save_format:
+             filename = f"mb_plot_{self.type.replace(' ', '_')}.{defaults.save_format}"
+             plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
+
          plt.show()
 
      def configure_interactive(self):

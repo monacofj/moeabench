@@ -74,7 +74,7 @@ class BasePymoo(BaseMoea, Problem):
     """
     Base class for all Pymoo-based MOEAs in MoeaBench.
     """
-    def __init__(self, problem, population=150, generations=300, seed=1, stop=None, **kwargs):
+    def __init__(self, problem, population=None, generations=None, seed=None, stop=None, **kwargs):
         # BaseMoea init
         BaseMoea.__init__(self, problem, population, generations, seed)
         

@@ -18,5 +18,5 @@ class U_NSGA3(BaseMoeaWrapper):
         Procedure for Both Single and Multi-objective Optimization. 
         Kalyanpur, India.
     """
-    def __init__(self, population=150, generations=300, seed=1):
+    def __init__(self, population=None, generations=None, seed=None):
         super().__init__(UNSGA_pymoo, population, generations, seed)

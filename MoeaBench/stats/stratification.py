@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from ..defaults import defaults
 from scipy.stats import linregress, wasserstein_distance
 from functools import cached_property
 from typing import Dict, Any
@@ -318,10 +319,11 @@ class TierResult(StratificationResult):
 
     @property
     def displacement_depth(self) -> int:
-        """Finds the first rank where the relative proportion of B is > 0.1."""
+        """Finds the first rank where the relative proportion of B is > threshold."""
         # This is a heuristic for when the 'loser' starts to appear.
+        threshold = defaults.displacement_threshold
         for r in range(1, self.max_rank + 1):
-            if self.joint_frequencies[r][1] > 0.1:
+            if self.joint_frequencies[r][1] > threshold:
                 return r
         return self.max_rank
 
@@ -339,7 +341,7 @@ class TierResult(StratificationResult):
             f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
             f"  Search Depth: {self.max_rank} global levels",
             f"  Dominance Ratio (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-            f"  Displacement Depth: {self.gap} (Rank where rival > 10%)",
+            f"  Displacement Depth: {self.gap} (Rank where rival > {defaults.displacement_threshold*100:.0f}%)",
             "",
             f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
             "-" * 35
@@ -351,8 +353,8 @@ class TierResult(StratificationResult):
             
         better = nameA if ratioA > 0.5 else nameB
         lines.append(f"\nDiagnosis: {better} occupies the Pole Position.")
-        if self.gap > 2:
-            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival (Large Gap > 2 ranks).")
+        if self.gap > defaults.large_gap_threshold:
+            lines.append(f"Observation: {nameA if better == nameA else nameB} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
             
         return "\n".join(lines)
 

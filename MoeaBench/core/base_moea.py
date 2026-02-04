@@ -15,7 +15,7 @@ class BaseMoea(ABC):
     optimize multiple objectives on a benchmark problem.
     """
      
-    def __init__(self, problem: Any, population: int = 160, generations: int = 300, seed: int = 1) -> None:
+    def __init__(self, problem: Any, population: Optional[int] = None, generations: Optional[int] = None, seed: Optional[int] = None) -> None:
         """
         Initializes the MOEA with a problem and parameters.
 

@@ -12,6 +12,7 @@ from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
 from .GEN_igdplus import GEN_igdplus
 from ..core.base import Reportable
+from ..defaults import defaults
 
 # We need the helper logic from analyse to calculate reference points
 # Since analyse is a mixin class, we might need to extract 'normalize' to a util or duplicate it.
@@ -116,21 +117,23 @@ class MetricMatrix(Reportable):
             best = np.min(valid_final)
 
         cv = std / (abs(mean) + 1e-9)
-        if cv < 0.05:
-            stability = f"High (CV={cv:.2f} < 0.05)"
-        elif cv > 0.15:
-            stability = f"Low (CV={cv:.2f} > 0.15)"
+        prec = defaults.precision
+
+        if cv < defaults.cv_tolerance:
+            stability = f"High (CV={cv:.{prec}f} < {defaults.cv_tolerance})"
+        elif cv > defaults.cv_moderate:
+            stability = f"Low (CV={cv:.{prec}f} > {defaults.cv_moderate})"
         else:
-            stability = f"Moderate (0.05 <= CV={cv:.2f} <= 0.15)"
+            stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
 
         source_info = f" ({self.source_name})" if self.source_name else ""
         
         lines = [
             f"--- Metric Report: {self.metric_name}{source_info} ---",
             f"  Final Performance (Last Gen):",
-            f"    - Mean: {mean:.6f}",
-            f"    - StdDev: {std:.6f}",
-            f"    - Best: {best:.6f}",
+            f"    - Mean: {mean:.{prec}f}",
+            f"    - StdDev: {std:.{prec}f}",
+            f"    - Best: {best:.{prec}f}",
             f"  Search Dynamics:",
             f"    - Runs: {data.shape[1]}",
             f"    - Generations: {data.shape[0]}",

@@ -18,5 +18,5 @@ class SPEA2(BaseMoeaWrapper):
         Zitzler, Laumanns, & Thiele (2001). SPEA2: Improving the Strength 
         Pareto Evolutionary Algorithm. Technical Report 103, ETH Zurich.
     """
-    def __init__(self, population=150, generations=300, seed=1, **kwargs):
+    def __init__(self, population=None, generations=None, seed=None, **kwargs):
         super().__init__(SPEA_pymoo, population, generations, seed, **kwargs)

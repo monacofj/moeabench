@@ -7,6 +7,7 @@ import numpy as np
 from scipy.stats import mannwhitneyu, ks_2samp, anderson_ksamp, wasserstein_distance
 from functools import cached_property
 from .base import StatsResult, SimpleStatsValue
+from ..defaults import defaults
 
 class HypothesisTestResult(StatsResult):
     """
@@ -33,14 +34,14 @@ class HypothesisTestResult(StatsResult):
     def effect_size_label(self) -> str:
         val = self.perf_probability
         d = abs(val - 0.5) * 2 # Map 0.5->0, 0/1->1
-        if d < 0.147: return "Negligible"
-        if d < 0.33: return "Small"
-        if d < 0.474: return "Medium"
+        if d < defaults.a12_negligible: return "Negligible"
+        if d < defaults.a12_small: return "Small"
+        if d < defaults.a12_medium: return "Medium"
         return "Large"
 
     @property
     def significant(self) -> bool:
-        return self.p_value < 0.05 if self.p_value is not None else False
+        return self.p_value < defaults.alpha if self.p_value is not None else False
 
     def report(self) -> str:
         name1 = getattr(self.data1, 'name', 'Group A')
@@ -54,14 +55,14 @@ class HypothesisTestResult(StatsResult):
         ]
         
         if self.p_value is not None:
-            lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha=0.05)")
+            lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha={defaults.alpha})")
             
-        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label} [>0.474 Large])")
+        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label} [>{defaults.a12_medium} Large])")
         
         # Narrative interpretation
         if self.significant:
             better = name1 if self.perf_probability > 0.5 else name2
-            lines.append(f"\nConclusion: There is a statistically significant difference (p < 0.05) favoring {better}.")
+            lines.append(f"\nConclusion: There is a statistically significant difference (p < {defaults.alpha}) favoring {better}.")
         elif self.p_value is not None:
             lines.append(f"\nConclusion: No statistically significant difference detected.")
         else:
@@ -182,13 +183,13 @@ class DistMatchResult(StatsResult):
     """
     Rich result for multi-axial distribution matching (topology/equivalence).
     """
-    def __init__(self, results, names, space='objs', method='ks', alpha=0.05, threshold=0.1):
+    def __init__(self, results, names, space='objs', method='ks', alpha=None, threshold=None):
         self.results = results # {axis_idx: score/p_val}
         self.names = names
         self.space = space
         self.method = method
-        self.alpha = alpha
-        self.threshold = threshold
+        self.alpha = alpha if alpha is not None else defaults.alpha
+        self.threshold = threshold if threshold is not None else defaults.displacement_threshold
 
     @property
     def p_values(self) -> dict:
@@ -238,7 +239,7 @@ class DistMatchResult(StatsResult):
             
         return "\n".join(lines)
 
-def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs):
+def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, threshold=None, **kwargs):
     """
     [mb.stats.topo_distribution] Performs multi-axial distribution matching.
     Verifies if populations are statistically equivalent in objective or decision space.
@@ -248,6 +249,8 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, t
         'anderson': Anderson-Darling k-sample test.
         'emd': Earth Mover's Distance (Wasserstein metric).
     """
+    alpha = alpha if alpha is not None else defaults.alpha
+    threshold = threshold if threshold is not None else defaults.displacement_threshold
     if len(args) < 2:
         raise ValueError("topo_dist requires at least two datasets for comparison.")
 

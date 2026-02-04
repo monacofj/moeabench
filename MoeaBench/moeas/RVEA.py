@@ -18,5 +18,5 @@ class RVEA(BaseMoeaWrapper):
         Evolutionary Algorithm for Many-objective Optimization. IEEE Trans. 
         Evol. Comput.
     """
-    def __init__(self, population=150, generations=300, seed=1, **kwargs):
+    def __init__(self, population=None, generations=None, seed=None, **kwargs):
         super().__init__(RVEA_pymoo, population, generations, seed, **kwargs)

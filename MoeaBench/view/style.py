@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from cycler import cycler
 import plotly.io as pio
 import plotly.graph_objects as go
+from ..defaults import defaults
 
 # --- MoeaBench Standard Palette ---
 # 1. Indigo:          #1A237E
@@ -25,12 +26,21 @@ MOEABENCH_PALETTE = [
     "#FF9100", "#2979FF", "#FBC02D"
 ]
 
-def apply_style():
+def apply_style(theme=None):
     """
     Applies the MoeaBench standard style globally to Matplotlib and Plotly.
     """
+    theme = theme if theme is not None else defaults.theme
+    
+    # Map themes
+    if theme == 'moeabench':
+        palette = MOEABENCH_PALETTE
+    else:
+        # Fallback to matplotlib default or other predefined if added
+        palette = MOEABENCH_PALETTE 
+
     # 1. Matplotlib Global Configuration
-    plt.rcParams['axes.prop_cycle'] = cycler(color=MOEABENCH_PALETTE)
+    plt.rcParams['axes.prop_cycle'] = cycler(color=palette)
     plt.rcParams['grid.color'] = '#E0E0E0'
     plt.rcParams['grid.linestyle'] = '--'
     plt.rcParams['grid.alpha'] = 0.7
@@ -38,7 +48,7 @@ def apply_style():
     # 2. Plotly Global Template Configuration
     # We create a custom 'moeabench' template based on 'plotly_white'
     mb_template = go.layout.Template(pio.templates["plotly_white"])
-    mb_template.layout.colorway = MOEABENCH_PALETTE
+    mb_template.layout.colorway = palette
     
     # Add to Plotly registry and set as default
     pio.templates["moeabench"] = mb_template

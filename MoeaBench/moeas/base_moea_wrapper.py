@@ -3,16 +3,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from ..defaults import defaults
+
 class BaseMoeaWrapper:
     """
     Base class for MOEA wrappers that bridge between the user-facing API 
     and the internal optimization engines.
     """
-    def __init__(self, engine_class, population=150, generations=300, seed=1, **kwargs):
+    def __init__(self, engine_class, population=None, generations=None, seed=None, **kwargs):
         self._engine_class = engine_class
-        self._initial_population = population
-        self._initial_generations = generations
-        self._initial_seed = seed
+        
+        # Use mb.defaults if not provided
+        self._initial_population = population if population is not None else defaults.population
+        self._initial_generations = generations if generations is not None else defaults.generations
+        self._initial_seed = seed if seed is not None else defaults.seed
         self._stop = None
         self._kwargs = kwargs # Store user parameters
         self._instance = None

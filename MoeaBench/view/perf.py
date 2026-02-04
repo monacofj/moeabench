@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from ..defaults import defaults
 from ..metrics.evaluator import plot_matrix, hypervolume
 
 def perf_history(*args, metric=None, **kwargs):
@@ -91,7 +92,7 @@ def perf_spread(*args, metric=None, gen=-1, title=None, **kwargs):
     plt.show()
     return ax
 
-def perf_density(*args, metric=None, gen=-1, title=None, alpha=0.05, **kwargs):
+def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     """
     [mb.view.perf_density] Performance Distribution Perspective.
     Visualizes metric probability density using KDE.
@@ -101,6 +102,8 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=0.05, **kwargs):
     
     if len(args) < 1:
         raise ValueError("perf_density requires at least one dataset.")
+
+    alpha = alpha if alpha is not None else defaults.alpha
 
     if metric is None:
         metric = hypervolume
