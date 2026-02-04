@@ -75,6 +75,12 @@ Use the `test.py` script in the root directory to run the test suite.
 - If you modify core logic, ensure `tests/unit/` remains at 100% pass rate.
 - Avoid adding tests that depend on heavy CPU usage or GUI backends.
 
+### Calibration and Baselines
+Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (`tests/baselines_v0.8.0.csv`) and a **Calibration Report** (`tests/CALIBRATION_v0.8.0.html`).
+- If your contribution affects the core IGD/HV performance, you MUST regenerate the baselines and the report.
+- Raw calibration traces are stored in `tests/calibration_data/`.
+- Use `tests/calibration/compute_baselines.py` and `tests/calibration/generate_visual_report.py` to maintain these artifacts.
+
 ---
 
 ## 4. Communication

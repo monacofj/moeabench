@@ -8,7 +8,7 @@ MoeaBench Smoke Tier Testing Suite (Regression)
 
 This is the second level of the testing pyramid, focused on **basic convergence**.
 The goal is to ensure that code changes do not degrade algorithm performance
-or break the numerical reproducibility of v0.7.6.
+or break the numerical reproducibility of v0.8.0.
 
 Reproducibility Methodology:
 ----------------------------
@@ -34,7 +34,7 @@ sys.path.append(os.path.abspath("."))
 import MoeaBench as mb
 from MoeaBench.metrics.GEN_igd import GEN_igd
 
-BASELINE_FILE = "tests/baselines_v0.7.7.csv"
+BASELINE_FILE = "tests/baselines_v0.8.0.csv"
 
 def get_smoke_configs():
     """

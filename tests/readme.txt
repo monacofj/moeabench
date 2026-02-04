@@ -26,6 +26,19 @@ Note: Unit Tests run automatically as a FOUNDATION for all tiers.
    $ python3 test.py --all
 
 
+Calibration and Baselines
+-------------------------
+The scientific integrity of MoeaBench is anchored in the following artifacts:
+
+- baselines_v0.8.0.csv: Consolidated performance metrics (IGD, HV, GD, SP) 
+  derived from N=30 runs. This is the oracle for regression testing.
+- CALIBRATION_v0.8.0.html: Comprehensive interactive report featuring 3D 
+  visualizations and convergence analysis.
+- calibration_data/: Raw CSV files per run/generation used to generate the 
+  baselines and the report.
+- ground_truth/: Mathematical optimal manifolds used as the reference "Truth".
+
+
 COMPONENT DESCRIPTION:
 ----------------------
 

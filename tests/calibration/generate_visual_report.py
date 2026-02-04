@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench v0.7.6 Visual Calibration Generator
+MoeaBench v0.8.0 Visual Calibration Generator
 ===============================================
 
 This script processes the full calibration trace to create an interactive 
@@ -15,11 +15,11 @@ Key Features:
 - 3D Overlays: Projection of algorithms onto the "Mathematical Truth" (Ground Truth).
 - Convergence Timeplots: IGD and Evolutive HV graphs throughout generations.
 - Plotly Interactivity: Zoom, rotation, and point inspection directly in the browser.
-- Consistent Normalization: Uses the same Ideal/Nadir bounds as v0.7.6.
+- Consistent Normalization: Uses the same Ideal/Nadir bounds as v0.8.0.
 
 Output:
 ------
-- tests/CALIBRATION_v0.7.6.html
+- tests/CALIBRATION_v0.8.0.html
 
 Usage:
 ----
@@ -44,8 +44,8 @@ from MoeaBench.metrics.GEN_igd import GEN_igd
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.7.7.csv")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.7.7.html")
+BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.8.0.csv")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.8.0.html")
 
 def generate_visual_report():
     if not os.path.exists(BASELINE_FILE):
@@ -56,7 +56,7 @@ def generate_visual_report():
     mops = sorted(df_base['MOP'].unique())
     
     html_content = [
-        "<html><head><title>MoeaBench v0.7.7 Calibration</title>",
+        "<html><head><title>MoeaBench v0.8.0 Calibration</title>",
         "<script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}});</script>",
         "<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML'></script>",
         "<style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f4f7f9; line-height: 1.6; color: #333; }",
@@ -76,11 +76,11 @@ def generate_visual_report():
         "ul { padding-left: 20px; }",
         "li { margin-bottom: 8px; }",
         "</style></head><body>",
-        "<h1>MoeaBench v0.7.6 Technical Calibration Report</h1>",
+        "<h1>MoeaBench v0.8.0 Technical Calibration Report</h1>",
         
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.7.6</b>. The objective is to validate and calibrate the numerical integrity and topological fidelity of the framework's core algorithms against established mathematical benchmarks (Ground Truth).</p>",
+        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.8.0</b>. The objective is to validate and calibrate the numerical integrity and topological fidelity of the framework's core algorithms against established mathematical benchmarks (Ground Truth).</p>",
         
         "<h3>Experimental Setup</h3>",
         "<ul>",
