@@ -289,3 +289,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Initial import of project files from `fervat40`'s repository.
+
+### Added
+- **Automated Diagnostics**: New `MoeaBench.diagnostics` module for algorithmic pathology (Diversity Collapse detection, etc.).

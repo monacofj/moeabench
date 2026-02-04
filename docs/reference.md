@@ -106,9 +106,10 @@ These methods operate on the **union of all runs** (The Cloud).
 *   `.variables` (*SmartArray*): Shortcut for the final aggregate variables (`.pop().variables`).
 
 **Methods:**
-*   **`.run(repeat=None, workers=None, **kwargs)`**: Executes the optimization.
+*   **`.run(repeat=None, workers=None, diagnose=False, **kwargs)`**: Executes the optimization.
     *   `repeat` (*int*, optional): Number of independent runs. Defaults to `exp.repeat`.
-    *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported. All runs are performed serially for stability and minimal overhead.
+    *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported.
+    *   `diagnose` (*bool*): If `True`, performs automated algorithmic pathology analysis after execution and prints the rationale using `.report_show()`. Defaults to `False`.
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
     *   `stop` (*callable*, optional): Custom stop criteria function. Receives a reference to the active **solver** as its context. Returns `True` to halt execution.
     *   `**kwargs`: Passed to the MOEA execution engine.
@@ -636,3 +637,41 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 > [!IMPORTANT]
 > **Hard Deprecation Policy**: In future versions, the soft-deprecated items above will only produce a `UserWarning` and will no longer execute logic. We strongly recommend updating your research pipelines to the new nomenclature.
 
+
+<a name="diagnostics"></a>
+## **12. Automated Diagnostics (`mb.diagnostics`)**
+
+The `diagnostics` module implements the **Algorithmic Pathology** engine.
+
+### **Types & Enums (`mb.diagnostics.enums`)**
+
+*   **`DiagnosticStatus` (Enum)**:
+    *   `OPTIMAL`: Balanced convergence and diversity.
+    *   `DIVERSITY_COLLAPSE`: Good GD (Convergence), Poor IGD (Coverage).
+    *   `CONVERGENCE_FAILURE`: Poor GD and IGD.
+    *   `TOPOLOGICAL_DISTORTION`: High EMD (Shape mismatch).
+    *   `SUPER_SATURATION`: H_rel > 100%.
+
+### **Classes**
+
+#### **`DiagnosticResult`**
+The rich result object returned by an audit.
+
+*   **Attributes**:
+    *   `.status` (*DiagnosticStatus*): The classification verdict.
+    *   `.metrics` (*dict*): The raw metrics used for the decision.
+    *   `.confidence` (*float*): Decision confidence score [0.0 - 1.0].
+*   **Methods**:
+    *   `.rationale() -> str`: Returns the generated scientific explanation text (The "Technical Storytelling" verdict).
+    *   `.report() -> str`: Returns a formatted narrative string of the audit findings.
+    *   `.report_show()`: Context-aware display (Prints in terminal, renders Markdown in Jupyter).
+
+### **Functions**
+
+#### **`audit(target, ground_truth=None) -> DiagnosticResult`**
+Performs an algorithmic pathology assessment.
+
+*   **Args**:
+    *   `target`: Can be a dictionary of metrics `{'igd': 0.1, ...}`, an `Experiment`, or a `Result` object.
+    *   `ground_truth` (*optional*): Reference front for metric calculation (if not embedded in target).
+*   **Returns**: `DiagnosticResult` populated with the verdict and rationale.

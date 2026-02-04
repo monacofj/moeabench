@@ -37,6 +37,7 @@ from . import stats
 from . import view
 from . import system
 from .defaults import defaults
+from . import diagnostics
 
 # MB Wrapper for direct access
 class _MB:
@@ -54,6 +55,7 @@ class _MB:
         self.view = view
         self.system = system
         self.defaults = defaults
+        self.diagnostics = diagnostics
         
         # Taxonomy: Performance | Topography | Stratification (v0.7.0)
         self.perf_evidence = stats.perf_evidence

@@ -659,7 +659,58 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **13. Architectural Philosophy (ADR)**
+## **13. Automated Diagnostics (Algorithmic Pathology)**
+    
+Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
+
+MoeaBench introduces a dedicated **Algorithmic Pathology** module (`MoeaBench.diagnostics`) designed to act as an automated expert system. Instead of just calculating numbers, it *interprets* the relationship between conflicting metrics (IGD vs GD vs H_rel) to diagnose the underlying behavior of the solver.
+
+### **The Diagnostic Engine**
+
+The engine audits the population against a Ground Truth and classifies the state into standardized scientific diagnoses:
+
+*   **Optimal Performance**: Balanced convergence and diversity with high hypervolume recovery.
+*   **Diversity Collapse**: The "GD Paradox". Excellent convergence (low GD) but poor coverage (high IGD). The population has degenerated into a small cluster or single point.
+*   **Convergence Failure**: Both convergence and diversity metrics are poor. The algorithm failed to approach the optimal front.
+*   **Topological Distortion**: High Earth Mover's Distance (EMD) despite acceptable IGD. The algorithm fails to capture the manifold's curvature or connectivity.
+*   **Super-Saturation**: $H_{rel} > 100\%$. The algorithm effectively "beats" the resolution of the reference set, often occurring in discrete approximations.
+
+### **Usage Guide**
+    
+You can invoke diagnostics manually on specific datasets or automatically during an experiment.
+
+#### **Method A: Manual Audit (Recommended)**
+The standard way to use the module is to explicitly audit an experiment after execution. This gives you control over when the expensive metric calculations occur.
+
+```python
+# 1. Run your experiment
+exp.run()
+
+# 2. Perform the audit explicitly
+# This calculates strictly necessary metrics (IGD, GD, EMD)
+diagnosis = mb.diagnostics.audit(exp)
+
+# 3. View the report (Renders Markdown in Notebooks)
+diagnosis.report_show()
+
+# 4. Access the rationale text programmatically
+print(diagnosis.rationale())
+```
+
+#### **Method B: Integrated Diagnosis (Convenience)**
+For quick studies, you can set the `diagnose` flag to `True`.
+
+> [!WARNING]
+> **Performance Impact**: Enabling `diagnose=True` will force the calculation of expensive metrics (like EMD and exact IGD) at the end of every run. For large-scale experiments (many runs or many objectives), this can significantly slow down the total execution time. Use with caution.
+
+```python
+# Run with enabled pathology analysis
+exp.run(diagnose=True)
+```
+
+---
+
+## **14. Architectural Philosophy (ADR)**
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
@@ -672,3 +723,20 @@ MoeaBench is built on a set of core engineering values designed to balance scien
 *   **Reproducibility**: We enforce **Determinism by Design** through strict seed management, ensuring every run can be reconstructed exactly. Additionally, our **Mirror Parity** policy ensures that every production script in `examples/` has a corresponding interactive Notebook (`.ipynb`), making research both deployable and explorable.
 
 *   **Usability & Aesthetics**: Visualization is a first-class citizen. Features like **Visual Micro-Jitter (ADR 004)** illustrate our commitment to clarity—by applying minute gaussian noise to plots, we ensure that overlapping algorithms remain visually distinguishable ("Comparative Isomorphism") without compromising the numerical exactness of the underlying statistical tests.
+
+## Automated Diagnostics
+
+MoeaBench includes an 'Algorithmic Pathology' module capable of automatically interpreting metrics.
+
+### Usage
+
+```python
+# Automatic (during run)
+exp.run(diagnose=True)
+
+# Manual
+d = mb.diagnostics.audit(pop, gt)
+print(d.rationale())
+```
+
+This feature detects phenomena like **Diversity Collapse** (Good GD, Bad IGD) or **Topological Distortion**.

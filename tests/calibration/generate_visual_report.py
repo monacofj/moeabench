@@ -59,24 +59,28 @@ def generate_visual_report():
         "<html><head><title>MoeaBench v0.8.0 Calibration</title>",
         "<script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}});</script>",
         "<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML'></script>",
-        "<style>body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background: #f4f7f9; line-height: 1.6; color: #333; }",
-        "h1 { color: #1a2a3a; border-bottom: 3px solid #3498db; padding-bottom: 15px; margin-bottom: 30px; }",
-        "h2 { color: #2c3e50; margin-top: 60px; border-left: 6px solid #3498db; padding-left: 15px; background: #ebf5fb; padding-top: 10px; padding-bottom: 10px; }",
-        "h3 { color: #2980b9; margin-top: 30px; border-bottom: 1px solid #d4e6f1; padding-bottom: 5px; }",
-        ".mop-section { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 50px; }",
-        ".metrics-footer { font-size: 0.85em; color: #555; margin-top: 20px; font-family: 'Courier New', Courier, monospace; background: #fdfefe; padding: 15px; border: 1px dashed #bdc3c7; border-radius: 6px; }",
-        ".intro-box { background: white; padding: 30px; border-radius: 12px; margin-bottom: 40px; border: 1px solid #e0e6ed; box-shadow: 0 2px 15px rgba(0,0,0,0.05); }",
-        ".note-box { background: #fff9db; padding: 20px; border-radius: 8px; margin-top: 20px; border-left: 5px solid #f1c40f; font-size: 0.95em; }",
-        "table { width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 30px; background: white; }",
-        "th { background: #f2f4f6; color: #2c3e50; font-weight: 600; text-align: left; border: 1px solid #dee2e6; padding: 12px; }",
-        "td { border: 1px solid #dee2e6; padding: 12px; }",
-        "tr:nth-child(even) { background-color: #f9fbfd; }",
-        "tr:hover { background-color: #f1f4f7; }",
-        "code { background: #f0f2f5; padding: 2px 5px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 0.9em; }",
+        "<style>body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; padding: 40px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); line-height: 1.6; color: #1e293b; min-height: 100vh; }",
+        ".header-container { max-width: 95%; margin: 0 auto 50px auto; text-align: center; }",
+        "h1 { color: #0f172a; font-size: 2.5em; letter-spacing: -0.02em; font-weight: 800; margin-bottom: 10px; background: linear-gradient(90deg, #3498db, #2c3e50); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }",
+        "h2 { color: #334155; margin-top: 40px; font-size: 1.5em; font-weight: 700; border-left: 5px solid #3498db; padding-left: 15px; margin-bottom: 20px; }",
+        "h3 { color: #475569; margin-top: 25px; font-weight: 600; font-size: 1.1em; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }",
+        ".mop-section { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin: 0 40px 60px 40px; }",
+        ".metrics-footer { font-size: 0.85em; color: #64748b; margin-top: 25px; font-family: 'JetBrains Mono', 'Fira Code', monospace; background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }",
+        ".intro-box { background: white; padding: 40px; border-radius: 16px; margin-bottom: 50px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 95%; margin-left: auto; margin-right: auto; }",
+        ".note-box { background: #fffcf0; padding: 20px; border-radius: 10px; margin-top: 25px; border-left: 5px solid #f1c40f; font-size: 0.95em; color: #856404; }",
+        "table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 25px; margin-bottom: 35px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }",
+        "th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; padding: 14px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.05em; }",
+        "td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 0.9em; }",
+        "tr:last-child td { border-bottom: none; }",
+        "tr:hover td { background-color: #f8fafc; }",
+        "code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: #0f172a; }",
         "ul { padding-left: 20px; }",
-        "li { margin-bottom: 8px; }",
+        "li { margin-bottom: 10px; }",
         "</style></head><body>",
+        "<div class='header-container'>",
         "<h1>MoeaBench v0.8.0 Technical Calibration Report</h1>",
+        "<p>Scientific Performance Audit and Convergence Metrics</p>",
+        "</div>",
         
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
@@ -139,10 +143,10 @@ def generate_visual_report():
             nadir = np.array([row0['Nadir_1'], row0['Nadir_2'], row0['Nadir_3']])
             hv_opt = row0['HV_opt']
 
-        # Layout: 1 row, 2 columns (3D Scatter, 2D Convergence)
+        # Layout: 1 row, 2 columns (3D Scatter Dominant)
         fig = make_subplots(
             rows=1, cols=2,
-            column_widths=[0.6, 0.4],
+            column_widths=[0.75, 0.25],
             specs=[[{'type': 'scene'}, {'type': 'xy', 'secondary_y': True}]],
             subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & H_rel)")
         )
@@ -156,8 +160,8 @@ def generate_visual_report():
                     mode='markers',
                     marker=dict(
                         size=2.0, 
-                        color='rgba(0, 0, 0, 0.2)', # Restored: Transparent Black Cloud
-                        line=dict(width=0)
+                        color='#475569', # Slate-600: Strong Visibility
+                        opacity=0.4
                     ),
                     name='Ground Truth',
                     legendgroup='GT',
@@ -167,16 +171,16 @@ def generate_visual_report():
                 print(f"      ERROR adding GT trace: {e}")
 
         algs = sorted(mop_df['Algorithm'].unique())
-        # Balanced Color Palette (Scientific Tones)
+        # Scientific Aesthetics - Vibrant High-Res
         colors_rgba = {
-            'NSGA2': 'rgba(231, 76, 60, 0.85)',  # Soft Red
-            'NSGA3': 'rgba(52, 152, 219, 0.85)', # Soft Blue
-            'MOEAD': 'rgba(255, 152, 0, 1.0)'   # Amber/Orange (Converged points)
+            'NSGA2': 'rgba(99, 102, 241, 0.95)', # Indigo
+            'NSGA3': 'rgba(5, 150, 105, 0.95)',  # Emerald
+            'MOEAD': 'rgba(217, 119, 6, 0.95)'   # Amber
         }
         colors_solid = {
-            'NSGA2': '#e74c3c', 
-            'NSGA3': '#3498db', 
-            'MOEAD': '#ff9800'  # Solid Amber
+            'NSGA2': '#6366f1', 
+            'NSGA3': '#059669', 
+            'MOEAD': '#d97706'
         }
         
         # Store metrics for HTML table
@@ -222,19 +226,22 @@ def generate_visual_report():
                     if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
                     
                     # Micro-Jitter to avoid perfect occlusion (e.g. DTLZ2)
-                    jitter_scale = 0.003
+                    jitter_scale = 0.005
                     F_jitter = F_obs + np.random.normal(0, jitter_scale, F_obs.shape)
 
-                    # Outlier Detection (Scale Warning)
-                    is_out_of_scale = np.any(np.abs(F_obs) > 5.0)
+                    # Adaptive Outlier Detection (Scale Warning)
+                    # Triggered only if values exceed 20% of the theoretical Nadir
+                    nadir_threshold = 1.2 * nadir
+                    is_out_of_scale = np.any(np.abs(F_obs) > nadir_threshold)
                     tag_warning = " [OUT OF SCALE]" if is_out_of_scale else ""
+                    
                     fig.add_trace(go.Scatter3d(
                         x=F_jitter[:,0], y=F_jitter[:,1], z=F_jitter[:,2],
                         mode='markers',
                         marker=dict(
-                            size=4.5, # Significantly larger to avoid occlusion by stay cloud
+                            size=4.5, # Larger for transparency
                             color=colors_rgba.get(alg, 'rgba(0,0,0,1.0)'),
-                            line=dict(width=0.5, color='white') # Added hair-thin white border for contrast
+                            opacity=0.6 # Translucency for density check
                         ),
                         name=f'{alg} (Final){tag_warning}',
                         legendgroup=alg,
@@ -346,20 +353,23 @@ def generate_visual_report():
                 except Exception as e:
                     print(f"      ERROR adding {alg} convergence traces: {e}")
 
-        # Formatting
+        # Clinical 3D Composition
         fig.update_layout(
-            height=600,
+            height=850,
             template='plotly_white',
+            dragmode='turntable',
             scene=dict(
-                xaxis_title='f1', yaxis_title='f2', zaxis_title='f3',
-                camera=dict(eye=dict(x=1.5, y=1.5, z=1.5)),
-                aspectmode='cube' # Prevent squeezing for asymmetric ranges (e.g. DTLZ7)
+                xaxis=dict(title='f1', range=[0, 1.1*nadir[0]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
+                yaxis=dict(title='f2', range=[0, 1.1*nadir[1]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
+                zaxis=dict(title='f3', range=[0, 1.1*nadir[2]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
+                camera=dict(eye=dict(x=1.7, y=1.7, z=1.5)),
+                aspectmode='cube'
             ),
-            margin=dict(l=0, r=0, b=0, t=40)
+            margin=dict(l=0, r=0, b=0, t=60)
         )
-        fig.update_yaxes(title_text="IGD (Log Scale)", secondary_y=False, row=1, col=2, type="log")
-        fig.update_yaxes(title_text="H_rel % (Convergence)", secondary_y=True, row=1, col=2, range=[0, 115])
-        fig.update_xaxes(title_text="Generations", row=1, col=2)
+        fig.update_yaxes(title_text="IGD (Log)", secondary_y=False, row=1, col=2, type="log", gridcolor="#f8fafc")
+        fig.update_yaxes(title_text="H_rel %", secondary_y=True, row=1, col=2, range=[0, 115], showgrid=False)
+        fig.update_xaxes(title_text="Generations", row=1, col=2, gridcolor="#f8fafc")
 
         # Convert to HTML
         div = fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False)
