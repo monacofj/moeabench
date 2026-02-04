@@ -52,3 +52,17 @@ path = [
 ]
 SPDX-FileCopyrightText = "2026 Monaco F. J. <monaco@usp.br>"
 SPDX-License-Identifier = "GPL-3.0-or-later"
+[[annotations]]
+path = [
+    "*.png",
+    "docs/images/*.png",
+    "examples/*.png",
+    "misc/*.png",
+    "tests/*.html",
+    "tests/*.csv"
+]
+SPDX-FileCopyrightText = [
+    "2025 Monaco F. J. <monaco@usp.br>",
+    "2025 Silva F. F. <fernandoferreira.silva42@usp.br>"
+]
+SPDX-License-Identifier = "GPL-3.0-or-later"

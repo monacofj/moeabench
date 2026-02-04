@@ -1,3 +1,10 @@
+<!--
+SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # 23. Caste Visualization Overhaul
 
 Date: 2026-02-02

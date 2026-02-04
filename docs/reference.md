@@ -358,7 +358,14 @@ MoeaBench enforces a **Universal Reporting Contract**. Every analytical object (
 ### **Participating Objects**
 1.  **`mb.experiment`**: Summarizes the experimental protocol (MOP, MOEA, Status).
 2.  **`mb.metrics.MetricMatrix`**: Summarizes mathematical performance, search dynamics, and stochastic stability.
-3.  **`mb.stats.StatsResult`**: Summarizes statistical evidence, rank distributions, and topological consistency.
+3.  **`mb.stats.StatsResult`**: Summarizes hypothesis tests, rank stratification, and topological matching.
+
+> [!NOTE]
+> **Transparency Policy (Explainable Verdicts)**
+> As of v0.7.7, all narrative reports explicitly state the decision criteria for qualitative judgments.
+> *   **Stability**: Shows Coefficient of Variation (e.g., `CV=0.01 < 0.05`).
+> *   **Stratification**: Explicitly states displacement depth trigger (`> 10%`).
+> *   **Statistics**: Clarifies significance (`p < 0.05`) and effect size thresholds.
 
 The output is something like:
 

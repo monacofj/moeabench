@@ -275,7 +275,7 @@ class experiment(Reportable):
         n_vars = getattr(self.mop, 'N', '?') if self.mop else '?'
         
         n_runs = len(self._runs)
-        status = "🟢 Populated" if n_runs > 0 else "⚪ Empty (Not run)"
+        status = "[OK] Populated" if n_runs > 0 else "[EMPTY] Empty (Not run)"
         
         lines = [
             f"--- Experiment Report: {self.name} ---",

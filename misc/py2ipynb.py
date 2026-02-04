@@ -1,3 +1,8 @@
+# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
+# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import json
 import sys
 import os
@@ -5,7 +10,14 @@ import os
 def convert(py_file, ipynb_file):
     with open(py_file, 'r') as f:
         code = f.read()
-
+    
+    # Split lines but keep ends to preserve structure
+    lines = code.splitlines(keepends=True)
+    
+    # Filter out SPDX headers from the notebook source to avoid 'reuse' parsing errors
+    # (The notebook file itself is already licensed via REUSE.toml)
+    filtered_lines = [line for line in lines if not line.startswith("# SPDX-")]
+    
     notebook = {
      "cells": [
       {
@@ -13,7 +25,7 @@ def convert(py_file, ipynb_file):
        "execution_count": None,
        "metadata": {},
        "outputs": [],
-       "source": code.splitlines(keepends=True)
+       "source": filtered_lines
       }
      ],
      "metadata": {

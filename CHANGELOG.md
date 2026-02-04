@@ -11,13 +11,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [0.7.7] - 2026-02-03
+## [0.7.7] - 2026-02-04
+
+### Added
+- **Universal Reporting Contract**: Implemented a unified `Reportable` interface across the entire library. Now, `Experiment`, `MetricMatrix`, and `StatsResult` all share the `.report()` and `.report_show()` methods for consistent narrative diagnostics.
+- **Explainable Verdicts (Transparency)**: All narrative reports now explicitly expose their decision criteria:
+  - **Stability**: Displays Coefficient of Variation thresholds (e.g., `CV=0.01 < 0.05`).
+  - **Stratification**: Explicitly states displacement depth triggers (`> 10%`) and Gap definitions (`> 2 ranks`).
+  - **Hypothesis Tests**: Clarifies significance levels (`p < 0.05`) and effect size magnitude thresholds (e.g., `> 0.474 Large`).
+- **REUSE Compliance Restoration**: Migrated binary licensing rules (png, html, csv) from the deprecated `.reuse/dep5` to the modern `REUSE.toml` standard.
 
 ### Changed
-- **Algorithm Optimization**: Integrated **Tchebycheff Decomposition (TCH)** as the distinct strategy for degenerate/biased benchmarks (DTLZ3-6, DPF3) in default MOEA/D configurations, successfully recovering manifold spread diversity.
-- **Visual Fidelity**: Implemented **Gaussian Micro-Jitter** ($\epsilon \sim 0.003$) in the 3D visualization engine to resolve point occlusion between competitive algorithms.
-- **Report Transparency**: Added dynamic **`[OUT OF SCALE]`** annotations to the visualization legend, automatically flagging algorithms that fail to converge within the normalized unit hypercube.
-- **Documentation**: Formalized these changes as **ADR 003** (Hybrid Decomposition) and **ADR 004** (Micro-Jitter) in the official User Guide.
+- **Report Standard**: Standardized report outputs to use pure alphanumeric indicators (e.g., `[OK]`, `[EMPTY]`) instead of graphical icons, ensuring compatibility with all terminal environments.
+- **Example Synchronization**: Synchronized all example scripts (`01`, `04`, `08`, `10`) and their Jupyter Notebook counterparts to utilize the new reporting system.
+
+### Fixed
+- **Notebook Generation**: Corrected `misc/py2ipynb.py` to strip SPDX headers from generated notebook source code, resolving `reuse lint` parsing errors.
+- **Compliance Audit**: Applied missing license headers to `moead_configs.py`, `find_ranks_v2.py`, and `audit_dpf3.py`.
 
 
 ## [0.7.6] - 2026-01-31
