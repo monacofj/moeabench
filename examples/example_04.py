@@ -33,6 +33,9 @@ def main():
     # hv1 contains the historical hypervolume for ALL runs.
     hv1 = mb.metrics.hv(exp1)
 
+    # NEW: Statistical summary of multi-run performance
+    hv1.report_show()
+
     # The perf_history automatically computes mean and standard deviation
     print("Plotting statistical convergence...")
     mb.view.perf_history(hv1, title="Stability Analysis (5-run HV)")

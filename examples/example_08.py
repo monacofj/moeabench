@@ -43,6 +43,10 @@ def main():
     exp1.run(repeat=repeats)
     exp2.run(repeat=repeats)
 
+    # NEW: Summary of both experimental protocols
+    exp1.report_show()
+    exp2.report_show()
+
     # 2. Analysis: Snapshot at Early Search (Gen 10)
     SNAPSHOT_GEN = 10
     print(f"\n--- Diagnostic Snapshot at Gen {SNAPSHOT_GEN} ---")
@@ -93,7 +97,7 @@ def main():
     # C. Competitive View (The Tier Duel)
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
     res_tier = mb.stats.tier(exp1, exp2, gen=SNAPSHOT_GEN)
-    print(res_tier.report())
+    res_tier.report_show()
     ax_tier = mb.view.strat_tiers(res_tier, title="Competitive Perspective: Tier Duel")
     ax_tier.figure.savefig("strat_tiers_duel.png", dpi=300, bbox_inches='tight')
     print("Saved 'strat_tiers_duel.png'")

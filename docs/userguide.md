@@ -355,20 +355,30 @@ mb.view.perf_density(exp1, exp2)
 
 
 #### **Programmatic Access**
-You can access the raw metric data displayed in these plots using the `mb.metrics` module.
+You can access the raw metric data displayed in these plots using the `mb.metrics` module. Every metric calculation returns a **Rich Result** (`MetricMatrix`) that supports narrative reporting.
 
 ```python
-# 1. Calculate metric history (returns a MetricMatrix)
-hv_matrix = mb.metrics.hypervolume(exp)
+# 1. Quick Performance Diagnosis
+res = mb.metrics.hv(exp)
+res.report_show()
 
-# 2. Access raw data (Generations x Runs)
-raw_data = hv_matrix.values     # (Gen x Run) Numpy array
-run_0 = hv_matrix.runs(0)       # Trajectory of the first run (All generations)
-final_dist = hv_matrix.gens(-1) # Distribution at the final generation (All runs)
+# 2. Raw Access
+raw = res.values   # (G, R) matrix
+last = res.gens()  # Metrics of the last generation
+```
 
-# 3. Statistical computations (Standard Numpy)
-mean_traj = raw_data.mean(axis=1) # Average trajectory across runs
-std_dev = raw_data.std(axis=1)    # Standard deviation over time
+**The output is something like:**
+
+```text
+--- Metric Report: Hypervolume (My Experiment) ---
+  Final Performance (Last Gen):
+    - Mean: 0.820412
+    - StdDev: 0.012450
+    - Best: 0.841033
+  Search Dynamics:
+    - Runs: 30
+    - Generations: 500
+    - Stability: High
 ```
 
 ### **7.3. Stratification (Population Structure)**
@@ -608,7 +618,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
-*   **Scientific Narrative (Storytelling)**: We believe code should tell a story. The library avoids 'black boxes' by structuring every result as a **Rich Object** that offers diagnostic narratives (via `.report_show()`), augmenting raw numbers with descriptive insights to help researchers streamline the interpretation of quantitative data.
+*   **Scientific Narrative (Technical Storytelling)**: We believe code should tell a story. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report_show()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 

@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # from .I_UserExperiment import I_UserExperiment # Legacy removed
+from .base import Reportable
 from .run import Run, SmartArray, Population
 import numpy as np
 import inspect
@@ -45,7 +46,7 @@ class JoinedPopulation:
         if not self.pops: return 0
         return sum(len(p) for p in self.pops)
 
-class experiment:
+class experiment(Reportable):
     def __init__(self, mop: Optional[Any] = None, moea: Optional[Any] = None) -> None:
         self._runs: List[Run] = []
         self._mop: Any = None
@@ -264,6 +265,32 @@ class experiment:
         """Delegates evaluation to the internal MOP."""
         return self.mop.evaluation(X, n_ieq_constr)
          
+    # Reporting
+    def report(self, **kwargs) -> str:
+        """Narrative report of the experiment's configuration and status."""
+        mop_name = self.mop.__class__.__name__ if self.mop else "None"
+        moea_name = self.moea.__class__.__name__ if self.moea else "None"
+        
+        m_objs = getattr(self.mop, 'M', '?') if self.mop else '?'
+        n_vars = getattr(self.mop, 'N', '?') if self.mop else '?'
+        
+        n_runs = len(self._runs)
+        status = "🟢 Populated" if n_runs > 0 else "⚪ Empty (Not run)"
+        
+        lines = [
+            f"--- Experiment Report: {self.name} ---",
+            f"  Status: {status}",
+            f"  Problem (MOP): {mop_name} (Objectives={m_objs}, Variables={n_vars})",
+            f"  Algorithm (MOEA): {moea_name}",
+            f"  Configuration: {n_runs}/{self.repeat} runs completed"
+        ]
+        
+        if n_runs > 0:
+            last_gen = len(self._runs[0])
+            lines.append(f"  Timeline: ~{last_gen} generations per run")
+            
+        return "\n".join(lines)
+
     # Execution
     def run(self, repeat: Optional[int] = None, workers: Optional[int] = None, **kwargs) -> None:
         """
@@ -275,7 +302,9 @@ class experiment:
                            All runs are performed serially for stability.
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
-        if repeat is None:
+        if repeat is not None:
+            self.repeat = repeat
+        else:
             repeat = self.repeat
         if repeat < 1: repeat = 1
         

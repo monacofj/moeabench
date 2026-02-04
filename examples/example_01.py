@@ -27,6 +27,9 @@ def main():
     print("Running experiment...")
     exp1.run()
     
+    # NEW: Quick narrative diagnosis of the experiment
+    exp1.report_show()
+    
     # 3. Visualization: Inspect the found Pareto Front (Spatial Perspective)
     # We plot the final non-dominated solutions in objective space.
     print("Plotting results...")
@@ -35,6 +38,10 @@ def main():
     # Calculate and plot Hypervolume convergence (Historic Perspective)
     # hv1 contains a MetricMatrix with historical values.
     hv1 = mb.metrics.hv(exp1)
+    
+    # NEW: Diagnostic report of metric performance and stability
+    hv1.report_show()
+    
     mb.view.perf_history(hv1, title="Hypervolume Convergence")
 
 if __name__ == "__main__":

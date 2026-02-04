@@ -11,6 +11,7 @@ from .GEN_igd import GEN_igd
 from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
 from .GEN_igdplus import GEN_igdplus
+from ..core.base import Reportable
 
 # We need the helper logic from analyse to calculate reference points
 # Since analyse is a mixin class, we might need to extract 'normalize' to a util or duplicate it.
@@ -71,7 +72,7 @@ def normalize(ref_exps, all_current_objs_list):
     return global_min, global_max
 
 
-class MetricMatrix:
+class MetricMatrix(Reportable):
     """
     A matrix (Generations x Runs) of metric values.
     """
@@ -93,10 +94,50 @@ class MetricMatrix:
         self.metric_name = metric_name
         self.source_name = source_name
 
+    def report(self, **kwargs) -> str:
+        """Narrative report of the metric performance and stability."""
+        data = self._data
+        if data.size == 0:
+            return f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
+
+        # Distribution at the last generation
+        # data is (G, R), so data[-1, :] is the final distribution
+        final_dist = data[-1, :]
+        valid_final = final_dist[np.isfinite(final_dist)]
+        
+        if len(valid_final) == 0:
+            return f"--- Metric Report: {self.metric_name} ---\n  Status: All values are NaN"
+
+        mean = np.mean(valid_final)
+        std = np.std(valid_final)
+        best = np.max(valid_final) # Assuming higher is better (Hypervolume)
+        # Check if it might be IGD/GD where lower is better
+        if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
+            best = np.min(valid_final)
+
+        stability = "High" if (std / (abs(mean) + 1e-9)) < 0.05 else "Moderate"
+        if (std / (abs(mean) + 1e-9)) > 0.15: stability = "Low (Stochastic)"
+
+        source_info = f" ({self.source_name})" if self.source_name else ""
+        
+        lines = [
+            f"--- Metric Report: {self.metric_name}{source_info} ---",
+            f"  Final Performance (Last Gen):",
+            f"    - Mean: {mean:.6f}",
+            f"    - StdDev: {std:.6f}",
+            f"    - Best: {best:.6f}",
+            f"  Search Dynamics:",
+            f"    - Runs: {data.shape[1]}",
+            f"    - Generations: {data.shape[0]}",
+            f"    - Stability: {stability}"
+        ]
+        
+        return "\n".join(lines)
+
     def __repr__(self):
         if self._data.size == 1:
             return f"{self._data.item():.6f}"
-        return f"<MetricMatrix {self._data.shape} ({self.metric_name})>"
+        return super().__repr__()
 
     def __float__(self):
         if self._data.size == 1:

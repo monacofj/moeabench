@@ -42,20 +42,20 @@ def main():
     # By default, topo_distribution(exp1, exp2) uses space='objs' and alpha=0.05
     print("\n--- [Analysis 1] Convergence Equivalence (Objective Space) ---")
     res_objs = mb.stats.topo_distribution(exp1, exp2, alpha=0.01) # Stricter alpha
-    print(res_objs.report())
+    res_objs.report_show()
 
     # 4. Topological Analysis: Decision Space
     # We can also check if they found the same solutions in the decision space
     print("\n--- [Analysis 2] Strategy Equivalence (Decision Space) ---")
     res_vars = mb.stats.topo_distribution(exp1, exp2, space='vars')
-    print(res_vars.report())
+    res_vars.report_show()
 
     # 5. Advanced: Earth Mover Distance (Geometric Distance)
     # Quantify "how far" the distributions are from each other
     print("\n--- [Analysis 3] Geometric Distance (EMD) ---")
     # Custom threshold: declare match only if distance < 0.05
     res_emd = mb.stats.topo_distribution(exp1, exp2, method='emd', threshold=0.05)
-    print(res_emd.report())
+    res_emd.report_show()
     
     # 6. Visual Verification: Distribution Plots (topo_density)
     # 6. Visual Verification: Documentation Composite (Match vs Mismatch)

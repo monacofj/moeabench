@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # MoeaBench API Reference Guide
-**Version 0.7.5 (Scientific Domains Edition)**
+**Version 0.7.7 (Unified Diagnostics Edition)**
 
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
@@ -343,6 +343,22 @@ All statistical functions in MoeaBench return objects inheriting from `StatsResu
 *   **`.report_show()`**: Displays the report appropriately for the environment.
     *   **Terminal**: Automatically calls `print(res.report())`.
     *   **Jupyter**: Renders a formatted **Markdown** block using `display(Markdown(...))`.
+
+---
+
+<a name="reportable"></a>
+## **7. The Reporting Contract (`Reportable`)**
+
+MoeaBench enforces a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
+
+### **The Interface**
+*   **`.report(**kwargs) \to str`**: returns a detailed technical narrative explaining the object's context, data, and scientific meaning.
+*   **`.report_show(**kwargs)`**: adaptive display method (Terminal vs. Notebook).
+
+### **Participating Objects**
+1.  **`mb.experiment`**: Summarizes the experimental protocol (MOP, MOEA, Status).
+2.  **`mb.metrics.MetricMatrix`**: Summarizes mathematical performance, search dynamics, and stochastic stability.
+3.  **`mb.stats.StatsResult`**: Summarizes statistical evidence, rank distributions, and topological consistency.
 
 The output is something like:
 
