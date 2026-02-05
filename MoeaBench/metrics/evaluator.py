@@ -367,6 +367,15 @@ def gd(exp, ref=None):
         except (AttributeError, NotImplementedError):
             logging.warning(f"GD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
+    
+    # Check if single population (ndarray)
+    if isinstance(exp, np.ndarray):
+        if ref is None: return MetricMatrix(np.array([np.nan]))
+        from .GEN_gd import GEN_gd
+        # GEN_gd expects (Hist, Ref)
+        metric = GEN_gd([exp], ref)
+        return MetricMatrix(metric.evaluate(), "GD")
+
     return _calc_metric(exp, ref, GEN_gd, "GD")
 
 def gdplus(exp, ref=None):
@@ -376,6 +385,13 @@ def gdplus(exp, ref=None):
         except (AttributeError, NotImplementedError):
             logging.warning(f"GD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
+    
+    if isinstance(exp, np.ndarray):
+        if ref is None: return MetricMatrix(np.array([np.nan]))
+        from .GEN_gdplus import GEN_gdplus
+        metric = GEN_gdplus([exp], ref)
+        return MetricMatrix(metric.evaluate(), "GD+")
+
     return _calc_metric(exp, ref, GEN_gdplus, "GD+")
 
 def igd(exp, ref=None):
@@ -385,6 +401,13 @@ def igd(exp, ref=None):
         except (AttributeError, NotImplementedError):
             logging.warning(f"IGD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
+    
+    if isinstance(exp, np.ndarray):
+        if ref is None: return MetricMatrix(np.array([np.nan]))
+        from .GEN_igd import GEN_igd
+        metric = GEN_igd([exp], ref)
+        return MetricMatrix(metric.evaluate(), "IGD")
+
     return _calc_metric(exp, ref, GEN_igd, "IGD")
 
 def igdplus(exp, ref=None):
@@ -394,6 +417,13 @@ def igdplus(exp, ref=None):
         except (AttributeError, NotImplementedError):
             logging.warning(f"IGD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
+    
+    if isinstance(exp, np.ndarray):
+        if ref is None: return MetricMatrix(np.array([np.nan]))
+        from .GEN_igdplus import GEN_igdplus
+        metric = GEN_igdplus([exp], ref)
+        return MetricMatrix(metric.evaluate(), "IGD+")
+
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
 def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):

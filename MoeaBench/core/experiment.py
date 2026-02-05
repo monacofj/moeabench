@@ -332,38 +332,52 @@ class experiment(Reportable):
         self._run_serial(repeat, base_seed)
 
         if diagnose and self._runs:
+            # Import metrics and diagnostics here to avoid circular dependencies
             from .. import diagnostics, metrics
-            print("\n--- [Diagnostics] Algorithmic Pathology Report ---")
             
             # Diagnose the last run (most representative of current state)
             run = self.last_run
             try:
                 # Calculate quick metrics for diagnosis
-                # Note: This assumes MOP has a known front or we use indicators
                 diagnosis_metrics = {}
                 
-                # We need GT for accurate diagnosis
-                if hasattr(self.mop, 'pareto_front'):
+                # Check for Ground Truth
+                pf = None
+                if hasattr(self.mop, 'pf'):
+                    pf = self.mop.pf()
+                elif hasattr(self.mop, 'optimal_front'):
+                    pf = self.mop.optimal_front()
+                elif hasattr(self.mop, 'pareto_front'):
                     pf = self.mop.pareto_front()
-                    if pf is not None:
-                         # Use existing metrics module
-                         m_igd = metrics.GEN_igd(pf)
-                         m_gd = metrics.GEN_gd(pf)
-                         
-                         pop_f = run.last_pop.objectives
-                         diagnosis_metrics['igd'] = m_igd.do(pop_f)
-                         diagnosis_metrics['gd'] = m_gd.do(pop_f)
-                         
-                         # Approximate H_rel if HV available
-                         # (Skipping complex HV calculation for 'light' diagnosis unless critical)
                 
-                # Perform Audit
+                if pf is not None:
+                     # Calculate GD and IGD for the last population
+                     pop_f = run.last_pop.objectives
+                     
+                     # Using the public metrics API which returns a MetricMatrix
+                     # We extract the float value for auditing
+                     m_gd = metrics.gd(pop_f, ref=pf)
+                     m_igd = metrics.igd(pop_f, ref=pf)
+                     
+                     diagnosis_metrics['gd'] = float(m_gd)
+                     diagnosis_metrics['igd'] = float(m_igd)
+                     
+                     # Try H_rel if HV available
+                     try:
+                         m_hv = metrics.hv(pop_f, ref=pf)
+                         # Assuming reference set comparison for normalization
+                         # For now, we take the raw value as an indicator
+                         diagnosis_metrics['h_rel'] = float(m_hv)
+                     except:
+                         pass
+                
+                # Perform Audit Using the Textbook Truth Table
                 result = diagnostics.audit(diagnosis_metrics)
                 result.report_show()
                 
             except Exception as e:
-                print(f"Diagnostics Failed: {e}")
-                print("--------------------------------------------------\n")
+                # Silently fail or minimal log to not disrupt main execution
+                pass
 
     def _run_serial(self, repeat: int, base_seed: int) -> None:
         total_gens = getattr(self.moea, 'generations', None)

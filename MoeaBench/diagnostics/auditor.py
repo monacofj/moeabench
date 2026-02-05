@@ -56,89 +56,82 @@ class PerformanceAuditor:
     @staticmethod
     def audit(metrics: Dict[str, float]) -> DiagnosticResult:
         """
-        Analyzes a dictionary of metrics (IGD, GD, H_rel, EMD) and returns a diagnosis.
+        Analyzes a dictionary of metrics (IGD, GD, H_rel, EMD) using the 8-state Pathology Truth Table.
         """
-        # Extract core metrics with safe defaults
+        # 1. Extract Metrics
         igd = metrics.get('igd', metrics.get('IGD', float('inf')))
         gd = metrics.get('gd', metrics.get('GD', float('inf')))
+        emd = metrics.get('emd', metrics.get('EMD', float('inf'))) # Default to inf if not computed
         h_rel = metrics.get('h_rel', metrics.get('H_rel', 0.0))
-        emd = metrics.get('emd', metrics.get('EMD', 0.0))
-        
-        # 1. Check for Super-Saturation (Resolution Artifacts)
-        if h_rel > 1.0:
+
+        # 2. Check for Super-Saturation (Pre-check)
+        if h_rel > 1.05: # 5% tolerance
             return DiagnosticResult(
                 status=DiagnosticStatus.SUPER_SATURATION,
                 metrics=metrics,
                 confidence=1.0,
                 _rationale=(
                     f"Super-Saturation Detected (H_rel = {h_rel*100:.2f}%). "
-                    "The algorithm has identified a discrete distribution that exceeds the "
-                    "volume of the sampled Ground Truth. This indicates extreme performance "
-                    "beyond the resolution of the reference baseline."
+                    "The algorithm has outperformed the resolution of the provided Ground Truth. "
                 )
             )
 
-        # 2. Check for Diversity Collapse (The "DPF2 Paradox")
-        # Low GD (close to front) but High IGD (poor coverage)
-        if gd < 0.01 and igd > 0.1:
-            return DiagnosticResult(
-                status=DiagnosticStatus.DIVERSITY_COLLAPSE,
-                metrics=metrics,
-                confidence=0.95,
-                _rationale=(
-                    f"Diversity Collapse Detected. The algorithm exhibits excellent convergence "
-                    f"(GD={gd:.1e}) but poor coverage (IGD={igd:.1e}). "
-                    "This indicates the population has degenerated into a small subset "
-                    "or a single point on the Pareto Front."
-                )
-            )
+        # 3. Binary Classification (The Truth Table)
+        # Thresholds defined in ADR 0025
+        GOOD_GD = gd < 0.05  # Convergence threshold (relaxed from 1e-3 for stability)
+        GOOD_IGD = igd < 0.1 # Coverage threshold
+        GOOD_EMD = emd < 0.08 # Topology threshold
 
-        # 3. Check for Topological Distortion
-        if emd > 0.08:
-            return DiagnosticResult(
-                status=DiagnosticStatus.TOPOLOGICAL_DISTORTION,
-                metrics=metrics,
-                confidence=0.8,
-                _rationale=(
-                    f"Topological Distortion Detected (EMD={emd:.3f}). "
-                    "While convergence metrics may be acceptable, the manifold reconstruction "
-                    "error is high, suggesting the algorithm failed to capture the true "
-                    "geometry/curvature of the Pareto Front."
+        # State Determination
+        if GOOD_GD:
+            if GOOD_IGD:
+                if GOOD_EMD:
+                    # (B, B, B) -> OPTIMAL
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.OPTIMAL, metrics=metrics, confidence=0.95,
+                        _rationale=f"Optimal Performance. The algorithm found a well-distributed prediction of the Pareto Front (GD={gd:.1e}, IGD={igd:.2f})."
+                    )
+                else:
+                    # (B, B, R) -> DISTRIBUTION BIAS
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.DISTRIBUTION_BIAS, metrics=metrics, confidence=0.85,
+                        _rationale=f"Distribution Bias. The front is well-converged and covered, but the internal distribution is irregular (EMD={emd:.3f}). This suggests diversity operators are fighting the manifold geometry."
+                    )
+            else:
+                if GOOD_EMD:
+                    # (B, R, B) -> SPARSE APPROXIMATION
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.SPARSE_APPROXIMATION, metrics=metrics, confidence=0.80,
+                        _rationale=f"Sparse Approximation. The solutions found are optimal (GD={gd:.1e}) and topologically correct (EMD={emd:.3f}), but too few to ensure global coverage (IGD={igd:.2f})."
+                    )
+                else:
+                    # (B, R, R) -> DIVERSITY COLLAPSE
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.DIVERSITY_COLLAPSE, metrics=metrics, confidence=0.95,
+                        _rationale=f"Diversity Collapse. Excellent convergence (GD={gd:.1e}) but poor coverage and topology. The population has likely degenerated into a single point or small cluster."
+                    )
+        else: # BAD GD
+            if GOOD_IGD:
+                # (R, B, X) -> METRIC CONTRADICTION
+                # Impossible to have Good Coverage (IGD) if Convergence (GD) is bad, 
+                # because IGD is lower-bounded by GD distance.
+                return DiagnosticResult(
+                    status=DiagnosticStatus.METRIC_CONTRADICTION, metrics=metrics, confidence=1.0,
+                    _rationale=f"Metric Contradiction. It is mathematically impossible to have good coverage (IGD={igd:.2f}) with poor convergence (GD={gd:.1e}). Check your Ground Truth data integrity."
                 )
-            )
-            
-        # 4. Check for Convergence Failure
-        if gd > 0.1 and igd > 0.1:
-            return DiagnosticResult(
-                status=DiagnosticStatus.CONVERGENCE_FAILURE,
-                metrics=metrics,
-                confidence=0.9,
-                _rationale=(
-                    f"Convergence Failure. Both convergence (GD={gd:.1e}) and coverage "
-                    f"(IGD={igd:.1e}) are insufficient. The algorithm likely failed to "
-                    "approach the Pareto Front effectively."
-                )
-            )
-
-        # 5. Default to Optimal
-        if igd <= 0.1 and gd <= 0.1:
-             return DiagnosticResult(
-                status=DiagnosticStatus.OPTIMAL,
-                metrics=metrics,
-                confidence=0.9,
-                _rationale=(
-                    f"Optimal Performance. The algorithm achieved a balanced trade-off "
-                    f"between convergence (GD={gd:.1e}) and diversity (IGD={igd:.1e}), "
-                    f"recovering {h_rel*100:.1f}% of the reference volume."
-                )
-            )
-
-        return DiagnosticResult(
-            status=DiagnosticStatus.UNDEFINED,
-            metrics=metrics,
-            confidence=0.0,
-            _rationale="Insufficient data or ambiguous metric signature for automated diagnosis."
-        )
+            else:
+                if GOOD_EMD:
+                    # (R, R, B) -> SHADOW FRONT
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.SHADOW_FRONT, metrics=metrics, confidence=0.75,
+                        _rationale=f"Shadow Front Detected. The algorithm failed to converge (GD={gd:.1e}), but the shape of the local front matches the true front (EMD={emd:.3f}). It may be trapped in a local Pareto Front translation."
+                    )
+                else:
+                    # (R, R, R) -> CONVERGENCE FAILURE
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.CONVERGENCE_FAILURE, metrics=metrics, confidence=0.90,
+                        _rationale=f"Convergence Failure. The algorithm failed to converge, cover, or capture the shape of the problem effectively (GD={gd:.1e}, IGD={igd:.2f})."
+                    )
 
 def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
     """
@@ -148,11 +141,55 @@ def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
         target: Can be a dictionary of metrics, an Experiment, or a Result object.
         ground_truth: Optional reference front (if target contains raw populations).
     """
-    metrics = {}
+def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
+    """
+    Smart delegate for performance auditing.
     
-    # Smart Delegation Logic
+    Args:
+        target: Can be a dictionary of metrics, an Experiment, or a Run object.
+        ground_truth: Optional reference front (if target contains raw populations).
+    """
+    metrics_data = {}
+    
+    # 1. Handle Dictionaries
     if isinstance(target, dict):
-        metrics = target
-    # Add more type handlers here (e.g. for Experiment or Result objects calculation logic)
+        metrics_data = target
     
-    return PerformanceAuditor.audit(metrics)
+    # 2. Handle Experiments and Runs
+    else:
+        # Import core objects to avoid circularity
+        from ..core.experiment import experiment
+        from ..core.run import Run
+        from .. import metrics as mb_metrics
+        
+        pop_objs = None
+        prob = None
+
+        if isinstance(target, experiment):
+            if not target.runs:
+                return PerformanceAuditor.audit({}) # Undefined
+            pop_objs = target.last_pop.objectives
+            prob = target.mop
+        elif isinstance(target, Run):
+            pop_objs = target.last_pop.objectives
+            prob = target.experiment.mop if target.experiment else None
+            
+        if pop_objs is not None:
+             # Identify Ground Truth
+             pf = ground_truth
+             if pf is None and prob is not None:
+                 if hasattr(prob, 'pf'):
+                     pf = prob.pf()
+                 elif hasattr(prob, 'optimal_front'):
+                     pf = prob.optimal_front()
+             
+             if pf is not None:
+                  # Use public API for robust calculation
+                  metrics_data['gd'] = float(mb_metrics.gd(pop_objs, ref=pf))
+                  metrics_data['igd'] = float(mb_metrics.igd(pop_objs, ref=pf))
+                  try:
+                      metrics_data['h_rel'] = float(mb_metrics.hv(pop_objs, ref=pf))
+                  except:
+                      pass
+                      
+    return PerformanceAuditor.audit(metrics_data)
