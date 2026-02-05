@@ -31,16 +31,18 @@ def main():
 
     # --- METHOD A: Manual Audit (Recommended) ---
     # We explicitly audit the experiment to see the scientific verdict.
+    print("\nVisualizing Results...")
+    mb.view.topo_shape(exp.front(), exp.pf(), title="Front Geometry: Optimal Scenario")
+    
     print("\nPerforming Manual Audit...")
     diagnosis = mb.diagnostics.audit(exp)
-    
-    # Display the report (In terminal it prints; in Jupyter it renders Markdown)
     diagnosis.report_show()
     
     # 2. Setup Study: Potential Diversity Collapse
+    print("\n" + "=" * 40)
     print("\n[Scenario 2] High Selection Pressure / Sparse Population")
     exp_sparse = mb.experiment()
-    exp_sparse.name = "NSGA-II Sparse"
+    exp_sparse.name = "NSGA-III Sparse"
     exp_sparse.mop = mb.mops.DTLZ2(M=3)
     # Using very small population to trigger Sparse Approximation or Collapse
     exp_sparse.moea = mb.moeas.NSGA3(population=12) 
@@ -49,6 +51,10 @@ def main():
     # We enable diagnostics directly in the run loop (caution: slower)
     print("\nRunning with Integrated Diagnostics...")
     exp_sparse.run(generations=50, diagnose=True)
+
+    # Visualizing the sparse result
+    print("\nVisualizing Sparse Geometry...")
+    mb.view.topo_shape(exp_sparse.front(), exp_sparse.pf(), title="Front Geometry: Sparse Scenario")
 
     # 3. Accessing the Rationale Programmatically
     # The 'rationale' method provides the textbook-style explanation.
