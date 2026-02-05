@@ -697,6 +697,20 @@ diagnosis.report_show()
 print(diagnosis.rationale())
 ```
 
+**Output Example (Terminal):**
+```text
+--- [Diagnostics] Algorithmic Pathology Report ---
+  Status: DIVERSITY_COLLAPSE
+  Confidence: 0.95
+  Analysis: Diversity Collapse Detected. The algorithm exhibits excellent convergence 
+  (GD=4.2e-05) but poor coverage (IGD=0.85). This indicates the population has 
+  degenerated into a small subset or a single point on the Pareto Front.
+--------------------------------------------------
+```
+
+> [!NOTE]
+> **Jupyter Integration**: When running in a Notebook, `.report_show()` automatically renders a beautifully formatted **Markdown box** with bold status badges and callouts, matching the library's premium visual identity.
+
 #### **Method B: Integrated Diagnosis (Convenience)**
 For quick studies, you can set the `diagnose` flag to `True`.
 
