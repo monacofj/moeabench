@@ -34,7 +34,29 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
     if title is None: title = "Solution Set Geometry"
     if axis_labels is None: axis_labels = "Objective"
     
-    for i, arg in enumerate(args):
+    # Automatic Reference Addition
+    new_args = list(args)
+    for arg in args:
+        # Check if the object has a reference front (pf)
+        if hasattr(arg, 'pf') and callable(getattr(arg, 'pf')):
+            try:
+                # We only add it if it's not already in the list of what we are plotting
+                pf_data = arg.pf()
+                if pf_data is not None:
+                    # Check if the name exists to avoid duplicates
+                    prob_name = getattr(arg, 'mop', arg).name if hasattr(arg, 'mop') else "Reference"
+                    ref_label = f"Ref: {prob_name}"
+                    
+                    if ref_label not in names:
+                        # Find where to insert this (after the experiment)
+                        # For simplicity, we append it to the end of the processing list
+                        new_args.append(pf_data)
+                        if labels is None: labels = []
+                        # We will handle names/labels in the loop below
+            except:
+                pass
+
+    for i, arg in enumerate(new_args):
         val = arg
         name = None
         t_mode = 'markers'
@@ -48,13 +70,22 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
              val = arg
              if not name: name = arg.name
              t_mode = 'lines'
+        elif hasattr(arg, 'pf') and callable(getattr(arg, 'pf')) and not isinstance(arg, np.ndarray):
+             # It's an experiment or problem, we want its front
+             val = arg.front() if hasattr(arg, 'front') else arg.pf()
         elif hasattr(arg, 'front') and callable(getattr(arg, 'front')):
              val = arg.front()
         elif hasattr(arg, 'objectives'):
              val = arg.objectives
         
         if not name:
-            if hasattr(val, 'name') and val.name: name = val.name
+            # Check if this specific arg was a result of our auto-pf injection
+            # It will be a raw numpy array at the end of new_args
+            if i >= len(args) and isinstance(arg, np.ndarray):
+                 # Try to find which experiment it belongs to for naming
+                 name = "Reference Front"
+                 t_mode = 'lines' # Show reference as lines/mesh if possible
+            elif hasattr(val, 'name') and val.name: name = val.name
             elif hasattr(arg, 'name') and arg.name: name = arg.name
             elif hasattr(arg, 'label') and arg.label: name = arg.label
 
