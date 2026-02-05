@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 # SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
 # SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 #
