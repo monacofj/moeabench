@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 11: Scientific Domains Taxonomy (The "Scientific Tridade")
-------------------------------------------------------------------
-This example demonstrates the MoeaBench v0.7.0 taxonomy, organizing 
-analysis into three domains: Topography, Performance, and Stratification.
+Example 11: Automated Diagnostics (Algorithmic Pathology)
+---------------------------------------------------------
+This example demonstrates how to use the automated diagnostics module to 
+interpret the health of an optimization search beyond raw numbers.
 """
 
 import mb_path
@@ -17,56 +17,44 @@ def main():
     print(f"MoeaBench Version: {mb.system.version()}")
     print("-" * 30)
 
-    # 1. Setup Study
-    exp1 = mb.experiment()
-    exp1.name = "NSGA3 (Standard)"
-    exp1.mop = mb.mops.DTLZ2(M=3)
-    exp1.moea = mb.moeas.NSGA3(population=100)
+    # 1. Setup Study: Standard Case
+    print("\n[Scenario 1] Standard Optimization (NSGA-II on DTLZ2)")
+    exp = mb.experiment()
+    exp.name = "NSGA-II Normal"
+    exp.mop = mb.mops.DTLZ2(M=3)
+    exp.moea = mb.moeas.NSGA3(population=100) # Using NSGA3 for robustness
     
-    exp2 = mb.experiment()
-    exp2.name = "MOEAD (Rival)"
-    exp2.mop = mb.mops.DTLZ2(M=3)
-    exp2.moea = mb.moeas.MOEAD(population=100)
+    # Execute
+    exp.run(generations=150)
 
-    # 2. Execute Research (Multi-run)
-    print("Executing multi-run experiments...")
-    exp1.run(repeat=5, generations=100)
-    exp2.run(repeat=5, generations=100)
+    # --- METHOD A: Manual Audit (Recommended) ---
+    # We explicitly audit the experiment to see the scientific verdict.
+    print("\nPerforming Manual Audit...")
+    diagnosis = mb.diagnostics.audit(exp)
+    
+    # Display the report (In terminal it prints; in Jupyter it renders Markdown)
+    diagnosis.report_show()
+    
+    # 2. Setup Study: Potential Diversity Collapse
+    print("\n[Scenario 2] High Selection Pressure / Sparse Population")
+    exp_sparse = mb.experiment()
+    exp_sparse.name = "NSGA-II Sparse"
+    exp_sparse.mop = mb.mops.DTLZ2(M=3)
+    # Using very small population to trigger Sparse Approximation or Collapse
+    exp_sparse.moea = mb.moeas.NSGA3(population=12) 
+    
+    # --- METHOD B: Integrated Diagnosis ---
+    # We enable diagnostics directly in the run loop (caution: slower)
+    print("\nRunning with Integrated Diagnostics...")
+    exp_sparse.run(generations=50, diagnose=True)
 
-    # --- DOMAIN 1: TOPOGRAPHY (topo_*) ---
-    # Geographic Focus: Where are the solutions?
-    print("\nVisualizing Topography...")
-    
-    # 1.1 Structural Shape
-    mb.view.topo_shape(exp1.front(), exp1.optimal_front(), title="Topographic Shape (NSGA3)")
-    
-    # 1.2 Search Corridors (Reliability Bands)
-    mb.view.topo_bands(exp1, levels=[0.5, 0.9], title="Search Reliability Bands (NSGA3)")
-    
-    # 1.3 Topologic Gap (Coverage Difference)
-    mb.view.topo_gap(exp1, exp2, title="Topologic Gap: NSGA3 vs MOEAD")
+    # 3. Accessing the Rationale Programmatically
+    # The 'rationale' method provides the textbook-style explanation.
+    print("\nInvestigating Sparse Rationale:")
+    diag_sparse = mb.diagnostics.audit(exp_sparse)
+    print(f"Scientific Verdict: {diag_sparse.rationale()}")
 
-    # --- DOMAIN 2: PERFORMANCE (perf_*) ---
-    # Utility Focus: How well did they perform?
-    print("\nVisualizing Performance...")
-    
-    # 2.1 Performance History (Convergence)
-    mb.view.perf_history(exp1, exp2, title="Convergence History (Hypervolume)")
-    
-    # 2.2 Performance Contrast (Statistical Spread)
-    mb.view.perf_spread(exp1, exp2, title="Performance Contrast (v0.7.0)")
-
-    # --- DOMAIN 3: STRATIFICATION (strat_*) ---
-    # Geological Focus: Internal population structure
-    print("\nVisualizing Stratification...")
-    
-    # 3.1 Structural Ranks
-    mb.view.strat_ranks(exp1, exp2, title="Selection Pressure (Rank Distribution)")
-    
-    # 3.2 Competitive Tier Duel
-    mb.view.strat_tiers(exp1, exp2, title="Competitive Tier Duel")
-
-    print("\nScientific domains showcase completed.")
+    print("\nDiagnostics showcase completed.")
 
 if __name__ == "__main__":
     main()

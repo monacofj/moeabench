@@ -599,6 +599,7 @@ class RandomSearch(mb.moeas.BaseMoea):
 ```
 > [!TIP]
 > For a detailed walkthrough on implementing and using custom plugins, see **`examples/example_05.py`**.
+> To see the **Automated Diagnostics** in action across different algorithmic pathologies, refer to **`examples/example_11.py`**.
 
 ---
 
