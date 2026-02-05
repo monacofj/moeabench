@@ -53,7 +53,14 @@ def generate_visual_report():
         return
 
     df_base = pd.read_csv(BASELINE_FILE)
-    mops = sorted(df_base['MOP'].unique())
+    
+    # Custom Sort: DTLZ before DPF, then alphabetical
+    def mop_sort_key(name):
+        if name.startswith('DTLZ'): return (0, name)
+        if name.startswith('DPF'): return (1, name)
+        return (2, name)
+        
+    mops = sorted(df_base['MOP'].unique(), key=mop_sort_key)
     
     html_content = [
         "<html><head><title>MoeaBench v0.8.0 Calibration</title>",
@@ -68,11 +75,18 @@ def generate_visual_report():
         ".metrics-footer { font-size: 0.85em; color: #64748b; margin-top: 25px; font-family: 'JetBrains Mono', 'Fira Code', monospace; background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }",
         ".intro-box { background: white; padding: 40px; border-radius: 16px; margin-bottom: 50px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 95%; margin-left: auto; margin-right: auto; }",
         ".note-box { background: #fffcf0; padding: 20px; border-radius: 10px; margin-top: 25px; border-left: 5px solid #f1c40f; font-size: 0.95em; color: #856404; }",
-        "table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 25px; margin-bottom: 35px; background: white; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; }",
-        "th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; padding: 14px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; font-size: 0.75em; letter-spacing: 0.05em; }",
-        "td { padding: 14px; border-bottom: 1px solid #f1f5f9; font-size: 0.9em; }",
+        "table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 25px; margin-bottom: 35px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; table-layout: fixed; }",
+        "th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; font-size: 0.7em; letter-spacing: 0.05em; }",
+        "td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85em; }",
+        ".nowrap { white-space: nowrap; }",
         "tr:last-child td { border-bottom: none; }",
         "tr:hover td { background-color: #f8fafc; }",
+        ".diag-badge { padding: 3px 8px; border-radius: 999px; font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; display: inline-block; margin-bottom: 4px; }",
+        ".diag-optimal { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }",
+        ".diag-failure { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }",
+        ".diag-warning { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }",
+        ".diag-shadow { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }",
+        ".diag-rationale { font-size: 0.8em; color: #64748b; font-style: italic; display: block; line-height: 1.3; }",
         "code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: #0f172a; }",
         "ul { padding-left: 20px; }",
         "li { margin-bottom: 10px; }",
@@ -303,6 +317,34 @@ def generate_visual_report():
                     if g_val <= 1.05 * final_igd:
                         t_conv = str(gens[g_idx])
                         break
+                
+                # AI Diagnostic Audit
+                import MoeaBench as mb
+                diag_metrics = {
+                    'gd': float(gd_mean),
+                    'igd': float(igd_mean),
+                    'h_rel': float(hv_rel_stat),
+                    'emd': emd_val
+                }
+                diagnosis = mb.diagnostics.audit(diag_metrics)
+                diag_status = diagnosis.status.name
+                diag_rationale = diagnosis.rationale()
+                
+                # Map status to CSS class
+                status_name = diagnosis.status.name
+                if status_name in ["IDEAL_FRONT", "SUPER_SATURATION"]:
+                    diag_class = "diag-optimal"
+                elif status_name in ["COLLAPSED_FRONT", "SEARCH_FAILURE"]:
+                    diag_class = "diag-failure"
+                elif status_name == "UNKNOWN":
+                    diag_class = "diag-shadow" 
+                else: 
+                    # BIASED, GAPPED, NOISY, DISTORTED, SHIFTED -> Warning
+                    diag_class = "diag-warning"
+            else:
+                diag_status = "N/A"
+                diag_rationale = "No metrics available."
+                diag_class = "diag-shadow"
             
             mop_metrics.append({
                 "alg": alg,
@@ -314,7 +356,10 @@ def generate_visual_report():
                 "h_ratio": f"{hv_ratio:.4f}",
                 "h_rel": f"{hv_rel_stat * 100:.2f}%", 
                 "time": f"{time_avg:.2f}",
-                "t_conv": t_conv
+                "t_conv": t_conv,
+                "diag_status": diag_status,
+                "diag_rationale": diag_rationale,
+                "diag_class": diag_class
             })
 
             if gens:
@@ -377,8 +422,21 @@ def generate_visual_report():
         html_content.append(f"<div class='mop-section'>")
         html_content.append(f"<h2>{mop_name} Benchmark Analysis</h2>")
         
-        # Build metrics table
+        # Build metrics table with optimized column widths
         table = ["<table>",
+                 "<colgroup>",
+                 "<col style='width: 90px'>",  # Alg
+                 "<col style='width: 170px'>", # IGD
+                 "<col style='width: 170px'>", # GD
+                 "<col style='width: 170px'>", # SP
+                 "<col style='width: 80px'>",  # EMD
+                 "<col style='width: 80px'>",  # H_raw
+                 "<col style='width: 80px'>",  # H_ratio
+                 "<col style='width: 80px'>",  # H_rel
+                 "<col style='width: 80px'>",  # Time
+                 "<col style='width: 90px'>",  # Stabil
+                 "<col style='width: auto'>",  # AI Diagnosis
+                 "</colgroup>",
                  "<tr>",
                  "<th>Algorithm</th>",
                  "<th>IGD (Mean &plusmn; Std)</th>",
@@ -388,20 +446,22 @@ def generate_visual_report():
                  "<th>H_raw</th>",
                  "<th>H_ratio</th>",
                  "<th>H_rel</th>",
-                 "<th>Time (s)</th>",
-                 "<th>Stabilization</th></tr>"]
+                 "<th>Time(s)</th>",
+                 "<th>Stabil.</th>",
+                 "<th>AI Diagnosis (Pathology)</th></tr>"]
         
         for m in mop_metrics:
             table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
-            table.append(f"<td>{m['igd']}</td>")
-            table.append(f"<td>{m['gd']}</td>")
-            table.append(f"<td>{m['sp']}</td>")
-            table.append(f"<td>{m['emd']}</td>")
-            table.append(f"<td>{m['h_raw']}</td>")
-            table.append(f"<td>{m['h_ratio']}</td>")
-            table.append(f"<td>{m['h_rel']}</td>")
-            table.append(f"<td>{m['time']}</td>")
-            table.append(f"<td>Gen {m['t_conv']}</td></tr>")
+            table.append(f"<td class='nowrap'>{m['igd']}</td>")
+            table.append(f"<td class='nowrap'>{m['gd']}</td>")
+            table.append(f"<td class='nowrap'>{m['sp']}</td>")
+            table.append(f"<td class='nowrap'>{m['emd']}</td>")
+            table.append(f"<td class='nowrap'>{m['h_raw']}</td>")
+            table.append(f"<td class='nowrap'>{m['h_ratio']}</td>")
+            table.append(f"<td class='nowrap'>{m['h_rel']}</td>")
+            table.append(f"<td class='nowrap'>{m['time']}</td>")
+            table.append(f"<td class='nowrap'>Gen {m['t_conv']}</td>")
+            table.append(f"<td><span class='diag-badge {m['diag_class']}'>{m['diag_status']}</span><br><span class='diag-rationale'>{m['diag_rationale']}</span></td></tr>")
         table.append("</table>")
         
         html_content.append("".join(table))

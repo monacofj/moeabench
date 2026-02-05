@@ -17,6 +17,21 @@ class DiagnosticResult:
         """Returns the scientific-didactic explanation of the diagnosis."""
         return self._rationale
 
+    @property
+    def gd(self) -> float:
+        """Convenience access to Generational Distance."""
+        return self.metrics.get('gd', float('inf'))
+
+    @property
+    def igd(self) -> float:
+        """Convenience access to Inverted Generational Distance."""
+        return self.metrics.get('igd', float('inf'))
+
+    @property
+    def emd(self) -> float:
+        """Convenience access to Earth Mover's Distance."""
+        return self.metrics.get('emd', float('inf'))
+
     def report(self, **kwargs) -> str:
         """Formatted narrative report."""
         lines = [
@@ -61,7 +76,7 @@ class PerformanceAuditor:
         # 1. Extract Metrics
         igd = metrics.get('igd', metrics.get('IGD', float('inf')))
         gd = metrics.get('gd', metrics.get('GD', float('inf')))
-        emd = metrics.get('emd', metrics.get('EMD', float('inf'))) # Default to inf if not computed
+        emd = metrics.get('emd', metrics.get('EMD', float('inf')))
         h_rel = metrics.get('h_rel', metrics.get('H_rel', 0.0))
 
         # 2. Check for Super-Saturation (Pre-check)
@@ -73,74 +88,75 @@ class PerformanceAuditor:
                 _rationale=(
                     f"Super-Saturation Detected (H_rel = {h_rel*100:.2f}%). "
                     "The algorithm has outperformed the resolution of the provided Ground Truth. "
+                    "This indicates performance saturation strictly superior to the discrete baseline."
                 )
             )
 
         # 3. Binary Classification (The Truth Table)
         # Thresholds defined in ADR 0025
-        GOOD_GD = gd < 0.1  # Convergence threshold (standardized for practical runs)
-        GOOD_IGD = igd < 0.1 # Coverage threshold
-        GOOD_EMD = emd < 0.08 # Topology threshold
+        # GOOD_GD (< 0.1)  : Converged?
+        # GOOD_IGD (< 0.1) : Covered?
+        # GOOD_EMD (< 0.12): Shape/Distribution Fidelity? (Relaxed from 0.08)
+        GOOD_GD = gd < 0.1
+        GOOD_IGD = igd < 0.1
+        GOOD_EMD = emd < 0.12
 
-        # State Determination
+        # State Determination (8 States)
         if GOOD_GD:
             if GOOD_IGD:
                 if GOOD_EMD:
-                    # (B, B, B) -> OPTIMAL
+                    # (1) [L, L, L] -> IDEAL FRONT
                     return DiagnosticResult(
-                        status=DiagnosticStatus.OPTIMAL, metrics=metrics, confidence=0.95,
-                        _rationale=f"Optimal Performance. The algorithm found a well-distributed prediction of the Pareto Front (GD={gd:.1e}, IGD={igd:.2f})."
+                        status=DiagnosticStatus.IDEAL_FRONT, metrics=metrics, confidence=0.98,
+                        _rationale=f"Ideal Front. The population lies close to the ground-truth Pareto front (GD={gd:.1e}), covers the full extent of the reference front without relevant gaps (IGD={igd:.2f}), and matches the reference distribution in a global, mass-transport sense (EMD={emd:.3f}). In practical terms, you not only 'hit the target,' but you also covered it uniformly and with the expected density."
                     )
                 else:
-                    # (B, B, R) -> DISTRIBUTION BIAS
+                    # (2) [L, L, H] -> BIASED SPREAD
                     return DiagnosticResult(
-                        status=DiagnosticStatus.DISTRIBUTION_BIAS, metrics=metrics, confidence=0.85,
-                        _rationale=f"Distribution Bias. The front is well-converged and covered, but the internal distribution is irregular (EMD={emd:.3f}). This suggests diversity operators are fighting the manifold geometry."
+                        status=DiagnosticStatus.BIASED_SPREAD, metrics=metrics, confidence=0.85,
+                        _rationale=f"Biased Spread. Solutions are near the true front (GD={gd:.1e}) and the front is broadly covered (IGD={igd:.2f}), yet the global distribution is distorted (EMD={emd:.3f}). This typically means the algorithm concentrates too much mass in some regions and too little in others—clustering or systematic density bias."
                     )
             else:
                 if GOOD_EMD:
-                    # (B, R, B) -> SPARSE APPROXIMATION
+                    # (3) [L, H, L] -> GAPPED COVERAGE
                     return DiagnosticResult(
-                        status=DiagnosticStatus.SPARSE_APPROXIMATION, metrics=metrics, confidence=0.80,
-                        _rationale=f"Sparse Approximation. The solutions found are optimal (GD={gd:.1e}) and topologically correct (EMD={emd:.3f}), but too few to ensure global coverage (IGD={igd:.2f})."
+                        status=DiagnosticStatus.GAPPED_COVERAGE, metrics=metrics, confidence=0.88,
+                        _rationale=f"Gapped Coverage. The solutions that exist are close to the true front (GD={gd:.1e}), but substantial regions of the reference front have no nearby representatives (IGD={igd:.2f}). Despite local correctness (EMD={emd:.3f}), the approximation captures only parts of the Pareto set, leaving 'holes'."
                     )
                 else:
-                    # (B, R, R) -> DIVERSITY COLLAPSE
+                    # (4) [L, H, H] -> COLLAPSED FRONT
                     return DiagnosticResult(
-                        status=DiagnosticStatus.DIVERSITY_COLLAPSE, metrics=metrics, confidence=0.95,
-                        _rationale=f"Diversity Collapse. Excellent convergence (GD={gd:.1e}) but poor coverage and topology. The population has likely degenerated into a single point or small cluster."
+                        status=DiagnosticStatus.COLLAPSED_FRONT, metrics=metrics, confidence=0.95,
+                        _rationale=f"Collapsed Front. The population is largely near the front (GD={gd:.1e}) but fails to represent its extent (IGD={igd:.2f}) and does not match the reference distribution globally (EMD={emd:.3f}). This is the signature of degeneracy: the algorithm collapses onto a small subset of the front (or even a single point)."
                     )
         else: # BAD GD
             if GOOD_IGD:
-                # (R, B, X) -> METRIC CONTRADICTION
-                # Impossible to have Good Coverage (IGD) if Convergence (GD) is bad, 
-                # because IGD is lower-bounded by GD distance.
-                return DiagnosticResult(
-                    status=DiagnosticStatus.METRIC_CONTRADICTION, metrics=metrics, confidence=1.0,
-                    _rationale=f"Metric Contradiction. It is mathematically impossible to have good coverage (IGD={igd:.2f}) with poor convergence (GD={gd:.1e}). Check your Ground Truth data integrity."
-                )
-            else:
                 if GOOD_EMD:
-                    # (R, R, B) -> SHADOW FRONT
+                    # (5) [H, L, L] -> NOISY POPULATION
                     return DiagnosticResult(
-                        status=DiagnosticStatus.SHADOW_FRONT, metrics=metrics, confidence=0.75,
-                        _rationale=f"Shadow Front Detected. The algorithm failed to converge (GD={gd:.1e}), but the shape of the local front matches the true front (EMD={emd:.3f}). It may be trapped in a local Pareto Front translation."
+                        status=DiagnosticStatus.NOISY_POPULATION, metrics=metrics, confidence=0.80,
+                        _rationale=f"Noisy Population. The reference front is well covered (IGD={igd:.2f}) and the global distribution resembles the reference (EMD={emd:.3f}), yet the population contains substantial mass far from the true front (GD={gd:.1e}). Scientifically, this indicates low purity: a meaningful subset approximates the front well, but many dominated points remain."
                     )
                 else:
-                    # (R, R, R) -> CONVERGENCE FAILURE
+                    # (6) [H, L, H] -> DISTORTED COVERAGE
                     return DiagnosticResult(
-                        status=DiagnosticStatus.CONVERGENCE_FAILURE, metrics=metrics, confidence=0.90,
-                        _rationale=f"Convergence Failure. The algorithm failed to converge, cover, or capture the shape of the problem effectively (GD={gd:.1e}, IGD={igd:.2f})."
+                        status=DiagnosticStatus.DISTORTED_COVERAGE, metrics=metrics, confidence=0.82,
+                        _rationale=f"Distorted Coverage. Coverage exists in the nearest-neighbor sense (IGD={igd:.2f}), but the population is globally inconsistent: it is far on average from the true front (GD={gd:.1e}) and its distribution deviates strongly (EMD={emd:.3f}). This often reflects a mixed regime with severe bias or contamination."
+                    )
+            else:
+                if GOOD_EMD:
+                    # (7) [H, H, L] -> SHIFTED_FRONT
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.SHIFTED_FRONT, metrics=metrics, confidence=0.90,
+                        _rationale=f"Shifted Front. The population forms a coherent, well-structured front-like manifold (EMD={emd:.3f}), but it is displaced relative to the true Pareto front (GD={gd:.1e}). Intuitively, the algorithm learned the 'right shape' but at the 'wrong location': a systematic mislocalization (e.g. Local Optimum Trap). For completeness, IGD={igd:.2f}."
+                    )
+                else:
+                    # (8) [H, H, H] -> SEARCH_FAILURE
+                    return DiagnosticResult(
+                        status=DiagnosticStatus.SEARCH_FAILURE, metrics=metrics, confidence=0.95,
+                        _rationale=f"Search Failure. The population is neither close to the true front (GD={gd:.1e}) nor does it cover it (IGD={igd:.2f}), and its global distribution is unrelated to the reference. A full failure mode. For completeness, EMD={emd:.3f}."
                     )
 
-def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
-    """
-    Smart delegate for performance auditing.
-    
-    Args:
-        target: Can be a dictionary of metrics, an Experiment, or a Result object.
-        ground_truth: Optional reference front (if target contains raw populations).
-    """
 def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
     """
     Smart delegate for performance auditing.
