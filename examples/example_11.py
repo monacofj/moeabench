@@ -16,51 +16,27 @@ import mb_path
 from MoeaBench import mb
 
 def main():
-    print(f"MoeaBench Version: {mb.system.version()}")
-    print("-" * 30)
+    # --- CASE 1: NSGA-III (Standard Benchmark) ---
+    print("\n[Case 1] NSGA-III Performance")
+    exp_n3 = mb.experiment()
+    exp_n3.mop = mb.mops.DTLZ2(M=3)
+    exp_n3.moea = mb.moeas.NSGA3(population=92) # Standard population
+    exp_n3.run(generations=150)
 
-    # 1. Setup Study: Standard Case
-    print("\n[Scenario 1] Standard Optimization (NSGA-II on DTLZ2)")
-    exp = mb.experiment()
-    exp.name = "NSGA-II Normal"
-    exp.mop = mb.mops.DTLZ2(M=3)
-    exp.moea = mb.moeas.NSGA3(population=100) # Using NSGA3 for robustness
+    # Explicitly show Data vs Reference (Optimal Front)
+    mb.view.topo_shape(exp_n3, exp_n3.optimal_front(), title="Geometry: NSGA-III")
+    mb.diagnostics.audit(exp_n3).report_show()
     
-    # Execute
-    exp.run(generations=150)
+    # --- CASE 2: MOEA/D (Potential Distribution Bias) ---
+    print("\n[Case 2] MOEA/D Performance")
+    exp_md = mb.experiment()
+    exp_md.mop = mb.mops.DTLZ2(M=3)
+    exp_md.moea = mb.moeas.MOEAD(population=92) 
+    exp_md.run(generations=150)
 
-    # --- METHOD A: Manual Audit (Recommended) ---
-    # We explicitly audit the experiment to see the scientific verdict.
-    print("\nVisualizing Results...")
-    mb.view.topo_shape(exp.front(), exp.pf(), title="Front Geometry: Optimal Scenario")
-    
-    print("\nPerforming Manual Audit...")
-    diagnosis = mb.diagnostics.audit(exp)
-    diagnosis.report_show()
-    
-    # 2. Setup Study: Potential Diversity Collapse
-    print("\n" + "=" * 40)
-    print("\n[Scenario 2] High Selection Pressure / Sparse Population")
-    exp_sparse = mb.experiment()
-    exp_sparse.name = "NSGA-III Sparse"
-    exp_sparse.mop = mb.mops.DTLZ2(M=3)
-    # Using very small population to trigger Sparse Approximation or Collapse
-    exp_sparse.moea = mb.moeas.NSGA3(population=12) 
-    
-    # --- METHOD B: Integrated Diagnosis ---
-    # We enable diagnostics directly in the run loop (caution: slower)
-    print("\nRunning with Integrated Diagnostics...")
-    exp_sparse.run(generations=50, diagnose=True)
-
-    # Visualizing the sparse result
-    print("\nVisualizing Sparse Geometry...")
-    mb.view.topo_shape(exp_sparse.front(), exp_sparse.pf(), title="Front Geometry: Sparse Scenario")
-
-    # 3. Accessing the Rationale Programmatically
-    # The 'rationale' method provides the textbook-style explanation.
-    print("\nInvestigating Sparse Rationale:")
-    diag_sparse = mb.diagnostics.audit(exp_sparse)
-    print(f"Scientific Verdict: {diag_sparse.rationale()}")
+    # Explicitly show Data vs Reference
+    mb.view.topo_shape(exp_md, exp_md.optimal_front(), title="Geometry: MOEA/D")
+    mb.diagnostics.audit(exp_md).report_show()
 
     print("\nDiagnostics showcase completed.")
 

@@ -139,6 +139,18 @@ class experiment(Reportable):
     def last_pop(self) -> Population:
         return self.last_run.last_pop
 
+    def pf(self, n_points: int = 100) -> Any:
+        """Returns the true Pareto Front for the current MOP (Shortcut)."""
+        return self.mop.pf(n_points)
+
+    def optimal_front(self, n_points: int = 100) -> Any:
+        """Textbook alias for the true Pareto Front."""
+        return self.pf(n_points)
+
+    def pareto_front(self, n_points: int = 100) -> Any:
+        """Standard alias for the true Pareto Front."""
+        return self.pf(n_points)
+
     def pop(self, gen: int = -1) -> JoinedPopulation:
         """Aggregate populations from all runs."""
         # This is tricky. API.py says:

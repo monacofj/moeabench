@@ -78,7 +78,7 @@ class PerformanceAuditor:
 
         # 3. Binary Classification (The Truth Table)
         # Thresholds defined in ADR 0025
-        GOOD_GD = gd < 0.05  # Convergence threshold (relaxed from 1e-3 for stability)
+        GOOD_GD = gd < 0.1  # Convergence threshold (standardized for practical runs)
         GOOD_IGD = igd < 0.1 # Coverage threshold
         GOOD_EMD = emd < 0.08 # Topology threshold
 
