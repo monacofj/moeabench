@@ -1,211 +1,301 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import numpy as np
+import json
+import os
 from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
-from .enums import DiagnosticStatus
+from scipy.spatial.distance import cdist
+from .enums import DiagnosticStatus, DiagnosticProfile
+
+# Reference Data Configuration
+REF_DATA_DIR = os.path.join(os.path.dirname(__file__), "resources/references")
+K_GRID = [50, 100, 200, 400, 800]
+
+def _load_reference(mop_name):
+    """Loads standardized reference package and baselines."""
+    base_dir = os.path.join(REF_DATA_DIR, mop_name)
+    if not os.path.exists(base_dir):
+        return None, None
+    
+    pkg_path = os.path.join(base_dir, "ref_package.npz")
+    json_path = os.path.join(base_dir, "baselines.json")
+    
+    try:
+        pkg = np.load(pkg_path)
+        with open(json_path, "r") as f:
+            baselines = json.load(f)
+        return pkg, baselines
+    except:
+        return None, None
+
+def _snap_to_grid(n):
+    """
+    Snaps population size n to the nearest VALID K in our grid.
+    STRICT MODE: Never choose a K greater than n (no upsampling).
+    If n is smaller than the smallest grid point, we cannot use the grid.
+    """
+    valid_k = [k for k in K_GRID if k <= n]
+    if not valid_k:
+        return n # Fallback: absolute n (will miss cache but preserves density)
+    return max(valid_k) # Closest downstream K
+
+def _resample_to_K(pop, K):
+    """
+    Deterministic resampling/thinning to match cardinality K.
+    STRICT MODE: Never upsample (duplicate). Only downsample or pass.
+    """
+    n = len(pop)
+    if n == K: return pop
+    if n < K:
+        # Should be unreachable with new _snap_to_grid logic
+        # But if it happens, we return RAW, never duplicate.
+        return pop 
+    else:
+        # Downsample using unique snapping or just stride (simple for now)
+        idx = np.linspace(0, n-1, K).astype(int)
+        return pop[idx]
 
 @dataclass
 class DiagnosticResult:
-    """
-    Encapsulates the finding of an algorithmic audit.
-    """
+    """ Encapsulates the finding of an algorithmic audit. """
     status: DiagnosticStatus
-    metrics: Dict[str, float]
+    verdict: str
+    verdicts: Dict[str, str]
+    metrics: Dict[str, Any]
     confidence: float
+    description: str
     _rationale: str
+    details: Dict[str, Any] = None 
 
     def rationale(self) -> str:
-        """Returns the scientific-didactic explanation of the diagnosis."""
         return self._rationale
 
-    @property
-    def gd(self) -> float:
-        """Convenience access to Generational Distance."""
-        return self.metrics.get('gd', float('inf'))
-
-    @property
-    def igd(self) -> float:
-        """Convenience access to Inverted Generational Distance."""
-        return self.metrics.get('igd', float('inf'))
-
-    @property
-    def emd(self) -> float:
-        """Convenience access to Earth Mover's Distance."""
-        return self.metrics.get('emd', float('inf'))
-
-    def report(self, **kwargs) -> str:
-        """Formatted narrative report."""
-        lines = [
-            f"--- [Diagnostics] Algorithmic Pathology Report ---",
-            f"  Status: {self.status.name}",
-            f"  Confidence: {self.confidence:.2f}",
-            f"  Analysis: {self._rationale}",
-            "--------------------------------------------------"
-        ]
-        return "\n".join(lines)
-
-    def report_show(self, **kwargs) -> None:
-        """Displays the report in the appropriate environment (Terminal/Notebook)."""
-        try:
-            from IPython.display import Markdown, display
-            # Check if running in a notebook environment
-            import sys
-            if 'ipykernel' in sys.modules:
-                display(Markdown(f"""
-### 🩺 Algorithmic Pathology Report
-**Status**: `{self.status.name}` (Confidence: {self.confidence:.2f})
-
-> **Analysis**: {self._rationale}
-"""))
-                return
-        except ImportError:
-            pass
-        
-        # Fallback to terminal print
-        print(self.report())
-
 class PerformanceAuditor:
-    """
-    Expert system for interpreting multi-objective performance metrics.
-    """
+    """ Expert system for interpreting multi-objective performance metrics. """
     
     @staticmethod
-    def audit(metrics: Dict[str, float]) -> DiagnosticResult:
-        """
-        Analyzes a dictionary of metrics (IGD, GD, H_rel, EMD) using the 8-state Pathology Truth Table.
-        """
-        # 1. Extract Metrics
-        igd = metrics.get('igd', metrics.get('IGD', float('inf')))
-        gd = metrics.get('gd', metrics.get('GD', float('inf')))
-        emd = metrics.get('emd', metrics.get('EMD', float('inf')))
-        h_rel = metrics.get('h_rel', metrics.get('H_rel', 0.0))
+    def audit(metrics: Dict[str, float], 
+              profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY,
+              diameter: float = 1.0) -> DiagnosticResult:
+        
+        MAX_EFF = {
+            DiagnosticProfile.RESEARCH: 1.10,
+            DiagnosticProfile.STANDARD: 1.60,
+            DiagnosticProfile.INDUSTRY: 2.00,
+            DiagnosticProfile.EXPLORATORY: 5.00
+        }
 
-        # 2. Check for Super-Saturation (Pre-check)
-        if h_rel > 1.05: # 5% tolerance
-            return DiagnosticResult(
-                status=DiagnosticStatus.SUPER_SATURATION,
-                metrics=metrics,
-                confidence=1.0,
-                _rationale=(
-                    f"Super-Saturation Detected (H_rel = {h_rel*100:.2f}%). "
-                    "The algorithm has outperformed the resolution of the provided Ground Truth. "
-                    "This indicates performance saturation strictly superior to the discrete baseline."
-                )
-            )
+        # 1. Super-Saturation Check (Warning Only)
+        h_rel = metrics.get('h_rel', 0.0)
+        is_saturated = h_rel > 1.05
+        # We do NOT return early anymore. We just note it.
 
-        # 3. Binary Classification (The Truth Table)
-        # Thresholds defined in ADR 0025
-        # GOOD_GD (< 0.1)  : Converged?
-        # GOOD_IGD (< 0.1) : Covered?
-        # GOOD_EMD (< 0.12): Shape/Distribution Fidelity? (Relaxed from 0.08)
-        GOOD_GD = gd < 0.1
-        GOOD_IGD = igd < 0.1
-        GOOD_EMD = emd < 0.12
+        # 2. Metric Extraction (Fail-Closed Defaults)
+        # Default is infinity (worst possible), never 1.0
+        igd_eff = metrics.get('igd_eff', np.inf)
+        emd_eff_uniform = metrics.get('emd_eff_uniform', np.inf)
+        gd_p95 = metrics.get('gd_p95', np.inf)
+        
+        # 3. Geometry Status (Physical Layer)
+        # Convergence requires < 5x floor (stricter than 10x)
+        GEOMETRY_EFF = 5.0
+        
+        # Normalized diameter is sqrt(M)
+        norm_diameter = np.sqrt(metrics.get('M', 3))
+        GEO_PURITY_THR_NORM = 0.05 * norm_diameter
 
-        # State Determination (8 States)
-        if GOOD_GD:
-            if GOOD_IGD:
-                if GOOD_EMD:
-                    # (1) [L, L, L] -> IDEAL FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.IDEAL_FRONT, metrics=metrics, confidence=0.98,
-                        _rationale=f"Ideal Front. The population lies close to the ground-truth Pareto front (GD={gd:.1e}), covers the full extent of the reference front without relevant gaps (IGD={igd:.2f}), and matches the reference distribution in a global, mass-transport sense (EMD={emd:.3f}). In practical terms, you not only 'hit the target,' but you also covered it uniformly and with the expected density."
-                    )
-                else:
-                    # (2) [L, L, H] -> BIASED SPREAD
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.BIASED_SPREAD, metrics=metrics, confidence=0.85,
-                        _rationale=f"Biased Spread. Solutions are near the true front (GD={gd:.1e}) and the front is broadly covered (IGD={igd:.2f}), yet the global distribution is distorted (EMD={emd:.3f}). This typically means the algorithm concentrates too much mass in some regions and too little in others—clustering or systematic density bias."
-                    )
+        GEO_IGD = igd_eff <= GEOMETRY_EFF
+        GEO_EMD = emd_eff_uniform <= GEOMETRY_EFF
+        GEO_PURITY = gd_p95 <= GEO_PURITY_THR_NORM
+        
+        status = DiagnosticStatus.SEARCH_FAILURE
+        rationale = ""
+        
+        if GEO_IGD: # Converged
+            if GEO_PURITY:
+                 if GEO_EMD:
+                      # Stricter Ideal Front Requirements
+                      if igd_eff < 1.3 and emd_eff_uniform < 1.5:
+                          status = DiagnosticStatus.IDEAL_FRONT
+                          rationale = "Ideal Front. Excellent convergence, purity, and topology."
+                      else:
+                          # It converged physically but isn't quite "Ideal"
+                          status = DiagnosticStatus.NOISY_POPULATION
+                          rationale = "Converged but efficiency sub-optimal (Noisy)."
+                 else:
+                      status = DiagnosticStatus.BIASED_SPREAD
+                      rationale = "Biased Spread. Converged and pure, but distribution is skewed."
+            else: # Bad Purity
+                 if GEO_EMD:
+                      status = DiagnosticStatus.NOISY_POPULATION
+                      rationale = "Noisy Population. Right shape but fuzzy (Low Purity)."
+                 else:
+                      status = DiagnosticStatus.DISTORTED_COVERAGE
+                      rationale = "Distorted Coverage. Roughly in place, but noisy and skewed."
+        else: # Not Converged
+             if GEO_EMD:
+                  status = DiagnosticStatus.SHIFTED_FRONT
+                  rationale = "Shifted Front. Good topology but displaced from GT."
+             else:
+                  if GEO_PURITY:
+                       status = DiagnosticStatus.COLLAPSED_FRONT
+                       rationale = "Collapsed Front. High purity but poor coverage."
+                  else:
+                       status = DiagnosticStatus.SEARCH_FAILURE
+                       rationale = "Search Failure. No resemblance to the Pareto Front."
+
+        # Override for Super-Saturation (if geometry is at least passable)
+        if is_saturated and status not in [DiagnosticStatus.SEARCH_FAILURE, DiagnosticStatus.COLLAPSED_FRONT]:
+             status = DiagnosticStatus.SUPER_SATURATION
+             rationale += " (Super-Saturation Detected)"
+
+        # 4. Determine Verdicts
+        verdicts = {}
+        for p in DiagnosticProfile:
+            p_val = p.value / 100.0
+            p_cert_gd = gd_p95 <= (p_val * norm_diameter)
+            
+            p_eff = MAX_EFF.get(p, 5.0)
+            p_cert_igd = igd_eff <= p_eff
+            
+            # CRITICAL FIX: EMD check is mandatory for ALL profiles now
+            # Standard/Industry can tolerate more (e.g., 2.0x), but can't be infinite.
+            p_cert_emd = emd_eff_uniform <= p_eff
+            
+            p_verdict = "FAIL"
+            
+            # Fail-Closed: If any metric is infinite, verdict is automatic FAIL
+            if np.isinf(igd_eff) or np.isinf(emd_eff_uniform):
+                p_verdict = "FAIL"
             else:
-                if GOOD_EMD:
-                    # (3) [L, H, L] -> GAPPED COVERAGE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.GAPPED_COVERAGE, metrics=metrics, confidence=0.88,
-                        _rationale=f"Gapped Coverage. The solutions that exist are close to the true front (GD={gd:.1e}), but substantial regions of the reference front have no nearby representatives (IGD={igd:.2f}). Despite local correctness (EMD={emd:.3f}), the approximation captures only parts of the Pareto set, leaving 'holes'."
-                    )
-                else:
-                    # (4) [L, H, H] -> COLLAPSED FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.COLLAPSED_FRONT, metrics=metrics, confidence=0.95,
-                        _rationale=f"Collapsed Front. The population is largely near the front (GD={gd:.1e}) but fails to represent its extent (IGD={igd:.2f}) and does not match the reference distribution globally (EMD={emd:.3f}). This is the signature of degeneracy: the algorithm collapses onto a small subset of the front (or even a single point)."
-                    )
-        else: # BAD GD
-            if GOOD_IGD:
-                if GOOD_EMD:
-                    # (5) [H, L, L] -> NOISY POPULATION
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.NOISY_POPULATION, metrics=metrics, confidence=0.80,
-                        _rationale=f"Noisy Population. The reference front is well covered (IGD={igd:.2f}) and the global distribution resembles the reference (EMD={emd:.3f}), yet the population contains substantial mass far from the true front (GD={gd:.1e}). Scientifically, this indicates low purity: a meaningful subset approximates the front well, but many dominated points remain."
-                    )
-                else:
-                    # (6) [H, L, H] -> DISTORTED COVERAGE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.DISTORTED_COVERAGE, metrics=metrics, confidence=0.82,
-                        _rationale=f"Distorted Coverage. Coverage exists in the nearest-neighbor sense (IGD={igd:.2f}), but the population is globally inconsistent: it is far on average from the true front (GD={gd:.1e}) and its distribution deviates strongly (EMD={emd:.3f}). This often reflects a mixed regime with severe bias or contamination."
-                    )
-            else:
-                if GOOD_EMD:
-                    # (7) [H, H, L] -> SHIFTED_FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.SHIFTED_FRONT, metrics=metrics, confidence=0.90,
-                        _rationale=f"Shifted Front. The population forms a coherent, well-structured front-like manifold (EMD={emd:.3f}), but it is displaced relative to the true Pareto front (GD={gd:.1e}). Intuitively, the algorithm learned the 'right shape' but at the 'wrong location': a systematic mislocalization (e.g. Local Optimum Trap). For completeness, IGD={igd:.2f}."
-                    )
-                else:
-                    # (8) [H, H, H] -> SEARCH_FAILURE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.SEARCH_FAILURE, metrics=metrics, confidence=0.95,
-                        _rationale=f"Search Failure. The population is neither close to the true front (GD={gd:.1e}) nor does it cover it (IGD={igd:.2f}), and its global distribution is unrelated to the reference. A full failure mode. For completeness, EMD={emd:.3f}."
-                    )
+                if p == DiagnosticProfile.RESEARCH:
+                    if status in [DiagnosticStatus.IDEAL_FRONT, DiagnosticStatus.SUPER_SATURATION] and p_cert_igd and p_cert_emd and p_cert_gd:
+                         p_verdict = "PASS"
+                else: 
+                     # For others, we accept wider status but require metrics to pass limits
+                     if p_cert_igd and p_cert_emd and status not in [DiagnosticStatus.SEARCH_FAILURE, DiagnosticStatus.COLLAPSED_FRONT]:
+                         p_verdict = "PASS"
+            
+            verdicts[p.name] = p_verdict
 
-def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
-    """
-    Smart delegate for performance auditing.
-    
-    Args:
-        target: Can be a dictionary of metrics, an Experiment, or a Run object.
-        ground_truth: Optional reference front (if target contains raw populations).
-    """
+        verdict = verdicts.get(profile.name, "FAIL")
+        metrics_str = f"IGD_eff={igd_eff:.2f}x, EMD_eff={emd_eff_uniform:.2f}x"
+        full_rationale = f"[{profile.name}] {status.name} -> {verdict}. {rationale} ({metrics_str})"
+
+        # Persist efficiencies for reporting
+        metrics['igd_eff'] = igd_eff
+        metrics['emd_eff_uniform'] = emd_eff_uniform
+        metrics['gd_p95_norm'] = gd_p95
+
+        return DiagnosticResult(
+            status=status, verdict=verdict, verdicts=verdicts,
+            metrics=metrics, confidence=0.95, description=rationale, _rationale=full_rationale
+        )
+
+def audit(target: Any, 
+          ground_truth: Optional[Any] = None,
+          profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
+    """ Main auditing entry point. Uses standardized reference library. """
     metrics_data = {}
+    diameter = 1.0
     
-    # 1. Handle Dictionaries
+    def _get_diameter(pts: np.ndarray) -> float:
+        if pts is None or len(pts) < 2: return 1.0
+        diff = np.max(pts, axis=0) - np.min(pts, axis=0)
+        return float(np.sqrt(np.sum(diff**2)))
+
     if isinstance(target, dict):
         metrics_data = target
-    
-    # 2. Handle Experiments and Runs
     else:
-        # Import core objects to avoid circularity
-        from ..core.experiment import experiment
-        from ..core.run import Run
-        from .. import metrics as mb_metrics
-        
-        pop_objs = None
-        prob = None
-
-        if isinstance(target, experiment):
-            if not target.runs:
-                return PerformanceAuditor.audit({}) # Undefined
+        pop_objs, prob = None, None
+        if hasattr(target, 'last_pop'):
             pop_objs = target.last_pop.objectives
-            prob = target.mop
-        elif isinstance(target, Run):
-            pop_objs = target.last_pop.objectives
-            prob = target.experiment.mop if target.experiment else None
+            if hasattr(target, 'mop'): prob = target.mop
+            elif hasattr(target, 'experiment') and target.experiment:
+                prob = getattr(target.experiment, 'mop', None)
+        elif isinstance(target, np.ndarray):
+            pop_objs = target
             
         if pop_objs is not None:
-             # Identify Ground Truth
-             pf = ground_truth
-             if pf is None and prob is not None:
-                 if hasattr(prob, 'pf'):
-                     pf = prob.pf()
-                 elif hasattr(prob, 'optimal_front'):
-                     pf = prob.optimal_front()
-             
-             if pf is not None:
-                  # Use public API for robust calculation
-                  metrics_data['gd'] = float(mb_metrics.gd(pop_objs, ref=pf))
-                  metrics_data['igd'] = float(mb_metrics.igd(pop_objs, ref=pf))
-                  try:
-                      metrics_data['h_rel'] = float(mb_metrics.hv(pop_objs, ref=pf))
-                  except:
-                      pass
-                      
-    return PerformanceAuditor.audit(metrics_data)
+            mop_name = prob.__class__.__name__ if prob else "Unknown"
+            pkg, baselines = _load_reference(mop_name)
+            
+            pf_raw = ground_truth
+            if pf_raw is None and prob is not None:
+                if hasattr(prob, 'pf'): pf_raw = prob.pf()
+                elif hasattr(prob, 'optimal_front'): pf_raw = prob.optimal_front()
+            
+            if pf_raw is not None:
+                diameter = _get_diameter(pf_raw)
+                n_raw = len(pop_objs)
+                K = _snap_to_grid(n_raw)
+                
+                # Strict: _resample_to_K will no longer upsample
+                pop_K = _resample_to_K(pop_objs, K)
+                
+                # Normalization
+                if pkg is not None: 
+                    ideal, nadir = pkg['ideal'], pkg['nadir']
+                    pf_norm = pkg['gt_norm']
+                else: 
+                    ideal, nadir = np.min(pf_raw, axis=0), np.max(pf_raw, axis=0)
+                    denom = nadir - ideal
+                    denom[denom == 0] = 1.0
+                    pf_norm = (pf_raw - ideal) / denom
+                
+                denom = nadir - ideal
+                denom[denom == 0] = 1.0
+                pop_norm = (pop_K - ideal) / denom
+                
+                metrics_data['mop_name'] = mop_name
+                metrics_data['n_raw'] = n_raw
+                metrics_data['K'] = K
+                metrics_data['M'] = pf_raw.shape[1]
+                
+                # 1. Purity (Normalized Space)
+                dist_matrix = cdist(pop_norm, pf_norm)
+                min_dists = np.min(dist_matrix, axis=1)
+                metrics_data['gd_p95'] = float(np.percentile(min_dists, 95))
+                metrics_data['min_dists'] = min_dists.tolist() 
+                
+                # 2. Coverage (Normalized Space)
+                gt_min_dists = np.min(dist_matrix, axis=0)
+                metrics_data['gt_min_dists'] = gt_min_dists.tolist() 
+                
+                # 3. Core Metrics (Normalized)
+                igd_raw = float(np.mean(gt_min_dists)) 
+                
+                from scipy.stats import wasserstein_distance
+                def _emd_avg(pts, ref_pts):
+                    M = pts.shape[1]
+                    return np.mean([wasserstein_distance(pts[:, m], ref_pts[:, m]) for m in range(M)])
+                
+                if pkg is not None and f"uni_{K}" in pkg:
+                    emd_uni_raw = _emd_avg(pop_norm, pkg[f"uni_{K}"])
+                else:
+                    emd_uni_raw = _emd_avg(pop_norm, pf_norm)
+                
+                # 3. Efficiency Mapping (Scientific Rigor: Fail-Closed)
+                metrics_data['igd_eff'] = np.inf 
+                metrics_data['emd_eff_uniform'] = np.inf
+
+                if baselines and str(K) in baselines['K_data']:
+                    bk = baselines['K_data'][str(K)]
+                    # Check for valid floors
+                    igd_f = bk.get('igd_floor', 0.0)
+                    emd_f = bk.get('emd_uni_floor', 0.0)
+                    
+                    if igd_f > 1e-12:
+                        metrics_data['igd_eff'] = igd_raw / igd_f
+                    if emd_f > 1e-12:
+                        metrics_data['emd_eff_uniform'] = emd_uni_raw / emd_f
+                else:
+                    # Missing baseline -> inf (FAIL), never 1.0
+                    pass 
+                
+                metrics_data['igd'], metrics_data['emd'] = igd_raw, emd_uni_raw
+                
+    return PerformanceAuditor.audit(metrics_data, profile=profile, diameter=diameter)

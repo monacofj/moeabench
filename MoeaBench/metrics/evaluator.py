@@ -410,6 +410,57 @@ def igd(exp, ref=None):
 
     return _calc_metric(exp, ref, GEN_igd, "IGD")
 
+def emd(exp, ref=None):
+    """
+    Computes the Earth Mover's Distance (Wasserstein) between population and reference.
+    For multivariate data, this implementation uses the average 1D Wasserstein distance 
+    per objective as a fast and robust distributional shift proxy.
+    """
+    if ref is None and hasattr(exp, 'optimal_front'):
+        try:
+            ref = exp.optimal_front()
+        except:
+            pass
+    
+    from scipy.stats import wasserstein_distance
+    
+    def _calc_emd_pair(pts, r_pts):
+        if pts is None or r_pts is None or len(pts) == 0 or len(r_pts) == 0:
+            return np.nan
+        M = pts.shape[1]
+        w_dists = []
+        for m in range(M):
+            d = wasserstein_distance(pts[:, m], r_pts[:, m])
+            w_dists.append(d)
+        
+        # DEBUG
+        # if np.mean(w_dists) > 0.01:
+        #    print(f"DEBUG EMD: M={M}, Dists={w_dists}")
+        #    print(f"PTS Shape: {pts.shape}, REF Shape: {r_pts.shape}")
+        return np.mean(w_dists)
+
+    F_GENs, Fs, source_name, n_runs = _extract_data(exp)
+    ref_front = get_reference_front(ref, Fs)
+    
+    # DEBUG
+    print(f"DEBUG: ref_front shape: {ref_front.shape if ref_front is not None else 'None'}")
+    
+    if ref_front is None:
+        return MetricMatrix(np.full((1, n_runs), np.nan), "EMD")
+
+    max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
+    mat = np.full((max_gens, n_runs), np.nan)
+    
+    for r_idx, f_gen in enumerate(F_GENs):
+        values = []
+        for g_pop in f_gen:
+            values.append(_calc_emd_pair(g_pop, ref_front))
+        
+        length = min(len(values), max_gens)
+        mat[:length, r_idx] = values[:length]
+        
+    return MetricMatrix(mat, "EMD", source_name=source_name)
+
 def igdplus(exp, ref=None):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:

@@ -40,12 +40,17 @@ if PROJ_ROOT not in sys.path:
 
 from MoeaBench.metrics.GEN_hypervolume import GEN_hypervolume
 from MoeaBench.metrics.GEN_igd import GEN_igd
+from MoeaBench.clinic import get_floor
+
 
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
 BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.8.0.csv")
 OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.8.0.html")
+
+# Diagnostic Parameters (to match auditor.py)
+GEOMETRY_EFF = 10.0
 
 def generate_visual_report():
     if not os.path.exists(BASELINE_FILE):
@@ -81,12 +86,14 @@ def generate_visual_report():
         ".nowrap { white-space: nowrap; }",
         "tr:last-child td { border-bottom: none; }",
         "tr:hover td { background-color: #f8fafc; }",
-        ".diag-badge { padding: 3px 8px; border-radius: 999px; font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; display: inline-block; margin-bottom: 4px; }",
-        ".diag-optimal { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }",
+        ".diag-badge { padding: 3px 8px; border-radius: 4px; font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; display: inline-block; margin-bottom: 4px; margin-right: 4px; }",
+        ".diag-optimal { background: #dbfcfe; color: #0284c7; border: 1px solid #bae6fd; }", # Blue/Cyan for Geometry Ideal
         ".diag-failure { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }",
         ".diag-warning { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }",
         ".diag-shadow { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }",
-        ".diag-rationale { font-size: 0.8em; color: #64748b; font-style: italic; display: block; line-height: 1.3; }",
+        ".verdict-pass { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }", # Green for PASS
+        ".verdict-fail { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }", # Red for FAIL
+        ".diag-rationale { font-size: 0.8em; color: #64748b; font-style: italic; display: block; line-height: 1.3; margin-top: 4px; }",
         "code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: #0f172a; }",
         "ul { padding-left: 20px; }",
         "li { margin-bottom: 10px; }",
@@ -108,7 +115,7 @@ def generate_visual_report():
         "<li><b>Objective Space:</b> All problems were configured with <code>M=3</code> objectives for volumetric analysis.</li>",
         "<li><b>Normalization Strategy:</b> We enforce <b>Strict Theoretical Normalization</b>. The [0, 1] range is mapped exclusively from the theoretical <i>Ideal</i> and <i>Nadir</i> points of the Ground Truth, not from observed data.</li>",
         "</ul>",
-
+        
         "<h2>2. Metric Glossary & Interpretation</h2>",
         "<ul>",
         "<li><b>IGD (Inverted Generational Distance):</b> Measures both convergence (proximity) and diversity (spread). <i>Lower is strictly better.</i></li>",
@@ -119,7 +126,7 @@ def generate_visual_report():
         "<li><b>T-conv (Stabilization):</b> The generation where the algorithm reaches a stable state (within 5% of its final IGD value).</li>",
         "<li><b>Time (s):</b> Average wall-clock execution time per run on the reference hardware.</li>",
         "</ul>",
-
+        
         "<div class='note-box'>",
         "<strong>Scientific Note: The Discretization Effect & Negative H_diff</strong><br>",
         "In cases of near-perfect convergence, you may observe an H_rel exceeding 100%.<br>",
@@ -157,12 +164,15 @@ def generate_visual_report():
             nadir = np.array([row0['Nadir_1'], row0['Nadir_2'], row0['Nadir_3']])
             hv_opt = row0['HV_opt']
 
-        # Layout: 1 row, 2 columns (3D Scatter Dominant)
+        # Layout: 2 rows (3D + Convergence | CDF Analysis)
         fig = make_subplots(
-            rows=1, cols=2,
-            column_widths=[0.75, 0.25],
-            specs=[[{'type': 'scene'}, {'type': 'xy', 'secondary_y': True}]],
-            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & H_rel)")
+            rows=2, cols=2,
+            column_widths=[0.6, 0.4],
+            row_heights=[0.6, 0.4],
+            specs=[[{'type': 'scene', 'rowspan': 2}, {'type': 'xy', 'secondary_y': True}],
+                   [None, {'type': 'xy'}]],
+            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History", 
+                            "Validation: Distance-to-GT CDF (Density)")
         )
 
         # 1. Add Ground Truth to 3D plot (Lowest Priority, subtle)
@@ -178,6 +188,7 @@ def generate_visual_report():
                         opacity=0.4
                     ),
                     name='Ground Truth',
+                    legend='legend',
                     legendgroup='GT',
                     showlegend=True
                 ), row=1, col=1)
@@ -200,6 +211,9 @@ def generate_visual_report():
         # Store metrics for HTML table
         mop_metrics = []
 
+        # Import for CDF calculation
+        from scipy.spatial.distance import cdist
+
         for alg in algs:
             # Get stats from baseline df
             alg_stats = mop_df[(mop_df['Algorithm'] == alg) & (mop_df['Intensity'] == 'standard')]
@@ -213,6 +227,10 @@ def generate_visual_report():
             hv_rel_stat = 0.0
             time_avg = 0.0
             
+            # Get Clinical Floors (N=200 fixed for this report)
+            igd_floor = get_floor(mop_name, "igd_floor", 200, "p10")
+            emd_floor = get_floor(mop_name, "emd_floor", 200, "p10")
+
             if not alg_stats.empty:
                 row = alg_stats.iloc[0]
                 igd_mean = row['IGD_mean']
@@ -225,6 +243,7 @@ def generate_visual_report():
                 hv_ratio = row['H_ratio']
                 hv_rel_stat = row['H_rel']
                 time_avg = row['Time_sec']
+
             
             # Note: We re-calculate dynamic HV (rel) from the final snapshot (Gen 1000) for strictness
             hv_rel_final = 0.0
@@ -239,6 +258,43 @@ def generate_visual_report():
                     # Trim to 3 obj if needed
                     if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
                     
+                    if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
+                    
+                    # CRITICAL FIX: Filter Non-Dominated Solutions only!
+                    # Dominated points ruin IGD/GD and visual clarity.
+                    try:
+                        from MoeaBench.core.utils import is_non_dominated
+                        mask_nd = is_non_dominated(F_obs)
+                        F_obs = F_obs[mask_nd]
+                    except ImportError:
+                        # Fallback: Simple Cull
+                        is_efficient = np.ones(F_obs.shape[0], dtype=bool)
+                        for i, c in enumerate(F_obs):
+                            if is_efficient[i]:
+                                is_efficient[is_efficient] = np.any(F_obs[is_efficient] < c, axis=1) | np.any(F_obs[is_efficient] == c, axis=1)
+                                is_efficient[i] = True # Keep self (buggy logic, better use Pymoo/Safe impl)
+                        # Actually, let's just use the robust Pymoo one if possible or a safe verified snippet
+                        # To be safe and minimal:
+                        def simple_cull(pts):
+                            is_eff = np.ones(len(pts), dtype=bool)
+                            for i, p in enumerate(pts):
+                                if is_eff[i]:
+                                    # If p is dominated by any other point, kill it.
+                                    # Dominated means: other <= p AND other != p
+                                    # We use strict dominance for typical cases.
+                                    # Fast vectorized check against current set?
+                                    pass # Too complex for inline.
+                            return pts
+                        
+                        # Better Plan: Use the one from calibration logic if available.
+                        # Assuming MoeaBench/core/utils exists as seen in other files?
+                        # I'll try-except Pymoo which is definitely there (used for IGD).
+                        from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+                        nds = NonDominatedSorting()
+                        fronts = nds.do(F_obs)
+                        if len(fronts) > 0:
+                            F_obs = F_obs[fronts[0]]
+
                     # Micro-Jitter to avoid perfect occlusion (e.g. DTLZ2)
                     jitter_scale = 0.005
                     F_jitter = F_obs + np.random.normal(0, jitter_scale, F_obs.shape)
@@ -258,9 +314,140 @@ def generate_visual_report():
                             opacity=0.6 # Translucency for density check
                         ),
                         name=f'{alg} (Final){tag_warning}',
+                        legend='legend',
                         legendgroup=alg,
                         showlegend=True
                     ), row=1, col=1)
+
+                    if F_opt is not None:
+                        # 2. Use Auditor to get Standardized Metrics and Distributions
+                        from MoeaBench.diagnostics.auditor import audit
+                        diag_res = audit(F_obs, ground_truth=F_opt)
+                        
+                        min_dists = np.array(diag_res.metrics['min_dists'])
+                        gt_min_dists = np.array(diag_res.metrics['gt_min_dists'])
+                        
+                        # A. 3D Coverage Heatmap (Gap Map)
+                        # We plot GT points colored by distance to nearest solution
+                        fig.add_trace(go.Scatter3d(
+                            x=F_opt[:,0], y=F_opt[:,1], z=F_opt[:,2],
+                            mode='markers',
+                            marker=dict(
+                                size=2.5,
+                                color=gt_min_dists,
+                                colorscale='Reds',
+                                cmin=0, cmax=GEOMETRY_EFF * igd_floor if igd_floor > 0 else 0.05,
+                                opacity=0.8,
+                                showscale=False
+                            ),
+                            name=f'Gap Map ({alg})',
+                            legend='legend',
+                            legendgroup=alg,
+                            visible='legendonly', # Hidden by default to keep 3D clean
+                            showlegend=True
+                        ), row=1, col=1)
+
+                        # B. CDF Analysis trace
+                        min_dists.sort()
+                        y_cdf = np.arange(len(min_dists)) / float(len(min_dists))
+                        
+                        fig.add_trace(go.Scatter(
+                            x=min_dists, y=y_cdf,
+                            mode='lines',
+                            line=dict(color=colors_solid.get(alg, 'black'), width=2),
+                            name=f'{alg}',
+                            legend='legend3',
+                            legendgroup=alg,
+                            showlegend=True,
+                            hoverinfo='x+y+name'
+                        ), row=2, col=2)
+                        
+                        # Add Decision Threshold Lines (Scientific Reference)
+                        if alg == algs[0]:
+                             # Reference Step (Ideal)
+                             fig.add_trace(go.Scatter(
+                                x=[0, 0, 0.1], y=[0, 1, 1],
+                                mode='lines',
+                                line=dict(color='#475569', dash='dot', width=1),
+                                name='Ideal (GT)',
+                                legend='legend3',
+                                legendgroup='GT',
+                                showlegend=True,
+                                hoverinfo='skip'
+                             ), row=2, col=2)
+
+                             # 95% Population Fraction Base Line (Reference)
+                             fig.add_trace(go.Scatter(
+                                x=[0, np.max(min_dists if 'min_dists' in locals() else [1.0])*1.5], y=[0.95, 0.95],
+                                mode='lines',
+                                line=dict(color='#64748b', dash='dot', width=0.8),
+                                name='95% Target',
+                                legendgroup='Threshold',
+                                showlegend=False,
+                                hoverinfo='skip'
+                             ), row=2, col=2)
+                        
+                             from MoeaBench.diagnostics.enums import DiagnosticProfile
+                             
+                             diff = nadir - ideal
+                             diameter = float(np.sqrt(np.sum(diff**2)))
+                             
+                             # Profile Color Mapping
+                             profile_colors = {
+                                 'RESEARCH': '#8b5cf6',
+                                 'STANDARD': '#ef4444',
+                                 'INDUSTRY': '#f59e0b',
+                                 'EXPLORATORY': '#94a3b8'
+                             }
+                             
+                             # Clinical Efficiency Thresholds
+                             # Research: 1.1x Floor, Standard: 1.5x Floor
+                             MAX_EFF = {
+                                'RESEARCH': 1.10,
+                                'STANDARD': 1.50,
+                                'INDUSTRY': 2.00,
+                                'EXPLORATORY': 5.00
+                             }
+
+                             for p in DiagnosticProfile:
+                                 p_color = profile_colors.get(p.name, '#000000')
+                                 target_eff = MAX_EFF.get(p.name, 5.0)
+                                 
+                                 # Calculate line position: Eff * Floor
+                                 # We use IGD Floor as primary proxy for "distance to GT"
+                                 # But CDF x-axis is Euclidean Distance (nearest neighbor).
+                                 # IGD is average NN distance. So IGD Floor is the best proxy for "Expected NN Dist".
+                                 
+                                 if igd_floor > 1e-9:
+                                     thr_val = target_eff * igd_floor
+                                 else:
+                                     # Fallback to diameter heuristic if no baseline
+                                     thr_val = (p.value / 100.0) * diameter
+
+                                 # Vertical Reference (GD Bound)
+                                 fig.add_trace(go.Scatter(
+                                    x=[thr_val, thr_val], y=[0, 1],
+                                    mode='lines',
+                                    line=dict(color=p_color, dash='dash', width=1.2),
+                                    name=f'{p.name} Limit',
+                                    legend='legend4',
+                                    legendgroup='Threshold',
+                                    showlegend=True,
+                                    hoverinfo='name+x'
+                                 ), row=2, col=2)
+
+                                 # Matching Horizontal (at 0.95)
+                                 fig.add_trace(go.Scatter(
+                                    x=[0, thr_val], y=[0.95, 0.95],
+                                    mode='lines',
+                                    line=dict(color=p_color, dash='dash', width=1.2),
+                                    name=f'{p.name} Target',
+                                    legendgroup='Threshold',
+                                    showlegend=False,
+                                    hoverinfo='skip'
+                                 ), row=2, col=2)
+
+
                 except Exception as e:
                     print(f"      ERROR adding {alg} 3D trace: {e}")
 
@@ -281,6 +468,17 @@ def generate_visual_report():
                 if os.path.exists(snap_file):
                     F_snap = pd.read_csv(snap_file).values
                     if F_snap.shape[1] > 3: F_snap = F_snap[:, :3]
+                    
+                    # CRITICAL FIX: Filter Snapshots too
+                    try:
+                        from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+                        if len(F_snap) > 0:
+                            nds = NonDominatedSorting()
+                            fronts = nds.do(F_snap)
+                            if len(fronts) > 0:
+                                F_snap = F_snap[fronts[0]]
+                    except Exception:
+                        pass # If NDS fails, use raw (better than crash)
                     
                     igd = float(metric_igd.do(F_snap)) if metric_igd else 0
                     
@@ -318,49 +516,51 @@ def generate_visual_report():
                         t_conv = str(gens[g_idx])
                         break
                 
-                # AI Diagnostic Audit
+                # Multi-Profile Diagnosis Matrix
                 import MoeaBench as mb
-                diag_metrics = {
-                    'gd': float(gd_mean),
-                    'igd': float(igd_mean),
-                    'h_rel': float(hv_rel_stat),
-                    'emd': emd_val
-                }
-                diagnosis = mb.diagnostics.audit(diag_metrics)
-                diag_status = diagnosis.status.name
-                diag_rationale = diagnosis.rationale()
+                from MoeaBench.diagnostics.enums import DiagnosticProfile
                 
-                # Map status to CSS class
-                status_name = diagnosis.status.name
-                if status_name in ["IDEAL_FRONT", "SUPER_SATURATION"]:
-                    diag_class = "diag-optimal"
-                elif status_name in ["COLLAPSED_FRONT", "SEARCH_FAILURE"]:
-                    diag_class = "diag-failure"
-                elif status_name == "UNKNOWN":
-                    diag_class = "diag-shadow" 
-                else: 
-                    # BIASED, GAPPED, NOISY, DISTORTED, SHIFTED -> Warning
-                    diag_class = "diag-warning"
-            else:
-                diag_status = "N/A"
-                diag_rationale = "No metrics available."
-                diag_class = "diag-shadow"
-            
-            mop_metrics.append({
-                "alg": alg,
-                "igd": f"{igd_mean:.4e} &plusmn; {igd_std:.1e}",
-                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
-                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
-                "emd": f"{emd_val:.4f}",
-                "h_raw": f"{hv_raw:.4f}",
-                "h_ratio": f"{hv_ratio:.4f}",
-                "h_rel": f"{hv_rel_stat * 100:.2f}%", 
-                "time": f"{time_avg:.2f}",
-                "t_conv": t_conv,
-                "diag_status": diag_status,
-                "diag_rationale": diag_rationale,
-                "diag_class": diag_class
-            })
+                multi_diag = {}
+                for p in DiagnosticProfile:
+                    d = mb.diagnostics.audit({'gd': float(gd_mean), 'igd': float(igd_mean), 'emd': emd_val, 'h_rel': float(hv_rel_stat), 'mop_name': mop_name, 'n': 200}, profile=p)
+                    
+                    # Style mapping for STATUS (Geometry)
+                    s_name = d.status.name
+                    if s_name in ["IDEAL_FRONT", "SUPER_SATURATION"]: d_cls = "diag-optimal"
+                    elif s_name == "SEARCH_FAILURE": d_cls = "diag-failure" # ONLY Search Failure is Red
+                    elif s_name == "UNKNOWN": d_cls = "diag-shadow" 
+                    else: d_cls = "diag-warning" # Distorted, Shifted, Noisy, Gapped, Collapsed = Warning (Yellow)
+                    
+                    # Style mapping for VERDICT (Certification)
+                    v_name = d.verdict 
+                    v_cls = "verdict-pass" if v_name == "PASS" else "verdict-fail"
+                    
+                    multi_diag[p.name] = {
+                        "status": s_name, 
+                        "status_cls": d_cls,
+                        "verdict": v_name,
+                        "verdict_cls": v_cls,
+                        "description": d.description,
+                        "metrics_summary": f"IGD_eff={d.metrics.get('igd_eff', 0):.2f}x, EMD_eff={d.metrics.get('emd_eff', 0):.2f}x"
+                    }
+
+                # Calculate clinical efficiency for display
+                igd_eff_show = igd_mean / igd_floor if igd_floor > 1e-9 else 0
+                emd_eff_show = emd_val / emd_floor if emd_floor > 1e-9 else 0
+
+                mop_metrics.append({
+                    "alg": alg,
+                    "igd": f"{igd_mean:.4f} (Eff: {igd_eff_show:.2f}x)",
+                    "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
+                    "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
+                    "emd": f"{emd_val:.4f} (Eff: {emd_eff_show:.2f}x)",
+                    "h_raw": f"{hv_raw:.4f}",
+                    "h_ratio": f"{hv_ratio:.4f}",
+                    "h_rel": f"{hv_rel_stat * 100:.2f}%", 
+                    "time": f"{time_avg:.2f}",
+                    "t_conv": t_conv,
+                    "multi_diag": multi_diag
+                })
 
             if gens:
                 print(f"    - Trace: {alg} Convergence Lines")
@@ -375,9 +575,10 @@ def generate_visual_report():
                             color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
                             line=dict(width=0) # Final Zen: No border
                         ),
-                        name=f'{alg} IGD',
+                        name=f'{alg}',
+                        legend='legend2',
                         legendgroup=alg,
-                        showlegend=False
+                        showlegend=True
                     ), row=1, col=2)
                     
                     # Plot HV Ratio (Secondary Y)
@@ -391,16 +592,17 @@ def generate_visual_report():
                             color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
                             line=dict(width=0) # Final Zen: No border
                         ),
-                        name=f'{alg} HV %',
+                        name=f'{alg} HV%',
+                        legend='legend2',
                         legendgroup=alg,
-                        showlegend=False
+                        showlegend=True
                     ), row=1, col=2, secondary_y=True)
                 except Exception as e:
                     print(f"      ERROR adding {alg} convergence traces: {e}")
-
+ 
         # Clinical 3D Composition
         fig.update_layout(
-            height=850,
+            height=900,
             template='plotly_white',
             dragmode='turntable',
             scene=dict(
@@ -408,13 +610,38 @@ def generate_visual_report():
                 yaxis=dict(title='f2', range=[0, 1.1*nadir[1]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
                 zaxis=dict(title='f3', range=[0, 1.1*nadir[2]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
                 camera=dict(eye=dict(x=1.7, y=1.7, z=1.5)),
-                aspectmode='cube'
+                aspectmode='cube',
+                domain=dict(x=[0, 0.6], y=[0, 1])
             ),
-            margin=dict(l=0, r=0, b=0, t=60)
+            margin=dict(l=0, r=20, b=0, t=60),
+            legend=dict(
+                orientation="v", yanchor="top", y=0.98, xanchor="left", x=0.02,
+                bgcolor="rgba(255,255,255,0.8)", bordercolor="#e2e8f0", borderwidth=1,
+                font=dict(size=10), tracegroupgap=5
+            ),
+            legend2=dict(
+                orientation="v", yanchor="top", y=0.98, xanchor="right", x=0.98,
+                bgcolor="rgba(255,255,255,0.8)", bordercolor="#e2e8f0", borderwidth=1,
+                font=dict(size=10), tracegroupgap=5
+            ),
+            legend3=dict(
+                orientation="v", yanchor="top", y=0.48, xanchor="right", x=0.98,
+                bgcolor="rgba(255,255,255,0.8)", bordercolor="#e2e8f0", borderwidth=1,
+                font=dict(size=10), tracegroupgap=5, title=dict(text="Algorithms", font=dict(size=11, weight='bold'))
+            ),
+            legend4=dict(
+                orientation="v", yanchor="top", y=0.48, xanchor="left", x=0.62,
+                bgcolor="rgba(255,255,255,0.8)", bordercolor="#e2e8f0", borderwidth=1,
+                font=dict(size=10), tracegroupgap=5, title=dict(text="Audit Tiers", font=dict(size=11, weight='bold'))
+            )
         )
         fig.update_yaxes(title_text="IGD (Log)", secondary_y=False, row=1, col=2, type="log", gridcolor="#f8fafc")
         fig.update_yaxes(title_text="H_rel %", secondary_y=True, row=1, col=2, range=[0, 115], showgrid=False)
         fig.update_xaxes(title_text="Generations", row=1, col=2, gridcolor="#f8fafc")
+
+        # CDF Axis
+        fig.update_xaxes(title_text="Dist to GT (Euclidean)", row=2, col=2, gridcolor="#f8fafc")
+        fig.update_yaxes(title_text="CDF (Frac of Pop)", row=2, col=2, range=[0, 1.05], gridcolor="#f8fafc")
 
         # Convert to HTML
         div = fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False)
@@ -422,8 +649,8 @@ def generate_visual_report():
         html_content.append(f"<div class='mop-section'>")
         html_content.append(f"<h2>{mop_name} Benchmark Analysis</h2>")
         
-        # Build metrics table with optimized column widths
-        table = ["<table>",
+        # 1. Build numerical metrics table
+        metrics_table = ["<table>",
                  "<colgroup>",
                  "<col style='width: 90px'>",  # Alg
                  "<col style='width: 170px'>", # IGD
@@ -435,43 +662,69 @@ def generate_visual_report():
                  "<col style='width: 80px'>",  # H_rel
                  "<col style='width: 80px'>",  # Time
                  "<col style='width: 90px'>",  # Stabil
-                 "<col style='width: auto'>",  # AI Diagnosis
                  "</colgroup>",
                  "<tr>",
                  "<th>Algorithm</th>",
                  "<th>IGD (Mean &plusmn; Std)</th>",
                  "<th>GD (Mean &plusmn; Std)</th>",
                  "<th>SP (Mean &plusmn; Std)</th>",
-                 "<th>EMD</th>",
+                 "<th>EMD (Wasserstein)</th>",
                  "<th>H_raw</th>",
                  "<th>H_ratio</th>",
                  "<th>H_rel</th>",
                  "<th>Time(s)</th>",
-                 "<th>Stabil.</th>",
-                 "<th>AI Diagnosis (Pathology)</th></tr>"]
+                 "<th>Stabil.</th></tr>"]
         
         for m in mop_metrics:
-            table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
-            table.append(f"<td class='nowrap'>{m['igd']}</td>")
-            table.append(f"<td class='nowrap'>{m['gd']}</td>")
-            table.append(f"<td class='nowrap'>{m['sp']}</td>")
-            table.append(f"<td class='nowrap'>{m['emd']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_raw']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_ratio']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_rel']}</td>")
-            table.append(f"<td class='nowrap'>{m['time']}</td>")
-            table.append(f"<td class='nowrap'>Gen {m['t_conv']}</td>")
-            table.append(f"<td><span class='diag-badge {m['diag_class']}'>{m['diag_status']}</span><br><span class='diag-rationale'>{m['diag_rationale']}</span></td></tr>")
-        table.append("</table>")
+            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['igd']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['gd']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['sp']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['emd']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['h_raw']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['h_ratio']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['h_rel']}</td>")
+            metrics_table.append(f"<td class='nowrap'>{m['time']}</td>")
+            metrics_table.append(f"<td class='nowrap'>Gen {m['t_conv']}</td></tr>")
+        metrics_table.append("</table>")
+
+        # 2. Build Certification Matrix table
+        matrix_table = ["<h3>Certification & Pathology Matrix</h3>",
+                        "<table>",
+                        "<tr><th>Algorithm</th>",
+                        "<th>Geometry Status</th>"] # New Column
+        for p_name in ["EXPLORATORY", "INDUSTRY", "STANDARD", "RESEARCH"]:
+            matrix_table.append(f"<th>{p_name} </th>")
+        matrix_table.append("</tr>")
+
+        for m in mop_metrics:
+            matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
+            
+            # Extract Status from EXPLORATORY (assumed stable across profiles)
+            base_diag = m['multi_diag'].get("EXPLORATORY", {"status": "N/A", "status_cls": "diag-shadow", "description": ""})
+            matrix_table.append(f"<td><span class='diag-badge {base_diag['status_cls']}'>{base_diag['status']}</span><br><span class='diag-rationale' style='font-weight:600'>{base_diag['description']}</span></td>")
+            
+            for p_name in ["EXPLORATORY", "INDUSTRY", "STANDARD", "RESEARCH"]:
+                d = m['multi_diag'].get(p_name, {"status": "N/A", "status_cls": "diag-shadow", "verdict": "N/A", "verdict_cls": "diag-shadow", "metrics_summary": ""})
+                # Show only Verdict Badge + Metrics/Reason
+                matrix_table.append(f"<td><span class='diag-badge {d['verdict_cls']}'>{d['verdict']}</span><br><span class='diag-rationale'>{d['metrics_summary']}</span></td>")
+            matrix_table.append("</tr>")
+        matrix_table.append("</table>")
         
-        html_content.append("".join(table))
+        html_content.append("".join(metrics_table))
         
         # Formatting bounds as readable tuples
         ideal_str = "(" + ", ".join([f"{v:.3f}" for v in ideal]) + ")"
         nadir_str = "(" + ", ".join([f"{v:.3f}" for v in nadir]) + ")"
         
         html_content.append(f"<div class='metrics-footer'><strong>Theoretical Reference:</strong><br>Ideal Point: {ideal_str}<br>Nadir Point: {nadir_str}<br>Sampled Reference HV: {hv_opt:.6f}</div>")
+        
+        # Primary Visualization
         html_content.append(div)
+        
+        # Matrix at bottom
+        html_content.append("".join(matrix_table))
+        
         html_content.append(f"</div>")
 
     html_content.append("</body></html>")

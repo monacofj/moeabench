@@ -8,36 +8,39 @@ We identified three primary binary states for each metric: **Good (B)** vs. **Ba
 ## Decision
 We will implement a comprehensive diagnostic system that maps *every* possible combination of these three metrics to a specific, scientifically grounded diagnosis. This moves the framework from simple "pass/fail" reporting to a nuanced expert system capable of identifying subtle behaviors like "Distribution Bias" or "Shadow Fronts."
 
-## The Pathology Truth Table (v0.8.0)
+## The Certification Framework (v0.9)
 
-We consider the following metrics:
-1.  **Convergence (GD)**: Is the population close to the true Pareto Front?
-2.  **Coverage (IGD)**: Does the population represent the entire Pareto Front?
-3.  **Topology (EMD)**: Does the shape/distribution match the Ground Truth?
+In v0.9, we transition from absolute values to scale-invariant metrics normalized by the **Characteristic Diameter ($D$)** of the reference front. $D$ is defined as the bounding box diagonal of the Ground Truth.
 
-**Legend**: L = Low/Good, H = High/Bad.
+Metrics are normalized as: $nMetric = Metric_{absolute} / D$.
 
-| GD | IGD | EMD | Diagnosis | Mathematical Signature |
+### Quality Profiles (Precision Tiers)
+Thresholds are defined as fractions of $D$.
+
+| Profile | nGD (p) | nIGD (2p) | nEMD (3p) | Clinical Utility |
+| :--- | :---: | :---: | :---: | :--- |
+| **EXPLORATORY** | 10.0% | 20.0% | 30.0% | "Legacy v0.8.0 safety net / Early exploration." |
+| **INDUSTRY** | 1.0% | 2.0% | 3.0% | "Good enough for decision making." |
+| **STANDARD** | 0.5% | 1.0% | 1.5% | "Standard benchmarking quality." |
+| **RESEARCH** | 0.2% | 0.5% | 0.8% | "State-of-the-art / Publication quality." |
+
+## The Pathology Truth Table
+
+The logical interaction remains constant across all profiles. **L** = Low/Good (below threshold), **H** = High/Bad (above threshold).
+
+| nGD | nIGD | nEMD | Diagnosis | Mathematical Signature |
 | :---: | :---: | :---: | :--- | :--- |
 | **L** | **L** | **L** | **IDEAL_FRONT** | Hit the target, covered it, correct density. |
 | **L** | **L** | **H** | **BIASED_SPREAD** | Converged & Covered, but clustered/distorted. |
 | **L** | **H** | **L** | **GAPPED_COVERAGE** | Local correctness, but global holes (Swiss Cheese). |
 | **L** | **H** | **H** | **COLLAPSED_FRONT** | Degeneracy. Collapsed to a point/line. |
-| **H** | **L** | **L** | **NOISY_POPULATION** | Good core coverage, but low purity (many dominated points). |
+| **H** | **L** | **L** | **NOISY_POPULATION** | Good core coverage, but many dominated points remain. |
 | **H** | **L** | **H** | **DISTORTED_COVERAGE** | Covers the area, but with noise and wrong shape. |
 | **H** | **H** | **L** | **SHIFTED_FRONT** | Right shape, wrong location (Local Optimum Trap). |
 | **H** | **H** | **H** | **SEARCH_FAILURE** | Complete failure to locate or cover the front. |
 
-## Implementation Details
-
-### Thresholding
-To convert continuous metrics into binary "Good/Bad" states, we use adaptive thresholds calibrated for engineering practicality:
-*   **Good GD**: $< 0.1$ (Relaxed from 1e-3 for robust acceptance)
-*   **Good IGD**: $< 0.1$ (Standard coverage)
-*   **Good EMD**: $< 0.12$ (Visual tolerance threshold)
-
-### The "Impossible" States Resolution
-Previous versions considered (High GD, Low IGD) as a contradiction. In v0.8.0, this is correctly reclassified as **Noisy Population**: the algorithm *did* cover the front (hence Low IGD), but the presence of many outliers inflates the average distance (High GD).
+### The Statistical Floor (Future)
+When the population size $N$ is small, $nIGD$ and $nEMD$ have a non-zero lower bound due to sampling noise. Future versions will adjust thresholds dynamically if the theoretical "Sampling Noise Floor" is higher than the profile threshold.
 
 ## Consequences
 *   **Positive**: Eliminates confusing "Contradiction" messages.
