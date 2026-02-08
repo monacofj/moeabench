@@ -33,10 +33,17 @@ class NSGA2deap(BaseMoea):
 
     def _setup_deap(self):
         """Configures the DEAP toolbox and creator."""
-        if not hasattr(creator, "FitnessMin"):
-            creator.create("FitnessMin", base.Fitness, weights=(-1.0,) * self.get_M())
-        if not hasattr(creator, "Individual"):
-            creator.create("Individual", array.array, typecode='d', fitness=creator.FitnessMin)   
+        # DEAP's creator is module-global; using fixed names breaks when tests run multiple
+        # problems with different objective counts in the same process.
+        M = int(self.get_M())
+        fitness_name = f"FitnessMin_{M}"
+        individual_name = f"Individual_{M}"
+        if not hasattr(creator, fitness_name):
+            creator.create(fitness_name, base.Fitness, weights=(-1.0,) * M)
+        FitnessCls = getattr(creator, fitness_name)
+        if not hasattr(creator, individual_name):
+            creator.create(individual_name, array.array, typecode='d', fitness=FitnessCls)
+        IndividualCls = getattr(creator, individual_name)
         
         if self.get_population() % 4 != 0:
             raise ValueError(
@@ -46,7 +53,7 @@ class NSGA2deap(BaseMoea):
 
         self.toolbox = base.Toolbox()
         self.toolbox.register("attr_float", self.uniform, 0, 1, self.get_N())
-        self.toolbox.register("individual", tools.initIterate, creator.Individual, self.toolbox.attr_float)
+        self.toolbox.register("individual", tools.initIterate, IndividualCls, self.toolbox.attr_float)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register("evaluate", self._evaluate_ind)
         

@@ -14,6 +14,8 @@ class DiagnosticStatus(Enum):
     SEARCH_FAILURE = auto()       # High nGD, High nIGD, High nEMD
     
     SUPER_SATURATION = auto()     # H_rel > 100%
+    UNDEFINED_BASELINE = auto()   # Missing/mismatched reference package
+    UNDEFINED_INPUT = auto()      # Invalid/unsupported input (e.g., dim mismatch)
     UNDEFINED = auto()            # Insufficient data
 
 class DiagnosticProfile(Enum):
@@ -21,7 +23,7 @@ class DiagnosticProfile(Enum):
     Precision tiers for algorithmic auditing.
     Values represent thresholds as % of the reference front diameter D.
     """
-    EXPLORATORY = 10.0 # Ultrapure tolerant (10% nGD, 20% nIGD, 30% nEMD)
-    INDUSTRY = 1.0    # Tolerant (1% nGD, 2% nIGD, 3% nEMD)
-    STANDARD = 0.5    # Balanced (0.5% nGD, 1% nIGD, 1.5% nEMD)
-    RESEARCH = 0.2    # Rigorous (0.2% nGD, 0.5% nIGD, 0.8% nEMD)
+    EXPLORATORY = 2.5
+    INDUSTRY = 1.7
+    STANDARD = 1.3
+    RESEARCH = 1.1

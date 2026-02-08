@@ -10,6 +10,7 @@ from scipy.cluster.vq import kmeans, vq
 from scipy.spatial.distance import cdist
 from scipy.stats import wasserstein_distance
 import logging
+import hashlib
 
 # Ensure Project Root is in path
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
@@ -22,6 +23,7 @@ from MoeaBench.mops import DPF1, DPF2, DPF3, DPF4, DPF5
 # Configuration
 K_GRID = [50, 100, 200, 400, 800]
 N_BOOTSTRAP = 200 # Sufficient for floors
+REFERENCE_SCHEMA_VERSION = "v2.0.0"
 DATA_DIR = os.path.join(PROJ_ROOT, "MoeaBench/diagnostics/resources/references")
 
 MOPS = [
@@ -109,15 +111,22 @@ def generate_reference_package(mop_cls):
     out_dir = os.path.join(DATA_DIR, mop_name)
     os.makedirs(out_dir, exist_ok=True)
     
+    gt_hash = hashlib.sha256(np.ascontiguousarray(gt_norm).tobytes()).hexdigest()
     pkg_data = {
         "gt_norm": gt_norm,
         "ideal": ideal,
-        "nadir": nadir
+        "nadir": nadir,
+        "schema_version": REFERENCE_SCHEMA_VERSION,
+        "gt_hash": gt_hash
     }
     
     baselines = {
         "mop": mop_name,
         "M": int(gt.shape[1]),
+        "schema_version": REFERENCE_SCHEMA_VERSION,
+        "normalizer": "ideal_nadir_minmax",
+        "gt_hash": gt_hash,
+        "metric_params": {"emd": "wasserstein_1d_avg"},
         "K_data": {}
     }
 
@@ -134,6 +143,7 @@ def generate_reference_package(mop_cls):
         # 4. Bootstrap Floors
         igd_samples = []
         emd_uni_samples = []
+        gd_p95_samples = []
         
         # Determine sampling size for bootstrap
         # If population is small, we can't do replace=False with K if K is too large.
@@ -157,12 +167,20 @@ def generate_reference_package(mop_cls):
             # EMD Uniform Floor
             emd_val = calculate_emd_1d_avg(sample, ref_uni)
             emd_uni_samples.append(emd_val)
+
+            # Robust Purity Floor (coverage-oriented, non-degenerate):
+            # Use GT->sample distances to avoid the trivial zero floor from sample->GT.
+            dists_gd = cdist(gt_norm, sample)
+            gd_p95_val = float(np.percentile(np.min(dists_gd, axis=1), 95))
+            gd_p95_samples.append(gd_p95_val)
             
         baselines["K_data"][str(K)] = {
             "igd_floor": float(np.median(igd_samples)),
             "igd_p10": float(np.percentile(igd_samples, 10)),
             "emd_uni_floor": float(np.median(emd_uni_samples)),
-            "emd_uni_p10": float(np.percentile(emd_uni_samples, 10))
+            "emd_uni_p10": float(np.percentile(emd_uni_samples, 10)),
+            "gd_p95_floor": float(np.median(gd_p95_samples)),
+            "gd_p95_p10": float(np.percentile(gd_p95_samples, 10))
         }
 
     # 5. Persist

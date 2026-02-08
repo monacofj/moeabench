@@ -8,11 +8,16 @@ import os
 from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
 from scipy.spatial.distance import cdist
+from scipy.stats import wasserstein_distance
 from .enums import DiagnosticStatus, DiagnosticProfile
 
 # Reference Data Configuration
 REF_DATA_DIR = os.path.join(os.path.dirname(__file__), "resources/references")
-K_GRID = [50, 100, 200, 400, 800]
+K_GRID = [50, 100, 150, 200, 300]
+
+# GT-only calibration (rand vs quasi-uniform) artifacts (per MOP).
+GT_CALIBRATION_JSON = "calibration.json"
+GT_CALIBRATION_PKG = "calibration_package.npz"
 
 def _load_reference(mop_name):
     """Loads standardized reference package and baselines."""
@@ -29,6 +34,30 @@ def _load_reference(mop_name):
             baselines = json.load(f)
         return pkg, baselines
     except:
+        return None, None
+
+def _load_gt_calibration(mop_name: str):
+    """
+    Loads GT-only calibration package for score-based auditing.
+
+    Returns:
+        (calib_json: dict|None, calib_pkg: np.load|None)
+    """
+    base_dir = os.path.join(REF_DATA_DIR, mop_name)
+    if not os.path.exists(base_dir):
+        return None, None
+
+    json_path = os.path.join(base_dir, GT_CALIBRATION_JSON)
+    pkg_path = os.path.join(base_dir, GT_CALIBRATION_PKG)
+    if not (os.path.exists(json_path) and os.path.exists(pkg_path)):
+        return None, None
+
+    try:
+        with open(json_path, "r") as f:
+            calib = json.load(f)
+        pkg = np.load(pkg_path)
+        return calib, pkg
+    except Exception:
         return None, None
 
 def _snap_to_grid(n):
@@ -58,6 +87,45 @@ def _resample_to_K(pop, K):
         idx = np.linspace(0, n-1, K).astype(int)
         return pop[idx]
 
+def _downsample_farthest_point(pts: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
+    """
+    Deterministic farthest-point downsampling (k-center style) to preserve coverage.
+    This is used only when |ND| > K and we must choose the evaluated set P_K.
+    """
+    n = len(pts)
+    if k >= n:
+        return pts
+    rng = np.random.default_rng(seed)
+    first = int(rng.integers(0, n))
+    chosen = [first]
+    min_d = cdist(pts, pts[[first]]).reshape(-1)
+    min_d[first] = 0.0
+    while len(chosen) < k:
+        nxt = int(np.argmax(min_d))
+        chosen.append(nxt)
+        d_new = cdist(pts, pts[[nxt]]).reshape(-1)
+        min_d = np.minimum(min_d, d_new)
+        min_d[nxt] = 0.0
+    return pts[np.array(chosen, dtype=int)]
+
+def _nn_dists(pts: np.ndarray) -> np.ndarray:
+    if len(pts) < 2:
+        return np.array([0.0])
+    d = cdist(pts, pts)
+    np.fill_diagonal(d, np.inf)
+    return np.min(d, axis=1)
+
+def _score_from_calibration(val: float, uni_p50: float, rand_p50: float) -> float:
+    """
+    Score in [0,1]: 0 ~ quasi-uniform-at-K, 1 ~ typical random-at-K.
+    Fail-closed: invalid calibration returns NaN and will trip baseline_ok=False.
+    """
+    denom = float(rand_p50) - float(uni_p50)
+    if not np.isfinite(denom) or denom <= 1e-12:
+        return float("nan")
+    x = (float(val) - float(uni_p50)) / denom
+    return float(np.clip(x, 0.0, 1.0))
+
 @dataclass
 class DiagnosticResult:
     """ Encapsulates the finding of an algorithmic audit. """
@@ -80,115 +148,89 @@ class PerformanceAuditor:
     def audit(metrics: Dict[str, float], 
               profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY,
               diameter: float = 1.0) -> DiagnosticResult:
-        
-        MAX_EFF = {
-            DiagnosticProfile.RESEARCH: 1.10,
-            DiagnosticProfile.STANDARD: 1.60,
-            DiagnosticProfile.INDUSTRY: 2.00,
-            DiagnosticProfile.EXPLORATORY: 5.00
+        # Interpretable profile thresholds on score_global (0=best-possible-at-K, 1=typical-random-at-K).
+        # These are "quartile-like" gates, not raw-distance magic numbers.
+        SCORE_THRESH = {
+            DiagnosticProfile.RESEARCH: 0.25,
+            DiagnosticProfile.STANDARD: 0.375,
+            DiagnosticProfile.INDUSTRY: 0.50,
+            DiagnosticProfile.EXPLORATORY: 0.75,
         }
 
-        # 1. Super-Saturation Check (Warning Only)
-        h_rel = metrics.get('h_rel', 0.0)
-        is_saturated = h_rel > 1.05
-        # We do NOT return early anymore. We just note it.
+        input_ok = bool(metrics.get("input_ok", True))
+        if not input_ok:
+            verdicts = {p.name: "FAIL" for p in DiagnosticProfile}
+            verdict = verdicts.get(profile.name, "FAIL")
+            reason = str(metrics.get("input_error", "Invalid input for audit."))
+            return DiagnosticResult(
+                status=DiagnosticStatus.UNDEFINED_INPUT,
+                verdict=verdict,
+                verdicts=verdicts,
+                metrics=metrics,
+                confidence=0.0,
+                description=reason,
+                _rationale=f"[{profile.name}] UNDEFINED_INPUT -> {verdict}. {reason}",
+            )
 
-        # 2. Metric Extraction (Fail-Closed Defaults)
-        # Default is infinity (worst possible), never 1.0
-        igd_eff = metrics.get('igd_eff', np.inf)
-        emd_eff_uniform = metrics.get('emd_eff_uniform', np.inf)
-        gd_p95 = metrics.get('gd_p95', np.inf)
-        
-        # 3. Geometry Status (Physical Layer)
-        # Convergence requires < 5x floor (stricter than 10x)
-        GEOMETRY_EFF = 5.0
-        
-        # Normalized diameter is sqrt(M)
-        norm_diameter = np.sqrt(metrics.get('M', 3))
-        GEO_PURITY_THR_NORM = 0.05 * norm_diameter
+        baseline_ok = bool(metrics.get("baseline_ok", False))
+        score_cov = float(metrics.get("score_cov", np.nan))
+        score_pure = float(metrics.get("score_pure", np.nan))
+        score_shape = float(metrics.get("score_shape", np.nan))
+        score_global = float(metrics.get("score_global", np.nan))
+        score_igd_mean = float(metrics.get("score_igd_mean", np.nan))
+        score_igd_p95 = float(metrics.get("score_igd_p95", np.nan))
 
-        GEO_IGD = igd_eff <= GEOMETRY_EFF
-        GEO_EMD = emd_eff_uniform <= GEOMETRY_EFF
-        GEO_PURITY = gd_p95 <= GEO_PURITY_THR_NORM
-        
-        status = DiagnosticStatus.SEARCH_FAILURE
-        rationale = ""
-        
-        if GEO_IGD: # Converged
-            if GEO_PURITY:
-                 if GEO_EMD:
-                      # Stricter Ideal Front Requirements
-                      if igd_eff < 1.3 and emd_eff_uniform < 1.5:
-                          status = DiagnosticStatus.IDEAL_FRONT
-                          rationale = "Ideal Front. Excellent convergence, purity, and topology."
-                      else:
-                          # It converged physically but isn't quite "Ideal"
-                          status = DiagnosticStatus.NOISY_POPULATION
-                          rationale = "Converged but efficiency sub-optimal (Noisy)."
-                 else:
-                      status = DiagnosticStatus.BIASED_SPREAD
-                      rationale = "Biased Spread. Converged and pure, but distribution is skewed."
-            else: # Bad Purity
-                 if GEO_EMD:
-                      status = DiagnosticStatus.NOISY_POPULATION
-                      rationale = "Noisy Population. Right shape but fuzzy (Low Purity)."
-                 else:
-                      status = DiagnosticStatus.DISTORTED_COVERAGE
-                      rationale = "Distorted Coverage. Roughly in place, but noisy and skewed."
-        else: # Not Converged
-             if GEO_EMD:
-                  status = DiagnosticStatus.SHIFTED_FRONT
-                  rationale = "Shifted Front. Good topology but displaced from GT."
-             else:
-                  if GEO_PURITY:
-                       status = DiagnosticStatus.COLLAPSED_FRONT
-                       rationale = "Collapsed Front. High purity but poor coverage."
-                  else:
-                       status = DiagnosticStatus.SEARCH_FAILURE
-                       rationale = "Search Failure. No resemblance to the Pareto Front."
+        # Status is diagnostic and profile-independent: "what happened with P?".
+        # It is intentionally based on calibrated scores, not raw-distance cutoffs.
+        if not baseline_ok or not np.isfinite(score_global):
+            status = DiagnosticStatus.UNDEFINED_BASELINE
+            rationale = "GT calibration unavailable or incompatible for this MOP/K."
+        else:
+            # IDEAL_FRONT: as good as the quasi-uniform-at-K reference (within the strictest tier).
+            if max(score_cov, score_pure, score_shape) <= SCORE_THRESH[DiagnosticProfile.RESEARCH]:
+                status = DiagnosticStatus.IDEAL_FRONT
+                rationale = "All calibrated components are within the strict (research) gate."
+            else:
+                comps = {"cov": score_cov, "pure": score_pure, "shape": score_shape}
+                dom = max(comps, key=lambda k: comps[k])
+                if dom == "cov":
+                    if score_shape > 0.50:
+                        status = DiagnosticStatus.COLLAPSED_FRONT
+                        rationale = "Coverage dominates and shape is very poor: collapse/degenerate support."
+                    elif score_igd_p95 >= score_igd_mean + 0.05:
+                        status = DiagnosticStatus.GAPPED_COVERAGE
+                        rationale = "Coverage dominates with heavy-tail GT->P distances: gaps in coverage."
+                    else:
+                        status = DiagnosticStatus.SHIFTED_FRONT
+                        rationale = "Coverage dominates without gap signature: systematic shift/under-coverage."
+                elif dom == "pure":
+                    status = DiagnosticStatus.NOISY_POPULATION
+                    rationale = "Purity dominates: outliers/noise in P even if coverage is acceptable."
+                else:
+                    # Shape dominates: geometry can look fine but distribution is biased/non-uniform at K.
+                    if score_cov <= 0.50 and score_pure <= 0.50:
+                        status = DiagnosticStatus.BIASED_SPREAD
+                        rationale = "Shape dominates with acceptable coverage/purity: biased/non-uniform spread."
+                    else:
+                        status = DiagnosticStatus.DISTORTED_COVERAGE
+                        rationale = "Shape dominates with other issues: distorted distribution and coverage."
 
-        # Override for Super-Saturation (if geometry is at least passable)
-        if is_saturated and status not in [DiagnosticStatus.SEARCH_FAILURE, DiagnosticStatus.COLLAPSED_FRONT]:
-             status = DiagnosticStatus.SUPER_SATURATION
-             rationale += " (Super-Saturation Detected)"
+                if score_global >= 0.99:
+                    status = DiagnosticStatus.SEARCH_FAILURE
+                    rationale = "All calibrated components are as bad as typical random-at-K."
 
-        # 4. Determine Verdicts
         verdicts = {}
         for p in DiagnosticProfile:
-            p_val = p.value / 100.0
-            p_cert_gd = gd_p95 <= (p_val * norm_diameter)
-            
-            p_eff = MAX_EFF.get(p, 5.0)
-            p_cert_igd = igd_eff <= p_eff
-            
-            # CRITICAL FIX: EMD check is mandatory for ALL profiles now
-            # Standard/Industry can tolerate more (e.g., 2.0x), but can't be infinite.
-            p_cert_emd = emd_eff_uniform <= p_eff
-            
+            thr = SCORE_THRESH[p]
             p_verdict = "FAIL"
-            
-            # Fail-Closed: If any metric is infinite, verdict is automatic FAIL
-            if np.isinf(igd_eff) or np.isinf(emd_eff_uniform):
-                p_verdict = "FAIL"
-            else:
-                if p == DiagnosticProfile.RESEARCH:
-                    if status in [DiagnosticStatus.IDEAL_FRONT, DiagnosticStatus.SUPER_SATURATION] and p_cert_igd and p_cert_emd and p_cert_gd:
-                         p_verdict = "PASS"
-                else: 
-                     # For others, we accept wider status but require metrics to pass limits
-                     if p_cert_igd and p_cert_emd and status not in [DiagnosticStatus.SEARCH_FAILURE, DiagnosticStatus.COLLAPSED_FRONT]:
-                         p_verdict = "PASS"
-            
+            if baseline_ok and np.isfinite(score_global):
+                if (score_global <= thr) and status not in {DiagnosticStatus.UNDEFINED_BASELINE, DiagnosticStatus.UNDEFINED_INPUT}:
+                    p_verdict = "PASS"
             verdicts[p.name] = p_verdict
 
         verdict = verdicts.get(profile.name, "FAIL")
-        metrics_str = f"IGD_eff={igd_eff:.2f}x, EMD_eff={emd_eff_uniform:.2f}x"
+        metrics_str = f"score_global={score_global:.2f}, cov={score_cov:.2f}, pure={score_pure:.2f}, shape={score_shape:.2f}"
         full_rationale = f"[{profile.name}] {status.name} -> {verdict}. {rationale} ({metrics_str})"
-
-        # Persist efficiencies for reporting
-        metrics['igd_eff'] = igd_eff
-        metrics['emd_eff_uniform'] = emd_eff_uniform
-        metrics['gd_p95_norm'] = gd_p95
 
         return DiagnosticResult(
             status=status, verdict=verdict, verdicts=verdicts,
@@ -220,6 +262,19 @@ def audit(target: Any,
             pop_objs = target
             
         if pop_objs is not None:
+            try:
+                from MoeaBench.core.utils import is_non_dominated
+                nd_mask = is_non_dominated(pop_objs)
+                pop_objs = pop_objs[nd_mask]
+            except Exception:
+                try:
+                    from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+                    fronts = NonDominatedSorting().do(pop_objs)
+                    if len(fronts) > 0:
+                        pop_objs = pop_objs[fronts[0]]
+                except Exception:
+                    pass
+
             mop_name = prob.__class__.__name__ if prob else "Unknown"
             pkg, baselines = _load_reference(mop_name)
             
@@ -229,18 +284,35 @@ def audit(target: Any,
                 elif hasattr(prob, 'optimal_front'): pf_raw = prob.optimal_front()
             
             if pf_raw is not None:
+                if pop_objs is None or pop_objs.ndim != 2:
+                    return PerformanceAuditor.audit(
+                        {"input_ok": False, "input_error": "Population objectives are missing or invalid."},
+                        profile=profile,
+                        diameter=diameter,
+                    )
+                if pop_objs.shape[1] != pf_raw.shape[1]:
+                    return PerformanceAuditor.audit(
+                        {
+                            "input_ok": False,
+                            "input_error": f"Dimension mismatch: pop M={pop_objs.shape[1]} vs GT M={pf_raw.shape[1]}",
+                            "mop_name": mop_name,
+                        },
+                        profile=profile,
+                        diameter=diameter,
+                    )
                 diameter = _get_diameter(pf_raw)
                 n_raw = len(pop_objs)
                 K = _snap_to_grid(n_raw)
                 
-                # Strict: _resample_to_K will no longer upsample
-                pop_K = _resample_to_K(pop_objs, K)
-                
                 # Normalization
-                if pkg is not None: 
-                    ideal, nadir = pkg['ideal'], pkg['nadir']
-                    pf_norm = pkg['gt_norm']
-                else: 
+                calib, calib_pkg = _load_gt_calibration(mop_name)
+                if calib_pkg is not None:
+                    ideal, nadir = calib_pkg["ideal"], calib_pkg["nadir"]
+                    pf_norm = calib_pkg["gt_norm"]
+                elif pkg is not None:
+                    ideal, nadir = pkg["ideal"], pkg["nadir"]
+                    pf_norm = pkg["gt_norm"]
+                else:
                     ideal, nadir = np.min(pf_raw, axis=0), np.max(pf_raw, axis=0)
                     denom = nadir - ideal
                     denom[denom == 0] = 1.0
@@ -248,54 +320,88 @@ def audit(target: Any,
                 
                 denom = nadir - ideal
                 denom[denom == 0] = 1.0
-                pop_norm = (pop_K - ideal) / denom
+                pop_norm_full = (pop_objs - ideal) / denom
+
+                # Strict: never upsample; choose evaluated P_K deterministically.
+                # Use farthest-point downsample for better geometry preservation than stride.
+                pop_norm = _downsample_farthest_point(pop_norm_full, K, seed=0)
                 
                 metrics_data['mop_name'] = mop_name
                 metrics_data['n_raw'] = n_raw
                 metrics_data['K'] = K
                 metrics_data['M'] = pf_raw.shape[1]
+                metrics_data['baseline_ok'] = False
                 
-                # 1. Purity (Normalized Space)
-                dist_matrix = cdist(pop_norm, pf_norm)
-                min_dists = np.min(dist_matrix, axis=1)
-                metrics_data['gd_p95'] = float(np.percentile(min_dists, 95))
-                metrics_data['min_dists'] = min_dists.tolist() 
-                
-                # 2. Coverage (Normalized Space)
-                gt_min_dists = np.min(dist_matrix, axis=0)
-                metrics_data['gt_min_dists'] = gt_min_dists.tolist() 
-                
-                # 3. Core Metrics (Normalized)
-                igd_raw = float(np.mean(gt_min_dists)) 
-                
-                from scipy.stats import wasserstein_distance
-                def _emd_avg(pts, ref_pts):
-                    M = pts.shape[1]
-                    return np.mean([wasserstein_distance(pts[:, m], ref_pts[:, m]) for m in range(M)])
-                
-                if pkg is not None and f"uni_{K}" in pkg:
-                    emd_uni_raw = _emd_avg(pop_norm, pkg[f"uni_{K}"])
-                else:
-                    emd_uni_raw = _emd_avg(pop_norm, pf_norm)
-                
-                # 3. Efficiency Mapping (Scientific Rigor: Fail-Closed)
-                metrics_data['igd_eff'] = np.inf 
-                metrics_data['emd_eff_uniform'] = np.inf
+                # Distances (normalized space): kept for report visualization.
+                d_p_to = np.min(cdist(pop_norm, pf_norm), axis=1)
+                d_gt_to = np.min(cdist(pf_norm, pop_norm), axis=1)
+                metrics_data["min_dists"] = d_p_to.tolist()
+                metrics_data["gt_min_dists"] = d_gt_to.tolist()
 
-                if baselines and str(K) in baselines['K_data']:
-                    bk = baselines['K_data'][str(K)]
-                    # Check for valid floors
-                    igd_f = bk.get('igd_floor', 0.0)
-                    emd_f = bk.get('emd_uni_floor', 0.0)
-                    
-                    if igd_f > 1e-12:
-                        metrics_data['igd_eff'] = igd_raw / igd_f
-                    if emd_f > 1e-12:
-                        metrics_data['emd_eff_uniform'] = emd_uni_raw / emd_f
-                else:
-                    # Missing baseline -> inf (FAIL), never 1.0
-                    pass 
-                
-                metrics_data['igd'], metrics_data['emd'] = igd_raw, emd_uni_raw
+                # Robust / component metrics (normalized).
+                igd_mean = float(np.mean(d_gt_to))
+                igd_p95 = float(np.percentile(d_gt_to, 95))
+                gd_p95 = float(np.percentile(d_p_to, 95))
+
+                metrics_data["igd_mean"] = igd_mean
+                metrics_data["igd_p95"] = igd_p95
+                metrics_data["gd_p95"] = gd_p95
+
+                # Score calibration (GT-only): rand vs quasi-uniform, same K.
+                metrics_data["score_global"] = np.nan
+                metrics_data["score_cov"] = np.nan
+                metrics_data["score_pure"] = np.nan
+                metrics_data["score_shape"] = np.nan
+                metrics_data["score_igd_mean"] = np.nan
+                metrics_data["score_igd_p95"] = np.nan
+
+                if calib and calib_pkg is not None:
+                    k_key = str(K)
+                    k_meta = calib.get("metrics", {}).get(k_key)
+                    if isinstance(k_meta, dict):
+                        s = float(k_meta.get("s", np.nan))
+                        metrics_data["s"] = s
+                        pur = float(gd_p95 / s) if np.isfinite(s) and s > 1e-12 else float("nan")
+
+                        u_key = f"u_ref_{K}"
+                        if u_key in calib_pkg:
+                            u_ref = calib_pkg[u_key]
+                            nn_p = _nn_dists(pop_norm)
+                            nn_u = _nn_dists(u_ref)
+                            shape = float(wasserstein_distance(nn_p, nn_u))
+                        else:
+                            pur = float("nan")
+                            shape = float("nan")
+
+                        metrics_data["pur"] = pur
+                        metrics_data["shape"] = shape
+
+                        def _get_p50(metric_name: str):
+                            mm = k_meta.get(metric_name, {})
+                            return float(mm.get("uni_p50", np.nan)), float(mm.get("rand_p50", np.nan))
+
+                        uni, rnd = _get_p50("IGD_mean")
+                        score_igd_mean = _score_from_calibration(igd_mean, uni, rnd)
+                        uni, rnd = _get_p50("IGD_95")
+                        score_igd_p95 = _score_from_calibration(igd_p95, uni, rnd)
+                        uni, rnd = _get_p50("PUR")
+                        score_pure = _score_from_calibration(pur, uni, rnd)
+                        uni, rnd = _get_p50("SHAPE")
+                        score_shape = _score_from_calibration(shape, uni, rnd)
+
+                        score_cov = float(np.nanmax([score_igd_mean, score_igd_p95]))
+                        score_global = float(np.nanmax([score_cov, score_pure, score_shape]))
+
+                        scores = [score_global, score_cov, score_pure, score_shape, score_igd_mean, score_igd_p95]
+                        if all(np.isfinite(x) for x in scores):
+                            metrics_data["baseline_ok"] = True
+                            metrics_data["score_global"] = score_global
+                            metrics_data["score_cov"] = score_cov
+                            metrics_data["score_pure"] = score_pure
+                            metrics_data["score_shape"] = score_shape
+                            metrics_data["score_igd_mean"] = score_igd_mean
+                            metrics_data["score_igd_p95"] = score_igd_p95
+                            metrics_data["pur"] = pur
+                            metrics_data["shape"] = shape
                 
     return PerformanceAuditor.audit(metrics_data, profile=profile, diameter=diameter)

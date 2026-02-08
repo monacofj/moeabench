@@ -376,6 +376,7 @@ def gd(exp, ref=None):
         metric = GEN_gd([exp], ref)
         return MetricMatrix(metric.evaluate(), "GD")
 
+    from .GEN_gd import GEN_gd
     return _calc_metric(exp, ref, GEN_gd, "GD")
 
 def gdplus(exp, ref=None):
@@ -392,6 +393,7 @@ def gdplus(exp, ref=None):
         metric = GEN_gdplus([exp], ref)
         return MetricMatrix(metric.evaluate(), "GD+")
 
+    from .GEN_gdplus import GEN_gdplus
     return _calc_metric(exp, ref, GEN_gdplus, "GD+")
 
 def igd(exp, ref=None):
@@ -408,6 +410,7 @@ def igd(exp, ref=None):
         metric = GEN_igd([exp], ref)
         return MetricMatrix(metric.evaluate(), "IGD")
 
+    from .GEN_igd import GEN_igd
     return _calc_metric(exp, ref, GEN_igd, "IGD")
 
 def emd(exp, ref=None):
@@ -475,6 +478,7 @@ def igdplus(exp, ref=None):
         metric = GEN_igdplus([exp], ref)
         return MetricMatrix(metric.evaluate(), "IGD+")
 
+    from .GEN_igdplus import GEN_igdplus
     return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
 
 def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):

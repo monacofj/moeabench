@@ -28,9 +28,11 @@ python tests/calibration/generate_visual_report.py
 
 import os
 import sys
+import glob
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from collections import Counter
 from plotly.subplots import make_subplots
 
 # Ensure local MoeaBench is importable
@@ -38,19 +40,122 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-from MoeaBench.metrics.GEN_hypervolume import GEN_hypervolume
-from MoeaBench.metrics.GEN_igd import GEN_igd
-from MoeaBench.clinic import get_floor
-
-
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
 BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.8.0.csv")
 OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.8.0.html")
 
-# Diagnostic Parameters (to match auditor.py)
-GEOMETRY_EFF = 10.0
+def _load_nd_points(csv_path):
+    pts = pd.read_csv(csv_path).values
+    if pts.shape[1] > 3:
+        pts = pts[:, :3]
+    if pts.shape[1] != 3:
+        raise ValueError(f"Expected 3 objectives, got {pts.shape[1]}")
+    try:
+        from MoeaBench.core.utils import is_non_dominated
+        pts = pts[is_non_dominated(pts)]
+    except Exception:
+        pass
+    return pts
+
+def _aggregate_clinical(mop_name, alg, F_opt):
+    from MoeaBench.diagnostics.auditor import audit
+    from MoeaBench.diagnostics.enums import DiagnosticProfile
+    import MoeaBench.mops as mops
+
+    pattern = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run[0-9][0-9].csv")
+    run_files = sorted(glob.glob(pattern))
+    statuses = []
+    profile_pass = {p.name: 0 for p in DiagnosticProfile}
+    invalid_dim = 0
+    invalid_other = 0
+    score_globals = []
+    score_covs = []
+    score_pures = []
+    score_shapes = []
+
+    for rf in run_files:
+        if "_gen" in os.path.basename(rf):
+            continue
+        try:
+            F_run = _load_nd_points(rf)
+            mop_obj = None
+            try:
+                mop_cls = getattr(mops, mop_name, None)
+                mop_obj = mop_cls() if mop_cls else None
+            except Exception:
+                mop_obj = None
+
+            class DummyRun:
+                def __init__(self, objs, prob):
+                    self.last_pop = type('P', (), {'objectives': objs})
+                    self.experiment = type('E', (), {'mop': prob})
+
+            run = DummyRun(F_run, mop_obj)
+            d = audit(run, ground_truth=F_opt)
+            if d.status.name in ["UNDEFINED_INPUT", "UNDEFINED_BASELINE", "UNDEFINED"]:
+                invalid_other += 1
+                continue
+            statuses.append(d.status.name)
+            for p in DiagnosticProfile:
+                if d.verdicts.get(p.name, "FAIL") == "PASS":
+                    profile_pass[p.name] += 1
+            score_globals.append(float(d.metrics.get("score_global", np.nan)))
+            score_covs.append(float(d.metrics.get("score_cov", np.nan)))
+            score_pures.append(float(d.metrics.get("score_pure", np.nan)))
+            score_shapes.append(float(d.metrics.get("score_shape", np.nan)))
+        except ValueError:
+            invalid_dim += 1
+            continue
+        except Exception:
+            invalid_other += 1
+            continue
+
+    n_runs = len(statuses)
+    status_mode = "UNDEFINED"
+    if n_runs:
+        # Prefer a robust, score-based aggregate diagnosis over "mode of run-level statuses".
+        # This matches the report narrative: diagnosis is statistical across runs, not run00.
+        cov_med = float(np.nanmedian(score_covs)) if len(score_covs) else np.nan
+        pure_med = float(np.nanmedian(score_pures)) if len(score_pures) else np.nan
+        shape_med = float(np.nanmedian(score_shapes)) if len(score_shapes) else np.nan
+        # Research-tier threshold on calibrated score (interpretable: closest to quasi-uniform-at-K).
+        if np.isfinite(cov_med) and np.isfinite(pure_med) and np.isfinite(shape_med):
+            if max(cov_med, pure_med, shape_med) <= 0.25:
+                status_mode = "IDEAL_FRONT"
+            else:
+                comps = {"cov": cov_med, "pure": pure_med, "shape": shape_med}
+                dom = max(comps, key=lambda k: comps[k])
+                if dom == "cov":
+                    status_mode = "GAPPED_COVERAGE" if shape_med <= 0.50 else "COLLAPSED_FRONT"
+                elif dom == "pure":
+                    status_mode = "NOISY_POPULATION"
+                else:
+                    status_mode = "BIASED_SPREAD" if (cov_med <= 0.50 and pure_med <= 0.50) else "DISTORTED_COVERAGE"
+                if float(np.nanmedian(score_globals)) >= 0.99:
+                    status_mode = "SEARCH_FAILURE"
+        else:
+            status_mode = Counter(statuses).most_common(1)[0][0]
+
+    pass_rates = {}
+    for p, c in profile_pass.items():
+        pass_rates[p] = (100.0 * c / n_runs) if n_runs else 0.0
+
+    return {
+        "n_runs": n_runs,
+        "n_total": len(run_files),
+        "n_invalid_dim": invalid_dim,
+        "n_invalid_other": invalid_other,
+        "status_mode": status_mode,
+        "pass_rates": pass_rates,
+        "score_global_median": float(np.nanmedian(score_globals)) if len(score_globals) else np.nan,
+        "score_global_q25": float(np.nanpercentile(score_globals, 25)) if len(score_globals) else np.nan,
+        "score_global_q75": float(np.nanpercentile(score_globals, 75)) if len(score_globals) else np.nan,
+        "score_cov_median": float(np.nanmedian(score_covs)) if len(score_covs) else np.nan,
+        "score_pure_median": float(np.nanmedian(score_pures)) if len(score_pures) else np.nan,
+        "score_shape_median": float(np.nanmedian(score_shapes)) if len(score_shapes) else np.nan,
+    }
 
 def generate_visual_report():
     if not os.path.exists(BASELINE_FILE):
@@ -119,7 +224,8 @@ def generate_visual_report():
         "<h2>2. Metric Glossary & Interpretation</h2>",
         "<ul>",
         "<li><b>IGD (Inverted Generational Distance):</b> Measures both convergence (proximity) and diversity (spread). <i>Lower is strictly better.</i></li>",
-        "<li><b>EMD:</b> Earth Mover's Distance. Quantifies topological match. <code>EMD < 0.1</code> represents high-fidelity recovery of the manifold.</li>",
+        "<li><b>EMD (Uniform):</b> Earth Mover's Distance against a uniformized GT reference. Certification uses <b>EMD_eff</b> (ratio to calibrated floor for the same K), not a fixed absolute cutoff.</li>",
+        "<li><b>Purity (GD_p95):</b> 95th-percentile distance from population to GT. Certification uses <b>Purity_eff</b> (ratio to calibrated floor).</li>",
         "<li><b>H_raw:</b> The absolute hypervolume calculated with Reference Point 1.1.</li>",
         r"<li><b>H_ratio:</b> $H_{raw} / RefBox$. Search area coverage (volume). Strictly $\le 1.0$.</li>",
         r"<li><b>H_rel:</b> $H_{raw} / H_{GT}$. Convergence to optimal front. Can exceed 100% due to saturation.</li>",
@@ -211,9 +317,6 @@ def generate_visual_report():
         # Store metrics for HTML table
         mop_metrics = []
 
-        # Import for CDF calculation
-        from scipy.spatial.distance import cdist
-
         for alg in algs:
             # Get stats from baseline df
             alg_stats = mop_df[(mop_df['Algorithm'] == alg) & (mop_df['Intensity'] == 'standard')]
@@ -222,15 +325,17 @@ def generate_visual_report():
             igd_mean = 0.0
             igd_std = 0.0
             emd_val = 0.0
+            gd_mean = 0.0
+            gd_std = 0.0
+            sp_mean = 0.0
+            sp_std = 0.0
             hv_raw = 0.0
             hv_ratio = 0.0
             hv_rel_stat = 0.0
             time_avg = 0.0
+            diag_res = None
             
             # Get Clinical Floors (N=200 fixed for this report)
-            igd_floor = get_floor(mop_name, "igd_floor", 200, "p10")
-            emd_floor = get_floor(mop_name, "emd_floor", 200, "p10")
-
             if not alg_stats.empty:
                 row = alg_stats.iloc[0]
                 igd_mean = row['IGD_mean']
@@ -254,81 +359,77 @@ def generate_visual_report():
             if os.path.exists(final_file):
                 print(f"    - Trace: {alg} 3D Final")
                 try:
-                    F_obs = pd.read_csv(final_file).values
-                    # Trim to 3 obj if needed
-                    if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
-                    
-                    if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
-                    
-                    # CRITICAL FIX: Filter Non-Dominated Solutions only!
-                    # Dominated points ruin IGD/GD and visual clarity.
-                    try:
-                        from MoeaBench.core.utils import is_non_dominated
-                        mask_nd = is_non_dominated(F_obs)
-                        F_obs = F_obs[mask_nd]
-                    except ImportError:
-                        # Fallback: Simple Cull
-                        is_efficient = np.ones(F_obs.shape[0], dtype=bool)
-                        for i, c in enumerate(F_obs):
-                            if is_efficient[i]:
-                                is_efficient[is_efficient] = np.any(F_obs[is_efficient] < c, axis=1) | np.any(F_obs[is_efficient] == c, axis=1)
-                                is_efficient[i] = True # Keep self (buggy logic, better use Pymoo/Safe impl)
-                        # Actually, let's just use the robust Pymoo one if possible or a safe verified snippet
-                        # To be safe and minimal:
-                        def simple_cull(pts):
-                            is_eff = np.ones(len(pts), dtype=bool)
-                            for i, p in enumerate(pts):
-                                if is_eff[i]:
-                                    # If p is dominated by any other point, kill it.
-                                    # Dominated means: other <= p AND other != p
-                                    # We use strict dominance for typical cases.
-                                    # Fast vectorized check against current set?
-                                    pass # Too complex for inline.
-                            return pts
-                        
-                        # Better Plan: Use the one from calibration logic if available.
-                        # Assuming MoeaBench/core/utils exists as seen in other files?
-                        # I'll try-except Pymoo which is definitely there (used for IGD).
-                        from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
-                        nds = NonDominatedSorting()
-                        fronts = nds.do(F_obs)
-                        if len(fronts) > 0:
-                            F_obs = F_obs[fronts[0]]
+                    F_obs = _load_nd_points(final_file)
 
-                    # Micro-Jitter to avoid perfect occlusion (e.g. DTLZ2)
                     jitter_scale = 0.005
                     F_jitter = F_obs + np.random.normal(0, jitter_scale, F_obs.shape)
 
-                    # Adaptive Outlier Detection (Scale Warning)
-                    # Triggered only if values exceed 20% of the theoretical Nadir
-                    nadir_threshold = 1.2 * nadir
-                    is_out_of_scale = np.any(np.abs(F_obs) > nadir_threshold)
-                    tag_warning = " [OUT OF SCALE]" if is_out_of_scale else ""
-                    
-                    fig.add_trace(go.Scatter3d(
-                        x=F_jitter[:,0], y=F_jitter[:,1], z=F_jitter[:,2],
-                        mode='markers',
-                        marker=dict(
-                            size=4.5, # Larger for transparency
-                            color=colors_rgba.get(alg, 'rgba(0,0,0,1.0)'),
-                            opacity=0.6 # Translucency for density check
-                        ),
-                        name=f'{alg} (Final){tag_warning}',
-                        legend='legend',
-                        legendgroup=alg,
-                        showlegend=True
-                    ), row=1, col=1)
-
+                    diag_res = None
+                    min_dists = np.array([])
+                    gt_min_dists = np.array([])
                     if F_opt is not None:
-                        # 2. Use Auditor to get Standardized Metrics and Distributions
                         from MoeaBench.diagnostics.auditor import audit
                         diag_res = audit(F_obs, ground_truth=F_opt)
-                        
-                        min_dists = np.array(diag_res.metrics['min_dists'])
-                        gt_min_dists = np.array(diag_res.metrics['gt_min_dists'])
+                        min_dists = np.array(diag_res.metrics.get('min_dists', []))
+                        gt_min_dists = np.array(diag_res.metrics.get('gt_min_dists', []))
+
+                    if len(min_dists) == len(F_obs):
+                        valid = np.isfinite(min_dists)
+                        if not np.any(valid):
+                            valid[:] = True
+                        threshold = np.nanpercentile(min_dists[valid], 50) if np.any(valid) else 0.0
+                        good_mask = valid & (min_dists <= threshold)
+                        bad_mask = valid & (min_dists > threshold)
+                        if not np.any(good_mask):
+                            good_mask = valid
+                            bad_mask = np.zeros_like(valid, dtype=bool)
+                    else:
+                        good_mask = np.ones(len(F_obs), dtype=bool)
+                        bad_mask = np.zeros(len(F_obs), dtype=bool)
+
+                    good_points = F_jitter[good_mask]
+                    bad_points = F_jitter[bad_mask]
+                    alg_color = colors_rgba.get(alg, 'rgba(0,0,0,0.9)')
+                    tag_warning = ""
+
+                    if len(good_points):
+                        fig.add_trace(go.Scatter3d(
+                            x=good_points[:,0], y=good_points[:,1], z=good_points[:,2],
+                            mode='markers',
+                            marker=dict(
+                                symbol='circle',
+                                size=4.2,
+                                color=alg_color,
+                                opacity=0.8,
+                                line=dict(width=0)
+                            ),
+                            name=f'{alg} (Close | filled)',
+                            legend='legend',
+                            legendgroup=alg,
+                            showlegend=True
+                        ), row=1, col=1)
+                    if len(bad_points):
+                        fig.add_trace(go.Scatter3d(
+                            x=bad_points[:,0], y=bad_points[:,1], z=bad_points[:,2],
+                            mode='markers',
+                            marker=dict(
+                                symbol='circle',
+                                size=5.1,
+                                color='rgba(0,0,0,0)',
+                                opacity=0.65,
+                                line=dict(width=1.8, color=alg_color)
+                            ),
+                            name=f'{alg} (Far | hollow)',
+                            legend='legend',
+                            legendgroup=alg,
+                            showlegend=True
+                        ), row=1, col=1)
+
+                    if diag_res is not None and len(gt_min_dists):
+                        # 2. Use Auditor to get Standardized Metrics and Distributions
                         
                         # A. 3D Coverage Heatmap (Gap Map)
-                        # We plot GT points colored by distance to nearest solution
+                        cmax = float(np.nanpercentile(gt_min_dists, 95)) if np.isfinite(gt_min_dists).any() else 1.0
                         fig.add_trace(go.Scatter3d(
                             x=F_opt[:,0], y=F_opt[:,1], z=F_opt[:,2],
                             mode='markers',
@@ -336,23 +437,24 @@ def generate_visual_report():
                                 size=2.5,
                                 color=gt_min_dists,
                                 colorscale='Reds',
-                                cmin=0, cmax=GEOMETRY_EFF * igd_floor if igd_floor > 0 else 0.05,
+                                cmin=0, cmax=cmax,
                                 opacity=0.8,
-                                showscale=False
+                                showscale=True,
+                                colorbar=dict(title='Dist to GT', thickness=15)
                             ),
                             name=f'Gap Map ({alg})',
                             legend='legend',
                             legendgroup=alg,
-                            visible='legendonly', # Hidden by default to keep 3D clean
+                            visible='legendonly',
                             showlegend=True
                         ), row=1, col=1)
 
                         # B. CDF Analysis trace
-                        min_dists.sort()
-                        y_cdf = np.arange(len(min_dists)) / float(len(min_dists))
+                        min_dists_sorted = np.sort(min_dists)
+                        y_cdf = np.arange(len(min_dists_sorted)) / float(len(min_dists_sorted))
                         
                         fig.add_trace(go.Scatter(
-                            x=min_dists, y=y_cdf,
+                            x=min_dists_sorted, y=y_cdf,
                             mode='lines',
                             line=dict(color=colors_solid.get(alg, 'black'), width=2),
                             name=f'{alg}',
@@ -364,21 +466,9 @@ def generate_visual_report():
                         
                         # Add Decision Threshold Lines (Scientific Reference)
                         if alg == algs[0]:
-                             # Reference Step (Ideal)
-                             fig.add_trace(go.Scatter(
-                                x=[0, 0, 0.1], y=[0, 1, 1],
-                                mode='lines',
-                                line=dict(color='#475569', dash='dot', width=1),
-                                name='Ideal (GT)',
-                                legend='legend3',
-                                legendgroup='GT',
-                                showlegend=True,
-                                hoverinfo='skip'
-                             ), row=2, col=2)
-
                              # 95% Population Fraction Base Line (Reference)
                              fig.add_trace(go.Scatter(
-                                x=[0, np.max(min_dists if 'min_dists' in locals() else [1.0])*1.5], y=[0.95, 0.95],
+                                x=[0, (np.max(min_dists_sorted) if len(min_dists_sorted) else 1.0)*1.5], y=[0.95, 0.95],
                                 mode='lines',
                                 line=dict(color='#64748b', dash='dot', width=0.8),
                                 name='95% Target',
@@ -387,65 +477,9 @@ def generate_visual_report():
                                 hoverinfo='skip'
                              ), row=2, col=2)
                         
-                             from MoeaBench.diagnostics.enums import DiagnosticProfile
-                             
-                             diff = nadir - ideal
-                             diameter = float(np.sqrt(np.sum(diff**2)))
-                             
-                             # Profile Color Mapping
-                             profile_colors = {
-                                 'RESEARCH': '#8b5cf6',
-                                 'STANDARD': '#ef4444',
-                                 'INDUSTRY': '#f59e0b',
-                                 'EXPLORATORY': '#94a3b8'
-                             }
-                             
-                             # Clinical Efficiency Thresholds
-                             # Research: 1.1x Floor, Standard: 1.5x Floor
-                             MAX_EFF = {
-                                'RESEARCH': 1.10,
-                                'STANDARD': 1.50,
-                                'INDUSTRY': 2.00,
-                                'EXPLORATORY': 5.00
-                             }
-
-                             for p in DiagnosticProfile:
-                                 p_color = profile_colors.get(p.name, '#000000')
-                                 target_eff = MAX_EFF.get(p.name, 5.0)
-                                 
-                                 # Calculate line position: Eff * Floor
-                                 # We use IGD Floor as primary proxy for "distance to GT"
-                                 # But CDF x-axis is Euclidean Distance (nearest neighbor).
-                                 # IGD is average NN distance. So IGD Floor is the best proxy for "Expected NN Dist".
-                                 
-                                 if igd_floor > 1e-9:
-                                     thr_val = target_eff * igd_floor
-                                 else:
-                                     # Fallback to diameter heuristic if no baseline
-                                     thr_val = (p.value / 100.0) * diameter
-
-                                 # Vertical Reference (GD Bound)
-                                 fig.add_trace(go.Scatter(
-                                    x=[thr_val, thr_val], y=[0, 1],
-                                    mode='lines',
-                                    line=dict(color=p_color, dash='dash', width=1.2),
-                                    name=f'{p.name} Limit',
-                                    legend='legend4',
-                                    legendgroup='Threshold',
-                                    showlegend=True,
-                                    hoverinfo='name+x'
-                                 ), row=2, col=2)
-
-                                 # Matching Horizontal (at 0.95)
-                                 fig.add_trace(go.Scatter(
-                                    x=[0, thr_val], y=[0.95, 0.95],
-                                    mode='lines',
-                                    line=dict(color=p_color, dash='dash', width=1.2),
-                                    name=f'{p.name} Target',
-                                    legendgroup='Threshold',
-                                    showlegend=False,
-                                    hoverinfo='skip'
-                                 ), row=2, col=2)
+                             # NOTE: We intentionally avoid drawing absolute distance gates here.
+                             # The clinical auditor uses calibrated scores (0..1) rather than
+                             # "distance <= X" lines, so those would be misleading/magic-numbery.
 
 
                 except Exception as e:
@@ -499,12 +533,25 @@ def generate_visual_report():
 
             # Calculate T-conv (stability point) and EMD (Topo Error)
             t_conv = "-"
+            clinical_agg = {
+                "n_runs": 0,
+                "status_mode": "UNDEFINED",
+                "pass_rates": {"EXPLORATORY": 0.0, "INDUSTRY": 0.0, "STANDARD": 0.0, "RESEARCH": 0.0},
+                "score_global_median": np.nan,
+                "score_global_q25": np.nan,
+                "score_global_q75": np.nan,
+                "score_cov_median": np.nan,
+                "score_pure_median": np.nan,
+                "score_shape_median": np.nan,
+            }
             if igd_vals:
                 final_igd = igd_vals[-1]
                 hv_rel_final = hv_rels[-1]
                 
                 # Topological Error (EMD) between final snapshot and GT
-                if F_opt is not None and F_snap is not None:
+                if diag_res is not None:
+                    emd_val = float(diag_res.metrics.get('emd', emd_val))
+                elif F_opt is not None and F_snap is not None:
                     import MoeaBench as mb
                     # Use internal topo_distribution with EMD method
                     # This calculates axis-wise Wasserstein distance (EMD)
@@ -515,52 +562,30 @@ def generate_visual_report():
                     if g_val <= 1.05 * final_igd:
                         t_conv = str(gens[g_idx])
                         break
-                
-                # Multi-Profile Diagnosis Matrix
-                import MoeaBench as mb
-                from MoeaBench.diagnostics.enums import DiagnosticProfile
-                
-                multi_diag = {}
-                for p in DiagnosticProfile:
-                    d = mb.diagnostics.audit({'gd': float(gd_mean), 'igd': float(igd_mean), 'emd': emd_val, 'h_rel': float(hv_rel_stat), 'mop_name': mop_name, 'n': 200}, profile=p)
-                    
-                    # Style mapping for STATUS (Geometry)
-                    s_name = d.status.name
-                    if s_name in ["IDEAL_FRONT", "SUPER_SATURATION"]: d_cls = "diag-optimal"
-                    elif s_name == "SEARCH_FAILURE": d_cls = "diag-failure" # ONLY Search Failure is Red
-                    elif s_name == "UNKNOWN": d_cls = "diag-shadow" 
-                    else: d_cls = "diag-warning" # Distorted, Shifted, Noisy, Gapped, Collapsed = Warning (Yellow)
-                    
-                    # Style mapping for VERDICT (Certification)
-                    v_name = d.verdict 
-                    v_cls = "verdict-pass" if v_name == "PASS" else "verdict-fail"
-                    
-                    multi_diag[p.name] = {
-                        "status": s_name, 
-                        "status_cls": d_cls,
-                        "verdict": v_name,
-                        "verdict_cls": v_cls,
-                        "description": d.description,
-                        "metrics_summary": f"IGD_eff={d.metrics.get('igd_eff', 0):.2f}x, EMD_eff={d.metrics.get('emd_eff', 0):.2f}x"
-                    }
 
-                # Calculate clinical efficiency for display
-                igd_eff_show = igd_mean / igd_floor if igd_floor > 1e-9 else 0
-                emd_eff_show = emd_val / emd_floor if emd_floor > 1e-9 else 0
+            if F_opt is not None:
+                clinical_agg = _aggregate_clinical(mop_name, alg, F_opt)
 
-                mop_metrics.append({
-                    "alg": alg,
-                    "igd": f"{igd_mean:.4f} (Eff: {igd_eff_show:.2f}x)",
-                    "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
-                    "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
-                    "emd": f"{emd_val:.4f} (Eff: {emd_eff_show:.2f}x)",
-                    "h_raw": f"{hv_raw:.4f}",
-                    "h_ratio": f"{hv_ratio:.4f}",
-                    "h_rel": f"{hv_rel_stat * 100:.2f}%", 
-                    "time": f"{time_avg:.2f}",
-                    "t_conv": t_conv,
-                    "multi_diag": multi_diag
-                })
+            # Variability indicator (robust): IQR / median on score_global across runs.
+            sg_med = clinical_agg["score_global_median"]
+            iqr = clinical_agg["score_global_q75"] - clinical_agg["score_global_q25"]
+            var_ratio = (iqr / sg_med) if (np.isfinite(iqr) and np.isfinite(sg_med) and sg_med > 1e-12) else np.nan
+            consistency_flag = "STABLE" if (np.isnan(var_ratio) or var_ratio <= 0.60) else "VARIABLE"
+
+            mop_metrics.append({
+                "alg": alg,
+                "igd": f"{igd_mean:.4f}",
+                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
+                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
+                "emd": f"{emd_val:.4f}",
+                "h_raw": f"{hv_raw:.4f}",
+                "h_ratio": f"{hv_ratio:.4f}",
+                "h_rel": f"{hv_rel_stat * 100:.2f}%",
+                "time": f"{time_avg:.2f}",
+                "t_conv": t_conv,
+                "clinical_agg": clinical_agg,
+                "consistency": consistency_flag
+            })
 
             if gens:
                 print(f"    - Trace: {alg} Convergence Lines")
@@ -688,26 +713,61 @@ def generate_visual_report():
             metrics_table.append(f"<td class='nowrap'>Gen {m['t_conv']}</td></tr>")
         metrics_table.append("</table>")
 
-        # 2. Build Certification Matrix table
+        # 2. Build Certification Matrix table (Aggregated across runs)
         matrix_table = ["<h3>Certification & Pathology Matrix</h3>",
+                        "<p class='diag-rationale' style='margin: 4px 0 12px 0;'>"
+                        "Clinical certification is aggregated over all available <code>standard_runXX</code> files "
+                        "for each algorithm (status mode + pass-rate by profile). The <code>run00</code> layer is visualization/debug only."
+                        "</p>",
+                        "<p class='diag-rationale' style='margin: 0 0 16px 0;'>"
+                        "Status is diagnostic and invariant: it tells you which component dominates the front (coverage/purity/shape) "
+                        "across 30 runs. Profiles are merely pass/fail gates on <code>score_global</code>. Thus a high pass-rate "
+                        "in Exploratory/Industry with a <code>BIASED_SPREAD</code> status signals “geometria boa, falta uniformidade”, "
+                        "and the report calls it out explicitly instead of changing the status."
+                        "</p>",
                         "<table>",
                         "<tr><th>Algorithm</th>",
-                        "<th>Geometry Status</th>"] # New Column
+                        "<th>Geometry Status</th><th>Median scores</th>"]
         for p_name in ["EXPLORATORY", "INDUSTRY", "STANDARD", "RESEARCH"]:
-            matrix_table.append(f"<th>{p_name} </th>")
-        matrix_table.append("</tr>")
+            matrix_table.append(f"<th>{p_name} pass-rate</th>")
+        matrix_table.append("<th>Runs</th><th>Skipped</th><th>Variability</th></tr>")
 
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
-            
-            # Extract Status from EXPLORATORY (assumed stable across profiles)
-            base_diag = m['multi_diag'].get("EXPLORATORY", {"status": "N/A", "status_cls": "diag-shadow", "description": ""})
-            matrix_table.append(f"<td><span class='diag-badge {base_diag['status_cls']}'>{base_diag['status']}</span><br><span class='diag-rationale' style='font-weight:600'>{base_diag['description']}</span></td>")
-            
+
+            agg = m.get("clinical_agg", {})
+            status_name = agg.get("status_mode", "UNDEFINED")
+            if status_name in ["IDEAL_FRONT", "SUPER_SATURATION"]:
+                status_cls = "diag-optimal"
+            elif status_name in ["SEARCH_FAILURE", "COLLAPSED_FRONT", "UNDEFINED_BASELINE"]:
+                status_cls = "diag-failure"
+            elif status_name == "UNDEFINED":
+                status_cls = "diag-shadow"
+            else:
+                status_cls = "diag-warning"
+            matrix_table.append(f"<td><span class='diag-badge {status_cls}'>{status_name}</span></td>")
+
+            sg = agg.get("score_global_median", np.nan)
+            sc = agg.get("score_cov_median", np.nan)
+            sp = agg.get("score_pure_median", np.nan)
+            ss = agg.get("score_shape_median", np.nan)
+            if all(np.isfinite([sg, sc, sp, ss])):
+                matrix_table.append(f"<td class='nowrap'><code>g={sg:.2f}</code> <code>cov={sc:.2f}</code> <code>pure={sp:.2f}</code> <code>shape={ss:.2f}</code></td>")
+            else:
+                matrix_table.append("<td class='nowrap'><span class='diag-badge diag-shadow'>n/a</span></td>")
+
             for p_name in ["EXPLORATORY", "INDUSTRY", "STANDARD", "RESEARCH"]:
-                d = m['multi_diag'].get(p_name, {"status": "N/A", "status_cls": "diag-shadow", "verdict": "N/A", "verdict_cls": "diag-shadow", "metrics_summary": ""})
-                # Show only Verdict Badge + Metrics/Reason
-                matrix_table.append(f"<td><span class='diag-badge {d['verdict_cls']}'>{d['verdict']}</span><br><span class='diag-rationale'>{d['metrics_summary']}</span></td>")
+                rate = float(agg.get("pass_rates", {}).get(p_name, 0.0))
+                v_cls = "verdict-pass" if rate >= 50.0 else "verdict-fail"
+                matrix_table.append(f"<td><span class='diag-badge {v_cls}'>{rate:.1f}%</span></td>")
+            n_runs = int(agg.get('n_runs', 0))
+            n_total = int(agg.get('n_total', n_runs))
+            matrix_table.append(f"<td>{n_runs}/{n_total}</td>")
+            skipped = int(agg.get('n_invalid_dim', 0)) + int(agg.get('n_invalid_other', 0))
+            matrix_table.append(f"<td>{skipped}</td>")
+            cons = m.get("consistency", "STABLE")
+            c_cls = "diag-shadow" if cons == "STABLE" else "diag-warning"
+            matrix_table.append(f"<td><span class='diag-badge {c_cls}'>{cons}</span></td>")
             matrix_table.append("</tr>")
         matrix_table.append("</table>")
         
@@ -718,6 +778,7 @@ def generate_visual_report():
         nadir_str = "(" + ", ".join([f"{v:.3f}" for v in nadir]) + ")"
         
         html_content.append(f"<div class='metrics-footer'><strong>Theoretical Reference:</strong><br>Ideal Point: {ideal_str}<br>Nadir Point: {nadir_str}<br>Sampled Reference HV: {hv_opt:.6f}</div>")
+        html_content.append("<p class='diag-rationale' style='margin-top: 12px;'><strong>Visual Semantics:</strong> Filled points mark solutions close to the Ground Truth, while hollow markers highlight points that remain far from the GT surface.</p>")
         
         # Primary Visualization
         html_content.append(div)

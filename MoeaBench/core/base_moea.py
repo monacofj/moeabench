@@ -25,6 +25,20 @@ class BaseMoea(ABC):
             generations (int): The total number of generations to run.
             seed (int): Random seed for reproducibility.
         """
+        # Defaults: allow users/tests to instantiate algorithms with only `seed=...`.
+        # Keep import local to avoid circular import at module import time.
+        if population is None or generations is None or seed is None:
+            try:
+                from MoeaBench.defaults import defaults as _defaults
+            except Exception:
+                _defaults = type("_D", (), {"population": 150, "generations": 300, "seed": 1})()
+            if population is None:
+                population = _defaults.population
+            if generations is None:
+                generations = _defaults.generations
+            if seed is None:
+                seed = _defaults.seed
+
         self.problem = problem
         self.population = population
         self.generations = generations
