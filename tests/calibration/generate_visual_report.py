@@ -48,7 +48,45 @@ def generate_visual_report():
         ".verdict-fail { background: #ffedd5; color: #9a3412; }",
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>.</p>"
+        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026).</p>",
+        
+        "<div class='intro-box'>",
+        "<h2>1. Methodology & Experimental Context</h2>",
+        "<p>The objective is to certify the framework's core algorithms against rigorous mathematical benchmarks (Ground Truth), using a scale-invariant quality assessment.</p>",
+        "<ul>",
+        "<li><b>Population:</b> Algorithms ran with <code>N=200</code>. Q-Scores are calculated on the <i>effective</i> non-dominated count ($K \\le 200$).</li>",
+        "<li><b>Evolutionary Budget:</b> Fixed at <code>1000 generations</code> per run.</li>",
+        "<li><b>Statistical Relevance:</b> Metrics derived from <b>30 independent runs</b> per algorithm/problem pair.</li>",
+        "<li><b>Normalization:</b> Strict Theoretical Normalization [0, 1] using the Ground Truth's <i>Ideal</i> and <i>Nadir</i> points.</li>",
+        "</ul>",
+
+        "<h2>2. Clinical Metrology Guide</h2>",
+        "<div style='background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px;'>",
+        "<b>Reading the Evidence:</b> This report uses a dual-layer validation framework.<br>",
+        "<ul style='margin-bottom:0'>",
+        "<li><b>Layer 1 - Clinical Matrix (The Verdict):</b> An engineering Q-Score (0.0 - 1.0).<br>",
+        "<i>Pass ($Q \\ge 0.67$):</i> The algorithm is statistically indistinguishable from the theoretical limit.<br>",
+        "<i>Fail ($Q < 0.34$):</i> The algorithm is performing closer to random noise than to the ideal.</li>",
+        "<li><b>Layer 2 - Structural Evidence (The Biopsy):</b> The <b>Distance-to-GT CDF</b> graph (bottom right).<br>",
+        "This graph reveals the 'physics' of the failure that the Q-Score summarizes. It plots the cumulative distribution of distances to the Ground Truth along the X-axis.",
+        "<ul style='margin-top:0.5rem'>",
+        "<li><b>Steep Left-Aligned Curve:</b> The ideal profile. High precision convergence where the entire population is uniformly close to the manifold.</li>",
+        "<li><b>Long Tail (Right-skewed):</b> Indicates <b>Poor Regularity (REG)</b>. While most points may be close, a subset of the population is 'stuck' far away (outliers) or trapped in local optima.</li>",
+        "<li><b>Rigid Shift (Offset):</b> Indicates <b>Good Geometry but Poor Fit (FIT)</b>. The curve has the correct vertical shape but is shifted to the right. The algorithm found the manifold's shape but stopped before reaching the true front.</li>",
+        "<li><b>Discontinuous Plateaus:</b> Vertical gaps in the curve indicate <b>Coverage Gaps (GAP)</b>. The algorithm completely missed specific regions of the objective space.</li>",
+        "</ul></li>",
+        "</ul></div>",
+
+        "<h3>3. Metric Glossary</h3>",
+        "<ul>",
+        "<li><b>FIT (Proximity):</b> How close the front is to the Optimal Manifold. High precision convergence.</li>",
+        "<li><b>COV (Coverage):</b> The extent of the manifold covered (Volume).</li>",
+        "<li><b>GAP (Continuity):</b> Absence of interruptions or holes in the Pareto approximation.</li>",
+        "<li><b>REG (Regularity):</b> Uniformity of the distribution. Penalizes clustering and outliers.</li>",
+        "<li><b>BAL (Balance):</b> Fairness of objective trade-offs (e.g., not favoring f1 over f2).</li>",
+        "<li><b>IGD/EMD:</b> Legacy distance metrics provided for backward compatibility.</li>",
+        "</ul>",
+        "</div>"
     ]
 
     colors_solid = {'NSGA2': '#6366f1', 'NSGA3': '#059669', 'MOEAD': '#d97706'}

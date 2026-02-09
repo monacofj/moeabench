@@ -98,23 +98,21 @@ The architecture is reified in a clean Python package:
 
 ---
 
-## 5. Implications and Review
+## 6. Structural Evidence: The Role of Distance-to-GT CDF
 
-### 5.1 Audit Traceability
-Every cell in the final report acts as a verifiable proof. The tooltips expose the entire derivation chain:
-> **Q-Score: 0.85**
-> *("Good", $Q > 0.67$)*
->
-> **Trace:**
-> *   **Fair Metric:** 0.045 (Physical measurement)
-> *   **Ideal (Reference):** 0.012 (Limit of physics for N=100)
-> *   **Random (Noise):** 0.150 (Expected chaos)
-> *   **Sample Size:** K=100 (Raw=100)
+While the **Clinical Matrix** (Layer 2) provides the engineering verdict, the **Distance-to-GT CDF** (Cumulative Distribution Function) serves as the **Structural Evidence** layer. It bridges the gap between raw mathematical distances and clinical interpretation.
 
-This transparency silences the "Why did I fail?" question. The user can see instantly if they failed because their physics were bad ($\approx Random$) or simply not good enough for the strict context ($\approx Ideal$).
+### 6.1 Diagnostic Anatomy of the CDF Curve
+The shape of the CDF curve allows for the "physical biopsy" of algorithmic failure:
 
-### 5.2 Scale Invariance Achieved
-By normalizing against the *Ideal* and *Random* specific to that dimensionality, the Q-Score becomes a **Universal Quality Constant**. A $Q=0.9$ on a 2D problem implies the same level of mastery as a $Q=0.9$ on a 10D problem, allowing for cross-problem aggregation and ranking.
+1.  **Steep Curve (Left-aligned):** High-precision convergence. The population is uniformly close to the manifold. (Healthy Profile).
+2.  **Long Tail (Right-skewed):** Presence of significant outliers or solutions trapped in local optima. Explains poor **REG (Regularity)** scores.
+3.  **Rigid Shift:** The curve shape is correct but moved right on the X-axis. Indicates the algorithm found the correct geometry but failed the final convergence step. Explains low **FIT** scores.
+4.  **Discontinuous Plateaus:** Vertical gaps in the CDF indicate "empty" regions in the Pareto approxmiation. Direct evidence for high **GAP** indices.
 
-### 5.3 Conclusion
-MoeaBench v0.9 moves beyond simple plotting. It establishes a **Metrological Standard** for multi-objective auditing. By acknowledging the sparsity law and certifying against rigorous empirical baselines, we provide the first truly fair and scalable framework for algorithmic benchmarking in the many-objective era.
+### 6.2 Conclusion
+By institutionalizing the CDF as a mandatory validation view, *MoeaBench* ensures that every quantitative Q-Score is accompanied by a transparent, visually inspectable proof of the underlying search pathology.
+
+---
+
+## 7. Implications and Review
