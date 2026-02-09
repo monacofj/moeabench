@@ -1,103 +1,120 @@
-# ADR 0026: Clinical Metrology and Dimensional Calibration in Finite Sampling
+# ADR 0026: Clinical Metrology and Dimensional Calibration in Finite Sampling Regimes
 
-**Status:** Proposed  
-**Date:** 2026-02-06  
-**Drivers:** Scientific Rigor, Scale Invariance, Fairness in Benchmarking  
-**Affects:** `MoeaBench.diagnostics`, `MoeaBench.metrics`, Calibration Reports
-
----
-
-## 1. Context and Problem Statement
-
-### 1.1 The N=200 Audit Challenge
-MoeaBench v0.8.0 introduced stringent diagnostic profiles (`RESEARCH`, `STANDARD`, `INDUSTRY`), originally defined by fixed thresholds based on the Pareto front diameter ($D$). For instance, the `STANDARD` profile required an IGD $< 0.5\% \times D$, and `RESEARCH` required $< 0.2\% \times D$.
-
-During calibration with 3D problems (DTLZ1-4, DPF1-5) and a fixed population of $N=200$, a systemic anomaly was observed: visually excellent and converged algorithms were consistently failing as `SEARCH_FAILURE` in the stricter profiles (`STANDARD` and `RESEARCH`).
-
-### 1.2 The Curse of Dimensionality in Coverage (The Sparsity Law)
-Theoretical investigation revealed that fixed thresholds ignored the intrinsic geometry of the coverage problem.
-To cover a manifold of $M$ objectives (with topological dimension $d \approx M-1$) using $N$ points, the expected average distance between neighbors ($R_{cov}$) does not tend to zero but rather to a physical limit imposed by density:
-
-$$ R_{coverage} \propto N^{-\frac{1}{M-1}} $$
-
-*   **In 2D ($M=2$):** With $N=200$, the expected distance is $\approx 0.5\%$. The fixed 0.5% threshold worked by coincidence.
-*   **In 3D ($M=3$):** With $N=200$, the expected distance jumps to $\approx 7.0\%$. Requiring 0.5% is physically impossible, as it would demand more points than the population possesses.
-*   **In Many-Ops ($M>3$):** Fixed requirements would lead to a 100% failure rate, regardless of algorithmic quality.
-
-### 1.3 Refuting the "Perfect Ground Truth"
-Furthermore, it was erroneously assumed that the Ground Truth (GT) is a perfect continuous surface. In practice, the GT is often a discrete set (2k to 10k points).
-*   **Noise Floor:** Even if an algorithm selected the *best possible subset* of $N$ points from the GT, the IGD and EMD would not be zero. They would have an irreducible residual value ($IGD_{floor}$).
-*   **Metrological Injustice:** Penalizing an algorithm for not reaching IGD=0.0 when the physical limit is IGD=0.03 is scientifically indefensible.
+**Status:** Accepted
+**Date:** 2026-02-09
+**Author:** Monaco F. J.
+**Drivers:** Scientific Rigor, Scale Invariance, Algorithmic Auditability, Metrological Fairness
 
 ---
 
-## 2. Architectural Decision: Separation of Physics and Clinic
+## 1. Abstract
 
-To resolve this without compromising the reproducibility of canonical metrics, we adopt a **Separation of Concerns (SoC)** architecture inspired by medical practice.
-
-### 2.1 Module `MoeaBench.metrics` (The Laboratory)
-*   **Responsibility:** Calculate pure physical quantities.
-*   **Nature:** Absolute, "Dumb", Reproducible.
-*   **Functions:** `igd(P, GT)`, `emd(P, GT)`.
-*   **Decision:** These functions remain unchanged. We will not embed "magic compensations" here. This ensures MoeaBench's IGD is comparable to literature.
-
-### 2.2 Module `MoeaBench.clinic` (The Clinic)
-*   **Responsibility:** Interpret physical quantities in light of context (Budget $N$, Dimensionality $M$).
-*   **Nature:** Relative, Calibrated, Contextual.
-*   **Key Concept:** **Efficiency Ratio to Floor ($Efficiency Ratio$)**.
-    
-    $$ Metric_{eff} = \frac{Metric_{observed}}{Metric_{floor}(N, Problem)} $$
-    
-*   **Interpretation:**
-    *   $1.0$: Perfect Efficiency (Algorithm reached the physical sampling limit).
-    *   $1.2$: 20% Inefficiency over the physical limit.
-    *   $>2.0$: Significant degradation.
-
-### 2.3 Module `MoeaBench.diagnostics` (The Auditor)
-*   **Responsibility:** Issue verdicts (`PASS`/`FAIL`) based on clinical data.
-*   **Decision:** Profiles (`RESEARCH`, `STANDARD`) are no longer defined by arbitrary physical values but by **Efficiency Levels**.
-    *   **Research:** Requires Efficiency $\le 1.10$ (10% tolerance over optimal).
-    *   **Standard:** Requires Efficiency $\le 1.50$ (50% tolerance).
-*   **Benefit:** This definition is **Scale Invariant**. It works equally for 2D, 3D, or 10D, as the dimensional difficulty has been absorbed by the denominator ($Metric_{floor}$).
+This Architectural Decision Record (ADR) formalizes the transition of the *MoeaBench* diagnostic system from a threshold-based heuristic model to a **Clinical Metrology** architecture. The central innovation is the decoupling of physical measurements ("Fair Metrics") from their engineering interpretation ("Q-Scores"). We demonstrate that finite sampling regimes ($N \approx 100-200$) in high-dimensional manifolds ($M \ge 3$) impose intrinsic geometric limitations ("The Sparsity Law") that render fixed-threshold metrics scientifically unrealistically exigent. To address this, we introduce a **3-Layer Architecture** (Raw $\to$ Fair $\to$ Q-Score) anchored by rigorous statistical baselines. This system provides a scale-invariant, audit-proof framework for certifying algorithmic performance, distinguishing fundamental physical bounds from actual search failures.
 
 ---
 
-## 3. Technical Specification
+## 2. Problem Statement: The Crisis of Naive Metrology
 
-### 3.1 Statistical Baseline Generation (`scripts/generate_baselines.py`)
-We will not use approximate analytical formulas. We will use **Monte Carlo Methods** to determine the empirical floor for each problem.
+### 2.1 The Curse of Dimensionality in Finite Sampling
+Traditional auditing profiles (e.g., standard industrial thresholds of $IGD < 0.01$) rely on the implicit assumption that the *Pareto Front* is a continuous surface that can be densely approximated by the algorithmic population $P$.
+However, in practical engineering scenarios, the population size $N$ is physically constrained (typically $N \le 200$). As the number of objectives $M$ increases, the theoretical minimum distance required to "cover" the manifold grows exponentially with respect to the dimensionality $d = M-1$.
 
-1.  **Sampling:** For each problem, we extract $K=100$ random subsets of size $N$ from the GT.
-2.  **Floor Calculation:**
-    *   **IGD Floor ($P_{10}$):** The 10th percentile of the IGD metrics of the subsets. We use $P_{10}$ ("Best-of-K") instead of the median ($P_{50}$) to represent a target of "Algorithmic Excellence", not just "Typical Randomness".
-    *   **EMD Floor ($P_{10}$):** Calculated between **pairs of subsets** ($S_a, S_b$) to isolate discretization noise and avoid cardinality artifacts ($N$ vs Full GT).
+We define the **Sparsity Law** for a $d$-dimensional manifold covered by $N$ points:
+$$ R_{cov} \propto N^{-\frac{1}{d}} $$
 
-The result is persisted in `MoeaBench/diagnostics/resources/baselines.json`.
+*   **For $M=2$ ($d=1$):** With $N=100$, coverage density is high ($R \approx 0.01$). Fixed thresholds work.
+*   **For $M=3$ ($d=2$):** With $N=100$, the expected nearest-neighbor distance jumps to $R \approx 0.10$. A threshold of $0.01$ becomes physically impossible, regardless of algorithmic perfection.
+*   **For $M>3$:** The manifold becomes largely empty space. Comparing an algorithm against a "Perfect Zero" baseline measures the geometry of the problem, not the quality of the solver.
 
-### 3.2 New Clinical Metrics (`MoeaBench/clinic/indicators.py`)
-
-#### `igd_efficiency(P, GT, n_eval, ...)`
-1.  Loads the `igd_floor` corresponding to the problem and $N$.
-2.  Calculates `raw_igd = metrics.igd(P, GT)`.
-3.  Returns `raw_igd / igd_floor`.
-
-#### `purity_robust(P, GT, percentile=95)`
-1.  Calculates GD distances for all points ($d_i$).
-2.  Returns the 95th percentile of $d_i$.
-3.  **Justification:** Mean GD is unstable. A single outlier point can destroy the mean. P95 trims the edges and focuses on the convergence of the population's main mass, aligning better with the visual diagnosis of `NOISY_POPULATION`.
+### 2.2 The Fallacy of the Perfect Ground Truth
+Furthermore, in numerical benchmarking, the "Ground Truth" (GT) is often a discrete reference set $F_{opt}$, not an infinite surface. Even an **Optimal Subset** $S_{opt} \subset F_{opt}$ of size $N$ will exhibit non-zero IGD and EMD values due to discretization noise.
+Evaluating an algorithm against $IGD=0.0$ imposes an unfair penalty, effectively failing robust algorithms for not achieving a physically attainable state—a metrological injustice.
 
 ---
 
-## 4. Consequences and Advantages
+## 3. Theoretical Framework: The 3-Layer Architecture
 
-### 4.1 Metrological Fairness
-Algorithms will no longer be punished for the limitations of physics. A `FAIL` diagnosis will unequivocally mean "worse than possible", not "worse than the auditor's imagination".
+To resolve these inconsistencies, we adopt a **Clinical Metrology** approach, separating the physics of measurement from the judgment of quality.
 
-### 4.2 Scalability to Many-Objectives
-The system is ready for $M=4, 5, 10...$. As dimensionality grows, `IGD_floor` grows organically. The pass criterion (Ratio $\le 1.5$) remains stable and meaningful.
+### 3.1 Layer 0: Raw Metrics (`MoeaBench.metrics`)
+*   **Definition:** Pure mathematical distances in the Euclidean objective space ($\mathbb{R}^M$).
+*   **Role:** The absolute "truth" of position. Uncorrected and unnormalized.
+*   **Examples:** $GD(P, GT)$, $IGD(P, GT)$, $W_1(P, GT)$.
+*   **Status:** Immutable. These are the primitives upon which all higher logic is built.
 
-### 4.3 Semantic Clarity
-*   **Search Failure:** Now reserved for actual convergence failures (Ratio $> 3.0$ or similar).
-*   **Noisy Population:** Diagnosed via `purity_robust`, indicating local dispersion without global collapse.
+### 3.2 Layer 1: Fair Metrics (`MoeaBench.diagnostics.fair`)
+*   **Definition:** Physically meaningful quantities, corrected for scale and resolution artifacts.
+*   **Direction:** **Low-is-Better** (Physical Error).
+*   **Role:** To characterize specific "pathologies" (e.g., Non-convergence, Gaps, Irregularity) in a way that is comparable across different problems.
+*   **Formal Definitions:**
+    1.  **FAIR_FIT (Convergence):**
+        $$ \mathcal{F}_{fit} = \frac{GD_{95}(P \to GT)}{s_{GT}} $$
+        *Normalization by $s_{GT}$ (GT resolution) makes convergence dimensionless.*
+    2.  **FAIR_COVERAGE (Completeness):**
+        $$ \mathcal{F}_{cov} = IGD_{mean}(GT \to P) $$
+    3.  **FAIR_GAP (Continuity):**
+        $$ \mathcal{F}_{gap} = IGD_{95}(GT \to P) $$
+        *Captures the "largest hole" in coverage, robust to outliers.*
+    4.  **FAIR_REGULARITY (Geometry):**
+        $$ \mathcal{F}_{reg} = W_1(\text{NN}(P), \text{NN}(U_{ref})) $$
+        *Wasserstein distance between the Nearest-Neighbor distribution of $P$ and a reference Uniform Lattice $U_{ref}$.*
+    5.  **FAIR_BALANCE (Topology):**
+        $$ \mathcal{F}_{bal} = D_{JS}(\text{Hist}(P) || \text{Hist}(U_{ref})) $$
+        *Jensen-Shannon divergence of cluster occupancy.*
 
-This architecture moves MoeaBench from a "Plotting" tool to a **Precision Scientific Audit** platform, capable of distinguishing fundamental limitations from algorithmic failures.
+### 3.3 Layer 2: Q-Scores (`MoeaBench.diagnostics.qscore`)
+*   **Definition:** Engineering quality grades normalized to the expectation of the specific problem instance $(Problem, N, M)$.
+*   **Direction:** **High-is-Better** ($Q \in [0.0, 1.0]$).
+*   **Role:** To determine the "Verdict" (Pass/Fail) by Contextualizing the Fair Metric.
+*   **The Transformation:**
+    $$ Q = 1.0 - \text{clip}\left( \frac{\mathcal{F}_{observed} - \mathcal{F}_{ideal}}{\mathcal{F}_{random} - \mathcal{F}_{ideal}} \right) $$
+
+    *   $\mathcal{F}_{ideal}$: The expected Fair Metric value of an **Optimal Subset** (obtained via Farthest Point Sampling of GT).
+    *   $\mathcal{F}_{random}$: The expected value of a **Random Subset** (or BBox Random).
+
+---
+
+## 4. Implementation Specification
+
+### 4.1 Strict Baseline Policy (The "Fail-Closed" Principle)
+To ensure the integrity of the audit, the system must never "guess" or "fallback".
+*   **Fail-Closed:** If the baselines ($\mathcal{F}_{ideal}, \mathcal{F}_{random}$) for a specific triplet $(Problem, K, Metric)$ are missing from the certified JSON, the system raises `UndefinedBaselineError`. The audit is aborted. This prevents "Shadow Audits" where algorithms pass due to loose default thresholds.
+
+### 4.2 Baseline Selection Rules
+To prevent grade inflation, the baselines are generated with rigorous statistical methods:
+*   **FIT Exception:** For Convergence, a random subset of GT is *too easy*. A "Random" algorithm would be far worse (generating points anywhere in the BBox).
+    *   $\mathcal{F}_{ideal}^{fit} = 0.0$ (Physical perfection is required).
+    *   $\mathcal{F}_{random}^{fit} = \mathbb{E}[\text{BBox Sampling}]$.
+*   **Diversity Metrics (Cov, Gap, Reg, Bal):**
+    *   $\mathcal{F}_{ideal} = \text{Median}(FPS(GT, K))$
+    *   $\mathcal{F}_{random} = \text{Median}(RandSubset(GT, K))$
+
+### 4.3 Modular Architecture (`MoeaBench.diagnostics`)
+The architecture is reified in a clean Python package:
+*   `fair.py`: Pure physics engines (scipy-based). No domain logic.
+*   `qscore.py`: The "Judge". Holds the normalization logic and baseline connectivity.
+*   `baselines.py`: The "Vault". secure, cached access to the baseline V2 JSON.
+*   `auditor.py`: The "Orchestrator". Computes the 5-dimensional quality matrix and issues the final textual verdict.
+
+---
+
+## 5. Implications and Review
+
+### 5.1 Audit Traceability
+Every cell in the final report acts as a verifiable proof. The tooltips expose the entire derivation chain:
+> **Q-Score: 0.85**
+> *("Good", $Q > 0.67$)*
+>
+> **Trace:**
+> *   **Fair Metric:** 0.045 (Physical measurement)
+> *   **Ideal (Reference):** 0.012 (Limit of physics for N=100)
+> *   **Random (Noise):** 0.150 (Expected chaos)
+> *   **Sample Size:** K=100 (Raw=100)
+
+This transparency silences the "Why did I fail?" question. The user can see instantly if they failed because their physics were bad ($\approx Random$) or simply not good enough for the strict context ($\approx Ideal$).
+
+### 5.2 Scale Invariance Achieved
+By normalizing against the *Ideal* and *Random* specific to that dimensionality, the Q-Score becomes a **Universal Quality Constant**. A $Q=0.9$ on a 2D problem implies the same level of mastery as a $Q=0.9$ on a 10D problem, allowing for cross-problem aggregation and ranking.
+
+### 5.3 Conclusion
+MoeaBench v0.9 moves beyond simple plotting. It establishes a **Metrological Standard** for multi-objective auditing. By acknowledging the sparsity law and certifying against rigorous empirical baselines, we provide the first truly fair and scalable framework for algorithmic benchmarking in the many-objective era.

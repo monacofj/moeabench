@@ -41,8 +41,9 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-import MoeaBench.clinic.indicators as clinic
-import MoeaBench.clinic.baselines as base
+import MoeaBench.diagnostics.baselines as base
+from scipy.spatial.distance import cdist, jensenshannon
+from scipy.stats import wasserstein_distance
 
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
 OUTPUT_JSON = os.path.join(PROJ_ROOT, "MoeaBench/diagnostics/resources/baselines_v2.json")
@@ -142,13 +143,13 @@ def compute_baselines_for_mop(mop_name, gt_path):
                 # W1 vs U_ref
                 d_p = base.cdist(P, P); np.fill_diagonal(d_p, np.inf); nn_p = np.min(d_p, axis=1)
                 d_u = base.cdist(U_ref, U_ref); np.fill_diagonal(d_u, np.inf); nn_u = np.min(d_u, axis=1)
-                return clinic.wasserstein_distance(nn_p, nn_u)
+                return wasserstein_distance(nn_p, nn_u)
 
             def raw_bal(P):
                 # JS vs H_ref
                 d_p = base.cdist(P, C_cents); lab_p = np.argmin(d_p, axis=1)
                 hp = np.bincount(lab_p, minlength=len(C_cents)).astype(float); hp /= np.sum(hp)
-                return clinic.jensenshannon(hp, H_ref, base=2.0)
+                return jensenshannon(hp, H_ref, base=2.0)
             
             # Collect Uni (FPS) values
             # Fit for Uni is 0 (subset), but let's compute to validade
