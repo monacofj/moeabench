@@ -29,7 +29,14 @@ def generate_visual_report():
         audit_data = json.load(f)
 
     problems = audit_data["problems"]
-    mops = sorted(problems.keys())
+    
+    # Custom Sort Order: DTLZ first, then DPF (or others)
+    def mop_sort_key(name):
+        if "DTLZ" in name:
+            return (0, name) # Priority 0
+        return (1, name) # Priority 1
+        
+    mops = sorted(problems.keys(), key=mop_sort_key)
 
     html_content = [
         "<html><head><title>MoeaBench v0.9.0 Calibration</title>",
@@ -120,14 +127,63 @@ def generate_visual_report():
             stats = data["stats"]
             clinical = data["clinical"]
             
-            # 3D Front
-            if data["final_front"]:
+            # 3D Front (Clinical Differentiation: Solid / Hollow / X)
+            if data["final_front"] and data["cdf_dists"]:
                 front = np.array(data["final_front"])
-                fig.add_trace(go.Scatter3d(
-                    x=front[:,0], y=front[:,1], z=front[:,2],
-                    mode='markers', marker=dict(size=4, color=colors_solid.get(alg, 'black'), opacity=0.8),
-                    name=alg, legendgroup=alg
-                ), row=1, col=1)
+                dists = np.array(data["cdf_dists"])
+                
+                # Fetch FIT baselines for per-point Q-Score calculation
+                fit_data = clinical.get("fit", {})
+                ideal = fit_data.get("ideal", 0.0)
+                rand = fit_data.get("rand", 1.0)
+                
+                # Calculate Q-Score for each point
+                denom = rand - ideal
+                if abs(denom) < 1e-12:
+                    q_points = np.where(dists < 1e-6, 1.0, 0.0)
+                else:
+                    q_points = 1.0 - np.clip((dists - ideal) / denom, 0.0, 1.0)
+                
+                mask_research = q_points >= 0.67
+                mask_industry = (q_points >= 0.34) & (q_points < 0.67)
+                mask_fail = q_points < 0.34
+                
+                # Trace 1: Research (Solid Circle)
+                if np.any(mask_research):
+                    pts = front[mask_research]
+                    fig.add_trace(go.Scatter3d(
+                        x=pts[:,0], y=pts[:,1], z=pts[:,2],
+                        mode='markers', marker=dict(size=4, color=colors_solid.get(alg, 'black'), opacity=1.0),
+                        name=f'{alg} (Research)', legendgroup=alg
+                    ), row=1, col=1)
+
+                # Trace 2: Industry (Hollow Circle)
+                if np.any(mask_industry):
+                    pts = front[mask_industry]
+                    fig.add_trace(go.Scatter3d(
+                        x=pts[:,0], y=pts[:,1], z=pts[:,2],
+                        mode='markers',
+                        marker=dict(
+                            size=4, symbol='circle-open',
+                            line=dict(color=colors_solid.get(alg, 'black'), width=2),
+                            opacity=0.8
+                        ),
+                        name=f'{alg} (Industry)', legendgroup=alg, showlegend=False
+                    ), row=1, col=1)
+
+                # Trace 3: Fail (X)
+                if np.any(mask_fail):
+                    pts = front[mask_fail]
+                    fig.add_trace(go.Scatter3d(
+                        x=pts[:,0], y=pts[:,1], z=pts[:,2],
+                        mode='markers',
+                        marker=dict(
+                            size=3, symbol='x',
+                            color=colors_solid.get(alg, 'black'),
+                            opacity=0.6
+                        ),
+                        name=f'{alg} (Fail)', legendgroup=alg, showlegend=False
+                    ), row=1, col=1)
 
             # History
             if data["history"]["gens"]:

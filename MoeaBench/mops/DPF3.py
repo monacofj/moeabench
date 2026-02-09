@@ -90,3 +90,23 @@ class DPF3(BaseDPF):
 
     def get_K(self):
         return self.K
+
+    def pf(self, n_points: int = 100):
+        """
+        Overrides BaseMop.pf to ensure only non-dominated points are returned.
+        DPF3's chaotic projection inherently produces many dominated points 
+        in the analytical sampling.
+        """
+        # 1. Generate candidate points using standard logic
+        F = super().pf(n_points)
+        
+        # 2. Filter using Non-Dominated Sorting
+        try:
+            from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+            nds = NonDominatedSorting()
+            fronts = nds.do(F)
+            # Return only the first front (Rank 0)
+            return F[fronts[0]]
+        except ImportError:
+            # Fallback (should not happen in standard env)
+            return F
