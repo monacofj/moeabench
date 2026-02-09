@@ -1,119 +1,131 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-"""
-MoeaBench Clinical Indicators
-=============================
+r"""
+MoeaBench Clinical Indicators (Quality Score System)
+===================================================
 
-This module implements "Clinical Metrics" - calibrated variants of standard
-MOO metrics (IGD, EMD) that are normalized by statistical baselines.
+This module implements the Normalized Clinical Quality Matrix logic.
+All metrics return a Quality Score ($Q \in [0,1]$) where:
+- 1.00: Indistinguishable from Optimal Uniform Sampling ($U_K$).
+- 0.00: Indistinguishable from Random Sampling ($R_K$).
 
-Purpose:
---------
-To provide scale-invariant efficiency ratios that account for:
-1. Finite Population Budget (N)
-2. Intrinsic Dimensionality (M)
-3. Discretization Noise of Ground Truth
-
-Key Metrics:
-------------
-- igd_efficiency(P, GT, problem): R = IGD_obs / IGD_floor(N)
-- emd_efficiency(P, GT, problem): R = EMD_obs / EMD_floor(N)
-- purity_robust(P, GT): GD at 95th percentile (outlier resistant)
-
-Architecture:
--------------
-Ideally, this module is consumed by `mb.diagnostics.auditor`, ensuring
-the auditor makes decisions based on "Efficiency" rather than "Raw Distance".
+Strictly anchored to Ground Truth baselines.
 """
 
-import os
-import json
 import numpy as np
-from scipy.spatial.distance import cdist
-from typing import Optional, Dict
+from scipy.spatial.distance import cdist, jensenshannon
+from scipy.stats import wasserstein_distance
+from typing import Optional, Tuple
 
-# Lazy Load Cache
-_BASELINES: Optional[Dict] = None
-
-def _load_baselines():
-    global _BASELINES
-    if _BASELINES is None:
-        path = os.path.join(os.path.dirname(__file__), "../diagnostics/resources/baselines.json")
-        try:
-            with open(path, "r") as f:
-                _BASELINES = json.load(f)
-        except Exception as e:
-            # Fallback for CI or fresh install
-            # print(f"Warning: Clinical Baselines not found at {path}. Using Identity.")
-            _BASELINES = {"problems": {}}
-    return _BASELINES
-
-def get_floor(problem: str, metric: str, n: int = 200, stat: str = "p10") -> float:
+def _normalize_quality(raw_val: float, uni50: float, rand50: float) -> float:
     """
-    Retrieves the statistical floor for a given problem/metric configuration.
-    
-    Args:
-        problem (str): "DTLZ1", "DPF3", etc.
-        metric (str): "igd_floor" or "emd_floor".
-        n (int): Population budget (currently only support for 200).
-        stat (str): "p10" (Expert), "p50" (Typical), "p90" (Pessimistic).
-    
-    Returns:
-        float: The floor value. Returns 1e-9 if not found to avoid div/0.
+    Quality Score Normalization Formula.
+    Clips output to [0, 1] and inverts the scale.
+    1.0 = Optimal (uni50), 0.0 = Random (rand50).
     """
-    bases = _load_baselines()
-    try:
-        # Currently N is implicit in the file, assuming generated for N=200
-        # Future: baselines[problem][n][metric][stat]
-        return bases["problems"][problem][metric][stat]
-    except KeyError:
-        # Fallback: Return a very small number -> efficiency will be huge (FAIL)
-        # OR return 0.0 if handled upstream.
-        # Ideally we log a warning.
-        return 1e-9
-
-def igd_efficiency(raw_igd: float, problem: str, n: int = 200) -> float:
-    """
-    Calculates the IGD Efficiency Ratio.
-    
-    R = raw_igd / igd_floor_p10
-    
-    Interpret:
-      1.0: Perfect (matches best random sampling)
-      <1.0: Better than random sampling (Smart Search)
-      >1.5: Inefficient
-    """
-    floor = get_floor(problem, "igd_floor", n, "p10")
-    if floor <= 1e-8: return 999.0 # Safe fallback for missing data
-    return raw_igd / floor
-
-def emd_efficiency(raw_emd: float, problem: str, n: int = 200) -> float:
-    """
-    Calculates the EMD Efficiency Ratio (Topology Check).
-    
-    R = raw_emd / emd_floor_p10
-    """
-    floor = get_floor(problem, "emd_floor", n, "p10")
-    if floor <= 1e-8: return 999.0
-    return raw_emd / floor
-
-def purity_robust(P: np.ndarray, GT: np.ndarray, percentile: int = 95) -> float:
-    """
-    Calculates the Robust Purity (GD) at a high percentile.
-    
-    Instead of Mean GD (sensitive to one outlier), we aggregate the distance
-    of the 95th percentile worst point. This trims the 5% worst garbage.
-    
-    Args:
-        P (np.ndarray): Population points.
-        GT (np.ndarray): Ground Truth points.
-        percentile (int): 95 recommended.
+    denom = rand50 - uni50
+    if abs(denom) < 1e-12:
+        # Degenerate baseline range
+        # If raw is close to uni, return 1.0 (Optimal). Else assume fail (0.0).
+        if abs(raw_val - uni50) < 1e-6:
+            return 1.0
+        return 0.0
         
-    Returns:
-        float: GD_p95
-    """
-    # 1. Distances from each point in P to nearest in GT
-    dists = cdist(P, GT, metric='euclidean')
-    min_dists = np.min(dists, axis=1) # Shape (N,)
+    # Calculate error in [0, 1]
+    error = (raw_val - uni50) / denom
+    error_clipped = np.clip(error, 0.0, 1.0)
     
-    # 2. Percentile
-    return float(np.percentile(min_dists, percentile))
+    # Invert to Quality
+    return float(1.0 - error_clipped)
+
+def fit_quality(P: np.ndarray, GT: np.ndarray, s_gt: float,
+                uni50: float, rand50: float) -> float:
+    r"""
+    Calculates FIT Quality Score.
+    
+    Raw Metric: $GD_{95}(P, GT) / s_{GT}$
+    """
+    # 1. Compute Distances to GT
+    d = cdist(P, GT, metric='euclidean')
+    min_d = np.min(d, axis=1) # (N,)
+    
+    # 2. Raw Metric (Normalized by local resolution)
+    gd95 = np.percentile(min_d, 95)
+    raw = gd95 / s_gt if s_gt > 1e-12 else gd95
+    
+    return _normalize_quality(raw, uni50, rand50)
+
+def coverage_quality(P: np.ndarray, GT: np.ndarray,
+                     uni50: float, rand50: float) -> float:
+    r"""
+    Calculates COVERAGE Quality Score.
+    
+    Raw Metric: $IGD_{mean}(P, GT)$
+    """
+    # 1. Compute Distances from GT to P
+    d = cdist(GT, P, metric='euclidean')
+    min_d = np.min(d, axis=1) # (|GT|,)
+    
+    # 2. Raw Metric
+    igd_mean = np.mean(min_d)
+    
+    return _normalize_quality(igd_mean, uni50, rand50)
+
+def density_quality(P: np.ndarray, GT: np.ndarray,
+                    uni50: float, rand50: float) -> float:
+    r"""
+    Calculates DENSITY Quality Score (formerly Gap).
+    
+    Raw Metric: $IGD_{95}(P, GT)$
+    """
+    d = cdist(GT, P, metric='euclidean')
+    min_d = np.min(d, axis=1)
+    
+    igd95 = np.percentile(min_d, 95)
+    
+    return _normalize_quality(igd95, uni50, rand50)
+
+def regularity_quality(P: np.ndarray, U_ref: np.ndarray,
+                       uni50: float, rand50: float) -> float:
+    r"""
+    Calculates REGULARITY Quality Score (formerly Uniformity).
+    
+    Raw Metric: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
+    """
+    # 1. Nearest Neighbors within P (excluding self)
+    d_p = cdist(P, P)
+    np.fill_diagonal(d_p, np.inf)
+    nn_p = np.min(d_p, axis=1)
+    
+    # 2. Nearest Neighbors within Reference U_ref
+    d_u = cdist(U_ref, U_ref)
+    np.fill_diagonal(d_u, np.inf)
+    nn_u = np.min(d_u, axis=1)
+    
+    # 3. Wasserstein Distance
+    w1 = wasserstein_distance(nn_p, nn_u)
+    
+    return _normalize_quality(w1, uni50, rand50)
+
+def balance_quality(P: np.ndarray, centroids: np.ndarray, ref_hist: np.ndarray,
+                    uni50: float, rand50: float) -> float:
+    r"""
+    Calculates BALANCE Quality Score.
+    
+    Raw Metric: $D_{JS}(H_P || H_{ref})$
+    """
+    # 1. Assign points to clusters
+    d = cdist(P, centroids)
+    labels = np.argmin(d, axis=1) # (N,)
+    
+    # 2. Compute Histogram (Frequency)
+    n_clusters = len(centroids)
+    hist_p = np.bincount(labels, minlength=n_clusters).astype(float)
+    hist_p /= np.sum(hist_p) # Normalize to Probability Mass
+    
+    # 3. JS Divergence
+    js = jensenshannon(hist_p, ref_hist, base=2.0)
+    
+    return _normalize_quality(js, uni50, rand50)
