@@ -1,211 +1,250 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import numpy as np
+import os
 from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
-from .enums import DiagnosticStatus
+from .enums import DiagnosticStatus, DiagnosticProfile
+from . import fair, qscore, baselines
+
+# Thresholds for Q-Score (High-is-Better)
+# Green >= 2/3, Yellow >= 1/3, Red < 1/3
+THRESH_RESEARCH = 0.67
+THRESH_INDUSTRY = 0.34
+# Less strict profiles can be lower if needed, but 1/3 is the absolute floor.
 
 @dataclass
 class DiagnosticResult:
-    """
-    Encapsulates the finding of an algorithmic audit.
-    """
+    """ Encapsulates the finding of an algorithmic audit. """
     status: DiagnosticStatus
-    metrics: Dict[str, float]
+    verdict: str
+    metrics: Dict[str, Any]
     confidence: float
+    description: str
     _rationale: str
+    details: Dict[str, Any] = None 
 
     def rationale(self) -> str:
-        """Returns the scientific-didactic explanation of the diagnosis."""
         return self._rationale
 
-    @property
-    def gd(self) -> float:
-        """Convenience access to Generational Distance."""
-        return self.metrics.get('gd', float('inf'))
-
-    @property
-    def igd(self) -> float:
-        """Convenience access to Inverted Generational Distance."""
-        return self.metrics.get('igd', float('inf'))
-
-    @property
-    def emd(self) -> float:
-        """Convenience access to Earth Mover's Distance."""
-        return self.metrics.get('emd', float('inf'))
-
-    def report(self, **kwargs) -> str:
-        """Formatted narrative report."""
-        lines = [
-            f"--- [Diagnostics] Algorithmic Pathology Report ---",
-            f"  Status: {self.status.name}",
-            f"  Confidence: {self.confidence:.2f}",
-            f"  Analysis: {self._rationale}",
-            "--------------------------------------------------"
-        ]
-        return "\n".join(lines)
-
-    def report_show(self, **kwargs) -> None:
-        """Displays the report in the appropriate environment (Terminal/Notebook)."""
-        try:
-            from IPython.display import Markdown, display
-            # Check if running in a notebook environment
-            import sys
-            if 'ipykernel' in sys.modules:
-                display(Markdown(f"""
-### 🩺 Algorithmic Pathology Report
-**Status**: `{self.status.name}` (Confidence: {self.confidence:.2f})
-
-> **Analysis**: {self._rationale}
-"""))
-                return
-        except ImportError:
-            pass
-        
-        # Fallback to terminal print
-        print(self.report())
-
 class PerformanceAuditor:
-    """
-    Expert system for interpreting multi-objective performance metrics.
-    """
+    """ Expert system for interpreting 5D Clinical Quality Scores. """
     
     @staticmethod
-    def audit(metrics: Dict[str, float]) -> DiagnosticResult:
-        """
-        Analyzes a dictionary of metrics (IGD, GD, H_rel, EMD) using the 8-state Pathology Truth Table.
-        """
-        # 1. Extract Metrics
-        igd = metrics.get('igd', metrics.get('IGD', float('inf')))
-        gd = metrics.get('gd', metrics.get('GD', float('inf')))
-        emd = metrics.get('emd', metrics.get('EMD', float('inf')))
-        h_rel = metrics.get('h_rel', metrics.get('H_rel', 0.0))
-
-        # 2. Check for Super-Saturation (Pre-check)
-        if h_rel > 1.05: # 5% tolerance
+    def audit(metrics: Dict[str, float], 
+              profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
+        
+        # 1. Check Inputs
+        input_ok = bool(metrics.get("input_ok", True))
+        if not input_ok:
             return DiagnosticResult(
-                status=DiagnosticStatus.SUPER_SATURATION,
+                status=DiagnosticStatus.UNDEFINED_INPUT,
+                verdict="FAIL",
                 metrics=metrics,
-                confidence=1.0,
-                _rationale=(
-                    f"Super-Saturation Detected (H_rel = {h_rel*100:.2f}%). "
-                    "The algorithm has outperformed the resolution of the provided Ground Truth. "
-                    "This indicates performance saturation strictly superior to the discrete baseline."
-                )
+                confidence=0.0,
+                description="Invalid input.",
+                _rationale="Input validation failed."
+            )
+            
+        baseline_ok = bool(metrics.get("baseline_ok", False))
+        if not baseline_ok:
+            return DiagnosticResult(
+                status=DiagnosticStatus.UNDEFINED_BASELINE,
+                verdict="FAIL", # Fail-Closed
+                metrics=metrics,
+                confidence=0.0,
+                description="Missing baselines.",
+                _rationale="Baselines unavailable for this MOP/K."
             )
 
-        # 3. Binary Classification (The Truth Table)
-        # Thresholds defined in ADR 0025
-        # GOOD_GD (< 0.1)  : Converged?
-        # GOOD_IGD (< 0.1) : Covered?
-        # GOOD_EMD (< 0.12): Shape/Distribution Fidelity? (Relaxed from 0.08)
-        GOOD_GD = gd < 0.1
-        GOOD_IGD = igd < 0.1
-        GOOD_EMD = emd < 0.12
-
-        # State Determination (8 States)
-        if GOOD_GD:
-            if GOOD_IGD:
-                if GOOD_EMD:
-                    # (1) [L, L, L] -> IDEAL FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.IDEAL_FRONT, metrics=metrics, confidence=0.98,
-                        _rationale=f"Ideal Front. The population lies close to the ground-truth Pareto front (GD={gd:.1e}), covers the full extent of the reference front without relevant gaps (IGD={igd:.2f}), and matches the reference distribution in a global, mass-transport sense (EMD={emd:.3f}). In practical terms, you not only 'hit the target,' but you also covered it uniformly and with the expected density."
-                    )
-                else:
-                    # (2) [L, L, H] -> BIASED SPREAD
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.BIASED_SPREAD, metrics=metrics, confidence=0.85,
-                        _rationale=f"Biased Spread. Solutions are near the true front (GD={gd:.1e}) and the front is broadly covered (IGD={igd:.2f}), yet the global distribution is distorted (EMD={emd:.3f}). This typically means the algorithm concentrates too much mass in some regions and too little in others—clustering or systematic density bias."
-                    )
-            else:
-                if GOOD_EMD:
-                    # (3) [L, H, L] -> GAPPED COVERAGE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.GAPPED_COVERAGE, metrics=metrics, confidence=0.88,
-                        _rationale=f"Gapped Coverage. The solutions that exist are close to the true front (GD={gd:.1e}), but substantial regions of the reference front have no nearby representatives (IGD={igd:.2f}). Despite local correctness (EMD={emd:.3f}), the approximation captures only parts of the Pareto set, leaving 'holes'."
-                    )
-                else:
-                    # (4) [L, H, H] -> COLLAPSED FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.COLLAPSED_FRONT, metrics=metrics, confidence=0.95,
-                        _rationale=f"Collapsed Front. The population is largely near the front (GD={gd:.1e}) but fails to represent its extent (IGD={igd:.2f}) and does not match the reference distribution globally (EMD={emd:.3f}). This is the signature of degeneracy: the algorithm collapses onto a small subset of the front (or even a single point)."
-                    )
-        else: # BAD GD
-            if GOOD_IGD:
-                if GOOD_EMD:
-                    # (5) [H, L, L] -> NOISY POPULATION
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.NOISY_POPULATION, metrics=metrics, confidence=0.80,
-                        _rationale=f"Noisy Population. The reference front is well covered (IGD={igd:.2f}) and the global distribution resembles the reference (EMD={emd:.3f}), yet the population contains substantial mass far from the true front (GD={gd:.1e}). Scientifically, this indicates low purity: a meaningful subset approximates the front well, but many dominated points remain."
-                    )
-                else:
-                    # (6) [H, L, H] -> DISTORTED COVERAGE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.DISTORTED_COVERAGE, metrics=metrics, confidence=0.82,
-                        _rationale=f"Distorted Coverage. Coverage exists in the nearest-neighbor sense (IGD={igd:.2f}), but the population is globally inconsistent: it is far on average from the true front (GD={gd:.1e}) and its distribution deviates strongly (EMD={emd:.3f}). This often reflects a mixed regime with severe bias or contamination."
-                    )
-            else:
-                if GOOD_EMD:
-                    # (7) [H, H, L] -> SHIFTED_FRONT
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.SHIFTED_FRONT, metrics=metrics, confidence=0.90,
-                        _rationale=f"Shifted Front. The population forms a coherent, well-structured front-like manifold (EMD={emd:.3f}), but it is displaced relative to the true Pareto front (GD={gd:.1e}). Intuitively, the algorithm learned the 'right shape' but at the 'wrong location': a systematic mislocalization (e.g. Local Optimum Trap). For completeness, IGD={igd:.2f}."
-                    )
-                else:
-                    # (8) [H, H, H] -> SEARCH_FAILURE
-                    return DiagnosticResult(
-                        status=DiagnosticStatus.SEARCH_FAILURE, metrics=metrics, confidence=0.95,
-                        _rationale=f"Search Failure. The population is neither close to the true front (GD={gd:.1e}) nor does it cover it (IGD={igd:.2f}), and its global distribution is unrelated to the reference. A full failure mode. For completeness, EMD={emd:.3f}."
-                    )
-
-def audit(target: Any, ground_truth: Optional[Any] = None) -> DiagnosticResult:
-    """
-    Smart delegate for performance auditing.
-    
-    Args:
-        target: Can be a dictionary of metrics, an Experiment, or a Run object.
-        ground_truth: Optional reference front (if target contains raw populations).
-    """
-    metrics_data = {}
-    
-    # 1. Handle Dictionaries
-    if isinstance(target, dict):
-        metrics_data = target
-    
-    # 2. Handle Experiments and Runs
-    else:
-        # Import core objects to avoid circularity
-        from ..core.experiment import experiment
-        from ..core.run import Run
-        from .. import metrics as mb_metrics
+        # 2. Extract Q-Scores
+        # Default to 0.0 (Worst) if missing, to be safe
+        q_fit = float(metrics.get("q_fit", 0.0))
+        q_cov = float(metrics.get("q_coverage", 0.0))
+        q_gap = float(metrics.get("q_gap", 0.0))
+        q_reg = float(metrics.get("q_regularity", 0.0))
+        q_bal = float(metrics.get("q_balance", 0.0))
         
-        pop_objs = None
-        prob = None
-
-        if isinstance(target, experiment):
-            if not target.runs:
-                return PerformanceAuditor.audit({}) # Undefined
-            pop_objs = target.last_pop.objectives
-            prob = target.mop
-        elif isinstance(target, Run):
-            pop_objs = target.last_pop.objectives
-            prob = target.experiment.mop if target.experiment else None
+        q_scores = {
+            "FIT": q_fit,
+            "COVERAGE": q_cov,
+            "GAP": q_gap,
+            "REGULARITY": q_reg,
+            "BALANCE": q_bal
+        }
+        
+        # 3. Determine Worst Dimension (Weakest Link)
+        worst_dim = min(q_scores, key=q_scores.get)
+        q_worst = q_scores[worst_dim]
+        
+        # 4. Determine Verdict
+        # RESEARCH: Q >= 0.67
+        # INDUSTRY: Q >= 0.34
+        # FAIL: Q < 0.34
+        
+        verdict = "FAIL"
+        status = DiagnosticStatus.UNDEFINED # Conceptual placeholder
+        
+        if q_worst >= THRESH_RESEARCH:
+            # Passed strict research standard
+            verdict = "PASS"
+            status = DiagnosticStatus.IDEAL_FRONT
+            rationale = "All dimensions meet Research Quality (>= 0.67)."
+        elif q_worst >= THRESH_INDUSTRY:
+            # Passed industry standard (loose)
+            if profile == DiagnosticProfile.RESEARCH:
+                verdict = "FAIL"
+                rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) below Research threshold."
+            else:
+                verdict = "PASS" # Industry/Exploratory pass
+                rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) meets Industry threshold."
+            status = DiagnosticStatus.IDEAL_FRONT # Still "Ideal" topology, just lower quality? 
+            # Or map specific issues based on dimension?
+        else:
+            # Absolute Fail
+            verdict = "FAIL"
+            rationale = f"Critically low quality in {worst_dim} ({q_worst:.2f})."
             
-        if pop_objs is not None:
-             # Identify Ground Truth
-             pf = ground_truth
-             if pf is None and prob is not None:
-                 if hasattr(prob, 'pf'):
-                     pf = prob.pf()
-                 elif hasattr(prob, 'optimal_front'):
-                     pf = prob.optimal_front()
-             
-             if pf is not None:
-                  # Use public API for robust calculation
-                  metrics_data['gd'] = float(mb_metrics.gd(pop_objs, ref=pf))
-                  metrics_data['igd'] = float(mb_metrics.igd(pop_objs, ref=pf))
-                  try:
-                      metrics_data['h_rel'] = float(mb_metrics.hv(pop_objs, ref=pf))
-                  except:
-                      pass
-                      
-    return PerformanceAuditor.audit(metrics_data)
+            # Map low score to Status
+            if worst_dim == "FIT":
+                status = DiagnosticStatus.SHIFTED_FRONT # Poor convergence
+            elif worst_dim == "COVERAGE":
+                status = DiagnosticStatus.COLLAPSED_FRONT # Poor coverage
+            elif worst_dim == "GAP":
+                status = DiagnosticStatus.GAPPED_COVERAGE
+            elif worst_dim == "REGULARITY":
+                status = DiagnosticStatus.NOISY_POPULATION # Irregular
+            elif worst_dim == "BALANCE":
+                status = DiagnosticStatus.BIASED_SPREAD
+            else:
+                status = DiagnosticStatus.SEARCH_FAILURE
+
+        return DiagnosticResult(
+            status=status,
+            verdict=verdict,
+            metrics=metrics,
+            confidence=0.95,
+            description=rationale,
+            _rationale=f"[{profile.name}] {status.name} -> {verdict}. {rationale}"
+        )
+
+def audit(target: Any, 
+          ground_truth: Optional[np.ndarray] = None,
+          profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
+    """
+    Main Entry Point.
+    Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor.
+    """
+    metrics_data = {"input_ok": True, "baseline_ok": False}
+    
+    # 1. Extract Population (P) and Problem Info
+    # Simplified extraction logic
+    pop_objs = None
+    mop_name = "Unknown"
+    
+    # Try to extract from dict or object
+    if isinstance(target, dict):
+        # Assume it's already metrics data? No, usually not passed here.
+        # If passed pre-computed metrics, just delegate
+        if "q_fit" in target:
+            return PerformanceAuditor.audit(target, profile)
+        return PerformanceAuditor.audit({"input_ok": False}, profile)
+        
+    if isinstance(target, np.ndarray):
+        pop_objs = target
+    elif hasattr(target, 'objectives'):
+        pop_objs = target.objectives
+    elif hasattr(target, 'last_pop'):
+         pop_objs = target.last_pop.objectives
+    
+    if pop_objs is None:
+         return PerformanceAuditor.audit({"input_ok": False}, profile)
+
+    # 2. Extract Ground Truth (GT)
+    # Needed for Fair Metrics
+    if ground_truth is None:
+        # Try to find from problem/experiment
+        # TODO: Implement robust GT finding if not passed
+        # For now, require ground_truth or fail
+        return PerformanceAuditor.audit({"input_ok": False, "description": "GT required"}, profile)
+
+    GT = ground_truth
+    P = pop_objs
+    
+    # 3. K-Selection logic (Snap to Grid?)
+    # Assume P is already the eval set? 
+    # Or should we downsample?
+    # New logic: The caller usually handles P.
+    # But baselines are K-specific.
+    K = len(P)
+    
+    # Snapshot MOP Name (needed for baselines)
+    # Assuming the user ensures correct MOP name is active/known?
+    # In 'target', if it's an Algorithm object, we can get it.
+    if hasattr(target, 'problem') and hasattr(target.problem, 'name'):
+        mop_name = target.problem.name
+    elif hasattr(target, 'mop_name'):
+        mop_name = target.mop_name
+        
+    metrics_data['mop_name'] = mop_name
+    metrics_data['K'] = K
+    metrics_data['K_raw'] = K # Assuming no downsampling happened here yet
+    
+    # 4. Compute Fair Metrics & Q-Scores
+    try:
+        # A. Baselines (for Ideal/Random logic inside qscore, but we need some context)
+        # Verify baselines exist for this K/Mop (implicitly done inside qscore)
+        pass # qscore will raise if missing
+        
+        # B. Shared Reference Objects (U_K, Hist)
+        # Needed for Regularity/Balance FAIR calculation
+        U_ref = baselines.get_ref_uk(GT, K, seed=0)
+        centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
+        
+        # Reference Histogram for Balance
+        d_u = baselines.cdist(U_ref, centroids)
+        lab_u = np.argmin(d_u, axis=1)
+        hist_ref = np.bincount(lab_u, minlength=len(centroids)).astype(float)
+        hist_ref /= np.sum(hist_ref)
+        
+        # C. Compute FAIR Metrics (Physics)
+        s_gt = baselines.get_resolution_factor(GT)
+        metrics_data['s_gt'] = s_gt
+        
+        f_fit = fair.compute_fair_fit(P, GT, s_gt)
+        f_cov = fair.compute_fair_coverage(P, GT)
+        f_gap = fair.compute_fair_gap(P, GT)
+        f_reg = fair.compute_fair_regularity(P, U_ref)
+        f_bal = fair.compute_fair_balance(P, centroids, hist_ref)
+        
+        metrics_data['fair_fit'] = f_fit
+        metrics_data['fair_coverage'] = f_cov
+        metrics_data['fair_gap'] = f_gap
+        metrics_data['fair_regularity'] = f_reg
+        metrics_data['fair_balance'] = f_bal
+        
+        # D. Compute Q-Scores (Engineering)
+        q_fit = qscore.compute_q_fit(f_fit, mop_name, K)
+        q_cov = qscore.compute_q_coverage(f_cov, mop_name, K)
+        q_gap = qscore.compute_q_gap(f_gap, mop_name, K)
+        q_reg = qscore.compute_q_regularity(f_reg, mop_name, K)
+        q_bal = qscore.compute_q_balance(f_bal, mop_name, K)
+        
+        metrics_data['q_fit'] = q_fit
+        metrics_data['q_coverage'] = q_cov
+        metrics_data['q_gap'] = q_gap
+        metrics_data['q_regularity'] = q_reg
+        metrics_data['q_balance'] = q_bal
+        
+        metrics_data['baseline_ok'] = True
+        
+    except baselines.UndefinedBaselineError:
+        metrics_data['baseline_ok'] = False
+    except Exception as e:
+        metrics_data['baseline_ok'] = False
+        metrics_data['error'] = str(e)
+
+    # 5. Verdict
+    return PerformanceAuditor.audit(metrics_data, profile)

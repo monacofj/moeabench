@@ -11,6 +11,25 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.9.0] - 2026-02-09
+
+### Added
+- **Clinical Metrology Architecture (v0.9)**: Implemented a rigorous 3-layer diagnostic framework to separate physical measurements from engineering quality interpretations.
+  - **Fair Metrics Layer**: Introduced physically meaningful, scale-invariant metrics:
+    - `FAIR_FIT`: Convergence normalized by ground truth resolution.
+    - `FAIR_COVERAGE`: Average IGD-based extent.
+    - `FAIR_GAP`: Continuity/Hole detection ($IGD_{95}$).
+    - `FAIR_REGULARITY`: Wasserstein distance to uniform lattice.
+    - `FAIR_BALANCE`: Jensen-Shannon divergence to reference occupancy.
+  - **Q-Score Layer**: Standardized engineering grades [0.0, 1.0] normalized against "Ideal" (FPS) and "Random" (Subset/BBox) baselines.
+- **Fail-Closed Baseline Policy**: Enforced strict algorithmic auditing. Missing baselines in `baselines_v2.json` now trigger an `UndefinedBaselineError` instead of silent fallbacks, ensuring scientific integrity.
+- **Enhanced Auditability**: Calibration reports now feature comprehensive tooltips for every quality cell, exposing the full derivation chain (Fair value, Ideal/Random references, and K-sampling metadata).
+- **Consolidated Diagnostics Namespace**: Migrated all clinical and diagnostic logic from `MoeaBench.clinic` (deprecated) to `MoeaBench.diagnostics`.
+
+### Changed
+- **Renamed Metrics**: Standardized "Density" to **"Gap"** to correctly reflect the topological nature of holes in the Pareto approximation.
+- **Improved Tooling**: Updated `generate_baselines.py` and `generate_visual_report.py` to support the new 3-layer architecture and v2 baseline JSON.
+
 ## [0.8.0] - 2026-02-04
 
 ### Added

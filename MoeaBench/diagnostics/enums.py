@@ -4,14 +4,26 @@ class DiagnosticStatus(Enum):
     """
     Standardized algorithmic pathology classifications.
     """
-    IDEAL_FRONT = auto()          # Low GD, Low IGD, Low EMD
-    BIASED_SPREAD = auto()        # Low GD, Low IGD, High EMD
-    GAPPED_COVERAGE = auto()      # Low GD, High IGD, Low EMD
-    COLLAPSED_FRONT = auto()      # Low GD, High IGD, High EMD
-    NOISY_POPULATION = auto()     # High GD, Low IGD, Low EMD
-    DISTORTED_COVERAGE = auto()   # High GD, Low IGD, High EMD
-    SHIFTED_FRONT = auto()        # High GD, High IGD, Low EMD
-    SEARCH_FAILURE = auto()       # High GD, High IGD, High EMD
+    IDEAL_FRONT = auto()          # Low nGD, Low nIGD, Low nEMD
+    BIASED_SPREAD = auto()        # Low nGD, Low nIGD, High nEMD
+    GAPPED_COVERAGE = auto()      # Low nGD, High nIGD, Low nEMD
+    COLLAPSED_FRONT = auto()      # Low nGD, High nIGD, High nEMD
+    NOISY_POPULATION = auto()     # High nGD, Low nIGD, Low nEMD
+    DISTORTED_COVERAGE = auto()   # High nGD, Low nIGD, High nEMD
+    SHIFTED_FRONT = auto()        # High nGD, High nIGD, Low nEMD
+    SEARCH_FAILURE = auto()       # High nGD, High nIGD, High nEMD
     
     SUPER_SATURATION = auto()     # H_rel > 100%
+    UNDEFINED_BASELINE = auto()   # Missing/mismatched reference package
+    UNDEFINED_INPUT = auto()      # Invalid/unsupported input (e.g., dim mismatch)
     UNDEFINED = auto()            # Insufficient data
+
+class DiagnosticProfile(Enum):
+    """
+    Precision tiers for algorithmic auditing.
+    Values represent thresholds as % of the reference front diameter D.
+    """
+    EXPLORATORY = 2.5
+    INDUSTRY = 1.7
+    STANDARD = 1.3
+    RESEARCH = 1.1

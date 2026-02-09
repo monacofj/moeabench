@@ -37,6 +37,7 @@ import MoeaBench as mb
 from MoeaBench.metrics.GEN_igd import GEN_igd
 
 BASELINE_FILE = "tests/baselines_v0.8.0.csv"
+RUN_HEAVY = os.getenv("MOEABENCH_RUN_HEAVY", "").strip() in {"1", "true", "TRUE", "yes", "YES"}
 
 def get_heavy_configs():
     """
@@ -57,6 +58,8 @@ def get_heavy_configs():
 
 configs = get_heavy_configs()
 
+@pytest.mark.slow
+@pytest.mark.skipif(not RUN_HEAVY, reason="Heavy tier disabled (set MOEABENCH_RUN_HEAVY=1 to enable).")
 @pytest.mark.skipif(not os.path.exists(BASELINE_FILE), reason="Baseline CSV not found.")
 @pytest.mark.parametrize("mop_name, alg_name, base_igd_mean, base_igd_std, pop, gen", configs)
 def test_heavy_statistical_quality(mop_name, alg_name, base_igd_mean, base_igd_std, pop, gen):
@@ -128,4 +131,3 @@ def test_heavy_statistical_quality(mop_name, alg_name, base_igd_mean, base_igd_s
          
          if cohens_d > 0.5: # Medium effect size degradation
              pytest.fail(f"Performance Regression Detected: p={p_val:.4f}, d={cohens_d:.2f}")
-

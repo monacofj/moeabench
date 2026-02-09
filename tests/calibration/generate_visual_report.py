@@ -3,483 +3,245 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench v0.8.0 Visual Calibration Generator
-===============================================
+MoeaBench Calibration Visual Report Generator (v0.9.0)
+=====================================================
 
-This script processes the full calibration trace to create an interactive 
-HTML report. It combines 3D Pareto front visualizations with dynamic 
-convergence curves (IGD/HV) based on snapshots.
-
-Key Features:
----------------------------
-- 3D Overlays: Projection of algorithms onto the "Mathematical Truth" (Ground Truth).
-- Convergence Timeplots: IGD and Evolutive HV graphs throughout generations.
-- Plotly Interactivity: Zoom, rotation, and point inspection directly in the browser.
-- Consistent Normalization: Uses the same Ideal/Nadir bounds as v0.8.0.
-
-Output:
-------
-- tests/CALIBRATION_v0.8.0.html
-
-Usage:
-----
-python tests/calibration/generate_visual_report.py
+Decoupled Renderer: Consumes pre-calculated audit data from JSON.
 """
 
 import os
-import sys
+import json
 import numpy as np
-import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-# Ensure local MoeaBench is importable
-PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-if PROJ_ROOT not in sys.path:
-    sys.path.insert(0, PROJ_ROOT)
-
-from MoeaBench.metrics.GEN_hypervolume import GEN_hypervolume
-from MoeaBench.metrics.GEN_igd import GEN_igd
-
 # Paths
-DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
-GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.8.0.csv")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.8.0.html")
+PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_audit_v0.9.json")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.9.html")
 
 def generate_visual_report():
-    if not os.path.exists(BASELINE_FILE):
-        print("Baseline CSV not found. Run analysis first.")
+    if not os.path.exists(AUDIT_JSON):
+        print(f"Error: Audit file {AUDIT_JSON} not found. Run audit_calibration.py first.")
         return
 
-    df_base = pd.read_csv(BASELINE_FILE)
-    
-    # Custom Sort: DTLZ before DPF, then alphabetical
-    def mop_sort_key(name):
-        if name.startswith('DTLZ'): return (0, name)
-        if name.startswith('DPF'): return (1, name)
-        return (2, name)
-        
-    mops = sorted(df_base['MOP'].unique(), key=mop_sort_key)
-    
+    with open(AUDIT_JSON, "r") as f:
+        audit_data = json.load(f)
+
+    problems = audit_data["problems"]
+    mops = sorted(problems.keys())
+
     html_content = [
-        "<html><head><title>MoeaBench v0.8.0 Calibration</title>",
-        "<script type='text/x-mathjax-config'>MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}});</script>",
-        "<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML'></script>",
-        "<style>body { font-family: 'Inter', system-ui, -apple-system, sans-serif; margin: 0; padding: 40px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); line-height: 1.6; color: #1e293b; min-height: 100vh; }",
-        ".header-container { max-width: 95%; margin: 0 auto 50px auto; text-align: center; }",
-        "h1 { color: #0f172a; font-size: 2.5em; letter-spacing: -0.02em; font-weight: 800; margin-bottom: 10px; background: linear-gradient(90deg, #3498db, #2c3e50); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }",
-        "h2 { color: #334155; margin-top: 40px; font-size: 1.5em; font-weight: 700; border-left: 5px solid #3498db; padding-left: 15px; margin-bottom: 20px; }",
-        "h3 { color: #475569; margin-top: 25px; font-weight: 600; font-size: 1.1em; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }",
-        ".mop-section { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding: 40px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, 0.3); box-shadow: 0 10px 30px rgba(0,0,0,0.04); margin: 0 40px 60px 40px; }",
-        ".metrics-footer { font-size: 0.85em; color: #64748b; margin-top: 25px; font-family: 'JetBrains Mono', 'Fira Code', monospace; background: rgba(0,0,0,0.02); padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); }",
-        ".intro-box { background: white; padding: 40px; border-radius: 16px; margin-bottom: 50px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); max-width: 95%; margin-left: auto; margin-right: auto; }",
-        ".note-box { background: #fffcf0; padding: 20px; border-radius: 10px; margin-top: 25px; border-left: 5px solid #f1c40f; font-size: 0.95em; color: #856404; }",
-        "table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 25px; margin-bottom: 35px; background: white; border-radius: 12px; border: 1px solid #e2e8f0; table-layout: fixed; }",
-        "th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; padding: 12px 10px; border-bottom: 1px solid #e2e8f0; text-transform: uppercase; font-size: 0.7em; letter-spacing: 0.05em; }",
-        "td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; font-size: 0.85em; }",
-        ".nowrap { white-space: nowrap; }",
-        "tr:last-child td { border-bottom: none; }",
-        "tr:hover td { background-color: #f8fafc; }",
-        ".diag-badge { padding: 3px 8px; border-radius: 999px; font-size: 0.7em; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em; display: inline-block; margin-bottom: 4px; }",
-        ".diag-optimal { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }",
-        ".diag-failure { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }",
-        ".diag-warning { background: #fef9c3; color: #a16207; border: 1px solid #fef08a; }",
-        ".diag-shadow { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }",
-        ".diag-rationale { font-size: 0.8em; color: #64748b; font-style: italic; display: block; line-height: 1.3; }",
-        "code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.9em; color: #0f172a; }",
-        "ul { padding-left: 20px; }",
-        "li { margin-bottom: 10px; }",
+        "<html><head><title>MoeaBench v0.9.0 Calibration</title>",
+        "<style>",
+        "body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 2rem; }",
+        "h1 { color: #0f172a; border-left: 5px solid #6366f1; padding-left: 1rem; margin-bottom: 0; }",
+        ".mop-section { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); padding: 1.5rem; margin-top: 2rem; border: 1px solid #e2e8f0; }",
+        "table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }",
+        "th { background: #f1f5f9; text-align: left; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }",
+        "td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }",
+        ".diag-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; text-align: center; min-width: 45px; }",
+        ".diag-optimal { background: #dcfce7; color: #166534; }",
+        ".diag-warning { background: #fef9c3; color: #854d0e; }",
+        ".diag-failure { background: #fee2e2; color: #991b1b; }",
+        ".verdict-pass { background: #e0e7ff; color: #3730a3; }",
+        ".verdict-fail { background: #ffedd5; color: #9a3412; }",
         "</style></head><body>",
-        "<div class='header-container'>",
-        "<h1>MoeaBench v0.8.0 Technical Calibration Report</h1>",
-        "<p>Scientific Performance Audit and Convergence Metrics</p>",
-        "</div>",
+        "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
+        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026).</p>",
         
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.8.0</b>. The objective is to validate and calibrate the numerical integrity and topological fidelity of the framework's core algorithms against established mathematical benchmarks (Ground Truth).</p>",
-        
-        "<h3>Experimental Setup</h3>",
+        "<p>The objective is to certify the framework's core algorithms against rigorous mathematical benchmarks (Ground Truth), using a scale-invariant quality assessment.</p>",
         "<ul>",
-        "<li><b>Population Framework:</b> All algorithms used a population size of <code>N=200</code>.</li>",
-        "<li><b>Evolutionary Budget:</b> Runs were executed for exactly <code>1000 generations</code>.</li>",
-        "<li><b>Statistical Baseline:</b> Metrics in the summary tables are derived from <b>30 independent runs</b> to ensure stochastical significance.</li>",
-        "<li><b>Objective Space:</b> All problems were configured with <code>M=3</code> objectives for volumetric analysis.</li>",
-        "<li><b>Normalization Strategy:</b> We enforce <b>Strict Theoretical Normalization</b>. The [0, 1] range is mapped exclusively from the theoretical <i>Ideal</i> and <i>Nadir</i> points of the Ground Truth, not from observed data.</li>",
+        "<li><b>Population:</b> Algorithms ran with <code>N=200</code>. Q-Scores are calculated on the <i>effective</i> non-dominated count ($K \\le 200$).</li>",
+        "<li><b>Evolutionary Budget:</b> Fixed at <code>1000 generations</code> per run.</li>",
+        "<li><b>Statistical Relevance:</b> Metrics derived from <b>30 independent runs</b> per algorithm/problem pair.</li>",
+        "<li><b>Normalization:</b> Strict Theoretical Normalization [0, 1] using the Ground Truth's <i>Ideal</i> and <i>Nadir</i> points.</li>",
         "</ul>",
 
-        "<h2>2. Metric Glossary & Interpretation</h2>",
-        "<ul>",
-        "<li><b>IGD (Inverted Generational Distance):</b> Measures both convergence (proximity) and diversity (spread). <i>Lower is strictly better.</i></li>",
-        "<li><b>EMD:</b> Earth Mover's Distance. Quantifies topological match. <code>EMD < 0.1</code> represents high-fidelity recovery of the manifold.</li>",
-        "<li><b>H_raw:</b> The absolute hypervolume calculated with Reference Point 1.1.</li>",
-        r"<li><b>H_ratio:</b> $H_{raw} / RefBox$. Search area coverage (volume). Strictly $\le 1.0$.</li>",
-        r"<li><b>H_rel:</b> $H_{raw} / H_{GT}$. Convergence to optimal front. Can exceed 100% due to saturation.</li>",
-        "<li><b>T-conv (Stabilization):</b> The generation where the algorithm reaches a stable state (within 5% of its final IGD value).</li>",
-        "<li><b>Time (s):</b> Average wall-clock execution time per run on the reference hardware.</li>",
-        "</ul>",
+        "<h2>2. Clinical Metrology Guide</h2>",
+        "<div style='background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px;'>",
+        "<b>Reading the Evidence:</b> This report uses a dual-layer validation framework.<br>",
+        "<ul style='margin-bottom:0'>",
+        "<li><b>Layer 1 - Clinical Matrix (The Verdict):</b> An engineering Q-Score (0.0 - 1.0).<br>",
+        "<i>Pass ($Q \\ge 0.67$):</i> The algorithm is statistically indistinguishable from the theoretical limit.<br>",
+        "<i>Fail ($Q < 0.34$):</i> The algorithm is performing closer to random noise than to the ideal.</li>",
+        "<li><b>Layer 2 - Structural Evidence (The Biopsy):</b> The <b>Distance-to-GT CDF</b> graph (bottom right).<br>",
+        "This graph reveals the 'physics' of the failure that the Q-Score summarizes. It plots the cumulative distribution of distances to the Ground Truth along the X-axis.",
+        "<ul style='margin-top:0.5rem'>",
+        "<li><b>Steep Left-Aligned Curve:</b> The ideal profile. High precision convergence where the entire population is uniformly close to the manifold.</li>",
+        "<li><b>Long Tail (Right-skewed):</b> Indicates <b>Poor Regularity (REG)</b>. While most points may be close, a subset of the population is 'stuck' far away (outliers) or trapped in local optima.</li>",
+        "<li><b>Rigid Shift (Offset):</b> Indicates <b>Good Geometry but Poor Fit (FIT)</b>. The curve has the correct vertical shape but is shifted to the right. The algorithm found the manifold's shape but stopped before reaching the true front.</li>",
+        "<li><b>Discontinuous Plateaus:</b> Vertical gaps in the curve indicate <b>Coverage Gaps (GAP)</b>. The algorithm completely missed specific regions of the objective space.</li>",
+        "</ul></li>",
+        "</ul></div>",
 
-        "<div class='note-box'>",
-        "<strong>Scientific Note: The Discretization Effect & Negative H_diff</strong><br>",
-        "In cases of near-perfect convergence, you may observe an H_rel exceeding 100%.<br>",
-        "<ul><li><b>Cause:</b> The 'Ground Truth' is a discrete sample (2k points for DTLZ, 10k for DPF). If an algorithm fills the gaps between these reference points, its volume can mathematically exceed the reference's volume.</li>",
-        "<li><b>Interpretation:</b> This indicates <b>performance saturation</b>. The algorithm has found a distribution that is strictly numerically superior to the discrete baseline.</li></ul>",
-        "</div>",
+        "<h3>3. Metric Glossary</h3>",
+        "<ul>",
+        "<li><b>FIT (Proximity):</b> How close the front is to the Optimal Manifold. High precision convergence.</li>",
+        "<li><b>COV (Coverage):</b> The extent of the manifold covered (Volume).</li>",
+        "<li><b>GAP (Continuity):</b> Absence of interruptions or holes in the Pareto approximation.</li>",
+        "<li><b>REG (Regularity):</b> Uniformity of the distribution. Penalizes clustering and outliers.</li>",
+        "<li><b>BAL (Balance):</b> Fairness of objective trade-offs (e.g., not favoring f1 over f2).</li>",
+        "<li><b>IGD/EMD:</b> Legacy distance metrics provided for backward compatibility.</li>",
+        "</ul>",
         "</div>"
     ]
 
-    for mop_name in mops:
-        print(f"Processing {mop_name}...")
-        mop_df = df_base[df_base['MOP'] == mop_name]
-        
-        # Load Ground Truth (Calibration is M=3)
-        gt_file = os.path.join(GT_DIR, f"{mop_name}_3_optimal.csv")
-        if os.path.exists(gt_file):
-            F_opt = pd.read_csv(gt_file, header=None).values
-            # Theoretical Bounds (Strict)
-            ideal = np.min(F_opt, axis=0)
-            nadir = np.max(F_opt, axis=0)
-            
-            # Use Pymoo to calc theoretical Max HV
-            from pymoo.indicators.hv import Hypervolume
-            hv_metric = Hypervolume(ref_point=np.array([1.1]*3),
-                                    norm_ref_point=False,
-                                    zero_to_one=True,
-                                    ideal=ideal,
-                                    nadir=nadir)
-            hv_opt = hv_metric.do(F_opt)
-        else:
-            F_opt = None
-            # Fallback to CSV if GT missing
-            row0 = mop_df.iloc[0]
-            ideal = np.array([row0['Ideal_1'], row0['Ideal_2'], row0['Ideal_3']])
-            nadir = np.array([row0['Nadir_1'], row0['Nadir_2'], row0['Nadir_3']])
-            hv_opt = row0['HV_opt']
+    colors_solid = {'NSGA2': '#6366f1', 'NSGA3': '#059669', 'MOEAD': '#d97706'}
 
-        # Layout: 1 row, 2 columns (3D Scatter Dominant)
+    for mop_name in mops:
+        problem = problems[mop_name]
+        algs = sorted(problem["algorithms"].keys())
+        
         fig = make_subplots(
-            rows=1, cols=2,
-            column_widths=[0.75, 0.25],
-            specs=[[{'type': 'scene'}, {'type': 'xy', 'secondary_y': True}]],
-            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History (IGD & H_rel)")
+            rows=2, cols=2,
+            column_widths=[0.6, 0.4],
+            row_heights=[0.6, 0.4],
+            specs=[[{'type': 'scene', 'rowspan': 2}, {'type': 'xy', 'secondary_y': True}],
+                   [None, {'type': 'xy'}]],
+            subplot_titles=(f"Final Pareto Front (M=3)", "Convergence History", 
+                            "Validation: Distance-to-GT CDF (Gap Analysis)")
         )
 
-        # 1. Add Ground Truth to 3D plot (Lowest Priority, subtle)
-        if F_opt is not None:
-            print(f"    - Trace: Ground Truth Group (GT)")
-            try:
-                fig.add_trace(go.Scatter3d(
-                    x=F_opt[:,0], y=F_opt[:,1], z=F_opt[:,2],
-                    mode='markers',
-                    marker=dict(
-                        size=2.0, 
-                        color='#475569', # Slate-600: Strong Visibility
-                        opacity=0.4
-                    ),
-                    name='Ground Truth',
-                    legendgroup='GT',
-                    showlegend=True
-                ), row=1, col=1)
-            except Exception as e:
-                print(f"      ERROR adding GT trace: {e}")
+        # Ground Truth
+        if "gt_points" in problem and problem["gt_points"]:
+            gt = np.array(problem["gt_points"])
+            fig.add_trace(go.Scatter3d(
+                x=gt[:,0], y=gt[:,1], z=gt[:,2],
+                mode='markers', marker=dict(size=2, color='#475569', opacity=0.3),
+                name='Ground Truth', legendgroup='GT'
+            ), row=1, col=1)
 
-        algs = sorted(mop_df['Algorithm'].unique())
-        # Scientific Aesthetics - Vibrant High-Res
-        colors_rgba = {
-            'NSGA2': 'rgba(99, 102, 241, 0.95)', # Indigo
-            'NSGA3': 'rgba(5, 150, 105, 0.95)',  # Emerald
-            'MOEAD': 'rgba(217, 119, 6, 0.95)'   # Amber
-        }
-        colors_solid = {
-            'NSGA2': '#6366f1', 
-            'NSGA3': '#059669', 
-            'MOEAD': '#d97706'
-        }
-        
-        # Store metrics for HTML table
         mop_metrics = []
-
         for alg in algs:
-            # Get stats from baseline df
-            alg_stats = mop_df[(mop_df['Algorithm'] == alg) & (mop_df['Intensity'] == 'standard')]
+            data = problem["algorithms"][alg]
+            stats = data["stats"]
+            clinical = data["clinical"]
             
-            # Initialize metrics with defaults
-            igd_mean = 0.0
-            igd_std = 0.0
-            emd_val = 0.0
-            hv_raw = 0.0
-            hv_ratio = 0.0
-            hv_rel_stat = 0.0
-            time_avg = 0.0
-            
-            if not alg_stats.empty:
-                row = alg_stats.iloc[0]
-                igd_mean = row['IGD_mean']
-                igd_std = row['IGD_std']
-                gd_mean = row['GD_mean']
-                gd_std = row['GD_std']
-                sp_mean = row['SP_mean']
-                sp_std = row['SP_std']
-                hv_raw = row['H_raw'] 
-                hv_ratio = row['H_ratio']
-                hv_rel_stat = row['H_rel']
-                time_avg = row['Time_sec']
-            
-            # Note: We re-calculate dynamic HV (rel) from the final snapshot (Gen 1000) for strictness
-            hv_rel_final = 0.0
+            # 3D Front
+            if data["final_front"]:
+                front = np.array(data["final_front"])
+                fig.add_trace(go.Scatter3d(
+                    x=front[:,0], y=front[:,1], z=front[:,2],
+                    mode='markers', marker=dict(size=4, color=colors_solid.get(alg, 'black'), opacity=0.8),
+                    name=alg, legendgroup=alg
+                ), row=1, col=1)
 
-            # Final Front (from standard intensity)
-            final_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00.csv")
-            F_obs = None
-            if os.path.exists(final_file):
-                print(f"    - Trace: {alg} 3D Final")
+            # History
+            if data["history"]["gens"]:
+                h = data["history"]
+                fig.add_trace(go.Scatter(
+                    x=h["gens"], y=h["igd"], mode='lines+markers',
+                    line=dict(color=colors_solid.get(alg, 'black')),
+                    name=f'{alg} IGD', legend='legend2', legendgroup=alg
+                ), row=1, col=2)
+                fig.add_trace(go.Scatter(
+                    x=h["gens"], y=h["hv_rel"], mode='lines+markers',
+                    line=dict(color=colors_solid.get(alg, 'black'), dash='dash'),
+                    name=f'{alg} HV%', legend='legend2', legendgroup=alg
+                ), row=1, col=2, secondary_y=True)
+
+            # CDF
+            if data["cdf_dists"]:
+                dists = np.array(data["cdf_dists"])
+                y_cdf = np.arange(len(dists)) / float(len(dists))
+                fig.add_trace(go.Scatter(
+                    x=dists, y=y_cdf, mode='lines',
+                    line=dict(color=colors_solid.get(alg, 'black'), width=2),
+                    name=f'{alg} CDF', legend='legend3', legendgroup=alg
+                ), row=2, col=2)
+            
+            # --- Detailed Metrics Extraction ---
+            igd_mean = stats.get('IGD_mean', 0.0)
+            igd_std = stats.get('IGD_std', 0.0)
+            gd_mean = stats.get('GD_mean', 0.0)
+            gd_std = stats.get('GD_std', 0.0) 
+            sp_mean = stats.get('SP_mean', 0.0)
+            sp_std = stats.get('SP_std', 0.0)
+            h_raw = stats.get('H_raw', 0.0)
+            h_ratio = stats.get('H_ratio', 0.0)
+            
+            # Clinical (v0.9)
+            igd_p_val = clinical.get('igd_p', {}).get('mean', 0)
+            gd_p_val = clinical.get('gd_p', {}).get('mean', 0)
+
+            # EMD Calculation
+            emd_val = stats.get('EMD_mean', 0.0)
+            if emd_val == 0.0 and "gt_points" in problem and data["final_front"]:
                 try:
-                    F_obs = pd.read_csv(final_file).values
-                    # Trim to 3 obj if needed
-                    if F_obs.shape[1] > 3: F_obs = F_obs[:, :3]
-                    
-                    # Micro-Jitter to avoid perfect occlusion (e.g. DTLZ2)
-                    jitter_scale = 0.005
-                    F_jitter = F_obs + np.random.normal(0, jitter_scale, F_obs.shape)
+                    from scipy.stats import wasserstein_distance
+                    gt_arr = np.array(problem["gt_points"])
+                    front_arr = np.array(data["final_front"])
+                    if gt_arr.shape[1] == front_arr.shape[1]:
+                        dists = [wasserstein_distance(front_arr[:, i], gt_arr[:, i]) for i in range(gt_arr.shape[1])]
+                        emd_val = np.mean(dists)
+                except: pass
 
-                    # Adaptive Outlier Detection (Scale Warning)
-                    # Triggered only if values exceed 20% of the theoretical Nadir
-                    nadir_threshold = 1.2 * nadir
-                    is_out_of_scale = np.any(np.abs(F_obs) > nadir_threshold)
-                    tag_warning = " [OUT OF SCALE]" if is_out_of_scale else ""
-                    
-                    fig.add_trace(go.Scatter3d(
-                        x=F_jitter[:,0], y=F_jitter[:,1], z=F_jitter[:,2],
-                        mode='markers',
-                        marker=dict(
-                            size=4.5, # Larger for transparency
-                            color=colors_rgba.get(alg, 'rgba(0,0,0,1.0)'),
-                            opacity=0.6 # Translucency for density check
-                        ),
-                        name=f'{alg} (Final){tag_warning}',
-                        legendgroup=alg,
-                        showlegend=True
-                    ), row=1, col=1)
-                except Exception as e:
-                    print(f"      ERROR adding {alg} 3D trace: {e}")
-
-            # Convergence History (Snapshots)
-            gens = []
-            igd_vals = []
-            hv_rels = []
-            
-            # Use Pymoo IGD object for consistency
-            metric_igd = None
-            if F_opt is not None:
-                from pymoo.indicators.igd import IGD
-                metric_igd = IGD(F_opt, zero_to_one=True)
-
-            F_snap = None
-            for g in range(100, 1100, 100):
-                snap_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00_gen{g}.csv")
-                if os.path.exists(snap_file):
-                    F_snap = pd.read_csv(snap_file).values
-                    if F_snap.shape[1] > 3: F_snap = F_snap[:, :3]
-                    
-                    igd = float(metric_igd.do(F_snap)) if metric_igd else 0
-                    
-                    # Strict Theoretical HV Calculation
-                    hv_calc = Hypervolume(ref_point=np.array([1.1]*3),
-                                          norm_ref_point=False,
-                                          zero_to_one=True,
-                                          ideal=ideal,
-                                          nadir=nadir)
-                    hv_val = hv_calc.do(F_snap)
-                    
-                    # Ensure HV Rel
-                    hv_rel_val = (hv_val / hv_opt) * 100 if hv_opt > 0 else 0
-                    
-                    gens.append(g)
-                    igd_vals.append(igd)
-                    hv_rels.append(hv_rel_val)
-
-            # Calculate T-conv (stability point) and EMD (Topo Error)
-            t_conv = "-"
-            if igd_vals:
-                final_igd = igd_vals[-1]
-                hv_rel_final = hv_rels[-1]
-                
-                # Topological Error (EMD) between final snapshot and GT
-                if F_opt is not None and F_snap is not None:
-                    import MoeaBench as mb
-                    # Use internal topo_distribution with EMD method
-                    # This calculates axis-wise Wasserstein distance (EMD)
-                    res = mb.stats.topo_distribution(F_snap, F_opt, method='emd')
-                    emd_val = np.mean(list(res.results.values()))
-                
-                for g_idx, g_val in enumerate(igd_vals):
-                    if g_val <= 1.05 * final_igd:
-                        t_conv = str(gens[g_idx])
-                        break
-                
-                # AI Diagnostic Audit
-                import MoeaBench as mb
-                diag_metrics = {
-                    'gd': float(gd_mean),
-                    'igd': float(igd_mean),
-                    'h_rel': float(hv_rel_stat),
-                    'emd': emd_val
-                }
-                diagnosis = mb.diagnostics.audit(diag_metrics)
-                diag_status = diagnosis.status.name
-                diag_rationale = diagnosis.rationale()
-                
-                # Map status to CSS class
-                status_name = diagnosis.status.name
-                if status_name in ["IDEAL_FRONT", "SUPER_SATURATION"]:
-                    diag_class = "diag-optimal"
-                elif status_name in ["COLLAPSED_FRONT", "SEARCH_FAILURE"]:
-                    diag_class = "diag-failure"
-                elif status_name == "UNKNOWN":
-                    diag_class = "diag-shadow" 
-                else: 
-                    # BIASED, GAPPED, NOISY, DISTORTED, SHIFTED -> Warning
-                    diag_class = "diag-warning"
-            else:
-                diag_status = "N/A"
-                diag_rationale = "No metrics available."
-                diag_class = "diag-shadow"
-            
             mop_metrics.append({
                 "alg": alg,
-                "igd": f"{igd_mean:.4e} &plusmn; {igd_std:.1e}",
-                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.1e}",
-                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.1e}",
-                "emd": f"{emd_val:.4f}",
-                "h_raw": f"{hv_raw:.4f}",
-                "h_ratio": f"{hv_ratio:.4f}",
-                "h_rel": f"{hv_rel_stat * 100:.2f}%", 
-                "time": f"{time_avg:.2f}",
-                "t_conv": t_conv,
-                "diag_status": diag_status,
-                "diag_rationale": diag_rationale,
-                "diag_class": diag_class
+                "igd": f"{igd_mean:.4f} &plusmn; {igd_std:.4f}",
+                "igd_p": f"{igd_p_val:.4f}",
+                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.2e}",
+                "gd_p": f"{gd_p_val:.4e}",
+                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.2e}",
+                "emd": f"{emd_val:.4f}", 
+                "h_raw": f"{h_raw:.4f}",
+                "h_ratio": f"{h_ratio:.4f}",
+                "h_rel": f"{stats.get('H_rel',0)*100:.2f}%",
+                "time": f"{stats.get('Time_sec',0):.2f}",
+                "clinical": clinical,
+                "t_conv": str(data["history"]["gens"][-1]) if data["history"]["gens"] else "-"
             })
-
-            if gens:
-                print(f"    - Trace: {alg} Convergence Lines")
-                try:
-                    # Plot IGD (Primary Y)
-                    fig.add_trace(go.Scatter(
-                        x=gens, y=igd_vals,
-                        mode='lines+markers',
-                        line=dict(color=colors_solid.get(alg, 'black'), shape='spline'),
-                        marker=dict(
-                            size=6,
-                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
-                            line=dict(width=0) # Final Zen: No border
-                        ),
-                        name=f'{alg} IGD',
-                        legendgroup=alg,
-                        showlegend=False
-                    ), row=1, col=2)
-                    
-                    # Plot HV Ratio (Secondary Y)
-                    fig.add_trace(go.Scatter(
-                        x=gens, y=hv_rels,
-                        mode='lines+markers',
-                        line=dict(color=colors_solid.get(alg, 'black'), dash='dash', shape='spline'),
-                        marker=dict(
-                            size=6,
-                            symbol='diamond',
-                            color=colors_rgba.get(alg, 'rgba(0,0,0,0.75)'),
-                            line=dict(width=0) # Final Zen: No border
-                        ),
-                        name=f'{alg} HV %',
-                        legendgroup=alg,
-                        showlegend=False
-                    ), row=1, col=2, secondary_y=True)
-                except Exception as e:
-                    print(f"      ERROR adding {alg} convergence traces: {e}")
-
-        # Clinical 3D Composition
+            
+        # Layout with multiple legends to fix disappearing plots
         fig.update_layout(
-            height=850,
+            height=850, margin=dict(l=0, r=0, t=60, b=0),
             template='plotly_white',
-            dragmode='turntable',
-            scene=dict(
-                xaxis=dict(title='f1', range=[0, 1.1*nadir[0]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
-                yaxis=dict(title='f2', range=[0, 1.1*nadir[1]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
-                zaxis=dict(title='f3', range=[0, 1.1*nadir[2]], gridcolor="#f1f5f9", showbackground=False, zerolinecolor="#e2e8f0"),
-                camera=dict(eye=dict(x=1.7, y=1.7, z=1.5)),
-                aspectmode='cube'
-            ),
-            margin=dict(l=0, r=0, b=0, t=60)
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.7)"),
+            legend2=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
+            legend3=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
+            scene=dict(xaxis_title='f1', yaxis_title='f2', zaxis_title='f3')
         )
-        fig.update_yaxes(title_text="IGD (Log)", secondary_y=False, row=1, col=2, type="log", gridcolor="#f8fafc")
-        fig.update_yaxes(title_text="H_rel %", secondary_y=True, row=1, col=2, range=[0, 115], showgrid=False)
-        fig.update_xaxes(title_text="Generations", row=1, col=2, gridcolor="#f8fafc")
 
-        # Convert to HTML
-        div = fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False)
+        html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
         
-        html_content.append(f"<div class='mop-section'>")
-        html_content.append(f"<h2>{mop_name} Benchmark Analysis</h2>")
-        
-        # Build metrics table with optimized column widths
-        table = ["<table>",
-                 "<colgroup>",
-                 "<col style='width: 90px'>",  # Alg
-                 "<col style='width: 170px'>", # IGD
-                 "<col style='width: 170px'>", # GD
-                 "<col style='width: 170px'>", # SP
-                 "<col style='width: 80px'>",  # EMD
-                 "<col style='width: 80px'>",  # H_raw
-                 "<col style='width: 80px'>",  # H_ratio
-                 "<col style='width: 80px'>",  # H_rel
-                 "<col style='width: 80px'>",  # Time
-                 "<col style='width: 90px'>",  # Stabil
-                 "<col style='width: auto'>",  # AI Diagnosis
-                 "</colgroup>",
-                 "<tr>",
-                 "<th>Algorithm</th>",
-                 "<th>IGD (Mean &plusmn; Std)</th>",
-                 "<th>GD (Mean &plusmn; Std)</th>",
-                 "<th>SP (Mean &plusmn; Std)</th>",
-                 "<th>EMD</th>",
-                 "<th>H_raw</th>",
-                 "<th>H_ratio</th>",
-                 "<th>H_rel</th>",
-                 "<th>Time(s)</th>",
-                 "<th>Stabil.</th>",
-                 "<th>AI Diagnosis (Pathology)</th></tr>"]
-        
+        # Numerical Table
+        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>EMD</th><th>H_raw</th><th>H_ratio</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
         for m in mop_metrics:
-            table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
-            table.append(f"<td class='nowrap'>{m['igd']}</td>")
-            table.append(f"<td class='nowrap'>{m['gd']}</td>")
-            table.append(f"<td class='nowrap'>{m['sp']}</td>")
-            table.append(f"<td class='nowrap'>{m['emd']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_raw']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_ratio']}</td>")
-            table.append(f"<td class='nowrap'>{m['h_rel']}</td>")
-            table.append(f"<td class='nowrap'>{m['time']}</td>")
-            table.append(f"<td class='nowrap'>Gen {m['t_conv']}</td>")
-            table.append(f"<td><span class='diag-badge {m['diag_class']}'>{m['diag_status']}</span><br><span class='diag-rationale'>{m['diag_rationale']}</span></td></tr>")
-        table.append("</table>")
+            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['emd']}</td><td>{m['h_raw']}</td><td>{m['h_ratio']}</td><td>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
+        metrics_table.append("</table>")
+        html_content.append("".join(metrics_table))
+
+        # Matrix Table
+        matrix_table = [
+            "<h3>Clinical Quality Matrix</h3>",
+            "<table><colgroup><col style='width: 100px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: auto'><col style='width: 120px'></colgroup>",
+            "<thead><tr><th>Algorithm</th><th>FIT</th><th>COV</th><th>GAP</th><th>REG</th><th>BAL</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
+        ]
+        for m in mop_metrics:
+            matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
+            c = m["clinical"]
+            for dim in ["fit", "cov", "gap", "reg", "bal"]:
+                d = c.get(dim, {})
+                q = d.get("q", 0)
+                cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
+                tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;Ideal: {d.get('ideal',0):.4f}&#013;Rand: {d.get('rand',0):.4f}"
+                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
+            matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
+            v = c.get("verdict", "FAIL")
+            v_cls = "verdict-pass" if v == "RESEARCH" else ("diag-warning" if v == "INDUSTRY" else "verdict-fail")
+            matrix_table.append(f"<td><span class='diag-badge {v_cls}'>{v}</span></td></tr>")
+        matrix_table.append("</table>")
         
-        html_content.append("".join(table))
-        
-        # Formatting bounds as readable tuples
-        ideal_str = "(" + ", ".join([f"{v:.3f}" for v in ideal]) + ")"
-        nadir_str = "(" + ", ".join([f"{v:.3f}" for v in nadir]) + ")"
-        
-        html_content.append(f"<div class='metrics-footer'><strong>Theoretical Reference:</strong><br>Ideal Point: {ideal_str}<br>Nadir Point: {nadir_str}<br>Sampled Reference HV: {hv_opt:.6f}</div>")
-        html_content.append(div)
-        html_content.append(f"</div>")
+        html_content.append(fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False))
+        html_content.append("".join(matrix_table))
+        html_content.append("</div>")
 
     html_content.append("</body></html>")
-    
-    with open(OUTPUT_HTML, "w") as f:
-        f.write("\n".join(html_content))
-    
-    print(f"\nSuccess! Interactive report generated at: {OUTPUT_HTML}")
+    with open(OUTPUT_HTML, "w") as f: f.write("\n".join(html_content))
+    print(f"Success! Report: {OUTPUT_HTML}")
 
 if __name__ == "__main__":
     generate_visual_report()

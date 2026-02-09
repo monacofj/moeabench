@@ -9,6 +9,7 @@ from .evaluator import (
     gd,
     gdplus,
     igdplus,
+    emd,
     plot_matrix,
     MetricMatrix
 )
