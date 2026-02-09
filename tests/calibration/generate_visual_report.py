@@ -136,13 +136,20 @@ def generate_visual_report():
                 fit_data = clinical.get("fit", {})
                 ideal = fit_data.get("ideal", 0.0)
                 rand = fit_data.get("rand", 1.0)
+                fair_agg = fit_data.get("fair", 0.0)
                 
-                # Calculate Q-Score for each point
+                # Recover s_gt (Resolution Factor) to align raw dists with normalized baselines
+                # Rule: fair_agg = percentile(dists, 95) / s_gt
+                d95 = np.percentile(dists, 95) if len(dists) > 0 else 0.0
+                s_gt = d95 / fair_agg if fair_agg > 1e-12 else 1.0
+                
+                # Calculate Q-Score for each point (normalized)
                 denom = rand - ideal
                 if abs(denom) < 1e-12:
                     q_points = np.where(dists < 1e-6, 1.0, 0.0)
                 else:
-                    q_points = 1.0 - np.clip((dists - ideal) / denom, 0.0, 1.0)
+                    # Normalize dists by s_gt before computing Q
+                    q_points = 1.0 - np.clip(((dists / s_gt) - ideal) / denom, 0.0, 1.0)
                 
                 mask_research = q_points >= 0.67
                 mask_industry = (q_points >= 0.34) & (q_points < 0.67)
