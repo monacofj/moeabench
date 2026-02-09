@@ -147,10 +147,56 @@ def generate_visual_report():
             if data["cdf_dists"]:
                 dists = np.array(data["cdf_dists"])
                 y_cdf = np.arange(len(dists)) / float(len(dists))
+                
+                # Add threshold lines only once (for the first alg) to avoid clutter
+                if alg == algs[0]:
+                     # Ideal Wall (x=0) - Plot as Scatter to avoid Scatter3d/add_vline bug
+                    fig.add_trace(go.Scatter(
+                        x=[0, 0], y=[0, 1.05], 
+                        mode='lines',
+                        line=dict(color='gray', dash='dot', width=1),
+                        name='Ideal (GT)',
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ), row=2, col=2)
+                    
+                    # 95% Population Target (y=0.95)
+                    max_dist = np.max(dists) if len(dists) > 0 else 1.0
+                    fig.add_trace(go.Scatter(
+                        x=[0, max_dist * 1.5], y=[0.95, 0.95],
+                        mode='lines', 
+                        line=dict(color='gray', dash='dot', width=1),
+                        name='95% Target',
+                        showlegend=False,
+                        hoverinfo='skip'
+                    ), row=2, col=2)
+                    
+                    # Annotation for 95% line
+                    fig.add_annotation(
+                        x=max_dist*1.0, y=0.95,
+                        text="95% Pop",
+                        showarrow=False,
+                        yshift=10,
+                        font=dict(size=10, color="gray"),
+                        row=2, col=2
+                    )
+
+                # Add main CDF curve
                 fig.add_trace(go.Scatter(
                     x=dists, y=y_cdf, mode='lines',
                     line=dict(color=colors_solid.get(alg, 'black'), width=2),
                     name=f'{alg} CDF', legend='legend3', legendgroup=alg
+                ), row=2, col=2)
+                
+                # Add per-algorithm 95% Intersection Drop-line (The "Biopsy" Marker)
+                p95 = np.percentile(dists, 95)
+                fig.add_trace(go.Scatter(
+                    x=[p95, p95], y=[0, 0.95],
+                    mode='lines',
+                    line=dict(color=colors_solid.get(alg, 'black'), dash='dot', width=1),
+                    name=f'{alg} 95%', showlegend=False,
+                    legendgroup=alg,
+                    hoverinfo='x'
                 ), row=2, col=2)
             
             # --- Detailed Metrics Extraction ---
