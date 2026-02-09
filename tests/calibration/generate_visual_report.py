@@ -152,21 +152,49 @@ def generate_visual_report():
                     line=dict(color=colors_solid.get(alg, 'black'), width=2),
                     name=f'{alg} CDF', legend='legend3', legendgroup=alg
                 ), row=2, col=2)
+            
+            # --- Detailed Metrics Extraction ---
+            igd_mean = stats.get('IGD_mean', 0.0)
+            igd_std = stats.get('IGD_std', 0.0)
+            gd_mean = stats.get('GD_mean', 0.0)
+            gd_std = stats.get('GD_std', 0.0) 
+            sp_mean = stats.get('SP_mean', 0.0)
+            sp_std = stats.get('SP_std', 0.0)
+            h_raw = stats.get('H_raw', 0.0)
+            h_ratio = stats.get('H_ratio', 0.0)
+            
+            # Clinical (v0.9)
+            igd_p_val = clinical.get('igd_p', {}).get('mean', 0)
+            gd_p_val = clinical.get('gd_p', {}).get('mean', 0)
+
+            # EMD Calculation
+            emd_val = stats.get('EMD_mean', 0.0)
+            if emd_val == 0.0 and "gt_points" in problem and data["final_front"]:
+                try:
+                    from scipy.stats import wasserstein_distance
+                    gt_arr = np.array(problem["gt_points"])
+                    front_arr = np.array(data["final_front"])
+                    if gt_arr.shape[1] == front_arr.shape[1]:
+                        dists = [wasserstein_distance(front_arr[:, i], gt_arr[:, i]) for i in range(gt_arr.shape[1])]
+                        emd_val = np.mean(dists)
+                except: pass
 
             mop_metrics.append({
                 "alg": alg,
-                "igd": f"{stats.get('IGD_mean',0):.4f}",
-                "gd": f"{stats.get('GD_mean',0):.4e}",
-                "igd_p": f"{clinical.get('igd_p', {}).get('mean', 0):.4f}",
-                "gd_p": f"{clinical.get('gd_p', {}).get('mean', 0):.4e}",
-                "sp": f"{stats.get('SP_mean',0):.4e}",
-                "emd": f"0.000", # Fixed or pulled from somewhere else if needed
+                "igd": f"{igd_mean:.4f} &plusmn; {igd_std:.4f}",
+                "igd_p": f"{igd_p_val:.4f}",
+                "gd": f"{gd_mean:.4e} &plusmn; {gd_std:.2e}",
+                "gd_p": f"{gd_p_val:.4e}",
+                "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.2e}",
+                "emd": f"{emd_val:.4f}", 
+                "h_raw": f"{h_raw:.4f}",
+                "h_ratio": f"{h_ratio:.4f}",
                 "h_rel": f"{stats.get('H_rel',0)*100:.2f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
                 "t_conv": str(data["history"]["gens"][-1]) if data["history"]["gens"] else "-"
             })
-
+            
         # Layout with multiple legends to fix disappearing plots
         fig.update_layout(
             height=850, margin=dict(l=0, r=0, t=60, b=0),
@@ -180,9 +208,9 @@ def generate_visual_report():
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
         
         # Numerical Table
-        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD</th><th>IGD+</th><th>GD</th><th>GD+</th><th>SP</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
+        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>EMD</th><th>H_raw</th><th>H_ratio</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
         for m in mop_metrics:
-            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
+            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['emd']}</td><td>{m['h_raw']}</td><td>{m['h_ratio']}</td><td>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
         metrics_table.append("</table>")
         html_content.append("".join(metrics_table))
 
