@@ -38,11 +38,47 @@ def _compute_q_linear(fair_val: float, ideal: float, rand50: float) -> float:
     # Clip and Invert
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
+def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.ndarray) -> float:
+    """
+    ECDF Q-Score formula.
+    
+    q = 1 - clip( (F(fair) - F(ideal)) / (F(rand50) - F(ideal)) )
+    """
+    # 1. Compute Cumulative Probabilities (F)
+    # np.searchsorted(sorted_array, value) returns index where value should be inserted
+    # Probability P(X < value) ~ index / N
+    N = len(rand_ecdf)
+    
+    idx_fair = np.searchsorted(rand_ecdf, fair_val, side='right')
+    F_fair = idx_fair / N
+    
+    idx_ideal = np.searchsorted(rand_ecdf, ideal, side='right')
+    F_ideal = idx_ideal / N
+    
+    idx_rand = np.searchsorted(rand_ecdf, rand50, side='right')
+    F_rand = idx_rand / N
+    
+    # 2. Denominator: Range between Ideal and Random in Probability Space
+    denom = F_rand - F_ideal
+    
+    # Safety: If baseline is degenerate (F_rand == F_ideal)
+    # This happens if ideal and rand50 fall in the same gap or plateau of ECDF.
+    if denom <= 1e-12:
+         # If fair is physically close to ideal (within epsilon), it's perfect.
+         # Otherwise it's worse (0.0), assuming ideal is the target.
+         return 1.0 if abs(fair_val - ideal) <= 1e-9 else 0.0
+
+    # 3. Interpolate
+    num = F_fair - F_ideal
+    error_score = num / denom
+    
+    return float(1.0 - np.clip(error_score, 0.0, 1.0))
+
 def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
-    """Computes Q_FIT using linear interpolation."""
-    # Ideal = 0.0
-    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
-    return _compute_q_linear(fair_fit, 0.0, rand50)
+    """Computes Q_FIT using ECDF."""
+    # Ideal = 0.0 (Perfect physical match)
+    _, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "fit")
+    return _compute_q_ecdf(fair_fit, 0.0, rand50, rand_ecdf)
 
 def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
     """Computes Q_COVERAGE using linear interpolation."""
@@ -84,10 +120,28 @@ def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) 
     # 2. Get Baseline
     _, rand50 = baselines.get_baseline_values(problem, k, "fit")
     
-    # 3. Vectorized Linear
-    denom = rand50 # Ideal is 0.0
+    # 3. Vectorized ECDF
+    _, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "fit")
+    N = len(rand_ecdf)
+    
+    # searchsorted is vectorized for the 'v' argument (fair_vals)
+    idx_fair = np.searchsorted(rand_ecdf, fair_vals, side='right')
+    F_fair = idx_fair / N
+    
+    # Scalar lookups for Ideal/Rand
+    idx_ideal = np.searchsorted(rand_ecdf, 0.0, side='right')
+    F_ideal = idx_ideal / N
+    
+    idx_rand = np.searchsorted(rand_ecdf, rand50, side='right')
+    F_rand = idx_rand / N
+    
+    denom = F_rand - F_ideal
+    
     if denom <= 1e-12:
-         return np.where(fair_vals <= 1e-12, 1.0, 0.0)
+         # ideal ~ rand
+         return np.where(F_fair <= F_ideal + 1e-12, 1.0, 0.0)
          
-    error_score = fair_vals / denom
+    num = F_fair - F_ideal
+    error_score = num / denom
+    
     return 1.0 - np.clip(error_score, 0.0, 1.0)

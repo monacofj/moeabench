@@ -147,14 +147,14 @@ def generate_visual_report():
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
                 try:
                     # K discretization to match Auditor and Baselines availability
+                    # K discretization to match Auditor (Fixed K-Target Policy)
                     K_raw = len(front)
-                    if K_raw >= 50:
-                        grid_k = [50, 100, 150, 200]
-                        K_target = max([k for k in grid_k if k <= K_raw])
-                    elif K_raw >= 10:
-                        K_target = K_raw
+                    SUPPORTED_K = list(range(10, 51)) + [100, 150, 200]
+                    
+                    if K_raw < 10:
+                        K_target = 10
                     else:
-                        K_target = K_raw
+                        K_target = min(SUPPORTED_K, key=lambda x: abs(x - K_raw))
 
                     q_points = qscore.compute_q_fit_points(dists, mop_name, K_target, s_fit)
                 except Exception as e:

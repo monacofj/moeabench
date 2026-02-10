@@ -34,9 +34,11 @@ def main():
         data = json.load(f)
 
     problems = data.get("problems", {})
+    print(f"DEBUG keys in loop: {list(problems.keys())}")
     new_problems = {}
 
-    for prob_name, k_dict in problems.items():
+    for prob_name in sorted(problems.keys()):
+        k_dict = problems[prob_name]
         print(f"Processing {prob_name}...")
         new_k_dict = {}
         

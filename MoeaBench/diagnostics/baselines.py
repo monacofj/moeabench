@@ -19,7 +19,8 @@ from scipy.spatial.distance import cdist
 from scipy.cluster.vq import kmeans2
 
 # Path to the Authorized Offline Baselines
-BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v3.json")
+# Path to the Authorized Offline Baselines
+BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
 _CACHE = None
 
 class UndefinedBaselineError(Exception):
@@ -113,20 +114,22 @@ def get_baseline_ecdf(problem: str, k: int, metric: str) -> Tuple[float, float, 
             raise UndefinedBaselineError(f"Invalid ECDF length {len(rand_ecdf)} for {problem}, K={k} (Expected 200)")
             
         # Check sorted (non-decreasing)
-        if np.any(np.diff(rand_ecdf) < -1e-12): # Allow epsilon noise? No, strictly sorted from JSON.
-             # JSON floats might have noise, but array should be sorted.
+        if np.any(np.diff(rand_ecdf) < -1e-12): # Allow epsilon noise
              if np.any(np.diff(rand_ecdf) < 0):
                 raise UndefinedBaselineError(f"ECDF not sorted for {problem}, K={k}")
         
-        # Check Median Consistency
+        # Check Median Consistency (Optional but good)
         calc_median = np.median(rand_ecdf)
         if not np.isclose(rand, calc_median, atol=1e-9):
+             # Log warning or fail? Fail-Closed means fail.
+             # But floating point issues might occur. tolerance 1e-9 is safe.
              raise UndefinedBaselineError(f"Baseline mismatch: rand50 ({rand}) != median(ecdf) ({calc_median}) for {problem}, K={k}")
             
         return float(uni), float(rand), rand_ecdf
         
     except (AttributeError, ValueError) as e:
         raise UndefinedBaselineError(f"Invalid baseline data for {problem}, K={k}: {e}")
+
 
 def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     """
