@@ -9,39 +9,28 @@ MoeaBench Clinical Quality Scores (Engineering Layer)
 This module implements the "Q-Score" logic ($Q \in [0, 1]$).
 Logic:
 1.  High-is-Better (1.0 = Optimal, 0.0 = Random/Fail).
-12. Formula: $q = 1.0 - clip( (F_rand(fair) - F_rand(ideal)) / (F_rand(rand50) - F_rand(ideal)) )$.
-13. Strict Baseline Rules:
+2.  Formula: Linear interpolation between Ideal (Q=1) and Random (Q=0).
+3.  Strict Baseline Rules:
     - FIT: ideal=0.0 (Perfect physical match), random=BBox-Random.
     - OTHERS: ideal=Uni50 (FPS of GT), random=Rand50 (Random Subset of GT).
-    - BASELINE: Uses Empirical CDF (ECDF) of 200 random samples.
 """
 
 import numpy as np
 from . import baselines
 
-def _ecdf(sorted_vals: np.ndarray, x: float) -> float:
-    """Computes Empirical CDF value for x given sorted_vals."""
-    # side='right': P(X <= x)
-    return np.searchsorted(sorted_vals, x, side='right') / len(sorted_vals)
-
-def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.ndarray) -> float:
+def _compute_q_linear(fair_val: float, ideal: float, rand50: float) -> float:
     """
-    ECDF-based Q-Score formula.
+    Linear Q-Score formula.
     
-    q = 1 - (F(fair) - F(ideal)) / (F(rand50) - F(ideal))
+    q = 1 - clip( (fair - ideal) / (rand50 - ideal) )
     """
-    f_fair = _ecdf(rand_ecdf, fair_val)
-    f_ideal = _ecdf(rand_ecdf, ideal)
-    f_rand = _ecdf(rand_ecdf, rand50) 
+    denom = rand50 - ideal
     
-    denom = f_rand - f_ideal
-    
-    # Safety: If baseline is degenerate (ideal and rand are indistinguishable in distribution)
-    # Fail-Closed per specification
+    # Safety: If baseline is degenerate (ideal and rand are too close)
     if denom <= 1e-12:
-         raise baselines.UndefinedBaselineError(f"Degenerate baseline distribution: F(rand)={f_rand} <= F(ideal)={f_ideal}")
+         return 1.0 if fair_val <= ideal + 1e-12 else 0.0
 
-    num = f_fair - f_ideal
+    num = fair_val - ideal
     
     # Error Score (0=Ideal, 1=Random)
     error_score = num / denom
@@ -50,31 +39,31 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
 def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
-    """Computes Q_FIT using ECDF."""
+    """Computes Q_FIT using linear interpolation."""
     # Ideal = 0.0
-    _, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "fit")
-    return _compute_q_ecdf(fair_fit, 0.0, rand50, rand_ecdf)
+    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
+    return _compute_q_linear(fair_fit, 0.0, rand50)
 
 def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
-    """Computes Q_COVERAGE using ECDF."""
+    """Computes Q_COVERAGE using linear interpolation."""
     # Ideal = Uni50
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "coverage")
-    return _compute_q_ecdf(fair_cov, uni50, rand50, rand_ecdf)
+    uni50, rand50 = baselines.get_baseline_values(problem, k, "coverage")
+    return _compute_q_linear(fair_cov, uni50, rand50)
 
 def compute_q_gap(fair_gap: float, problem: str, k: int) -> float:
-    """Computes Q_GAP using ECDF."""
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
-    return _compute_q_ecdf(fair_gap, uni50, rand50, rand_ecdf)
+    """Computes Q_GAP using linear interpolation."""
+    uni50, rand50 = baselines.get_baseline_values(problem, k, "gap")
+    return _compute_q_linear(fair_gap, uni50, rand50)
 
 def compute_q_regularity(fair_reg: float, problem: str, k: int) -> float:
-    """Computes Q_REGULARITY using ECDF."""
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "uniformity")
-    return _compute_q_ecdf(fair_reg, uni50, rand50, rand_ecdf)
+    """Computes Q_REGULARITY using linear interpolation."""
+    uni50, rand50 = baselines.get_baseline_values(problem, k, "uniformity")
+    return _compute_q_linear(fair_reg, uni50, rand50)
 
 def compute_q_balance(fair_bal: float, problem: str, k: int) -> float:
-    """Computes Q_BALANCE using ECDF."""
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "balance")
-    return _compute_q_ecdf(fair_bal, uni50, rand50, rand_ecdf)
+    """Computes Q_BALANCE using linear interpolation."""
+    uni50, rand50 = baselines.get_baseline_values(problem, k, "balance")
+    return _compute_q_linear(fair_bal, uni50, rand50)
 
 def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
     """
@@ -93,17 +82,12 @@ def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) 
     fair_vals = dists / s_fit
     
     # 2. Get Baseline
-    _, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "fit")
+    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
     
-    # 3. Vectorized ECDF
-    n = len(rand_ecdf)
-    f_fair = np.searchsorted(rand_ecdf, fair_vals, side='right') / n
-    f_ideal = np.searchsorted(rand_ecdf, 0.0, side='right') / n
-    f_rand = np.searchsorted(rand_ecdf, rand50, side='right') / n
-    
-    denom = f_rand - f_ideal
+    # 3. Vectorized Linear
+    denom = rand50 # Ideal is 0.0
     if denom <= 1e-12:
-         raise baselines.UndefinedBaselineError(f"Degenerate baseline in vector calc: F(rand)={f_rand} <= F(ideal)={f_ideal}")
+         return np.where(fair_vals <= 1e-12, 1.0, 0.0)
          
-    error_score = (f_fair - f_ideal) / denom
+    error_score = fair_vals / denom
     return 1.0 - np.clip(error_score, 0.0, 1.0)

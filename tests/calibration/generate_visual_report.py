@@ -142,15 +142,21 @@ def generate_visual_report():
                 # Fetch FIT baselines (already normalized in v3)
                 fit_data = clinical.get("fit", {})
                 rand_norm = fit_data.get("rand", 1.0) # This is now fit.rand50 in s_K units
-                s_fit = data.get("metrics", {}).get("s_fit", 1.0) # The new s_K scaling factor
-
-                s_fit = data.get("metrics", {}).get("s_fit", 1.0) # The new s_K scaling factor
+                s_fit = clinical.get("s_fit", 1.0) # The new s_K scaling factor
 
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
                 try:
-                    # K = len(front) typically 200 for this report
-                    # We pass len(front) as K. If baseline missing, it will raise.
-                    q_points = qscore.compute_q_fit_points(dists, mop_name, len(front), s_fit)
+                    # K discretization to match Auditor and Baselines availability
+                    K_raw = len(front)
+                    if K_raw >= 50:
+                        grid_k = [50, 100, 150, 200]
+                        K_target = max([k for k in grid_k if k <= K_raw])
+                    elif K_raw >= 10:
+                        K_target = K_raw
+                    else:
+                        K_target = K_raw
+
+                    q_points = qscore.compute_q_fit_points(dists, mop_name, K_target, s_fit)
                 except Exception as e:
                     print(f"Warning: Q-Point calc failed for {alg} on {mop_name}: {e}")
                     q_points = np.zeros_like(dists)
@@ -211,9 +217,10 @@ def generate_visual_report():
                     name=f'{alg} HV%', legend='legend2', legendgroup=alg
                 ), row=1, col=2, secondary_y=True)
 
-            # CDF
+            # CDF (Validation: Distance-to-GT)
             if data["cdf_dists"]:
-                dists = np.array(data["cdf_dists"])
+                # SANITIZATION: Normalize raw distances by s_K for macroscopic view
+                dists = np.array(data["cdf_dists"]) / s_fit
                 y_cdf = np.arange(len(dists)) / float(len(dists))
                 
                 # Add threshold lines only once (for the first alg) to avoid clutter
@@ -248,6 +255,9 @@ def generate_visual_report():
                         font=dict(size=10, color="gray"),
                         row=2, col=2
                     )
+                    
+                    # Update X-Axis label to reflect sanitization
+                    fig.update_xaxes(title_text="Normalized Distance (GD / s_K)", row=2, col=2)
 
                 # Add main CDF curve
                 fig.add_trace(go.Scatter(
@@ -345,7 +355,10 @@ def generate_visual_report():
                 tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;Ideal: {d.get('ideal',0):.4f}&#013;Rand: {d.get('rand',0):.4f}"
                 if dim == "fit" and "s_fit" in m:
                     tip += f"&#013;s_K (Scale): {m['s_fit']:.2e}"
-                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
+                    sub_text = f"<div style='font-size: 0.7rem; color: #64748b; margin-top: 2px;'>f:{d.get('fair',0):.2f}<br>s:{m['s_fit']:.1e}</div>"
+                    matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span>{sub_text}</td>")
+                else:
+                    matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
             matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
             v = c.get("verdict", "FAIL")
             v_cls = "verdict-pass" if v == "RESEARCH" else ("diag-warning" if v == "INDUSTRY" else "verdict-fail")

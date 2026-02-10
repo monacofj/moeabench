@@ -82,6 +82,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     n_k_fail = 0
 
     s_gt = base.get_resolution_factor(F_opt)
+    s_fit = 1.0 # Default
 
     for rf in run_files:
         if "_gen" in os.path.basename(rf): continue
@@ -97,8 +98,15 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             else:
                 n_k_fail += 1; continue
                 
+            # Calculate s_K (Scale) for this K
+            s_fit = base.get_resolution_factor_k(F_opt, K_target, seed=0)
+
             # Load Baselines
             try:
+                # Get s_fit (s_K) for this K_target
+                s_fit = base.get_resolution_factor_k(F_opt, K_target, seed=0)
+                
+                # Fetch ECDF values internally if needed, or just values for summary
                 f_u, f_r = base.get_baseline_values(mop_name, K_target, "fit")
                 c_u, c_r = base.get_baseline_values(mop_name, K_target, "coverage")
                 g_u, g_r = base.get_baseline_values(mop_name, K_target, "gap")
@@ -119,7 +127,8 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             hist_ref /= np.sum(hist_ref)
 
             # Metrics
-            fair_f = fair.compute_fair_fit(P_eval, F_opt, s_gt)
+            # Using s_fit (s_K) instead of s_gt for Clinical consistency (ADR 0026)
+            fair_f = fair.compute_fair_fit(P_eval, F_opt, s_fit)
             fair_c = fair.compute_fair_coverage(P_eval, F_opt)
             fair_g = fair.compute_fair_gap(P_eval, F_opt)
             fair_r = fair.compute_fair_regularity(P_eval, U_ref)
@@ -143,7 +152,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             igd_p_vals.append(GEN_igdplus([F_run], F_opt).evaluate()[0])
             gd_p_vals.append(GEN_gdplus([F_run], F_opt).evaluate()[0])
             
-        except Exception: continue
+            # Record s_fit for the report
+            metrics_entry = {"s_fit": s_fit}
+            
+        except Exception: 
+            import traceback; traceback.print_exc()
+            continue
 
     n_runs = len(fit_vals)
     def _med(lst): return float(np.nanmedian(lst)) if len(lst) else np.nan
@@ -176,7 +190,8 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         "bal": {"q": mq["bal"], "fair": mf["bal"], "ideal": mi["bal"], "rand": mr["bal"]},
         "k_used": _med(k_used_vals), "k_raw": _med(k_raw_vals),
         "igd_p": {"mean": _avg(igd_p_vals), "std": float(np.std(igd_p_vals)) if igd_p_vals else 0},
-        "gd_p": {"mean": _avg(gd_p_vals), "std": float(np.std(gd_p_vals)) if gd_p_vals else 0}
+        "gd_p": {"mean": _avg(gd_p_vals), "std": float(np.std(gd_p_vals)) if gd_p_vals else 0},
+        "s_fit": s_fit if 's_fit' in locals() else 1.0 # The macroscopic ruler (s_K)
     }
 
 def run_audit():

@@ -19,7 +19,7 @@ from scipy.spatial.distance import cdist
 from scipy.cluster.vq import kmeans2
 
 # Path to the Authorized Offline Baselines
-BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "../diagnostics/resources/baselines_v4.json")
+BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v3.json")
 _CACHE = None
 
 class UndefinedBaselineError(Exception):

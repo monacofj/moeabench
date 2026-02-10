@@ -94,6 +94,7 @@ To prevent grade inflation, the baselines are generated with rigorous statistica
 *   **FIT Exception:** For Convergence, a random subset of GT is *too easy*. A "Random" algorithm would be far worse (generating points anywhere in the BBox).
     *   $\mathcal{F}_{ideal}^{fit} = 0.0$ (Physical perfection is required).
     *   $\mathcal{F}_{random}^{fit} = \mathbb{E}[\text{BBox Sampling} / s_K]$.
+    *   **Explicite rule**: The baseline fit.rand50 must be in units of $1/s_K$ for clinical consistency.
 *   **Diversity Metrics (Cov, Gap, Reg, Bal):**
     *   $\mathcal{F}_{ideal} = \text{Median}(FPS(GT, K))$
     *   $\mathcal{F}_{random} = \text{Median}(RandSubset(GT, K))$
