@@ -48,8 +48,12 @@ To resolve these inconsistencies, we adopt a **Clinical Metrology** approach, se
 *   **Role:** To characterize specific "pathologies" (e.g., Non-convergence, Gaps, Irregularity) in a way that is comparable across different problems.
 *   **Formal Definitions:**
     1.  **FAIR_FIT (Convergence):**
-        $$ \mathcal{F}_{fit} = \frac{GD_{95}(P \to GT)}{s_{GT}} $$
-        *Normalization by $s_{GT}$ (GT resolution) makes convergence dimensionless.*
+        $$ \mathcal{F}_{fit} = \frac{GD_{95}(P \to GT)}{s_K} $$
+        *  $s_K = \text{Median}(\text{NN}(U_K))$, where $U_K = \text{FPS}(GT, K, \text{seed}=0)$.
+        *  **Rationale for Sanitization:**
+            *   **The "Microscopic Ruler" Problem:** The previous normalizer, $s_{GT}$, is the resolution of the dense Ground Truth ($N \approx 10,000$). In high dimensions ($M \ge 3$), this value becomes infinitesimal ($10^{-5}$), causing raw distances ($10^{-1}$) to explode when normalized.
+            *   **Dynamic Range Collapse:** Because the Random Baseline is also measured against this microscopic ruler, its value becomes astronomical (e.g., ~2400 for DTLZ6). The Q-Score formula ($1 - \text{Error}/\text{Random}$) then divides a large error by a colossal baseline, compressing all scores to $0.99+$ even for failed runs.
+            *   **The Clinical Fix ($s_K$):** We replace the microscopic ruler with a macroscopic one: the expected resolution of a finite population of size $K$. This restores the dynamic range, ensuring that a gross visual error penalizes the Q-Score effectively.
     2.  **FAIR_COVERAGE (Completeness):**
         $$ \mathcal{F}_{cov} = IGD_{mean}(GT \to P) $$
     3.  **FAIR_GAP (Continuity):**
@@ -63,28 +67,33 @@ To resolve these inconsistencies, we adopt a **Clinical Metrology** approach, se
         *Jensen-Shannon divergence of cluster occupancy.*
 
 ### 3.3 Layer 2: Q-Scores (`MoeaBench.diagnostics.qscore`)
-*   **Definition:** Engineering quality grades normalized to the expectation of the specific problem instance $(Problem, N, M)$.
+*   **Definition:** Engineering quality grades normalized to the expectation of the specific problem instance $(Problem, N, M)$ using Empirical Distribution Functions.
 *   **Direction:** **High-is-Better** ($Q \in [0.0, 1.0]$).
-*   **Role:** To determine the "Verdict" (Pass/Fail) by Contextualizing the Fair Metric.
-*   **The Transformation:**
-    $$ Q = 1.0 - \text{clip}\left( \frac{\mathcal{F}_{observed} - \mathcal{F}_{ideal}}{\mathcal{F}_{random} - \mathcal{F}_{ideal}} \right) $$
+*   **Role:** To determine the "Verdict" (Pass/Fail) by Contextualizing the Fair Metric within the actual population of random outcomes.
+*   **The Transformation (ECDF-based):**
+    To eliminate distortions caused by skewed or fat-tailed baseline distributions, we replace linear interpolation with a logic based on the **Empirical Cumulative Distribution Function (ECDF)**, denoted as $F_{rand}(x)$:
 
-    *   $\mathcal{F}_{ideal}$: The expected Fair Metric value of an **Optimal Subset** (obtained via Farthest Point Sampling of GT).
-    *   $\mathcal{F}_{random}$: The expected value of a **Random Subset** (or BBox Random).
+    $$ Q = 1.0 - \text{clip}\left( \frac{F_{rand}(\mathcal{F}_{observed}) - F_{rand}(\mathcal{F}_{ideal})}{F_{rand}(\mathcal{F}_{random}) - F_{rand}(\mathcal{F}_{ideal})} \right) $$
+
+    *   $F_{rand}(x)$: The ECDF of a certified random baseline distribution (200 samples).
+    *   $\mathcal{F}_{ideal}$: The expected Fair Metric value of an **Optimal Subset**.
+    *   $\mathcal{F}_{random}$: The median of the baseline distribution (guaranteed $Q=0$ at the median).
 
 ---
 
 ## 4. Implementation Specification
 
-### 4.1 Strict Baseline Policy (The "Fail-Closed" Principle)
+### 4.1 Strict Baseline Policy (Baselines v4)
 To ensure the integrity of the audit, the system must never "guess" or "fallback".
-*   **Fail-Closed:** If the baselines ($\mathcal{F}_{ideal}, \mathcal{F}_{random}$) for a specific triplet $(Problem, K, Metric)$ are missing from the certified JSON, the system raises `UndefinedBaselineError`. The audit is aborted. This prevents "Shadow Audits" where algorithms pass due to loose default thresholds.
+*   **Baselines v4 (ECDF):** The system stores a discrete distribution of **200 sorted samples** per triplet $(Problem, K, Metric)$.
+*   **Fail-Closed:** If the baselines for a specific triplet are missing or do not conform to the 200-sample sorted schema, the system raises `UndefinedBaselineError`.
+*   **Consistency Invariant:** The stored `rand50` MUST be the median of the 200 samples in `rand_ecdf`. The system verifies this at load time.
 
 ### 4.2 Baseline Selection Rules
 To prevent grade inflation, the baselines are generated with rigorous statistical methods:
 *   **FIT Exception:** For Convergence, a random subset of GT is *too easy*. A "Random" algorithm would be far worse (generating points anywhere in the BBox).
     *   $\mathcal{F}_{ideal}^{fit} = 0.0$ (Physical perfection is required).
-    *   $\mathcal{F}_{random}^{fit} = \mathbb{E}[\text{BBox Sampling}]$.
+    *   $\mathcal{F}_{random}^{fit} = \mathbb{E}[\text{BBox Sampling} / s_K]$.
 *   **Diversity Metrics (Cov, Gap, Reg, Bal):**
     *   $\mathcal{F}_{ideal} = \text{Median}(FPS(GT, K))$
     *   $\mathcal{F}_{random} = \text{Median}(RandSubset(GT, K))$

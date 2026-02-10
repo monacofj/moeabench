@@ -210,10 +210,13 @@ def audit(target: Any,
         hist_ref /= np.sum(hist_ref)
         
         # C. Compute FAIR Metrics (Physics)
-        s_gt = baselines.get_resolution_factor(GT)
-        metrics_data['s_gt'] = s_gt
+        # s_gt = baselines.get_resolution_factor(GT) 
+        s_k = baselines.get_resolution_factor_k(GT, K, seed=0)
         
-        f_fit = fair.compute_fair_fit(P, GT, s_gt)
+        metrics_data['s_fit'] = s_k
+        metrics_data['s_gt'] = baselines.get_resolution_factor(GT) # Keep for reference
+        
+        f_fit = fair.compute_fair_fit(P, GT, s_k)
         f_cov = fair.compute_fair_coverage(P, GT)
         f_gap = fair.compute_fair_gap(P, GT)
         f_reg = fair.compute_fair_regularity(P, U_ref)

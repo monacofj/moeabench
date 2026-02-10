@@ -10,6 +10,7 @@ Decoupled Renderer: Consumes pre-calculated audit data from JSON.
 """
 
 import os
+import sys
 import json
 import numpy as np
 import plotly.graph_objects as go
@@ -19,6 +20,12 @@ from plotly.subplots import make_subplots
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_audit_v0.9.json")
 OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.9.html")
+
+# Ensure project root in path for imports
+if PROJ_ROOT not in sys.path:
+    sys.path.insert(0, PROJ_ROOT)
+
+from MoeaBench.diagnostics import qscore
 
 def generate_visual_report():
     if not os.path.exists(AUDIT_JSON):
@@ -132,24 +139,22 @@ def generate_visual_report():
                 front = np.array(data["final_front"])
                 dists = np.array(data["cdf_dists"])
                 
-                # Fetch FIT baselines for per-point Q-Score calculation
+                # Fetch FIT baselines (already normalized in v3)
                 fit_data = clinical.get("fit", {})
-                ideal = fit_data.get("ideal", 0.0)
-                rand = fit_data.get("rand", 1.0)
-                fair_agg = fit_data.get("fair", 0.0)
+                rand_norm = fit_data.get("rand", 1.0) # This is now fit.rand50 in s_K units
+                s_fit = data.get("metrics", {}).get("s_fit", 1.0) # The new s_K scaling factor
+
+                s_fit = data.get("metrics", {}).get("s_fit", 1.0) # The new s_K scaling factor
+
+                # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
+                try:
+                    # K = len(front) typically 200 for this report
+                    # We pass len(front) as K. If baseline missing, it will raise.
+                    q_points = qscore.compute_q_fit_points(dists, mop_name, len(front), s_fit)
+                except Exception as e:
+                    print(f"Warning: Q-Point calc failed for {alg} on {mop_name}: {e}")
+                    q_points = np.zeros_like(dists)
                 
-                # Recover s_gt (Resolution Factor) to align raw dists with normalized baselines
-                # Rule: fair_agg = percentile(dists, 95) / s_gt
-                d95 = np.percentile(dists, 95) if len(dists) > 0 else 0.0
-                s_gt = d95 / fair_agg if fair_agg > 1e-12 else 1.0
-                
-                # Calculate Q-Score for each point (normalized)
-                denom = rand - ideal
-                if abs(denom) < 1e-12:
-                    q_points = np.where(dists < 1e-6, 1.0, 0.0)
-                else:
-                    # Normalize dists by s_gt before computing Q
-                    q_points = 1.0 - np.clip(((dists / s_gt) - ideal) / denom, 0.0, 1.0)
                 
                 mask_research = q_points >= 0.67
                 mask_industry = (q_points >= 0.34) & (q_points < 0.67)
@@ -301,6 +306,7 @@ def generate_visual_report():
                 "h_rel": f"{stats.get('H_rel',0)*100:.2f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
+                "s_fit": s_fit, # Expose s_K scale
                 "t_conv": str(data["history"]["gens"][-1]) if data["history"]["gens"] else "-"
             })
             
@@ -311,7 +317,7 @@ def generate_visual_report():
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.7)"),
             legend2=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
             legend3=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
-            scene=dict(xaxis_title='f1', yaxis_title='f2', zaxis_title='f3')
+            scene=dict(xaxis_title='f1', yaxis_title='f2', zaxis_title='f3', aspectmode='cube')
         )
 
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
@@ -337,6 +343,8 @@ def generate_visual_report():
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
                 tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;Ideal: {d.get('ideal',0):.4f}&#013;Rand: {d.get('rand',0):.4f}"
+                if dim == "fit" and "s_fit" in m:
+                    tip += f"&#013;s_K (Scale): {m['s_fit']:.2e}"
                 matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
             matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
             v = c.get("verdict", "FAIL")
