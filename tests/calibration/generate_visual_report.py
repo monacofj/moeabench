@@ -63,7 +63,6 @@ def generate_visual_report():
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
         "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026).</p>",
-        
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
         "<p>The objective is to certify the framework's core algorithms against rigorous mathematical benchmarks (Ground Truth), using a scale-invariant quality assessment.</p>",
@@ -71,26 +70,24 @@ def generate_visual_report():
         "<li><b>Population:</b> Algorithms ran with <code>N=200</code>. Q-Scores are calculated on the <i>effective</i> non-dominated count ($K \\le 200$).</li>",
         "<li><b>Evolutionary Budget:</b> Fixed at <code>1000 generations</code> per run.</li>",
         "<li><b>Statistical Relevance:</b> Metrics derived from <b>30 independent runs</b> per algorithm/problem pair.</li>",
-        "<li><b>Normalization:</b> Strict Theoretical Normalization [0, 1] using the Ground Truth's <i>Ideal</i> and <i>Nadir</i> points.</li>",
+        "<li><b>Normalization:</b> Strict Theoretical Normalization [0, 1] using the Ground Truth's <i>Utopia</i> and <i>Nadir</i> points.</li>",
         "</ul>",
-
         "<h2>2. Clinical Metrology Guide</h2>",
         "<div style='background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px;'>",
         "<b>Reading the Evidence:</b> This report uses a dual-layer validation framework.<br>",
         "<ul style='margin-bottom:0'>",
         "<li><b>Layer 1 - Clinical Matrix (The Verdict):</b> An engineering Q-Score (0.0 - 1.0).<br>",
         "<i>Pass ($Q \\ge 0.67$):</i> The algorithm is statistically indistinguishable from the theoretical limit.<br>",
-        "<i>Fail ($Q < 0.34$):</i> The algorithm is performing closer to random noise than to the ideal.</li>",
+        "<i>Fail ($Q < 0.34$):</i> The algorithm is performing closer to <b>AnchorBad</b> than to <b>AnchorGood</b>.</li>",
         "<li><b>Layer 2 - Structural Evidence (The Biopsy):</b> The <b>Distance-to-GT CDF</b> graph (bottom right).<br>",
         "This graph reveals the 'physics' of the failure that the Q-Score summarizes. It plots the cumulative distribution of distances to the Ground Truth along the X-axis.",
         "<ul style='margin-top:0.5rem'>",
-        "<li><b>Steep Left-Aligned Curve:</b> The ideal profile. High precision convergence where the entire population is uniformly close to the manifold.</li>",
+        "<li><b>Steep Left-Aligned Curve:</b> The <b>AnchorGood</b> profile. High precision convergence where the entire population is uniformly close to the manifold.</li>",
         "<li><b>Long Tail (Right-skewed):</b> Indicates <b>Poor Regularity (REG)</b>. While most points may be close, a subset of the population is 'stuck' far away (outliers) or trapped in local optima.</li>",
         "<li><b>Rigid Shift (Offset):</b> Indicates <b>Good Geometry but Poor Fit (FIT)</b>. The curve has the correct vertical shape but is shifted to the right. The algorithm found the manifold's shape but stopped before reaching the true front.</li>",
         "<li><b>Discontinuous Plateaus:</b> Vertical gaps in the curve indicate <b>Coverage Gaps (GAP)</b>. The algorithm completely missed specific regions of the objective space.</li>",
         "</ul></li>",
         "</ul></div>",
-
         "<h3>3. Metric Glossary</h3>",
         "<ul>",
         "<li><b>FIT (Proximity):</b> How close the front is to the Optimal Manifold. High precision convergence.</li>",
@@ -149,7 +146,7 @@ def generate_visual_report():
                 
                 # Fetch FIT baselines (already normalized in v3)
                 fit_data = clinical.get("fit", {})
-                rand_norm = fit_data.get("rand", 1.0) # This is now fit.rand50 in s_K units
+                anchor_bad_norm = fit_data.get("anchor_bad", 1.0) # This is now fit.anchor_bad in s_K units
                 s_fit = clinical.get("s_fit", 1.0) # The new s_K scaling factor
 
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
@@ -230,12 +227,12 @@ def generate_visual_report():
                 
                 # Add threshold lines only once (for the first alg) to avoid clutter
                 if alg == algs[0]:
-                     # Ideal Wall (x=0) - Plot as Scatter to avoid Scatter3d/add_vline bug
+                     # Utopia Wall (x=0) - Plot as Scatter to avoid Scatter3d/add_vline bug
                     fig.add_trace(go.Scatter(
                         x=[0, 0], y=[0, 1.05], 
                         mode='lines',
                         line=dict(color='gray', dash='dot', width=1),
-                        name='Ideal (GT)',
+                        name='Utopia (GT)',
                         showlegend=False,
                         hoverinfo='skip'
                     ), row=2, col=2)
@@ -357,7 +354,7 @@ def generate_visual_report():
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
-                tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;Ideal: {d.get('ideal',0):.4f}&#013;Rand: {d.get('rand',0):.4f}"
+                tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;AnchorGood: {d.get('anchor_good',0):.4f}&#013;AnchorBad: {d.get('anchor_bad',0):.4f}"
                 if dim == "fit" and "s_fit" in m:
                     tip += f"&#013;s_K (Scale): {m['s_fit']:.2e}"
                     sub_text = f"<div style='font-size: 0.7rem; color: #64748b; margin-top: 2px;'>f:{d.get('fair',0):.2f}<br>s:{m['s_fit']:.1e}</div>"

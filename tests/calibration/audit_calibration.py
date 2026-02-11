@@ -183,24 +183,97 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
         "verdict": verdict, "summary": summary_text,
-        "fit": {"q": mq["fit"], "fair": mf["fit"], "ideal": mi["fit"], "rand": mr["fit"]},
-        "cov": {"q": mq["cov"], "fair": mf["cov"], "ideal": mi["cov"], "rand": mr["cov"]},
-        "gap": {"q": mq["gap"], "fair": mf["gap"], "ideal": mi["gap"], "rand": mr["gap"]},
-        "reg": {"q": mq["reg"], "fair": mf["reg"], "ideal": mi["reg"], "rand": mr["reg"]},
-        "bal": {"q": mq["bal"], "fair": mf["bal"], "ideal": mi["bal"], "rand": mr["bal"]},
+        "fit": {"q": mq["fit"], "fair": mf["fit"], "anchor_good": mi["fit"], "anchor_bad": mr["fit"]},
+        "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"]},
+        "gap": {"q": mq["gap"], "fair": mf["gap"], "anchor_good": mi["gap"], "anchor_bad": mr["gap"]},
+        "reg": {"q": mq["reg"], "fair": mf["reg"], "anchor_good": mi["reg"], "anchor_bad": mr["reg"]},
+        "bal": {"q": mq["bal"], "fair": mf["bal"], "anchor_good": mi["bal"], "anchor_bad": mr["bal"]},
         "k_used": _med(k_used_vals), "k_raw": _med(k_raw_vals),
         "igd_p": {"mean": _avg(igd_p_vals), "std": float(np.std(igd_p_vals)) if igd_p_vals else 0},
         "gd_p": {"mean": _avg(gd_p_vals), "std": float(np.std(gd_p_vals)) if gd_p_vals else 0},
         "s_fit": s_fit if 's_fit' in locals() else 1.0 # The macroscopic ruler (s_K)
     }
 
+def _audit_problem_alg(mop_name, alg, F_opt, mop_df):
+    """Worker function for parallel audit."""
+    print(f"  - {alg}")
+    # Final stats from baseline CSV
+    alg_stats = mop_df[(mop_df['Algorithm'] == alg) & (mop_df['Intensity'] == 'standard')]
+    stats_row = alg_stats.iloc[0].to_dict() if not alg_stats.empty else {}
+    
+    # Clinical Aggregation (Heavy)
+    clinical = _aggregate_clinical(mop_name, alg, F_opt) if F_opt is not None else {}
+    
+    # Representative Final Front
+    final_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00.csv")
+    F_obs_pts = _load_nd_points(final_file) if os.path.exists(final_file) else np.array([])
+    F_obs = F_obs_pts.tolist()
+    
+    # CDF Data for validation plot
+    cdf_dists = []
+    point_dists = []
+    if F_opt is not None and len(F_obs) > 0:
+        from scipy.spatial.distance import cdist
+        dists = cdist(np.array(F_obs), F_opt, metric='euclidean')
+        raw_d = np.min(dists, axis=1)
+        point_dists = raw_d.tolist()
+        cdf_dists = np.sort(raw_d).tolist()
+
+    # Convergence History
+    history = {"gens": [], "igd": [], "hv_rel": []}
+    if F_opt is not None:
+        try:
+            from pymoo.indicators.igd import IGD
+            metric_igd = IGD(F_opt, zero_to_one=True)
+            from pymoo.indicators.hv import Hypervolume
+            ideal, nadir = np.min(F_opt, axis=0), np.max(F_opt, axis=0)
+            hv_engine = Hypervolume(ref_point=np.array([1.1]*3), norm_ref_point=False, zero_to_one=True, ideal=ideal, nadir=nadir)
+            hv_opt = hv_engine.do(F_opt)
+            
+            for g in range(100, 1100, 100):
+                snap_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00_gen{g}.csv")
+                if os.path.exists(snap_file):
+                    F_snap = _load_nd_points(snap_file)
+                    history["gens"].append(g)
+                    history["igd"].append(float(metric_igd.do(F_snap)))
+                    hv_v = hv_engine.do(F_snap)
+                    history["hv_rel"].append((hv_v / hv_opt) * 100 if hv_opt > 0 else 0)
+        except Exception as e:
+            print(f"Warning: History calculation failed for {mop_name}_{alg}: {e}")
+
+    return alg, {
+        "stats": stats_row,
+        "clinical": clinical,
+        "final_front": F_obs,
+        "cdf_dists": cdf_dists,
+        "point_dists": point_dists,
+        "history": history
+    }
+
 def run_audit():
     if not os.path.exists(BASELINE_FILE): return print("Baseline CSV not found.")
     df_base = pd.read_csv(BASELINE_FILE)
     mops = sorted(df_base['MOP'].unique())
+    
+    # Load existing data for RESUME capability
     audit_data = {"problems": {}}
+    if os.path.exists(AUDIT_JSON):
+        try:
+            with open(AUDIT_JSON, "r") as f:
+                audit_data = json.load(f)
+            print(f"Resuming audit. {len(audit_data['problems'])} problems already in JSON.")
+        except:
+            print("Could not load existing audit JSON. Starting fresh.")
+
+    from concurrent.futures import ProcessPoolExecutor
 
     for mop_name in mops:
+        if mop_name in audit_data["problems"] and audit_data["problems"][mop_name].get("algorithms"):
+            # Deep check for completeness
+            if len(audit_data["problems"][mop_name]["algorithms"]) >= 3:
+                print(f"Problem {mop_name} already audited. Skipping.")
+                continue
+
         print(f"Auditing {mop_name}...")
         mop_df = df_base[df_base['MOP'] == mop_name]
         
@@ -208,70 +281,27 @@ def run_audit():
         gt_file = os.path.join(GT_DIR, f"{mop_name}_3_optimal.csv")
         F_opt = pd.read_csv(gt_file, header=None).values if os.path.exists(gt_file) else None
         
-        audit_data["problems"][mop_name] = {"ideal": None, "nadir": None}
+        audit_data["problems"][mop_name] = {"utopia": None, "nadir": None}
         if F_opt is not None:
-            audit_data["problems"][mop_name]["ideal"] = np.min(F_opt, axis=0).tolist()
+            audit_data["problems"][mop_name]["utopia"] = np.min(F_opt, axis=0).tolist()
             audit_data["problems"][mop_name]["nadir"] = np.max(F_opt, axis=0).tolist()
             # Representative GT (downsampled for 3D plot)
             audit_data["problems"][mop_name]["gt_points"] = F_opt[np.random.choice(len(F_opt), min(1000, len(F_opt)), replace=False)].tolist()
 
         audit_data["problems"][mop_name]["algorithms"] = {}
         algs = sorted(mop_df['Algorithm'].unique())
-        for alg in algs:
-            print(f"  - {alg}")
-            # Final stats from baseline CSV
-            alg_stats = mop_df[(mop_df['Algorithm'] == alg) & (mop_df['Intensity'] == 'standard')]
-            stats_row = alg_stats.iloc[0].to_dict() if not alg_stats.empty else {}
-            
-            # Clinical Aggregation (Heavy)
-            clinical = _aggregate_clinical(mop_name, alg, F_opt) if F_opt is not None else {}
-            
-            # Representative Final Front
-            final_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00.csv")
-            F_obs = _load_nd_points(final_file).tolist() if os.path.exists(final_file) else []
-            
-            # CDF Data for validation plot
-            cdf_dists = []
-            point_dists = []
-            if F_opt is not None and F_obs:
-                from scipy.spatial.distance import cdist
-                dists = cdist(np.array(F_obs), F_opt, metric='euclidean')
-                # Save RAW distances for 3D point coloring (aligned to front)
-                raw_d = np.min(dists, axis=1)
-                point_dists = raw_d.tolist()
-                # Save SORTED distances for CDF Plot
-                cdf_dists = np.sort(raw_d).tolist()
+        
+        # USE PROCESS POOL FOR ALGORITHMS
+        with ProcessPoolExecutor() as executor:
+            futures = [executor.submit(_audit_problem_alg, mop_name, alg, F_opt, mop_df) for alg in algs]
+            for future in futures:
+                alg_name, alg_res = future.result()
+                audit_data["problems"][mop_name]["algorithms"][alg_name] = alg_res
 
-            # Convergence History
-            history = {"gens": [], "igd": [], "hv_rel": []}
-            if F_opt is not None:
-                from pymoo.indicators.igd import IGD
-                metric_igd = IGD(F_opt, zero_to_one=True)
-                # HV Setup
-                from pymoo.indicators.hv import Hypervolume
-                ideal, nadir = np.min(F_opt, axis=0), np.max(F_opt, axis=0)
-                hv_engine = Hypervolume(ref_point=np.array([1.1]*3), norm_ref_point=False, zero_to_one=True, ideal=ideal, nadir=nadir)
-                hv_opt = hv_engine.do(F_opt)
-                
-                for g in range(100, 1100, 100):
-                    snap_file = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run00_gen{g}.csv")
-                    if os.path.exists(snap_file):
-                        F_snap = _load_nd_points(snap_file)
-                        history["gens"].append(g)
-                        history["igd"].append(float(metric_igd.do(F_snap)))
-                        hv_v = hv_engine.do(F_snap)
-                        history["hv_rel"].append((hv_v / hv_opt) * 100 if hv_opt > 0 else 0)
+        # Incremental Save
+        with open(AUDIT_JSON, "w") as f: json.dump(audit_data, f)
+        print(f"Incremental save: {mop_name} completed.")
 
-            audit_data["problems"][mop_name]["algorithms"][alg] = {
-                "stats": stats_row,
-                "clinical": clinical,
-                "final_front": F_obs,
-                "cdf_dists": cdf_dists,
-                "point_dists": point_dists, # New field for correct 3D coloring
-                "history": history
-            }
-
-    with open(AUDIT_JSON, "w") as f: json.dump(audit_data, f)
     print(f"Audit complete: {AUDIT_JSON}")
 
 if __name__ == "__main__":
