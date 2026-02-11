@@ -90,11 +90,8 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             F_run = _load_nd_points(rf)
             K_raw = len(F_run)
             
-            if K_raw >= 50:
-                grid = [50, 100, 150, 200]
-                K_target = max([k for k in grid if k <= K_raw])
-            elif K_raw >= 10:
-                K_target = K_raw 
+            if K_raw >= 10:
+                K_target = base.snap_k(K_raw)
             else:
                 n_k_fail += 1; continue
                 
@@ -103,15 +100,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
 
             # Load Baselines
             try:
-                # Get s_fit (s_K) for this K_target
-                s_fit = base.get_resolution_factor_k(F_opt, K_target, seed=0)
-                
                 # Fetch ECDF values internally if needed, or just values for summary
                 f_u, f_r = base.get_baseline_values(mop_name, K_target, "fit")
-                c_u, c_r = base.get_baseline_values(mop_name, K_target, "coverage")
+                c_u, c_r = base.get_baseline_values(mop_name, K_target, "cov")
                 g_u, g_r = base.get_baseline_values(mop_name, K_target, "gap")
-                u_u, u_r = base.get_baseline_values(mop_name, K_target, "uniformity")
-                b_u, b_r = base.get_baseline_values(mop_name, K_target, "balance")
+                u_u, u_r = base.get_baseline_values(mop_name, K_target, "reg")
+                b_u, b_r = base.get_baseline_values(mop_name, K_target, "bal")
             except base.UndefinedBaselineError:
                 n_undefined_baseline += 1; continue
 
@@ -128,7 +122,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
 
             # Metrics
             # Using s_fit (s_K) instead of s_gt for Clinical consistency (ADR 0026)
-            fair_f = fair.compute_fair_fit(P_eval, F_opt, s_fit)
+            fair_f = fair.compute_fair_fit(P_eval, F_opt, s_fit=s_fit) # Renamed param
             fair_c = fair.compute_fair_coverage(P_eval, F_opt)
             fair_g = fair.compute_fair_gap(P_eval, F_opt)
             fair_r = fair.compute_fair_regularity(P_eval, U_ref)
@@ -169,16 +163,22 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     mr = {"fit": _med(rand_fit_vals), "cov": _med(rand_cov_vals), "gap": _med(rand_gap_vals), "reg": _med(rand_reg_vals), "bal": _med(rand_bal_vals)}
     
     summary_list = []
-    if mq["fit"] < 0.67: summary_list.append("Insufficient Precision (Proximity to Front)")
-    if mq["cov"] < 0.67: summary_list.append("Limited Coverage (Reduced Extent)")
-    if mq["gap"] < 0.67: summary_list.append("Significant Topological Interruptions (Gaps)")
-    if mq["reg"] < 0.67: summary_list.append("Uneven Distribution Pattern (Irregularity)")
-    if mq["bal"] < 0.67: summary_list.append("Structural Bias (Non-Uniform Objective Coverage)")
+    # Fail-Closed NaN Check
+    if np.isnan(mq["fit"]) or mq["fit"] < 0.67: summary_list.append("Insufficient Precision (Proximity to Front)")
+    if np.isnan(mq["cov"]) or mq["cov"] < 0.67: summary_list.append("Limited Coverage (Reduced Extent)")
+    if np.isnan(mq["gap"]) or mq["gap"] < 0.67: summary_list.append("Significant Topological Interruptions (Gaps)")
+    if np.isnan(mq["reg"]) or mq["reg"] < 0.67: summary_list.append("Uneven Distribution Pattern (Irregularity)")
+    if np.isnan(mq["bal"]) or mq["bal"] < 0.67: summary_list.append("Structural Bias (Non-Uniform Objective Coverage)")
+    
     summary_text = "; ".join(summary_list) if summary_list else "Excellent Performance (All Dimensions)"
     
     q_worst = np.nanmin(list(mq.values()))
+    # Strict fallback for all-NaN case
+    if np.isnan(q_worst): q_worst = 0.0
+    
     verdict = "RESEARCH" if q_worst >= 0.67 else ("INDUSTRY" if q_worst >= 0.34 else "FAIL")
-    if n_undefined_baseline > 0 and n_runs == n_undefined_baseline: verdict = "UNDEFINED_BASELINE"
+    # Correct condition for undefined baseline
+    if n_runs == 0 and n_undefined_baseline > 0: verdict = "UNDEFINED_BASELINE"
 
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
@@ -208,13 +208,14 @@ def run_audit():
         gt_file = os.path.join(GT_DIR, f"{mop_name}_3_optimal.csv")
         F_opt = pd.read_csv(gt_file, header=None).values if os.path.exists(gt_file) else None
         
-        audit_data["problems"][mop_name] = {"algorithms": {}, "ideal": None, "nadir": None}
+        audit_data["problems"][mop_name] = {"ideal": None, "nadir": None}
         if F_opt is not None:
             audit_data["problems"][mop_name]["ideal"] = np.min(F_opt, axis=0).tolist()
             audit_data["problems"][mop_name]["nadir"] = np.max(F_opt, axis=0).tolist()
             # Representative GT (downsampled for 3D plot)
             audit_data["problems"][mop_name]["gt_points"] = F_opt[np.random.choice(len(F_opt), min(1000, len(F_opt)), replace=False)].tolist()
 
+        audit_data["problems"][mop_name]["algorithms"] = {}
         algs = sorted(mop_df['Algorithm'].unique())
         for alg in algs:
             print(f"  - {alg}")
@@ -231,10 +232,15 @@ def run_audit():
             
             # CDF Data for validation plot
             cdf_dists = []
+            point_dists = []
             if F_opt is not None and F_obs:
                 from scipy.spatial.distance import cdist
                 dists = cdist(np.array(F_obs), F_opt, metric='euclidean')
-                cdf_dists = np.sort(np.min(dists, axis=1)).tolist()
+                # Save RAW distances for 3D point coloring (aligned to front)
+                raw_d = np.min(dists, axis=1)
+                point_dists = raw_d.tolist()
+                # Save SORTED distances for CDF Plot
+                cdf_dists = np.sort(raw_d).tolist()
 
             # Convergence History
             history = {"gens": [], "igd": [], "hv_rel": []}
@@ -261,6 +267,7 @@ def run_audit():
                 "clinical": clinical,
                 "final_front": F_obs,
                 "cdf_dists": cdf_dists,
+                "point_dists": point_dists, # New field for correct 3D coloring
                 "history": history
             }
 

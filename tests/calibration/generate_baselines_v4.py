@@ -7,142 +7,208 @@
 MoeaBench Baseline Generator v4 (ECDF-based)
 ============================================
 
-Generates baselines_v4.json containing:
-1. uni50: Median metric value for Uniform samples.
-2. rand50: Median metric value for Random samples.
-3. rand_ecdf: Sorted list of 200 Random metric values (Empirical CDF).
+Generates baselines_v4.json containing ECDF profiles for ALL clinical metrics:
+1. FIT (Proximity)
+2. COV (Coverage)
+3. GAP (Continuity)
+4. REG (Regularity)
+5. BAL (Balance)
+
+For each metric M and population size K:
+- rand_ecdf: Sorted list of 200 values from Random Sampling (The "Failure" Profile)
+- uni50: Median value from Uniform Sampling (The "Ideal" Profile)
+- rand50: Median value from Random Sampling
 
 Key Features:
 - Deterministic sampling (Fixed Seeds).
-- Full K coverage: Generates baselines for K=1..200 (or close to it) to support Fixed K-Policy.
-- Normalized Metrics: FIT uses s_K scaling.
+- Full K coverage: Generates baselines for K=10..50, 100, 150, 200.
 """
 
 import os
+import sys
+
+# Ensure project root in path for imports
+PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJ_ROOT not in sys.path:
+    sys.path.insert(0, PROJ_ROOT)
+
 import json
 import numpy as np
 import MoeaBench.diagnostics.baselines as base
+import MoeaBench.diagnostics.fair as fair
 from scipy.spatial.distance import cdist
 
 # Configuration
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../MoeaBench/diagnostics/resources/baselines_v4.json")
-N_SAMPLES = 200
+N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
+N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
 
-# Full K Range for Fixed K-Policy (Auditor will snap to these)
-# Generating 1..50 densely, then strided.
-# Actually, let's do the "grid" the user requested or implied:
-# "If you want to keep K_eff... baseline v4 has to cover all K=1..200"
-# "If you want Fixed K_target... auditor snaps to grid"
-# I will implement the Grid approach as per plan: [10..50, 100, 150, 200]
-# But wait, to be safe against "K_eff usage", providing more is better.
-# Let's generate a dense grid 10..200 for now? No, that's heavy.
-# Let's stick to the implementation plan: "Iterates over all problems and strictly enforces the existing K-list"?
-# No, user said: "strictly enforces existing K-list is an error".
-# User suggestion: "gera baseline para todos os K de 1 a 200" OR "snap to grid".
-# My plan update said: "Logic: K_target = snap_to_grid(K_eff, [50, 100, 150, 200])".
-# So I will generate for the Standard Grid + Dense Range [10..50] for backward compat?
-# Let's just generate the Standard Grid: [10, 20, 30, 40, 50, 100, 150, 200] roughly?
-# Actually, the user's preferred "Fixed K_target" implies we only need baselines for the targets we allow.
-# I will generate: range(10, 51) + [60, 70, 80, 90, 100, 120, 140, 150, 160, 180, 200]
-# This covers most bases.
+# Full K Grid for Fixed K-Policy
 K_VALUES = list(range(10, 51)) + [100, 150, 200]
 
-
-def calculate_metrics(samples, gt_norm, ideal, nadir, s_k):
-    """Calculates FIT."""
+def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
+    """
+    Calculates all 5 Clinical Metrics for a given sample population.
+    
+    Args:
+        samples (np.ndarray): The population to evaluate (N x M)
+        gt_norm (np.ndarray): Ground Truth (Normalized)
+        s_fit (float): Resolution factor for FIT
+        u_ref (np.ndarray): Uniform Reference for REG
+        c_cents (np.ndarray): Cluster centers for BAL
+        hist_ref (np.ndarray): Reference histogram for BAL
+        
+    Returns:
+        dict: {fit, cov, gap, reg, bal}
+    """
     metrics = {}
     
-    # 1. FIT (Convergence) - Standardized by s_K
-    # Using KDTree for speed if N is large, but cdist is fine for 200x2000
-    d = cdist(samples, gt_norm)
-    min_d = np.min(d, axis=1) # (N,)
-    # Robust Metric (Percentile 95)
-    gd95 = np.percentile(min_d, 95)
-    
-    # Normalize
-    if s_k > 1e-12:
-        metrics['fit'] = float(gd95 / s_k)
-    else:
-        metrics['fit'] = float(gd95) # Fallback if singular GT
+    # 1. FIT (Proximity)
+    metrics['fit'] = fair.compute_fair_fit(samples, gt_norm, s_fit)
+
+    # 2. COV (Coverage)
+    metrics['cov'] = fair.compute_fair_coverage(samples, gt_norm)
+
+    # 3. GAP (Continuity)
+    metrics['gap'] = fair.compute_fair_gap(samples, gt_norm)
+
+    # 4. REG (Regularity)
+    metrics['reg'] = fair.compute_fair_regularity(samples, u_ref)
+
+    # 5. BAL (Balance)
+    metrics['bal'] = fair.compute_fair_balance(samples, c_cents, hist_ref)
 
     return metrics
 
-def generate_ecdf_for_problem(prob_name, gt_norm, ideal, nadir):
+def generate_ecdf_for_problem(prob_name, gt_norm):
     problem_data = {}
     M = gt_norm.shape[1] # Objectives
 
+    # Global References (Resolution Indep)
+    # Clusters for Balance (Fixed seed for consistency)
+    c_cents, _ = base.get_ref_clusters(gt_norm, c=32, seed=0)
+    
+    # Pre-compute Uniform Reference for Balance (Ideal Histogram)
+    # We need a dense U_ref to compute the ideal histogram once
+    # Actually fair.compute_fair_balance needs hist_ref derived from F_OPT (GT)
+    # But wait, baselines.py says: "hist_ref passed to fair_balance".
+    # In audit_calibration.py: 
+    #   U_ref = base.get_ref_uk(F_opt, K_target, seed=0)
+    #   d_u = base.cdist(U_ref, C_cents)
+    #   lab_u = np.argmin(d_u, axis=1)
+    #   hist_ref ...
+    # Ideally, Balance should be checked against Uniform distribution on GT.
+    # Let's follow auditor logic: derive hist_ref from a Uniform sampling of GT (U_ref).
+    
     for k in K_VALUES:
         k_str = str(k)
         
-        # 1. s_K (Macroscopic Scale)
-        s_k = base.get_resolution_factor_k(gt_norm, k, seed=0)
+        # --- PREPARATION ---
+        # 1. s_K (Scale for FIT)
+        s_fit = base.get_resolution_factor_k(gt_norm, k, seed=0)
         
-        fit_samples = []
-
-        # Consistent reseeding per K
-        # We need N_SAMPLES iterations. Each iteration is a "run" of size K.
+        # 2. U_ref (Reference for REG and BAL) - The "Ideal" shape
+        u_ref = base.get_ref_uk(gt_norm, k, seed=0)
+        
+        # 3. Reference Histogram for BAL
+        # Map U_ref to clusters to define "Identity" distribution
+        d_u = cdist(u_ref, c_cents)
+        lab_u = np.argmin(d_u, axis=1)
+        hist_ref = np.bincount(lab_u, minlength=len(c_cents)).astype(float)
+        hist_ref /= np.sum(hist_ref)
+        
+        # --- GENERATION (RANDOM) ---
+        # "Failure" Baseline: Random Sampling in [0,1]^M
+        rand_vals = {"fit": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        
         rng = np.random.RandomState(SEED_START + k)
-        
         for _ in range(N_SAMPLES):
-            # Uniform Random Sampling in [0,1]^M (Normalized Space)
+            # Random Pop
             pop = rng.rand(k, M)
+            m = calculate_metrics(pop, gt_norm, s_fit, u_ref, c_cents, hist_ref)
+            for key in rand_vals: rand_vals[key].append(m[key])
             
-            # Calculate Metrics
-            m = calculate_metrics(pop, gt_norm, ideal, nadir, s_k)
-            fit_samples.append(m['fit'])
+        # --- GENERATION (IDEAL) ---
+        # "Success" Baseline: Uniform Sampling from GT (u_ref itself, or perturbations?)
+        # Ideally, we sample subsets of GT that are perfectly Uniform.
+        # But u_ref IS the definition of Uniform on GT for size K.
+        # So "Ideal" is effectively computing metrics on u_ref itself (or similar uniform sets).
+        # Since u_ref is deterministic (seed=0), let's generate a few variations 
+        # using different seeds for get_ref_uk to simulate "Ideal but stochastic" algorithms?
+        # Specification says: "Ideal = Uni50 (FPS of GT)". 
+        # So we sample N_IDEAL sets using FPS with different seeds.
+        
+        uni_vals = {"fit": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        for i in range(N_IDEAL):
+            # Sample Uniformly from GT (Simulates a perfect algorithm)
+            # Seed varies to get distribution of "Perfect"
+            pop_uni = base.get_ref_uk(gt_norm, k, seed=100+i) 
             
-        # 3. Process ECDF and Statistics
-        fit_vals = np.sort(fit_samples) # ECDF (Sorted)
-        fit_rand50 = float(np.median(fit_vals))
-        
-        # UNI50 (Placeholder for now, usually same as Random for FIT)
-        fit_uni50 = 0.0 
-        
-        problem_data[k_str] = {
-            "fit": {
-                "uni50": fit_uni50,
-                "rand50": fit_rand50,
-                "rand_ecdf": [float(x) for x in fit_vals] # Must be sorted
+            # Note: For REG, we compare pop_uni against u_ref (seed=0).
+            # This captures the variance of "perfect" samplers against the canonical reference.
+            m = calculate_metrics(pop_uni, gt_norm, s_fit, u_ref, c_cents, hist_ref)
+            for key in uni_vals: uni_vals[key].append(m[key])
+
+        # --- STORAGE ---
+        k_data = {}
+        for metric in ["fit", "cov", "gap", "reg", "bal"]:
+            # Random (ECDF)
+            r_all = np.sort(rand_vals[metric])
+            r_50 = float(np.median(r_all))
+            r_ecdf = [float(x) for x in r_all]
+            
+            # Ideal (Scalar Anchor)
+            u_50 = float(np.median(uni_vals[metric]))
+            
+            # Special case for FIT: Ideal is 0.0 by definition of distance
+            if metric == "fit": u_50 = 0.0
+            
+            k_data[metric] = {
+                "uni50": u_50,
+                "rand50": r_50,
+                "rand_ecdf": r_ecdf
             }
-        }
+            
+        problem_data[k_str] = k_data
         
     return problem_data
 
 def main():
     print(f"Generating Baselines v4 (ECDF)...")
     print(f"Output: {OUTPUT_FILE}")
-    print(f"K_VALUES to generate: {K_VALUES}")
+    print(f"K_VALUES: {K_VALUES}")
     
+    # Locate references
+    # Assuming code is running from tests/calibration/
     ref_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../MoeaBench/diagnostics/resources/references"))
     
-    # List valid problem directories (must have calibration_package.npz)
     problems = []
     if os.path.exists(ref_dir):
         for d in sorted(os.listdir(ref_dir)):
-             if os.path.isdir(os.path.join(ref_dir, d)) and os.path.exists(os.path.join(ref_dir, d, "calibration_package.npz")):
-                 problems.append(d)
+            if os.path.isdir(os.path.join(ref_dir, d)) and os.path.exists(os.path.join(ref_dir, d, "calibration_package.npz")):
+                problems.append(d)
     
     if not problems:
-        print(f"Error: No reference problems found in {ref_dir}")
+        print(f"Error: No reference problems found in {ref_dir}. CWD: {os.getcwd()}")
         return
 
     print(f"Found {len(problems)} problems: {problems}")
     
-    final_json = {"problems": {}}
+    final_json = {
+        "schema": "baselines_v4_ecdf",
+        "rand_ecdf_n": N_SAMPLES,
+        "problems": {}
+    }
     
     for prob in problems:
         print(f"Processing {prob}...", end="", flush=True)
         try:
             pkg_path = os.path.join(ref_dir, prob, "calibration_package.npz")
             pkg = np.load(pkg_path)
-            
-            # Extract data
             gt_norm = pkg['gt_norm']
-            ideal = pkg['ideal']
-            nadir = pkg['nadir']
             
-            p_data = generate_ecdf_for_problem(prob, gt_norm, ideal, nadir)
+            p_data = generate_ecdf_for_problem(prob, gt_norm)
             final_json["problems"][prob] = p_data
             print(" Done.")
             
@@ -154,7 +220,7 @@ def main():
     # Save
     print(f"Saving to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w") as f:
-        json.dump(final_json, f, indent=None) # Compact JSON to save space given large arrays
+        json.dump(final_json, f, indent=None) 
     
     print("Baseline generation complete.")
 

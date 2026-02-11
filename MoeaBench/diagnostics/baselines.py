@@ -148,7 +148,7 @@ def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     
     indices = [start_idx]
     # Distances to current set
-    min_dists = cdist(gt[start_idx:start_idx+1], gt,metric='euclidean')[0]
+    min_dists = cdist(gt[start_idx:start_idx+1], gt, metric='euclidean')[0]
     
     for _ in range(k - 1):
         # Select point with max min_dist
@@ -205,3 +205,26 @@ def get_resolution_factor_k(gt: np.ndarray, k: int, seed: int = 0) -> float:
     np.fill_diagonal(d, np.inf)
     min_d = np.min(d, axis=1)
     return float(np.median(min_d))
+
+def snap_k(k_raw: int) -> int:
+    """
+    Snaps the raw population size K to the nearest supported baseline K
+    using a strict 'floor' logic for consistency with the audit protocol.
+    
+    Rules:
+    - K < 10: Returns 10 (Minimum supported)
+    - 10 <= K < 50: Returns K (Exact match)
+    - K >= 50: Returns max(grid <= K) where grid=[50, 100, 150, 200]
+    """
+    if k_raw < 10:
+        return 10
+    if k_raw < 50:
+        return k_raw
+    
+    grid = [50, 100, 150, 200]
+    # Filter grid items <= k_raw
+    candidates = [g for g in grid if g <= k_raw]
+    if not candidates:
+        # Should not happen given k_raw >= 50 check, but safe fallback
+        return 50
+    return max(candidates)

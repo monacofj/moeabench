@@ -189,8 +189,8 @@ def audit(target: Any,
         # For now, snap to 10.
         K_target = 10
     else:
-        # Find nearest
-        K_target = min(SUPPORTED_K, key=lambda x: abs(x - K_raw))
+        # Strict snap
+        K_target = baselines.snap_k(K_raw)
         
     metrics_data['mop_name'] = mop_name
     metrics_data['K'] = K_target # Clinical K
@@ -205,8 +205,7 @@ def audit(target: Any,
         mop_name = target.mop_name
         
     metrics_data['mop_name'] = mop_name
-    metrics_data['K'] = K
-    metrics_data['K_raw'] = K # Assuming no downsampling happened here yet
+    # Removed redundant and erroneous K assignment (caused NameError)
     
     # 4. Compute Fair Metrics & Q-Scores
     try:

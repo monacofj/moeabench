@@ -135,9 +135,17 @@ def generate_visual_report():
             clinical = data["clinical"]
             
             # 3D Front (Clinical Differentiation: Solid / Hollow / X)
-            if data["final_front"] and data["cdf_dists"]:
+            if data["final_front"]:
                 front = np.array(data["final_front"])
-                dists = np.array(data["cdf_dists"])
+                
+                # Use raw point distances (aligned) if available, else fallback to sorted (buggy but fallback)
+                if "point_dists" in data and data["point_dists"]:
+                    dists = np.array(data["point_dists"])
+                elif data["cdf_dists"]:
+                    print(f"Warning: Using sorted cdf_dists for {alg} (Visual artifacts likely)")
+                    dists = np.array(data["cdf_dists"])
+                else:
+                    dists = np.zeros(len(front))
                 
                 # Fetch FIT baselines (already normalized in v3)
                 fit_data = clinical.get("fit", {})
@@ -146,15 +154,12 @@ def generate_visual_report():
 
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
                 try:
-                    # K discretization to match Auditor and Baselines availability
                     # K discretization to match Auditor (Fixed K-Target Policy)
+                    from MoeaBench.diagnostics import baselines as base
                     K_raw = len(front)
-                    SUPPORTED_K = list(range(10, 51)) + [100, 150, 200]
                     
-                    if K_raw < 10:
-                        K_target = 10
-                    else:
-                        K_target = min(SUPPORTED_K, key=lambda x: abs(x - K_raw))
+                    # Strict Snap (Floor) matches Auditor
+                    K_target = base.snap_k(K_raw)
 
                     q_points = qscore.compute_q_fit_points(dists, mop_name, K_target, s_fit)
                 except Exception as e:

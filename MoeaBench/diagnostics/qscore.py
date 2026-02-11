@@ -81,25 +81,24 @@ def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
     return _compute_q_ecdf(fair_fit, 0.0, rand50, rand_ecdf)
 
 def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
-    """Computes Q_COVERAGE using linear interpolation."""
-    # Ideal = Uni50
-    uni50, rand50 = baselines.get_baseline_values(problem, k, "coverage")
-    return _compute_q_linear(fair_cov, uni50, rand50)
+    """Computes Q_COVERAGE using ECDF."""
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
+    return _compute_q_ecdf(fair_cov, uni50, rand50, rand_ecdf)
 
 def compute_q_gap(fair_gap: float, problem: str, k: int) -> float:
-    """Computes Q_GAP using linear interpolation."""
-    uni50, rand50 = baselines.get_baseline_values(problem, k, "gap")
-    return _compute_q_linear(fair_gap, uni50, rand50)
+    """Computes Q_GAP using ECDF."""
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
+    return _compute_q_ecdf(fair_gap, uni50, rand50, rand_ecdf)
 
 def compute_q_regularity(fair_reg: float, problem: str, k: int) -> float:
-    """Computes Q_REGULARITY using linear interpolation."""
-    uni50, rand50 = baselines.get_baseline_values(problem, k, "uniformity")
-    return _compute_q_linear(fair_reg, uni50, rand50)
+    """Computes Q_REGULARITY using ECDF."""
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
+    return _compute_q_ecdf(fair_reg, uni50, rand50, rand_ecdf)
 
 def compute_q_balance(fair_bal: float, problem: str, k: int) -> float:
-    """Computes Q_BALANCE using linear interpolation."""
-    uni50, rand50 = baselines.get_baseline_values(problem, k, "balance")
-    return _compute_q_linear(fair_bal, uni50, rand50)
+    """Computes Q_BALANCE using ECDF."""
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
+    return _compute_q_ecdf(fair_bal, uni50, rand50, rand_ecdf)
 
 def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
     """
