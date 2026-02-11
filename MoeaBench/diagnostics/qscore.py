@@ -75,10 +75,10 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
 def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
-    """Computes Q_FIT using ECDF."""
+    """Computes Q_FIT using strict linear baseline (Ideal -> Rand50)."""
     # Ideal = 0.0 (Perfect physical match)
-    _, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "fit")
-    return _compute_q_ecdf(fair_fit, 0.0, rand50, rand_ecdf)
+    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
+    return _compute_q_linear(fair_fit, 0.0, rand50)
 
 def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
     """Computes Q_COVERAGE using ECDF."""
