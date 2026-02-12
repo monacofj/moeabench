@@ -316,7 +316,7 @@ def generate_visual_report():
                 "emd": f"{emd_val:.4f}", 
                 "h_raw": f"{h_raw:.4f}",
                 "h_ratio": f"{h_ratio:.4f}",
-                "h_rel": f"{stats.get('H_rel',0)*100:.2f}%",
+                "h_rel": f"{stats.get('H_rel',0)*100:.3f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
                 "s_fit": s_fit, # Expose s_K scale
@@ -345,8 +345,8 @@ def generate_visual_report():
         # Matrix Table
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
-            "<table><colgroup><col style='width: 100px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: auto'><col style='width: 120px'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>FIT</th><th>COV</th><th>GAP</th><th>REG</th><th>BAL</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
+            "<table><colgroup><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: auto'><col style='width: 120px'></colgroup>",
+            "<thead><tr><th>Algorithm</th><th>FITNESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGULARITY</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
@@ -355,13 +355,24 @@ def generate_visual_report():
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
-                tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;AnchorGood: {d.get('anchor_good',0):.4f}&#013;AnchorBad: {d.get('anchor_bad',0):.4f}"
+                
+                # Full Tip for Tooltip
+                tip = f"Q: {q:.4f}&#013;Fair: {d.get('fair',0):.4f}&#013;Good: {d.get('anchor_good',0):.4f}&#013;Bad: {d.get('anchor_bad',0):.4f}"
+                if "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
+                
+                # Didactic Subtext (PDF-ready)
+                f_val = d.get('fair', 0)
+                g_val = d.get('anchor_good', 0)
+                b_val = d.get('anchor_bad', 0)
+                
+                sub_style = "font-size: 0.65rem; color: #64748b; line-height: 1.1; margin-top: 4px;"
+                sub_text = f"<div style='{sub_style}'>f: {f_val:.3f}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                
                 if dim == "fit" and "s_fit" in m:
-                    tip += f"&#013;s_K (Scale): {m['s_fit']:.2e}"
-                    sub_text = f"<div style='font-size: 0.7rem; color: #64748b; margin-top: 2px;'>f:{d.get('fair',0):.2f}<br>s:{m['s_fit']:.1e}</div>"
-                    matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span>{sub_text}</td>")
-                else:
-                    matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
+                    sub_text = f"<div style='{sub_style}'>f: {f_val:.3f} s: {m['s_fit']:.1e}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                
+                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")
+            
             matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
             v = c.get("verdict", "FAIL")
             v_cls = "verdict-pass" if v == "RESEARCH" else ("diag-warning" if v == "INDUSTRY" else "verdict-fail")
