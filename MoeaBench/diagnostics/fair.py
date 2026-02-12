@@ -19,12 +19,12 @@ from scipy.spatial.distance import cdist, jensenshannon
 from scipy.stats import wasserstein_distance
 from typing import Optional, Tuple
 
-def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_gt: float) -> float:
+def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_fit: float) -> float:
     r"""
     Calculates FAIR_FIT (Convergence).
     
-    Definition: $GD_{95}(P \to GT) / s_{GT}$
-    Meaning: How far P is from GT, in units of GT resolution.
+    Definition: $GD_{95}(P \to GT) / s_{FIT}$
+    Meaning: How far P is from GT, in units of s_fit (resolution at K).
     Ideal: 0.0
     """
     if len(P) == 0:
@@ -38,9 +38,9 @@ def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_gt: float) -> float:
     gd95 = np.percentile(min_d, 95)
     
     # 3. Normalize by Resolution (Scale Invariance)
-    # If s_gt is effectively zero, return raw gd95 (though this implies singular GT)
-    if s_gt > 1e-12:
-        return float(gd95 / s_gt)
+    # If s_fit is effectively zero, return raw gd95 (though this implies singular GT/Ref)
+    if s_fit > 1e-12:
+        return float(gd95 / s_fit)
     return float(gd95)
 
 def compute_fair_coverage(P: np.ndarray, GT: np.ndarray) -> float:

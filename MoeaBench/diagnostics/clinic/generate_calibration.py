@@ -37,6 +37,9 @@ def _normalize(gt: np.ndarray):
     denom = nadir - ideal
     denom[denom == 0] = 1.0
     gt_norm = (gt - ideal) / denom
+    # Remove duplicates to ensure non-zero s_GT
+    _, idx = np.unique(np.round(gt_norm, 8), axis=0, return_index=True)
+    gt_norm = gt_norm[np.sort(idx)]
     return gt_norm, ideal, nadir
 
 

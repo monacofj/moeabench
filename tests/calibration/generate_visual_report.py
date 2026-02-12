@@ -10,6 +10,7 @@ Decoupled Renderer: Consumes pre-calculated audit data from JSON.
 """
 
 import os
+import sys
 import json
 import numpy as np
 import plotly.graph_objects as go
@@ -19,6 +20,12 @@ from plotly.subplots import make_subplots
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_audit_v0.9.json")
 OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.9.html")
+
+# Ensure project root in path for imports
+if PROJ_ROOT not in sys.path:
+    sys.path.insert(0, PROJ_ROOT)
+
+from MoeaBench.diagnostics import qscore
 
 def generate_visual_report():
     if not os.path.exists(AUDIT_JSON):
@@ -55,44 +62,42 @@ def generate_visual_report():
         ".verdict-fail { background: #ffedd5; color: #9a3412; }",
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026).</p>",
-        
+        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
         "<div class='intro-box'>",
         "<h2>1. Methodology & Experimental Context</h2>",
-        "<p>The objective is to certify the framework's core algorithms against rigorous mathematical benchmarks (Ground Truth), using a scale-invariant quality assessment.</p>",
+        "<p>The goal is to certify algorithmic performance against rigorous mathematical <b>Ground Truth (GT)</b> benchmarks. Quality is assessed using scale-invariant metrics that separate pure convergence from structural distribution.</p>",
         "<ul>",
-        "<li><b>Population:</b> Algorithms ran with <code>N=200</code>. Q-Scores are calculated on the <i>effective</i> non-dominated count ($K \\le 200$).</li>",
-        "<li><b>Evolutionary Budget:</b> Fixed at <code>1000 generations</code> per run.</li>",
-        "<li><b>Statistical Relevance:</b> Metrics derived from <b>30 independent runs</b> per algorithm/problem pair.</li>",
-        "<li><b>Normalization:</b> Strict Theoretical Normalization [0, 1] using the Ground Truth's <i>Ideal</i> and <i>Nadir</i> points.</li>",
+        "<li><b>Population:</b> Algorithms ran with <i>N=200</i>. Q-Scores reflect the performance of the effective non-dominated population ($K \\le 200$).</li>",
+        "<li><b>Scale Invariance:</b> All distance-based metrics are normalized by the <i>Utopia</i> and <i>Nadir</i> points of the theoretical manifold.</li>",
+        "<li><b>Statistical Validity:</b> Results aggregated from <b>30 independent runs</b> to filter stochastic noise.</li>",
         "</ul>",
-
         "<h2>2. Clinical Metrology Guide</h2>",
         "<div style='background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px;'>",
-        "<b>Reading the Evidence:</b> This report uses a dual-layer validation framework.<br>",
+        "<b>Interpretative Framework:</b> Validation is conducted across two complementary layers of evidence:<br>",
         "<ul style='margin-bottom:0'>",
-        "<li><b>Layer 1 - Clinical Matrix (The Verdict):</b> An engineering Q-Score (0.0 - 1.0).<br>",
-        "<i>Pass ($Q \\ge 0.67$):</i> The algorithm is statistically indistinguishable from the theoretical limit.<br>",
-        "<i>Fail ($Q < 0.34$):</i> The algorithm is performing closer to random noise than to the ideal.</li>",
-        "<li><b>Layer 2 - Structural Evidence (The Biopsy):</b> The <b>Distance-to-GT CDF</b> graph (bottom right).<br>",
-        "This graph reveals the 'physics' of the failure that the Q-Score summarizes. It plots the cumulative distribution of distances to the Ground Truth along the X-axis.",
+        "<li><b>Layer 1 - The Clinical Matrix (Verdict):</b> A summary Q-Score $[0.0, 1.0]$.<br>",
+        "<i>Pass ($Q \\ge 0.67$):</i> Performance is scientifically indistinguishable from the theoretical limit.<br>",
+        "<i>Fail ($Q < 0.34$):</i> Performance is physically closer to random noise (<b>AnchorBad</b>) than to the optimal solution.</li>",
+        "<li><b>Layer 2 - The Structural Biopsy (CDF Evidence):</b> A plot of cumulative distances to the Truth (bottom right).<br>",
+        "This reveals the 'physics' of why an algorithm might be failing:",
         "<ul style='margin-top:0.5rem'>",
-        "<li><b>Steep Left-Aligned Curve:</b> The ideal profile. High precision convergence where the entire population is uniformly close to the manifold.</li>",
-        "<li><b>Long Tail (Right-skewed):</b> Indicates <b>Poor Regularity (REG)</b>. While most points may be close, a subset of the population is 'stuck' far away (outliers) or trapped in local optima.</li>",
-        "<li><b>Rigid Shift (Offset):</b> Indicates <b>Good Geometry but Poor Fit (FIT)</b>. The curve has the correct vertical shape but is shifted to the right. The algorithm found the manifold's shape but stopped before reaching the true front.</li>",
-        "<li><b>Discontinuous Plateaus:</b> Vertical gaps in the curve indicate <b>Coverage Gaps (GAP)</b>. The algorithm completely missed specific regions of the objective space.</li>",
+        "<li><b>Horizontal Shift:</b> Indicates <b>Poor Fit</b>. The algorithm found the correct shape but stopped before reaching the manifold.</li>",
+        "<li><b>Long Tail / Right Skew:</b> Indicates <b>Poor Regularity</b>. A subset of solutions is either stuck in local optima or poorly distributed.</li>",
+        "<li><b>Vertical Plateaus:</b> Indicates <b>Coverage Gaps</b>. The algorithm completely bypassed specific regions of the objective space.</li>",
         "</ul></li>",
         "</ul></div>",
-
-        "<h3>3. Metric Glossary</h3>",
-        "<ul>",
-        "<li><b>FIT (Proximity):</b> How close the front is to the Optimal Manifold. High precision convergence.</li>",
-        "<li><b>COV (Coverage):</b> The extent of the manifold covered (Volume).</li>",
-        "<li><b>GAP (Continuity):</b> Absence of interruptions or holes in the Pareto approximation.</li>",
-        "<li><b>REG (Regularity):</b> Uniformity of the distribution. Penalizes clustering and outliers.</li>",
-        "<li><b>BAL (Balance):</b> Fairness of objective trade-offs (e.g., not favoring f1 over f2).</li>",
-        "<li><b>IGD/EMD:</b> Legacy distance metrics provided for backward compatibility.</li>",
-        "</ul>",
+        "<h3>3. Metric Glossary (Didactic)</h3>",
+        "<table>",
+        "<tr><th>Metric</th><th>Didactic Interpretation</th></tr>",
+        "<tr><td><b>FIT</b></td><td><b>Proximity (\"Did we reach the goal?\"):</b> Measures the absolute precision of convergence to the optimal manifold.</td></tr>",
+        "<tr><td><b>COV</b></td><td><b>Coverage (\"Did we see it all?\"):</b> Measures the geographic extent of the manifold that was successfully explored.</td></tr>",
+        "<tr><td><b>GAP</b></td><td><b>Continuity (\"Are there holes?\"):</b> Measures the absence of large interruptions in the approximation.</td></tr>",
+        "<tr><td><b>REG</b></td><td><b>Regularity (\"Is it organized?\"):</b> Measures the uniformity and reliability of the distribution (penalizes outliers).</td></tr>",
+        "<tr><td><b>BAL</b></td><td><b>Balance (\"Were we fair?\"):</b> Measures the equity between competing objective trade-offs (e.g., f1 vs f2).</td></tr>",
+        "<tr><td><b>H_raw</b></td><td><b>Physical Volume:</b> The absolute geometric volume dominated in the objective space (raw units).</td></tr>",
+        "<tr><td><b>H_ratio</b></td><td><b>Geometric Difficulty:</b> Measured against the reference box $[0..1.1]$. This indicates how \"hard\" the problem is (how small the needle is compared to the haystack).</td></tr>",
+        "<tr><td><b>H_rel</b></td><td><b>Certification Progress:</b> Measured against the Ground Truth. This is the official score (how much of the scientific limit was attained).</td></tr>",
+        "</table>",
         "</div>"
     ]
 
@@ -128,28 +133,37 @@ def generate_visual_report():
             clinical = data["clinical"]
             
             # 3D Front (Clinical Differentiation: Solid / Hollow / X)
-            if data["final_front"] and data["cdf_dists"]:
+            if data["final_front"]:
                 front = np.array(data["final_front"])
-                dists = np.array(data["cdf_dists"])
                 
-                # Fetch FIT baselines for per-point Q-Score calculation
-                fit_data = clinical.get("fit", {})
-                ideal = fit_data.get("ideal", 0.0)
-                rand = fit_data.get("rand", 1.0)
-                fair_agg = fit_data.get("fair", 0.0)
-                
-                # Recover s_gt (Resolution Factor) to align raw dists with normalized baselines
-                # Rule: fair_agg = percentile(dists, 95) / s_gt
-                d95 = np.percentile(dists, 95) if len(dists) > 0 else 0.0
-                s_gt = d95 / fair_agg if fair_agg > 1e-12 else 1.0
-                
-                # Calculate Q-Score for each point (normalized)
-                denom = rand - ideal
-                if abs(denom) < 1e-12:
-                    q_points = np.where(dists < 1e-6, 1.0, 0.0)
+                # Use raw point distances (aligned) if available, else fallback to sorted (buggy but fallback)
+                if "point_dists" in data and data["point_dists"]:
+                    dists = np.array(data["point_dists"])
+                elif data["cdf_dists"]:
+                    print(f"Warning: Using sorted cdf_dists for {alg} (Visual artifacts likely)")
+                    dists = np.array(data["cdf_dists"])
                 else:
-                    # Normalize dists by s_gt before computing Q
-                    q_points = 1.0 - np.clip(((dists / s_gt) - ideal) / denom, 0.0, 1.0)
+                    dists = np.zeros(len(front))
+                
+                # Fetch FIT baselines (already normalized in v3)
+                fit_data = clinical.get("fit", {})
+                anchor_bad_norm = fit_data.get("anchor_bad", 1.0) # This is now fit.anchor_bad in s_K units
+                s_fit = clinical.get("s_fit", 1.0) # The new s_K scaling factor
+
+                # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
+                try:
+                    # K discretization to match Auditor (Fixed K-Target Policy)
+                    from MoeaBench.diagnostics import baselines as base
+                    K_raw = len(front)
+                    
+                    # Strict Snap (Floor) matches Auditor
+                    K_target = base.snap_k(K_raw)
+
+                    q_points = qscore.compute_q_fit_points(dists, mop_name, K_target, s_fit)
+                except Exception as e:
+                    print(f"Warning: Q-Point calc failed for {alg} on {mop_name}: {e}")
+                    q_points = np.zeros_like(dists)
+                
                 
                 mask_research = q_points >= 0.67
                 mask_industry = (q_points >= 0.34) & (q_points < 0.67)
@@ -206,19 +220,20 @@ def generate_visual_report():
                     name=f'{alg} HV%', legend='legend2', legendgroup=alg
                 ), row=1, col=2, secondary_y=True)
 
-            # CDF
+            # CDF (Validation: Distance-to-GT)
             if data["cdf_dists"]:
-                dists = np.array(data["cdf_dists"])
+                # SANITIZATION: Normalize raw distances by s_K for macroscopic view
+                dists = np.array(data["cdf_dists"]) / s_fit
                 y_cdf = np.arange(len(dists)) / float(len(dists))
                 
                 # Add threshold lines only once (for the first alg) to avoid clutter
                 if alg == algs[0]:
-                     # Ideal Wall (x=0) - Plot as Scatter to avoid Scatter3d/add_vline bug
+                     # Utopia Wall (x=0) - Plot as Scatter to avoid Scatter3d/add_vline bug
                     fig.add_trace(go.Scatter(
                         x=[0, 0], y=[0, 1.05], 
                         mode='lines',
                         line=dict(color='gray', dash='dot', width=1),
-                        name='Ideal (GT)',
+                        name='Utopia (GT)',
                         showlegend=False,
                         hoverinfo='skip'
                     ), row=2, col=2)
@@ -243,6 +258,9 @@ def generate_visual_report():
                         font=dict(size=10, color="gray"),
                         row=2, col=2
                     )
+                    
+                    # Update X-Axis label to reflect sanitization
+                    fig.update_xaxes(title_text="Normalized Distance (GD / s_K)", row=2, col=2)
 
                 # Add main CDF curve
                 fig.add_trace(go.Scatter(
@@ -298,9 +316,10 @@ def generate_visual_report():
                 "emd": f"{emd_val:.4f}", 
                 "h_raw": f"{h_raw:.4f}",
                 "h_ratio": f"{h_ratio:.4f}",
-                "h_rel": f"{stats.get('H_rel',0)*100:.2f}%",
+                "h_rel": f"{stats.get('H_rel',0)*100:.3f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
+                "s_fit": s_fit, # Expose s_K scale
                 "t_conv": str(data["history"]["gens"][-1]) if data["history"]["gens"] else "-"
             })
             
@@ -311,7 +330,7 @@ def generate_visual_report():
             legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(255,255,255,0.7)"),
             legend2=dict(yanchor="top", y=0.99, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
             legend3=dict(yanchor="bottom", y=0.01, xanchor="right", x=0.99, bgcolor="rgba(255,255,255,0.7)"),
-            scene=dict(xaxis_title='f1', yaxis_title='f2', zaxis_title='f3')
+            scene=dict(xaxis_title='f1', yaxis_title='f2', zaxis_title='f3', aspectmode='cube')
         )
 
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
@@ -326,8 +345,8 @@ def generate_visual_report():
         # Matrix Table
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
-            "<table><colgroup><col style='width: 100px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: 80px'><col style='width: auto'><col style='width: 120px'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>FIT</th><th>COV</th><th>GAP</th><th>REG</th><th>BAL</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
+            "<table><colgroup><col style='width: 100px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: auto'><col style='width: 120px'></colgroup>",
+            "<thead><tr><th>Algorithm</th><th>FITNESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGULARITY</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
@@ -336,8 +355,24 @@ def generate_visual_report():
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
-                tip = f"Q: {q:.2f}&#013;Fair: {d.get('fair',0):.4f}&#013;Ideal: {d.get('ideal',0):.4f}&#013;Rand: {d.get('rand',0):.4f}"
-                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.2f}</span></td>")
+                
+                # Full Tip for Tooltip
+                tip = f"Q: {q:.4f}&#013;Fair: {d.get('fair',0):.4f}&#013;Good: {d.get('anchor_good',0):.4f}&#013;Bad: {d.get('anchor_bad',0):.4f}"
+                if "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
+                
+                # Didactic Subtext (PDF-ready)
+                f_val = d.get('fair', 0)
+                g_val = d.get('anchor_good', 0)
+                b_val = d.get('anchor_bad', 0)
+                
+                sub_style = "font-size: 0.65rem; color: #64748b; line-height: 1.1; margin-top: 4px;"
+                sub_text = f"<div style='{sub_style}'>f: {f_val:.3f}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                
+                if dim == "fit" and "s_fit" in m:
+                    sub_text = f"<div style='{sub_style}'>f: {f_val:.3f} s: {m['s_fit']:.1e}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                
+                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")
+            
             matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
             v = c.get("verdict", "FAIL")
             v_cls = "verdict-pass" if v == "RESEARCH" else ("diag-warning" if v == "INDUSTRY" else "verdict-fail")

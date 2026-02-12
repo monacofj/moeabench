@@ -173,12 +173,28 @@ def audit(target: Any,
     GT = ground_truth
     P = pop_objs
     
-    # 3. K-Selection logic (Snap to Grid?)
-    # Assume P is already the eval set? 
-    # Or should we downsample?
-    # New logic: The caller usually handles P.
-    # But baselines are K-specific.
-    K = len(P)
+    # 3. K-Selection logic (Fixed K-Target Policy)
+    # To avoid UndefinedBaselineError for K_eff (e.g., 17, 83), we snap to the nearest
+    # supported baseline K. This ensures consistent scoring.
+    K_raw = len(P)
+    
+    # Supported Grid (must match baselines_v4.py generation)
+    # Range 10..50 + [100, 150, 200]
+    # We can perform a smart snap.
+    SUPPORTED_K = list(range(10, 51)) + [100, 150, 200]
+    
+    if K_raw < 10:
+        # Too small to be clinically significant? Or snap to 10?
+        # Let's snap to 10 but flag? 
+        # For now, snap to 10.
+        K_target = 10
+    else:
+        # Strict snap
+        K_target = baselines.snap_k(K_raw)
+        
+    metrics_data['mop_name'] = mop_name
+    metrics_data['K'] = K_target # Clinical K
+    metrics_data['K_raw'] = K_raw # Actual K
     
     # Snapshot MOP Name (needed for baselines)
     # Assuming the user ensures correct MOP name is active/known?
@@ -189,8 +205,7 @@ def audit(target: Any,
         mop_name = target.mop_name
         
     metrics_data['mop_name'] = mop_name
-    metrics_data['K'] = K
-    metrics_data['K_raw'] = K # Assuming no downsampling happened here yet
+    # Removed redundant and erroneous K assignment (caused NameError)
     
     # 4. Compute Fair Metrics & Q-Scores
     try:
@@ -200,7 +215,10 @@ def audit(target: Any,
         
         # B. Shared Reference Objects (U_K, Hist)
         # Needed for Regularity/Balance FAIR calculation
-        U_ref = baselines.get_ref_uk(GT, K, seed=0)
+        # B. Shared Reference Objects (U_K, Hist)
+        # Needed for Regularity/Balance FAIR calculation
+        # Use K_target for creating the "Ruler"
+        U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
         centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
         
         # Reference Histogram for Balance
@@ -210,13 +228,19 @@ def audit(target: Any,
         hist_ref /= np.sum(hist_ref)
         
         # C. Compute FAIR Metrics (Physics)
-        s_gt = baselines.get_resolution_factor(GT)
-        metrics_data['s_gt'] = s_gt
+        # s_gt = baselines.get_resolution_factor(GT) 
+        # C. Compute FAIR Metrics (Physics)
+        # s_gt = baselines.get_resolution_factor(GT) 
+        # Normalization uses K_target resolution to match baseline
+        s_k = baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
-        f_fit = fair.compute_fair_fit(P, GT, s_gt)
-        f_cov = fair.compute_fair_coverage(P, GT)
+        metrics_data['s_fit'] = s_k
+        metrics_data['s_gt'] = baselines.get_resolution_factor(GT) # Keep for reference
+        
+        f_fit = fair.compute_fair_fit(P, GT, s_k)
+        f_cov = fair.compute_fair_coverage(P, GT) # Coverage might depend on U_K size?
         f_gap = fair.compute_fair_gap(P, GT)
-        f_reg = fair.compute_fair_regularity(P, U_ref)
+        f_reg = fair.compute_fair_regularity(P, U_ref) # Uses U_ref (size K_target)
         f_bal = fair.compute_fair_balance(P, centroids, hist_ref)
         
         metrics_data['fair_fit'] = f_fit
@@ -226,11 +250,13 @@ def audit(target: Any,
         metrics_data['fair_balance'] = f_bal
         
         # D. Compute Q-Scores (Engineering)
-        q_fit = qscore.compute_q_fit(f_fit, mop_name, K)
-        q_cov = qscore.compute_q_coverage(f_cov, mop_name, K)
-        q_gap = qscore.compute_q_gap(f_gap, mop_name, K)
-        q_reg = qscore.compute_q_regularity(f_reg, mop_name, K)
-        q_bal = qscore.compute_q_balance(f_bal, mop_name, K)
+        # D. Compute Q-Scores (Engineering)
+        # Use K_target for baseline retrieval
+        q_fit = qscore.compute_q_fit(f_fit, mop_name, K_target)
+        q_cov = qscore.compute_q_coverage(f_cov, mop_name, K_target)
+        q_gap = qscore.compute_q_gap(f_gap, mop_name, K_target)
+        q_reg = qscore.compute_q_regularity(f_reg, mop_name, K_target)
+        q_bal = qscore.compute_q_balance(f_bal, mop_name, K_target)
         
         metrics_data['q_fit'] = q_fit
         metrics_data['q_coverage'] = q_cov

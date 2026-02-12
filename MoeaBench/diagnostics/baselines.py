@@ -19,7 +19,8 @@ from scipy.spatial.distance import cdist
 from scipy.cluster.vq import kmeans2
 
 # Path to the Authorized Offline Baselines
-BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "../diagnostics/resources/baselines_v2.json")
+# Path to the Authorized Offline Baselines
+BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
 _CACHE = None
 
 class UndefinedBaselineError(Exception):
@@ -79,6 +80,57 @@ def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float
     except (AttributeError, ValueError):
         raise UndefinedBaselineError(f"Missing baseline for {problem}, K={k}, {metric}")
 
+def get_baseline_ecdf(problem: str, k: int, metric: str) -> Tuple[float, float, np.ndarray]:
+    """
+    Retrieves (uni50, rand50, rand_ecdf) for a given (problem, k, metric).
+    
+    Returns:
+        (uni50, rand50, rand_ecdf)
+        
+    Raises:
+        UndefinedBaselineError: If baseline is missing or invalid (Strict).
+    """
+    try:
+        bases = load_offline_baselines()
+    except UndefinedBaselineError:
+        raise
+
+    try:
+        p_data = bases.get("problems", {}).get(problem, {})
+        k_data = p_data.get(str(k), {})
+        m_data = k_data.get(metric, {})
+        
+        uni = m_data.get("uni50")
+        rand = m_data.get("rand50")
+        rand_ecdf = m_data.get("rand_ecdf")
+        
+        if uni is None or rand is None or rand_ecdf is None:
+            raise UndefinedBaselineError(f"Incomplete baseline for {problem}, K={k}, {metric}")
+            
+        rand_ecdf = np.array(rand_ecdf, dtype=float)
+        
+        # Strict Validation
+        if len(rand_ecdf) != 200:
+            raise UndefinedBaselineError(f"Invalid ECDF length {len(rand_ecdf)} for {problem}, K={k} (Expected 200)")
+            
+        # Check sorted (non-decreasing)
+        if np.any(np.diff(rand_ecdf) < -1e-12): # Allow epsilon noise
+             if np.any(np.diff(rand_ecdf) < 0):
+                raise UndefinedBaselineError(f"ECDF not sorted for {problem}, K={k}")
+        
+        # Check Median Consistency (Optional but good)
+        calc_median = np.median(rand_ecdf)
+        if not np.isclose(rand, calc_median, atol=1e-9):
+             # Log warning or fail? Fail-Closed means fail.
+             # But floating point issues might occur. tolerance 1e-9 is safe.
+             raise UndefinedBaselineError(f"Baseline mismatch: rand50 ({rand}) != median(ecdf) ({calc_median}) for {problem}, K={k}")
+            
+        return float(uni), float(rand), rand_ecdf
+        
+    except (AttributeError, ValueError) as e:
+        raise UndefinedBaselineError(f"Invalid baseline data for {problem}, K={k}: {e}")
+
+
 def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     """
     Generates the Deterministic Reference $U_K$ (Uniform-at-K).
@@ -96,7 +148,7 @@ def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     
     indices = [start_idx]
     # Distances to current set
-    min_dists = cdist(gt[start_idx:start_idx+1], gt,metric='euclidean')[0]
+    min_dists = cdist(gt[start_idx:start_idx+1], gt, metric='euclidean')[0]
     
     for _ in range(k - 1):
         # Select point with max min_dist
@@ -139,3 +191,40 @@ def get_resolution_factor(gt: np.ndarray) -> float:
     np.fill_diagonal(d, np.inf)
     min_d = np.min(d, axis=1)
     return float(np.median(min_d))
+
+def get_resolution_factor_k(gt: np.ndarray, k: int, seed: int = 0) -> float:
+    """
+    Calculates s_K: Median Nearest Neighbor distance within U_K (FPS of GT).
+    Used for normalizing FIT in finite sampling regimes.
+    """
+    u_ref = get_ref_uk(gt, k, seed=seed)
+    if len(u_ref) < 2:
+        return 1.0
+        
+    d = cdist(u_ref, u_ref)
+    np.fill_diagonal(d, np.inf)
+    min_d = np.min(d, axis=1)
+    return float(np.median(min_d))
+
+def snap_k(k_raw: int) -> int:
+    """
+    Snaps the raw population size K to the nearest supported baseline K
+    using a strict 'floor' logic for consistency with the audit protocol.
+    
+    Rules:
+    - K < 10: Returns 10 (Minimum supported)
+    - 10 <= K < 50: Returns K (Exact match)
+    - K >= 50: Returns max(grid <= K) where grid=[50, 100, 150, 200]
+    """
+    if k_raw < 10:
+        return 10
+    if k_raw < 50:
+        return k_raw
+    
+    grid = [50, 100, 150, 200]
+    # Filter grid items <= k_raw
+    candidates = [g for g in grid if g <= k_raw]
+    if not candidates:
+        # Should not happen given k_raw >= 50 check, but safe fallback
+        return 50
+    return max(candidates)
