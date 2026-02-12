@@ -345,7 +345,7 @@ def generate_visual_report():
         # Matrix Table
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
-            "<table><colgroup><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: 100px'><col style='width: auto'><col style='width: 120px'></colgroup>",
+            "<table><colgroup><col style='width: 100px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: auto'><col style='width: 120px'></colgroup>",
             "<thead><tr><th>Algorithm</th><th>FITNESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGULARITY</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
         ]
         for m in mop_metrics:
