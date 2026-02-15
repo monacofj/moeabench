@@ -61,14 +61,16 @@ class PerformanceAuditor:
 
         # 2. Extract Q-Scores
         # Default to 0.0 (Worst) if missing, to be safe
-        q_fit = float(metrics.get("q_fit", 0.0))
+        q_denoise = float(metrics.get("q_denoise", 0.0))
+        q_closeness = float(metrics.get("q_closeness", 0.0))
         q_cov = float(metrics.get("q_coverage", 0.0))
         q_gap = float(metrics.get("q_gap", 0.0))
         q_reg = float(metrics.get("q_regularity", 0.0))
         q_bal = float(metrics.get("q_balance", 0.0))
         
         q_scores = {
-            "FIT": q_fit,
+            "DENOISE": q_denoise,
+            "CLOSENESS": q_closeness,
             "COVERAGE": q_cov,
             "GAP": q_gap,
             "REGULARITY": q_reg,
@@ -108,8 +110,10 @@ class PerformanceAuditor:
             rationale = f"Critically low quality in {worst_dim} ({q_worst:.2f})."
             
             # Map low score to Status
-            if worst_dim == "FIT":
-                status = DiagnosticStatus.SHIFTED_FRONT # Poor convergence
+            if worst_dim == "DENOISE":
+                status = DiagnosticStatus.SHIFTED_FRONT # Poor convergence (better than noise but shifted)
+            elif worst_dim == "CLOSENESS":
+                status = DiagnosticStatus.SHIFTED_FRONT # Failed to reach GT
             elif worst_dim == "COVERAGE":
                 status = DiagnosticStatus.COLLAPSED_FRONT # Poor coverage
             elif worst_dim == "GAP":
@@ -120,6 +124,13 @@ class PerformanceAuditor:
                 status = DiagnosticStatus.BIASED_SPREAD
             else:
                 status = DiagnosticStatus.SEARCH_FAILURE
+
+        # 5. Closeness Gate (Refined Plan v2)
+        # Even if q_worst passes, if closeness is failed, the verdict is FAIL.
+        if q_closeness < THRESH_INDUSTRY and verdict == "PASS":
+            verdict = "FAIL"
+            status = DiagnosticStatus.SHIFTED_FRONT
+            rationale = f"Verification Failed: Closeness ({q_closeness:.2f}) < {THRESH_INDUSTRY:.2f}. Convergence not attained separate from Denoise."
 
         return DiagnosticResult(
             status=status,
@@ -148,7 +159,8 @@ def audit(target: Any,
     if isinstance(target, dict):
         # Assume it's already metrics data? No, usually not passed here.
         # If passed pre-computed metrics, just delegate
-        if "q_fit" in target:
+        # Pre-computed metrics
+        if "q_denoise" in target:
             return PerformanceAuditor.audit(target, profile)
         return PerformanceAuditor.audit({"input_ok": False}, profile)
         
@@ -243,22 +255,26 @@ def audit(target: Any,
         f_reg = fair.compute_fair_regularity(P, U_ref) # Uses U_ref (size K_target)
         f_bal = fair.compute_fair_balance(P, centroids, hist_ref)
         
-        metrics_data['fair_fit'] = f_fit
+        # New: Closeness distribution (Part B)
+        u_dist = fair.compute_fair_closeness_distribution(P, GT, s_k)
+        
+        metrics_data['fair_denoise'] = f_fit # same as fair_fit internally
         metrics_data['fair_coverage'] = f_cov
         metrics_data['fair_gap'] = f_gap
         metrics_data['fair_regularity'] = f_reg
         metrics_data['fair_balance'] = f_bal
         
         # D. Compute Q-Scores (Engineering)
-        # D. Compute Q-Scores (Engineering)
         # Use K_target for baseline retrieval
-        q_fit = qscore.compute_q_fit(f_fit, mop_name, K_target)
+        q_denoise = qscore.compute_q_denoise(f_fit, mop_name, K_target)
+        q_closeness = qscore.compute_q_closeness(u_dist, mop_name, K_target)
         q_cov = qscore.compute_q_coverage(f_cov, mop_name, K_target)
         q_gap = qscore.compute_q_gap(f_gap, mop_name, K_target)
         q_reg = qscore.compute_q_regularity(f_reg, mop_name, K_target)
         q_bal = qscore.compute_q_balance(f_bal, mop_name, K_target)
         
-        metrics_data['q_fit'] = q_fit
+        metrics_data['q_denoise'] = q_denoise
+        metrics_data['q_closeness'] = q_closeness
         metrics_data['q_coverage'] = q_cov
         metrics_data['q_gap'] = q_gap
         metrics_data['q_regularity'] = q_reg

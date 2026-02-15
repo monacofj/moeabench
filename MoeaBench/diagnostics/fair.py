@@ -43,6 +43,24 @@ def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_fit: float) -> float:
         return float(gd95 / s_fit)
     return float(gd95)
 
+def compute_fair_closeness_distribution(P: np.ndarray, GT: np.ndarray, s_fit: float) -> np.ndarray:
+    """
+    Calculates the distribution of normalized distances to GT.
+    
+    Returns u_j = min_dist(p_j, GT) / s_fit
+    """
+    if len(P) == 0:
+        return np.array([])
+        
+    # 1. Compute Distances to GT
+    d = cdist(P, GT, metric='euclidean')
+    min_d = np.min(d, axis=1) # (N,)
+    
+    # 2. Normalize by Resolution
+    if s_fit > 1e-12:
+        return min_d / s_fit
+    return min_d
+
 def compute_fair_coverage(P: np.ndarray, GT: np.ndarray) -> float:
     r"""
     Calculates FAIR_COVERAGE.

@@ -54,12 +54,13 @@ def generate_visual_report():
         "table { width: 100%; border-collapse: collapse; margin-top: 1rem; font-size: 0.9rem; }",
         "th { background: #f1f5f9; text-align: left; padding: 0.75rem; border-bottom: 2px solid #e2e8f0; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; }",
         "td { padding: 0.75rem; border-bottom: 1px solid #f1f5f9; }",
-        ".diag-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; text-align: center; min-width: 45px; }",
+        ".diag-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; text-align: center; min-width: 60px; white-space: nowrap; }",
         ".diag-optimal { background: #dcfce7; color: #166534; }",
         ".diag-warning { background: #fef9c3; color: #854d0e; }",
         ".diag-failure { background: #fee2e2; color: #991b1b; }",
         ".verdict-pass { background: #e0e7ff; color: #3730a3; }",
         ".verdict-fail { background: #ffedd5; color: #9a3412; }",
+        "th, td { white-space: nowrap; }",
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
         "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
@@ -89,7 +90,8 @@ def generate_visual_report():
         "<h3>3. Metric Glossary (Didactic)</h3>",
         "<table>",
         "<tr><th>Metric</th><th>Didactic Interpretation</th></tr>",
-        "<tr><td><b>FIT</b></td><td><b>Proximity (\"Did we reach the goal?\"):</b> Measures the absolute precision of convergence to the optimal manifold.</td></tr>",
+        "<tr><td><b>DENOISE</b></td><td><b>Noise Mitigation (\"Progress better than noise\"):</b> Measures how much of the initial random noise was removed.</td></tr>",
+        "<tr><td><b>CLOSENESS</b></td><td><b>Proximity (\"Did we reach the goal?\"):</b> Measures the absolute precision of convergence to the optimal manifold.</td></tr>",
         "<tr><td><b>COV</b></td><td><b>Coverage (\"Did we see it all?\"):</b> Measures the geographic extent of the manifold that was successfully explored.</td></tr>",
         "<tr><td><b>GAP</b></td><td><b>Continuity (\"Are there holes?\"):</b> Measures the absence of large interruptions in the approximation.</td></tr>",
         "<tr><td><b>REG</b></td><td><b>Regularity (\"Is it organized?\"):</b> Measures the uniformity and reliability of the distribution (penalizes outliers).</td></tr>",
@@ -145,9 +147,9 @@ def generate_visual_report():
                 else:
                     dists = np.zeros(len(front))
                 
-                # Fetch FIT baselines (already normalized in v3)
-                fit_data = clinical.get("fit", {})
-                anchor_bad_norm = fit_data.get("anchor_bad", 1.0) # This is now fit.anchor_bad in s_K units
+                # Fetch DENOISE/CLOSENESS baselines (already normalized in v4)
+                denoise_data = clinical.get("denoise", {})
+                closeness_data = clinical.get("closeness", {})
                 s_fit = clinical.get("s_fit", 1.0) # The new s_K scaling factor
 
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
@@ -159,7 +161,7 @@ def generate_visual_report():
                     # Strict Snap (Floor) matches Auditor
                     K_target = base.snap_k(K_raw)
 
-                    q_points = qscore.compute_q_fit_points(dists, mop_name, K_target, s_fit)
+                    q_points = qscore.compute_q_closeness_points(dists, mop_name, K_target, s_fit)
                 except Exception as e:
                     print(f"Warning: Q-Point calc failed for {alg} on {mop_name}: {e}")
                     q_points = np.zeros_like(dists)
@@ -306,6 +308,14 @@ def generate_visual_report():
                         emd_val = np.mean(dists)
                 except: pass
 
+            # NEAR@1 and NEAR@2 (from clinical closeness)
+            # Calculated from point_dists if available
+            near1, near2 = 0.0, 0.0
+            if data.get("point_dists"):
+                u_pts = np.array(data["point_dists"]) / s_fit
+                near1 = np.mean(u_pts <= 1.0) * 100
+                near2 = np.mean(u_pts <= 2.0) * 100
+
             mop_metrics.append({
                 "alg": alg,
                 "igd": f"{igd_mean:.4f} &plusmn; {igd_std:.4f}",
@@ -317,6 +327,8 @@ def generate_visual_report():
                 "h_raw": f"{h_raw:.4f}",
                 "h_ratio": f"{h_ratio:.4f}",
                 "h_rel": f"{stats.get('H_rel',0)*100:.3f}%",
+                "near1": f"{near1:.1f}%",
+                "near2": f"{near2:.1f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
                 "s_fit": s_fit, # Expose s_K scale
@@ -336,29 +348,31 @@ def generate_visual_report():
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
         
         # Numerical Table
-        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>EMD</th><th>H_raw</th><th>H_ratio</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
+        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>NEAR@1</th><th>NEAR@2</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
         for m in mop_metrics:
-            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['emd']}</td><td>{m['h_raw']}</td><td>{m['h_ratio']}</td><td>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
+            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['near1']}</td><td>{m['near2']}</td><td style='font-weight: 500'>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
         metrics_table.append("</table>")
         html_content.append("".join(metrics_table))
 
         # Matrix Table
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
-            "<table><colgroup><col style='width: 100px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: 110px'><col style='width: auto'><col style='width: 120px'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>FITNESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGULARITY</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
+            "<table><colgroup><col style='width: 120px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: auto'><col style='width: 120px'></colgroup>",
+            "<thead><tr><th>Algorithm</th><th>DENOISE</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             c = m["clinical"]
-            for dim in ["fit", "cov", "gap", "reg", "bal"]:
+            for dim in ["denoise", "closeness", "cov", "gap", "reg", "bal"]:
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
                 
                 # Full Tip for Tooltip
                 tip = f"Q: {q:.4f}&#013;Fair: {d.get('fair',0):.4f}&#013;Good: {d.get('anchor_good',0):.4f}&#013;Bad: {d.get('anchor_bad',0):.4f}"
-                if "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
+                if dim == "denoise" and "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
+                if dim == "closeness":
+                    tip += f"&#013;sigma: {d.get('sigma',0):.2e}&#013;p95: {d.get('p95',0):.2f}"
                 
                 # Didactic Subtext (PDF-ready)
                 f_val = d.get('fair', 0)
@@ -368,7 +382,7 @@ def generate_visual_report():
                 sub_style = "font-size: 0.65rem; color: #64748b; line-height: 1.1; margin-top: 4px;"
                 sub_text = f"<div style='{sub_style}'>f: {f_val:.3f}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
                 
-                if dim == "fit" and "s_fit" in m:
+                if dim == "denoise" and "s_fit" in m:
                     sub_text = f"<div style='{sub_style}'>f: {f_val:.3f} s: {m['s_fit']:.1e}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
                 
                 matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")

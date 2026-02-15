@@ -8,11 +8,12 @@ MoeaBench Baseline Generator v4 (ECDF-based)
 ============================================
 
 Generates baselines_v4.json containing ECDF profiles for ALL clinical metrics:
-1. FIT (Proximity)
-2. COV (Coverage)
-3. GAP (Continuity)
-4. REG (Regularity)
-5. BAL (Balance)
+1. DENOISE (Progress better than noise)
+2. CLOSENESS (Proximity to GT via Normal-Blur)
+3. COV (Coverage)
+4. GAP (Continuity)
+5. REG (Regularity)
+6. BAL (Balance)
 
 For each metric M and population size K:
 - rand_ecdf: Sorted list of 200 values from Random Sampling (The "Failure" Profile)
@@ -37,6 +38,8 @@ import numpy as np
 import MoeaBench.diagnostics.baselines as base
 import MoeaBench.diagnostics.fair as fair
 from scipy.spatial.distance import cdist
+from scipy.sparse.csgraph import connected_components
+from scipy.sparse import csr_matrix
 
 # Configuration
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../MoeaBench/diagnostics/resources/baselines_v4.json")
@@ -46,6 +49,144 @@ SEED_START = 1000
 
 # Full K Grid for Fixed K-Policy
 K_VALUES = list(range(10, 51)) + [100, 150, 200]
+
+def estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
+    """
+    Estimates unit normals for each GT point using local PCA.
+    Includes connected components to handle discontinuous manifolds.
+    """
+    N = len(gt)
+    M = gt.shape[1]
+    
+    # 1. Connected Components (to avoid cross-component neighbors)
+    # k_graph = k_pca (clamp sqrt(N), 10, 30)
+    k_pca = int(np.clip(np.round(np.sqrt(N)), 10, 30))
+    
+    # Build kNN graph (adjacency matrix)
+    dists = cdist(gt, gt)
+    indices = np.argsort(dists, axis=1)[:, 1:k_pca+1]
+    
+    rows = np.repeat(np.arange(N), k_pca)
+    cols = indices.flatten()
+    data = np.ones(N * k_pca)
+    adj = csr_matrix((data, (rows, cols)), shape=(N, N))
+    
+    n_components, labels = connected_components(adj, directed=False)
+    
+    normals = np.zeros((N, M))
+    for i in range(N):
+        # 2. Local PCA within same component
+        comp_mask = (labels == labels[i])
+        comp_indices = np.where(comp_mask)[0]
+        
+        # Adjust k if component is small
+        k_eff = min(k_pca, len(comp_indices) - 1)
+        if k_eff < M: # Poorly conditioned for PCA
+             # Fallback: find all in same component up to k_pca
+             # if still too few, k_eff will be small
+             pass
+             
+        # Find neighbors within component
+        d_comp = dists[i, comp_mask]
+        # sort again within component
+        idx_in_comp = np.argsort(d_comp)[1:k_eff+1]
+        neighbors = gt[comp_indices[idx_in_comp]]
+        
+        if len(neighbors) < 2:
+            # Fallback: isotropic or zero (isotropic handled in blur)
+            continue
+            
+        # PCA
+        mean = np.mean(neighbors, axis=0)
+        centered = neighbors - mean
+        cov = np.dot(centered.T, centered)
+        eigvals, eigvecs = np.linalg.eigh(cov)
+        
+        # Normal is the eigenvector of the smallest eigenvalue
+        n = eigvecs[:, 0]
+        normals[i] = n / np.linalg.norm(n)
+        
+    return normals
+
+def generate_half_normal_blur(gt: np.ndarray, normals: np.ndarray, sigma: float, rng: np.random.RandomState) -> np.ndarray:
+    """
+    Generates a blurred version of GT using Half-Normal displacement along normals.
+    Includes domain safety (coordinates >= 0).
+    """
+    N, M = gt.shape
+    blurred = np.zeros_like(gt)
+    
+    for i in range(N):
+        n = normals[i]
+        valid = False
+        retry = 0
+        mag_scale = 1.0
+        
+        while not valid and retry < 5:
+            # Half-Normal magnitude
+            mag = abs(rng.normal(0, sigma * mag_scale))
+            # Random sign
+            sign = rng.choice([-1, 1])
+            
+            # If normal is zero (fallback), use random isotropic direction
+            if np.linalg.norm(n) < 1e-12:
+                n_rand = rng.normal(size=M)
+                n_rand /= np.linalg.norm(n_rand)
+                p_prime = gt[i] + sign * mag * n_rand
+            else:
+                p_prime = gt[i] + sign * mag * n
+                
+            # Domain safety: Objective space [0, inf)
+            if np.all(p_prime >= -1e-10):
+                valid = True
+                blurred[i] = p_prime
+            else:
+                # Retry strategy: try other sign, then reduce magnitude
+                if retry == 0:
+                    p_prime_flip = gt[i] - sign * mag * n
+                    if np.all(p_prime_flip >= -1e-10):
+                        valid = True
+                        blurred[i] = p_prime_flip
+                else:
+                    mag_scale *= 0.5
+                retry += 1
+        
+        if not valid:
+            # Last resort: just stay at GT
+            blurred[i] = gt[i]
+            
+    return blurred
+
+def calibrate_sigma(gt: np.ndarray, normals: np.ndarray, s_fit: float, rng_seed: int) -> float:
+    """
+    Finds sigma such that median(min_dist(G_blur, GT) / s_fit) approx 2.0.
+    """
+    target = 2.0
+    sigma = 2.0 * s_fit
+    
+    for it in range(6):
+        rng = np.random.RandomState(rng_seed + it)
+        blurred = generate_half_normal_blur(gt, normals, sigma, rng)
+        
+        # Compute u_blur = d / s_fit
+        dists = cdist(blurred, gt)
+        min_d = np.min(dists, axis=1)
+        u_blur = min_d / s_fit
+        
+        med = np.median(u_blur)
+        if abs(med - target) / target < 0.05:
+            break
+            
+        # Multiplicative scaling
+        if med > 1e-12:
+            sigma *= (target / med)
+        else:
+            sigma *= 2.0
+            
+    # Final check of p95
+    p95 = np.percentile(u_blur, 95)
+    # Target p95 is ~5.16 for Half-Normal
+    return sigma, med, p95
 
 def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
     """
@@ -60,12 +201,12 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
         hist_ref (np.ndarray): Reference histogram for BAL
         
     Returns:
-        dict: {fit, cov, gap, reg, bal}
+        dict: {denoise, cov, gap, reg, bal}
     """
     metrics = {}
     
-    # 1. FIT (Proximity)
-    metrics['fit'] = fair.compute_fair_fit(samples, gt_norm, s_fit)
+    # 1. DENOISE (Proximity)
+    metrics['denoise'] = fair.compute_fair_fit(samples, gt_norm, s_fit)
 
     # 2. COV (Coverage)
     metrics['cov'] = fair.compute_fair_coverage(samples, gt_norm)
@@ -84,6 +225,10 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
 def generate_ecdf_for_problem(prob_name, gt_norm):
     problem_data = {}
     M = gt_norm.shape[1] # Objectives
+
+    # 1. Estimate Normals (once per problem)
+    print(f" estimating normals...", end="", flush=True)
+    normals = estimate_gt_normals(gt_norm)
 
     # Global References (Resolution Indep)
     # Clusters for Balance (Fixed seed for consistency)
@@ -118,9 +263,30 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
         hist_ref = np.bincount(lab_u, minlength=len(c_cents)).astype(float)
         hist_ref /= np.sum(hist_ref)
         
+        # --- GENERATION (CLOSENESS BASELINE) ---
+        # Part B2: Calibrate sigma and generate G_blur
+        sigma, med_blur, p95_blur = calibrate_sigma(gt_norm, normals, s_fit, SEED_START + k)
+        
+        # Final baseline for this K
+        rng_blur = np.random.RandomState(SEED_START + k + 500)
+        g_blur = generate_half_normal_blur(gt_norm, normals, sigma, rng_blur)
+        
+        # u_blur = d_j / s_fit
+        d_blur = cdist(g_blur, gt_norm)
+        u_blur = np.min(d_blur, axis=1) / s_fit
+        
+        # Sort and downsample to N_SAMPLES if needed (to keep JSON size uniform)
+        u_blur_sorted = np.sort(u_blur)
+        if len(u_blur_sorted) > N_SAMPLES:
+            # Linear sampling of the ECDF
+            indices = np.linspace(0, len(u_blur_sorted)-1, N_SAMPLES).astype(int)
+            u_blur_ecdf = u_blur_sorted[indices]
+        else:
+            u_blur_ecdf = u_blur_sorted
+            
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
-        rand_vals = {"fit": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        rand_vals = {"denoise": [], "cov": [], "gap": [], "reg": [], "bal": []}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES):
@@ -131,15 +297,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             
         # --- GENERATION (IDEAL) ---
         # "Success" Baseline: Uniform Sampling from GT (u_ref itself, or perturbations?)
-        # Ideally, we sample subsets of GT that are perfectly Uniform.
-        # But u_ref IS the definition of Uniform on GT for size K.
-        # So "Ideal" is effectively computing metrics on u_ref itself (or similar uniform sets).
-        # Since u_ref is deterministic (seed=0), let's generate a few variations 
-        # using different seeds for get_ref_uk to simulate "Ideal but stochastic" algorithms?
-        # Specification says: "Ideal = Uni50 (FPS of GT)". 
-        # So we sample N_IDEAL sets using FPS with different seeds.
-        
-        uni_vals = {"fit": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        uni_vals = {"denoise": [], "cov": [], "gap": [], "reg": [], "bal": []}
         for i in range(N_IDEAL):
             # Sample Uniformly from GT (Simulates a perfect algorithm)
             # Seed varies to get distribution of "Perfect"
@@ -152,7 +310,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
 
         # --- STORAGE ---
         k_data = {}
-        for metric in ["fit", "cov", "gap", "reg", "bal"]:
+        for metric in ["denoise", "cov", "gap", "reg", "bal"]:
             # Random (ECDF)
             r_all = np.sort(rand_vals[metric])
             r_50 = float(np.median(r_all))
@@ -161,8 +319,8 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             # Ideal (Scalar Anchor)
             u_50 = float(np.median(uni_vals[metric]))
             
-            # Special case for FIT: Ideal is 0.0 by definition of distance
-            if metric == "fit": u_50 = 0.0
+            # Special case for DENOISE: Ideal is 0.0 by definition of distance
+            if metric == "denoise": u_50 = 0.0
             
             k_data[metric] = {
                 "uni50": u_50,
@@ -170,6 +328,17 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
                 "rand_ecdf": r_ecdf
             }
             
+        # Store CLOSENESS
+        # Ideal is degenerate 0.0
+        k_data["closeness"] = {
+            "uni50": 0.0,
+            "rand50": float(med_blur),
+            "rand_ecdf": [float(x) for x in u_blur_ecdf],
+            "sigma": float(sigma),
+            "p95": float(p95_blur),
+            "seed": SEED_START + k
+        }
+        
         problem_data[k_str] = k_data
         
     return problem_data

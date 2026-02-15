@@ -11,7 +11,7 @@ Logic:
 1.  High-is-Better (1.0 = Optimal, 0.0 = Random/Fail).
 2.  Formula: Linear interpolation between Ideal (Q=1) and Random (Q=0).
 3.  Strict Baseline Rules:
-    - FIT: ideal=0.0 (Perfect physical match), random=BBox-Random.
+    - DENOISE: ideal=0.0 (Better-than-noise progress), random=BBox-Random.
     - OTHERS: ideal=Uni50 (FPS of GT), random=Rand50 (Random Subset of GT).
 """
 
@@ -146,15 +146,44 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
-def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
-    """Computes Q_FIT using a log-linear baseline (Ideal -> Rand50).
+def compute_q_denoise(fair_denoise: float, problem: str, k: int) -> float:
+    """Computes Q_DENOISE using a log-linear baseline (Ideal -> Rand50).
 
     This keeps the same semantics as the linear mapping (0.0 is ideal, Rand50 is
     the random anchor), but reduces saturation near Q~1 when FAIR is very small.
     """
-    # Ideal = 0.0 (Perfect physical match)
-    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
-    return _compute_q_loglinear(fair_fit, 0.0, rand50)
+    # Ideal = 0.0 (Better-than-noise progress)
+    _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
+    return _compute_q_loglinear(fair_denoise, 0.0, rand50)
+
+def compute_q_closeness(u_dist: np.ndarray, problem: str, k: int) -> float:
+    """Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
+    
+    Args:
+        u_dist: Array of normalized distances to GT (u = d / s_fit)
+        problem: Problem name
+        k: Population size
+    """
+    if u_dist.size == 0:
+        return float('nan')
+        
+    # 1. Get Baseline (G_blur ECDF)
+    # We use get_baseline_ecdf because CLOSENESS is distributional
+    _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "closeness")
+    
+    # 2. Stability: Explicit ideal samples (all zeros, same size as u_dist)
+    ideal_samples = np.zeros_like(u_dist)
+    
+    # 3. Compute Wasserstein-1 Distances
+    d_bad = _wasserstein_1d(u_dist, rand_ecdf)
+    d_ideal = _wasserstein_1d(u_dist, ideal_samples)
+    
+    # 4. Interpolate
+    denom = d_bad + d_ideal
+    if denom <= 1e-12:
+        return 1.0
+        
+    return float(d_bad / denom)
 
 def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
     """Computes Q_COVERAGE using ECDF."""
@@ -176,9 +205,9 @@ def compute_q_balance(fair_bal: float, problem: str, k: int) -> float:
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
     return _compute_q_ecdf(fair_bal, uni50, rand50, rand_ecdf)
 
-def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
+def compute_q_denoise_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
     """
-    Vectorized Q-Score calculation for point cloud (FIT).
+    Vectorized Q-Score calculation for point cloud (DENOISE).
     
     Args:
         dists: Array of raw distances (min d(P->GT))
@@ -193,14 +222,43 @@ def compute_q_fit_points(dists: np.ndarray, problem: str, k: int, s_fit: float) 
     fair_vals = dists / s_fit
     
     # 2. Get Baseline (Rand50 in FAIR space)
-    _, rand50 = baselines.get_baseline_values(problem, k, "fit")
+    _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
 
-    # 3. Vectorized log-linear mapping (same anchors as compute_q_fit)
+    # 3. Vectorized log-linear mapping (same anchors as compute_q_denoise)
     denom_raw = max(rand50, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
         return np.where(fair_vals <= 1e-12, 1.0, 0.0)
 
     num_raw = np.maximum(fair_vals, 0.0)
+    error_score = np.log1p(num_raw) / denom
+    return 1.0 - np.clip(error_score, 0.0, 1.0)
+
+def compute_q_closeness_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
+    """
+    Vectorized Q-Score calculation for point cloud (CLOSENESS).
+    
+    Args:
+        dists: Array of raw distances (min d(P->GT))
+        problem: Problem name
+        k: K value
+        s_fit: Resolution factor for normalization
+        
+    Returns:
+        np.ndarray: Array of Q-Scores for each point (0..1)
+    """
+    # 1. Normalize
+    u_vals = dists / s_fit
+    
+    # 2. Get Baseline (Rand50 in FAIR space, which is the sigma-blur median)
+    _, rand50 = baselines.get_baseline_values(problem, k, "closeness")
+
+    # 3. Vectorized log-linear mapping (Anchors: 0 -> Q=1, rand50 -> Q=0)
+    denom_raw = max(rand50, 0.0)
+    denom = np.log1p(denom_raw)
+    if denom <= 1e-12:
+        return np.where(u_vals <= 1e-12, 1.0, 0.0)
+
+    num_raw = np.maximum(u_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
     return 1.0 - np.clip(error_score, 0.0, 1.0)
