@@ -350,6 +350,21 @@ def generate_visual_report():
                 near1 = np.mean(u_pts <= 1.0) * 100
                 near2 = np.mean(u_pts <= 2.0) * 100
 
+            # Stabilization Heuristic (v0.9.1)
+            # Find the first generation where H_rel reaches 99.9% of final value
+            t_conv = "-"
+            if data["history"]["gens"] and data["history"]["hv_rel"]:
+                h_gen = data["history"]["gens"]
+                h_hv = data["history"]["hv_rel"]
+                final_hv = h_hv[-1]
+                if final_hv > 0:
+                    for i, v in enumerate(h_hv):
+                        if v >= 0.999 * final_hv:
+                            t_conv = str(h_gen[i])
+                            break
+                else:
+                    t_conv = str(h_gen[-1])
+
             mop_metrics.append({
                 "alg": alg,
                 "igd": f"{igd_mean:.4f} &plusmn; {igd_std:.4f}",
@@ -366,7 +381,7 @@ def generate_visual_report():
                 "time": f"{stats.get('Time_sec',0):.2f}",
                 "clinical": clinical,
                 "s_fit": s_fit, # Expose s_K scale
-                "t_conv": str(data["history"]["gens"][-1]) if data["history"]["gens"] else "-"
+                "t_conv": t_conv
             })
             
         # Layout with multiple legends to fix disappearing plots
