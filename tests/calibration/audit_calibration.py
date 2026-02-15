@@ -254,24 +254,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     mi = {m: float(np.nanmedian(ideal_ref[m])) for m in ['denoise','closeness','cov','gap','reg','bal']}
     mr = {m: _rand50(m) for m in ['denoise','closeness','cov','gap','reg','bal']}
     
-    summary_list = []
-    # Fail-Closed NaN Check & Gate (Refined Plan v2)
-    if np.isnan(mq["denoise"]) or mq["denoise"] < 0.67: summary_list.append("Insufficient Precision (Denoise Progress)")
-    if np.isnan(mq["closeness"]) or mq["closeness"] < 0.67: summary_list.append("Poor Convergence (Proximity to GT)")
-    if np.isnan(mq["cov"]) or mq["cov"] < 0.67: summary_list.append("Limited Coverage (Reduced Extent)")
-    if np.isnan(mq["gap"]) or mq["gap"] < 0.67: summary_list.append("Significant Topological Interruptions (Gaps)")
-    if np.isnan(mq["reg"]) or mq["reg"] < 0.67: summary_list.append("Uneven Distribution Pattern (Irregularity)")
-    if np.isnan(mq["bal"]) or mq["bal"] < 0.67: summary_list.append("Structural Bias (Non-Uniform Objective Coverage)")
-    
-    summary_text = "; ".join(summary_list) if summary_list else "Excellent Performance (All Dimensions)"
-    
     q_worst = np.nanmin(list(mq.values()))
     # Strict fallback for all-NaN case
     if np.isnan(q_worst): q_worst = 0.0
     
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
-        "summary": summary_text,
         "denoise": {"q": mq["denoise"], "fair": mf["denoise"], "anchor_good": mi["denoise"], "anchor_bad": mr["denoise"], **md["denoise"]},
         "closeness": {"q": mq["closeness"], "fair": mf["closeness"], "anchor_good": mi["closeness"], "anchor_bad": mr["closeness"], **md["closeness"]},
         "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"], **md["cov"]},

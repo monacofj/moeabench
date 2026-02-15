@@ -27,6 +27,42 @@ if PROJ_ROOT not in sys.path:
 
 from MoeaBench.diagnostics import qscore
 
+def get_analytical_summary(clinical):
+    """ Generates a symmetric, non-subjective clinical summary from Q-scores. """
+    matrix = {
+        "denoise":   {0.95: "Near-Ideal Suppr.", 0.85: "Strong Suppr.", 0.67: "Effective", 0.34: "Partial", 0.0: "Noise-dominant"},
+        "closeness": {0.95: "Asymptotic Prox.", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
+        "cov":       {0.95: "Exhaustive", 0.85: "Extensive", 0.67: "Standard", 0.34: "Limited", 0.0: "Collapsed"},
+        "gap":       {0.95: "High Continuity", 0.85: "Stable", 0.67: "Managed Gaps", 0.34: "Interrupted", 0.0: "Fragmented"},
+        "reg":       {0.95: "Hyper-uniform", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Chaotic"},
+        "bal":       {0.95: "Optimal Parity", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
+    }
+    labels = {"denoise": "Denoising", "closeness": "Proximity", "cov": "Coverage", "gap": "Continuity", "reg": "Regularity", "bal": "Parity"}
+
+    def get_desc(m, q):
+        if q is None or np.isnan(q): return "Undefined"
+        for thresh in sorted(matrix[m].keys(), reverse=True):
+            if q >= thresh: return matrix[m][thresh]
+        return matrix[m][0.0]
+
+    high_fidelity = []
+    anomalies = []
+    q_vals = {}
+    for m in labels.keys():
+        q = clinical.get(m, {}).get('q', np.nan)
+        q_vals[m] = q
+        desc = get_desc(m, q)
+        if q >= 0.85: high_fidelity.append(f"{desc} {labels[m]}")
+        if q < 0.67:  anomalies.append(f"{desc} {labels[m]}")
+
+    if len(high_fidelity) == 6 and all(q_vals[m] >= 0.95 for m in q_vals):
+        return "Structural Perfection: All dimensions exhibit near-ideal fidelity."
+    
+    parts = []
+    if high_fidelity: parts.append("High Fidelity: " + ", ".join(high_fidelity))
+    if anomalies:     parts.append("Anomalies: " + ", ".join(anomalies))
+    return "; ".join(parts) if parts else "Standard Operational Performance"
+
 def generate_visual_report():
     if not os.path.exists(AUDIT_JSON):
         print(f"Error: Audit file {AUDIT_JSON} not found. Run audit_calibration.py first.")
@@ -385,7 +421,8 @@ def generate_visual_report():
                 
                 matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")
             
-            matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td></tr>")
+            summary_text = get_analytical_summary(c)
+            matrix_table.append(f"<td style='font-style: italic; color: #64748b; font-size: 0.85rem'>{summary_text}</td></tr>")
         matrix_table.append("</table>")
         
         html_content.append(fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False))
