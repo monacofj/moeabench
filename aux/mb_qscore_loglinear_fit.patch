@@ -1,0 +1,96 @@
+--- a/MoeaBench/diagnostics/qscore.py
++++ b/MoeaBench/diagnostics/qscore.py
+@@ -2,17 +2,32 @@
+ #
+ # SPDX-License-Identifier: GPL-3.0-or-later
+ 
+-"""
+-MoeaBench Clinical Quality Scores (Engineering Layer)
++r"""MoeaBench Clinical Quality Scores (Engineering Layer)
+ =====================================================
+ 
+-This module implements the "Q-Score" logic ($Q \in [0, 1]$).
+-Logic:
+-1.  High-is-Better (1.0 = Optimal, 0.0 = Random/Fail).
+-2.  Formula: Linear interpolation between Ideal (Q=1) and Random (Q=0).
+-3.  Strict Baseline Rules:
+-    - FIT: ideal=0.0 (Perfect physical match), random=BBox-Random.
+-    - OTHERS: ideal=Uni50 (FPS of GT), random=Rand50 (Random Subset of GT).
++This module implements the "Q-Score" logic (Q \in [0, 1]).
++
++Design goals
++------------
++
++* High-is-better: 1.0 means "as good as the baseline allows", 0.0 means "as bad as the random
++  baseline".
++* Keep the baselines interpretable (Ideal/Good vs Random/Bad), but **avoid pathological
++  saturation** where almost everything becomes exactly 1.0 after formatting.
++
++Baseline rules
++--------------
++
++* FIT: ideal=0.0 (perfect physical match), random=BBox-Random.
++* OTHERS: ideal=Uni50 (FPS of GT), random=Rand50 (random subset of GT).
++
++Important note on calibration
++-----------------------------
++
++The original linear mapping can saturate very quickly when the random baseline is orders of
++magnitude worse than any reasonable algorithm (common for FIT). To keep sensitivity near the
++top end without changing the meaning of the anchors, we use a **log-linear** mapping for
++distance-like scores.
+ """
+ 
+ import numpy as np
+@@ -38,6 +53,33 @@
+     # Clip and Invert
+     return float(1.0 - np.clip(error_score, 0.0, 1.0))
+ 
++def _compute_q_log_linear(fair_val: float, ideal: float, rand50: float) -> float:
++    """Log-linear Q-Score formula.
++
++    Same anchors as the linear version, but applies a log1p transform to the *numerator* and
++    *denominator* before interpolation:
++
++        q = 1 - clip( log1p(fair-ideal) / log1p(rand50-ideal) )
++
++    Why this helps
++    --------------
++
++    When (rand50-ideal) is huge, linear interpolation makes (fair-ideal)/(rand50-ideal) almost
++    zero for any decent algorithm, so Q becomes ~1. The log transform expands the dynamic range
++    near the top end, preserving ordering and still respecting the same anchors.
++    """
++    denom = rand50 - ideal
++    if denom <= 1e-12:
++        return 1.0 if fair_val <= ideal + 1e-12 else 0.0
++
++    num = fair_val - ideal
++    if num <= 0.0:
++        return 1.0
++
++    # log1p keeps stability for small values
++    error_score = np.log1p(num) / np.log1p(denom)
++    return float(1.0 - np.clip(error_score, 0.0, 1.0))
++
+ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.ndarray) -> float:
+     """
+     ECDF Q-Score formula.
+@@ -75,10 +117,15 @@
+     return float(1.0 - np.clip(error_score, 0.0, 1.0))
+ 
+ def compute_q_fit(fair_fit: float, problem: str, k: int) -> float:
+-    """Computes Q_FIT using strict linear baseline (Ideal -> Rand50)."""
++    """Computes Q_FIT using strict baseline (Ideal -> Rand50).
++
++    FIT is the most common case where Rand50 can be orders of magnitude worse than any
++    algorithm, making the linear mapping saturate at 1.0. We therefore use the log-linear
++    variant here.
++    """
+     # Ideal = 0.0 (Perfect physical match)
+     _, rand50 = baselines.get_baseline_values(problem, k, "fit")
+-    return _compute_q_linear(fair_fit, 0.0, rand50)
++    return _compute_q_log_linear(fair_fit, 0.0, rand50)
+ 
+ def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
+     """Computes Q_COVERAGE using ECDF."""

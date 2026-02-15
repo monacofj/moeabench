@@ -1,0 +1,106 @@
+From a4548cb6f8c4cb022c0d1b58e4b978fb10753be2 Mon Sep 17 00:00:00 2001
+From: oai <oai@example.com>
+Date: Thu, 12 Feb 2026 15:23:18 +0000
+Subject: [PATCH] add wasserstein distance diagnostics to calibration json
+
+---
+ tests/calibration/audit_calibration.py | 66 +++++++++++++++++++-------
+ 1 file changed, 49 insertions(+), 17 deletions(-)
+
+diff --git a/tests/calibration/audit_calibration.py b/tests/calibration/audit_calibration.py
+index db651b8..cf89b44 100644
+--- a/tests/calibration/audit_calibration.py
++++ b/tests/calibration/audit_calibration.py
+@@ -167,9 +167,19 @@ def _aggregate_clinical(mop_name, alg, F_opt):
+             vals['bal'].append(fair.compute_fair_balance(pop_uni, C_cents, hist_ref))
+         return s_k, {m: np.asarray(v, float) for m, v in vals.items()}
+ 
+-    def _q_weighted(metric: str) -> float:
++    def _q_and_dists_weighted(metric: str):
++        """Compute distributional Q and diagnostic distances (weighted across K).
++
++        Returns (q, d_ideal, d_rand, delta), where:
++          - d_ideal = W1(D_F, D_GT)
++          - d_rand  = W1(D_F, D_R)
++          - delta   = W1(D_GT, D_R)
++        """
+         total = 0
+-        acc = 0.0
++        acc_q = 0.0
++        acc_di = 0.0
++        acc_dr = 0.0
++        acc_delta = 0.0
+         for k, samples in fair_by_k[metric].items():
+             if len(samples) == 0:
+                 continue
+@@ -178,18 +188,40 @@ def _aggregate_clinical(mop_name, alg, F_opt):
+             except base.UndefinedBaselineError:
+                 continue
+             s_k, ideal_samps = _get_practical_ideal_samples(k)
+-            q_k = qscore.compute_q_wasserstein(np.asarray(samples, float), ideal_samps[metric], np.asarray(rand_ecdf, float))
++            f_s = np.asarray(samples, float)
++            i_s = ideal_samps[metric]
++            r_s = np.asarray(rand_ecdf, float)
++
++            # Q-score
++            q_k = qscore.compute_q_wasserstein(f_s, i_s, r_s)
++
++            # Diagnostics (same W1 used internally)
++            d_i = qscore._wasserstein_1d(f_s, i_s)
++            d_r = qscore._wasserstein_1d(f_s, r_s)
++            delta = qscore._wasserstein_1d(i_s, r_s)
+             w = len(samples)
+             total += w
+-            acc += float(q_k) * w
+-        return acc / total if total > 0 else float('nan')
+-
+-    mq = {
+-        'fit': _q_weighted('fit'),
+-        'cov': _q_weighted('cov'),
+-        'gap': _q_weighted('gap'),
+-        'reg': _q_weighted('reg'),
+-        'bal': _q_weighted('bal'),
++            acc_q += float(q_k) * w
++            acc_di += float(d_i) * w
++            acc_dr += float(d_r) * w
++            acc_delta += float(delta) * w
++        if total <= 0:
++            return float('nan'), float('nan'), float('nan'), float('nan')
++        return acc_q / total, acc_di / total, acc_dr / total, acc_delta / total
++
++    q_fit, di_fit, dr_fit, de_fit = _q_and_dists_weighted('fit')
++    q_cov, di_cov, dr_cov, de_cov = _q_and_dists_weighted('cov')
++    q_gap, di_gap, dr_gap, de_gap = _q_and_dists_weighted('gap')
++    q_reg, di_reg, dr_reg, de_reg = _q_and_dists_weighted('reg')
++    q_bal, di_bal, dr_bal, de_bal = _q_and_dists_weighted('bal')
++
++    mq = {'fit': q_fit, 'cov': q_cov, 'gap': q_gap, 'reg': q_reg, 'bal': q_bal}
++    md = {
++        'fit': {'d_ideal': di_fit, 'd_rand': dr_fit, 'delta': de_fit},
++        'cov': {'d_ideal': di_cov, 'd_rand': dr_cov, 'delta': de_cov},
++        'gap': {'d_ideal': di_gap, 'd_rand': dr_gap, 'delta': de_gap},
++        'reg': {'d_ideal': di_reg, 'd_rand': dr_reg, 'delta': de_reg},
++        'bal': {'d_ideal': di_bal, 'd_rand': dr_bal, 'delta': de_bal},
+     }
+     mf = {"fit": _med(fair_fit_vals), "cov": _med(fair_cov_vals), "gap": _med(fair_gap_vals), "reg": _med(fair_reg_vals), "bal": _med(fair_bal_vals)}
+     # Anchors shown in report: (good) median of practical-ideal sample, (bad) baseline rand50, at reference K
+@@ -224,11 +256,11 @@ def _aggregate_clinical(mop_name, alg, F_opt):
+     return {
+         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
+         "verdict": verdict, "summary": summary_text,
+-        "fit": {"q": mq["fit"], "fair": mf["fit"], "anchor_good": mi["fit"], "anchor_bad": mr["fit"]},
+-        "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"]},
+-        "gap": {"q": mq["gap"], "fair": mf["gap"], "anchor_good": mi["gap"], "anchor_bad": mr["gap"]},
+-        "reg": {"q": mq["reg"], "fair": mf["reg"], "anchor_good": mi["reg"], "anchor_bad": mr["reg"]},
+-        "bal": {"q": mq["bal"], "fair": mf["bal"], "anchor_good": mi["bal"], "anchor_bad": mr["bal"]},
++        "fit": {"q": mq["fit"], "fair": mf["fit"], "anchor_good": mi["fit"], "anchor_bad": mr["fit"], **md["fit"]},
++        "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"], **md["cov"]},
++        "gap": {"q": mq["gap"], "fair": mf["gap"], "anchor_good": mi["gap"], "anchor_bad": mr["gap"], **md["gap"]},
++        "reg": {"q": mq["reg"], "fair": mf["reg"], "anchor_good": mi["reg"], "anchor_bad": mr["reg"], **md["reg"]},
++        "bal": {"q": mq["bal"], "fair": mf["bal"], "anchor_good": mi["bal"], "anchor_bad": mr["bal"], **md["bal"]},
+         "k_used": _med(k_used_vals), "k_raw": _med(k_raw_vals),
+         "igd_p": {"mean": _avg(igd_p_vals), "std": float(np.std(igd_p_vals)) if igd_p_vals else 0},
+         "gd_p": {"mean": _avg(gd_p_vals), "std": float(np.std(gd_p_vals)) if gd_p_vals else 0},
+-- 
+2.39.5
+
