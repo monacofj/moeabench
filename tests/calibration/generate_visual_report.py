@@ -58,8 +58,6 @@ def generate_visual_report():
         ".diag-optimal { background: #dcfce7; color: #166534; }",
         ".diag-warning { background: #fef9c3; color: #854d0e; }",
         ".diag-failure { background: #fee2e2; color: #991b1b; }",
-        ".verdict-pass { background: #e0e7ff; color: #3730a3; }",
-        ".verdict-fail { background: #ffedd5; color: #9a3412; }",
         "th, td { white-space: nowrap; }",
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
@@ -76,9 +74,9 @@ def generate_visual_report():
         "<div style='background: #f8fafc; padding: 15px; border-left: 4px solid #3b82f6; margin-bottom: 20px;'>",
         "<b>Interpretative Framework:</b> Validation is conducted across two complementary layers of evidence:<br>",
         "<ul style='margin-bottom:0'>",
-        "<li><b>Layer 1 - The Clinical Matrix (Verdict):</b> A summary Q-Score $[0.0, 1.0]$.<br>",
-        "<i>Pass ($Q \\ge 0.67$):</i> Performance is scientifically indistinguishable from the theoretical limit.<br>",
-        "<i>Fail ($Q < 0.34$):</i> Performance is physically closer to random noise (<b>AnchorBad</b>) than to the optimal solution.</li>",
+        "<li><b>Layer 1 - The Clinical Matrix:</b> A summary of Q-Scores $[0.0, 1.0]$.<br>",
+        "Values near $1.0$ indicate performance indistinguishable from the theoretical limit.<br>",
+        "Values near $0.0$ indicate performance closer to random noise (<b>AnchorBad</b>) than to the optimal solution.</li>",
         "<li><b>Layer 2 - The Structural Biopsy (CDF Evidence):</b> A plot of cumulative distances to the Truth (bottom right).<br>",
         "This reveals the 'physics' of why an algorithm might be failing:",
         "<ul style='margin-top:0.5rem'>",
@@ -177,7 +175,7 @@ def generate_visual_report():
                     fig.add_trace(go.Scatter3d(
                         x=pts[:,0], y=pts[:,1], z=pts[:,2],
                         mode='markers', marker=dict(size=4, color=colors_solid.get(alg, 'black'), opacity=1.0),
-                        name=f'{alg} (Research)', legendgroup=alg
+                        name=f'{alg}', legendgroup=alg
                     ), row=1, col=1)
 
                 # Trace 2: Industry (Hollow Circle)
@@ -191,7 +189,7 @@ def generate_visual_report():
                             line=dict(color=colors_solid.get(alg, 'black'), width=2),
                             opacity=0.8
                         ),
-                        name=f'{alg} (Industry)', legendgroup=alg, showlegend=False
+                        name=f'{alg}', legendgroup=alg, showlegend=False
                     ), row=1, col=1)
 
                 # Trace 3: Fail (X)
@@ -205,7 +203,7 @@ def generate_visual_report():
                             color=colors_solid.get(alg, 'black'),
                             opacity=0.6
                         ),
-                        name=f'{alg} (Fail)', legendgroup=alg, showlegend=False
+                        name=f'{alg}', legendgroup=alg, showlegend=False
                     ), row=1, col=1)
 
             # History
@@ -357,8 +355,8 @@ def generate_visual_report():
         # Matrix Table
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
-            "<table><colgroup><col style='width: 120px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: auto'><col style='width: 120px'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>DENOISE</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>SUMMARY</th><th>VERDICT</th></tr></thead>"
+            "<table><colgroup><col style='width: 120px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: auto'></colgroup>",
+            "<thead><tr><th>Algorithm</th><th>DENOISE</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>SUMMARY</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
@@ -387,10 +385,7 @@ def generate_visual_report():
                 
                 matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")
             
-            matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td>")
-            v = c.get("verdict", "FAIL")
-            v_cls = "verdict-pass" if v == "RESEARCH" else ("diag-warning" if v == "INDUSTRY" else "verdict-fail")
-            matrix_table.append(f"<td><span class='diag-badge {v_cls}'>{v}</span></td></tr>")
+            matrix_table.append(f"<td style='font-style: italic; color: #64748b'>{c.get('summary', '-')}</td></tr>")
         matrix_table.append("</table>")
         
         html_content.append(fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False))

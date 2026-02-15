@@ -19,7 +19,6 @@ THRESH_INDUSTRY = 0.34
 class DiagnosticResult:
     """ Encapsulates the finding of an algorithmic audit. """
     status: DiagnosticStatus
-    verdict: str
     metrics: Dict[str, Any]
     confidence: float
     description: str
@@ -41,7 +40,6 @@ class PerformanceAuditor:
         if not input_ok:
             return DiagnosticResult(
                 status=DiagnosticStatus.UNDEFINED_INPUT,
-                verdict="FAIL",
                 metrics=metrics,
                 confidence=0.0,
                 description="Invalid input.",
@@ -52,7 +50,6 @@ class PerformanceAuditor:
         if not baseline_ok:
             return DiagnosticResult(
                 status=DiagnosticStatus.UNDEFINED_BASELINE,
-                verdict="FAIL", # Fail-Closed
                 metrics=metrics,
                 confidence=0.0,
                 description="Missing baselines.",
@@ -81,64 +78,45 @@ class PerformanceAuditor:
         worst_dim = min(q_scores, key=q_scores.get)
         q_worst = q_scores[worst_dim]
         
-        # 4. Determine Verdict
-        # RESEARCH: Q >= 0.67
-        # INDUSTRY: Q >= 0.34
-        # FAIL: Q < 0.34
-        
-        verdict = "FAIL"
-        status = DiagnosticStatus.UNDEFINED # Conceptual placeholder
+        # 4. Map Pathologies based on Weakest Link
+        status = DiagnosticStatus.UNDEFINED
         
         if q_worst >= THRESH_RESEARCH:
-            # Passed strict research standard
-            verdict = "PASS"
             status = DiagnosticStatus.IDEAL_FRONT
-            rationale = "All dimensions meet Research Quality (>= 0.67)."
+            rationale = "All dimensions meet high precision threshold (>= 0.67)."
         elif q_worst >= THRESH_INDUSTRY:
-            # Passed industry standard (loose)
-            if profile == DiagnosticProfile.RESEARCH:
-                verdict = "FAIL"
-                rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) below Research threshold."
-            else:
-                verdict = "PASS" # Industry/Exploratory pass
-                rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) meets Industry threshold."
-            status = DiagnosticStatus.IDEAL_FRONT # Still "Ideal" topology, just lower quality? 
-            # Or map specific issues based on dimension?
+            status = DiagnosticStatus.IDEAL_FRONT # Conceptually ideal but with lower precision
+            rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) meets industry threshold."
         else:
-            # Absolute Fail
-            verdict = "FAIL"
             rationale = f"Critically low quality in {worst_dim} ({q_worst:.2f})."
             
-            # Map low score to Status
+            # Map low score to Status (Pathology)
             if worst_dim == "DENOISE":
-                status = DiagnosticStatus.SHIFTED_FRONT # Poor convergence (better than noise but shifted)
+                status = DiagnosticStatus.SHIFTED_FRONT
             elif worst_dim == "CLOSENESS":
-                status = DiagnosticStatus.SHIFTED_FRONT # Failed to reach GT
+                status = DiagnosticStatus.SHIFTED_FRONT
             elif worst_dim == "COVERAGE":
-                status = DiagnosticStatus.COLLAPSED_FRONT # Poor coverage
+                status = DiagnosticStatus.COLLAPSED_FRONT
             elif worst_dim == "GAP":
                 status = DiagnosticStatus.GAPPED_COVERAGE
             elif worst_dim == "REGULARITY":
-                status = DiagnosticStatus.NOISY_POPULATION # Irregular
+                status = DiagnosticStatus.NOISY_POPULATION
             elif worst_dim == "BALANCE":
                 status = DiagnosticStatus.BIASED_SPREAD
             else:
                 status = DiagnosticStatus.SEARCH_FAILURE
 
-        # 5. Closeness Gate (Refined Plan v2)
-        # Even if q_worst passes, if closeness is failed, the verdict is FAIL.
-        if q_closeness < THRESH_INDUSTRY and verdict == "PASS":
-            verdict = "FAIL"
+        # 5. Closeness Gate (Enforced Pathology)
+        if q_closeness < THRESH_INDUSTRY:
             status = DiagnosticStatus.SHIFTED_FRONT
-            rationale = f"Verification Failed: Closeness ({q_closeness:.2f}) < {THRESH_INDUSTRY:.2f}. Convergence not attained separate from Denoise."
+            rationale = f"Convergence not attained: Closeness ({q_closeness:.2f}) below threshold."
 
         return DiagnosticResult(
             status=status,
-            verdict=verdict,
             metrics=metrics,
             confidence=0.95,
             description=rationale,
-            _rationale=f"[{profile.name}] {status.name} -> {verdict}. {rationale}"
+            _rationale=f"[{profile.name}] {status.name}. {rationale}"
         )
 
 def audit(target: Any, 

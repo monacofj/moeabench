@@ -269,16 +269,9 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     # Strict fallback for all-NaN case
     if np.isnan(q_worst): q_worst = 0.0
     
-    verdict = "RESEARCH" if q_worst >= 0.67 else ("INDUSTRY" if q_worst >= 0.34 else "FAIL")
-    
-    # New: Closeness Gate (explicit message)
-    if mq["closeness"] < 0.34 and verdict != "FAIL":
-        verdict = "FAIL"
-        summary_text += " [Verification Failed: Closeness < 0.34 (Convergence not attained separate from Denoise)]"
-
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
-        "verdict": verdict, "summary": summary_text,
+        "summary": summary_text,
         "denoise": {"q": mq["denoise"], "fair": mf["denoise"], "anchor_good": mi["denoise"], "anchor_bad": mr["denoise"], **md["denoise"]},
         "closeness": {"q": mq["closeness"], "fair": mf["closeness"], "anchor_good": mi["closeness"], "anchor_bad": mr["closeness"], **md["closeness"]},
         "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"], **md["cov"]},
