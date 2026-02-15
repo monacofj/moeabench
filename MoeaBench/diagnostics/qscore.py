@@ -60,6 +60,12 @@ def compute_q_wasserstein(front_samples: np.ndarray, ideal_samples: np.ndarray, 
         return float('nan')
     d_i = _wasserstein_1d(f, i)
     d_r = _wasserstein_1d(f, r)
+    delta = _wasserstein_1d(i, r)
+    
+    # Monotonicity Gate: If error >= baseline noise budget, score is 0.
+    if d_i >= delta:
+        return 0.0
+        
     denom = d_i + d_r
     if denom <= eps:
         return 1.0
@@ -175,10 +181,14 @@ def compute_q_closeness(u_dist: np.ndarray, problem: str, k: int) -> float:
     ideal_samples = np.zeros_like(u_dist)
     
     # 3. Compute Wasserstein-1 Distances
-    d_bad = _wasserstein_1d(u_dist, rand_ecdf)
     d_ideal = _wasserstein_1d(u_dist, ideal_samples)
+    d_bad_ideal = _wasserstein_1d(rand_ecdf, ideal_samples)
     
-    # 4. Interpolate
+    # 4. Monotonicity Gate
+    if d_ideal >= d_bad_ideal:
+        return 0.0
+        
+    d_bad = _wasserstein_1d(u_dist, rand_ecdf)
     denom = d_bad + d_ideal
     if denom <= 1e-12:
         return 1.0
@@ -254,6 +264,7 @@ def compute_q_closeness_points(dists: np.ndarray, problem: str, k: int, s_fit: f
     _, rand50 = baselines.get_baseline_values(problem, k, "closeness")
 
     # 3. Vectorized log-linear mapping (Anchors: 0 -> Q=1, rand50 -> Q=0)
+    # Monotonicity Gate: Saturate at 0.0 if result is worse than baseline.
     denom_raw = max(rand50, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
@@ -261,4 +272,4 @@ def compute_q_closeness_points(dists: np.ndarray, problem: str, k: int, s_fit: f
 
     num_raw = np.maximum(u_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
-    return 1.0 - np.clip(error_score, 0.0, 1.0)
+    return np.maximum(0.0, 1.0 - error_score)
