@@ -94,7 +94,8 @@ def generate_visual_report():
         ".diag-optimal { background: #dcfce7; color: #166534; }",
         ".diag-warning { background: #fef9c3; color: #854d0e; }",
         ".diag-failure { background: #fee2e2; color: #991b1b; }",
-        "th, td { white-space: nowrap; }",
+        ".matrix-summary { font-style: italic; color: #64748b; font-size: 0.85rem; min-width: 200px; white-space: normal; }",
+        "th, td:not(.matrix-summary) { white-space: normal; }",
         "</style></head><body>",
         "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
         "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
@@ -452,7 +453,7 @@ def generate_visual_report():
                 matrix_table.append(f"<td style='padding: 8px 4px; vertical-align: top;'><span class='diag-badge {cls}' title='{tip}'>{q_label}</span><br>{sub_text}</td>")
             
             summary_text = get_analytical_summary(c)
-            matrix_table.append(f"<td style='font-style: italic; color: #64748b; font-size: 0.85rem'>{summary_text}</td></tr>")
+            matrix_table.append(f"<td class='matrix-summary'>{summary_text}</td></tr>")
         matrix_table.append("</table>")
         
         html_content.append(fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False))
