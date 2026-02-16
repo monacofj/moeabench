@@ -12,7 +12,7 @@ Divided into:
 - Q-Scores (Clinical, Calibration-corrected): mb.diagnostics.q_...
 """
 
-from .auditor import audit, DiagnosticResult
+from .auditor import audit, fair_audit, q_audit, DiagnosticResult, FairAuditResult, QualityAuditResult
 from .enums import DiagnosticStatus
 
 # Fair Metrics (Physical Layer)
@@ -38,7 +38,9 @@ from .qscore import (
 )
 
 __all__ = [
-    "audit", "DiagnosticResult", "DiagnosticStatus",
+    "audit", "fair_audit", "q_audit", 
+    "DiagnosticResult", "FairAuditResult", "QualityAuditResult",
+    "DiagnosticStatus",
     "fair_denoise", "fair_closeness", "fair_coverage", "fair_gap", "fair_regularity", "fair_balance",
     "q_denoise", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
     "q_denoise_points", "q_closeness_points"

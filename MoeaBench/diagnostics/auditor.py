@@ -17,189 +17,147 @@ THRESH_INDUSTRY = 0.34
 # Less strict profiles can be lower if needed, but 1/3 is the absolute floor.
 
 @dataclass
-class DiagnosticResult(Reportable):
-    """ Encapsulates the finding of an algorithmic audit. """
-    status: DiagnosticStatus
-    metrics: Dict[str, Any]
-    confidence: float
-    description: str
-    _rationale: str
-    details: Dict[str, Any] = None 
-
-    def rationale(self) -> str:
-        return self._rationale
-
+class QualityAuditResult(Reportable):
+    """ Results of a clinical certification audit. """
+    scores: Dict[str, qscore.QResult]
+    mop_name: str
+    k: int
+    
     def report(self, **kwargs) -> str:
-        """ Returns a multi-line human-readable summary. """
-        status_name = self.status.name.replace("_", " ").title()
-        
-        # 1. Header
-        lines = [
-            f"# MoeaBench Performance Audit: {status_name}",
-            f"**Verdict**: {self.description}",
-            ""
-        ]
-        
-        # 2. Extract Key Q-Scores (Clinical Dimensions)
-        q_scores = {
-            "Denoising": self.metrics.get("q_denoise", 0.0),
-            "Proximity": self.metrics.get("q_closeness", 0.0),
-            "Coverage":  self.metrics.get("q_coverage", 0.0),
-            "Continuity":self.metrics.get("q_gap", 0.0),
-            "Regularity":self.metrics.get("q_regularity", 0.0),
-            "Parity":    self.metrics.get("q_balance", 0.0)
-        }
-        
-        # 3. Clinical Summary (Biópsia)
-        from .qscore import QResult
-        
-        high_fidelity = []
-        anomalies = []
-        
-        for name, val in q_scores.items():
-            q = float(val)
-            # Find label from QResult (re-using the matrix logic)
-            # We need a dummy name for lookup
-            dummy = f"Q_{name.upper()}"
-            if dummy == "Q_CONTINUITY": dummy = "Q_GAP" # Alignment
-            if dummy == "Q_PARITY": dummy = "Q_BALANCE"
-            
-            matrix = QResult._LABELS.get(dummy, {})
+        lines = [f"# Clinical Quality Audit: {self.mop_name} (K={self.k})", ""]
+        table = ["| Dimension | Q-Score | Verdict |", "| :--- | :--- | :--- |"]
+        for name, qres in self.scores.items():
+            q = float(qres.value)
+            # Find label
+            matrix = qres._LABELS.get(qres.name, {})
             label = "Undefined"
             for thresh in sorted(matrix.keys(), reverse=True):
                 if q >= thresh:
                     label = matrix[thresh]
                     break
-            
-            summary_part = f"{label} {name}"
-            if q >= 0.85:
-                high_fidelity.append(summary_part)
-            if q < 0.67:
-                anomalies.append(summary_part)
-        
-        if high_fidelity:
-            lines.append(f"**High Fidelity**: {', '.join(high_fidelity)}")
-        if anomalies:
-            lines.append(f"**Anomalies Detected**: {', '.join(anomalies)}")
-        
-        lines.append("")
-        lines.append(f"**Rationale**: {self._rationale}")
-        
+            table.append(f"| {name} | {q:.3f} | {label} |")
+        lines.extend(table)
+        return "\n".join(lines)
+
+@dataclass
+class FairAuditResult(Reportable):
+    """ Results of a physical engineering audit. """
+    metrics: Dict[str, fair.FairResult]
+    
+    def report(self, **kwargs) -> str:
+        lines = ["# Physical Engineering Audit", ""]
+        for name, fres in self.metrics.items():
+            lines.append(f"- **{name}**: {float(fres.value):.4f} ({fres.description})")
+        return "\n".join(lines)
+
+@dataclass
+class DiagnosticResult(Reportable):
+    """ High-level synthesis of an algorithmic audit (The Biopsy). """
+    q_audit_res: QualityAuditResult
+    fair_audit_res: FairAuditResult
+    status: DiagnosticStatus
+    description: str
+
+    def report(self, **kwargs) -> str:
+        lines = [
+            f"# MoeaBench Diagnostic Biopsy",
+            f"**Primary Status**: {self.status.name.replace('_', ' ').title()}",
+            f"**Executive Summary**: {self.description}",
+            "",
+            "## 1. Clinical Quality (Certification)",
+            self.q_audit_res.report() if self.q_audit_res else "N/A",
+            "",
+            "## 2. Physical Evidence (Facts)",
+            self.fair_audit_res.report() if self.fair_audit_res else "N/A"
+        ]
         return "\n".join(lines)
 
 class PerformanceAuditor:
-    """ Expert system for interpreting 5D Clinical Quality Scores. """
+    """ Expert system for interpreting Clinical Quality Scores. """
     
     @staticmethod
-    def audit(metrics: Dict[str, float], 
-              profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
+    def audit_fair(metrics: Dict[str, fair.FairResult]) -> FairAuditResult:
+        """ Aggregates physical Fact results. """
+        return FairAuditResult(metrics=metrics)
         
-        # 1. Check Inputs
-        input_ok = bool(metrics.get("input_ok", True))
-        if not input_ok:
-            return DiagnosticResult(
-                status=DiagnosticStatus.UNDEFINED_INPUT,
-                metrics=metrics,
-                confidence=0.0,
-                description="Invalid input.",
-                _rationale="Input validation failed."
-            )
-            
-        baseline_ok = bool(metrics.get("baseline_ok", False))
-        if not baseline_ok:
-            return DiagnosticResult(
-                status=DiagnosticStatus.UNDEFINED_BASELINE,
-                metrics=metrics,
-                confidence=0.0,
-                description="Missing baselines.",
-                _rationale="Baselines unavailable for this MOP/K."
-            )
+    @staticmethod
+    def audit_quality(q_scores: Dict[str, qscore.QResult], 
+                     mop: str = "Unknown", k: int = 0) -> QualityAuditResult:
+        """ Aggregates Clinical Certification results. """
+        return QualityAuditResult(scores=q_scores, mop_name=mop, k=k)
 
-        # 2. Extract Q-Scores
-        # Default to 0.0 (Worst) if missing, to be safe
-        q_denoise = float(metrics.get("q_denoise", 0.0))
-        q_closeness = float(metrics.get("q_closeness", 0.0))
-        q_cov = float(metrics.get("q_coverage", 0.0))
-        q_gap = float(metrics.get("q_gap", 0.0))
-        q_reg = float(metrics.get("q_regularity", 0.0))
-        q_bal = float(metrics.get("q_balance", 0.0))
-        
-        q_scores = {
-            "DENOISE": q_denoise,
-            "CLOSENESS": q_closeness,
-            "COVERAGE": q_cov,
-            "GAP": q_gap,
-            "REGULARITY": q_reg,
-            "BALANCE": q_bal
-        }
-        
-        # 3. Determine Worst Dimension (Weakest Link)
-        worst_dim = min(q_scores, key=q_scores.get)
-        q_worst = q_scores[worst_dim]
-        
-        # 4. Map Pathologies based on Weakest Link
-        status = DiagnosticStatus.UNDEFINED
-        
-        if q_worst >= THRESH_RESEARCH:
-            status = DiagnosticStatus.IDEAL_FRONT
-            rationale = "All dimensions meet high precision threshold (>= 0.67)."
-        elif q_worst >= THRESH_INDUSTRY:
-            status = DiagnosticStatus.IDEAL_FRONT # Conceptually ideal but with lower precision
-            rationale = f"Weakest link {worst_dim} ({q_worst:.2f}) meets industry threshold."
-        else:
-            rationale = f"Critically low quality in {worst_dim} ({q_worst:.2f})."
-            
-            # Map low score to Status (Pathology)
-            if worst_dim == "DENOISE":
-                status = DiagnosticStatus.SHIFTED_FRONT
-            elif worst_dim == "CLOSENESS":
-                status = DiagnosticStatus.SHIFTED_FRONT
-            elif worst_dim == "COVERAGE":
-                status = DiagnosticStatus.COLLAPSED_FRONT
-            elif worst_dim == "GAP":
-                status = DiagnosticStatus.GAPPED_COVERAGE
-            elif worst_dim == "REGULARITY":
-                status = DiagnosticStatus.NOISY_POPULATION
-            elif worst_dim == "BALANCE":
-                status = DiagnosticStatus.BIASED_SPREAD
-            else:
-                status = DiagnosticStatus.SEARCH_FAILURE
+    @staticmethod
+    def audit_synthesis(q_res: QualityAuditResult, 
+                        f_res: FairAuditResult) -> DiagnosticResult:
+        """ 
+        The 'Biopsy' Logic. 
+        Identifies pathologies without subjective weighting.
+        """
+        if q_res is None or f_res is None:
+             return DiagnosticResult(None, None, DiagnosticStatus.UNDEFINED, "Audit failed or missing baselines.")
 
-        # 5. Closeness Gate (Enforced Pathology)
-        if q_closeness < THRESH_INDUSTRY:
-            status = DiagnosticStatus.SHIFTED_FRONT
-            rationale = f"Convergence not attained: Closeness ({q_closeness:.2f}) below threshold."
+        # 1. Detect Pathologies (Q < 0.34)
+        anomalies = []
+        for name, qval in q_res.scores.items():
+            if float(qval.value) < THRESH_INDUSTRY:
+                anomalies.append(name.replace("Q_", "").title())
+        
+        status = DiagnosticStatus.IDEAL_FRONT
+        desc = "Algorithm performance meets industry certification standards."
+        
+        if anomalies:
+            status = DiagnosticStatus.SEARCH_FAILURE
+            desc = f"Critical failures detected in: {', '.join(anomalies)}."
+            
+            # Simple heuristic mapping for single-mode failures
+            if len(anomalies) == 1:
+                mapping = {
+                    "COVERAGE": DiagnosticStatus.COLLAPSED_FRONT,
+                    "CLOSENESS": DiagnosticStatus.SHIFTED_FRONT,
+                    "DENOISE": DiagnosticStatus.SHIFTED_FRONT,
+                    "GAP": DiagnosticStatus.GAPPED_COVERAGE,
+                    "BALANCE": DiagnosticStatus.BIASED_SPREAD,
+                    "REGULARITY": DiagnosticStatus.NOISY_POPULATION
+                }
+                status = mapping.get(anomalies[0].upper(), status)
+
+        # 2. Check Substandard range (0.34 <= Q < 0.67)
+        elif any(float(q.value) < THRESH_RESEARCH for q in q_res.scores.values()):
+            sub = [n.replace("Q_", "").title() for n, q in q_res.scores.items() if float(q.value) < THRESH_RESEARCH]
+            desc = f"Performance is Substandard (Yellow Zone) in: {', '.join(sub)}."
 
         return DiagnosticResult(
+            q_audit_res=q_res,
+            fair_audit_res=f_res,
             status=status,
-            metrics=metrics,
-            confidence=0.95,
-            description=rationale,
-            _rationale=f"[{profile.name}] {status.name}. {rationale}"
+            description=desc
         )
+
+def fair_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> FairAuditResult:
+    """ Aggregates all physical (fair) metrics. """
+    res = audit(target, ground_truth)
+    return res.fair_audit_res
+
+def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAuditResult:
+    """ Aggregates all clinical (q) scores. """
+    res = audit(target, ground_truth)
+    return res.q_audit_res
 
 def audit(target: Any, 
           ground_truth: Optional[np.ndarray] = None,
           profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
     """
-    Main Entry Point.
-    Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor.
+    [Cascade Entry Point]
+    Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor for synthesis.
     """
-    metrics_data = {"input_ok": True, "baseline_ok": False}
-    
     # 1. Extract Population (P) and Problem Info
-    # Simplified extraction logic
     pop_objs = None
     mop_name = "Unknown"
     
-    # Try to extract from dict or object
     if isinstance(target, dict):
-        # Assume it's already metrics data? No, usually not passed here.
-        # If passed pre-computed metrics, just delegate
-        # Pre-computed metrics
-        if "q_denoise" in target:
-            return PerformanceAuditor.audit(target, profile)
-        return PerformanceAuditor.audit({"input_ok": False}, profile)
+        # We don't support passing raw dicts here in the new architecture 
+        # as we need to compute the fair/q cascade.
+        return PerformanceAuditor.audit_synthesis(None, None) 
         
     if isinstance(target, np.ndarray):
         pop_objs = target
@@ -209,64 +167,28 @@ def audit(target: Any,
          pop_objs = target.last_pop.objectives
     
     if pop_objs is None:
-         return PerformanceAuditor.audit({"input_ok": False}, profile)
+         return PerformanceAuditor.audit_synthesis(None, None)
 
     # 2. Extract Ground Truth (GT)
-    # Needed for Fair Metrics
     if ground_truth is None:
-        # Try to find from problem/experiment
-        # TODO: Implement robust GT finding if not passed
-        # For now, require ground_truth or fail
-        return PerformanceAuditor.audit({"input_ok": False, "description": "GT required"}, profile)
+        return PerformanceAuditor.audit_synthesis(None, None)
 
     GT = ground_truth
     P = pop_objs
     
-    # 3. K-Selection logic (Fixed K-Target Policy)
-    # To avoid UndefinedBaselineError for K_eff (e.g., 17, 83), we snap to the nearest
-    # supported baseline K. This ensures consistent scoring.
+    # 3. K-Selection logic 
     K_raw = len(P)
+    K_target = baselines.snap_k(K_raw)
     
-    # Supported Grid (must match baselines_v4.py generation)
-    # Range 10..50 + [100, 150, 200]
-    # We can perform a smart snap.
-    SUPPORTED_K = list(range(10, 51)) + [100, 150, 200]
-    
-    if K_raw < 10:
-        # Too small to be clinically significant? Or snap to 10?
-        # Let's snap to 10 but flag? 
-        # For now, snap to 10.
-        K_target = 10
-    else:
-        # Strict snap
-        K_target = baselines.snap_k(K_raw)
-        
-    metrics_data['mop_name'] = mop_name
-    metrics_data['K'] = K_target # Clinical K
-    metrics_data['K_raw'] = K_raw # Actual K
-    
-    # Snapshot MOP Name (needed for baselines)
-    # Assuming the user ensures correct MOP name is active/known?
-    # In 'target', if it's an Algorithm object, we can get it.
+    # Snapshot MOP Name
     if hasattr(target, 'problem') and hasattr(target.problem, 'name'):
         mop_name = target.problem.name
     elif hasattr(target, 'mop_name'):
         mop_name = target.mop_name
         
-    metrics_data['mop_name'] = mop_name
-    # Removed redundant and erroneous K assignment (caused NameError)
-    
     # 4. Compute Fair Metrics & Q-Scores
     try:
-        # A. Baselines (for Ideal/Random logic inside qscore, but we need some context)
-        # Verify baselines exist for this K/Mop (implicitly done inside qscore)
-        pass # qscore will raise if missing
-        
-        # B. Shared Reference Objects (U_K, Hist)
-        # Needed for Regularity/Balance FAIR calculation
-        # B. Shared Reference Objects (U_K, Hist)
-        # Needed for Regularity/Balance FAIR calculation
-        # Use K_target for creating the "Ruler"
+        # A. Shared Reference Objects
         U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
         centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
         
@@ -276,54 +198,48 @@ def audit(target: Any,
         hist_ref = np.bincount(lab_u, minlength=len(centroids)).astype(float)
         hist_ref /= np.sum(hist_ref)
         
-        # C. Compute FAIR Metrics (Physics)
-        # s_gt = baselines.get_resolution_factor(GT) 
-        # C. Compute FAIR Metrics (Physics)
-        # s_gt = baselines.get_resolution_factor(GT) 
-        # Normalization uses K_target resolution to match baseline
+        # B. Normalization Resolution
         s_k = baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
-        metrics_data['s_fit'] = s_k
-        metrics_data['s_gt'] = baselines.get_resolution_factor(GT) # Keep for reference
-        
-        f_fit = fair.fair_denoise(P, GT, s_k)
-        f_cov = fair.fair_coverage(P, GT) # Coverage might depend on U_K size?
+        # C. Compute FAIR Metrics (Physics)
+        f_denoise = fair.fair_denoise(P, GT, s_k)
+        f_closeness_raw = fair.fair_closeness(P, GT, s_k) 
+        f_cov = fair.fair_coverage(P, GT)
         f_gap = fair.fair_gap(P, GT)
-        f_reg = fair.fair_regularity(P, U_ref) # Uses U_ref (size K_target)
+        f_reg = fair.fair_regularity(P, U_ref)
         f_bal = fair.fair_balance(P, centroids, hist_ref)
         
-        # New: Closeness distribution (Part B)
-        u_dist = fair.fair_closeness(P, GT, s_k)
-        
-        metrics_data['fair_denoise'] = f_fit # same as fair_fit internally
-        metrics_data['fair_coverage'] = f_cov
-        metrics_data['fair_gap'] = f_gap
-        metrics_data['fair_regularity'] = f_reg
-        metrics_data['fair_balance'] = f_bal
+        f_metrics = {
+            "DENOISE": fair.FairResult(value=f_denoise, name="DENOISE", description="Convergence precision"),
+            "COVERAGE": fair.FairResult(value=f_cov, name="COVERAGE", description="Objective space coverage"),
+            "GAP": fair.FairResult(value=f_gap, name="GAP", description="Population continuity"),
+            "REGULARITY": fair.FairResult(value=f_reg, name="REGULARITY", description="Uniformity of spread"),
+            "BALANCE": fair.FairResult(value=f_bal, name="BALANCE", description="Mass distribution")
+        }
+        fair_res = PerformanceAuditor.audit_fair(f_metrics)
         
         # D. Compute Q-Scores (Engineering)
-        # Use K_target for baseline retrieval
-        q_denoise = qscore.q_denoise(f_fit, problem=mop_name, k=K_target)
-        q_closeness = qscore.q_closeness(u_dist, problem=mop_name, k=K_target)
-        q_cov = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
-        q_gap = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
-        q_reg = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)
-        q_bal = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
+        q_den = qscore.q_denoise(f_denoise, problem=mop_name, k=K_target)
+        q_clo = qscore.q_closeness(f_closeness_raw, problem=mop_name, k=K_target)
+        q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
+        q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
+        q_r = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)
+        q_b = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
         
-        metrics_data['q_denoise'] = q_denoise
-        metrics_data['q_closeness'] = q_closeness
-        metrics_data['q_coverage'] = q_cov
-        metrics_data['q_gap'] = q_gap
-        metrics_data['q_regularity'] = q_reg
-        metrics_data['q_balance'] = q_bal
+        q_scores = {
+            "Q_DENOISE": q_den,
+            "Q_CLOSENESS": q_clo,
+            "Q_COVERAGE": q_c,
+            "Q_GAP": q_g,
+            "Q_REGULARITY": q_r,
+            "Q_BALANCE": q_b
+        }
+        q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
         
-        metrics_data['baseline_ok'] = True
+        # 5. Synthesis (The Biopsy)
+        return PerformanceAuditor.audit_synthesis(q_res, fair_res)
         
     except baselines.UndefinedBaselineError:
-        metrics_data['baseline_ok'] = False
+        return PerformanceAuditor.audit_synthesis(None, None) 
     except Exception as e:
-        metrics_data['baseline_ok'] = False
-        metrics_data['error'] = str(e)
-
-    # 5. Verdict
-    return PerformanceAuditor.audit(metrics_data, profile)
+        raise e

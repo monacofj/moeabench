@@ -645,7 +645,7 @@ score = mb.diagnostics.q_denoise(exp)
 ```
 
 #### **`q_closeness`**
-- **Rationale**: Calibrates point-wise proximity using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
+- **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
 - **Example**:
 ```python
 score = mb.diagnostics.q_closeness(exp)

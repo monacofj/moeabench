@@ -693,7 +693,7 @@ They are "Fair" because they are divided by $s_K$, making them scale-invariant a
 
 #### **`fair_closeness(data, ref=None, s_k=None) -> np.ndarray`**
 *   **Definition**: Vector of point-wise distances: $u_j = \min(\|p_j - GT\|) / s_K$.
-*   **Rationale**: Provides the **Distribution of Proximity**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
+*   **Rationale**: Provides the **Distribution of Closeness**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
 *   **Returns**: 1D Array of size $N$.
 
 #### **`fair_coverage(data, ref=None) -> FairResult`**
