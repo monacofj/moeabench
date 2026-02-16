@@ -642,37 +642,93 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 <a name="diagnostics"></a>
 ## **12. Automated Diagnostics (`mb.diagnostics`)**
 
-The `diagnostics` module implements the **Algorithmic Pathology** engine.
+The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. It implements a two-layer diagnostic stack:
+1.  **Physical Layer (`fair_`)**: Objectively calibrated metrics that measure physical properties (Distance, Coverage, Uniformity) normalized by the physics of the problem resolution ($s_K$).
+2.  **Clinical Layer (`q_`)**: Quality Scores ($Q \in [0, 1]$) that map physical metrics onto a normalized scale of utility, calibrated against "Blind" and "Ideal" baselines.
 
-### **Types & Enums (`mb.diagnostics.enums`)**
+> [!NOTE]
+> **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Denoise" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-*   **`DiagnosticStatus` (Enum)**:
-    *   `OPTIMAL`: Balanced convergence and diversity.
-    *   `DIVERSITY_COLLAPSE`: Good GD (Convergence), Poor IGD (Coverage).
-    *   `CONVERGENCE_FAILURE`: Poor GD and IGD.
-    *   `TOPOLOGICAL_DISTORTION`: High EMD (Shape mismatch).
-    *   `SUPER_SATURATION`: H_rel > 100%.
+### **12.1. The Smart Dispatch Protocol**
 
-### **Classes**
+All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
 
-#### **`DiagnosticResult`**
-The rich result object returned by an audit.
+*   **Polymorphic Input**:
+    *   `Experiment`: Automatically extracts the **Pareto Front** of the last run, the **Ground Truth** ($GT$) from the MOP, and the **Resolution Scale** ($s_K$).
+    *   `Run`: Extracts Front, GT, and Scale from a specific execution.
+    *   `Population`: Extracts Front and tries to find MOP references.
+    *   `np.ndarray`: Treated as a raw Front. Requires manual `ref` (GT) and `s_k` to be safe.
 
-*   **Attributes**:
-    *   `.status` (*DiagnosticStatus*): The classification verdict.
-    *   `.metrics` (*dict*): The raw metrics used for the decision.
-    *   `.confidence` (*float*): Decision confidence score [0.0 - 1.0].
-*   **Methods**:
-    *   `.rationale() -> str`: Returns the generated scientific explanation text (The "Technical Storytelling" verdict).
-    *   `.report() -> str`: Returns a formatted narrative string of the audit findings.
-    *   `.report_show()`: Context-aware display (Prints in terminal, renders Markdown in Jupyter).
+*   **Context Resolution**:
+    *   **$GT$ (Ground Truth)**: If not provided explicitly via `ref=...`, the system looks for `.optimal_front()` or `.mop.pf()`.
+    *   **$s_K$ (Resolution Scale)**: The "Physics of Resolution". If not provided via `s_k=...`, it looks for `mop.s_k` or `mop.s_fit`. Defaults to `1.0` if unknown.
 
-### **Functions**
+---
 
-#### **`audit(target, ground_truth=None) -> DiagnosticResult`**
-Performs an algorithmic pathology assessment.
+### **12.2. Physical Metrics (Fair Layer)**
 
-*   **Args**:
-    *   `target`: Can be a dictionary of metrics `{'igd': 0.1, ...}`, an `Experiment`, or a `Result` object.
-    *   `ground_truth` (*optional*): Reference front for metric calculation (if not embedded in target).
-*   **Returns**: `DiagnosticResult` populated with the verdict and rationale.
+These metrics answer: *"What is the physical state of the population?"*
+They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
+
+#### **`fair_denoise(data, ref=None, s_k=None) -> float`**
+*   **Definition**: $GD_{95}(P \to GT) / s_K$
+*   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Denoising) and normalizes the distance by the expected separation of optimal points ($s_K$).
+*   **Ideal**: $0.0$.
+*   **Interpretation**: Values $< 1.0$ indicate the population is "fitting" the manifold better than the discrete resolution limit.
+
+#### **`fair_closeness(data, ref=None, s_k=None) -> np.ndarray`**
+*   **Definition**: Vector of point-wise distances: $u_j = \min(\|p_j - GT\|) / s_K$.
+*   **Rationale**: Provides the **Distribution of Proximity**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
+*   **Returns**: 1D Array of size $N$.
+
+#### **`fair_coverage(data, ref=None) -> float`**
+*   **Definition**: $IGD_{mean}(GT \to P)$
+*   **Rationale**: Measures **Global Coverage**. It is the average distance from *any* point on the True Front to the nearest solution found.
+*   **Ideal**: $0.0$.
+
+#### **`fair_gap(data, ref=None) -> float`**
+*   **Definition**: $IGD_{95}(GT \to P)$
+*   **Rationale**: Measures **worst-case holes** in the coverage. By taking the 95th percentile of the IGD components, it identifies the largest "Gaps" in the manifold approximation.
+
+#### **`fair_regularity(data, ref_distribution=None) -> float`**
+*   **Definition**: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
+*   **Rationale**: Measures **Structural Uniformity**. It uses the **Wasserstein-1 Distance** (Earth Mover's Distance) to compare the distribution of Nearest-Neighbor distances in $P$ against a perfectly uniform lattice $U_{ref}$.
+*   **Ideal**: $0.0$ (structure matches the lattice).
+
+#### **`fair_balance(data, centroids=None, ref_hist=None) -> float`**
+*   **Definition**: $D_{JS}(H_P || H_{ref})$
+*   **Rationale**: Measures **Manifold Bias**. It partitions the Ground Truth into $C$ clusters and calculates the **Jensen-Shannon Divergence** between the finding rates of the algorithm and the reference density.
+*   **Ideal**: $0.0$ (Balanced occupancy).
+
+---
+
+### **12.3. Clinical Metrics (Q-Scores)**
+
+These metrics answer: *"Is this good or bad?"*
+They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**.
+
+*   **Range**: $1.0$ (Ideal) to $0.0$ (Baseline/Random). Negative values indicate pathological failure.
+*   **Logic**: $Q = 1 - \text{Correction}(\frac{\text{Fair} - \text{Ideal}}{\text{Random} - \text{Ideal}})$
+
+#### **`q_denoise(data, ...) -> float`**
+*   **Baselines**: Ideal=$0.0$, Random=$Rand_{50}$ (from repository).
+*   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ to distinguish "Super-converged" solutions from merely "Good" ones.
+
+#### **`q_closeness(data, ...) -> float`**
+*   **Baselines**: Ideal=$0.0$, Random=$ECDF(G_{blur})$ (Gaussian-blurred GT).
+*   **Mapping**: **Wasserstein-1**. Computes the topological similarity between the finding distribution and the noise model.
+
+#### **`q_coverage`, `q_gap`, `q_regularity`, `q_balance`**
+*   **Baselines**: Ideal=$Uni_{50}$ (Median of FPS subsets), Random=$Rand_{50}$ (Median of Random subsets).
+*   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to rank the solution.
+
+---
+
+### **12.4. Offline Calibration Method**
+
+MoeaBench uses a strict **Fail-Closed** calibration system (`baselines_v4.json`).
+
+1.  **Discrete Sampling**: Baselines are pre-computed for finite population sizes $K \in \{10..50, 100, 150, 200\}$.
+2.  **$Uni_{50}$ (The Anchor)**: Generated using **Farthest Point Sampling (FPS)** on the Ground Truth. Represents the "best possible" distribution for a discrete set of size $K$.
+3.  **$Rand_{50}$ & ECDF (The Noise)**: Generated by Monte Carlo sampling (Uniform randomness or Gaussian blur). Represents the "Physics of Failure".
+4.  **Snap Policy**: If an experiment uses a $K$ not in the grid, it snaps to the nearest safe floor (e.g., $K=80 \to 50$) to avoid unfair penalization.

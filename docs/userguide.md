@@ -577,7 +577,162 @@ topo_res.report_show()
 
 ---
 
-## **9. Extensibility: Plugging your Algorithm**
+## **9. Algorithmic Diagnostics (The Smart API)**
+    
+Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
+
+MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnostics`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
+
+> [!TIP]
+> **Further Reading**: Curious about why we renamed "Fitness" to "Denoise" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
+
+### **9.1. The Philosophy: Physical vs. Clinical**
+
+*   **Physical Metrics (`fair_`)**: These quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales.
+*   **Clinical Metrics (`q_`)**: These translate physical facts into value judgments ($0.0 \dots 1.0$) based on strict offline baselines (Physics of Failure). A $Q=0.95$ Denoise score means the algorithm is "Near-Ideal" relative to what is mathematically possible for that population size.
+
+### **9.2. Physical Metrics (Fair)**
+
+#### **`fair_denoise`**
+- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `fair_denoise` refines this by filtering out the worst 5% outliers (Denoising) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
+- **Example**:
+```python
+d = mb.diagnostics.fair_denoise(exp)
+```
+
+#### **`fair_closeness`**
+- **Rationale**: While `fair_denoise` provides a scalar summary, `fair_closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
+- **Example**:
+```python
+u_vals = mb.diagnostics.fair_closeness(exp)
+```
+
+#### **`fair_coverage`**
+- **Rationale**: Deviation of the Ground Truth **from** the Population ($GT \to P$). Standard IGD is sensitive to the number of points. `fair_coverage` uses the average distance from the Ground Truth to the population to measure how well the solver has "reached" the entire manifold. It answers: "On average, how far is any optimal point from being found?"
+- **Example**:
+```python
+cov = mb.diagnostics.fair_coverage(exp)
+```
+
+#### **`fair_gap`**
+- **Rationale**: An algorithm might have good average coverage but still leave massive "holes" on the front. `fair_gap` calculates the 95th percentile of the IGD components to quantify the size of the largest coverage failures (the Gaps), ensuring that narrow-but-deep search failures are identified.
+- **Example**:
+```python
+gap = mb.diagnostics.fair_gap(exp)
+```
+
+#### **`fair_regularity`**
+- **Rationale**: Measures spatial uniformity. It uses the Wasserstein-1 (EMD) distance to compare the population's nearest-neighbor distribution against a perfectly uniform lattice. This detects if the algorithm is "clumping" or if it has successfully distributed solutions evenly across the front.
+- **Example**:
+```python
+reg = mb.diagnostics.fair_regularity(exp)
+```
+
+#### **`fair_balance`**
+- **Rationale**: High-dimensional manifolds often feature distinct "regions" or clusters. `fair_balance` uses Jensen-Shannon Divergence to check if the algorithm has explored all clusters of the Ground Truth with the same probability as the reference density, detecting manifold occupancy bias.
+- **Example**:
+```python
+bal = mb.diagnostics.fair_balance(exp)
+```
+
+### **9.3. Clinical Metrics (Q-Scores)**
+
+#### **`q_denoise`**
+- **Rationale**: Map the physical `fair_denoise` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
+- **Example**:
+```python
+score = mb.diagnostics.q_denoise(exp)
+```
+
+#### **`q_closeness`**
+- **Rationale**: Calibrates point-wise proximity using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
+- **Example**:
+```python
+score = mb.diagnostics.q_closeness(exp)
+```
+
+#### **`q_coverage`**
+- **Rationale**: Uses a full **ECDF (Empirical Cumulative Distribution Function)** of random sampling to rank the coverage. A score of $0.5$ means the algorithm is exactly as good as a random target of the front, while $Q > 0.9$ indicates scientific-grade manifold reach.
+- **Example**:
+```python
+score = mb.diagnostics.q_coverage(exp)
+```
+
+#### **`q_gap`**
+- **Rationale**: Ranks the continuity of the front. It identifies if the solver has "broken" the manifold into fragments. Like coverage, it is ranked via ECDF against baseline hole distributions.
+- **Example**:
+```python
+score = mb.diagnostics.q_gap(exp)
+```
+
+#### **`q_regularity`**
+- **Rationale**: Clinical assessment of internal population structure. It quantifies the "Regularity" progress, allowing users to detect if a solver's diversity-maintenance mechanism is working as expected or failing relative to random behavior.
+- **Example**:
+```python
+score = mb.diagnostics.q_regularity(exp)
+```
+
+#### **`q_balance`**
+- **Rationale**: The final clinical check for manifold bias. It answers: "Is the distribution of solutions across clusters better than a random draw?" Significant balanced search results in $Q \to 1.0$.
+- **Example**:
+```python
+score = mb.diagnostics.q_balance(exp)
+```
+
+### **9.4. Practical Usage (Smart API)**
+
+The `mb.diagnostics` API handles all the complexity of Ground Truth resolution for you.
+
+#### **Scenario A: Automated Audit**
+The standard workflow is to let the API figure out the context from the `Experiment` object:
+
+```python
+import MoeaBench as mb
+
+# 1. Run Config
+exp = mb.experiment()
+exp.mop = mb.mops.DTLZ2()
+exp.moea = mb.moeas.NSGA3()
+exp.run()
+
+# 2. Clinical Diagnosis (Returns Q-Score 0.0-1.0)
+q_denoise = mb.diagnostics.q_denoise(exp)
+q_balance = mb.diagnostics.q_balance(exp)
+```
+
+#### **Scenario B: Manual/Raw Data**
+If you have a raw NumPy array (from an external library):
+
+```python
+import numpy as np
+
+# Your raw data (PopSize x Objectives)
+my_front = np.random.rand(100, 3) 
+
+# You MUST provide the Ground Truth and Resolution Scale (s_K)
+true_pf = ... # Your analytical front
+s_k = 0.05    # Your estimated resolution scale
+
+# Calculate Physical Metric
+dist_normalized = mb.diagnostics.fair_closeness(my_front, ref=true_pf, s_k=s_k)
+```
+
+### **9.5. The 8-State Diagnostic Ontology**
+
+When the `audit()` function runs, it classifies the algorithm into one of 8 scientific states:
+
+1.  **Optimal**: High Denoise, High Coverage, High Regularity. The gold standard.
+2.  **Manifold Mismatch**: Good Denoise, but Q-Gap is low. The algorithm found a front, but it's the *wrong* front.
+3.  **Diversity Collapse**: Excellent Denoise, but Coverage/Balance are near zero.
+4.  **Signal Drift**: Coverage is fine, but Denoise is poor. The front is "fuzzy".
+5.  **Fragmentation**: Good points, but large Gaps ($Q_{Gap} \approx 0$).
+6.  **Super-Saturation**: Solution density exceeds the reference calibration ($H_{rel} > 100\%$).
+7.  **Convergence Failure**: Everything is bad. Random search territory.
+8.  **Instability**: High variance in metrics across runs.
+
+---
+
+## **10. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -605,11 +760,9 @@ class MyProblem(mb.mops.BaseMop):
 ### **Custom MOEA Plugin**
 To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
-> [!NOTE]
-> **Consistent Design**: Custom algorithms follow the **same architectural pattern** as custom MOPs. Refer to [Reference Guide: Section 9.2](reference.md#extensibility) for the technical contract and a code skeleton.
+---
 
-
-## **10. Persistence (`save` and `load`)**
+## **11. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -632,7 +785,7 @@ exp.load("results", mode="data")
 
 ---
 
-## **11. Data Export (CSV)**
+## **12. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -641,86 +794,18 @@ MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw 
 exp.name = "my_study"
 mb.system.export_objectives(exp) # Saves to "my_study_objectives.csv"
 
-# 2. Export with a custom name
-mb.system.export_variables(exp, "final_vars.csv")
-
-# 3. Export data from a specific population snapshot
+# 2. Export data from a specific population snapshot
 pop = exp.last_pop
 mb.system.export_objectives(pop, "final_pop_objs.csv")
 ```
 
 ---
 
-## **12. References**
+## **13. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
 *   **[MOPs Manual](mops.md)**: Detailed history and mathematics of built-in benchmarks.
-
----
-
-## **13. Automated Diagnostics (Algorithmic Pathology)**
-    
-Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
-
-MoeaBench introduces a dedicated **Algorithmic Pathology** module (`MoeaBench.diagnostics`) designed to act as an automated expert system. Instead of just calculating numbers, it *interprets* the relationship between conflicting metrics (IGD vs GD vs H_rel) to diagnose the underlying behavior of the solver.
-
-### **The Diagnostic Engine**
-
-The engine audits the population against a Ground Truth and classifies the state into standardized scientific diagnoses:
-
-*   **Optimal Performance**: Balanced convergence and diversity with high hypervolume recovery.
-*   **Diversity Collapse**: The "GD Paradox". Excellent convergence (low GD) but poor coverage (high IGD). The population has degenerated into a small cluster or single point.
-*   **Convergence Failure**: Both convergence and diversity metrics are poor. The algorithm failed to approach the optimal front.
-*   **Topological Distortion**: High Earth Mover's Distance (EMD) despite acceptable IGD. The algorithm fails to capture the manifold's curvature or connectivity.
-*   **Super-Saturation**: $H_{rel} > 100\%$. The algorithm effectively "beats" the resolution of the reference set, often occurring in discrete approximations.
-
-### **Usage Guide**
-    
-You can invoke diagnostics manually on specific datasets or automatically during an experiment.
-
-#### **Method A: Manual Audit (Recommended)**
-The standard way to use the module is to explicitly audit an experiment after execution. This gives you control over when the expensive metric calculations occur.
-
-```python
-# 1. Run your experiment
-exp.run()
-
-# 2. Perform the audit explicitly
-# This calculates strictly necessary metrics (IGD, GD, EMD)
-diagnosis = mb.diagnostics.audit(exp)
-
-# 3. View the report (Renders Markdown in Notebooks)
-diagnosis.report_show()
-
-# 4. Access the rationale text programmatically
-print(diagnosis.rationale())
-```
-
-**Output Example (Terminal):**
-```text
---- [Diagnostics] Algorithmic Pathology Report ---
-  Status: DIVERSITY_COLLAPSE
-  Confidence: 0.95
-  Analysis: Diversity Collapse Detected. The algorithm exhibits excellent convergence 
-  (GD=4.2e-05) but poor coverage (IGD=0.85). This indicates the population has 
-  degenerated into a small subset or a single point on the Pareto Front.
---------------------------------------------------
-```
-
-> [!NOTE]
-> **Jupyter Integration**: When running in a Notebook, `.report_show()` automatically renders a beautifully formatted **Markdown box** with bold status badges and callouts, matching the library's premium visual identity.
-
-#### **Method B: Integrated Diagnosis (Convenience)**
-For quick studies, you can set the `diagnose` flag to `True`.
-
-> [!WARNING]
-> **Performance Impact**: Enabling `diagnose=True` will force the calculation of expensive metrics (like EMD and exact IGD) at the end of every run. For large-scale experiments (many runs or many objectives), this can significantly slow down the total execution time. Use with caution.
-
-```python
-# Run with enabled pathology analysis
-exp.run(diagnose=True)
-```
 
 ---
 
@@ -737,20 +822,3 @@ MoeaBench is built on a set of core engineering values designed to balance scien
 *   **Reproducibility**: We enforce **Determinism by Design** through strict seed management, ensuring every run can be reconstructed exactly. Additionally, our **Mirror Parity** policy ensures that every production script in `examples/` has a corresponding interactive Notebook (`.ipynb`), making research both deployable and explorable.
 
 *   **Usability & Aesthetics**: Visualization is a first-class citizen. Features like **Visual Micro-Jitter (ADR 004)** illustrate our commitment to clarity—by applying minute gaussian noise to plots, we ensure that overlapping algorithms remain visually distinguishable ("Comparative Isomorphism") without compromising the numerical exactness of the underlying statistical tests.
-
-## Automated Diagnostics
-
-MoeaBench includes an 'Algorithmic Pathology' module capable of automatically interpreting metrics.
-
-### Usage
-
-```python
-# Automatic (during run)
-exp.run(diagnose=True)
-
-# Manual
-d = mb.diagnostics.audit(pop, gt)
-print(d.rationale())
-```
-
-This feature detects phenomena like **Diversity Collapse** (Good GD, Bad IGD) or **Topological Distortion**.
