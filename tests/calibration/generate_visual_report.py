@@ -412,6 +412,8 @@ def generate_visual_report():
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             c = m["clinical"]
+            s_fit = c.get("s_fit") # Correct nesting for s_fit
+
             for dim in ["denoise", "closeness", "cov", "gap", "reg", "bal"]:
                 d = c.get(dim, {})
                 q = d.get("q", 0)
@@ -428,13 +430,26 @@ def generate_visual_report():
                 g_val = d.get('anchor_good', 0)
                 b_val = d.get('anchor_bad', 0)
                 
-                sub_style = "font-size: 0.65rem; color: #64748b; line-height: 1.1; margin-top: 4px;"
-                sub_text = f"<div style='{sub_style}'>f: {f_val:.3f}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                # Vertical Monospace Console (Neutral & Aligned)
+                sub_style = "font-family: monospace; font-size: 0.65rem; color: #475569; line-height: 1.2; margin-top: 5px; text-align: left; display: inline-block;"
                 
-                if dim == "denoise" and "s_fit" in m:
-                    sub_text = f"<div style='{sub_style}'>f: {f_val:.3f} s: {m['s_fit']:.1e}<br>g: {g_val:.3f}<br>b: {b_val:.3f}</div>"
+                # Base lines: f, g, b
+                lines = [
+                    f"f: {f_val:6.3f}",
+                    f"g: {g_val:6.3f}",
+                    f"b: {b_val:6.3f}"
+                ]
                 
-                matrix_table.append(f"<td><span class='diag-badge {cls}' title='{tip}'>{q:.3f}</span>{sub_text}</td>")
+                # Add s_K as the 4th line for Denoise and Closeness
+                if dim in ["denoise", "closeness"] and s_fit is not None:
+                    lines.append(f"s: {s_fit:9.2e}")
+                
+                sub_text = f"<div style='{sub_style}'>{'<br>'.join(lines)}</div>"
+                
+                # Q Label (No badges here, as requested)
+                q_label = f"{q:.3f}"
+
+                matrix_table.append(f"<td style='padding: 8px 4px; vertical-align: top;'><span class='diag-badge {cls}' title='{tip}'>{q_label}</span><br>{sub_text}</td>")
             
             summary_text = get_analytical_summary(c)
             matrix_table.append(f"<td style='font-style: italic; color: #64748b; font-size: 0.85rem'>{summary_text}</td></tr>")
