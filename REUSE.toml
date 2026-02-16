@@ -66,3 +66,16 @@ SPDX-FileCopyrightText = [
     "2025 Silva F. F. <fernandoferreira.silva42@usp.br>"
 ]
 SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = [
+    "MoeaBench/diagnostics/resources/**/*",
+    "aux/**/*",
+    "docs/adr/*.md",
+    "tests/**/*",
+    ".gitattributes",
+    ".vscode/settings.json",
+    "pytest.ini"
+]
+SPDX-FileCopyrightText = "2026 Monaco F. J. <monaco@usp.br>"
+SPDX-License-Identifier = "GPL-3.0-or-later"
