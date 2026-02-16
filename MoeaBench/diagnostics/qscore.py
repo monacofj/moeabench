@@ -272,4 +272,4 @@ def compute_q_closeness_points(dists: np.ndarray, problem: str, k: int, s_fit: f
 
     num_raw = np.maximum(u_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
-    return np.maximum(0.0, 1.0 - error_score)
+    return 1.0 - error_score

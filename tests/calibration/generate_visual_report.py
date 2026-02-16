@@ -160,6 +160,14 @@ def generate_visual_report():
         "<tr><td><b>Regularity</b></td><td><b>Uniformity:</b> Are points evenly spaced?</td><td><b>Random Spacing:</b> Poisson-like clumping.</td><td><b>Crystalline:</b> Perfect lattice grid.</td></tr>",
         "<tr><td><b>Balance</b></td><td><b>Fairness:</b> Is the spread equitable?</td><td><b>Biased Spread:</b> Random clustering in specific regions.</td><td><b>Equitable:</b> Perfect mass distribution.</td></tr>",
         "</table>",
+
+        "<h3>Tier 4: Structural Biopsy (Marker Grammar)</h3>",
+        "<p>The 3D Pareto Front uses specific markers to indicate <b>point-wise quality</b> based on the local Q-Score:</p>",
+        "<ul>",
+        "<li>● <b>Solid Circle:</b> High precision ($Q \ge 0.5$). Points effectively converging to the manifold.</li>",
+        "<li>○ <b>Hollow Circle:</b> Standard precision ($0 \le Q < 0.5$). Converged, but with residual error approaching the noise floor.</li>",
+        "<li>◇ <b>Diamond Open:</b> Failure ($Q < 0$). Points statistically indistinguishable from random noise or Gaussian blur.</li>",
+        "</ul>",
         "</div>"
     ]
 
@@ -227,22 +235,22 @@ def generate_visual_report():
                     q_points = np.zeros_like(dists)
                 
                 
-                mask_research = q_points >= 0.67
-                mask_industry = (q_points >= 0.34) & (q_points < 0.67)
-                mask_fail = q_points < 0.34
+                mask_solid = q_points >= 0.5
+                mask_hollow = (q_points >= 0.0) & (q_points < 0.5)
+                mask_diamond = q_points < 0.0
                 
-                # Trace 1: Research (Solid Circle)
-                if np.any(mask_research):
-                    pts = front[mask_research]
+                # Trace 1: Precision (Solid Circle)
+                if np.any(mask_solid):
+                    pts = front[mask_solid]
                     fig.add_trace(go.Scatter3d(
                         x=pts[:,0], y=pts[:,1], z=pts[:,2],
                         mode='markers', marker=dict(size=4, color=colors_solid.get(alg, 'black'), opacity=1.0),
                         name=f'{alg}', legendgroup=alg
                     ), row=1, col=1)
 
-                # Trace 2: Industry (Hollow Circle)
-                if np.any(mask_industry):
-                    pts = front[mask_industry]
+                # Trace 2: Standard (Hollow Circle)
+                if np.any(mask_hollow):
+                    pts = front[mask_hollow]
                     fig.add_trace(go.Scatter3d(
                         x=pts[:,0], y=pts[:,1], z=pts[:,2],
                         mode='markers',
@@ -254,15 +262,15 @@ def generate_visual_report():
                         name=f'{alg}', legendgroup=alg, showlegend=False
                     ), row=1, col=1)
 
-                # Trace 3: Fail (X)
-                if np.any(mask_fail):
-                    pts = front[mask_fail]
+                # Trace 3: Failure (Diamond Open)
+                if np.any(mask_diamond):
+                    pts = front[mask_diamond]
                     fig.add_trace(go.Scatter3d(
                         x=pts[:,0], y=pts[:,1], z=pts[:,2],
                         mode='markers',
                         marker=dict(
-                            size=3, symbol='x',
-                            color=colors_solid.get(alg, 'black'),
+                            size=4, symbol='diamond-open',
+                            line=dict(color=colors_solid.get(alg, 'black'), width=1.5),
                             opacity=0.6
                         ),
                         name=f'{alg}', legendgroup=alg, showlegend=False
