@@ -88,7 +88,10 @@ The reporting layer is stripped of all logic that maps numerical scores to verba
 
 **Retained:**
 *   **Q-Scores:** The raw $[0, 1]$ numbers.
-*   **Visual Heatmaps:** Color coding (Green/Yellow/Red) is retained as a strictly visual aid for data density, defined purely by numerical thresholds ($0.67$, $0.34$), without attached labels.
+*   **Structural Marker Grammar:** A geometric system for point-wise diagnostics in 3D plots:
+    *   ● **Solid Circle ($Q \ge 0.5$):** Effective convergence.
+    *   ○ **Hollow Circle ($0 \le Q < 0.5$):** Standard convergence (noisy).
+    *   ◇ **Diamond Open ($Q < 0$):** Failure state (worse than baseline).
 *   **Structural Diagnosis:** The `DiagnosticStatus` enum (e.g., `GAPPED_COVERAGE`, `SHIFTED_FRONT`) remains the primary method of qualitative feedback. The tool tells you *what went wrong* (Pathology), not *how to feel about it* (Verdict).
 
 ---
@@ -103,7 +106,7 @@ The reporting layer is stripped of all logic that maps numerical scores to verba
 The HTML report generation (`generate_visual_report.py`) is refactored to:
 1.  Accept the new `denoise` key.
 2.  Render the "Summary" column as a concatenation of detected structural pathologies (from `auditor.py`).
-3.  Display the 3D markers using the **Log-Linear** scale for visual differentiation, but applying the same **Gate Rule** (clamping to Hollow/X markers if worse than baseline).
+3.  Display the 3D markers using the **Structural Marker Grammar**. Note that while the aggregated Q-Score is clamped at $0.0$, the point-wise visualization layer allows $Q < 0.0$ (unclamped) to explicitly identify points that have degraded beyond the baseline "Blur Radius". These appear as **Open Diamonds**.
 
 ## 5. Verification Results (DPF3 & DTLZ8/9)
 Validating the new framework against known problematic cases:
