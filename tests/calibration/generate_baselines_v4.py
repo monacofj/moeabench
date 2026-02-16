@@ -206,19 +206,19 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
     metrics = {}
     
     # 1. DENOISE (Proximity)
-    metrics['denoise'] = fair.compute_fair_fit(samples, gt_norm, s_fit)
+    metrics['denoise'] = fair.fair_denoise(samples, gt_norm, s_k=s_fit)
 
     # 2. COV (Coverage)
-    metrics['cov'] = fair.compute_fair_coverage(samples, gt_norm)
+    metrics['cov'] = fair.fair_coverage(samples, gt_norm)
 
     # 3. GAP (Continuity)
-    metrics['gap'] = fair.compute_fair_gap(samples, gt_norm)
+    metrics['gap'] = fair.fair_gap(samples, gt_norm)
 
     # 4. REG (Regularity)
-    metrics['reg'] = fair.compute_fair_regularity(samples, u_ref)
+    metrics['reg'] = fair.fair_regularity(samples, u_ref)
 
     # 5. BAL (Balance)
-    metrics['bal'] = fair.compute_fair_balance(samples, c_cents, hist_ref)
+    metrics['bal'] = fair.fair_balance(samples, c_cents, hist_ref)
 
     return metrics
 

@@ -227,14 +227,14 @@ def audit(target: Any,
         metrics_data['s_fit'] = s_k
         metrics_data['s_gt'] = baselines.get_resolution_factor(GT) # Keep for reference
         
-        f_fit = fair.compute_fair_fit(P, GT, s_k)
-        f_cov = fair.compute_fair_coverage(P, GT) # Coverage might depend on U_K size?
-        f_gap = fair.compute_fair_gap(P, GT)
-        f_reg = fair.compute_fair_regularity(P, U_ref) # Uses U_ref (size K_target)
-        f_bal = fair.compute_fair_balance(P, centroids, hist_ref)
+        f_fit = fair.fair_denoise(P, GT, s_k)
+        f_cov = fair.fair_coverage(P, GT) # Coverage might depend on U_K size?
+        f_gap = fair.fair_gap(P, GT)
+        f_reg = fair.fair_regularity(P, U_ref) # Uses U_ref (size K_target)
+        f_bal = fair.fair_balance(P, centroids, hist_ref)
         
         # New: Closeness distribution (Part B)
-        u_dist = fair.compute_fair_closeness_distribution(P, GT, s_k)
+        u_dist = fair.fair_closeness(P, GT, s_k)
         
         metrics_data['fair_denoise'] = f_fit # same as fair_fit internally
         metrics_data['fair_coverage'] = f_cov
@@ -244,12 +244,12 @@ def audit(target: Any,
         
         # D. Compute Q-Scores (Engineering)
         # Use K_target for baseline retrieval
-        q_denoise = qscore.compute_q_denoise(f_fit, mop_name, K_target)
-        q_closeness = qscore.compute_q_closeness(u_dist, mop_name, K_target)
-        q_cov = qscore.compute_q_coverage(f_cov, mop_name, K_target)
-        q_gap = qscore.compute_q_gap(f_gap, mop_name, K_target)
-        q_reg = qscore.compute_q_regularity(f_reg, mop_name, K_target)
-        q_bal = qscore.compute_q_balance(f_bal, mop_name, K_target)
+        q_denoise = qscore.q_denoise(f_fit, problem=mop_name, k=K_target)
+        q_closeness = qscore.q_closeness(u_dist, problem=mop_name, k=K_target)
+        q_cov = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
+        q_gap = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
+        q_reg = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)
+        q_bal = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
         
         metrics_data['q_denoise'] = q_denoise
         metrics_data['q_closeness'] = q_closeness

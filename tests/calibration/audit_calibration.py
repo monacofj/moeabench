@@ -124,14 +124,14 @@ def _aggregate_clinical(mop_name, alg, F_opt):
 
             # Metrics
             # Using s_fit (s_K) instead of s_gt for Clinical consistency (ADR 0026)
-            fair_f = fair.compute_fair_fit(P_eval, F_opt, s_fit=s_fit) # Renamed param
-            fair_c = fair.compute_fair_coverage(P_eval, F_opt)
-            fair_g = fair.compute_fair_gap(P_eval, F_opt)
-            fair_r = fair.compute_fair_regularity(P_eval, U_ref)
-            fair_b = fair.compute_fair_balance(P_eval, C_cents, hist_ref)
+            fair_f = fair.fair_denoise(P_eval, F_opt, s_k=s_fit) # Updated name and s_k
+            fair_c = fair.fair_coverage(P_eval, F_opt)
+            fair_g = fair.fair_gap(P_eval, F_opt)
+            fair_r = fair.fair_regularity(P_eval, U_ref)
+            fair_b = fair.fair_balance(P_eval, C_cents, hist_ref)
             
             # New: Closeness distribution
-            u_dist = fair.compute_fair_closeness_distribution(P_eval, F_opt, s_fit=s_fit)
+            u_dist = fair.fair_closeness(P_eval, F_opt, s_k=s_fit)
             
             # Store FAIR values (per-run) and also bucket by K for distributional Q
             fair_denoise_vals.append(fair_f); fair_cov_vals.append(fair_c); fair_gap_vals.append(fair_g); fair_reg_vals.append(fair_r); fair_bal_vals.append(fair_b)
@@ -170,12 +170,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         vals = {'denoise': [], 'closeness': [], 'cov': [], 'gap': [], 'reg': [], 'bal': []}
         for i in range(N_IDEAL):
             pop_uni = base.get_ref_uk(F_opt, k, seed=100+i)
-            vals['denoise'].append(fair.compute_fair_fit(pop_uni, F_opt, s_fit=s_k))
-            vals['closeness'].extend(fair.compute_fair_closeness_distribution(pop_uni, F_opt, s_fit=s_k).tolist())
-            vals['cov'].append(fair.compute_fair_coverage(pop_uni, F_opt))
-            vals['gap'].append(fair.compute_fair_gap(pop_uni, F_opt))
-            vals['reg'].append(fair.compute_fair_regularity(pop_uni, U_ref))
-            vals['bal'].append(fair.compute_fair_balance(pop_uni, C_cents, hist_ref))
+            vals['denoise'].append(fair.fair_denoise(pop_uni, F_opt, s_k=s_k))
+            vals['closeness'].extend(fair.fair_closeness(pop_uni, F_opt, s_k=s_k).tolist())
+            vals['cov'].append(fair.fair_coverage(pop_uni, F_opt))
+            vals['gap'].append(fair.fair_gap(pop_uni, F_opt))
+            vals['reg'].append(fair.fair_regularity(pop_uni, U_ref))
+            vals['bal'].append(fair.fair_balance(pop_uni, C_cents, hist_ref))
         return s_k, {m: np.asarray(v, float) for m, v in vals.items()}
 
     def _q_and_dists_weighted(metric: str):

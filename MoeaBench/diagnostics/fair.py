@@ -17,17 +17,20 @@ These metrics are:
 import numpy as np
 from scipy.spatial.distance import cdist, jensenshannon
 from scipy.stats import wasserstein_distance
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any
+from .utils import _resolve_diagnostic_context
 
-def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_fit: float) -> float:
+def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
-    Calculates FAIR_FIT (Convergence).
+    [Smart API] Calculates FAIR_DENOISE (Convergence).
     
     Definition: $GD_{95}(P \to GT) / s_{FIT}$
     Meaning: How far P is from GT, in units of s_fit (resolution at K).
     Ideal: 0.0
     """
-    if len(P) == 0:
+    P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    
+    if P is None or GT is None or len(P) == 0:
         return np.inf
 
     # 1. Compute Distances to GT
@@ -38,18 +41,19 @@ def compute_fair_fit(P: np.ndarray, GT: np.ndarray, s_fit: float) -> float:
     gd95 = np.percentile(min_d, 95)
     
     # 3. Normalize by Resolution (Scale Invariance)
-    # If s_fit is effectively zero, return raw gd95 (though this implies singular GT/Ref)
     if s_fit > 1e-12:
         return float(gd95 / s_fit)
     return float(gd95)
 
-def compute_fair_closeness_distribution(P: np.ndarray, GT: np.ndarray, s_fit: float) -> np.ndarray:
+def fair_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
-    Calculates the distribution of normalized distances to GT.
+    [Smart API] Calculates the distribution of normalized distances to GT.
     
     Returns u_j = min_dist(p_j, GT) / s_fit
     """
-    if len(P) == 0:
+    P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+
+    if P is None or GT is None or len(P) == 0:
         return np.array([])
         
     # 1. Compute Distances to GT
@@ -61,15 +65,17 @@ def compute_fair_closeness_distribution(P: np.ndarray, GT: np.ndarray, s_fit: fl
         return min_d / s_fit
     return min_d
 
-def compute_fair_coverage(P: np.ndarray, GT: np.ndarray) -> float:
+def fair_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
-    Calculates FAIR_COVERAGE.
+    [Smart API] Calculates FAIR_COVERAGE.
     
     Definition: $IGD_{mean}(GT \to P)$
     Meaning: Average distance from ANY point in GT to the nearest point in P.
     Ideal: 0.0 (Complete coverage)
     """
-    if len(P) == 0:
+    P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
+
+    if P is None or GT is None or len(P) == 0:
         return np.inf
 
     # 1. Compute Distances from GT to P
@@ -79,15 +85,17 @@ def compute_fair_coverage(P: np.ndarray, GT: np.ndarray) -> float:
     # 2. Mean (IGD)
     return float(np.mean(min_d))
 
-def compute_fair_gap(P: np.ndarray, GT: np.ndarray) -> float:
+def fair_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
-    Calculates FAIR_GAP (formerly Density).
+    [Smart API] Calculates FAIR_GAP (formerly Density).
     
     Definition: $IGD_{95}(GT \to P)$
     Meaning: The size of the "large holes" in coverage (ignoring worst 5% outliers).
     Ideal: 0.0
     """
-    if len(P) == 0:
+    P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
+
+    if P is None or GT is None or len(P) == 0:
         return np.inf
 
     # 1. Compute Distances from GT to P
@@ -97,16 +105,19 @@ def compute_fair_gap(P: np.ndarray, GT: np.ndarray) -> float:
     # 2. Percentile 95 (Robust Max)
     return float(np.percentile(min_d, 95))
 
-def compute_fair_regularity(P: np.ndarray, U_ref: np.ndarray) -> float:
+def fair_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
-    Calculates FAIR_REGULARITY (formerly Uniformity).
+    [Smart API] Calculates FAIR_REGULARITY (formerly Uniformity).
     
     Definition: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
     Meaning: Wasserstein distance between the Nearest-Neighbor distribution of P
-             and that of a reference Uniform lattice U_ref.
-    Ideal: 0.0 (Same geometric spacing distribution)
+             and that of a reference distribution (usually from a Uniform lattice).
+    Ideal: 0.0
     """
-    if len(P) < 2 or len(U_ref) < 2:
+    P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
+    U_ref = ref_distribution
+
+    if P is None or len(P) < 2 or U_ref is None or len(U_ref) < 2:
         return 0.0 # Degenerate case
 
     # 1. Nearest Neighbors within P (excluding self)
@@ -122,15 +133,17 @@ def compute_fair_regularity(P: np.ndarray, U_ref: np.ndarray) -> float:
     # 3. Wasserstein Distance
     return float(wasserstein_distance(nn_p, nn_u))
 
-def compute_fair_balance(P: np.ndarray, centroids: np.ndarray, ref_hist: np.ndarray) -> float:
+def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
-    Calculates FAIR_BALANCE.
+    [Smart API] Calculates FAIR_BALANCE.
     
     Definition: $D_{JS}(H_P || H_{ref})$
     Meaning: Jensen-Shannon divergence between cluster occupancy histograms.
-    Ideal: 0.0 (Matches reference mass distribution)
+    Ideal: 0.0
     """
-    if len(P) == 0:
+    P, _, _ = _resolve_diagnostic_context(data, **kwargs)
+
+    if P is None or len(P) == 0 or centroids is None or ref_hist is None:
         return 1.0 # Max divergence
 
     # 1. Assign points to clusters

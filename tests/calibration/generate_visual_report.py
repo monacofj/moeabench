@@ -229,7 +229,7 @@ def generate_visual_report():
                     # Strict Snap (Floor) matches Auditor
                     K_target = base.snap_k(K_raw)
 
-                    q_points = qscore.compute_q_closeness_points(dists, mop_name, K_target, s_fit)
+                    q_points = qscore.q_closeness_points(dists, problem=mop_name, k=K_target, s_k=s_fit)
                 except Exception as e:
                     print(f"Warning: Q-Point calc failed for {alg} on {mop_name}: {e}")
                     q_points = np.zeros_like(dists)

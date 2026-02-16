@@ -16,7 +16,11 @@ Logic:
 """
 
 import numpy as np
+from scipy.spatial.distance import cdist
 from . import baselines
+from .utils import _resolve_diagnostic_context
+from . import fair
+from typing import Any, Optional
 
 
 def _wasserstein_1d(u: np.ndarray, v: np.ndarray) -> float:
@@ -152,29 +156,30 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
-def compute_q_denoise(fair_denoise: float, problem: str, k: int) -> float:
-    """Computes Q_DENOISE using a log-linear baseline (Ideal -> Rand50).
-
-    This keeps the same semantics as the linear mapping (0.0 is ideal, Rand50 is
-    the random anchor), but reduces saturation near Q~1 when FAIR is very small.
+def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_DENOISE using a log-linear baseline (Ideal -> Rand50).
     """
+    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    
+    # Calculate Fair Metric first
+    f_val = fair.fair_denoise(P, GT, s_fit)
+    
     # Ideal = 0.0 (Better-than-noise progress)
     _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
-    return _compute_q_loglinear(fair_denoise, 0.0, rand50)
+    return _compute_q_loglinear(f_val, 0.0, rand50)
 
-def compute_q_closeness(u_dist: np.ndarray, problem: str, k: int) -> float:
-    """Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
-    
-    Args:
-        u_dist: Array of normalized distances to GT (u = d / s_fit)
-        problem: Problem name
-        k: Population size
+def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
     """
+    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    
+    # Calculate Fair Dist first
+    u_dist = fair.fair_closeness(P, GT, s_fit)
+    
     if u_dist.size == 0:
         return float('nan')
         
     # 1. Get Baseline (G_blur ECDF)
-    # We use get_baseline_ecdf because CLOSENESS is distributional
     _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "closeness")
     
     # 2. Stability: Explicit ideal samples (all zeros, same size as u_dist)
@@ -195,46 +200,57 @@ def compute_q_closeness(u_dist: np.ndarray, problem: str, k: int) -> float:
         
     return float(d_bad / denom)
 
-def compute_q_coverage(fair_cov: float, problem: str, k: int) -> float:
-    """Computes Q_COVERAGE using ECDF."""
+def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_COVERAGE using ECDF."""
+    P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
+    f_val = fair.fair_coverage(P, GT)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
-    return _compute_q_ecdf(fair_cov, uni50, rand50, rand_ecdf)
+    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
 
-def compute_q_gap(fair_gap: float, problem: str, k: int) -> float:
-    """Computes Q_GAP using ECDF."""
+def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_GAP using ECDF."""
+    P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
+    f_val = fair.fair_gap(P, GT)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
-    return _compute_q_ecdf(fair_gap, uni50, rand50, rand_ecdf)
+    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
 
-def compute_q_regularity(fair_reg: float, problem: str, k: int) -> float:
-    """Computes Q_REGULARITY using ECDF."""
+def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_REGULARITY using ECDF."""
+    P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
+    f_val = fair.fair_regularity(P, ref_distribution)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
-    return _compute_q_ecdf(fair_reg, uni50, rand50, rand_ecdf)
+    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
 
-def compute_q_balance(fair_bal: float, problem: str, k: int) -> float:
-    """Computes Q_BALANCE using ECDF."""
+def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_BALANCE using ECDF."""
+    P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
+    f_val = fair.fair_balance(P, centroids, ref_hist)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
-    return _compute_q_ecdf(fair_bal, uni50, rand50, rand_ecdf)
+    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
 
-def compute_q_denoise_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
+def q_denoise_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
-    Vectorized Q-Score calculation for point cloud (DENOISE).
+    [Smart API] Vectorized Q-Score calculation for point cloud (DENOISE).
+    Supports either (P, GT) or pre-calculated dists.
+    """
+    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
     
-    Args:
-        dists: Array of raw distances (min d(P->GT))
-        problem: Problem name
-        k: K value
-        s_fit: Resolution factor for normalization
-        
-    Returns:
-        np.ndarray: Array of Q-Scores for each point (0..1)
-    """
-    # 1. Normalize
-    fair_vals = dists / s_fit
+    if P is None or len(P) == 0:
+        return np.array([])
+
+    # If data was 1D and no GT, assume they are already normalized or raw dists
+    if P.ndim == 1:
+        fair_vals = P # Already distances
+    else:
+        if GT is None:
+             raise ValueError("Ground truth (ref) required to calculate distances from front.")
+        d = cdist(P, GT, metric='euclidean')
+        fair_vals = np.min(d, axis=1) / s_fit
     
     # 2. Get Baseline (Rand50 in FAIR space)
     _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
 
-    # 3. Vectorized log-linear mapping (same anchors as compute_q_denoise)
+    # 3. Vectorized log-linear mapping
     denom_raw = max(rand50, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
@@ -244,27 +260,28 @@ def compute_q_denoise_points(dists: np.ndarray, problem: str, k: int, s_fit: flo
     error_score = np.log1p(num_raw) / denom
     return 1.0 - np.clip(error_score, 0.0, 1.0)
 
-def compute_q_closeness_points(dists: np.ndarray, problem: str, k: int, s_fit: float) -> np.ndarray:
+def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
-    Vectorized Q-Score calculation for point cloud (CLOSENESS).
-    
-    Args:
-        dists: Array of raw distances (min d(P->GT))
-        problem: Problem name
-        k: K value
-        s_fit: Resolution factor for normalization
-        
-    Returns:
-        np.ndarray: Array of Q-Scores for each point (0..1)
+    [Smart API] Vectorized Q-Score calculation for point cloud (CLOSENESS).
+    Supports either (P, GT) or pre-calculated dists.
     """
-    # 1. Normalize
-    u_vals = dists / s_fit
+    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+
+    if P is None or len(P) == 0:
+        return np.array([])
+
+    if P.ndim == 1:
+        u_vals = P # Already distances (normalized or raw)
+    else:
+        if GT is None:
+             raise ValueError("Ground truth (ref) required to calculate distances from front.")
+        d = cdist(P, GT, metric='euclidean')
+        u_vals = np.min(d, axis=1) / s_fit
     
-    # 2. Get Baseline (Rand50 in FAIR space, which is the sigma-blur median)
+    # 2. Get Baseline (Rand50 in FAIR space)
     _, rand50 = baselines.get_baseline_values(problem, k, "closeness")
 
-    # 3. Vectorized log-linear mapping (Anchors: 0 -> Q=1, rand50 -> Q=0)
-    # Monotonicity Gate: Saturate at 0.0 if result is worse than baseline.
+    # 3. Vectorized log-linear mapping
     denom_raw = max(rand50, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
