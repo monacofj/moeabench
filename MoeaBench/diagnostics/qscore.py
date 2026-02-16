@@ -20,7 +20,32 @@ from scipy.spatial.distance import cdist
 from . import baselines
 from .utils import _resolve_diagnostic_context
 from . import fair
+from .base import DiagnosticValue
 from typing import Any, Optional
+
+class QResult(DiagnosticValue):
+    """ Specialized result for Clinical (Q-Score) metrics. """
+    
+    _LABELS = {
+        "Q_DENOISE":   {0.95: "Near-Ideal Suppr.", 0.85: "Strong Suppr.", 0.67: "Effective", 0.34: "Partial", 0.0: "Noise-dominant"},
+        "Q_CLOSENESS": {0.95: "Asymptotic Prox.", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
+        "Q_COVERAGE":  {0.95: "Exhaustive", 0.85: "Extensive", 0.67: "Standard", 0.34: "Limited", 0.0: "Collapsed"},
+        "Q_GAP":       {0.95: "High Continuity", 0.85: "Stable", 0.67: "Managed Gaps", 0.34: "Interrupted", 0.0: "Fragmented"},
+        "Q_REGULARITY":{0.95: "Hyper-uniform", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Chaotic"},
+        "Q_BALANCE":   {0.95: "Optimal Parity", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
+    }
+    
+    def report(self, **kwargs) -> str:
+        q = float(self.value)
+        label = "Undefined"
+        if self.name in self._LABELS:
+            matrix = self._LABELS[self.name]
+            for thresh in sorted(matrix.keys(), reverse=True):
+                if q >= thresh:
+                    label = matrix[thresh]
+                    break
+        
+        return f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
 
 
 def _wasserstein_1d(u: np.ndarray, v: np.ndarray) -> float:
@@ -166,7 +191,13 @@ def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     
     # Ideal = 0.0 (Better-than-noise progress)
     _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
-    return _compute_q_loglinear(f_val, 0.0, rand50)
+    q_val = _compute_q_loglinear(f_val, 0.0, rand50)
+    
+    return QResult(
+        value=q_val,
+        name="Q_DENOISE",
+        description="Measures the reduction of entropic noise/clutter in the population."
+    )
 
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
@@ -195,38 +226,45 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
         
     d_bad = _wasserstein_1d(u_dist, rand_ecdf)
     denom = d_bad + d_ideal
-    if denom <= 1e-12:
-        return 1.0
-        
-    return float(d_bad / denom)
+    q_val = float(d_bad / denom) if denom > 1e-12 else 1.0
+    
+    return QResult(
+        value=q_val,
+        name="Q_CLOSENESS",
+        description="Measures the precision/sharpness of convergence to the manifold."
+    )
 
 def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_COVERAGE using ECDF."""
     P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
     f_val = fair.fair_coverage(P, GT)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
-    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    return QResult(value=q_val, name="Q_COVERAGE", description="Measures how well the population spans the entire front.")
 
 def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_GAP using ECDF."""
     P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
     f_val = fair.fair_gap(P, GT)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
-    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    return QResult(value=q_val, name="Q_GAP", description="Measures the continuity of the front (lack of large holes).")
 
 def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_REGULARITY using ECDF."""
     P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
     f_val = fair.fair_regularity(P, ref_distribution)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
-    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    return QResult(value=q_val, name="Q_REGULARITY", description="Measures the uniformity of point spacing (lattice order).")
 
 def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_BALANCE using ECDF."""
     P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
     f_val = fair.fair_balance(P, centroids, ref_hist)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
-    return _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
+    return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
 
 def q_denoise_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """

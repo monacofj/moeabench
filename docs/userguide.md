@@ -679,28 +679,44 @@ score = mb.diagnostics.q_regularity(exp)
 score = mb.diagnostics.q_balance(exp)
 ```
 
-### **9.4. Practical Usage (Smart API)**
+### **9.4. Practical Usage (Narrative Reporting)**
 
-The `mb.diagnostics` API handles all the complexity of Ground Truth resolution for you.
+The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
 
-#### **Scenario A: Automated Audit**
-The standard workflow is to let the API figure out the context from the `Experiment` object:
+#### **Scenario A: Analytical Biopsy (Full Audit)**
+The `audit()` function performs a comprehensive check and returns a `DiagnosticResult` with a rich reporting interface:
 
 ```python
 import MoeaBench as mb
 
-# 1. Run Config
-exp = mb.experiment()
-exp.mop = mb.mops.DTLZ2()
-exp.moea = mb.moeas.NSGA3()
+exp = mb.experiment(moea="NSGA3", mop="DTLZ2")
 exp.run()
 
-# 2. Clinical Diagnosis (Returns Q-Score 0.0-1.0)
-q_denoise = mb.diagnostics.q_denoise(exp)
-q_balance = mb.diagnostics.q_balance(exp)
+# 1. Perform a scientific audit
+res = mb.diagnostics.audit(exp)
+
+# 2. Display interactive report (Rich Markdown in Notebooks)
+res.report_show()
+
+# 3. Access narrative summary as a string (if needed)
+text = res.report()
 ```
 
-#### **Scenario B: Manual/Raw Data**
+#### **Scenario B: Individual Metric deep-dive**
+Even individual metrics like `q_denoise` or `fair_coverage` support the reporting contract:
+
+```python
+# Returns an object that acts as a float
+q = mb.diagnostics.q_denoise(exp)
+
+# Use it as a number in calculations
+print(f"Current Q_DENOISE: {float(q):.4f}")
+
+# Explain the clinical significance mapping
+q.report_show()
+```
+
+#### **Scenario C: Manual/Raw Data**
 If you have a raw NumPy array (from an external library):
 
 ```python
@@ -713,8 +729,9 @@ my_front = np.random.rand(100, 3)
 true_pf = ... # Your analytical front
 s_k = 0.05    # Your estimated resolution scale
 
-# Calculate Physical Metric
-dist_normalized = mb.diagnostics.fair_closeness(my_front, ref=true_pf, s_k=s_k)
+# Calculate Physical Metric and report physical meaning
+fact = mb.diagnostics.fair_closeness(my_front, ref=true_pf, s_k=s_k)
+fact.report_show()
 ```
 
 ### **9.5. The 8-State Diagnostic Ontology**

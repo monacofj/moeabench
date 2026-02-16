@@ -8,6 +8,7 @@ from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
 from .enums import DiagnosticStatus, DiagnosticProfile
 from . import fair, qscore, baselines
+from .base import Reportable
 
 # Thresholds for Q-Score (High-is-Better)
 # Green >= 2/3, Yellow >= 1/3, Red < 1/3
@@ -16,7 +17,7 @@ THRESH_INDUSTRY = 0.34
 # Less strict profiles can be lower if needed, but 1/3 is the absolute floor.
 
 @dataclass
-class DiagnosticResult:
+class DiagnosticResult(Reportable):
     """ Encapsulates the finding of an algorithmic audit. """
     status: DiagnosticStatus
     metrics: Dict[str, Any]
@@ -27,6 +28,64 @@ class DiagnosticResult:
 
     def rationale(self) -> str:
         return self._rationale
+
+    def report(self, **kwargs) -> str:
+        """ Returns a multi-line human-readable summary. """
+        status_name = self.status.name.replace("_", " ").title()
+        
+        # 1. Header
+        lines = [
+            f"# MoeaBench Performance Audit: {status_name}",
+            f"**Verdict**: {self.description}",
+            ""
+        ]
+        
+        # 2. Extract Key Q-Scores (Clinical Dimensions)
+        q_scores = {
+            "Denoising": self.metrics.get("q_denoise", 0.0),
+            "Proximity": self.metrics.get("q_closeness", 0.0),
+            "Coverage":  self.metrics.get("q_coverage", 0.0),
+            "Continuity":self.metrics.get("q_gap", 0.0),
+            "Regularity":self.metrics.get("q_regularity", 0.0),
+            "Parity":    self.metrics.get("q_balance", 0.0)
+        }
+        
+        # 3. Clinical Summary (Biópsia)
+        from .qscore import QResult
+        
+        high_fidelity = []
+        anomalies = []
+        
+        for name, val in q_scores.items():
+            q = float(val)
+            # Find label from QResult (re-using the matrix logic)
+            # We need a dummy name for lookup
+            dummy = f"Q_{name.upper()}"
+            if dummy == "Q_CONTINUITY": dummy = "Q_GAP" # Alignment
+            if dummy == "Q_PARITY": dummy = "Q_BALANCE"
+            
+            matrix = QResult._LABELS.get(dummy, {})
+            label = "Undefined"
+            for thresh in sorted(matrix.keys(), reverse=True):
+                if q >= thresh:
+                    label = matrix[thresh]
+                    break
+            
+            summary_part = f"{label} {name}"
+            if q >= 0.85:
+                high_fidelity.append(summary_part)
+            if q < 0.67:
+                anomalies.append(summary_part)
+        
+        if high_fidelity:
+            lines.append(f"**High Fidelity**: {', '.join(high_fidelity)}")
+        if anomalies:
+            lines.append(f"**Anomalies Detected**: {', '.join(anomalies)}")
+        
+        lines.append("")
+        lines.append(f"**Rationale**: {self._rationale}")
+        
+        return "\n".join(lines)
 
 class PerformanceAuditor:
     """ Expert system for interpreting 5D Clinical Quality Scores. """

@@ -19,6 +19,12 @@ from scipy.spatial.distance import cdist, jensenshannon
 from scipy.stats import wasserstein_distance
 from typing import Optional, Tuple, Any
 from .utils import _resolve_diagnostic_context
+from .base import DiagnosticValue
+
+class FairResult(DiagnosticValue):
+    """ Specialized result for Physical (Fair) metrics. """
+    def report(self, **kwargs) -> str:
+        return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
 
 def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
@@ -41,9 +47,13 @@ def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = No
     gd95 = np.percentile(min_d, 95)
     
     # 3. Normalize by Resolution (Scale Invariance)
-    if s_fit > 1e-12:
-        return float(gd95 / s_fit)
-    return float(gd95)
+    f_val = float(gd95 / s_fit) if s_fit > 1e-12 else float(gd95)
+    
+    return FairResult(
+        value=f_val,
+        name="FAIR_DENOISE",
+        description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth."
+    )
 
 def fair_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
@@ -83,7 +93,12 @@ def fair_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     min_d = np.min(d, axis=1) # (|GT|,)
     
     # 2. Mean (IGD)
-    return float(np.mean(min_d))
+    f_val = float(np.mean(min_d))
+    return FairResult(
+        value=f_val,
+        name="FAIR_COVERAGE",
+        description=f"Average distance from target manifold to nearest solution is {f_val:.4f}."
+    )
 
 def fair_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
@@ -103,7 +118,12 @@ def fair_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     min_d = np.min(d, axis=1)
     
     # 2. Percentile 95 (Robust Max)
-    return float(np.percentile(min_d, 95))
+    f_val = float(np.percentile(min_d, 95))
+    return FairResult(
+        value=f_val,
+        name="FAIR_GAP",
+        description=f"Largest hole detected on the manifold is {f_val:.4f}."
+    )
 
 def fair_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
@@ -131,7 +151,12 @@ def fair_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **
     nn_u = np.min(d_u, axis=1)
     
     # 3. Wasserstein Distance
-    return float(wasserstein_distance(nn_p, nn_u))
+    f_val = float(wasserstein_distance(nn_p, nn_u))
+    return FairResult(
+        value=f_val,
+        name="FAIR_REGULARITY",
+        description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance)."
+    )
 
 def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
@@ -157,4 +182,9 @@ def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Op
     
     # 3. JS Divergence
     # Base 2 gives range [0, 1] for JS
-    return float(jensenshannon(hist_p, ref_hist, base=2.0))
+    f_val = float(jensenshannon(hist_p, ref_hist, base=2.0))
+    return FairResult(
+        value=f_val,
+        name="FAIR_BALANCE",
+        description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence)."
+    )

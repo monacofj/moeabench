@@ -642,14 +642,29 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 <a name="diagnostics"></a>
 ## **12. Automated Diagnostics (`mb.diagnostics`)**
 
-The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. It implements a two-layer diagnostic stack:
-1.  **Physical Layer (`fair_`)**: Objectively calibrated metrics that measure physical properties (Distance, Coverage, Uniformity) normalized by the physics of the problem resolution ($s_K$).
-2.  **Clinical Layer (`q_`)**: Quality Scores ($Q \in [0, 1]$) that map physical metrics onto a normalized scale of utility, calibrated against "Blind" and "Ideal" baselines.
+The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Universal Reporting Contract** (`Reportable`), providing narrative insights alongside numerical values.
+
+### **12.1. The Diagnostics Reporting Contract (`Reportable`)**
+
+Instead of returning raw `float` or `ndarray` values, functions return specialized objects that preserve numerical behavior while providing narrative insights.
+
+*   **`DiagnosticValue`**: The base class for single-metric results.
+    *   **Numerical Fallback**: Objects can be cast directly to `float()`.
+    *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights.
+    *   **`.report_show()`**: Renders the narrative report with rich formatting.
+
+| Result Class | Returner functions | Characteristics |
+| :--- | :--- | :--- |
+| **`FairResult`** | `fair_denoise`, `fair_coverage`, etc. | Physical facts, normalized by resolution. |
+| **`QResult`** | `q_denoise`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
+| **`DiagnosticResult`**| `audit()` | High-level synthesis with Biopsy summary. |
+
+---
+
+### **12.2. The Smart Dispatch Protocol**
 
 > [!NOTE]
 > **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Denoise" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
-
-### **12.1. The Smart Dispatch Protocol**
 
 All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
 
@@ -670,7 +685,7 @@ All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_dia
 These metrics answer: *"What is the physical state of the population?"*
 They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
 
-#### **`fair_denoise(data, ref=None, s_k=None) -> float`**
+#### **`fair_denoise(data, ref=None, s_k=None) -> FairResult`**
 *   **Definition**: $GD_{95}(P \to GT) / s_K$
 *   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Denoising) and normalizes the distance by the expected separation of optimal points ($s_K$).
 *   **Ideal**: $0.0$.
@@ -681,21 +696,21 @@ They are "Fair" because they are divided by $s_K$, making them scale-invariant a
 *   **Rationale**: Provides the **Distribution of Proximity**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
 *   **Returns**: 1D Array of size $N$.
 
-#### **`fair_coverage(data, ref=None) -> float`**
+#### **`fair_coverage(data, ref=None) -> FairResult`**
 *   **Definition**: $IGD_{mean}(GT \to P)$
 *   **Rationale**: Measures **Global Coverage**. It is the average distance from *any* point on the True Front to the nearest solution found.
 *   **Ideal**: $0.0$.
 
-#### **`fair_gap(data, ref=None) -> float`**
+#### **`fair_gap(data, ref=None) -> FairResult`**
 *   **Definition**: $IGD_{95}(GT \to P)$
 *   **Rationale**: Measures **worst-case holes** in the coverage. By taking the 95th percentile of the IGD components, it identifies the largest "Gaps" in the manifold approximation.
 
-#### **`fair_regularity(data, ref_distribution=None) -> float`**
+#### **`fair_regularity(data, ref_distribution=None) -> FairResult`**
 *   **Definition**: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
 *   **Rationale**: Measures **Structural Uniformity**. It uses the **Wasserstein-1 Distance** (Earth Mover's Distance) to compare the distribution of Nearest-Neighbor distances in $P$ against a perfectly uniform lattice $U_{ref}$.
 *   **Ideal**: $0.0$ (structure matches the lattice).
 
-#### **`fair_balance(data, centroids=None, ref_hist=None) -> float`**
+#### **`fair_balance(data, centroids=None, ref_hist=None) -> FairResult`**
 *   **Definition**: $D_{JS}(H_P || H_{ref})$
 *   **Rationale**: Measures **Manifold Bias**. It partitions the Ground Truth into $C$ clusters and calculates the **Jensen-Shannon Divergence** between the finding rates of the algorithm and the reference density.
 *   **Ideal**: $0.0$ (Balanced occupancy).
@@ -710,17 +725,29 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Range**: $1.0$ (Ideal) to $0.0$ (Baseline/Random). Negative values indicate pathological failure.
 *   **Logic**: $Q = 1 - \text{Correction}(\frac{\text{Fair} - \text{Ideal}}{\text{Random} - \text{Ideal}})$
 
-#### **`q_denoise(data, ...) -> float`**
+#### **`q_denoise(data, ...) -> QResult`**
 *   **Baselines**: Ideal=$0.0$, Random=$Rand_{50}$ (from repository).
 *   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ to distinguish "Super-converged" solutions from merely "Good" ones.
 
-#### **`q_closeness(data, ...) -> float`**
+#### **`q_closeness(data, ...) -> QResult`**
 *   **Baselines**: Ideal=$0.0$, Random=$ECDF(G_{blur})$ (Gaussian-blurred GT).
 *   **Mapping**: **Wasserstein-1**. Computes the topological similarity between the finding distribution and the noise model.
 
-#### **`q_coverage`, `q_gap`, `q_regularity`, `q_balance`**
+#### **`q_coverage`, `q_gap`, `q_regularity`, `q_balance` -> `QResult`**
 *   **Baselines**: Ideal=$Uni_{50}$ (Median of FPS subsets), Random=$Rand_{50}$ (Median of Random subsets).
 *   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to rank the solution.
+
+---
+
+### **12.4. Comprehensive Algorithmic Audit**
+
+#### **`audit(data, ground_truth=None, problem=None, ...) -> DiagnosticResult`**
+*   **Rationale**: The primary entry point for automated performance analysis. It runs the full 6-dimensional clinical suite and synthesizes a high-level verdict.
+*   **Process**:
+    1.  Calculates all 6 Q-Scores.
+    2.  Applies the **Performance Auditor** expert system.
+    3.  Classifies the algorithm into the **8-State Pathology Ontology**.
+*   **Return**: A `DiagnosticResult` object that provides the full narrative biopsy via `.report_show()`.
 
 ---
 
