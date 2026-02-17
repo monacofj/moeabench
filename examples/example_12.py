@@ -69,6 +69,12 @@ def main():
     # This aggregates all FAIR metrics (Closeness, Coverage, Gap, Regularity, Balance)
     mb.diagnostics.fair_audit(exp, ground_truth=gt).report_show()
 
+    # 4. Full Diagnostic Biopsy (Executive Narrative)
+    print("\nStep 3: Performing Full Diagnostic Biopsy...")
+    diag_res = mb.diagnostics.audit(exp, ground_truth=gt)
+    print("\n--- Executive Summary ---")
+    print(diag_res.summary())
+
     print("\nExample 12 completed.")
 
 if __name__ == "__main__":

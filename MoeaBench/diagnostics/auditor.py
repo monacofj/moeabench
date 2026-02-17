@@ -57,6 +57,45 @@ class QualityAuditResult(Reportable):
                 
         return "\n".join(lines)
 
+    def summary(self) -> str:
+        """ Hierarchical clinical interpretation (The Decision Tree). """
+        s = self.scores
+        def q(n): return float(s[n].value) if n in s else 0.0
+
+        # Gate 1: Proximity (Closeness)
+        q_close = q("Q_CLOSENESS")
+        if q_close < THRESH_INDUSTRY:
+            return "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
+
+        # Gate 2: Spatial Extent (Coverage & Gap)
+        q_cov = q("Q_COVERAGE")
+        q_gap = q("Q_GAP")
+        
+        # Worst Quartile check (0.25)
+        if q_cov < 0.25 and q_gap < 0.25:
+             return "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
+
+        # Level 3: Distribution Quality (Order)
+        pathologies = []
+        if q_cov < THRESH_INDUSTRY: pathologies.append("collapsed coverage")
+        elif q_cov < THRESH_RESEARCH: pathologies.append("limited coverage")
+        
+        if q_gap < THRESH_INDUSTRY: pathologies.append("severe fragmentation")
+        elif q_gap < THRESH_RESEARCH: pathologies.append("continuity breaches")
+        
+        if q("Q_REGULARITY") < THRESH_INDUSTRY: pathologies.append("chaotic spacing")
+        elif q("Q_REGULARITY") < THRESH_RESEARCH: pathologies.append("irregular distribution")
+        
+        if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("severe structural bias")
+        elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("skewed distribution")
+
+        base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "High-precision convergence confirmed."
+        
+        if not pathologies:
+            return f"{base} Overall structural integrity meets certification standards."
+            
+        return f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
+
 @dataclass
 class FairAuditResult(Reportable):
     """ Results of a physical engineering audit. """
@@ -81,6 +120,12 @@ class DiagnosticResult(Reportable):
     fair_audit_res: FairAuditResult
     status: DiagnosticStatus
     description: str
+
+    def summary(self) -> str:
+        """ Preferred fluid narrative for executive reporting. """
+        if self.q_audit_res:
+            return self.q_audit_res.summary()
+        return self.description
 
     def report(self, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)

@@ -33,10 +33,10 @@ def main():
     exp = mb.experiment()
     exp.mop = mb.mops.DTLZ2(M=3)
     
-    # "Strangled" Configuration: Only 52 individuals and 5 generations.
+    # "Strangled" Configuration: Only 52 individuals and 40 generations.
     # A healthy run usually requires 100+ generations.
     # Note: Population must be a multiple of 4 for minimal compatibility with TournamentDCD
-    exp.moea = mb.moeas.NSGA2(population=52, generations=5)
+    exp.moea = mb.moeas.NSGA2(population=52, generations=40)
     exp.name = "Strangled NSGA-II"
 
     # 2. Execution: Run the optimization
@@ -55,6 +55,10 @@ def main():
     # This uses the new elegant terminal format.
     print("\n--- Clinical Quality Report ---\n")
     q_res.report_show()
+    
+    # 5.1 Clinical Narrative Summary (Hierarchical Decision Tree)
+    print("\n--- Clinical Narrative Summary ---")
+    print(q_res.summary())
     
     # 6. Visual Confirmation
     # Visually compare the "Strangled" population against the true front.
