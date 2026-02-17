@@ -65,7 +65,10 @@ class QualityAuditResult(Reportable):
         # Gate 1: Proximity (Closeness)
         q_close = q("Q_CLOSENESS")
         if q_close < THRESH_INDUSTRY:
-            return "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
+            msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
+            if q("Q_DENOISE") >= THRESH_RESEARCH:
+                msg = f"Poor Convergence: Despite effective progress in denoising, the algorithm failed to approach the optimal manifold."
+            return msg
 
         # Gate 2: Spatial Extent (Coverage & Gap)
         q_cov = q("Q_COVERAGE")
@@ -83,13 +86,13 @@ class QualityAuditResult(Reportable):
         if q_gap < THRESH_INDUSTRY: pathologies.append("severe fragmentation")
         elif q_gap < THRESH_RESEARCH: pathologies.append("continuity breaches")
         
-        if q("Q_REGULARITY") < THRESH_INDUSTRY: pathologies.append("chaotic spacing")
+        if q("Q_REGULARITY") < THRESH_INDUSTRY: pathologies.append("unstructured spacing")
         elif q("Q_REGULARITY") < THRESH_RESEARCH: pathologies.append("irregular distribution")
         
-        if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("severe structural bias")
-        elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("skewed distribution")
+        if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("skewed parity")
+        elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("distribution bias")
 
-        base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "High-precision convergence confirmed."
+        base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
         
         if not pathologies:
             return f"{base} Overall structural integrity meets certification standards."

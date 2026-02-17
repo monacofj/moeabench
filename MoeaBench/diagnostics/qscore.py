@@ -28,11 +28,11 @@ class QResult(DiagnosticValue):
     
     _LABELS = {
         "Q_DENOISE":   {0.95: "Near-Ideal Suppr.", 0.85: "Strong Suppr.", 0.67: "Effective", 0.34: "Partial", 0.0: "Noise-dominant"},
-        "Q_CLOSENESS": {0.95: "Asymptotic Closeness", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
+        "Q_CLOSENESS": {0.95: "Asymptotic", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
         "Q_COVERAGE":  {0.95: "Exhaustive", 0.85: "Extensive", 0.67: "Standard", 0.34: "Limited", 0.0: "Collapsed"},
         "Q_GAP":       {0.95: "High Continuity", 0.85: "Stable", 0.67: "Managed Gaps", 0.34: "Interrupted", 0.0: "Fragmented"},
-        "Q_REGULARITY":{0.95: "Hyper-uniform", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Chaotic"},
-        "Q_BALANCE":   {0.95: "Optimal Balance", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
+        "Q_REGULARITY":{0.95: "Asymptotic Regularity", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Unstructured"},
+        "Q_BALANCE":   {0.95: "Near-Ideal Balance", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
     }
     
     def report(self, **kwargs) -> str:

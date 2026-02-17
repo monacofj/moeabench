@@ -31,13 +31,13 @@ def get_analytical_summary(clinical):
     """ Generates a symmetric, non-subjective clinical summary from Q-scores. """
     matrix = {
         "denoise":   {0.95: "Near-Ideal Suppr.", 0.85: "Strong Suppr.", 0.67: "Effective", 0.34: "Partial", 0.0: "Noise-dominant"},
-        "closeness": {0.95: "Asymptotic Prox.", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
+        "closeness": {0.95: "Asymptotic", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
         "cov":       {0.95: "Exhaustive", 0.85: "Extensive", 0.67: "Standard", 0.34: "Limited", 0.0: "Collapsed"},
         "gap":       {0.95: "High Continuity", 0.85: "Stable", 0.67: "Managed Gaps", 0.34: "Interrupted", 0.0: "Fragmented"},
-        "reg":       {0.95: "Hyper-uniform", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Chaotic"},
-        "bal":       {0.95: "Optimal Parity", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
+        "reg":       {0.95: "Asymptotic Regularity", 0.85: "Ordered", 0.67: "Consistent", 0.34: "Irregular", 0.0: "Unstructured"},
+        "bal":       {0.95: "Near-Ideal Balance", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
     }
-    labels = {"denoise": "Denoising", "closeness": "Proximity", "cov": "Coverage", "gap": "Continuity", "reg": "Regularity", "bal": "Parity"}
+    labels = {"denoise": "Denoising", "closeness": "Proximity", "cov": "Coverage", "gap": "Continuity", "reg": "Regularity", "bal": "Balance"}
 
     def get_desc(m, q):
         if q is None or np.isnan(q): return "Undefined"
