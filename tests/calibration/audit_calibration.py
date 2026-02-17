@@ -56,6 +56,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     import MoeaBench.diagnostics.baselines as base
     from MoeaBench.metrics.GEN_igdplus import GEN_igdplus
     from MoeaBench.metrics.GEN_gdplus import GEN_gdplus
+    from MoeaBench.diagnostics.auditor import QualityAuditResult
 
     pattern = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run[0-9][0-9].csv")
     run_files = sorted(glob.glob(pattern))
@@ -134,15 +135,15 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             u_dist = fair.fair_closeness(P_eval, F_opt, s_k=s_fit)
             
             # Store FAIR values (per-run) and also bucket by K for distributional Q
-            fair_denoise_vals.append(fair_f); fair_cov_vals.append(fair_c); fair_gap_vals.append(fair_g); fair_reg_vals.append(fair_r); fair_bal_vals.append(fair_b)
+            fair_denoise_vals.append(float(fair_f)); fair_cov_vals.append(float(fair_c)); fair_gap_vals.append(float(fair_g)); fair_reg_vals.append(float(fair_r)); fair_bal_vals.append(float(fair_b))
             u_closeness_vals.append(u_dist)
             
-            fair_by_k["denoise"][K_target].append(fair_f)
+            fair_by_k["denoise"][K_target].append(float(fair_f))
             fair_by_k["closeness"][K_target].extend(u_dist.tolist()) # Accumulate points for distributional W1
-            fair_by_k["cov"][K_target].append(fair_c)
-            fair_by_k["gap"][K_target].append(fair_g)
-            fair_by_k["reg"][K_target].append(fair_r)
-            fair_by_k["bal"][K_target].append(fair_b)
+            fair_by_k["cov"][K_target].append(float(fair_c))
+            fair_by_k["gap"][K_target].append(float(fair_g))
+            fair_by_k["reg"][K_target].append(float(fair_r))
+            fair_by_k["bal"][K_target].append(float(fair_b))
             k_used_vals.append(K_target); k_raw_vals.append(K_raw)
             igd_p_vals.append(GEN_igdplus([F_run], F_opt).evaluate()[0])
             gd_p_vals.append(GEN_gdplus([F_run], F_opt).evaluate()[0])
@@ -170,12 +171,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         vals = {'denoise': [], 'closeness': [], 'cov': [], 'gap': [], 'reg': [], 'bal': []}
         for i in range(N_IDEAL):
             pop_uni = base.get_ref_uk(F_opt, k, seed=100+i)
-            vals['denoise'].append(fair.fair_denoise(pop_uni, F_opt, s_k=s_k))
+            vals['denoise'].append(float(fair.fair_denoise(pop_uni, F_opt, s_k=s_k)))
             vals['closeness'].extend(fair.fair_closeness(pop_uni, F_opt, s_k=s_k).tolist())
-            vals['cov'].append(fair.fair_coverage(pop_uni, F_opt))
-            vals['gap'].append(fair.fair_gap(pop_uni, F_opt))
-            vals['reg'].append(fair.fair_regularity(pop_uni, U_ref))
-            vals['bal'].append(fair.fair_balance(pop_uni, C_cents, hist_ref))
+            vals['cov'].append(float(fair.fair_coverage(pop_uni, F_opt)))
+            vals['gap'].append(float(fair.fair_gap(pop_uni, F_opt)))
+            vals['reg'].append(float(fair.fair_regularity(pop_uni, U_ref)))
+            vals['bal'].append(float(fair.fair_balance(pop_uni, C_cents, hist_ref)))
         return s_k, {m: np.asarray(v, float) for m, v in vals.items()}
 
     def _q_and_dists_weighted(metric: str):
@@ -258,8 +259,21 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     # Strict fallback for all-NaN case
     if np.isnan(q_worst): q_worst = 0.0
     
+    # Create QualityAuditResult to get the standardized summary narrative
+    q_results = {
+        "Q_DENOISE":   qscore.QResult(mq["denoise"], "Q_DENOISE"),
+        "Q_CLOSENESS": qscore.QResult(mq["closeness"], "Q_CLOSENESS"),
+        "Q_COVERAGE":  qscore.QResult(mq["cov"], "Q_COVERAGE"),
+        "Q_GAP":       qscore.QResult(mq["gap"], "Q_GAP"),
+        "Q_REGULARITY": qscore.QResult(mq["reg"], "Q_REGULARITY"),
+        "Q_BALANCE":   qscore.QResult(mq["bal"], "Q_BALANCE")
+    }
+    audit_res = QualityAuditResult(q_results, mop_name=mop_name, k=k_ref)
+    summary_text = audit_res.summary()
+
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
+        "summary": summary_text,
         "denoise": {"q": mq["denoise"], "fair": mf["denoise"], "anchor_good": mi["denoise"], "anchor_bad": mr["denoise"], **md["denoise"]},
         "closeness": {"q": mq["closeness"], "fair": mf["closeness"], "anchor_good": mi["closeness"], "anchor_bad": mr["closeness"], **md["closeness"]},
         "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"], **md["cov"]},
