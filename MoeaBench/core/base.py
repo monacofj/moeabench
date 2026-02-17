@@ -15,20 +15,26 @@ class Reportable:
     def report_show(self, **kwargs):
         """
         Displays the report appropriately for the environment.
-        Prints to console in scripts, renders Markdown in Notebooks.
+        Prints clean text to console in scripts, renders Markdown in Notebooks.
         """
-        content = self.report(**kwargs)
-        
         # Check if running in Jupyter/IPython
         try:
-            from IPython.display import display, Markdown
-            # This check is a common way to detect if we're actually in a shell/notebook
             from IPython import get_ipython
-            if get_ipython() is not None:
-                display(Markdown(content))
-            else:
-                print(content)
+            is_notebook = get_ipython() is not None
         except (ImportError, NameError):
+            is_notebook = False
+
+        # Request appropriate format from the report() implementation
+        # (Defaulting to markdown=True for backward compatibility if not explicitly handled)
+        content = self.report(markdown=is_notebook, **kwargs)
+        
+        if is_notebook:
+            try:
+                from IPython.display import display, Markdown
+                display(Markdown(content))
+            except ImportError:
+                print(content)
+        else:
             print(content)
 
     def __repr__(self):

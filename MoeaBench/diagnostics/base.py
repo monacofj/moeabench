@@ -22,4 +22,6 @@ class DiagnosticValue(Reportable):
 
     def report(self, **kwargs) -> str:
         """Returns a basic narrative report."""
-        return f"### {self.name}\n- **Value**: {self.value:.4f}\n- **Insight**: {self.description}"
+        if kwargs.get('markdown', True):
+            return f"### {self.name}\n- **Value**: {self.value:.4f}\n- **Insight**: {self.description}"
+        return f"{self.name}\n  Value: {self.value:.4f}\n  Insight: {self.description}"

@@ -10,7 +10,7 @@ from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
 
-def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None):
+def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, **kwargs):
     """
     [mb.view.topo_shape] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
@@ -119,7 +119,8 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         while len(objectives) < 3: objectives.append(0)
         s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes)
     
-    s.show()
+    if show:
+        s.show()
     return s
 
 def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='objs', title=None, show=True, ax=None, **kwargs):

@@ -24,19 +24,37 @@ class QualityAuditResult(Reportable):
     k: int
     
     def report(self, **kwargs) -> str:
-        lines = [f"# Clinical Quality Audit: {self.mop_name} (K={self.k})", ""]
-        table = ["| Dimension | Q-Score | Verdict |", "| :--- | :--- | :--- |"]
-        for name, qres in self.scores.items():
-            q = float(qres.value)
-            # Find label
-            matrix = qres._LABELS.get(qres.name, {})
-            label = "Undefined"
-            for thresh in sorted(matrix.keys(), reverse=True):
-                if q >= thresh:
-                    label = matrix[thresh]
-                    break
-            table.append(f"| {name} | {q:.3f} | {label} |")
-        lines.extend(table)
+        use_md = kwargs.get('markdown', True)
+        if use_md:
+            header = f"# Clinical Quality Audit: {self.mop_name} (K={self.k})"
+            sep = ""
+        else:
+            header = f"\n=== CLINICAL QUALITY AUDIT: {self.mop_name} (K={self.k}) ==="
+            sep = "-" * len(header.strip())
+            
+        lines = [header, sep] if not use_md else [header, ""]
+        
+        if use_md:
+            table = ["| Dimension | Q-Score | Verdict |", "| :--- | :--- | :--- |"]
+            for name, qres in self.scores.items():
+                q = float(qres.value)
+                matrix = qres._LABELS.get(qres.name, {})
+                label = "Undefined"
+                for thresh in sorted(matrix.keys(), reverse=True):
+                    if q >= thresh:
+                        label = matrix[thresh]
+                        break
+                table.append(f"| {name} | {q:.3f} | {label} |")
+            lines.extend(table)
+        else:
+            # Terminal: List format matching FairAuditResult
+            # Calculate max width for alignment
+            width = max(len(name) for name in self.scores.keys()) if self.scores else 0
+            
+            for name, qres in self.scores.items():
+                 # We call report with markdown=False and alignment width
+                 lines.append(f"  {qres.report(markdown=False, width=width)}")
+                
         return "\n".join(lines)
 
 @dataclass
@@ -45,9 +63,15 @@ class FairAuditResult(Reportable):
     metrics: Dict[str, fair.FairResult]
     
     def report(self, **kwargs) -> str:
-        lines = ["# Physical Engineering Audit", ""]
+        use_md = kwargs.get('markdown', True)
+        header = "# Physical Engineering Audit" if use_md else "\n=== PHYSICAL ENGINEERING AUDIT ==="
+        lines = [header, ""]
         for name, fres in self.metrics.items():
-            lines.append(f"- **{name}**: {float(fres.value):.4f} ({fres.description})")
+            if use_md:
+                lines.append(f"- **{name}**: {float(fres.value):.4f} ({fres.description})")
+            else:
+                # Remove brackets and align colons (using 12 chars padding)
+                lines.append(f"  {name:<12} : {float(fres.value):.4f} - {fres.description}")
         return "\n".join(lines)
 
 @dataclass
@@ -59,16 +83,30 @@ class DiagnosticResult(Reportable):
     description: str
 
     def report(self, **kwargs) -> str:
+        use_md = kwargs.get('markdown', True)
+        if use_md:
+            header = "# MoeaBench Diagnostic Biopsy"
+            status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
+            exec_line = f"**Executive Summary**: {self.description}"
+            sub_q = "## 1. Clinical Quality (Certification)"
+            sub_f = "## 2. Physical Evidence (Facts)"
+        else:
+            header = "=== MOEABENCH DIAGNOSTIC BIOPSY ==="
+            status_line = f"Primary Status: {self.status.name.replace('_', ' ').title()}"
+            exec_line = f"Executive Summary: {self.description}"
+            sub_q = ">> LAYER 1: CLINICAL QUALITY"
+            sub_f = ">> LAYER 2: PHYSICAL EVIDENCE"
+
         lines = [
-            f"# MoeaBench Diagnostic Biopsy",
-            f"**Primary Status**: {self.status.name.replace('_', ' ').title()}",
-            f"**Executive Summary**: {self.description}",
+            header,
+            status_line,
+            exec_line,
             "",
-            "## 1. Clinical Quality (Certification)",
-            self.q_audit_res.report() if self.q_audit_res else "N/A",
+            sub_q,
+            self.q_audit_res.report(**kwargs) if self.q_audit_res else "N/A",
             "",
-            "## 2. Physical Evidence (Facts)",
-            self.fair_audit_res.report() if self.fair_audit_res else "N/A"
+            sub_f,
+            self.fair_audit_res.report(**kwargs) if self.fair_audit_res else "N/A"
         ]
         return "\n".join(lines)
 
@@ -179,10 +217,18 @@ def audit(target: Any,
     # 3. K-Selection logic 
     K_raw = len(P)
     K_target = baselines.snap_k(K_raw)
-    
     # Snapshot MOP Name
-    if hasattr(target, 'problem') and hasattr(target.problem, 'name'):
-        mop_name = target.problem.name
+    mop_obj = None
+    if hasattr(target, 'mop'):
+        mop_obj = target.mop
+    elif hasattr(target, 'problem'):
+        mop_obj = target.problem
+        
+    if mop_obj:
+        if hasattr(mop_obj, 'name'):
+            mop_name = mop_obj.name
+        else:
+            mop_name = mop_obj.__class__.__name__
     elif hasattr(target, 'mop_name'):
         mop_name = target.mop_name
         
@@ -210,11 +256,11 @@ def audit(target: Any,
         f_bal = fair.fair_balance(P, centroids, hist_ref)
         
         f_metrics = {
-            "DENOISE": fair.FairResult(value=f_denoise, name="DENOISE", description="Convergence precision"),
-            "COVERAGE": fair.FairResult(value=f_cov, name="COVERAGE", description="Objective space coverage"),
-            "GAP": fair.FairResult(value=f_gap, name="GAP", description="Population continuity"),
-            "REGULARITY": fair.FairResult(value=f_reg, name="REGULARITY", description="Uniformity of spread"),
-            "BALANCE": fair.FairResult(value=f_bal, name="BALANCE", description="Mass distribution")
+            "CLOSENESS": f_denoise,
+            "COVERAGE": f_cov,
+            "GAP": f_gap,
+            "REGULARITY": f_reg,
+            "BALANCE": f_bal
         }
         fair_res = PerformanceAuditor.audit_fair(f_metrics)
         

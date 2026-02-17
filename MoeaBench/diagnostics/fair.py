@@ -24,7 +24,9 @@ from .base import DiagnosticValue
 class FairResult(DiagnosticValue):
     """ Specialized result for Physical (Fair) metrics. """
     def report(self, **kwargs) -> str:
-        return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
+        if kwargs.get('markdown', True):
+            return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
+        return f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
 
 def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
@@ -51,7 +53,7 @@ def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = No
     
     return FairResult(
         value=f_val,
-        name="FAIR_DENOISE",
+        name="FAIR_CLOSENESS",
         description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth."
     )
 
@@ -166,7 +168,7 @@ def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Op
     Meaning: Jensen-Shannon divergence between cluster occupancy histograms.
     Ideal: 0.0
     """
-    P, _, _ = _resolve_diagnostic_context(data, **kwargs)
+    P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
 
     if P is None or len(P) == 0 or centroids is None or ref_hist is None:
         return 1.0 # Max divergence

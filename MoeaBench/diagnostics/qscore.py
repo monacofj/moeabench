@@ -45,7 +45,13 @@ class QResult(DiagnosticValue):
                     label = matrix[thresh]
                     break
         
-        return f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
+        if kwargs.get('markdown', True):
+            return f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
+        
+        # Clean terminal output: pad name to width if provided
+        width = kwargs.get('width', len(self.name))
+        name_str = f"{self.name}".ljust(width)
+        return f"{name_str} : {q:.3f} [{label}] - {self.description}"
 
 
 def _wasserstein_1d(u: np.ndarray, v: np.ndarray) -> float:
@@ -173,7 +179,9 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     if denom <= 1e-12:
          # If fair is physically close to ideal (within epsilon), it's perfect.
          # Otherwise it's worse (0.0), assuming ideal is the target.
-         return 1.0 if abs(fair_val - ideal) <= 1e-9 else 0.0
+         # Otherwise it's worse (0.0), assuming ideal is the target.
+         val = 1.0 if abs(fair_val - ideal) <= 1e-9 else 0.0
+         return val
 
     # 3. Interpolate
     num = F_fair - F_ideal
@@ -184,10 +192,17 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
 def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_DENOISE using a log-linear baseline (Ideal -> Rand50).
     """
-    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-    
-    # Calculate Fair Metric first
-    f_val = fair.fair_denoise(P, GT, s_fit)
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+        f_val = float(data.value)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, (float, int, np.number)):
+        f_val = float(data)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        f_val = fair.fair_denoise(P, GT, s_fit)
     
     # Ideal = 0.0 (Better-than-noise progress)
     _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
@@ -202,13 +217,17 @@ def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
     """
-    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-    
-    # Calculate Fair Dist first
-    u_dist = fair.fair_closeness(P, GT, s_fit)
+    if isinstance(data, np.ndarray) and data.ndim == 1:
+        # Pre-calculated distribution
+        u_dist = data
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        u_dist = fair.fair_closeness(P, GT, s_fit)
     
     if u_dist.size == 0:
-        return float('nan')
+        return QResult(0.0, "Q_CLOSENESS", "Empty distribution (Failed).")
         
     # 1. Get Baseline (G_blur ECDF)
     _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "closeness")
@@ -222,7 +241,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
     
     # 4. Monotonicity Gate
     if d_ideal >= d_bad_ideal:
-        return 0.0
+        return QResult(0.0, "Q_CLOSENESS", "Worse than random baseline.")
         
     d_bad = _wasserstein_1d(u_dist, rand_ecdf)
     denom = d_bad + d_ideal
@@ -236,32 +255,72 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
 
 def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_COVERAGE using ECDF."""
-    P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-    f_val = fair.fair_coverage(P, GT)
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+        f_val = float(data.value)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, (float, int, np.number)):
+        f_val = float(data)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
+        f_val = fair.fair_coverage(P, GT)
+        
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_COVERAGE", description="Measures how well the population spans the entire front.")
 
 def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_GAP using ECDF."""
-    P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-    f_val = fair.fair_gap(P, GT)
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+        f_val = float(data.value)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, (float, int, np.number)):
+        f_val = float(data)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
+        f_val = fair.fair_gap(P, GT)
+        
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_GAP", description="Measures the continuity of the front (lack of large holes).")
 
 def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_REGULARITY using ECDF."""
-    P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-    f_val = fair.fair_regularity(P, ref_distribution)
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+        f_val = float(data.value)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, (float, int, np.number)):
+        f_val = float(data)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
+        f_val = fair.fair_regularity(P, ref_distribution)
+        
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_REGULARITY", description="Measures the uniformity of point spacing (lattice order).")
 
 def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_BALANCE using ECDF."""
-    P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-    f_val = fair.fair_balance(P, centroids, ref_hist)
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+        f_val = float(data.value)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, (float, int, np.number)):
+        f_val = float(data)
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    else:
+        P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
+        f_val = fair.fair_balance(P, centroids, ref_hist)
+        
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
