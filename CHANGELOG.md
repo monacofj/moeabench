@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Headway Calibration Bug**: Resolved a critical unit mismatch in `q_headway` where normalized physical results were being compared against raw baseline distances, causing incorrect "Failure" scores.
 - **UnboundLocalError in Q-Scores**: Fixed a regression in `qscore.py` where the resolution factor (`s_fit`) was uninitialized when processing pre-calculated scalar results.
 - **AttributeError (Radar)**: Fixed invalid Matplotlib polar axis grid access.
+- **Alpha Consistency (View)**: Standardized `perf_spread` to respect `defaults.alpha` instead of a hardcoded value, resolving an API asymmetry.
 
 ## [0.9.0] - 2026-02-09
 

@@ -28,7 +28,7 @@ def perf_history(*args, metric=None, **kwargs):
             
     return plot_matrix(processed_args, **kwargs)
 
-def perf_spread(*args, metric=None, gen=-1, title=None, **kwargs):
+def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     """
     [mb.view.perf_spread] Comparative Performance Perspective (Contrast).
     Visualizes comparative performance stats using Boxplots and 
@@ -38,6 +38,8 @@ def perf_spread(*args, metric=None, gen=-1, title=None, **kwargs):
     
     if len(args) < 1:
         raise ValueError("perf_spread requires at least one dataset.")
+
+    alpha = alpha if alpha is not None else defaults.alpha
 
     if metric is None:
         metric = hypervolume
@@ -76,7 +78,7 @@ def perf_spread(*args, metric=None, gen=-1, title=None, **kwargs):
         res = perf_evidence(args[0], args[1], metric=metric, gen=gen, **kwargs)
         prob = res.perf_probability
         p_val = res.p_value
-        sig_str = "*" if p_val < 0.05 else "ns"
+        sig_str = "*" if p_val < alpha else "ns"
         
         # Position annotation between the two boxes
         y_max = max([np.max(s) for s in samples])

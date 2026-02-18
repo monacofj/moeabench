@@ -229,8 +229,8 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 *   **`perf_history(*args, metric=None, ...)`**:
     *   **Permanent Alias**: `timeplot`. Plots the evolution of a scalar metric over time.
-*   **`perf_spread(*args, metric=None, gen=-1, ...)`**:
-    *   Visualizes **Performance Contrast** using Boxplots with A12/p-value annotations.
+*   **`perf_spread(*args, metric=None, gen=-1, alpha=None, ...)`**:
+    *   Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
 *   **`perf_density(*args, metric=None, gen=-1, ...)`**:
     *   Plots the probability distribution of a performance metric via KDE.
 
