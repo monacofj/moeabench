@@ -406,14 +406,14 @@ def generate_visual_report():
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
             "<table><colgroup><col style='width: 120px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: auto'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>DENOISE</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>SUMMARY</th></tr></thead>"
+            "<thead><tr><th>Algorithm</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>DENOISE</th><th>SUMMARY</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             c = m["clinical"]
             s_fit = c.get("s_fit") # Correct nesting for s_fit
 
-            for dim in ["denoise", "closeness", "cov", "gap", "reg", "bal"]:
+            for dim in ["closeness", "cov", "gap", "reg", "bal", "denoise"]:
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
