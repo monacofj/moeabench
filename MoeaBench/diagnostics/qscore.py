@@ -335,14 +335,17 @@ def q_denoise_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     if P is None or len(P) == 0:
         return np.array([])
 
-    # If data was 1D and no GT, assume they are already normalized or raw dists
+    # If data was 1D and no GT, assume they are already raw dists
     if P.ndim == 1:
-        fair_vals = P # Already distances
+        u_vals = P 
     else:
         if GT is None:
              raise ValueError("Ground truth (ref) required to calculate distances from front.")
         d = cdist(P, GT, metric='euclidean')
-        fair_vals = np.min(d, axis=1) / s_fit
+        u_vals = np.min(d, axis=1)
+
+    # Apply resolution scaling
+    fair_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
     
     # 2. Get Baseline (Rand50 in FAIR space)
     _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
@@ -368,12 +371,15 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
         return np.array([])
 
     if P.ndim == 1:
-        u_vals = P # Already distances (normalized or raw)
+        raw_u = P 
     else:
         if GT is None:
              raise ValueError("Ground truth (ref) required to calculate distances from front.")
         d = cdist(P, GT, metric='euclidean')
-        u_vals = np.min(d, axis=1) / s_fit
+        raw_u = np.min(d, axis=1)
+    
+    # Apply resolution scaling
+    u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
     
     # 2. Get Baseline (Rand50 in FAIR space)
     _, rand50 = baselines.get_baseline_values(problem, k, "closeness")
