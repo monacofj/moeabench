@@ -28,9 +28,9 @@ class FairResult(DiagnosticValue):
             return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
         return f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
 
-def fair_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_HEADWAY (Algorithmic Progress over BBox).
+    [Smart API] Calculates HEADWAY (Algorithmic Progress over BBox).
     
     Definition: $GD_{95}(P \to GT) / s_{FIT}$
     Meaning: How far P is from GT, in units of s_fit (resolution at K).
@@ -53,11 +53,11 @@ def fair_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = No
     
     return FairResult(
         value=f_val,
-        name="FAIR_HEADWAY",
+        name="HEADWAY",
         description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth."
     )
 
-def fair_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
+def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
     [Smart API] Calculates the distribution of normalized distances to GT.
     
@@ -77,9 +77,9 @@ def fair_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = 
         return min_d / s_fit
     return min_d
 
-def fair_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_COVERAGE.
+    [Smart API] Calculates COVERAGE.
     
     Definition: $IGD_{mean}(GT \to P)$
     Meaning: Average distance from ANY point in GT to the nearest point in P.
@@ -98,13 +98,13 @@ def fair_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     f_val = float(np.mean(min_d))
     return FairResult(
         value=f_val,
-        name="FAIR_COVERAGE",
+        name="COVERAGE",
         description=f"Average distance from target manifold to nearest solution is {f_val:.4f}."
     )
 
-def fair_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_GAP (formerly Density).
+    [Smart API] Calculates GAP (formerly Density).
     
     Definition: $IGD_{95}(GT \to P)$
     Meaning: The size of the "large holes" in coverage (ignoring worst 5% outliers).
@@ -123,13 +123,13 @@ def fair_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     f_val = float(np.percentile(min_d, 95))
     return FairResult(
         value=f_val,
-        name="FAIR_GAP",
+        name="GAP",
         description=f"Largest hole detected on the manifold is {f_val:.4f}."
     )
 
-def fair_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
+def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_REGULARITY (formerly Uniformity).
+    [Smart API] Calculates REGULARITY (formerly Uniformity).
     
     Definition: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
     Meaning: Wasserstein distance between the Nearest-Neighbor distribution of P
@@ -156,13 +156,13 @@ def fair_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **
     f_val = float(wasserstein_distance(nn_p, nn_u))
     return FairResult(
         value=f_val,
-        name="FAIR_REGULARITY",
+        name="REGULARITY",
         description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance)."
     )
 
-def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
+def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_BALANCE.
+    [Smart API] Calculates BALANCE.
     
     Definition: $D_{JS}(H_P || H_{ref})$
     Meaning: Jensen-Shannon divergence between cluster occupancy histograms.
@@ -187,6 +187,6 @@ def fair_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Op
     f_val = float(jensenshannon(hist_p, ref_hist, base=2.0))
     return FairResult(
         value=f_val,
-        name="FAIR_BALANCE",
+        name="BALANCE",
         description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence)."
     )

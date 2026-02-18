@@ -296,24 +296,32 @@ def audit(target: Any,
         s_k = baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
         # C. Compute FAIR Metrics (Physics)
-        f_headway = fair.fair_headway(P, GT, s_k)
-        f_closeness_raw = fair.fair_closeness(P, GT, s_k) 
-        f_cov = fair.fair_coverage(P, GT)
-        f_gap = fair.fair_gap(P, GT)
-        f_reg = fair.fair_regularity(P, U_ref)
-        f_bal = fair.fair_balance(P, centroids, hist_ref)
+        f_headway = fair.headway(P, GT, s_k)
+        f_closeness_raw = fair.closeness(P, GT, s_k) 
+        f_cov = fair.coverage(P, GT)
+        f_gap = fair.gap(P, GT)
+        f_reg = fair.regularity(P, U_ref)
+        f_bal = fair.balance(P, centroids, hist_ref)
+        
+        # Scalar summary of closeness for the physical audit report
+        f_closeness_val = fair.FairResult(
+            value=float(np.median(f_closeness_raw)) if len(f_closeness_raw) > 0 else 0.0,
+            name="CLOSENESS",
+            description=f"Median distance to manifold is {np.median(f_closeness_raw):.4f} resolution-units." if len(f_closeness_raw) > 0 else "No points."
+        )
         
         f_metrics = {
-            "HEADWAY": f_headway,
-            "CLOSENESS": f_closeness_raw, 
+            "CLOSENESS": f_closeness_val, 
+            "COVERAGE": f_cov,
             "GAP": f_gap,
             "REGULARITY": f_reg,
-            "BALANCE": f_bal
+            "BALANCE": f_bal,
+            "HEADWAY": f_headway
         }
         fair_res = PerformanceAuditor.audit_fair(f_metrics)
         
         # D. Compute Q-Scores (Engineering)
-        q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target)
+        q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
         q_clo = qscore.q_closeness(f_closeness_raw, problem=mop_name, k=K_target)
         q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
         q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
@@ -321,12 +329,12 @@ def audit(target: Any,
         q_b = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
         
         q_scores = {
-            "Q_HEADWAY": q_h,
             "Q_CLOSENESS": q_clo,
             "Q_COVERAGE": q_c,
             "Q_GAP": q_g,
             "Q_REGULARITY": q_r,
-            "Q_BALANCE": q_b
+            "Q_BALANCE": q_b,
+            "Q_HEADWAY": q_h
         }
         q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
         

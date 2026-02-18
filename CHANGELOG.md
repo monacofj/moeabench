@@ -11,6 +11,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
+### Added
+- **Cascade Audit Architecture**: Transitioned diagnostics to a layered "Expert Biopsy" system, providing direct access to Physical Facts (`fair_audit`), Clinical Quality (`q_audit`), and Synthesis Narratives (`audit`).
+- **Hierarchical Executive Narratives**: Implemented a decision-tree based `.summary()` method for audit results, providing automated, high-precision textual interpretations of algorithm performance.
+- **Environment-Aware Reporting**: The `.report()` system now automatically optimizes output for Terminal (ASCII) or Jupyter Notebook (Markdown/HTML) environments.
+- **New Diagnostic Examples**: Added `example_12.py` (Physical Layer) and `example_13.py` (Clinical/Narrative Layer) to demonstrate the advanced diagnostic pipeline.
+- **ADR 0028 & 0029**: Formalized the "Gate Rule" for monotonicity and the "Headway" nomenclature refactoring.
+
+### Changed
+- **Nomenclature Global Refactor**:
+  - Renamed `DENOISE` to **`HEADWAY`** across all code, documentation, and baseline data.
+  - Removed the redundant `fair_` prefix from physical metrics (`fair_closeness` $\to$ `closeness`, etc.).
+  - Standardized diagnostic terminology: `Proximity` $\to$ `Closeness`, `Continuity` $\to$ `Gap`, `Parity` $\to$ `Balance`.
+- **Streamlined Diagnostics API**: The `mb.diagnostics` namespace now prioritizes the two-tier pattern: `metric()` (Fact) and `q_metric()` (Score).
+- **Calibration Report Enhancement**: Updated the visual report template with the new nomenclature, structural marker grammar, and the hierarchical summary narrative.
+
+### Fixed
+- **Headway Calibration Bug**: Resolved a critical unit mismatch in `q_headway` where normalized physical results were being compared against raw baseline distances, causing incorrect "Failure" scores.
+- **UnboundLocalError in Q-Scores**: Fixed a regression in `qscore.py` where the resolution factor (`s_fit`) was uninitialized when processing pre-calculated scalar results.
+
 ## [0.9.0] - 2026-02-09
 
 ### Added

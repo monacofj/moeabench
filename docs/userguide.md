@@ -588,57 +588,57 @@ MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnos
 
 ### **9.1. The Philosophy: Physical vs. Clinical**
 
-*   **Physical Metrics (`fair_`)**: These quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales.
+*   **Physical Metrics**: These quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales.
 *   **Clinical Metrics (`q_`)**: These translate physical facts into value judgments ($0.0 \dots 1.0$) based on strict offline baselines (Physics of Failure). A $Q=0.95$ Headway score means the algorithm is "Near-Ideal" relative to what is mathematically possible for that population size.
 
 ### **9.2. Physical Metrics (Fair)**
 
-#### **`fair_headway`**
-- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `fair_headway` refines this by filtering out the worst 5% outliers (Headway) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
+#### **`headway`**
+- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `headway` refines this by filtering out the worst 5% outliers (Headway) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
 - **Example**:
 ```python
-d = mb.diagnostics.fair_headway(exp)
+d = mb.diagnostics.headway(exp)
 ```
 
-#### **`fair_closeness`**
-- **Rationale**: While `fair_headway` provides a scalar summary, `fair_closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
+#### **`closeness`**
+- **Rationale**: While `headway` provides a scalar summary, `closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
 - **Example**:
 ```python
-u_vals = mb.diagnostics.fair_closeness(exp)
+u_vals = mb.diagnostics.closeness(exp)
 ```
 
-#### **`fair_coverage`**
-- **Rationale**: Deviation of the Ground Truth **from** the Population ($GT \to P$). Standard IGD is sensitive to the number of points. `fair_coverage` uses the average distance from the Ground Truth to the population to measure how well the solver has "reached" the entire manifold. It answers: "On average, how far is any optimal point from being found?"
+#### **`coverage`**
+- **Rationale**: Deviation of the Ground Truth **from** the Population ($GT \to P$). Standard IGD is sensitive to the number of points. `coverage` uses the average distance from the Ground Truth to the population to measure how well the solver has "reached" the entire manifold. It answers: "On average, how far is any optimal point from being found?"
 - **Example**:
 ```python
-cov = mb.diagnostics.fair_coverage(exp)
+cov = mb.diagnostics.coverage(exp)
 ```
 
-#### **`fair_gap`**
-- **Rationale**: An algorithm might have good average coverage but still leave massive "holes" on the front. `fair_gap` calculates the 95th percentile of the IGD components to quantify the size of the largest coverage failures (the Gaps), ensuring that narrow-but-deep search failures are identified.
+#### **`gap`**
+- **Rationale**: An algorithm might have good average coverage but still leave massive "holes" on the front. `gap` calculates the 95th percentile of the IGD components to quantify the size of the largest coverage failures (the Gaps), ensuring that narrow-but-deep search failures are identified.
 - **Example**:
 ```python
-gap = mb.diagnostics.fair_gap(exp)
+gap = mb.diagnostics.gap(exp)
 ```
 
-#### **`fair_regularity`**
+#### **`regularity`**
 - **Rationale**: Measures spatial uniformity. It uses the Wasserstein-1 (EMD) distance to compare the population's nearest-neighbor distribution against a perfectly uniform lattice. This detects if the algorithm is "clumping" or if it has successfully distributed solutions evenly across the front.
 - **Example**:
 ```python
-reg = mb.diagnostics.fair_regularity(exp)
+reg = mb.diagnostics.regularity(exp)
 ```
 
-#### **`fair_balance`**
-- **Rationale**: High-dimensional manifolds often feature distinct "regions" or clusters. `fair_balance` uses Jensen-Shannon Divergence to check if the algorithm has explored all clusters of the Ground Truth with the same probability as the reference density, detecting manifold occupancy bias.
+#### **`balance`**
+- **Rationale**: High-dimensional manifolds often feature distinct "regions" or clusters. `balance` uses Jensen-Shannon Divergence to check if the algorithm has explored all clusters of the Ground Truth with the same probability as the reference density, detecting manifold occupancy bias.
 - **Example**:
 ```python
-bal = mb.diagnostics.fair_balance(exp)
+bal = mb.diagnostics.balance(exp)
 ```
 
 ### **9.3. Clinical Metrics (Q-Scores)**
 
 #### **`q_headway`**
-- **Rationale**: Map the physical `fair_headway` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
+- **Rationale**: Map the physical `headway` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
 - **Example**:
 ```python
 score = mb.diagnostics.q_headway(exp)
@@ -703,7 +703,7 @@ text = res.report()
 ```
 
 #### **Scenario B: Individual Metric deep-dive**
-Even individual metrics like `q_headway` or `fair_coverage` support the reporting contract:
+Even individual metrics like `q_headway` or `coverage` support the reporting contract:
 
 ```python
 # Returns an object that acts as a float
@@ -730,7 +730,7 @@ true_pf = ... # Your analytical front
 s_k = 0.05    # Your estimated resolution scale
 
 # Calculate Physical Metric and report physical meaning
-fact = mb.diagnostics.fair_closeness(my_front, ref=true_pf, s_k=s_k)
+fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report_show()
 ```
 

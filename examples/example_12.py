@@ -50,15 +50,15 @@ def main():
     
     # A. Closeness (Physical Proximity Distribution)
     # This is the raw data used for the "Certification" layer.
-    u_dist = mb.diagnostics.fair_closeness(exp, ground_truth=gt)
+    u_dist = mb.diagnostics.closeness(exp, ground_truth=gt)
     print("\n--- Physical Insight: Closeness (Raw Distribution) ---")
     print(f"- Mean Distance: {np.mean(u_dist):.4f} resolution-units")
     print(f"- Max Distance (95th percentile): {np.percentile(u_dist, 95):.4f}")
     
     # B. Scalar Clinical/Fair Results
     # We compute the scalar versions of FAIR metrics
-    f_cov = mb.diagnostics.fair_coverage(exp, ground_truth=gt)
-    f_gap = mb.diagnostics.fair_gap(exp, ground_truth=gt)
+    f_cov = mb.diagnostics.coverage(exp, ground_truth=gt)
+    f_gap = mb.diagnostics.gap(exp, ground_truth=gt)
     
     print("\n--- Physical Insight: Coverage & Gaps ---")
     print(f"- Coverage Score: {float(f_cov):.4f} (Avg distance to manifold)")

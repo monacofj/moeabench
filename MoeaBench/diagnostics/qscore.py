@@ -192,6 +192,7 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
 def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Rand50).
     """
+    s_fit = s_k if s_k is not None else 1.0
     if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
@@ -201,8 +202,9 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        f_val = fair.fair_headway(P, GT, s_fit)
+        P, GT, s_ctx, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        s_fit = s_ctx
+        f_val = fair.headway(P, GT, s_fit)
     
     # Ideal = 0.0 (Better-than-noise progress)
     _, rand50_raw = baselines.get_baseline_values(problem, k, "headway")
@@ -228,7 +230,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
         k = kwargs.get('k', 100)
     else:
         P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        u_dist = fair.fair_closeness(P, GT, s_fit)
+        u_dist = fair.closeness(P, GT, s_fit)
     
     if u_dist.size == 0:
         return QResult(0.0, "Q_CLOSENESS", "Empty distribution (Failed).")
@@ -269,7 +271,7 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = fair.fair_coverage(P, GT)
+        f_val = fair.coverage(P, GT)
         
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
@@ -287,7 +289,7 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = fair.fair_gap(P, GT)
+        f_val = fair.gap(P, GT)
         
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
@@ -305,7 +307,7 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = fair.fair_regularity(P, ref_distribution)
+        f_val = fair.regularity(P, ref_distribution)
         
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
@@ -323,7 +325,7 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = fair.fair_balance(P, centroids, ref_hist)
+        f_val = fair.balance(P, centroids, ref_hist)
         
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)

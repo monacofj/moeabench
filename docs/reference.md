@@ -655,7 +655,7 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 
 | Result Class | Returner functions | Characteristics |
 | :--- | :--- | :--- |
-| **`FairResult`** | `fair_headway`, `fair_coverage`, etc. | Physical facts, normalized by resolution. |
+| **`FairResult`** | `headway`, `coverage`, etc. | Physical facts, normalized by resolution. |
 | **`QResult`** | `q_headway`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
 | **`DiagnosticResult`**| `audit()` | High-level synthesis with Biopsy summary. |
 
@@ -685,32 +685,32 @@ All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_dia
 These metrics answer: *"What is the physical state of the population?"*
 They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
 
-#### **`fair_headway(data, ref=None, s_k=None) -> FairResult`**
+#### **`headway(data, ref=None, s_k=None) -> FairResult`**
 *   **Definition**: $GD_{95}(P \to GT) / s_K$
 *   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Headway) and normalizes the distance by the expected separation of optimal points ($s_K$).
 *   **Ideal**: $0.0$.
 *   **Interpretation**: Values $< 1.0$ indicate the population is "fitting" the manifold better than the discrete resolution limit.
 
-#### **`fair_closeness(data, ref=None, s_k=None) -> np.ndarray`**
+#### **`closeness(data, ref=None, s_k=None) -> np.ndarray`**
 *   **Definition**: Vector of point-wise distances: $u_j = \min(\|p_j - GT\|) / s_K$.
 *   **Rationale**: Provides the **Distribution of Closeness**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
 *   **Returns**: 1D Array of size $N$.
 
-#### **`fair_coverage(data, ref=None) -> FairResult`**
+#### **`coverage(data, ref=None) -> FairResult`**
 *   **Definition**: $IGD_{mean}(GT \to P)$
 *   **Rationale**: Measures **Global Coverage**. It is the average distance from *any* point on the True Front to the nearest solution found.
 *   **Ideal**: $0.0$.
 
-#### **`fair_gap(data, ref=None) -> FairResult`**
+#### **`gap(data, ref=None) -> FairResult`**
 *   **Definition**: $IGD_{95}(GT \to P)$
 *   **Rationale**: Measures **worst-case holes** in the coverage. By taking the 95th percentile of the IGD components, it identifies the largest "Gaps" in the manifold approximation.
 
-#### **`fair_regularity(data, ref_distribution=None) -> FairResult`**
+#### **`regularity(data, ref_distribution=None) -> FairResult`**
 *   **Definition**: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
 *   **Rationale**: Measures **Structural Uniformity**. It uses the **Wasserstein-1 Distance** (Earth Mover's Distance) to compare the distribution of Nearest-Neighbor distances in $P$ against a perfectly uniform lattice $U_{ref}$.
 *   **Ideal**: $0.0$ (structure matches the lattice).
 
-#### **`fair_balance(data, centroids=None, ref_hist=None) -> FairResult`**
+#### **`balance(data, centroids=None, ref_hist=None) -> FairResult`**
 *   **Definition**: $D_{JS}(H_P || H_{ref})$
 *   **Rationale**: Measures **Manifold Bias**. It partitions the Ground Truth into $C$ clusters and calculates the **Jensen-Shannon Divergence** between the finding rates of the algorithm and the reference density.
 *   **Ideal**: $0.0$ (Balanced occupancy).
