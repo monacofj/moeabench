@@ -94,7 +94,7 @@ def generate_visual_report():
         "<p>Before assigning a grade, we compute the <b>Physical Metrics</b>. These are \"Fair\" because they are robust to outliers and, where applicable, normalized by the problem's resolution (s_K).</p>",
         "<table class='metric-table'>",
         "<tr><th>Fair Metric</th><th>Physical Definition (Measurement)</th></tr>",
-        "<tr><td><b>Fair Denoise</b></td><td><b>Convergence Depth:</b> The 95th percentile distance to the Ground Truth, divided by resolution (s_K).<br><i>Meaning:</i> \"How many pixels away is the front?\"</td></tr>",
+        "<tr><td><b>Fair Headway</b></td><td><b>Convergence Depth:</b> The 95th percentile distance to the Ground Truth, divided by resolution (s_K).<br><i>Meaning:</i> \"How many pixels away is the front?\"</td></tr>",
         "<tr><td><b>Fair Closeness</b></td><td><b>Proximity Distribution:</b> The set of all distances to Ground Truth, divided by s_K.<br><i>Meaning:</i> The complete distribution of convergence errors.</td></tr>",
         "<tr><td><b>Fair Coverage</b></td><td><b>Extent Error:</b> The mean distance from the Ground Truth to the Front (IGD Mean).<br><i>Meaning:</i> The average gap left uncovered.</td></tr>",
         "<tr><td><b>Fair Gap</b></td><td><b>Continuity Breach:</b> The 95th percentile of the IGD (Worst Hole).<br><i>Meaning:</i> The size of the largest gap in the front.</td></tr>",
@@ -118,7 +118,7 @@ def generate_visual_report():
         "<h4>3.2 Q-Score Definitions & Baselines</h4>",
         "<table class='metric-table'>",
         "<tr><th>Q-Score</th><th>Concept</th><th>Baseline Failure (Q=0)</th><th>Ideal State (Q=1)</th></tr>",
-        "<tr><td><b>Denoise</b></td><td><b>Entropic Progress:</b> Did the algorithm reduce the initial randomness?</td><td><b>Random Guessing:</b> Points scattered blindly in the objective space.</td><td><b>Noise-Free:</b> Complete removal of entropic noise.</td></tr>",
+        "<tr><td><b>Headway</b></td><td><b>Algorithmic Progress:</b> Did the algorithm advance beyond the initial random bounding box?</td><td><b>Random Guessing:</b> Points scattered blindly in the objective space.</td><td><b>Noise-Free:</b> Complete removal of entropic noise.</td></tr>",
         "<tr><td><b>Closeness</b></td><td><b>Precision vs. Blur:</b> How sharp is the convergence?</td><td><b>Gaussian Blur:</b> Ground Truth \"inflated\" by statistical noise.</td><td><b>Discrete Truth:</b> Perfect, sharp convergence.</td></tr>",
         "<tr><td><b>Coverage</b></td><td><b>Extent:</b> Does the population stretch to the edges?</td><td><b>Random Extent:</b> Coverage limited by random chance.</td><td><b>Full Manifold:</b> Limits reached perfectly.</td></tr>",
         "<tr><td><b>Gap</b></td><td><b>Continuity:</b> Are there large holes?</td><td><b>Random Gaps:</b> Holes expected from random sampling.</td><td><b>Seamless:</b> No gaps larger than resolution.</td></tr>",
@@ -180,8 +180,8 @@ def generate_visual_report():
                 else:
                     dists = np.zeros(len(front))
                 
-                # Fetch DENOISE/CLOSENESS baselines (already normalized in v4)
-                denoise_data = clinical.get("denoise", {})
+                # Fetch HEADWAY/CLOSENESS baselines (already normalized in v4)
+                headway_data = clinical.get("headway", {})
                 closeness_data = clinical.get("closeness", {})
                 s_fit = clinical.get("s_fit", 1.0) # The new s_K scaling factor
 
@@ -406,21 +406,21 @@ def generate_visual_report():
         matrix_table = [
             "<h3>Clinical Quality Matrix</h3>",
             "<table><colgroup><col style='width: 120px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: 140px'><col style='width: auto'></colgroup>",
-            "<thead><tr><th>Algorithm</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>DENOISE</th><th>SUMMARY</th></tr></thead>"
+            "<thead><tr><th>Algorithm</th><th>CLOSENESS</th><th>COVERAGE</th><th>CONTINUITY</th><th>REGUL.</th><th>BALANCE</th><th>HEADWAY</th><th>SUMMARY</th></tr></thead>"
         ]
         for m in mop_metrics:
             matrix_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td>")
             c = m["clinical"]
             s_fit = c.get("s_fit") # Correct nesting for s_fit
 
-            for dim in ["closeness", "cov", "gap", "reg", "bal", "denoise"]:
+            for dim in ["closeness", "cov", "gap", "reg", "bal", "headway"]:
                 d = c.get(dim, {})
                 q = d.get("q", 0)
                 cls = "diag-optimal" if q >= 0.67 else ("diag-warning" if q >= 0.34 else "diag-failure")
                 
                 # Full Tip for Tooltip
                 tip = f"Q: {q:.4f}&#013;Fair: {d.get('fair',0):.4f}&#013;Good: {d.get('anchor_good',0):.4f}&#013;Bad: {d.get('anchor_bad',0):.4f}"
-                if dim == "denoise" and "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
+                if dim == "headway" and "s_fit" in m: tip += f"&#013;s_K: {m['s_fit']:.2e}"
                 if dim == "closeness":
                     tip += f"&#013;sigma: {d.get('sigma',0):.2e}&#013;p95: {d.get('p95',0):.2f}"
                 
@@ -439,8 +439,8 @@ def generate_visual_report():
                     f"b: {b_val:6.3f}"
                 ]
                 
-                # Add s_K as the 4th line for Denoise and Closeness
-                if dim in ["denoise", "closeness"] and s_fit is not None:
+                # Add s_K as the 4th line for Headway and Closeness
+                if dim in ["headway", "closeness"] and s_fit is not None:
                     lines.append(f"s: {s_fit:9.2e}")
                 
                 sub_text = f"<div style='{sub_style}'>{'<br>'.join(lines)}</div>"

@@ -8,7 +8,7 @@ MoeaBench Baseline Generator v4 (ECDF-based)
 ============================================
 
 Generates baselines_v4.json containing ECDF profiles for ALL clinical metrics:
-1. DENOISE (Progress better than noise)
+1. HEADWAY (Progress better than noise)
 2. CLOSENESS (Proximity to GT via Normal-Blur)
 3. COV (Coverage)
 4. GAP (Continuity)
@@ -201,12 +201,12 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
         hist_ref (np.ndarray): Reference histogram for BAL
         
     Returns:
-        dict: {denoise, cov, gap, reg, bal}
+        dict: {headway, cov, gap, reg, bal}
     """
     metrics = {}
     
-    # 1. DENOISE (Proximity)
-    metrics['denoise'] = fair.fair_denoise(samples, gt_norm, s_k=s_fit)
+    # 1. HEADWAY (Proximity)
+    metrics['headway'] = fair.fair_headway(samples, gt_norm, s_k=s_fit)
 
     # 2. COV (Coverage)
     metrics['cov'] = fair.fair_coverage(samples, gt_norm)
@@ -286,7 +286,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
-        rand_vals = {"denoise": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        rand_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES):
@@ -297,7 +297,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             
         # --- GENERATION (IDEAL) ---
         # "Success" Baseline: Uniform Sampling from GT (u_ref itself, or perturbations?)
-        uni_vals = {"denoise": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        uni_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
         for i in range(N_IDEAL):
             # Sample Uniformly from GT (Simulates a perfect algorithm)
             # Seed varies to get distribution of "Perfect"
@@ -310,7 +310,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
 
         # --- STORAGE ---
         k_data = {}
-        for metric in ["denoise", "cov", "gap", "reg", "bal"]:
+        for metric in ["headway", "cov", "gap", "reg", "bal"]:
             # Random (ECDF)
             r_all = np.sort(rand_vals[metric])
             r_50 = float(np.median(r_all))
@@ -319,8 +319,8 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             # Ideal (Scalar Anchor)
             u_50 = float(np.median(uni_vals[metric]))
             
-            # Special case for DENOISE: Ideal is 0.0 by definition of distance
-            if metric == "denoise": u_50 = 0.0
+            # Special case for HEADWAY: Ideal is 0.0 by definition of distance
+            if metric == "headway": u_50 = 0.0
             
             k_data[metric] = {
                 "uni50": u_50,

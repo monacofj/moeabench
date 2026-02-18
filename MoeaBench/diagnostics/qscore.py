@@ -11,7 +11,7 @@ Logic:
 1.  High-is-Better (1.0 = Optimal, 0.0 = Random/Fail).
 2.  Formula: Linear interpolation between Ideal (Q=1) and Random (Q=0).
 3.  Strict Baseline Rules:
-    - DENOISE: ideal=0.0 (Better-than-noise progress), random=BBox-Random.
+    - HEADWAY: ideal=0.0 (Better-than-noise progress), random=BBox-Random.
     - OTHERS: ideal=Uni50 (FPS of GT), random=Rand50 (Random Subset of GT).
 """
 
@@ -27,7 +27,7 @@ class QResult(DiagnosticValue):
     """ Specialized result for Clinical (Q-Score) metrics. """
     
     _LABELS = {
-        "Q_DENOISE":   {0.95: "Near-Ideal Suppr.", 0.85: "Strong Suppr.", 0.67: "Effective", 0.34: "Partial", 0.0: "Noise-dominant"},
+        "Q_HEADWAY":   {0.95: "Near-Ideal Progress", 0.85: "Strong Progress", 0.67: "Effective", 0.34: "Partial", 0.0: "Static/Random"},
         "Q_CLOSENESS": {0.95: "Asymptotic", 0.85: "High Precision", 0.67: "Sufficient", 0.34: "Coarse", 0.0: "Remote"},
         "Q_COVERAGE":  {0.95: "Exhaustive", 0.85: "Extensive", 0.67: "Standard", 0.34: "Limited", 0.0: "Collapsed"},
         "Q_GAP":       {0.95: "High Continuity", 0.85: "Stable", 0.67: "Managed Gaps", 0.34: "Interrupted", 0.0: "Fragmented"},
@@ -189,8 +189,8 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
-def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
-    """[Smart API] Computes Q_DENOISE using a log-linear baseline (Ideal -> Rand50).
+def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+    """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Rand50).
     """
     if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
@@ -202,16 +202,20 @@ def q_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
         k = kwargs.get('k', 100)
     else:
         P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        f_val = fair.fair_denoise(P, GT, s_fit)
+        f_val = fair.fair_headway(P, GT, s_fit)
     
     # Ideal = 0.0 (Better-than-noise progress)
-    _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
+    _, rand50_raw = baselines.get_baseline_values(problem, k, "headway")
+    
+    # Normalize baseline to match FAIR units (s_fit)
+    rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
+
     q_val = _compute_q_loglinear(f_val, 0.0, rand50)
     
     return QResult(
         value=q_val,
-        name="Q_DENOISE",
-        description="Measures the reduction of entropic noise/clutter in the population."
+        name="Q_HEADWAY",
+        description="Measures the algorithmic progress (headway) made beyond the random bounding box."
     )
 
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
@@ -325,9 +329,9 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
 
-def q_denoise_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
+def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
-    [Smart API] Vectorized Q-Score calculation for point cloud (DENOISE).
+    [Smart API] Vectorized Q-Score calculation for point cloud (HEADWAY).
     Supports either (P, GT) or pre-calculated dists.
     """
     P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
@@ -348,7 +352,8 @@ def q_denoise_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     fair_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
     
     # 2. Get Baseline (Rand50 in FAIR space)
-    _, rand50 = baselines.get_baseline_values(problem, k, "denoise")
+    _, rand50_raw = baselines.get_baseline_values(problem, k, "headway")
+    rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
 
     # 3. Vectorized log-linear mapping
     denom_raw = max(rand50, 0.0)

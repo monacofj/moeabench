@@ -23,7 +23,7 @@ This matrix defines the conversion from numerical Q-Scores [0, 1] to standardize
 
 | Dimension | 0.95 (Except.) | 0.85 (High) | 0.67 (Std.) | 0.34 (Substd.) | 0.0 (Fail) |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **DENOISE** | Near-Ideal Suppr. | Strong Suppr. | Effective | Partial | Noise-dominant |
+| **HEADWAY** | Near-Ideal Suppr. | Strong Suppr. | Effective | Partial | Noise-dominant |
 | **CLOSENESS** | Asymptotic | High Precision | Sufficient | Coarse | Remote |
 | **COVERAGE** | Exhaustive | Extensive | Standard | Limited | Collapsed |
 | **GAP** | High Continuity | Stable | Managed Gaps | Interrupted | Fragmented |

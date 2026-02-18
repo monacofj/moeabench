@@ -66,8 +66,8 @@ class QualityAuditResult(Reportable):
         q_close = q("Q_CLOSENESS")
         if q_close < THRESH_INDUSTRY:
             msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
-            if q("Q_DENOISE") >= THRESH_RESEARCH:
-                msg = f"Poor Convergence: Despite effective progress in denoising, the algorithm failed to approach the optimal manifold."
+            if q("Q_HEADWAY") >= THRESH_RESEARCH:
+                msg = f"Poor Convergence: Despite effective progress in headway, the algorithm failed to approach the optimal manifold."
             return msg
 
         # Gate 2: Spatial Extent (Coverage & Gap)
@@ -200,7 +200,7 @@ class PerformanceAuditor:
                 mapping = {
                     "COVERAGE": DiagnosticStatus.COLLAPSED_FRONT,
                     "CLOSENESS": DiagnosticStatus.SHIFTED_FRONT,
-                    "DENOISE": DiagnosticStatus.SHIFTED_FRONT,
+                    "HEADWAY": DiagnosticStatus.SHIFTED_FRONT,
                     "GAP": DiagnosticStatus.GAPPED_COVERAGE,
                     "BALANCE": DiagnosticStatus.BIASED_SPREAD,
                     "REGULARITY": DiagnosticStatus.NOISY_POPULATION
@@ -296,7 +296,7 @@ def audit(target: Any,
         s_k = baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
         # C. Compute FAIR Metrics (Physics)
-        f_denoise = fair.fair_denoise(P, GT, s_k)
+        f_headway = fair.fair_headway(P, GT, s_k)
         f_closeness_raw = fair.fair_closeness(P, GT, s_k) 
         f_cov = fair.fair_coverage(P, GT)
         f_gap = fair.fair_gap(P, GT)
@@ -304,8 +304,8 @@ def audit(target: Any,
         f_bal = fair.fair_balance(P, centroids, hist_ref)
         
         f_metrics = {
-            "CLOSENESS": f_denoise,
-            "COVERAGE": f_cov,
+            "HEADWAY": f_headway,
+            "CLOSENESS": f_closeness_raw, 
             "GAP": f_gap,
             "REGULARITY": f_reg,
             "BALANCE": f_bal
@@ -313,7 +313,7 @@ def audit(target: Any,
         fair_res = PerformanceAuditor.audit_fair(f_metrics)
         
         # D. Compute Q-Scores (Engineering)
-        q_den = qscore.q_denoise(f_denoise, problem=mop_name, k=K_target)
+        q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target)
         q_clo = qscore.q_closeness(f_closeness_raw, problem=mop_name, k=K_target)
         q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
         q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
@@ -321,7 +321,7 @@ def audit(target: Any,
         q_b = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
         
         q_scores = {
-            "Q_DENOISE": q_den,
+            "Q_HEADWAY": q_h,
             "Q_CLOSENESS": q_clo,
             "Q_COVERAGE": q_c,
             "Q_GAP": q_g,

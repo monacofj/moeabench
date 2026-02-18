@@ -28,9 +28,9 @@ class FairResult(DiagnosticValue):
             return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
         return f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
 
-def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+def fair_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
-    [Smart API] Calculates FAIR_DENOISE (Convergence).
+    [Smart API] Calculates FAIR_HEADWAY (Algorithmic Progress over BBox).
     
     Definition: $GD_{95}(P \to GT) / s_{FIT}$
     Meaning: How far P is from GT, in units of s_fit (resolution at K).
@@ -53,7 +53,7 @@ def fair_denoise(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = No
     
     return FairResult(
         value=f_val,
-        name="FAIR_CLOSENESS",
+        name="FAIR_HEADWAY",
         description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth."
     )
 

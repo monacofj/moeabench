@@ -182,7 +182,7 @@ def get_ref_clusters(gt: np.ndarray, c: int = 32, seed: int = 0) -> Any:
 def get_resolution_factor(gt: np.ndarray) -> float:
     """
     Calculates s_GT: Median Nearest Neighbor distance within GT.
-    Used for normalizing DENOISE/FIT.
+    Used for normalizing HEADWAY/FIT.
     """
     if len(gt) < 2:
         return 1.0 # Fallback
@@ -195,7 +195,7 @@ def get_resolution_factor(gt: np.ndarray) -> float:
 def get_resolution_factor_k(gt: np.ndarray, k: int, seed: int = 0) -> float:
     """
     Calculates s_K: Median Nearest Neighbor distance within U_K (FPS of GT).
-    Used for normalizing DENOISE/FIT in finite sampling regimes.
+    Used for normalizing HEADWAY/FIT in finite sampling regimes.
     """
     u_ref = get_ref_uk(gt, k, seed=seed)
     if len(u_ref) < 2:

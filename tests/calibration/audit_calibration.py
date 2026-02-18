@@ -62,12 +62,12 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     run_files = sorted(glob.glob(pattern))
     
     # Fair Metric Accumulators (Physics)
-    fair_denoise_vals, fair_cov_vals, fair_gap_vals, fair_reg_vals, fair_bal_vals = [], [], [], [], []
+    fair_headway_vals, fair_cov_vals, fair_gap_vals, fair_reg_vals, fair_bal_vals = [], [], [], [], []
     u_closeness_vals = [] # List of arrays
 
     # Bucket FAIR samples by snapped K to compute distributional Q (Wasserstein)
     fair_by_k = {
-        'denoise': defaultdict(list),
+        'headway': defaultdict(list),
         'closeness': defaultdict(list), # Stores flat list of all u samples for this K
         'cov': defaultdict(list),
         'gap': defaultdict(list),
@@ -103,7 +103,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             # Load Baselines
             try:
                 # Fetch ECDF values internally if needed, or just values for summary
-                f_u, f_r = base.get_baseline_values(mop_name, K_target, "denoise")
+                f_u, f_r = base.get_baseline_values(mop_name, K_target, "headway")
                 c_u, c_r = base.get_baseline_values(mop_name, K_target, "cov")
                 g_u, g_r = base.get_baseline_values(mop_name, K_target, "gap")
                 u_u, u_r = base.get_baseline_values(mop_name, K_target, "reg")
@@ -125,7 +125,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
 
             # Metrics
             # Using s_fit (s_K) instead of s_gt for Clinical consistency (ADR 0026)
-            fair_f = fair.fair_denoise(P_eval, F_opt, s_k=s_fit) # Updated name and s_k
+            fair_f = fair.fair_headway(P_eval, F_opt, s_k=s_fit) # Updated name and s_k
             fair_c = fair.fair_coverage(P_eval, F_opt)
             fair_g = fair.fair_gap(P_eval, F_opt)
             fair_r = fair.fair_regularity(P_eval, U_ref)
@@ -135,10 +135,10 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             u_dist = fair.fair_closeness(P_eval, F_opt, s_k=s_fit)
             
             # Store FAIR values (per-run) and also bucket by K for distributional Q
-            fair_denoise_vals.append(float(fair_f)); fair_cov_vals.append(float(fair_c)); fair_gap_vals.append(float(fair_g)); fair_reg_vals.append(float(fair_r)); fair_bal_vals.append(float(fair_b))
+            fair_headway_vals.append(float(fair_f)); fair_cov_vals.append(float(fair_c)); fair_gap_vals.append(float(fair_g)); fair_reg_vals.append(float(fair_r)); fair_bal_vals.append(float(fair_b))
             u_closeness_vals.append(u_dist)
             
-            fair_by_k["denoise"][K_target].append(float(fair_f))
+            fair_by_k["headway"][K_target].append(float(fair_f))
             fair_by_k["closeness"][K_target].extend(u_dist.tolist()) # Accumulate points for distributional W1
             fair_by_k["cov"][K_target].append(float(fair_c))
             fair_by_k["gap"][K_target].append(float(fair_g))
@@ -154,7 +154,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         except Exception: 
             import traceback; traceback.print_exc()
             continue
-    n_runs = len(fair_denoise_vals)
+    n_runs = len(fair_headway_vals)
     def _med(lst): return float(np.nanmedian(lst)) if len(lst) else np.nan
     def _avg(lst): return float(np.mean(lst)) if len(lst) else np.nan
     # Distributional Q via Wasserstein-1 against baseline random ECDF and a practical-ideal sample
@@ -168,10 +168,10 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         hist_ref /= np.sum(hist_ref)
 
         N_IDEAL = 30
-        vals = {'denoise': [], 'closeness': [], 'cov': [], 'gap': [], 'reg': [], 'bal': []}
+        vals = {'headway': [], 'closeness': [], 'cov': [], 'gap': [], 'reg': [], 'bal': []}
         for i in range(N_IDEAL):
             pop_uni = base.get_ref_uk(F_opt, k, seed=100+i)
-            vals['denoise'].append(float(fair.fair_denoise(pop_uni, F_opt, s_k=s_k)))
+            vals['headway'].append(float(fair.fair_headway(pop_uni, F_opt, s_k=s_k)))
             vals['closeness'].extend(fair.fair_closeness(pop_uni, F_opt, s_k=s_k).tolist())
             vals['cov'].append(float(fair.fair_coverage(pop_uni, F_opt)))
             vals['gap'].append(float(fair.fair_gap(pop_uni, F_opt)))
@@ -221,23 +221,23 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             return float('nan'), float('nan'), float('nan'), float('nan')
         return acc_q / total, acc_di / total, acc_dr / total, acc_delta / total
 
-    q_denoise, di_denoise, dr_denoise, de_denoise = _q_and_dists_weighted('denoise')
+    q_headway, di_headway, dr_headway, de_headway = _q_and_dists_weighted('headway')
     q_closeness, di_closeness, dr_closeness, de_closeness = _q_and_dists_weighted('closeness')
     q_cov, di_cov, dr_cov, de_cov = _q_and_dists_weighted('cov')
     q_gap, di_gap, dr_gap, de_gap = _q_and_dists_weighted('gap')
     q_reg, di_reg, dr_reg, de_reg = _q_and_dists_weighted('reg')
     q_bal, di_bal, dr_bal, de_bal = _q_and_dists_weighted('bal')
 
-    mq = {'denoise': q_denoise, 'closeness': q_closeness, 'cov': q_cov, 'gap': q_gap, 'reg': q_reg, 'bal': q_bal}
+    mq = {'headway': q_headway, 'closeness': q_closeness, 'cov': q_cov, 'gap': q_gap, 'reg': q_reg, 'bal': q_bal}
     md = {
-        'denoise': {'d_ideal': di_denoise, 'd_rand': dr_denoise, 'delta': de_denoise},
+        'headway': {'d_ideal': di_headway, 'd_rand': dr_headway, 'delta': de_headway},
         'closeness': {'d_ideal': di_closeness, 'd_rand': dr_closeness, 'delta': de_closeness},
         'cov': {'d_ideal': di_cov, 'd_rand': dr_cov, 'delta': de_cov},
         'gap': {'d_ideal': di_gap, 'd_rand': dr_gap, 'delta': de_gap},
         'reg': {'d_ideal': di_reg, 'd_rand': dr_reg, 'delta': de_reg},
         'bal': {'d_ideal': di_bal, 'd_rand': dr_bal, 'delta': de_bal},
     }
-    mf = {"denoise": _med(fair_denoise_vals), "cov": _med(fair_cov_vals), "gap": _med(fair_gap_vals), "reg": _med(fair_reg_vals), "bal": _med(fair_bal_vals)}
+    mf = {"headway": _med(fair_headway_vals), "cov": _med(fair_cov_vals), "gap": _med(fair_gap_vals), "reg": _med(fair_reg_vals), "bal": _med(fair_bal_vals)}
     if u_closeness_vals:
         # For fair_closeness (physics), we can show the median of all point-distances across all runs
         mf["closeness"] = _med(np.concatenate(u_closeness_vals))
@@ -252,8 +252,8 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         _, r50 = base.get_baseline_values(mop_name, k_ref, metric)
         return float(r50)
 
-    mi = {m: float(np.nanmedian(ideal_ref[m])) for m in ['denoise','closeness','cov','gap','reg','bal']}
-    mr = {m: _rand50(m) for m in ['denoise','closeness','cov','gap','reg','bal']}
+    mi = {m: float(np.nanmedian(ideal_ref[m])) for m in ["headway","closeness","cov","gap","reg","bal"]}
+    mr = {m: _rand50(m) for m in ["headway","closeness","cov","gap","reg","bal"]}
     
     q_worst = np.nanmin(list(mq.values()))
     # Strict fallback for all-NaN case
@@ -261,7 +261,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     
     # Create QualityAuditResult to get the standardized summary narrative
     q_results = {
-        "Q_DENOISE":   qscore.QResult(mq["denoise"], "Q_DENOISE"),
+        "Q_HEADWAY":   qscore.QResult(mq["headway"], "Q_HEADWAY"),
         "Q_CLOSENESS": qscore.QResult(mq["closeness"], "Q_CLOSENESS"),
         "Q_COVERAGE":  qscore.QResult(mq["cov"], "Q_COVERAGE"),
         "Q_GAP":       qscore.QResult(mq["gap"], "Q_GAP"),
@@ -274,7 +274,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     return {
         "n_runs": n_runs, "n_valid": n_runs - n_k_fail, "n_k_fail": n_k_fail,
         "summary": summary_text,
-        "denoise": {"q": mq["denoise"], "fair": mf["denoise"], "anchor_good": mi["denoise"], "anchor_bad": mr["denoise"], **md["denoise"]},
+        "headway": {"q": mq["headway"], "fair": mf["headway"], "anchor_good": mi["headway"], "anchor_bad": mr["headway"], **md["headway"]},
         "closeness": {"q": mq["closeness"], "fair": mf["closeness"], "anchor_good": mi["closeness"], "anchor_bad": mr["closeness"], **md["closeness"]},
         "cov": {"q": mq["cov"], "fair": mf["cov"], "anchor_good": mi["cov"], "anchor_bad": mr["cov"], **md["cov"]},
         "gap": {"q": mq["gap"], "fair": mf["gap"], "anchor_good": mi["gap"], "anchor_bad": mr["gap"], **md["gap"]},

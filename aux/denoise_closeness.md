@@ -1,23 +1,23 @@
-# Spec (v2): Rename FIT→DENOISE and add Q_CLOSENESS using GT-normal-blur (Half-Normal) + W1 Q-score
+# Spec (v2): Rename FIT→HEADWAY and add Q_CLOSENESS using GT-normal-blur (Half-Normal) + W1 Q-score
 
 ## Design goals
-1) **User clarity**: “DENOISE” means *better than noise baseline* (progress), not “close to GT”.
+1) **User clarity**: “HEADWAY” means *better than noise baseline* (progress), not “close to GT”.
 2) **No semantic overlap**: “CLOSENESS” measures only *perpendicular proximity to GT* (not coverage/regularity).
 3) **Consistency**: Q_CLOSENESS uses the same Q-score “dialect” as other Q metrics (ECDF + Wasserstein-1).
 4) **Scientific plausibility**: GT degradation uses a conventional error model (Gaussian along estimated normal ⇒ Half-Normal magnitudes).
 
 ---
 
-## Part A — Rename FIT to DENOISE (no math changes)
+## Part A — Rename FIT to HEADWAY (no math changes)
 ### A1. Public labels
 - Replace all user-facing mentions:
-  - `FIT` → `DENOISE`
-  - `q_fit` → `q_denoise`
-  - “Fit / Proximity” wording → “Denoise / Better-than-noise progress”
+  - `FIT` → `HEADWAY`
+  - `q_fit` → `q_headway`
+  - “Fit / Proximity” wording → “Headway / Better-than-noise progress”
 - Keep the underlying computation unchanged.
 
 ### A2. Documentation snippet (glossary)
-- **DENOISE**: “How far the algorithm’s outcome is from a noise baseline (AnchorBad), relative to the ideal (AnchorGood). High DENOISE does **not** imply closeness to the GT manifold.”
+- **HEADWAY**: “How far the algorithm’s outcome is from a noise baseline (AnchorBad), relative to the ideal (AnchorGood). High HEADWAY does **not** imply closeness to the GT manifold.”
 
 ---
 
@@ -143,7 +143,7 @@ Optional but highly recommended (for interpretability):
 These are not part of Q but help users instantly see “how much is actually on GT”.
 
 ### B4.2 Verdict logic (initial suggestion)
-To prevent “denoise-only” false positives, require CLOSENESS:
+To prevent “headway-only” false positives, require CLOSENESS:
 - A run/problem cannot be “good” overall if CLOSENESS is below threshold.
 - Reuse existing thresholds (0.34/0.67) for CLOSENESS to stay consistent, then tune later.
 
@@ -151,7 +151,7 @@ To prevent “denoise-only” false positives, require CLOSENESS:
 
 ## Part B5 — Acceptance tests (must pass)
 1) **DTLZ2** (NSGA2/NSGA3): high CLOSENESS and high near@1.
-2) **DTLZ6** with visible parallel arcs: low CLOSENESS even if DENOISE is high.
+2) **DTLZ6** with visible parallel arcs: low CLOSENESS even if HEADWAY is high.
 3) **Disconnected GT** (e.g., DTLZ7-like): CLOSENESS stable (no cross-component neighbor contamination).
 4) Reproducibility: `G_blur`, σ, and q_closeness identical across runs given same seeds.
 

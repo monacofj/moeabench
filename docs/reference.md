@@ -655,8 +655,8 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 
 | Result Class | Returner functions | Characteristics |
 | :--- | :--- | :--- |
-| **`FairResult`** | `fair_denoise`, `fair_coverage`, etc. | Physical facts, normalized by resolution. |
-| **`QResult`** | `q_denoise`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
+| **`FairResult`** | `fair_headway`, `fair_coverage`, etc. | Physical facts, normalized by resolution. |
+| **`QResult`** | `q_headway`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
 | **`DiagnosticResult`**| `audit()` | High-level synthesis with Biopsy summary. |
 
 ---
@@ -664,7 +664,7 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 ### **12.2. The Smart Dispatch Protocol**
 
 > [!NOTE]
-> **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Denoise" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
+> **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Headway" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
 All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
 
@@ -685,9 +685,9 @@ All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_dia
 These metrics answer: *"What is the physical state of the population?"*
 They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
 
-#### **`fair_denoise(data, ref=None, s_k=None) -> FairResult`**
+#### **`fair_headway(data, ref=None, s_k=None) -> FairResult`**
 *   **Definition**: $GD_{95}(P \to GT) / s_K$
-*   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Denoising) and normalizes the distance by the expected separation of optimal points ($s_K$).
+*   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Headway) and normalizes the distance by the expected separation of optimal points ($s_K$).
 *   **Ideal**: $0.0$.
 *   **Interpretation**: Values $< 1.0$ indicate the population is "fitting" the manifold better than the discrete resolution limit.
 
@@ -725,7 +725,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Range**: $1.0$ (Ideal) to $0.0$ (Baseline/Random). Negative values indicate pathological failure.
 *   **Logic**: $Q = 1 - \text{Correction}(\frac{\text{Fair} - \text{Ideal}}{\text{Random} - \text{Ideal}})$
 
-#### **`q_denoise(data, ...) -> QResult`**
+#### **`q_headway(data, ...) -> QResult`**
 *   **Baselines**: Ideal=$0.0$, Random=$Rand_{50}$ (from repository).
 *   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ to distinguish "Super-converged" solutions from merely "Good" ones.
 

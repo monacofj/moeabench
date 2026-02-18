@@ -17,7 +17,7 @@ from .enums import DiagnosticStatus
 
 # Fair Metrics (Physical Layer)
 from .fair import (
-    fair_denoise,
+    fair_headway,
     fair_closeness,
     fair_coverage,
     fair_gap,
@@ -27,13 +27,13 @@ from .fair import (
 
 # Q-Scores (Clinical Layer)
 from .qscore import (
-    q_denoise,
+    q_headway,
     q_closeness,
     q_coverage,
     q_gap,
     q_regularity,
     q_balance,
-    q_denoise_points,
+    q_headway_points,
     q_closeness_points
 )
 
@@ -41,7 +41,7 @@ __all__ = [
     "audit", "fair_audit", "q_audit", 
     "DiagnosticResult", "FairAuditResult", "QualityAuditResult",
     "DiagnosticStatus",
-    "fair_denoise", "fair_closeness", "fair_coverage", "fair_gap", "fair_regularity", "fair_balance",
-    "q_denoise", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
-    "q_denoise_points", "q_closeness_points"
+    "fair_headway", "fair_closeness", "fair_coverage", "fair_gap", "fair_regularity", "fair_balance",
+    "q_headway", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
+    "q_headway_points", "q_closeness_points"
 ]

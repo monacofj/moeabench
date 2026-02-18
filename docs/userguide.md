@@ -584,24 +584,24 @@ Modern optimization algorithms can fail in subtle ways that raw numbers often hi
 MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnostics`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
 
 > [!TIP]
-> **Further Reading**: Curious about why we renamed "Fitness" to "Denoise" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
+> **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
 ### **9.1. The Philosophy: Physical vs. Clinical**
 
 *   **Physical Metrics (`fair_`)**: These quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales.
-*   **Clinical Metrics (`q_`)**: These translate physical facts into value judgments ($0.0 \dots 1.0$) based on strict offline baselines (Physics of Failure). A $Q=0.95$ Denoise score means the algorithm is "Near-Ideal" relative to what is mathematically possible for that population size.
+*   **Clinical Metrics (`q_`)**: These translate physical facts into value judgments ($0.0 \dots 1.0$) based on strict offline baselines (Physics of Failure). A $Q=0.95$ Headway score means the algorithm is "Near-Ideal" relative to what is mathematically possible for that population size.
 
 ### **9.2. Physical Metrics (Fair)**
 
-#### **`fair_denoise`**
-- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `fair_denoise` refines this by filtering out the worst 5% outliers (Denoising) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
+#### **`fair_headway`**
+- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `fair_headway` refines this by filtering out the worst 5% outliers (Headway) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
 - **Example**:
 ```python
-d = mb.diagnostics.fair_denoise(exp)
+d = mb.diagnostics.fair_headway(exp)
 ```
 
 #### **`fair_closeness`**
-- **Rationale**: While `fair_denoise` provides a scalar summary, `fair_closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
+- **Rationale**: While `fair_headway` provides a scalar summary, `fair_closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
 - **Example**:
 ```python
 u_vals = mb.diagnostics.fair_closeness(exp)
@@ -637,11 +637,11 @@ bal = mb.diagnostics.fair_balance(exp)
 
 ### **9.3. Clinical Metrics (Q-Scores)**
 
-#### **`q_denoise`**
-- **Rationale**: Map the physical `fair_denoise` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
+#### **`q_headway`**
+- **Rationale**: Map the physical `fair_headway` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
 - **Example**:
 ```python
-score = mb.diagnostics.q_denoise(exp)
+score = mb.diagnostics.q_headway(exp)
 ```
 
 #### **`q_closeness`**
@@ -703,14 +703,14 @@ text = res.report()
 ```
 
 #### **Scenario B: Individual Metric deep-dive**
-Even individual metrics like `q_denoise` or `fair_coverage` support the reporting contract:
+Even individual metrics like `q_headway` or `fair_coverage` support the reporting contract:
 
 ```python
 # Returns an object that acts as a float
-q = mb.diagnostics.q_denoise(exp)
+q = mb.diagnostics.q_headway(exp)
 
 # Use it as a number in calculations
-print(f"Current Q_DENOISE: {float(q):.4f}")
+print(f"Current Q_HEADWAY: {float(q):.4f}")
 
 # Explain the clinical significance mapping
 q.report_show()
@@ -738,10 +738,10 @@ fact.report_show()
 
 When the `audit()` function runs, it classifies the algorithm into one of 8 scientific states:
 
-1.  **Optimal**: High Denoise, High Coverage, High Regularity. The gold standard.
-2.  **Manifold Mismatch**: Good Denoise, but Q-Gap is low. The algorithm found a front, but it's the *wrong* front.
-3.  **Diversity Collapse**: Excellent Denoise, but Coverage/Balance are near zero.
-4.  **Signal Drift**: Coverage is fine, but Denoise is poor. The front is "fuzzy".
+1.  **Optimal**: High Headway, High Coverage, High Regularity. The gold standard.
+2.  **Manifold Mismatch**: Good Headway, but Q-Gap is low. The algorithm found a front, but it's the *wrong* front.
+3.  **Diversity Collapse**: Excellent Headway, but Coverage/Balance are near zero.
+4.  **Signal Drift**: Coverage is fine, but Headway is poor. The front is "fuzzy".
 5.  **Fragmentation**: Good points, but large Gaps ($Q_{Gap} \approx 0$).
 6.  **Super-Saturation**: Solution density exceeds the reference calibration ($H_{rel} > 100\%$).
 7.  **Convergence Failure**: Everything is bad. Random search territory.
