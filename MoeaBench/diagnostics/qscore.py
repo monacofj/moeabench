@@ -223,16 +223,22 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_CLOSENESS using GT-normal-blur baseline (W1).
     """
-    if isinstance(data, np.ndarray) and data.ndim == 1:
-        # Pre-calculated distribution
+    if hasattr(data, 'raw_data') and data.raw_data is not None:
+        # Pre-calculated distribution in a FairResult/DiagnosticValue
+        u_dist = data.raw_data
+        problem = kwargs.get('problem', "Unknown")
+        k = kwargs.get('k', 100)
+    elif isinstance(data, np.ndarray) and data.ndim == 1:
+        # Pre-calculated distribution (raw)
         u_dist = data
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
         P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        u_dist = fair.closeness(P, GT, s_fit)
+        res = fair.closeness(P, GT, s_fit)
+        u_dist = res.raw_data
     
-    if u_dist.size == 0:
+    if u_dist is None or u_dist.size == 0:
         return QResult(0.0, "Q_CLOSENESS", "Empty distribution (Failed).")
         
     # 1. Get Baseline (G_blur ECDF)

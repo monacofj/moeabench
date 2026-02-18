@@ -245,6 +245,28 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 *   **`strat_tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
+### **2.5. Clinical Analysis (`mb.view.clinic_*`)**
+
+Specialized diagnostic instruments for deep-dive pathology analysis. All clinical plotters are polymorphic and adhere to the **Smart Dispatch Protocol**, automatically resolving Ground Truth and Resolution Scale from experiments.
+
+*   **`clinic_radar(target, ground_truth=None, show=True, **kwargs)`**:
+    *   **Role**: *The Certification* (Q-Score Spider Plot).
+    *   **Logic**: Calculates all 6 Q-Scores (Headway, Closeness, Coverage, Gap, Regularity, Balance) and maps them to a radial chart.
+    *   **Grid**: Displays explicit concentric circles at intervals of $0.25$ to indicate quality tiers.
+*   **`clinic_ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
+    *   **Role**: *The Judge* (Goal Attainment).
+    *   **Logic**: Plots the Empirical Cumulative Distribution Function of the specified metric.
+    *   **Static Markers**: Automatically inserts dashed drop-lines for the **Median (50%)** and **Robust Max (95%)**.
+    *   **Metric Support**: Supports all Layer 1 Fairview metrics.
+*   **`clinic_distribution(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
+    *   **Role**: *The Pathologist* (Point-wise Error Morphology).
+    *   **Logic**: Renders a Histogram + KDE (Kernel Density Estimate) of the representative FAIR distribution.
+    *   **Markers**: Includes median and 95th percentile vertical lines for scale context.
+*   **`clinic_history(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
+    *   **Role**: *The Monitor* (Temporal Trajectory).
+    *   **Logic**: Evolution of the representative scalar fact ($f_{val}$) over generations.
+    *   **Cloud Support**: If targeting an `Experiment`, it plots trajectories for all runs provided.
+
 ---
 
 ## **3. MOPs (`mb.mops.*`)**

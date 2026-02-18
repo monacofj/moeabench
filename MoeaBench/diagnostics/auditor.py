@@ -297,18 +297,11 @@ def audit(target: Any,
         
         # C. Compute FAIR Metrics (Physics)
         f_headway = fair.headway(P, GT, s_k)
-        f_closeness_raw = fair.closeness(P, GT, s_k) 
+        f_closeness_val = fair.closeness(P, GT, s_k) 
         f_cov = fair.coverage(P, GT)
         f_gap = fair.gap(P, GT)
         f_reg = fair.regularity(P, U_ref)
         f_bal = fair.balance(P, centroids, hist_ref)
-        
-        # Scalar summary of closeness for the physical audit report
-        f_closeness_val = fair.FairResult(
-            value=float(np.median(f_closeness_raw)) if len(f_closeness_raw) > 0 else 0.0,
-            name="CLOSENESS",
-            description=f"Median distance to manifold is {np.median(f_closeness_raw):.4f} resolution-units." if len(f_closeness_raw) > 0 else "No points."
-        )
         
         f_metrics = {
             "CLOSENESS": f_closeness_val, 
@@ -322,7 +315,7 @@ def audit(target: Any,
         
         # D. Compute Q-Scores (Engineering)
         q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
-        q_clo = qscore.q_closeness(f_closeness_raw, problem=mop_name, k=K_target)
+        q_clo = qscore.q_closeness(f_closeness_val, problem=mop_name, k=K_target)
         q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
         q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
         q_r = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)

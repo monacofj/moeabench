@@ -49,15 +49,17 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     gd95 = np.percentile(min_d, 95)
     
     # 3. Normalize by Resolution (Scale Invariance)
-    f_val = float(gd95 / s_fit) if s_fit > 1e-12 else float(gd95)
+    u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
+    f_val = float(np.percentile(u_vals, 95))
     
     return FairResult(
         value=f_val,
         name="HEADWAY",
-        description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth."
+        description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth (95th percentile).",
+        raw_data=u_vals
     )
 
-def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
+def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FairResult:
     """
     [Smart API] Calculates the distribution of normalized distances to GT.
     
@@ -66,16 +68,22 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return np.array([])
+        return FairResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
         
     # 1. Compute Distances to GT
     d = cdist(P, GT, metric='euclidean')
     min_d = np.min(d, axis=1) # (N,)
     
     # 2. Normalize by Resolution
-    if s_fit > 1e-12:
-        return min_d / s_fit
-    return min_d
+    u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
+    f_val = float(np.median(u_vals))
+    
+    return FairResult(
+        value=f_val,
+        name="CLOSENESS",
+        description="Median distance to ground truth manifold.",
+        raw_data=u_vals
+    )
 
 def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     r"""
@@ -99,7 +107,8 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     return FairResult(
         value=f_val,
         name="COVERAGE",
-        description=f"Average distance from target manifold to nearest solution is {f_val:.4f}."
+        description=f"Average distance from target manifold to nearest solution is {f_val:.4f}.",
+        raw_data=min_d
     )
 
 def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
@@ -124,7 +133,8 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     return FairResult(
         value=f_val,
         name="GAP",
-        description=f"Largest hole detected on the manifold is {f_val:.4f}."
+        description=f"Largest hole detected on the manifold is {f_val:.4f}.",
+        raw_data=min_d
     )
 
 def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
@@ -157,7 +167,8 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     return FairResult(
         value=f_val,
         name="REGULARITY",
-        description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance)."
+        description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance).",
+        raw_data=nn_p # Plot the distribution of NN distances
     )
 
 def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
@@ -188,5 +199,6 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     return FairResult(
         value=f_val,
         name="BALANCE",
-        description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence)."
+        description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence).",
+        raw_data=hist_p # For balance, the raw data is the occupancy histogram
     )

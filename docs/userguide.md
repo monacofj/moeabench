@@ -679,7 +679,69 @@ score = mb.diagnostics.q_regularity(exp)
 score = mb.diagnostics.q_balance(exp)
 ```
 
-### **9.4. Practical Usage (Narrative Reporting)**
+---
+
+## **8. Clinical Metrology: The Pathology Layer**
+
+Beyond standard performance metrics (like Hypervolume or IGD), MoeaBench introduces the **Clinical Layer**. This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed.
+
+The clinical layer operate on two distinct tiers:
+1.  **Physics (Layer 1 - FAIR Metrics)**: Raw, resolution-invariant physical facts (e.g., "The population is 5 units away from the target"). 
+2.  **Engineering (Layer 2 - Q-Scores)**: Qualitative certifications (0 to 1) based on a comparison with standardized baselines (e.g., "This closeness is in the top 10% of typical results for this problem").
+
+### **8.1. The Quadriga of Instruments**
+
+MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension. These instruments are polymorphic and agnostic to the underlying metric.
+
+#### **Instrument 1: The Radar (`clinic_radar`)**
+*   **Role**: *The Certification* (A holistic biopsy).
+*   **Description**: A spider plot that visualizes the 6 Quality Scores (Q-Scores) simultaneously: Closeness, Coverage, Gap, Regularity, Balance, and Headway.
+*   **Interpretation**: A larger, more symmetric polygon indicates a healthy, "well-rounded" algorithm. Sharp collapses in one axis (e.g., GAP) highlight specific algorithmic pathologies.
+
+#### **Instrument 2: The ECDF (`clinic_ecdf`)**
+*   **Role**: *The Judge* (Goal attainment).
+*   **Description**: Plots the Empirical Cumulative Distribution Function of a metric.
+*   **Markers**: Automatically shows **Median (50%)** and **Robust Max (95%)** drop-lines.
+*   **Interpretation**: Useful for assessing consistency. A steep curve shifted to the left indicates that most of the population reached a high-quality state. A "long tail" indicates outliers or unstructured search.
+
+#### **Instrument 3: The Distribution (`clinic_distribution`)**
+*   **Role**: *The Pathologist* (Error morphology).
+*   **Description**: A density/histogram plot of point-wise performance.
+*   **Interpretation**: Helps identify the "shape" of the search error. A bimodal distribution might suggest that the algorithm is succeeding in some regions but completely failing in others.
+
+#### **Instrument 4: The History (`clinic_history`)**
+*   **Role**: *The Monitor* (Temporal health).
+*   **Description**: Tracks the evolution of a physical fact over generations across all runs.
+*   **Interpretation**: Differentiates between slow-but-steady convergence and premature stalling.
+
+### **8.2. Universal Diagnostic API**
+
+One of the most powerful features of MoeaBench is that these instruments work with **any** of the 6 fair metrics. You can mix and match to perform precise diagnostics.
+
+```python
+# Holistic certification
+mb.view.clinic_radar(exp)
+
+# Deep dive into 'Coverage' pathology
+mb.view.clinic_ecdf(exp, metric="coverage")
+mb.view.clinic_distribution(exp, metric="coverage")
+
+# Monitor 'Balance' over time to check for drift
+mb.view.clinic_history(exp, metric="balance")
+```
+
+| Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
+| :--- | :--- | :--- |
+| **Closeness** | Normalized distance to the true manifold. | Stagnation / Poor convergence. |
+| **Coverage** | Connectivity from the target to the solution. | Holes / Uncovered regions. |
+| **Gap** | Size of the largest detected manifold hole. | Local trapping / Discontinuity. |
+| **Regularity** | Spacing uniformity between neighbors. | Clumping / Unstructured density. |
+| **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
+| **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
+
+---
+
+## **9. Narrative Reports: Beyond Numbers**
 
 The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
 

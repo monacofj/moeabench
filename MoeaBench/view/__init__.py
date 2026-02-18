@@ -6,6 +6,7 @@
 from .topo import (topo_shape, topo_bands, topo_gap, topo_density)
 from .perf import (perf_history, perf_spread, perf_density)
 from .strat import (strat_ranks, strat_caste_deprecated, strat_caste, strat_tiers)
+from .clinic import (clinic_ecdf, clinic_distribution, clinic_history, clinic_radar)
 
 from .style import apply_style
 
@@ -30,6 +31,7 @@ __all__ = [
     "topo_shape", "topo_bands", "topo_gap", "topo_density",
     "perf_history", "perf_spread", "perf_density",
     "strat_ranks", "strat_caste_deprecated", "strat_caste", "strat_tiers",
+    "clinic_ecdf", "clinic_distribution", "clinic_history", "clinic_radar",
     "spaceplot", "timeplot", "topo_dist",
     "rankplot", "casteplot", "tierplot", "rank_caste2"
 ]

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from typing import Optional, Any
 from ..core.base import Reportable
 
 class DiagnosticValue(Reportable):
@@ -9,10 +10,11 @@ class DiagnosticValue(Reportable):
     Base class for diagnostic values that support narrative reporting.
     Wraps a numeric result and provides a human-readable explanation.
     """
-    def __init__(self, value: float, name: str, description: str = ""):
+    def __init__(self, value: float, name: str, description: str = "", raw_data: Optional[Any] = None):
         self.value = value
         self.name = name
         self.description = description
+        self.raw_data = raw_data
 
     def __float__(self):
         return float(self.value)

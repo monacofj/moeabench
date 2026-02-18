@@ -11,12 +11,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-## [Unreleased]
+## [0.9.1] - 2026-02-18
+
 ### Added
+- **Clinical Visualization Suite (`mb.view.clinic_*`)**: Implemented a semantically-aligned diagnostic suite for deep algorithm analysis:
+  - `clinic_radar`: Clinical Quality Fingerprint (Spider plot of 6 Q-Scores).
+  - `clinic_ecdf`: Goal-attainment analysis with explicit **Median (50%)** and **Robust Max (95%)** drop-lines.
+  - `clinic_distribution`: Morphological analysis of point-wise error.
+  - `clinic_history`: Temporal trajectory of physical facts over generations.
+- **Semantic Distribution Payload**: Refactored the diagnostic engine (`FairResult`) to carry `raw_data` for all instruments, enabling point-wise distribution analysis.
+- **Improved Visual Standards**:
+  - Standardized red dashed lines for 95th percentile (Headway) anchors.
+  - Added concentric grids to radar plots for quality tier visualization.
+  - Uniform nomenclature: All plots now use semantically correct metric names (e.g., "Closeness Distribution") instead of generic labels.
+- **ADR 0030**: Formalized the Clinical Instrument Architecture.
 - **Cascade Audit Architecture**: Transitioned diagnostics to a layered "Expert Biopsy" system, providing direct access to Physical Facts (`fair_audit`), Clinical Quality (`q_audit`), and Synthesis Narratives (`audit`).
 - **Hierarchical Executive Narratives**: Implemented a decision-tree based `.summary()` method for audit results, providing automated, high-precision textual interpretations of algorithm performance.
 - **Environment-Aware Reporting**: The `.report()` system now automatically optimizes output for Terminal (ASCII) or Jupyter Notebook (Markdown/HTML) environments.
-- **New Diagnostic Examples**: Added `example_12.py` (Physical Layer) and `example_13.py` (Clinical/Narrative Layer) to demonstrate the advanced diagnostic pipeline.
+- **New Diagnostic Examples**: Added `example_12.py` (Physical Layer), `example_13.py` (Clinical/Narrative Layer), and `example_14.py` (Visual Clinical Layer).
 - **ADR 0028 & 0029**: Formalized the "Gate Rule" for monotonicity and the "Headway" nomenclature refactoring.
 
 ### Changed
@@ -30,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Headway Calibration Bug**: Resolved a critical unit mismatch in `q_headway` where normalized physical results were being compared against raw baseline distances, causing incorrect "Failure" scores.
 - **UnboundLocalError in Q-Scores**: Fixed a regression in `qscore.py` where the resolution factor (`s_fit`) was uninitialized when processing pre-calculated scalar results.
+- **AttributeError (Radar)**: Fixed invalid Matplotlib polar axis grid access.
 
 ## [0.9.0] - 2026-02-09
 
