@@ -59,15 +59,19 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
              val = arg.objectives
         
         if not name:
-            # Check if this specific arg was a result of our auto-pf injection
-            # It will be a raw numpy array at the end of new_args
-            if i >= len(args) and isinstance(arg, np.ndarray):
-                 # Try to find which experiment it belongs to for naming
-                 name = "Reference Front"
-                 t_mode = 'markers' # Use markers to show the GT points as a cloud
-            elif hasattr(val, 'name') and val.name: name = val.name
-            elif hasattr(arg, 'name') and arg.name: name = arg.name
-            elif hasattr(arg, 'label') and arg.label: name = arg.label
+            # Smart Legend Naming
+            # Try to get the name of the object (Experiment Name)
+            obj_name = getattr(val, 'name', None) or getattr(arg, 'name', None)
+            
+            # Try to get the specific label (Filter)
+            obj_label = getattr(val, 'label', None) or getattr(arg, 'label', None)
+            
+            if obj_name and obj_label and obj_name != obj_label:
+                name = f"{obj_name} ({obj_label})"
+            elif obj_name:
+                name = obj_name
+            elif obj_label:
+                name = obj_label
 
         if not name: name = f"Data {i+1}"
              

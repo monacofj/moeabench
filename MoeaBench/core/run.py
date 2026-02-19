@@ -248,6 +248,11 @@ class Population:
         self.gen = gen
         
     @property
+    def name(self) -> Optional[str]:
+        """Delegates name access to the source (simulating SmartArray behavior)."""
+        return getattr(self.source, 'name', None)
+        
+    @property
     def objs(self) -> SmartArray: return self.objectives
     
     @property

@@ -27,16 +27,16 @@ class JoinedPopulation:
     @property
     def objectives(self) -> SmartArray:
         if not self.pops:
-             return SmartArray(np.array([]), label="Population (Objectives)", axis_label="Objective")
+             return SmartArray(np.array([]), label="Population", axis_label="Objective")
         data = np.vstack([p.objectives for p in self.pops])
-        return SmartArray(data, label="Population (Objectives)", axis_label="Objective")
+        return SmartArray(data, label="Population", axis_label="Objective")
 
     @property
     def variables(self) -> SmartArray:
         if not self.pops:
-             return SmartArray(np.array([]), label="Population (Variables)", axis_label="Variable")
+             return SmartArray(np.array([]), label="Population", axis_label="Variable")
         data = np.vstack([p.variables for p in self.pops])
-        return SmartArray(data, label="Population (Variables)", axis_label="Variable")
+        return SmartArray(data, label="Population", axis_label="Variable")
 
     @property
     def objs(self) -> SmartArray: return self.objectives
@@ -252,7 +252,7 @@ class experiment(Reportable):
         """[Deprecated] Returns the non-dominated front considering all runs combined. Use exp.front() instead."""
         p = self.pop(gen)
         # Create a combined population to apply global filtering
-        combined = Population(p.objectives, p.variables, source=self, label="Superfront")
+        combined = Population(p.objectives, p.variables, source=self, label="Non-dominated")
         res = combined.non_dominated().objectives
         if hasattr(res, 'name'): res.name = self.name
         return res
@@ -260,7 +260,7 @@ class experiment(Reportable):
     def superset(self, gen: int = -1) -> SmartArray:
         """[Deprecated] Returns the non-dominated decision set considering all runs combined. Use exp.set() instead."""
         p = self.pop(gen)
-        combined = Population(p.objectives, p.variables, source=self, label="Superset")
+        combined = Population(p.objectives, p.variables, source=self, label="Non-dominated")
         res = combined.non_dominated().variables
         if hasattr(res, 'name'): res.name = self.name
         return res
@@ -302,13 +302,10 @@ class experiment(Reportable):
         
         # 3. Filtering: Apply non-dominance purely over the theoretical samples
         # This handles cases like DTLZ7 where the condition g=min is not sufficient.
-        pop = Population(objs, vars, source=self, label="Optimal")
+        # For analytical optimal fronts, we want the label to be "Reference" 
+        # But we keep the name as the Experiment name so the plotter can do "Exp (Reference)"
+        pop = Population(objs, vars, source=self, label="Reference")
         pop = pop.non_dominated()
-        
-        # For analytical optimal fronts, we want the name to be "Reference Front" 
-        # instead of the experiment name.
-        pop.objectives.name = "Reference Front"
-        pop.variables.name = "Reference Front"
         
         return pop
 
