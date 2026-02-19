@@ -57,6 +57,7 @@ def calibrate_mop(mop: Any, baseline: Optional[str] = None, force: bool = False,
 
     # 2. Check Cache/File
     if os.path.exists(path) and not force:
+        print(f"MoeaBench: Loading custom baselines for '{mop_name}' from sidecar.")
         base.register_baselines(path)
         return False
 

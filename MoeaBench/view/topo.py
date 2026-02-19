@@ -84,7 +84,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
             if i >= len(args) and isinstance(arg, np.ndarray):
                  # Try to find which experiment it belongs to for naming
                  name = "Reference Front"
-                 t_mode = 'lines' # Show reference as lines/mesh if possible
+                 t_mode = 'markers' # Use markers to show the GT points as a cloud
             elif hasattr(val, 'name') and val.name: name = val.name
             elif hasattr(arg, 'name') and arg.name: name = arg.name
             elif hasattr(arg, 'label') and arg.label: name = arg.label

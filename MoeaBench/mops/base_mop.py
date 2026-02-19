@@ -83,14 +83,30 @@ class BaseMop(ABC):
     def ps(self, n_points: int = 100) -> np.ndarray:
         """
         Samples the true Pareto Set (decision variables).
-        Should be overridden by subclasses.
+        
+        This method is critical for the MoeaBench Diagnostic Pipeline (v0.9+). 
+        It provides the 'Analytical Truth' used to calculate Ground Truth (GT) 
+        and Baselines during calibration.
+        
+        Args:
+            n_points (int): Number of target points to sample. 
+                            For M=2, usually a 1D linear space.
+                            For M=3, usually a 2D grid/triangulation.
         """
         raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")
 
     def calibrate(self, baseline: Optional[str] = None, force: bool = False, **kwargs) -> bool:
         """
         Calibrates the clinical diagnostics for this MOP instance.
-        Generates/Loads a sidecar JSON file with Ground Truth and Baselines.
+        
+        This process generates (or loads) a portable 'Sidecar' JSON file co-located 
+        with the problem's source code. The sidecar contains the frozen Ground Truth 
+        and statistical baselines (ECDF) required for Clinical Radar plots (Q-Scores).
+        
+        Args:
+            baseline (str, optional): Explicit sidecar path. 
+            force (bool): If True, ignores the cache and forces re-calibration.
+            **kwargs: Passed to the calibration engine (e.g., k_values).
         """
         from ..diagnostics.calibration import calibrate_mop
         return calibrate_mop(self, baseline=baseline, force=force, **kwargs)

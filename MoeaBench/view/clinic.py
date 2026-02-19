@@ -185,7 +185,9 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
     """
     mode = _resolve_mode(mode)
     res = audit(target, ground_truth)
-    if not res or not res.q_audit_res: return None
+    if not res or not res.q_audit_res:
+        print("Warning: [mb.view.clinic_radar] No baseline data found for this problem/population-size combo. Call mop.calibrate() first.")
+        return None
 
     scores = res.q_audit_res.scores
     cat = ["Q_CLOSENESS", "Q_COVERAGE", "Q_GAP", "Q_REGULARITY", "Q_BALANCE", "Q_HEADWAY"]

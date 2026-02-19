@@ -57,7 +57,17 @@ class _MB:
         self.defaults = defaults
         self.diagnostics = diagnostics
         self.calibrate = diagnostics.calibrate
+        """
+        [mb.calibrate]
+        Entry point for MOP Calibration. 
+        Calculates or loads clinical baselines for a problem instance.
+        """
+        
         self.register_baselines = diagnostics.register_baselines
+        """
+        [mb.register_baselines]
+        Registers an external JSON sidecar or baseline dictionary in the current session.
+        """
         
         # Taxonomy: Performance | Topography | Stratification (v0.7.0)
         self.perf_evidence = stats.perf_evidence

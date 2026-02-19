@@ -849,6 +849,45 @@ class MyProblem(mb.mops.BaseMop):
 ### **Custom MOEA Plugin**
 To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
+### **12.2. MOP Plugin Support and Calibration**
+
+MoeaBench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
+
+#### **The "One-Click" Calibration Workflow**
+For a custom MOP to be clinically certified, it needs a **Sidecar JSON** file containing its Ground Truth (GT) and statistical baselines (ECDF). You can generate this automatically:
+
+```python
+# 1. Instantiate your custom MOP
+mop = MyProblem()
+
+# 2. Perform "One-Click" Calibration
+# This samples the Pareto set (ps), calculates baselines, and saves a Sidecar
+mop.calibrate()
+
+# 3. Everything is now ready for deep diagnostics
+exp = mb.experiment(mop=mop)
+exp.run()
+mb.view.clinic_radar(exp) # Works perfectly with custom baselines!
+```
+
+#### **How it Works: The Sidecar Pattern**
+- **Persistence**: `mop.calibrate()` creates a JSON file (e.g., `MyProblem.json`) next to your Python class.
+- **Portability**: You can share this JSON file along with your code. MoeaBench will automatically find and load it if it's in the same directory as the problem definition.
+- **Scientific Integrity**: The sidecar stores a "frozen" Ground Truth, ensuring that your Q-Scores remain comparable even if you change your sampling logic later.
+
+> [!IMPORTANT]
+> **Pareto Set Requirement**: To use `calibrate()`, your custom MOP **must** implement the `ps(n)` method, which provides the analytical Pareto Set (decision variables) sample. This is the source of "truth" for all subsequent calibrations.
+
+```python
+class MyProblem(mb.mops.BaseMop):
+    # ... __init__ and evaluation ...
+    
+    def ps(self, n):
+        # Return a matrix of n decision variables belonging to the Pareto Set
+        t = np.linspace(0, 1, n)
+        return np.column_stack([t, np.zeros((n, self.N-1))])
+```
+
 ---
 
 ## **13. Persistence (`save` and `load`)**

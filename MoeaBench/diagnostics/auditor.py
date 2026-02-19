@@ -231,57 +231,29 @@ def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAu
 
 def audit(target: Any, 
           ground_truth: Optional[np.ndarray] = None,
-          profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY) -> DiagnosticResult:
+          profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY,
+          **kwargs) -> DiagnosticResult:
     """
     [Cascade Entry Point]
     Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor for synthesis.
     """
-    # 1. Extract Population (P) and Problem Info
-    pop_objs = None
-    mop_name = "Unknown"
+    from .utils import _resolve_diagnostic_context
     
-    if isinstance(target, dict):
-        # We don't support passing raw dicts here in the new architecture 
-        # as we need to compute the fair/q cascade.
-        return PerformanceAuditor.audit_synthesis(None, None) 
-        
-    if isinstance(target, np.ndarray):
-        pop_objs = target
-    elif hasattr(target, 'objectives'):
-        pop_objs = target.objectives
-    elif hasattr(target, 'last_pop'):
-         pop_objs = target.last_pop.objectives
-    
-    if pop_objs is None:
+    # 1. Resolve Context (P, GT, s_k, Name, K)
+    P, GT, s_k_mop, mop_name, K_raw = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
+
+    if P is None or GT is None:
          return PerformanceAuditor.audit_synthesis(None, None)
 
-    # 2. Extract Ground Truth (GT)
-    if ground_truth is None:
-        return PerformanceAuditor.audit_synthesis(None, None)
-
-    GT = ground_truth
-    P = pop_objs
-    
-    # 3. K-Selection logic 
-    K_raw = len(P)
+    # 2. K-Selection logic 
     K_target = baselines.snap_k(K_raw)
-    # Snapshot MOP Name
-    mop_obj = None
-    if hasattr(target, 'mop'):
-        mop_obj = target.mop
-    elif hasattr(target, 'problem'):
-        mop_obj = target.problem
-        
-    if mop_obj:
-        if hasattr(mop_obj, 'name'):
-            mop_name = mop_obj.name
-        else:
-            mop_name = mop_obj.__class__.__name__
-    elif hasattr(target, 'mop_name'):
-        mop_name = target.mop_name
         
     # 4. Compute Fair Metrics & Q-Scores
     try:
+        bases = baselines.load_offline_baselines()
+        if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
+             GT = np.array(bases["_gt_registry"][mop_name])
+
         # A. Shared Reference Objects
         U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
         centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
@@ -293,7 +265,8 @@ def audit(target: Any,
         hist_ref /= np.sum(hist_ref)
         
         # B. Normalization Resolution
-        s_k = baselines.get_resolution_factor_k(GT, K_target, seed=0)
+        # Use s_k from mop if available, otherwise calculate from GT
+        s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
         # C. Compute FAIR Metrics (Physics)
         f_headway = fair.headway(P, GT, s_k)

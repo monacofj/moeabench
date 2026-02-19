@@ -37,7 +37,28 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
         except:
              raise TypeError(f"Unsupported data type for diagnostics: {type(data)}")
 
-    # 2. Resolve Ground Truth (ref)
+    # 2. Resolve Problem Name and K
+    mop = None
+    if hasattr(data, 'mop'):
+        mop = data.mop
+    elif hasattr(data, 'source') and hasattr(data.source, 'mop'):
+        mop = data.source.mop
+
+    if problem_name is None and mop is not None:
+        problem_name = mop.name if hasattr(mop, 'name') else mop.__class__.__name__
+    
+    if k_val is None:
+        if isinstance(front, np.ndarray) and front.ndim > 1:
+            k_val = len(front)
+        elif hasattr(data, 'pop'):
+            # Experiment
+            try:
+                p = data.pop()
+                k_val = len(p)
+            except:
+                pass
+
+    # 3. Resolve Ground Truth (ref)
     if gt is None:
         if hasattr(data, 'pf') and callable(data.pf):
             gt = data.pf()
@@ -50,7 +71,7 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
             elif hasattr(src, 'mop') and hasattr(src.mop, 'pf'):
                 gt = src.mop.pf()
         
-        # 2.1 Sidecar/Cache Look-up (Plugin support)
+        # 3.1 Sidecar/Cache Look-up (Plugin support)
         if gt is None and problem_name is not None:
              from .baselines import load_offline_baselines
              try:
@@ -59,27 +80,6 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
                      gt = np.array(bases["_gt_registry"][problem_name])
              except:
                  pass
-
-    # 3. Resolve Problem Name and K
-    mop = None
-    if hasattr(data, 'mop'):
-        mop = data.mop
-    elif hasattr(data, 'source') and hasattr(data.source, 'mop'):
-        mop = data.source.mop
-
-    if problem_name is None and mop is not None:
-        problem_name = mop.__class__.__name__
-    
-    if k_val is None:
-        if isinstance(front, np.ndarray) and front.ndim > 1:
-            k_val = len(front)
-        elif hasattr(data, 'pop'):
-            # Experiment
-            try:
-                p = data.pop()
-                k_val = len(p)
-            except:
-                pass
     
     # 4. Resolve Resolution Scale (s_k)
     if res is None:

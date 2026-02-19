@@ -50,6 +50,7 @@ mb.view.timeplot(exp)                           # Plot Hypervolume convergence
 *   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
 *   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
 *   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
+*   **One-Click Calibration**: Programmatically certify custom MOPs via `mop.calibrate()`, generating portable sidecar JSON files for full clinical diagnostic support.
 *   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 

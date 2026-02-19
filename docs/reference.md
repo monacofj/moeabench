@@ -113,6 +113,7 @@ These methods operate on the **union of all runs** (The Cloud).
     *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
     *   `stop` (*callable*, optional): Custom stop criteria function. Receives a reference to the active **solver** as its context. Returns `True` to halt execution.
     *   `**kwargs`: Passed to the MOEA execution engine.
+*   **`.calibrate(**kwargs)`**: Shortcut to `exp.mop.calibrate()`. Calibrates the diagnostic baselines using the experiment's problem instance.
 *   **`.save(path, mode='all')`**: Persists the experiment to a compressed ZIP file.
     *   `path` (*str*): Filename or folder.
     *   `mode` (*str*): `'all'`, `'config'`, or `'data'`.
@@ -568,7 +569,17 @@ MoeaBench uses a standardized ZIP-based persistence format.
 
 MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots).
 
-### **9.1. Custom MOPs (`mb.mops.BaseMop`)**
+### **9.1. BaseMop (`mb.mops.BaseMop`)**
+The abstract skeleton for all problem plugins.
+
+**Methods to Override:**
+*   **`evaluation(X)`**: Must return `{'F': obj_matrix}`.
+*   **`ps(n)`**: [MANDATORY for Certification] Returns $n$ Pareto Set decision variable samples.
+
+**API Methods:**
+*   **`calibrate(baseline=None, force=False, **kwargs)`**: Performs automated calibration and generates a Sidecar JSON file.
+*   **`pf(n)`**: Samples the true Pareto Front (objectives).
+
 The contract for problems requires implementing a **vectorized** evaluation function. This allows the framework to process entire populations using NumPy's high-performance broadcasting.
 
 **The Contract:**
