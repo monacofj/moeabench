@@ -176,6 +176,33 @@ class experiment(Reportable):
         """Legacy compatibility for save mechanism."""
         return self._mop
 
+    # --- Parameter Delegation to MOEA ---
+    @property
+    def population(self) -> Optional[int]:
+        """Delegates population size access to the MOEA."""
+        if hasattr(self.moea, 'population'):
+            return self.moea.population
+        return None
+
+    @population.setter
+    def population(self, value: int) -> None:
+        """Delegates population size assignment to the MOEA."""
+        if hasattr(self.moea, 'population'):
+            self.moea.population = value
+
+    @property
+    def generations(self) -> Optional[int]:
+        """Delegates generation count access to the MOEA."""
+        if hasattr(self.moea, 'generations'):
+            return self.moea.generations
+        return None
+
+    @generations.setter
+    def generations(self, value: int) -> None:
+        """Delegates generation count assignment to the MOEA."""
+        if hasattr(self.moea, 'generations'):
+            self.moea.generations = value
+
     # Shortcuts
     @property
     def last_run(self) -> Run:
@@ -189,14 +216,6 @@ class experiment(Reportable):
     def pf(self, n_points: int = 100) -> Any:
         """Returns the true Pareto Front for the current MOP (Shortcut)."""
         return self.mop.pf(n_points)
-
-    def optimal_front(self, n_points: int = 100) -> Any:
-        """Textbook alias for the true Pareto Front."""
-        return self.pf(n_points)
-
-    def pareto_front(self, n_points: int = 100) -> Any:
-        """Standard alias for the true Pareto Front."""
-        return self.pf(n_points)
 
     def pop(self, gen: int = -1) -> JoinedPopulation:
         """Aggregate populations from all runs."""
@@ -286,10 +305,10 @@ class experiment(Reportable):
         pop = Population(objs, vars, source=self, label="Optimal")
         pop = pop.non_dominated()
         
-        # For analytical optimal fronts, we want the name to be "Optimal" 
+        # For analytical optimal fronts, we want the name to be "Reference Front" 
         # instead of the experiment name.
-        pop.objectives.name = "Optimal"
-        pop.variables.name = "Optimal"
+        pop.objectives.name = "Reference Front"
+        pop.variables.name = "Reference Front"
         
         return pop
 

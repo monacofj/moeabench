@@ -49,7 +49,9 @@ exp = mb.experiment()
 exp.mop = mb.mops.DTLZ2(M=3)            # Problem: 3-objective DTLZ2
 exp.moea = mb.moeas.NSGA3()             # Algorithm: NSGA-III
 exp.name = "My Research Study"          # Label for reports
-exp.moea.seed = 100                     # Override global seed
+exp.population = 200                    # Set algorithm population size (delegated)
+exp.generations = 500                   # Set algorithm generations (delegated)
+exp.moea.seed = 100                     # Access underlying algorithm directly
 
 # Variant B: Functional configuration (Concise)
 # Note: You can pass instances or classes.
@@ -108,9 +110,10 @@ X = pop_all.variables                   # (N_total x N_vars) Decision Variables
 F = pop_all.objs
 X = pop_all.vars
 
-# Theoretical Optima (if available for the MOP)
-pf = exp.optimal_front(n_points=500)    # True Pareto Front (N x M)
-ps = exp.optimal_set(n_points=500)      # True Pareto Set (N x N_vars)
+# Theoretical Reference Fronts (if available for the MOP)
+# Use labels like "Reference Front" for consistency.
+pf = exp.optimal_front(n_points=500)    # Theoretical Pareto Front (N x M)
+ps = exp.optimal_set(n_points=500)      # Theoretical Pareto Set (N x N_vars)
 
 # -----------------------------------------------------------------------------
 # 5. Clinical Diagnostics (System V Integration)
