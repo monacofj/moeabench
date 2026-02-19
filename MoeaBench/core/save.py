@@ -91,10 +91,12 @@ class save:
         
         # 0.1 Create README.md with SPDX headers
         readme_lines = []
+        # REUSE-IgnoreStart
         if obj.authors:
             readme_lines.append(f"SPDX-FileCopyrightText: {obj.year} {obj.authors}")
         if obj.license:
             readme_lines.append(f"SPDX-License-Identifier: {obj.license}")
+        # REUSE-IgnoreEnd
         
         readme_lines.extend([
             "",
