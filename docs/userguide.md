@@ -610,17 +610,21 @@ MoeaBench transforms raw performance data into a "detailed diagnostic assessment
 
 ### **9.2. Physical Metrics (FAIR Principles)**
 
-These metrics quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales. These metrics provide raw, resolution-invariant physical facts about the population.
+In ideal multi-objective optimization, the Pareto front is often a continuous manifold. In practice, however, we deal with two physical constraints:
+1. **Discrete Ground Truth**: Our analytical reference is usually a finite set of points sampled from the true front.
+2. **Finite Population**: The algorithm's output is also a finite set of points.
 
-#### **`headway`**
-- **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `headway` refines this by filtering out the worst 5% outliers (Headway) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
-- **Example**:
-```python
-d = mb.diagnostics.headway(exp)
-```
+Because of this, it is physically impossible to achieve an "error of zero" unless the population points exactly coincide with the GT samples. To account for this, MoeaBench uses **Resolution-Based Normalization**. 
+
+We define the **Resolution Scale** ($s_K$) as the expected average distance between points in a "perfectly" distributed population of size $K$. By dividing physical distances by $s_K$, we move from absolute units to "Resolution Units". 
+
+> [!IMPORTANT]
+> **The Target of Success**: In the physical layer (FAIR), these metrics represent **Error** or **Distance**. Consequently, the analytical ideal is **0.0** (perfect match). The Resolution Scale ($s_K$) acts as a "Macroscopic Ruler" to make these errors comparable across problems, but it does not shift the mathematical target of zero error.
+
+These metrics provide raw, resolution-invariant physical facts about the population:
 
 #### **`closeness`**
-- **Rationale**: While `headway` provides a scalar summary, `closeness` returns the raw distribution of distances for every point in the population. This allows researchers to visualize the "scatter" of the front or perform detailed statistical analysis on individual solution proximity.
+- **Rationale**: Measures the **approximation to the optimum**. It returns the raw distribution of distances for every point in the population to the nearest point in the Ground Truth ($P \to GT$), normalized by $s_K$. It quantifies the median precision/sharpness of the convergence.
 - **Example**:
 ```python
 u_vals = mb.diagnostics.closeness(exp)
@@ -654,6 +658,13 @@ reg = mb.diagnostics.regularity(exp)
 bal = mb.diagnostics.balance(exp)
 ```
 
+#### **`headway`**
+- **Rationale**: Measures **progress away from random**. It quantifies how far the population has traveled from the initial random bounding box towards the manifold. It uses the 95th percentile distance ($GD_{95}(P \to GT)$) normalized by $s_K$ to provide a robust measure of the "gain" achieved by the solver.
+- **Example**:
+```python
+d = mb.diagnostics.headway(exp)
+```
+
 ---
 
 ### **9.3. Clinical Normalization (Q-Scores)**
@@ -668,21 +679,13 @@ The scale is divided into five diagnostic tiers:
 - **$[0.34, 0.67]$ - Marginal / Exploratory (Yellow)**: Detectable drive, but unstable or coarse results.
 - **$[0.00, 0.34]$ - Failure / Random (Red)**: Performance indistinguishable from unguided search.
 
-#### **`q_headway` (Log-Linear Scale)**
-- **Rationale**: Map the physical `headway` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
-- **Example**:
-```python
-score = mb.diagnostics.q_headway(exp)
-```
-- **Interpretation Example ($Q=0.8$)**: The algorithm has traveled 80% of the log-distance between a random start and the Pareto front. Because the scale is logarithmic, this indicates that the solver has overcome the "initial resistance" and is effectively converging.
-
 #### **`q_closeness` (ECDF Scale)**
 - **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
 - **Example**:
 ```python
 score = mb.diagnostics.q_closeness(exp)
 ```
-- **Interpretation Example ($Q=0.8$)**: The population's proximity to the front is better than 80% of the random baseline samples. It is a **Sufficient** result for high-stakes engineering.
+- **Interpretation Example ($Q=0.8$)**: The population's proximity to the front is better than 80% of the random baseline samples. Solution precision approximates the optimum significantly better than random search.
 
 #### **`q_coverage` (ECDF Scale)**
 - **Rationale**: Uses a full **ECDF (Empirical Cumulative Distribution Function)** of random sampling to rank the coverage. A score of $0.5$ means the algorithm is exactly as good as a random target of the front, while $Q > 0.9$ indicates scientific-grade manifold reach.
@@ -714,7 +717,15 @@ score = mb.diagnostics.q_regularity(exp)
 ```python
 score = mb.diagnostics.q_balance(exp)
 ```
-- **Interpretation Example ($Q=0.8$)**: Indicates an **Equitable/Fair** distribution across clusters. Manifold occupancy bias is low, and the algorithm is exploring different Pareto regions with similar probability.
+- **Interpretation Example ($Q=0.8$)**: Indicates an **Equitable/Fair** distribution across clusters. Manifold occupancy bias is low.
+
+#### **`q_headway` (Log-Linear Scale)**
+- **Rationale**: Ranks the **progress gained against random noise**. It uses a **Log-Linear** mapping to provide high resolution as the algorithm escapes the initial bounding box.
+- **Example**:
+```python
+score = mb.diagnostics.q_headway(exp)
+```
+- **Interpretation Example ($Q=0.8$)**: The algorithm has traveled 80% of the log-distance between a random start and the manifold. It indicates the solver has successfully "broken away" from random entropy.
 
 ---
 
