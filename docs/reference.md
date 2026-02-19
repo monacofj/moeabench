@@ -7,8 +7,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # MoeaBench API Reference Guide
 
-> **Version 0.10.2**
-
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
 ---
