@@ -1,0 +1,762 @@
+{
+  "DPF1/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9995708708559081,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9996154083114306
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0010079972621323489,
+      "COVERAGE": 0.02372836486748539,
+      "GAP": 0.10358329591569058,
+      "REGULARITY": 0.0030888490860357816,
+      "BALANCE": 0.6076852604037231,
+      "HEADWAY": 0.0016206735580503334
+    },
+    "status": "OK"
+  },
+  "DPF1/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9998376124140766,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9996974439848841
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0002501530652123851,
+      "COVERAGE": 0.0011635890515608312,
+      "GAP": 0.0028032549944524603,
+      "REGULARITY": 0.000782006552291154,
+      "BALANCE": 0.10940788692729635,
+      "HEADWAY": 0.0012747541034849018
+    },
+    "status": "OK"
+  },
+  "DPF1/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9998250623512469,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9997549555806504
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0002969132322347258,
+      "COVERAGE": 0.003641743188201331,
+      "GAP": 0.01426919326756628,
+      "REGULARITY": 0.002289114013069927,
+      "BALANCE": 0.2853468565538472,
+      "HEADWAY": 0.0010323164533433942
+    },
+    "status": "OK"
+  },
+  "DPF2/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9997240031630165,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9993089303619946
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.00027931365944188527,
+      "COVERAGE": 3.6305883987040795,
+      "GAP": 6.356667978945245,
+      "REGULARITY": 0.031117338559512393,
+      "BALANCE": 0.9423334385639817,
+      "HEADWAY": 0.0026067013471230836
+    },
+    "status": "OK"
+  },
+  "DPF2/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9977268831810413,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9948607135835066
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0027488956647970285,
+      "COVERAGE": 0.010923227073530025,
+      "GAP": 0.027455735166355327,
+      "REGULARITY": 0.008481498352414638,
+      "BALANCE": 0.14323694992114985,
+      "HEADWAY": 0.019548688618542403
+    },
+    "status": "OK"
+  },
+  "DPF2/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9977983111029889,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9948681169953973
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.002865482458088101,
+      "COVERAGE": 0.01972763324863414,
+      "GAP": 0.06316870745168053,
+      "REGULARITY": 0.02040786205817948,
+      "BALANCE": 0.2984765989578172,
+      "HEADWAY": 0.01952025462464229
+    },
+    "status": "OK"
+  },
+  "DPF3/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9971729273867873,
+      "Q_COVERAGE": 0.65,
+      "Q_GAP": 0.76,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9963734529769894
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0027496652662884996,
+      "COVERAGE": 0.19008006816652387,
+      "GAP": 0.23257566029684532,
+      "REGULARITY": 0.024611464155798665,
+      "BALANCE": 0.36714853950141485,
+      "HEADWAY": 0.011878255672906813
+    },
+    "status": "OK"
+  },
+  "DPF3/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9985076232160834,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.17000000000000004,
+      "Q_HEADWAY": 0.997505447327633
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0020407932341990325,
+      "COVERAGE": 0.0014091705380237492,
+      "GAP": 0.006033304538407855,
+      "REGULARITY": 0.0017547389993385204,
+      "BALANCE": 0.3178848817716508,
+      "HEADWAY": 0.011594914560525622
+    },
+    "status": "OK"
+  },
+  "DPF3/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9979054102573868,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9962079526739178
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.002890911308431912,
+      "COVERAGE": 0.005120471659249243,
+      "GAP": 0.02427111809211781,
+      "REGULARITY": 0.0033682019320031785,
+      "BALANCE": 0.43247568681646764,
+      "HEADWAY": 0.01767884261854015
+    },
+    "status": "OK"
+  },
+  "DPF4/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9998368343811425,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9997657118931251
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0002960371043283056,
+      "COVERAGE": 0.27968091400510814,
+      "GAP": 0.7598151102532311,
+      "REGULARITY": 0.007521214034143965,
+      "BALANCE": 0.8702581143084361,
+      "HEADWAY": 0.000996351398633977
+    },
+    "status": "OK"
+  },
+  "DPF4/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9996381402833687,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.94,
+      "Q_HEADWAY": 0.9992101209696672
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0004595369035308843,
+      "COVERAGE": 0.003144180897183694,
+      "GAP": 0.008516645110435407,
+      "REGULARITY": 0.003373268194695665,
+      "BALANCE": 0.26128355041552576,
+      "HEADWAY": 0.0033630697203717473
+    },
+    "status": "OK"
+  },
+  "DPF4/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9996263740021654,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9993539939345961
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0005307974565978112,
+      "COVERAGE": 0.02191861000878726,
+      "GAP": 0.13979716982490892,
+      "REGULARITY": 0.006286509200350605,
+      "BALANCE": 0.4441205589954684,
+      "HEADWAY": 0.002749660154093988
+    },
+    "status": "OK"
+  },
+  "DPF5/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.991137169771311,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9788341136977465
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.016892499663586864,
+      "COVERAGE": 0.022907338818278312,
+      "GAP": 0.05194567555481085,
+      "REGULARITY": 0.028728585832643833,
+      "BALANCE": 0.3464783495534241,
+      "HEADWAY": 0.049607991106778146
+    },
+    "status": "OK"
+  },
+  "DPF5/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9923278178507234,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.71,
+      "Q_HEADWAY": 0.9794577804406118
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.011974253810025664,
+      "COVERAGE": 0.022465134741040872,
+      "GAP": 0.0863471342097935,
+      "REGULARITY": 0.027238029073365914,
+      "BALANCE": 0.406515674144751,
+      "HEADWAY": 0.048111654981898296
+    },
+    "status": "OK"
+  },
+  "DPF5/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9903243705580818,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9790374639752751
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.02154966132811493,
+      "COVERAGE": 0.02279152618165855,
+      "GAP": 0.05203468061975014,
+      "REGULARITY": 0.020623409168983874,
+      "BALANCE": 0.18124398042640016,
+      "HEADWAY": 0.04911986718479022
+    },
+    "status": "OK"
+  },
+  "DTLZ1/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.994077636994767,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9870146284892671
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.011036675326284138,
+      "COVERAGE": 0.03224369331951686,
+      "GAP": 0.07384647248165929,
+      "REGULARITY": 0.017497347839057535,
+      "BALANCE": 0.35684301564054494,
+      "HEADWAY": 0.03411286501358064
+    },
+    "status": "OK"
+  },
+  "DTLZ1/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9960312259604912,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9914637658092857
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0080762644819665,
+      "COVERAGE": 0.01800704982353436,
+      "GAP": 0.03782163682528391,
+      "REGULARITY": 0.012853537754884096,
+      "BALANCE": 0.27478761463706075,
+      "HEADWAY": 0.022295791359183085
+    },
+    "status": "OK"
+  },
+  "DTLZ1/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9957534972666474,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9915922319955423
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.008846381106386532,
+      "COVERAGE": 0.013412812745439588,
+      "GAP": 0.019965150174051448,
+      "REGULARITY": 0.009347119521133077,
+      "BALANCE": 0.12595505476978125,
+      "HEADWAY": 0.02195659371287556
+    },
+    "status": "OK"
+  },
+  "DTLZ2/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9894156757331388,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.99,
+      "Q_HEADWAY": 0.9746901717424876
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.023246383985730354,
+      "COVERAGE": 0.03630586099641771,
+      "GAP": 0.05949650245475274,
+      "REGULARITY": 0.012637093356683211,
+      "BALANCE": 0.1890696335866192,
+      "HEADWAY": 0.053729921614034074
+    },
+    "status": "OK"
+  },
+  "DTLZ2/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.989522014243364,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.99,
+      "Q_HEADWAY": 0.9783031404878404
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.023447374714916064,
+      "COVERAGE": 0.04793863737617858,
+      "GAP": 0.09312440051287445,
+      "REGULARITY": 0.03124714007501971,
+      "BALANCE": 0.19340727506679126,
+      "HEADWAY": 0.0458868710482105
+    },
+    "status": "OK"
+  },
+  "DTLZ2/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9894188781060449,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.99,
+      "Q_HEADWAY": 0.974690454799723
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.02330406258358756,
+      "COVERAGE": 0.03630132612440592,
+      "GAP": 0.0595166970401441,
+      "REGULARITY": 0.012635525007722808,
+      "BALANCE": 0.1890696335866192,
+      "HEADWAY": 0.05372930485398482
+    },
+    "status": "OK"
+  },
+  "DTLZ3/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.0,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.0
+    },
+    "raw_metrics": {
+      "CLOSENESS": 5.006289480641,
+      "COVERAGE": 5.008298400306006,
+      "GAP": 5.012522194403606,
+      "REGULARITY": 0.263083982650665,
+      "BALANCE": 0.3512184819957547,
+      "HEADWAY": 5.007517513251267
+    },
+    "status": "OK"
+  },
+  "DTLZ3/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.990842262120976,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9788316131276157
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.020815423710047295,
+      "COVERAGE": 0.047180792488925656,
+      "GAP": 0.10139346822766551,
+      "REGULARITY": 0.03527759895361765,
+      "BALANCE": 0.28005327976707195,
+      "HEADWAY": 0.044942019703898314
+    },
+    "status": "OK"
+  },
+  "DTLZ3/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9901006485733154,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.98,
+      "Q_HEADWAY": 0.9777226309027975
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.020996308877761584,
+      "COVERAGE": 0.0357002914158081,
+      "GAP": 0.05995266805896371,
+      "REGULARITY": 0.01349252271927745,
+      "BALANCE": 0.20264993831209804,
+      "HEADWAY": 0.04735137437440922
+    },
+    "status": "OK"
+  },
+  "DTLZ4/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9918468476250306,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.19999999999999996,
+      "Q_HEADWAY": 0.9755278898885331
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.019765363951781606,
+      "COVERAGE": 0.055266444274876106,
+      "GAP": 0.09466319885118896,
+      "REGULARITY": 0.04825926082174092,
+      "BALANCE": 0.32431314599929106,
+      "HEADWAY": 0.04183108516417492
+    },
+    "status": "OK"
+  },
+  "DTLZ4/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9900701016828115,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.99,
+      "Q_HEADWAY": 0.9775113442486848
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.02068481838770766,
+      "COVERAGE": 0.0478444324870071,
+      "GAP": 0.0937562744489145,
+      "REGULARITY": 0.0310718861251897,
+      "BALANCE": 0.20093459797049748,
+      "HEADWAY": 0.04688191551400814
+    },
+    "status": "OK"
+  },
+  "DTLZ4/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.990454440608085,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9784473062264715
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.020335561542075088,
+      "COVERAGE": 0.035264010940971105,
+      "GAP": 0.05912845268260423,
+      "REGULARITY": 0.012968391827865175,
+      "BALANCE": 0.18850175587001475,
+      "HEADWAY": 0.04488758596394467
+    },
+    "status": "OK"
+  },
+  "DTLZ5/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9997356731246353,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9995125185127036
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.00036085911768244847,
+      "COVERAGE": 0.007045011045195037,
+      "GAP": 0.021883291071341605,
+      "REGULARITY": 0.012133595816767014,
+      "BALANCE": 0.25697587693813245,
+      "HEADWAY": 0.00197027059782677
+    },
+    "status": "OK"
+  },
+  "DTLZ5/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9994944635629415,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9992169955173082
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0008049023555576654,
+      "COVERAGE": 0.0027357261682615765,
+      "GAP": 0.0063489408433063,
+      "REGULARITY": 0.0021635397832650734,
+      "BALANCE": 0.12636520331099482,
+      "HEADWAY": 0.003714830931825088
+    },
+    "status": "OK"
+  },
+  "DTLZ5/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9997024300223528,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9995279644942308
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.000466952375807847,
+      "COVERAGE": 0.0059880619856825705,
+      "GAP": 0.022330497127846773,
+      "REGULARITY": 0.005031182266092944,
+      "BALANCE": 0.362870301695853,
+      "HEADWAY": 0.002237842620452391
+    },
+    "status": "OK"
+  },
+  "DTLZ6/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.954442647527447,
+      "Q_COVERAGE": 0.96,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9519369130036958
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.09685947919192697,
+      "COVERAGE": 0.09325203962028657,
+      "GAP": 0.10611606336644305,
+      "REGULARITY": 0.011160398727923902,
+      "BALANCE": 0.1828015036831514,
+      "HEADWAY": 0.21564818380615125
+    },
+    "status": "OK"
+  },
+  "DTLZ6/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9559345893470537,
+      "Q_COVERAGE": 0.6699999999999999,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9676575828261393
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.09807368358888165,
+      "COVERAGE": 0.09597672259381194,
+      "GAP": 0.10181124669295018,
+      "REGULARITY": 0.008229030064204449,
+      "BALANCE": 0.17424515153380318,
+      "HEADWAY": 0.1653506511638225
+    },
+    "status": "OK"
+  },
+  "DTLZ6/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9509809729795189,
+      "Q_COVERAGE": 0.12,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.974245117696821
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.11611883793381383,
+      "COVERAGE": 0.10829162863639478,
+      "GAP": 0.11525275602021366,
+      "REGULARITY": 0.005804307429616978,
+      "BALANCE": 0.4307780697135854,
+      "HEADWAY": 0.12958957019524958
+    },
+    "status": "OK"
+  },
+  "DTLZ7/MOEAD": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9840074953784792,
+      "Q_COVERAGE": 0.9299999999999999,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9328293821854714
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.0255498884449366,
+      "COVERAGE": 0.09196213283226273,
+      "GAP": 0.18408822435935798,
+      "REGULARITY": 0.06448526408093758,
+      "BALANCE": 0.550402226485127,
+      "HEADWAY": 0.1340549164724707
+    },
+    "status": "OK"
+  },
+  "DTLZ7/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9856694201052038,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9602955464938776
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.027821569685013946,
+      "COVERAGE": 0.0540312795082077,
+      "GAP": 0.11708763033271732,
+      "REGULARITY": 0.02943663747513823,
+      "BALANCE": 0.2202182265959395,
+      "HEADWAY": 0.07719450125371057
+    },
+    "status": "OK"
+  },
+  "DTLZ7/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.989377537357708,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 1.0,
+      "Q_HEADWAY": 0.9679428293706467
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.023029310760365886,
+      "COVERAGE": 0.046158341325921136,
+      "GAP": 0.09415435359396519,
+      "REGULARITY": 0.03221800924087774,
+      "BALANCE": 0.20093409978859264,
+      "HEADWAY": 0.06187675000421997
+    },
+    "status": "OK"
+  },
+  "DTLZ8/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.8114508926894802,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 0.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.8502713295137201
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.4047238875268052,
+      "COVERAGE": 0.5807184346793001,
+      "GAP": 0.8138695820937257,
+      "REGULARITY": 0.05888071169798664,
+      "BALANCE": 0.963841880435738,
+      "HEADWAY": 0.40943627232575247
+    },
+    "status": "OK"
+  },
+  "DTLZ8/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9929280697356546,
+      "Q_COVERAGE": 1.0,
+      "Q_GAP": 1.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9857389602005809
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.013765921415164098,
+      "COVERAGE": 0.0375638658239847,
+      "GAP": 0.12863172352945912,
+      "REGULARITY": 0.026991734989179166,
+      "BALANCE": 0.4084382307338566,
+      "HEADWAY": 0.03322752049330409
+    },
+    "status": "OK"
+  },
+  "DTLZ9/NSGA2": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.0,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.0
+    },
+    "raw_metrics": {
+      "CLOSENESS": 1730.759851636362,
+      "COVERAGE": 1730.8574501108967,
+      "GAP": 1731.1433221081054,
+      "REGULARITY": 0.008466381280014486,
+      "BALANCE": 0.9498182778294079,
+      "HEADWAY": 1730.759851636362
+    },
+    "status": "OK"
+  },
+  "DTLZ9/NSGA3": {
+    "q_scores": {
+      "Q_CLOSENESS": 0.9716759730209,
+      "Q_COVERAGE": 0.0,
+      "Q_GAP": 0.0,
+      "Q_REGULARITY": 1.0,
+      "Q_BALANCE": 0.0,
+      "Q_HEADWAY": 0.9675879917099881
+    },
+    "raw_metrics": {
+      "CLOSENESS": 0.054157338367107316,
+      "COVERAGE": 0.19378336704406518,
+      "GAP": 0.5332773213475163,
+      "REGULARITY": 0.007259347748436338,
+      "BALANCE": 0.6487629911867199,
+      "HEADWAY": 0.16186314665650728
+    },
+    "status": "OK"
+  }
+}

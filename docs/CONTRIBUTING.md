@@ -54,7 +54,7 @@ Before contributing, please read the following technical resources to understand
 
 ## 3. Verification and Testing
 
-We maintain a rigorous testing pyramid using `pytest` and a central orchestrator. No contribution will be accepted if it breaks the core logic or mathematical invariants.
+We maintain a rigorous testing pyramid using `pytest` and a central orchestrator. No contribution will be accepted if it breaks the core logic or mathematical invariants. For a detailed description of the testing pyramid and tier-specific instructions, please refer to [tests/readme.txt](../tests/readme.txt).
 
 ### Test Orchestrator
 Use the `test.py` script in the root directory to run the test suite. 
@@ -67,7 +67,8 @@ Use the `test.py` script in the root directory to run the test suite.
 ### Testing Tiers
 - **Unit Tests (`--unit`)**: Functional validation of core classes (`Population`, `Experiment`), metrics, and persistence.
 - **Light Tier (`--light`)**: Mathematical invariants of benchmarks (e.g., DTLZ/DPF geometry) without stochastic execution.
-- **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the v0.8.0 release baselines (IGD thresholds).
+- **Regression Tier (`--regression`)**: Certified numerical reproducibility. Verifies if Q-Scores and FAIR metrics match the Calibration Reference targets down to 6 decimal places.
+- **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the release baselines (IGD thresholds).
 - **Heavy Tier (`--heavy`)**: Full statistical calibration (N=30) and hypothesis testing for large-scale performance verification.
 
 ### Contribution Rules for Tests
@@ -76,8 +77,9 @@ Use the `test.py` script in the root directory to run the test suite.
 - Avoid adding tests that depend on heavy CPU usage or GUI backends.
 
 ### Calibration and Baselines
-Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (`tests/baselines_v0.8.0.csv`) and a **Calibration Report** (`tests/CALIBRATION_v0.8.0.html`).
+Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (e.g., `tests/baselines_v0.8.0.csv`) and a **Calibration Report** (e.g., `tests/CALIBRATION_v0.8.0.html`).
 - If your contribution affects the core IGD/HV performance, you MUST regenerate the baselines and the report.
+- The framework also utilizes **Calibration Reference Data** (JSON) for numerical regression testing.
 - Raw calibration traces are stored in `tests/calibration_data/`.
 - Use `tests/calibration/compute_baselines.py` and `tests/calibration/generate_visual_report.py` to maintain these artifacts.
 

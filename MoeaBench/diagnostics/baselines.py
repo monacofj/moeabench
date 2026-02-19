@@ -13,6 +13,7 @@ This module handles:
 
 import os
 import json
+import warnings
 import numpy as np
 from typing import Optional, Dict, Any, Tuple, Union
 from scipy.spatial.distance import cdist
@@ -28,23 +29,28 @@ class UndefinedBaselineError(Exception):
     """Raised when a required baseline is missing (Fail-Closed)."""
     pass
 
+# Track if cache is stale
+_CACHE_DIRTY = True
+
 def register_baselines(source: Union[str, Dict[str, Any]]) -> None:
     """
     Registers a new source of baselines.
     Source can be a path to a JSON file or a dictionary.
     """
-    global _CACHE
+    global _CACHE_DIRTY
     _REGISTERED_SOURCES.append(source)
-    # Invalidate cache to force re-merge
-    _CACHE = None
+    # Mark cache as dirty to force re-merge on next load
+    _CACHE_DIRTY = True
 
 def load_offline_baselines() -> Dict[str, Any]:
     """
     Loads and merges all offline baseline sources.
     Uses Fail-Closed logic for the primary resource.
     """
-    global _CACHE
-    if _CACHE is not None:
+    global _CACHE, _CACHE_DIRTY
+    
+    # Return valid cache if available and not dirty
+    if _CACHE is not None and not _CACHE_DIRTY:
         return _CACHE
     
     # 1. Start with the core library baselines
@@ -91,6 +97,7 @@ def load_offline_baselines() -> Dict[str, Any]:
                     full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
 
     _CACHE = full_data
+    _CACHE_DIRTY = False
     return _CACHE
 
 def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float]:
@@ -221,7 +228,11 @@ def get_ref_clusters(gt: np.ndarray, c: int = 32, seed: int = 0) -> Any:
         # Fallback if GT is tiny: just use GT points as centroids
         return gt, np.arange(n_pts)
         
-    centroids, labels = kmeans2(gt, c, minit='points', seed=seed, iter=20)
+    with warnings.catch_warnings():
+        # SciPy may warn about empty clusters if data is highly collapsed or 
+        # for specific seeds. MoeaBench handles histograms with zeros gracefully.
+        warnings.simplefilter("ignore", category=UserWarning)
+        centroids, labels = kmeans2(gt, c, minit='points', seed=seed, iter=20)
     return centroids, labels
 
 def get_resolution_factor(gt: np.ndarray) -> float:

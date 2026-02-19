@@ -53,15 +53,17 @@ def main():
     parser = argparse.ArgumentParser(description="MoeaBench Test Orchestrator")
     parser.add_argument("--unit", action="store_true", help="Run functional unit tests")
     parser.add_argument("--light", action="store_true", help="Run Light Tier (Math Invariants)")
-    parser.add_argument("--smoke", action="store_true", help="Run Smoke Tier (Regression)")
+    parser.add_argument("--smoke", action="store_true", help="Run Smoke Tier (Convergence Regression)")
+    parser.add_argument("--regression", action="store_true", help="Run Regression Tier (Numerical Certification)")
     parser.add_argument("--heavy", action="store_true", help="Run Heavy Tier (Statistical)")
     parser.add_argument("--all", action="store_true", help="Run all tests (excluding heavy)")
 
     args = parser.parse_args()
 
-    # Default to --light if no specific tier is requested (foundational + math)
-    if not (args.unit or args.light or args.smoke or args.heavy or args.all):
+    # Default logic (Daily Validation): Unit + Light + Regression
+    if not (args.unit or args.light or args.smoke or args.regression or args.heavy or args.all):
         args.light = True
+        args.regression = True
     
     success = True
 
@@ -75,7 +77,11 @@ def main():
             if not run_tier_tests("light"):
                 success = False
 
-        if args.smoke or (args.all and not args.light): # Logical convenience
+        if args.regression or args.all:
+            if not run_tier_tests("regression"):
+                success = False
+
+        if args.smoke or args.all:
             if not run_tier_tests("smoke"):
                 success = False
 
