@@ -16,6 +16,7 @@ import mb_path
 from MoeaBench import mb
 
 def main():
+    print(f"MoeaBench v{mb.system.version()}")
     # --- CASE 1: NSGA-III on DPF1 (Optimal Solution) ---
     print("\n[Case 1] NSGA-III on DPF1 (Linear Front)")
     exp_n3 = mb.experiment()

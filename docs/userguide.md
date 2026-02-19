@@ -7,9 +7,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # MoeaBench User Guide
 
+> **Version 0.10.2**
 
-
-MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
+MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 
 To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
@@ -811,8 +811,8 @@ res = mb.diagnostics.audit(exp)
 res.report_show()
 
 # 3. Access narrative summary as a string (if needed)
-text = res.report()
-print(res.verdicts) # {'Q_HEADWAY': 'Effective', ...}
+# text = res.report()
+# print(res.verdicts) # {'Q_HEADWAY': 'Effective', ...}
 ```
 
 #### **Scenario B: Individual Metric deep-dive**

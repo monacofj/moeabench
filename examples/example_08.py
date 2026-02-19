@@ -21,7 +21,7 @@ from MoeaBench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"Version: {mb.system.version()}")
+    print(f"MoeaBench v{mb.system.version()}")
     print("--- Advanced Diagnostics Workshop ---\n")
 
     # 1. Setup: Standard 3D problem (DTLZ2)

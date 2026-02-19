@@ -26,6 +26,7 @@ from MoeaBench import mb
 import matplotlib.pyplot as plt
 
 def main():
+    print(f"MoeaBench v{mb.system.version()}")
     print("=== Example 13: Clinical Quality Audit (Q-Scores) ===\n")
 
     # 1. Setup: DTLZ2 (3 Objectives) and NSGA-II

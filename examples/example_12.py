@@ -21,6 +21,7 @@ import numpy as np
 from MoeaBench import mb
 
 def main():
+    print(f"MoeaBench v{mb.system.version()}")
     print("Example 12: Exploring the Physical (FAIR) Layer")
     print("===============================================")
 

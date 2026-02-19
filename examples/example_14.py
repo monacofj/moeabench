@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from MoeaBench import mb
 
 def main():
+    print(f"MoeaBench v{mb.system.version()}")
     print("Example 14: Exploring Diagnostic Visualizations")
     print("===============================================")
 

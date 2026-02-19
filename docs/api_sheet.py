@@ -1,20 +1,22 @@
-# SPDX-FileCopyrightText: 2025 Monaco F. J. <monaco@usp.br>
-# SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
 """
-MoeaBench API Cheat Sheet (v0.10.1)
+MoeaBench API Cheat Sheet (v0.10.2)
 ===================================
 Information Interpretation for Multi-objective Evolutionary Algorithms.
 
 This script demonstrates the core capabilities of the framework in a condensed format.
 It covers configuration, execution, diagnostics, metrics, and extensibility.
 
-Do not run this script directly; use it as a reference for your own code.
+NOTE: This file is for REFERENCE ONLY and is not intended for direct execution.
 """
+import sys
 import MoeaBench as mb
 import numpy as np
+
+# Abort execution if run directly
+if __name__ == "__main__":
+    print(f"MoeaBench v{mb.system.version()}")
+    print("This script is a syntax reference only and cannot be executed directly.")
+    sys.exit(0)
 
 # -----------------------------------------------------------------------------
 # 1. Global Configuration (mb.defaults)
@@ -113,8 +115,8 @@ ps = exp.optimal_set(n_points=500)      # True Pareto Set (N x N_vars)
 # It issues Verdicts (Pass/Fail) and Quality Scores (0-100).
 
 # A. Full Audit
-# Prints a comprehensive report with Pass/Fail verdicts.
-mb.diagnostics.audit(exp)
+# Generates a report with Verdicts (Pass/Fail) and Quality Scores (0-100)
+mb.diagnostics.audit(exp).report_show()
 
 # B. Calibration (For custom problems)
 # Generates a baseline profile relative to a random search.
@@ -155,7 +157,7 @@ mb.view.clinic_distribution(exp)        # Q-Score Histograms
 # Hypervolume (Tripartite: Exact, Monte Carlo, Slicing)
 # Automatically selects 'exact' or 'monte_carlo' based on dimensions (M).
 hv_matrix = mb.metrics.hypervolume(exp) # Returns MetricMatrix (Run x Time)
-print(hv_matrix.report())               # Statistics (Mean, Median, Std, IQR)
+hv_matrix.report_show()                  # Statistics (Mean, Median, Std, IQR)
 
 # Accessing raw values
 final_hv = hv_matrix.last               # Array of final values for each run
@@ -172,11 +174,11 @@ exp_b = mb.experiment()                 # Assume another experiment
 
 # Mann-Whitney U Test (Evidence of superiority)
 res_test = mb.stats.perf_evidence(exp_a, exp_b) 
-print(res_test.report())
+res_test.report_show()
 
 # Vargha-Delaney A12 (Effect Size / Win Probability)
 res_prob = mb.stats.perf_probability(exp_a, exp_b)
-print(f"Win Probability: {res_prob.mean:.2f}")
+res_prob.report_show()
 
 # -----------------------------------------------------------------------------
 # 8. Custom Extensions (Plugin Architecture)

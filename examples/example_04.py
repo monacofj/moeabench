@@ -17,7 +17,7 @@ import mb_path
 from MoeaBench import mb
 
 def main():
-    print(f"Version: {mb.system.version()}")
+    print(f"MoeaBench v{mb.system.version()}")
     # 1. Setup: Multiple runs for NSGA-III
     exp1 = mb.experiment()
     exp1.name = "NSGA-III (5 runs)"

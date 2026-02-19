@@ -55,7 +55,7 @@ class MyProblem(mb.mops.BaseMop):
         return res
 
 def main():
-    print(f"Version: {mb.system.version()}")
+    print(f"MoeaBench v{mb.system.version()}")
     # 2. Setup: Instantiate and use the custom benchmark
     mop1 = MyProblem()
     

@@ -18,7 +18,7 @@ from MoeaBench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"Version: {mb.system.version()}")
+    print(f"MoeaBench v{mb.system.version()}")
     # 1. Setup: Compare NSGA-II vs NSGA-III on DTLZ2
     # We use a 3-objective problem (M=3)
     exp1 = mb.experiment()
