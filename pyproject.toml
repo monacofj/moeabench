@@ -45,4 +45,4 @@ where = ["."]
 include = ["MoeaBench*"]
 
 [tool.setuptools.package-data]
-"MoeaBench" = ["requirements.txt"]
+"MoeaBench" = ["requirements.txt", "diagnostics/resources/baselines_v4.json", "diagnostics/resources/references/**/*"]
