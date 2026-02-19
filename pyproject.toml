@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "MoeaBench"
-version = "0.10.3"
+version = "0.10.4"
 authors = [
   { name = "Silva F. F.", email = "fernandoferreira.silva42@usp.br" },
   { name = "Monaco F. J.", email = "monaco@usp.br" },
@@ -40,9 +40,12 @@ dependencies = [
     "scipy",
 ]
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["MoeaBench*"]
 
 [tool.setuptools.package-data]
-"MoeaBench" = ["requirements.txt", "diagnostics/resources/baselines_v4.json", "diagnostics/resources/references/**/*"]
+"MoeaBench" = ["requirements.txt", "diagnostics/resources/*.json", "diagnostics/resources/references/**/*"]
