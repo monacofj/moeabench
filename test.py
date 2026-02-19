@@ -54,7 +54,7 @@ def main():
     parser.add_argument("--unit", action="store_true", help="Run functional unit tests")
     parser.add_argument("--light", action="store_true", help="Run Light Tier (Math Invariants)")
     parser.add_argument("--smoke", action="store_true", help="Run Smoke Tier (Convergence Regression)")
-    parser.add_argument("--regression", action="store_true", help="Run Regression Tier (Numerical Certification)")
+    parser.add_argument("--regression", action="store_true", help="Run Regression Tier (Numerical Integrity)")
     parser.add_argument("--heavy", action="store_true", help="Run Heavy Tier (Statistical)")
     parser.add_argument("--all", action="store_true", help="Run all tests (excluding heavy)")
 

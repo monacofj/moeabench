@@ -49,7 +49,7 @@ def main():
     print("\nStep 1: Calculating Individual Physical Metrics (Closeness & Coverage)...")
     
     # A. Closeness (Physical Proximity Distribution)
-    # This is the raw data used for the "Certification" layer.
+    # This is the raw data used for the "Validation" layer.
     u_dist = mb.diagnostics.closeness(exp, ground_truth=gt)
     print("\n--- Physical Insight: Closeness (Raw Distribution) ---")
     print(f"- Mean Distance: {np.mean(u_dist):.4f} resolution-units")

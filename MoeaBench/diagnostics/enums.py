@@ -21,13 +21,3 @@ class DiagnosticStatus(Enum):
     UNDEFINED_BASELINE = auto()   # Missing/mismatched reference package
     UNDEFINED_INPUT = auto()      # Invalid/unsupported input (e.g., dim mismatch)
     UNDEFINED = auto()            # Insufficient data
-
-class DiagnosticProfile(Enum):
-    """
-    Precision tiers for algorithmic auditing.
-    Values represent thresholds as % of the reference front diameter D.
-    """
-    EXPLORATORY = 2.5
-    INDUSTRY = 1.7
-    STANDARD = 1.3
-    RESEARCH = 1.1

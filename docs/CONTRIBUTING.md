@@ -45,6 +45,9 @@ We strive for high-quality, "Pythonic" code that is efficient and easy to mainta
 - **Vectorization**: This is our core technical style. Never iterate over populations in Python loops. Use **NumPy** vectorized operations exclusively.
 - **Smart Containers**: Use `SmartArray` for numerical data to ensure label consistency and easy plotting integration.
 
+### Licensing
+Ensure all new files include the SPDX header and respect the terms of the **GPL-3.0-or-later** license (see the `COPYING` file for details).
+
 ### Developer Documentation
 Before contributing, please read the following technical resources to understand our core principles and evolution:
 - **[Design Philosophy](design.md)**: Detailed explanation of our **Technical Storytelling** (Scientific Narrative) style, the Rich Result architecture, the `fooplot` convention, and mandatory vectorization.

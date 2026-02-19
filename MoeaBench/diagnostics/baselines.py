@@ -18,6 +18,7 @@ import numpy as np
 from typing import Optional, Dict, Any, Tuple, Union
 from scipy.spatial.distance import cdist
 from scipy.cluster.vq import kmeans2
+from contextlib import contextmanager
 
 # Path to the Authorized Offline Baselines
 # Path to the Authorized Offline Baselines
@@ -41,6 +42,34 @@ def register_baselines(source: Union[str, Dict[str, Any]]) -> None:
     _REGISTERED_SOURCES.append(source)
     # Mark cache as dirty to force re-merge on next load
     _CACHE_DIRTY = True
+
+def reset_baselines() -> None:
+    """
+    Clears all registered sources and resets the cache to the library default.
+    """
+    global _CACHE, _CACHE_DIRTY, _REGISTERED_SOURCES
+    _REGISTERED_SOURCES = []
+    _CACHE = None
+    _CACHE_DIRTY = True
+
+@contextmanager
+def use_baselines(source: Union[str, Dict[str, Any]]):
+    """
+    Context manager to temporarily use a specific baseline source.
+    Useful for longitudinal studies or comparing against historical references.
+    """
+    global _CACHE, _CACHE_DIRTY, _REGISTERED_SOURCES
+    old_sources = list(_REGISTERED_SOURCES)
+    old_cache = _CACHE
+    
+    try:
+        reset_baselines()
+        register_baselines(source)
+        yield
+    finally:
+        _REGISTERED_SOURCES = old_sources
+        _CACHE = old_cache
+        _CACHE_DIRTY = True
 
 def load_offline_baselines() -> Dict[str, Any]:
     """

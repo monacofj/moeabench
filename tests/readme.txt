@@ -4,6 +4,7 @@ MoeaBench Testing Infrastructure (v0.9+)
 The project utilizes a testing pyramid structure to ensure the functional,
 mathematical, and statistical integrity of the framework.
 
+
 HOW TO RUN THE TESTS:
 --------------------
 Use the central orchestrator `test.py` located in the project root.
@@ -13,16 +14,18 @@ Note: Unit Tests run automatically as a FOUNDATION for all tiers.
    $ python3 test.py --unit         # Functional only (~3s)
 
 2. Regression Tests:
-   $ python3 test.py --regression   # Numerical Certification (~2s)
+   $ python3 test.py --regression   # Numerical Integrity (~2s)
   
-3. Daily Validation (Default):
-   $ python3 test.py                # Unit + Light + Regression (~6-8s)
-   $ python3 test.py --light        # Same as above (explicit)
+3. Development Validation (Default):
+   $ python3 test.py          # Unit + Light + Regression Tier (~8s)
    
-4. Convergence Regression Verification:
+4. Release Validation:
+   $ python3 test.py --smoke  # All above + Convergence (~25s)
+   
+5. Convergence Regression Verification:
    $ python3 test.py --smoke        # Unit + Smoke Tier (~10 min)
 
-5. Complete Scientific Audit:
+6. Complete Scientific Audit:
    $ python3 test.py --heavy        # Unit + Heavy Tier (Hours)
 
 6. Total Verification (Unit + Light + Smoke + Regression):
@@ -54,7 +57,7 @@ COMPONENT DESCRIPTION:
    without relying on stochasticity.
 
 3. REGRESSION TIER (tests/test_regression_tier.py):
-   Certified numerical reproducibility. Verifies if Q-Scores and FAIR metrics 
+   Numerical integrity verification. Verifies if Q-Scores and FAIR metrics 
    match the Calibration Reference targets (v0.9+) down to 6 decimal places.
 
 4. SMOKE TIER (tests/test_smoke_tier.py):

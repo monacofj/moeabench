@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 # Clinical Quality Matrix (v0.9.1)
 
-This matrix defines the conversion from numerical Q-Scores [0, 1] to standardized technical clinical terminology used in MoeaBench certification reports.
+This matrix defines the conversion from numerical Q-Scores [0, 1] to standardized technical clinical terminology used in MoeaBench validation reports.
 
 ## 1. Quality Thresholds (Tiers)
 

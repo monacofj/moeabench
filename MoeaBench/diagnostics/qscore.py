@@ -204,10 +204,13 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     else:
         P, GT, s_ctx, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
         s_fit = s_ctx
-        f_val = fair.headway(P, GT, s_fit)
+        f_val = float(fair.headway(P, GT, s_fit))
+    
+    # Snap K to supported baseline grid
+    k_snap = baselines.snap_k(k)
     
     # Ideal = 0.0 (Better-than-noise progress)
-    _, rand50_raw = baselines.get_baseline_values(problem, k, "headway")
+    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
     
     # Normalize baseline to match FAIR units (s_fit)
     rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
@@ -241,8 +244,11 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
     if u_dist is None or u_dist.size == 0:
         return QResult(0.0, "Q_CLOSENESS", "Empty distribution (Failed).")
         
+    # Snap K to supported baseline grid
+    k_snap = baselines.snap_k(k)
+    
     # 1. Get Baseline (G_blur ECDF)
-    _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "closeness")
+    _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "closeness")
     
     # 2. Stability: Explicit ideal samples (all zeros, same size as u_dist)
     ideal_samples = np.zeros_like(u_dist)
@@ -277,9 +283,10 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = fair.coverage(P, GT)
+        f_val = float(fair.coverage(P, GT))
         
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "cov")
+    k_snap = baselines.snap_k(k)
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_COVERAGE", description="Measures how well the population spans the entire front.")
 
@@ -295,9 +302,10 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = fair.gap(P, GT)
+        f_val = float(fair.gap(P, GT))
         
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "gap")
+    k_snap = baselines.snap_k(k)
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_GAP", description="Measures the continuity of the front (lack of large holes).")
 
@@ -313,9 +321,10 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = fair.regularity(P, ref_distribution)
+        f_val = float(fair.regularity(P, ref_distribution))
         
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "reg")
+    k_snap = baselines.snap_k(k)
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_REGULARITY", description="Measures the uniformity of point spacing (lattice order).")
 
@@ -331,9 +340,10 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = fair.balance(P, centroids, ref_hist)
+        f_val = float(fair.balance(P, centroids, ref_hist))
         
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k, "bal")
+    k_snap = baselines.snap_k(k)
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal")
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
 
@@ -360,7 +370,8 @@ def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     fair_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
     
     # 2. Get Baseline (Rand50 in FAIR space)
-    _, rand50_raw = baselines.get_baseline_values(problem, k, "headway")
+    k_snap = baselines.snap_k(k)
+    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
     rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
 
     # 3. Vectorized log-linear mapping
@@ -395,7 +406,8 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
     u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
     
     # 2. Get Baseline (Rand50 in FAIR space)
-    _, rand50 = baselines.get_baseline_values(problem, k, "closeness")
+    k_snap = baselines.snap_k(k)
+    _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness")
 
     # 3. Vectorized log-linear mapping
     denom_raw = max(rand50, 0.0)

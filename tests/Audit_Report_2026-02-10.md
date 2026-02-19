@@ -31,7 +31,7 @@ However, the codebase fails to adhere to the specification's implicit mandate fo
 - `qscore.compute_q_regularity`: **Non-Compliant**. Uses `_compute_q_linear`.
 - `qscore.compute_q_balance`: **Non-Compliant**. Uses `_compute_q_linear`.
 
-**Impact:** The "Unified Specification" aims to remove arbitrary scales. Linear interpolation preserves arbitrary scaling issues for 4 out of 5 metrics, undermining the certification's scientific validity.
+**Impact:** The "Unified Specification" aims to remove arbitrary scales. Linear interpolation preserves arbitrary scaling issues for 4 out of 5 metrics, undermining the validation's scientific validity.
 
 ### 3.2. Incomplete Baseline Generation (Section 3 & 6)
 **Requirement:** Determining the `rand_ecdf` and `uni50` (or equivalent) for all metrics to support the Q-Score.

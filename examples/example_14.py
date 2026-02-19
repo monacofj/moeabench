@@ -10,7 +10,7 @@ Example 14: Diagnostic Visualization Suite (The Clinical Layer)
 This example demonstrates the 4 primary diagnostic instruments:
 1. clinic_ecdf: Goal attainment (The Judge)
 2. clinic_distribution: Physics of error (The Pathologist)
-3. clinic_radar: Quality fingerprint (The Certification)
+3. clinic_radar: Quality fingerprint (The Validation)
 4. clinic_history: Health trajectory (The Monitor)
 
 Scenario: We simulate a "Premature Convergence" search where the algorithm

@@ -15,7 +15,7 @@ Divided into:
 
 from .auditor import audit, fair_audit, q_audit, DiagnosticResult, FairAuditResult, QualityAuditResult
 from .enums import DiagnosticStatus
-from .baselines import register_baselines
+from .baselines import register_baselines, reset_baselines, use_baselines
 from .calibration import calibrate_mop as calibrate
 
 # Fair Metrics (Physical Layer)
@@ -44,7 +44,7 @@ __all__ = [
     "audit", "fair_audit", "q_audit", 
     "DiagnosticResult", "FairAuditResult", "QualityAuditResult",
     "DiagnosticStatus",
-    "register_baselines", "calibrate",
+    "register_baselines", "reset_baselines", "use_baselines", "calibrate",
     "headway", "closeness", "coverage", "gap", "regularity", "balance",
     "q_headway", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
     "q_headway_points", "q_closeness_points"

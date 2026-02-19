@@ -14,6 +14,8 @@ import inspect
 import os
 from ..progress import get_progress_bar, set_active_pbar
 from typing import Optional, List, Union, Any, Iterator, Dict
+import warnings
+import datetime
 
 class JoinedPopulation:
     def __init__(self, pops: List[Population], source: Any = None) -> None:
@@ -54,6 +56,11 @@ class experiment(Reportable):
         self._stop: Any = None
         self._name: str = "experiment"
         self._repeat: int = 1
+        
+        # Scientific Metadata
+        self._authors: Optional[str] = None
+        self._license: str = "GPL-3.0-or-later" # Default project license
+        self._year: int = datetime.date.today().year
 
         
         # Use properties for auto-instantiation and validation
@@ -111,6 +118,46 @@ class experiment(Reportable):
     @moea.setter
     def moea(self, value: Any) -> None:
         self._moea = value
+
+    # Scientific Metadata Properties
+    @property
+    def authors(self) -> Optional[str]: return self._authors
+    @authors.setter
+    def authors(self, value: str) -> None: self._authors = value
+
+    @property
+    def year(self) -> int: return self._year
+    @year.setter
+    def year(self, value: int) -> None: self._year = int(value)
+
+    @property
+    def license(self) -> str: return self._license
+    @license.setter
+    def license(self, value: str) -> None:
+        # Standard SPDX validation list
+        spdx_ids = {
+            "GPL-3.0-or-later", "GPL-3.0-only", "GPL-2.0-or-later", "GPL-2.0-only",
+            "MIT", "Apache-2.0", "BSD-3-Clause", "BSD-2-Clause", "LGPL-3.0-or-later",
+            "AGPL-3.0-or-later", "CC0-1.0", "CC-BY-4.0", "MPL-2.0", "Unlicense"
+        }
+        
+        # Simple normalization
+        val = value.strip()
+        normalization = {
+            "GPL3": "GPL-3.0-or-later",
+            "GPLv3": "GPL-3.0-or-later",
+            "MIT": "MIT",
+            "Apache2": "Apache-2.0",
+            "BSD": "BSD-3-Clause"
+        }
+        
+        normalized = normalization.get(val.upper(), val)
+        if normalized not in spdx_ids:
+            warnings.warn(f"'{val}' is not a recognized standard SPDX license identifier. "
+                          f"Consider using a standard ID (e.g., 'GPL-3.0-or-later', 'MIT').", 
+                          UserWarning)
+        
+        self._license = normalized
 
     @property
     def runs(self) -> List[Run]:
@@ -296,6 +343,11 @@ class experiment(Reportable):
             f"  Algorithm (MOEA): {moea_name}",
             f"  Configuration: {n_runs}/{self.repeat} runs completed"
         ]
+        
+        if self.authors:
+            lines.insert(1, f"  Authors: {self.authors}")
+        if self.license:
+            lines.insert(2, f"  License: {self.license} (c) {self.year}")
         
         if n_runs > 0:
             last_gen = len(self._runs[0])

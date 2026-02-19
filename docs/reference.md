@@ -256,7 +256,7 @@ Specialized diagnostic instruments for deep-dive pathology analysis. All clinica
 > Functionally, the `mb.view.clinic_*` instruments work identically for **any** algorithm (e.g., SPEA2, MOEA/D, or custom plugins). Q-Scores are calculated against the problem's analytical Ground Truth ($GT$), not against other algorithms.
 
 *   **`clinic_radar(target, ground_truth=None, show=True, **kwargs)`**:
-    *   **Role**: *The Certification* (Q-Score Spider Plot).
+    *   **Role**: *The Validation* (Q-Score Spider Plot).
     *   **Logic**: Calculates all 6 Q-Scores (Headway, Closeness, Coverage, Gap, Regularity, Balance) and maps them to a radial chart.
     *   **Grid**: Displays explicit concentric circles at intervals of $0.25$ to indicate quality tiers.
 *   **`clinic_ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
@@ -574,7 +574,7 @@ The abstract skeleton for all problem plugins.
 
 **Methods to Override:**
 *   **`evaluation(X)`**: Must return `{'F': obj_matrix}`.
-*   **`ps(n)`**: [MANDATORY for Certification] Returns $n$ Pareto Set decision variable samples.
+*   **`ps(n)`**: [MANDATORY for Validation] Returns $n$ Pareto Set decision variable samples.
 
 **API Methods:**
 *   **`calibrate(baseline=None, force=False, **kwargs)`**: Performs automated calibration and generates a Sidecar JSON file.
@@ -689,13 +689,16 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 *   **`DiagnosticValue`**: The base class for single-metric results.
     *   **Numerical Fallback**: Objects can be cast directly to `float()`.
     *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights.
+    *   **`exp.authors`**: `str` Optional author metadata for persistence.
+    *   **`exp.license`**: `str` SPDX License ID (e.g., 'MIT').
+    *   **`exp.year`**: `int` Publication year.
+    *   **`exp.report()`**: `str` Narrative report of configuration.
     *   **`.report_show()`**: Renders the narrative report with rich formatting.
 
 | Result Class | Returner functions | Characteristics |
 | :--- | :--- | :--- |
 | **`FairResult`** | `headway`, `coverage`, etc. | Physical facts, normalized by resolution. |
 | **`QResult`** | `q_headway`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
-| **`DiagnosticResult`**| `audit()` | High-level synthesis with Biopsy summary. |
 
 ---
 
@@ -779,13 +782,22 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 ### **12.4. Comprehensive Algorithmic Audit**
 
-#### **`audit(data, ground_truth=None, problem=None, ...) -> DiagnosticResult`**
+#### **`audit(data, ground_truth=None) -> DiagnosticResult`**
 *   **Rationale**: The primary entry point for automated performance analysis. It runs the full 6-dimensional clinical suite and synthesizes a high-level verdict.
+*   **GT Resolution**: If `ground_truth` is a string, it is treated as a file path and loaded automatically (`.npy`, `.npz`, `.csv`).
 *   **Process**:
     1.  Calculates all 6 Q-Scores.
     2.  Applies the **Performance Auditor** expert system.
     3.  Classifies the algorithm into the **8-State Pathology Ontology**.
 *   **Return**: A `DiagnosticResult` object that provides the full narrative biopsy via `.report_show()`.
+
+### **12.5. Baseline Management**
+
+| Function | Args | Description |
+| :--- | :--- | :--- |
+| **`mb.diagnostics.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
+| **`mb.diagnostics.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
+| **`mb.diagnostics.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
 
 ---
 

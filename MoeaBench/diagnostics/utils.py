@@ -7,6 +7,7 @@ Internal utilities for the diagnostics package.
 """
 
 import numpy as np
+import os
 from typing import Any, Tuple, Optional
 
 def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **kwargs) -> Tuple[np.ndarray, np.ndarray, float, str, int]:
@@ -80,6 +81,22 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
                      gt = np.array(bases["_gt_registry"][problem_name])
              except:
                  pass
+        
+    # 3.2 File Path Resolution (Polymorphic loading)
+    if isinstance(gt, str) and os.path.exists(gt):
+        try:
+            if gt.endswith(".npy"):
+                gt = np.load(gt)
+            elif gt.endswith(".npz"):
+                data_npz = np.load(gt)
+                # Take first array or 'F'
+                key = 'F' if 'F' in data_npz else data_npz.files[0]
+                gt = data_npz[key]
+            elif gt.endswith(".csv"):
+                gt = np.genfromtxt(gt, delimiter=',', skip_header=1)
+        except Exception as e:
+            # Fallback/Log if file is invalid
+            pass
     
     # 4. Resolve Resolution Scale (s_k)
     if res is None:

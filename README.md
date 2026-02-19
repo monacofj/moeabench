@@ -14,7 +14,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 > Copyright (c) 2025 Monaco F. J. <monaco@usp.br>  
 > Copyright (c) 2025 Silva F. F. <fernandoferreira.silva42@usp.br>  
 >
->This project is distributed under the GNU General Public License v3.0 or later. See the file LICENSE for more information. Some third-party components or specific files may be licensed under different terms. Please, consult the SPDX identifiers in each file's header and the LICENSES/ directory for precise details. 
+>This project is distributed under the GNU General Public License v3.0 or later. See the file COPYING for more information. Some third-party components or specific files may be licensed under different terms. Please, consult the SPDX identifiers in each file's header and the LICENSES/ directory for precise details. 
 
 
 
@@ -50,7 +50,7 @@ mb.view.timeplot(exp)                           # Plot Hypervolume convergence
 *   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
 *   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
 *   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
-*   **One-Click Calibration**: Programmatically certify custom MOPs via `mop.calibrate()`, generating portable sidecar JSON files for full clinical diagnostic support.
+*   **One-Click Calibration**: Programmatically validate custom MOPs via `mop.calibrate()`, generating portable sidecar JSON files for full clinical diagnostic support.
 *   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 

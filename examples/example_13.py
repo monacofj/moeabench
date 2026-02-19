@@ -9,7 +9,7 @@
 MoeaBench Example 13: Clinical Quality Audit (Q-Scores)
 =====================================================
 
-This example demonstrates the "Clinical Certification" layer of the diagnostic suite.
+This example demonstrates the "Clinical Validation" layer of the diagnostic suite.
 We simulate a "Collapsed Front" pathology by running a real optimizer (NSGA-II)
 with extremely limited resources (5 generations).
 

@@ -73,6 +73,12 @@ And the `view.perf_history` function will produce a plot showing the hypervolume
 ![Convergence](images/hello_time.png)
 *Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
 
+*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment.
+*   `exp.authors = "Monaco F. J."` $\to$ Assigns authorship for reproducibility.
+*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs).
+*   `exp.year = 2026` $\to$ Sets the publication year.
+*   `exp.run()` $\to$ Orchestrates the actual optimization process.
+*   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.
 *Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.perf_history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
 
 ---
@@ -687,14 +693,14 @@ Beyond standard performance metrics (like Hypervolume or IGD), MoeaBench introdu
 
 The clinical layer operate on two distinct tiers:
 1.  **Physics (Layer 1 - FAIR Metrics)**: Raw, resolution-invariant physical facts (e.g., "The population is 5 units away from the target"). 
-2.  **Engineering (Layer 2 - Q-Scores)**: Qualitative certifications (0 to 1) based on a comparison with standardized baselines (e.g., "This closeness is in the top 10% of typical results for this problem").
+2.  **Engineering (Layer 2 - Q-Scores)**: Qualitative validations (0 to 1) based on a comparison with standardized baselines (e.g., "This closeness is in the top 10% of typical results for this problem").
 
 ### **10.1. The Quadriga of Instruments**
 
 MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension. These instruments are polymorphic and agnostic to the underlying metric.
 
 #### **Instrument 1: The Radar (`clinic_radar`)**
-*   **Role**: *The Certification* (A holistic biopsy).
+*   **Role**: *The Validation* (A holistic biopsy).
 *   **Description**: A spider plot that visualizes the 6 Quality Scores (Q-Scores) simultaneously: Closeness, Coverage, Gap, Regularity, Balance, and Headway.
 *   **Interpretation**: A larger, more symmetric polygon indicates a healthy, "well-rounded" algorithm. Sharp collapses in one axis (e.g., GAP) highlight specific algorithmic pathologies.
 
@@ -719,7 +725,7 @@ MoeaBench provides four primary visualization tools (instruments) to inspect any
 One of the most powerful features of MoeaBench is that these instruments work with **any** of the 6 fair metrics. You can mix and match to perform precise diagnostics.
 
 ```python
-# Holistic certification
+# Holistic validation
 mb.view.clinic_radar(exp)
 
 # Deep dive into 'Coverage' pathology
@@ -739,7 +745,7 @@ mb.view.clinic_history(exp, metric="balance")
 | **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
 | **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
 
-### **10.3. The Certification Hierarchy**
+### **10.3. The Validation Hierarchy**
 
 A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certified' while others (like SPEA2) are not? Can I still use SPEA2?"*
 
@@ -806,18 +812,30 @@ fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report_show()
 ```
 
-### **11.1. The 8-State Diagnostic Ontology**
-
-When the `audit()` function runs, it classifies the algorithm into one of 8 scientific states:
-
-1.  **Optimal**: High Headway, High Coverage, High Regularity. The gold standard.
-2.  **Manifold Mismatch**: Good Headway, but Q-Gap is low. The algorithm found a front, but it's the *wrong* front.
-3.  **Diversity Collapse**: Excellent Headway, but Coverage/Balance are near zero.
-4.  **Signal Drift**: Coverage is fine, but Headway is poor. The front is "fuzzy".
-5.  **Fragmentation**: Good points, but large Gaps ($Q_{Gap} \approx 0$).
-6.  **Super-Saturation**: Solution density exceeds the reference calibration ($H_{rel} > 100\%$).
-7.  **Convergence Failure**: Everything is bad. Random search territory.
 8.  **Instability**: High variance in metrics across runs.
+
+### **11.2. Longitudinal Auditing: Comparing against History**
+
+Scientific progress is longitudinal. MoeaBench provides two mechanisms to audit current results against historical or alternative reference systems.
+
+#### **Mechanism A: Contextual Baseline Switching**
+To verify if a new algorithm version is better relative to an *older* baseline (e.g., from v0.8.0), use the `use_baselines` context manager:
+
+```python
+# Directly from mb.diagnostics
+with mb.diagnostics.use_baselines("references/baselines_v0.8.json"):
+    res = mb.diagnostics.audit(exp)
+    res.report_show()
+```
+# System automatically reverts to the current library baselines here
+
+#### **Mechanism B: Polymorphic Path Loading**
+You can audit against a specific Ground Truth file (saved from a previous publication) simply by passing the path:
+
+```python
+# MoeaBench automatically detects .npy, .npz, and .csv formats
+mb.diagnostics.audit(exp, ground_truth="data/published_gt.npz")
+```
 
 ---
 
@@ -910,6 +928,11 @@ exp.load("results", mode="data")
 *   **`all` (Default)**: Persists the entire state (Problem + Algorithm + Runs).
 *   **`config`**: Records only the "experimental protocol" (MOP/MOEA settings).
 *   **`data`**: Focuses on the results of the execution (Runs).
+
+#### **Enhanced Scientific Metadata (v2)**
+Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
+- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines_v4.json` data package used).
+- **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
 
 ---
 

@@ -70,13 +70,21 @@ class DTLZ2(BaseMop):
         return {'F': F}
 
     def ps(self, n_points=100):
-        """Analytical sampling of DTLZ2 Pareto Set."""
+        """Analytical sampling of DTLZ2 Pareto Set (Deterministic)."""
         M = self.M
         N = self.N
-        # For DTLZ problems, ps is where xi = 0.5 for i >= M
-        # and xi in [0, 1] for i < M
         res = np.zeros((n_points, N))
-        res[:, :M-1] = np.random.random((n_points, M - 1))
+        
+        # Deterministic sampling for position on the manifold
+        if M == 2:
+            res[:, 0] = np.linspace(0, 1, n_points)
+        else:
+            # Simple quasi-random grid for M > 2
+            # For verification and standards, a fixed Sobol/Halton or even 
+            # a seeded random is better than raw random.
+            rng = np.random.RandomState(42) # Scientific reproducibility seed
+            res[:, :M-1] = rng.random((n_points, M - 1))
+            
         res[:, M-1:] = 0.5
         return res
 

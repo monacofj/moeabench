@@ -6,7 +6,7 @@ import numpy as np
 import os
 from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
-from .enums import DiagnosticStatus, DiagnosticProfile
+from .enums import DiagnosticStatus
 from . import fair, qscore, baselines
 from .base import Reportable
 
@@ -18,7 +18,7 @@ THRESH_INDUSTRY = 0.34
 
 @dataclass
 class QualityAuditResult(Reportable):
-    """ Results of a clinical certification audit. """
+    """ Results of a clinical quality validation. """
     scores: Dict[str, qscore.QResult]
     mop_name: str
     k: int
@@ -95,7 +95,7 @@ class QualityAuditResult(Reportable):
         base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
         
         if not pathologies:
-            return f"{base} Overall structural integrity meets certification standards."
+            return f"{base} Overall structural integrity meets validation standards."
             
         return f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
 
@@ -136,7 +136,7 @@ class DiagnosticResult(Reportable):
             header = "# MoeaBench Diagnostic Biopsy"
             status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"**Executive Summary**: {self.description}"
-            sub_q = "## 1. Clinical Quality (Certification)"
+            sub_q = "## 1. Clinical Quality (Validation)"
             sub_f = "## 2. Physical Evidence (Facts)"
         else:
             header = "=== MOEABENCH DIAGNOSTIC BIOPSY ==="
@@ -169,7 +169,7 @@ class PerformanceAuditor:
     @staticmethod
     def audit_quality(q_scores: Dict[str, qscore.QResult], 
                      mop: str = "Unknown", k: int = 0) -> QualityAuditResult:
-        """ Aggregates Clinical Certification results. """
+        """ Aggregates Clinical Quality results. """
         return QualityAuditResult(scores=q_scores, mop_name=mop, k=k)
 
     @staticmethod
@@ -189,7 +189,7 @@ class PerformanceAuditor:
                 anomalies.append(name.replace("Q_", "").title())
         
         status = DiagnosticStatus.IDEAL_FRONT
-        desc = "Algorithm performance meets industry certification standards."
+        desc = "Algorithm performance meets industry quality standards."
         
         if anomalies:
             status = DiagnosticStatus.SEARCH_FAILURE
@@ -231,7 +231,6 @@ def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAu
 
 def audit(target: Any, 
           ground_truth: Optional[np.ndarray] = None,
-          profile: DiagnosticProfile = DiagnosticProfile.EXPLORATORY,
           **kwargs) -> DiagnosticResult:
     """
     [Cascade Entry Point]
