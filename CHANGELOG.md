@@ -19,12 +19,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **`mop.calibrate()`**: Automated "One-Click" calibration engine that materializes Ground Truth, calculates statistical baselines (ECDF), and registers the problem in the diagnostic system.
   - **Sidecar JSON Pattern**: Calibration data is now persisted in a portable, co-located JSON file (`<ProblemName>.json`), acting as a scientific "passport" for custom MOPs.
   - **Decentralized Baseline Loading**: The diagnostic engine now automatically resolves and loads sidecar files co-located with MOP source code.
+- **Calibration Progress Bar**: Integrated `MoeaProgress` into the calibration engine for real-time feedback during baseline generation.
 - **Smart Diagnostic Resolver**: Upgraded the internal cascade to prioritize "frozen" Ground Truth from registered sidecars, ensuring long-term scientific consistency for custom plugins.
 
 ### Fixed
 - **GT Resolution Priority**: Fixed a bug in `_resolve_diagnostic_context` where the problem name was resolved too late for sidecar lookup.
 - **Visual Consistency (GT)**: Changed the default visualization of automatically injected Reference Fronts in `topo_shape` to 'markers' (point-cloud) to satisfy user expectations and reveal sampling density.
 - **Silent Diagnostic Failures**: Added explicit warnings to `clinic_radar` when baseline data is missing for a specific population size (K), preventing silent plot failures.
+- **Robustness (Fair Metrics)**: Ensured that physical metrics always return `FairResult` objects instead of raw floats in edge cases.
+- **Git Protocol**: Added `.gitignore` rules for sidecar JSONs to maintain repository cleanliness while supporting local calibration.
 
 ## [0.9.2] - 2026-02-18
 

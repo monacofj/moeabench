@@ -39,7 +39,7 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
     
     if P is None or GT is None or len(P) == 0:
-        return np.inf
+        return FairResult(np.inf, "HEADWAY", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances to GT
     d = cdist(P, GT, metric='euclidean')
@@ -96,7 +96,7 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return np.inf
+        return FairResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P
     d = cdist(GT, P, metric='euclidean')
@@ -122,7 +122,7 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return np.inf
+        return FairResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P
     d = cdist(GT, P, metric='euclidean')
@@ -150,7 +150,7 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     U_ref = ref_distribution
 
     if P is None or len(P) < 2 or U_ref is None or len(U_ref) < 2:
-        return 0.0 # Degenerate case
+        return FairResult(np.inf, "REGULARITY", "Insufficient points for regularity.", raw_data=np.array([]))
 
     # 1. Nearest Neighbors within P (excluding self)
     d_p = cdist(P, P)
@@ -182,7 +182,7 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
 
     if P is None or len(P) == 0 or centroids is None or ref_hist is None:
-        return 1.0 # Max divergence
+        return FairResult(1.0, "BALANCE", "Missing context for balance.", raw_data=np.array([]))
 
     # 1. Assign points to clusters
     d = cdist(P, centroids)

@@ -217,3 +217,7 @@ inconsistency/*
 study_config.zip  
 study_full.zip
 docs/pathology/AGENT_IMPETUOSITY_REPORT.md
+
+# Sidecar Calibration Data (MOP Plugins)
+examples/*.json
+MoeaBench/mops/*.json

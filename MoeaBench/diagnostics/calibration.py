@@ -98,8 +98,12 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
     normals = _estimate_gt_normals(gt)
     c_cents, _ = base.get_ref_clusters(gt, c=32, seed=0)
     
+    from ..progress import get_progress_bar
+    
     problem_data = {}
-    for k in k_grid:
+    pbar = get_progress_bar(total=len(k_grid), desc=f"Calibration Profile: {name}")
+    
+    for i, k in enumerate(k_grid):
         k_str = str(k)
         
         # Scale and references
@@ -136,9 +140,9 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
             m = _calc_all(pop_rand, gt, s_fit, u_ref, c_cents, hist_ref)
             for key in rand_metrics: rand_metrics[key].append(m[key])
             
-        for i in range(N_IDEAL_DRAWS):
+        for _ in range(N_IDEAL_DRAWS):
             # Ideal Sample (Success)
-            pop_uni = base.get_ref_uk(gt, k, seed=100 + i)
+            pop_uni = base.get_ref_uk(gt, k, seed=100 + _)
             m = _calc_all(pop_uni, gt, s_fit, u_ref, c_cents, hist_ref)
             for key in ideal_metrics: ideal_metrics[key].append(m[key])
             
@@ -152,7 +156,9 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
             }
             
         problem_data[k_str] = k_data
+        pbar.update_to(i + 1)
         
+    pbar.close()
     return problem_data
 
 def _calc_all(p, gt, s_fit, u_ref, c_cents, hist_ref):
