@@ -49,6 +49,16 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
                 gt = src.pf()
             elif hasattr(src, 'mop') and hasattr(src.mop, 'pf'):
                 gt = src.mop.pf()
+        
+        # 2.1 Sidecar/Cache Look-up (Plugin support)
+        if gt is None and problem_name is not None:
+             from .baselines import load_offline_baselines
+             try:
+                 bases = load_offline_baselines()
+                 if "_gt_registry" in bases and problem_name in bases["_gt_registry"]:
+                     gt = np.array(bases["_gt_registry"][problem_name])
+             except:
+                 pass
 
     # 3. Resolve Problem Name and K
     mop = None

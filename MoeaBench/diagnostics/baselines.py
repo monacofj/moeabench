@@ -14,7 +14,7 @@ This module handles:
 import os
 import json
 import numpy as np
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any, Tuple, Union
 from scipy.spatial.distance import cdist
 from scipy.cluster.vq import kmeans2
 
@@ -22,30 +22,75 @@ from scipy.cluster.vq import kmeans2
 # Path to the Authorized Offline Baselines
 BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
 _CACHE = None
+_REGISTERED_SOURCES = [] # List of dicts or paths
 
 class UndefinedBaselineError(Exception):
     """Raised when a required baseline is missing (Fail-Closed)."""
     pass
 
+def register_baselines(source: Union[str, Dict[str, Any]]) -> None:
+    """
+    Registers a new source of baselines.
+    Source can be a path to a JSON file or a dictionary.
+    """
+    global _CACHE
+    _REGISTERED_SOURCES.append(source)
+    # Invalidate cache to force re-merge
+    _CACHE = None
+
 def load_offline_baselines() -> Dict[str, Any]:
     """
-    Loads the strict offline baselines JSON.
-    Raises UndefinedBaselineError if file missing.
+    Loads and merges all offline baseline sources.
+    Uses Fail-Closed logic for the primary resource.
     """
     global _CACHE
     if _CACHE is not None:
         return _CACHE
     
+    # 1. Start with the core library baselines
     if not os.path.exists(BASELINE_JSON_PATH):
-        # FAIL-CLOSED architecture: Raise error immediately
-        raise UndefinedBaselineError(f"Baseline file not found at {BASELINE_JSON_PATH}")
+        raise UndefinedBaselineError(f"Primary baseline file not found at {BASELINE_JSON_PATH}")
 
     try:
         with open(BASELINE_JSON_PATH, "r") as f:
-            _CACHE = json.load(f)
+            full_data = json.load(f)
     except Exception as e:
-        raise UndefinedBaselineError(f"Failed to parse baseline file: {e}")
+        raise UndefinedBaselineError(f"Failed to parse primary baseline file: {e}")
     
+    # 2. Merge registered sources
+    for src in _REGISTERED_SOURCES:
+        src_data = None
+        if isinstance(src, str):
+            if os.path.exists(src):
+                try:
+                    with open(src, "r") as f:
+                        src_data = json.load(f)
+                except Exception as e:
+                    # Log warning but continue? 
+                    # For strictness in research, maybe we should fail.
+                    continue
+        elif isinstance(src, dict):
+            src_data = src
+        
+        if src_data and "problems" in src_data:
+            # Shallow merge of problem dictionaries
+            for prob_id, prob_data in src_data["problems"].items():
+                full_data["problems"][prob_id] = prob_data
+                
+                # Also capture gt_reference if present (Plugin Sidecar)
+                if "gt_reference" in src_data:
+                    # In sidecars, name is often at top level but gt_reference too.
+                    # We store it in a hidden index for utils.py to find
+                    if "_gt_registry" not in full_data:
+                        full_data["_gt_registry"] = {}
+                    full_data["_gt_registry"][prob_id] = src_data["gt_reference"]
+                elif "gt_reference" in prob_data:
+                     # Nested GT
+                    if "_gt_registry" not in full_data:
+                        full_data["_gt_registry"] = {}
+                    full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
+
+    _CACHE = full_data
     return _CACHE
 
 def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float]:

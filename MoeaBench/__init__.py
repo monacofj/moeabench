@@ -56,6 +56,8 @@ class _MB:
         self.system = system
         self.defaults = defaults
         self.diagnostics = diagnostics
+        self.calibrate = diagnostics.calibrate
+        self.register_baselines = diagnostics.register_baselines
         
         # Taxonomy: Performance | Topography | Stratification (v0.7.0)
         self.perf_evidence = stats.perf_evidence

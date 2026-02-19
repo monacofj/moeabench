@@ -12,6 +12,7 @@ class BaseMop(ABC):
     Abstract Base Class for all Multi-Objective Problems (MOPs) in MoeaBench.
     """
     def __init__(self, **kwargs: Any) -> None:
+        self.name = kwargs.pop('name', self.__class__.__name__)
         self.M = kwargs.pop('M', 3)
         self.N = kwargs.pop('N', None)
         self.kwargs = kwargs
@@ -85,3 +86,11 @@ class BaseMop(ABC):
         Should be overridden by subclasses.
         """
         raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")
+
+    def calibrate(self, baseline: Optional[str] = None, force: bool = False, **kwargs) -> bool:
+        """
+        Calibrates the clinical diagnostics for this MOP instance.
+        Generates/Loads a sidecar JSON file with Ground Truth and Baselines.
+        """
+        from ..diagnostics.calibration import calibrate_mop
+        return calibrate_mop(self, baseline=baseline, force=force, **kwargs)

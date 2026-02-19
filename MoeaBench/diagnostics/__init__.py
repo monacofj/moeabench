@@ -10,10 +10,13 @@ Provides clinical diagnostics for evolutionary algorithm performance.
 Divided into:
 - Physical Metrics (Physical, Scale-corrected): mb.diagnostics.headway, etc.
 - Q-Scores (Clinical, Calibration-corrected): mb.diagnostics.q_headway, etc.
+- Calibration (Plugin Support): mb.diagnostics.calibrate, mb.diagnostics.register_baselines
 """
 
 from .auditor import audit, fair_audit, q_audit, DiagnosticResult, FairAuditResult, QualityAuditResult
 from .enums import DiagnosticStatus
+from .baselines import register_baselines
+from .calibration import calibrate_mop as calibrate
 
 # Fair Metrics (Physical Layer)
 from .fair import (
@@ -41,6 +44,7 @@ __all__ = [
     "audit", "fair_audit", "q_audit", 
     "DiagnosticResult", "FairAuditResult", "QualityAuditResult",
     "DiagnosticStatus",
+    "register_baselines", "calibrate",
     "headway", "closeness", "coverage", "gap", "regularity", "balance",
     "q_headway", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
     "q_headway_points", "q_closeness_points"
