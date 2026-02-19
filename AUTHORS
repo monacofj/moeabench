@@ -1,11 +1,10 @@
 MoeaBench Authorship & Credits
 ------------------------------
 
-MoeaBench software was originally developed in 2025-2026, as part of 
-the Master's Thesis of Fernando Ferreira da Silva, under the 
-supervision of Prof. Dr. Monaco F. J., at the Institute of 
-Mathematical and Computer Sciences (ICMC), University of São Paulo, 
-Brazil, in collaboration with Prof. Dr. Abraham Kuruvilla and 
+MoeaBench software was originally developed in 2025-2026, as part of the Master's
+Thesis of Fernando Ferreira da Silva, under the supervision of Prof. Dr. Monaco
+F. J., at the Institute of Mathematical and Computer Sciences (ICMC), University
+of São Paulo, Brazil, in collaboration with Prof. Dr. Abraham Kuruvilla and
 Prof. Dr. Delbem A. C. B.
 
 
@@ -15,18 +14,25 @@ The source code and technical implementation are authored by:
 * Fernando Ferreira da Silva <https://github.com/ferbat40>
 
 ### Research Framework & Scientific Conception
-The underlying research project and the conceptual foundations of the MoeaBench framework are a collaborative work by:
+The underlying research project and the conceptual foundations of the
+MoeaBench framework are a collaborative work by:
 * Monaco F. J. <monaco@usp.br>
 * Delbem A. C. B.  <acbd@icmc.usp.br>
 * Kuruvilla J. <abraham@fmrp.usp.br>
 * Ferreira F. F. S. <fernandoferreira.silva42@usp.br>
 
-For formal academic citation of the research framework, please refer to the `CITATION.cff` file in the repository root.
+For formal academic citation of the research framework, please refer to the
+`CITATION.cff` file in the repository root.
 
 
 ### AI Usage Disclosure
 
-Auxiliary AI assistance tools have been used in this project under the authors' oversight for technical tasks such as repository maintenance chores, defect detection, code compliance auditing, test suite automation, and refinement of documentation. The human authors remain fully responsible for the intellectual work and in effective control of the design and implementation of the software functionality, architectural decisions, and overall codebase development.
+Auxiliary AI assistance tools have been used in this project under the authors'
+oversight for technical tasks such as repository maintenance chores, defect
+detection, code compliance auditing, test suite automation, and refinement of
+documentation. The human authors remain fully responsible for the intellectual
+work and in effective control of the design and implementation of the software
+functionality, architectural decisions, and overall codebase development.
 
 ---
 For inquiry and contact: <monaco@usp.br>
