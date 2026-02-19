@@ -83,6 +83,12 @@ Maintaining scientific consistency is paramount. The framework relies on an **Or
 
 ---
 
-## 4. Communication
+## 4. AI Usage Disclosure
+
+While we don't rule out the use of auxiliary AI assistance tools in this project, contributors must explicitly disclose such usage, take full responsibility for the intellectual work, and ensure all submissions strictly adhere to our performance requirements and licensing compatibility.
+
+---
+
+## 5. Communication
 
 Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](../AUTHORS) file for contact details.

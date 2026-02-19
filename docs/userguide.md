@@ -681,7 +681,7 @@ score = mb.diagnostics.q_balance(exp)
 
 ---
 
-## **8. Clinical Metrology: The Pathology Layer**
+## **10. Clinical Metrology: The Pathology Layer**
 
 Beyond standard performance metrics (like Hypervolume or IGD), MoeaBench introduces the **Clinical Layer**. This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed.
 
@@ -689,7 +689,7 @@ The clinical layer operate on two distinct tiers:
 1.  **Physics (Layer 1 - FAIR Metrics)**: Raw, resolution-invariant physical facts (e.g., "The population is 5 units away from the target"). 
 2.  **Engineering (Layer 2 - Q-Scores)**: Qualitative certifications (0 to 1) based on a comparison with standardized baselines (e.g., "This closeness is in the top 10% of typical results for this problem").
 
-### **8.1. The Quadriga of Instruments**
+### **10.1. The Quadriga of Instruments**
 
 MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension. These instruments are polymorphic and agnostic to the underlying metric.
 
@@ -714,7 +714,7 @@ MoeaBench provides four primary visualization tools (instruments) to inspect any
 *   **Description**: Tracks the evolution of a physical fact over generations across all runs.
 *   **Interpretation**: Differentiates between slow-but-steady convergence and premature stalling.
 
-### **8.2. Universal Diagnostic API**
+### **10.2. Universal Diagnostic API**
 
 One of the most powerful features of MoeaBench is that these instruments work with **any** of the 6 fair metrics. You can mix and match to perform precise diagnostics.
 
@@ -739,9 +739,19 @@ mb.view.clinic_history(exp, metric="balance")
 | **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
 | **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
 
+### **10.3. The Certification Hierarchy**
+
+A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certified' while others (like SPEA2) are not? Can I still use SPEA2?"*
+
+The answer is: **Yes, absolutely.** Functionally, there is zero difference.
+
+*   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
+*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Calibration Report** (`tests/CALIBRATION.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
+*   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
+
 ---
 
-## **9. Narrative Reports: Beyond Numbers**
+## **11. Narrative Reports: Beyond Numbers**
 
 The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
 
@@ -796,7 +806,7 @@ fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report_show()
 ```
 
-### **9.5. The 8-State Diagnostic Ontology**
+### **11.1. The 8-State Diagnostic Ontology**
 
 When the `audit()` function runs, it classifies the algorithm into one of 8 scientific states:
 
@@ -811,7 +821,7 @@ When the `audit()` function runs, it classifies the algorithm into one of 8 scie
 
 ---
 
-## **10. Extensibility: Plugging your Algorithm**
+## **12. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -841,7 +851,7 @@ To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing th
 
 ---
 
-## **11. Persistence (`save` and `load`)**
+## **13. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -864,7 +874,7 @@ exp.load("results", mode="data")
 
 ---
 
-## **12. Data Export (CSV)**
+## **14. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -880,7 +890,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **13. References**
+## **15. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
@@ -888,7 +898,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **14. Architectural Philosophy (ADR)**
+## **16. Architectural Philosophy (ADR)**
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 

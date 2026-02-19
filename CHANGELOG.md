@@ -11,6 +11,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [0.9.2] - 2026-02-18
+
+### Added
+- **Certification Hierarchy**: Documentation (User Guide 10.3) clarifying the administrative nature of "Certified Baselines" and the analytical origin of Q-Scores.
+- **Functional Parity**: Explicit note in Reference Guide emphasizing that all algorithms (Certified or Compliant) share the same runtime diagnostics capabilities.
+- **Version Abstraction**: Created canonical symlinks (`CALIBRATION.html`, `baselines.json`) to decouple documentation from internal version numbers.
+
+### Fixed
+- **Section Numbering**: Corrected duplicate section headers in `userguide.md`, ensuring a sequential flow from 1 to 16.
+- **Legacy Integrity**: Explicitly retained legacy baseline files (`v0.8.0`, `v2`, `v3`) to ensure full regression test compatibility.
+
 ## [0.9.1] - 2026-02-18
 
 ### Added

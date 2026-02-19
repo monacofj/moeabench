@@ -68,7 +68,7 @@ def generate_visual_report():
         "<h2>1. Methodology & Experimental Context</h2>",
         "<p>The goal is to certify algorithmic performance against rigorous mathematical <b>Ground Truth (GT)</b> benchmarks.</p>",
         "<ul>",
-        "<li><b>Population:</b> Algorithms ran with <i>N=200</i>. Q-Scores reflect the performance of the effective non-dominated population ($K \\le 200$).</li>",
+        "<li><b>Population:</b> Algorithms ran with <i>N=200</i>. Q-Scores reflect the performance of the effective non-dominated population (K &le; 200).</li>",
         "<li><b>Scale Invariance:</b> All distance-based metrics are normalized by the <i>Utopia</i> and <i>Nadir</i> points of the theoretical manifold.</li>",
         "<li><b>Statistical Validity:</b> Results aggregated from <b>30 independent runs</b> to filter stochastic noise.</li>",
         "</ul>",
@@ -129,9 +129,9 @@ def generate_visual_report():
         "<h3>Tier 4: Structural Biopsy (Marker Grammar)</h3>",
         "<p>The 3D Pareto Front uses specific markers to indicate <b>point-wise quality</b> based on the local Q-Score:</p>",
         "<ul>",
-        "<li>● <b>Solid Circle:</b> High precision ($Q \ge 0.5$). Points effectively converging to the manifold.</li>",
-        "<li>○ <b>Hollow Circle:</b> Standard precision ($0 \le Q < 0.5$). Converged, but with residual error approaching the noise floor.</li>",
-        "<li>◇ <b>Diamond Open:</b> Failure ($Q < 0$). Points statistically indistinguishable from random noise or Gaussian blur.</li>",
+        "<li>● <b>Solid Circle:</b> High precision (Q &ge; 0.5). Points effectively converging to the manifold.</li>",
+        "<li>○ <b>Hollow Circle:</b> Standard precision (0 &le; Q &lt; 0.5). Converged, but with residual error approaching the noise floor.</li>",
+        "<li>◇ <b>Diamond Open:</b> Failure (Q &lt; 0). Points statistically indistinguishable from random noise or Gaussian blur.</li>",
         "</ul>",
         "</div>"
     ]

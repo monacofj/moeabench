@@ -249,6 +249,11 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 Specialized diagnostic instruments for deep-dive pathology analysis. All clinical plotters are polymorphic and adhere to the **Smart Dispatch Protocol**, automatically resolving Ground Truth and Resolution Scale from experiments.
 
+> [!IMPORTANT]
+> **Functional Parity (All Algorithms are Equal)**
+> While some algorithms (like NSGA-II) are marked as "Certified Baselines" in our documentation, this is a purely administrative distinction for the library's static release report.
+> Functionally, the `mb.view.clinic_*` instruments work identically for **any** algorithm (e.g., SPEA2, MOEA/D, or custom plugins). Q-Scores are calculated against the problem's analytical Ground Truth ($GT$), not against other algorithms.
+
 *   **`clinic_radar(target, ground_truth=None, show=True, **kwargs)`**:
     *   **Role**: *The Certification* (Q-Score Spider Plot).
     *   **Logic**: Calculates all 6 Q-Scores (Headway, Closeness, Coverage, Gap, Regularity, Balance) and maps them to a radial chart.

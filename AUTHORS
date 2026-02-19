@@ -23,5 +23,10 @@ The underlying research project and the conceptual foundations of the MoeaBench 
 
 For formal academic citation of the research framework, please refer to the `CITATION.cff` file in the repository root.
 
+
+### AI Usage Disclosure
+
+Auxiliary AI assistance tools have been used in this project under the authors' oversight for technical tasks such as repository maintenance chores, defect detection, code compliance auditing, test suite automation, and refinement of documentation. The human authors remain fully responsible for the intellectual work and in effective control of the design and implementation of the software functionality, architectural decisions, and overall codebase development.
+
 ---
 For inquiry and contact: <monaco@usp.br>
