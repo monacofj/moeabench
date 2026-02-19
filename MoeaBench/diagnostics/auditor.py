@@ -23,6 +23,11 @@ class QualityAuditResult(Reportable):
     mop_name: str
     k: int
     
+    @property
+    def verdicts(self) -> Dict[str, str]:
+        """Returns a dictionary of human-readable labels for each Q-Score."""
+        return {name: qres.verdict for name, qres in self.scores.items()}
+    
     def report(self, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
         if use_md:
@@ -123,6 +128,21 @@ class DiagnosticResult(Reportable):
     fair_audit_res: FairAuditResult
     status: DiagnosticStatus
     description: str
+
+    @property
+    def quality(self) -> QualityAuditResult:
+        """Access the Quality (Q-Score) audit results."""
+        return self.q_audit_res
+
+    @property
+    def fair(self) -> FairAuditResult:
+        """Access the Fair (Physical) audit results."""
+        return self.fair_audit_res
+
+    @property
+    def verdicts(self) -> Dict[str, str]:
+        """Proxy to access Q-Score verdicts directly."""
+        return self.q_audit_res.verdicts
 
     def summary(self) -> str:
         """ Preferred fluid narrative for executive reporting. """

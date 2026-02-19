@@ -13,14 +13,12 @@ MoeaBench is an **extensible analytical toolkit** that complements multi-objecti
 
 To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
-For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guide](mops.md)**.
+For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guide](mops.md)**. To explore practical code usage, visit the **[examples/](file:///home/monaco/Work/moeabench/examples)** directory.
 
 *   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
 *   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
 
-
-
-This document provides an introductory guide through the framework. For detailed technical specifications of every method and class, please consult the **[API Reference](reference.md)**.
+This document provides an introductory guide through the framework. For detailed technical specifications of every method and class, please consult the **[API Reference](reference.md)**. For a certified snapshot of the library's performance, see the official **[Calibration Report](file:///home/monaco/Work/moeabench/tests/CALIBRATION.html)**.
 
 
 ---
@@ -592,12 +590,22 @@ MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnos
 > [!TIP]
 > **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-### **9.1. The Philosophy: Physical vs. Clinical**
+### **9.1. Pathology Roadmap**
 
-*   **Physical Metrics**: These quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales.
-*   **Clinical Metrics (`q_`)**: These translate physical facts into value judgments ($0.0 \dots 1.0$) based on strict offline baselines (Physics of Failure). A $Q=0.95$ Headway score means the algorithm is "Near-Ideal" relative to what is mathematically possible for that population size.
+MoeaBench transforms raw performance data into a biological-style "Biopsy". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
 
-### **9.2. Physical Metrics (Fair)**
+| Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
+| :--- | :--- | :--- |
+| **Closeness** | Normalized distance to the true manifold. | Stagnation / Poor convergence. |
+| **Coverage** | Connectivity from the target to the solution. | Holes / Uncovered regions. |
+| **Gap** | Size of the largest detected manifold hole. | Local trapping / Discontinuity. |
+| **Regularity** | Spacing uniformity between neighbors. | Clumping / Unstructured density. |
+| **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
+| **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
+
+### **9.2. The Physical Layer (FAIR Metrics)**
+
+These metrics quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales. These metrics provide raw, resolution-invariant physical facts about the population.
 
 #### **`headway`**
 - **Rationale**: Deviation of the Population **from** the Ground Truth ($P \to GT$). Traditionally, convergence metrics like Generational Distance (GD) measure raw distance to the front. `headway` refines this by filtering out the worst 5% outliers (Headway) and normalizing the result by the expected resolution of the problem ($s_K$). This provides a "Fair" score that represents convergence depth in units of the manifold's own density.
@@ -641,127 +649,146 @@ reg = mb.diagnostics.regularity(exp)
 bal = mb.diagnostics.balance(exp)
 ```
 
-### **9.3. Clinical Metrics (Q-Scores)**
+---
 
-#### **`q_headway`**
+### **9.3. The Engineering Layer (Q-Scores)**
+
+A Quality-Score (Q-Score) is not a raw physical measurement. It is a **clinical normalization** of the physical facts. It is an **interpolated rank** situated between an **Analytical Ideal** ($Q=1.0$) and a **Standardized Noise Floor** ($Q=0.0$). This ensures that a score of $0.8$ represents the same degree of "algorithmic health" regardless of whether the problem objectives are in the range $[0, 1]$ or $[0, 10^6]$.
+
+#### **Diagnostic Tiers**
+The scale is divided into five diagnostic tiers:
+- **$[0.95, 1.00]$ - Asymptotic (Blue)**: Optimal performance, indistinguishable from the analytical truth.
+- **$[0.85, 0.95]$ - State-of-the-Art (Dark Green)**: High-precision research-grade results.
+- **$[0.67, 0.85]$ - Competent / Industrial (Green)**: Robust and reliable for engineering applications.
+- **$[0.34, 0.67]$ - Marginal / Exploratory (Yellow)**: Detectable drive, but unstable or coarse results.
+- **$[0.00, 0.34]$ - Failure / Random (Red)**: Performance indistinguishable from unguided search.
+
+#### **`q_headway` (Log-Linear Scale)**
 - **Rationale**: Map the physical `headway` result onto a $[0, 1]$ utility scale. It uses a **Log-Linear** mapping to provide high resolution near the optimal front ($Q=1.0$), distinguishing between "Converged" and "Super-Converged" results.
 - **Example**:
 ```python
 score = mb.diagnostics.q_headway(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: The algorithm has traveled 80% of the log-distance between a random start and the Pareto front. Because the scale is logarithmic, this indicates that the solver has overcome the "initial resistance" and is effectively converging.
 
-#### **`q_closeness`**
+#### **`q_closeness` (ECDF Scale)**
 - **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
 - **Example**:
 ```python
 score = mb.diagnostics.q_closeness(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: The population's proximity to the front is better than 80% of the random baseline samples. It is a **Sufficient** result for high-stakes engineering.
 
-#### **`q_coverage`**
+#### **`q_coverage` (ECDF Scale)**
 - **Rationale**: Uses a full **ECDF (Empirical Cumulative Distribution Function)** of random sampling to rank the coverage. A score of $0.5$ means the algorithm is exactly as good as a random target of the front, while $Q > 0.9$ indicates scientific-grade manifold reach.
 - **Example**:
 ```python
 score = mb.diagnostics.q_coverage(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: Signifies **Standard Coverage**. The algorithm has successfully mapped the primary features of the manifold, indicating scientific-grade reach.
 
-#### **`q_gap`**
+#### **`q_gap` (ECDF Scale)**
 - **Rationale**: Ranks the continuity of the front. It identifies if the solver has "broken" the manifold into fragments. Like coverage, it is ranked via ECDF against baseline hole distributions.
 - **Example**:
 ```python
 score = mb.diagnostics.q_gap(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: Signifies **Managed Gaps**. The solver has successfully maintained the continuity of the manifold, and any remaining fragments are within acceptable scientific limits.
 
-#### **`q_regularity`**
+#### **`q_regularity` (Rank Scale)**
 - **Rationale**: Clinical assessment of internal population structure. It quantifies the "Regularity" progress, allowing users to detect if a solver's diversity-maintenance mechanism is working as expected or failing relative to random behavior.
 - **Example**:
 ```python
 score = mb.diagnostics.q_regularity(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: Indicates an **Ordered/Consistent** distribution. Solutions are not clumping significantly, and the diversity-maintenance mechanism is working effectively.
 
-#### **`q_balance`**
+#### **`q_balance` (Rank Scale)**
 - **Rationale**: The final clinical check for manifold bias. It answers: "Is the distribution of solutions across clusters better than a random draw?" Significant balanced search results in $Q \to 1.0$.
 - **Example**:
 ```python
 score = mb.diagnostics.q_balance(exp)
 ```
+- **Interpretation Example ($Q=0.8$)**: Indicates an **Equitable/Fair** distribution across clusters. Manifold occupancy bias is low, and the algorithm is exploring different Pareto regions with similar probability.
 
 ---
 
-## **10. Clinical Metrology: The Pathology Layer**
+### **9.4. The Quadriga of Instruments**
 
-Beyond standard performance metrics (like Hypervolume or IGD), MoeaBench introduces the **Clinical Layer**. This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed.
-
-The clinical layer operate on two distinct tiers:
-1.  **Physics (Layer 1 - FAIR Metrics)**: Raw, resolution-invariant physical facts (e.g., "The population is 5 units away from the target"). 
-2.  **Engineering (Layer 2 - Q-Scores)**: Qualitative validations (0 to 1) based on a comparison with standardized baselines (e.g., "This closeness is in the top 10% of typical results for this problem").
-
-### **10.1. The Quadriga of Instruments**
-
-MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension. These instruments are polymorphic and agnostic to the underlying metric.
+MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (Physical) or Layer 2 (Clinical). These instruments are polymorphic and agnostic to the underlying metric.
 
 #### **Instrument 1: The Radar (`clinic_radar`)**
 *   **Role**: *The Validation* (A holistic biopsy).
 *   **Description**: A spider plot that visualizes the 6 Quality Scores (Q-Scores) simultaneously: Closeness, Coverage, Gap, Regularity, Balance, and Headway.
 *   **Interpretation**: A larger, more symmetric polygon indicates a healthy, "well-rounded" algorithm. Sharp collapses in one axis (e.g., GAP) highlight specific algorithmic pathologies.
+*   **Example**:
+```python
+# Holistic validation
+mb.view.clinic_radar(exp)
+```
+
+![Clinical Radar](images/clinic_radar.png)
+*Figure 3: Holistic Audit: The Radar instrument identifies functional imbalances.*
+
+**Didactic Guide**:
+When looking at the Radar, observe the "shape" of the search. A symmetric $Q \approx 0.8$ polygon represents a versatile solver. If you see a "spike" pointing inward at **GAP**, your algorithm has converged to the front but has failed to find representative "bridges" between clusters. If **HEADWAY** is high but **CLOSENESS** is low, your algorithm is moving but has not yet reached the "asymptotic" zone of precision.
 
 #### **Instrument 2: The ECDF (`clinic_ecdf`)**
-*   **Role**: *The Judge* (Goal attainment).
+*   **Role**: *The Judge* (Goal attainment consistency).
 *   **Description**: Plots the Empirical Cumulative Distribution Function of a metric.
 *   **Markers**: Automatically shows **Median (50%)** and **Robust Max (95%)** drop-lines.
 *   **Interpretation**: Useful for assessing consistency. A steep curve shifted to the left indicates that most of the population reached a high-quality state. A "long tail" indicates outliers or unstructured search.
+*   **Example**:
+```python
+# Deep dive into 'Coverage' pathology
+mb.view.clinic_ecdf(exp, metric="coverage")
+```
+
+![Clinical ECDF](images/clinic_ecdf.png)
+*Figure 4: Statistical Consensus: The ECDF instrument monitors goal attainment.*
+
+**Didactic Guide**:
+The X-axis represents the physical error (Layer 1), and the Y-axis represents the probability. A vertical "cliff" means all solutions reached the same level. A "long tail" on the right signifies that some solutions are still lost in the decision space. The **95% marker** is your "Worst Case" guarantee; if it is beyond the **Rand50** baseline, your algorithm's results are statistically indistinguishable from a random guess.
 
 #### **Instrument 3: The Distribution (`clinic_distribution`)**
 *   **Role**: *The Pathologist* (Error morphology).
 *   **Description**: A density/histogram plot of point-wise performance.
 *   **Interpretation**: Helps identify the "shape" of the search error. A bimodal distribution might suggest that the algorithm is succeeding in some regions but completely failing in others.
+*   **Example**:
+```python
+# Deep dive into 'Coverage' pathology
+mb.view.clinic_distribution(exp, metric="coverage")
+```
+
+![Clinical Distribution](images/clinic_distribution.png)
+*Figure 5: Population Morphology: Identifying multimodality in search errors.*
+
+**Didactic Guide**:
+Search errors are rarely normal (Gaussian). Look for **Multi-modality**. If you see two distinct peaks, your algorithm has "split" its focus: it found a local optimum for some objectives while being trapped for others. A wide, flat distribution suggests that the populations' proximity to the front is chaotic and unorganized.
 
 #### **Instrument 4: The History (`clinic_history`)**
-*   **Role**: *The Monitor* (Temporal health).
+*   **Role**: *The Monitor* (Temporal health/stalling).
 *   **Description**: Tracks the evolution of a physical fact over generations across all runs.
 *   **Interpretation**: Differentiates between slow-but-steady convergence and premature stalling.
-
-### **10.2. Universal Diagnostic API**
-
-One of the most powerful features of MoeaBench is that these instruments work with **any** of the 6 fair metrics. You can mix and match to perform precise diagnostics.
-
+*   **Example**:
 ```python
-# Holistic validation
-mb.view.clinic_radar(exp)
-
-# Deep dive into 'Coverage' pathology
-mb.view.clinic_ecdf(exp, metric="coverage")
-mb.view.clinic_distribution(exp, metric="coverage")
-
 # Monitor 'Balance' over time to check for drift
 mb.view.clinic_history(exp, metric="balance")
 ```
 
-| Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
-| :--- | :--- | :--- |
-| **Closeness** | Normalized distance to the true manifold. | Stagnation / Poor convergence. |
-| **Coverage** | Connectivity from the target to the solution. | Holes / Uncovered regions. |
-| **Gap** | Size of the largest detected manifold hole. | Local trapping / Discontinuity. |
-| **Regularity** | Spacing uniformity between neighbors. | Clumping / Unstructured density. |
-| **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
-| **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
+![Clinical History](images/clinic_history.png)
+*Figure 6: Temporal Trajectory: Tracking the "velocity" of optimization.*
 
-### **10.3. The Validation Hierarchy**
-
-A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certified' while others (like SPEA2) are not? Can I still use SPEA2?"*
-
-The answer is: **Yes, absolutely.** Functionally, there is zero difference.
-
-*   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
-*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Calibration Report** (`tests/CALIBRATION.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
-*   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
+**Didactic Guide**:
+Watch the slope of the curve. A horizontal line that appears early in the experiment indicates a **Stall**. If the variance between runs (the shaded area) increases over time, your algorithm is sensitive to initial conditions (low robustness). Ideally, the variance should decrease as the population "funnels" toward the Pareto front.
 
 ---
 
-## **11. Narrative Reports: Beyond Numbers**
+### **9.5. Narrative Reports & Auditing Workflow**
 
 The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
 
-#### **Scenario A: Analytical Biopsy (Full Audit)**
+#### **Scenario A: Full Audit**
 The `audit()` function performs a comprehensive check and returns a `DiagnosticResult` with a rich reporting interface:
 
 ```python
@@ -778,6 +805,7 @@ res.report_show()
 
 # 3. Access narrative summary as a string (if needed)
 text = res.report()
+print(res.verdicts) # {'Q_HEADWAY': 'Effective', ...}
 ```
 
 #### **Scenario B: Individual Metric deep-dive**
@@ -812,9 +840,19 @@ fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report_show()
 ```
 
-8.  **Instability**: High variance in metrics across runs.
 
-### **11.2. Longitudinal Auditing: Comparing against History**
+
+### **9.6. The Validation Hierarchy**
+
+A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certified' while others (like SPEA2) are not? Can I still use SPEA2?"*
+
+The answer is: **Yes, absolutely.** Functionally, there is zero difference.
+
+*   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
+*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Calibration Report** (`tests/CALIBRATION.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
+*   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
+
+#### **Longitudinal Auditing: Comparing against History**
 
 Scientific progress is longitudinal. MoeaBench provides two mechanisms to audit current results against historical or alternative reference systems.
 
@@ -839,7 +877,7 @@ mb.diagnostics.audit(exp, ground_truth="data/published_gt.npz")
 
 ---
 
-## **12. Extensibility: Plugging your Algorithm**
+## **10. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -867,7 +905,7 @@ class MyProblem(mb.mops.BaseMop):
 ### **Custom MOEA Plugin**
 To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
-### **12.2. MOP Plugin Support and Calibration**
+### **10.1. MOP Plugin Support and Calibration**
 
 MoeaBench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
 
@@ -908,7 +946,7 @@ class MyProblem(mb.mops.BaseMop):
 
 ---
 
-## **13. Persistence (`save` and `load`)**
+## **11. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -936,7 +974,7 @@ Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. T
 
 ---
 
-## **14. Data Export (CSV)**
+## **12. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -952,7 +990,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **15. References**
+## **13. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.

@@ -35,6 +35,17 @@ class QResult(DiagnosticValue):
         "Q_BALANCE":   {0.95: "Near-Ideal Balance", 0.85: "Equitable", 0.67: "Fair", 0.34: "Biased", 0.0: "Skewed"}
     }
     
+    @property
+    def verdict(self) -> str:
+        """Returns the categorical label for this Q-Score."""
+        q = float(self.value)
+        if self.name in self._LABELS:
+            matrix = self._LABELS[self.name]
+            for thresh in sorted(matrix.keys(), reverse=True):
+                if q >= thresh:
+                    return matrix[thresh]
+        return "Undefined"
+    
     def report(self, **kwargs) -> str:
         q = float(self.value)
         label = "Undefined"
