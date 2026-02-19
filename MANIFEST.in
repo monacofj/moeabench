@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 recursive-include MoeaBench/diagnostics/resources *.json
 recursive-include MoeaBench/diagnostics/resources/references *
 include MoeaBench/requirements.txt
