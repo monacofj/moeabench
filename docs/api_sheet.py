@@ -1,5 +1,5 @@
 """
-MoeaBench API Cheat Sheet (v0.10.4)
+MoeaBench API Cheat Sheet (v0.10.5)
 ===================================
 Information Interpretation for Multi-objective Evolutionary Algorithms.
 

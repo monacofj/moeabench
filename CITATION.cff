@@ -23,7 +23,7 @@ authors:
     affiliation: "University of São Paulo (ICMC-USP)"
     email: "fernandoferreira.silva42@usp.br"
 title: "MoeaBench: An Extensible Analytical Toolkit for Multi-Objective Evolutionary Algorithm Research"
-version: 0.10.4
+version: 0.10.5
 date-released: 2026-02-19
 url: "https://github.com/monacofj/moeabench"
 repository-code: "https://github.com/monacofj/moeabench"
