@@ -194,6 +194,7 @@ cython_debug/
 
 # Agent AI Context
 .agent/
+.antigravityignore/
 
 # Ruff stuff:
 .ruff_cache/
