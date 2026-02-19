@@ -5,7 +5,7 @@
 
 from .topo import (topo_shape, topo_bands, topo_gap, topo_density)
 from .perf import (perf_history, perf_spread, perf_density)
-from .strat import (strat_ranks, strat_caste_deprecated, strat_caste, strat_tiers)
+from .strat import (strat_ranks, strat_caste, strat_tiers)
 from .clinic import (clinic_ecdf, clinic_distribution, clinic_history, clinic_radar)
 
 from .style import apply_style
@@ -16,22 +16,11 @@ apply_style()
 # Aliases for legacy support (Topography & Performance)
 spaceplot = topo_shape
 timeplot = perf_history
-topo_dist = topo_density
-
-# Aliases for legacy support (Stratification)
-rankplot = strat_ranks
-casteplot = strat_caste
-tierplot = strat_tiers
-rank_caste2 = strat_caste
-
-# Note: strat legacy aliases (rankplot, casteplot, tierplot) are maintained 
-# for backward compatibility as permanent or soft-deprecated members.
 
 __all__ = [
     "topo_shape", "topo_bands", "topo_gap", "topo_density",
     "perf_history", "perf_spread", "perf_density",
-    "strat_ranks", "strat_caste_deprecated", "strat_caste", "strat_tiers",
+    "strat_ranks", "strat_caste", "strat_tiers",
     "clinic_ecdf", "clinic_distribution", "clinic_history", "clinic_radar",
-    "spaceplot", "timeplot", "topo_dist",
-    "rankplot", "casteplot", "tierplot", "rank_caste2"
+    "spaceplot", "timeplot"
 ]

@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # MoeaBench User Guide
 
-**Welcome to MoeaBench!**
+
 
 MoeaBench is an **extensible analytical toolkit** that complements multi-objective optimization research by adding a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 
@@ -23,14 +23,14 @@ This document provides an introductory guide through the framework. For detailed
 
 ---
 
-## **1. Introduction: The Laboratory Philosophy**
+## **1. Introduction: Design Philosophy**
 
 MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
 
 ### **Key Features**
 *   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
 *   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
-*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
+*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 *   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
 *   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
 *   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
@@ -39,7 +39,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 
 ---
 
-## **2. Quick Start: The "Hello World" Path**
+## **2. Getting Started: Minimal Working Example**
 
 The smallest meaningful unit in MoeaBench is the **Experiment**. An experiment establishes the link between a problem (MOP) and an algorithm (MOEA).
 
@@ -57,7 +57,7 @@ exp.moea = mb.moeas.NSGA3()             # Choose an optimization algorithm
 # 2. Run the experiment
 exp.run()
 
-# 3. View instant reward
+# 3. Visualization of Results
 mb.view.topo_shape(exp)                 # View the resulting Pareto front  
 mb.view.perf_history(exp)               # View the hypervomume convergence
 ```
@@ -81,7 +81,7 @@ And the `view.perf_history` function will produce a plot showing the hypervolume
 
 ---
 
-## **3. Scientific Rigor: Multi-Run Experiments**
+## **3. Statistical Rigor: Stochastic Experimentation**
 
 In evolutionary optimization, a single run is rarely representative. Stochastic algorithms require multiple independent trials to provide statistically significant conclusions.
 
@@ -98,7 +98,7 @@ exp.run()
 ```
 
 ### **Reproducibility & Seeds**
-Scientific benchmarking requires absolute control over randomness. MoeaBench treats random seeds as fundamental metadata to ensure experiments are perfectly replicable.
+Rigorous benchmarking necessitates distinct control over stochastic processes. MoeaBench treats random seeds as fundamental metadata to ensure experiments are perfectly replicable.
 
 *   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
 *   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
@@ -210,7 +210,7 @@ exp.run()
 ```
 
 
-## **4. The Data Hierarchy: accessing results**
+## **4. Data Architecture and Access Patterns**
 
 MoeaBench implements a structured data hierarchy designed to facilitate granular access to simulation results. This architecture defines four abstraction layers, ranging from the high-level experiment container down to the raw numerical arrays.
 
@@ -268,7 +268,7 @@ nd_vars = exp[2].pop().non_dominated().vars
 
 ---
 
-## **5. Solution Filters**
+## **5. Data Filtering and Extraction**
 
 To simplify data extraction, MoeaBench implements **Solution Filters**. These methods automatically adjust their scope based on the calling context: when invoked from an **`Experiment`**, they aggregate results from all runs (Cloud context); when invoked from a **`Run`**, they target that specific trajectory (Local context).
 
@@ -290,7 +290,7 @@ mb.view.topo_shape(nd.objs, ref.objs)
 
 ---
 
-## **6. Data Delegation and Shortcuts**
+## **6. Data Access Convenience Methods**
  
 MoeaBench employs a delegation mechanism to streamline access to nested data. Attributes accessed at the `Experiment` level are automatically resolved to their logical aggregates (e.g., the superfront of all runs) or to the most recent instance.
 
@@ -319,7 +319,7 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 ---
 
-## **7. Scientific Perspectives: The Three Domains**
+## **7. Analytical Domains**
 
 MoeaBench organizes all analytical tools into three fundamental scientific domains. This taxonomy helps you choose the right "lens" to observe your search process.
 
@@ -370,7 +370,7 @@ This domain reduces high-dimensional outcomes into scalar values (Hypervolume, I
 
 *   **`perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud.
 *   **`perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
-*   **`perf_density`**: Shows the "Form of Luck"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
+*   **`perf_density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
 
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
@@ -384,7 +384,7 @@ MoeaBench prioritizes mathematical honesty. When evaluating performance against 
 
 ```python
 # Statistical contrast between two methods
-mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hv)
+mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hypervolume)
 
 # Metric evolution over time
 mb.view.perf_history(exp)
@@ -392,6 +392,9 @@ mb.view.perf_history(exp)
 # Probability Distribution (Luck Stability)
 mb.view.perf_density(exp1, exp2)
 ```
+
+> [!NOTE]
+> **Legacy Support**: While `mb.view.topo_shape` and `mb.view.perf_history` are the canonical names, the aliases `mb.view.spaceplot` and `mb.view.timeplot` are supported for backward compatibility but are not recommended for new projects.
 
 ![Performance Contrast](images/perf_spread.png)
 *Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
@@ -408,8 +411,12 @@ You can access the raw metric data displayed in these plots using the `mb.metric
 
 ```python
 # 1. Quick Performance Diagnosis
-res = mb.metrics.hv(exp)
+res = mb.metrics.hypervolume(exp)
 res.report_show()
+```
+
+> [!NOTE]
+> **Metric Aliases**: For convenience, `mb.metrics.hv` is provided as a permanent alias for `mb.metrics.hypervolume`.
 
 # 2. Raw Access
 raw = res.values   # (G, R) matrix
@@ -581,7 +588,7 @@ topo_res.report_show()
 
 ---
 
-## **9. Algorithmic Diagnostics (The Smart API)**
+## **9. Algorithmic Diagnostics and Pathology Detection**
     
 Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
 
@@ -590,9 +597,9 @@ MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnos
 > [!TIP]
 > **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-### **9.1. Pathology Roadmap**
+### **9.1. Diagnostic Ontology**
 
-MoeaBench transforms raw performance data into a biological-style "Biopsy". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
+MoeaBench transforms raw performance data into a "detailed diagnostic assessment". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
 
 | Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
 | :--- | :--- | :--- |
@@ -603,7 +610,7 @@ MoeaBench transforms raw performance data into a biological-style "Biopsy". This
 | **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
 | **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
 
-### **9.2. The Physical Layer (FAIR Metrics)**
+### **9.2. Physical Metrics (FAIR Principles)**
 
 These metrics quantify the physical properties of the population (distance, uniformity) in a way that is **Normalized by Resolution**. We divide distances by $s_K$ (the expected distance between points in a perfect front at size $K$). This makes the metrics comparable across different problem scales. These metrics provide raw, resolution-invariant physical facts about the population.
 
@@ -651,7 +658,7 @@ bal = mb.diagnostics.balance(exp)
 
 ---
 
-### **9.3. The Engineering Layer (Q-Scores)**
+### **9.3. Clinical Normalization (Q-Scores)**
 
 A Quality-Score (Q-Score) is not a raw physical measurement. It is a **clinical normalization** of the physical facts. It is an **interpolated rank** situated between an **Analytical Ideal** ($Q=1.0$) and a **Standardized Noise Floor** ($Q=0.0$). This ensures that a score of $0.8$ represents the same degree of "algorithmic health" regardless of whether the problem objectives are in the range $[0, 1]$ or $[0, 10^6]$.
 
@@ -713,12 +720,12 @@ score = mb.diagnostics.q_balance(exp)
 
 ---
 
-### **9.4. The Quadriga of Instruments**
+### **9.4. Diagnostic Instruments**
 
 MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (Physical) or Layer 2 (Clinical). These instruments are polymorphic and agnostic to the underlying metric.
 
 #### **Instrument 1: The Radar (`clinic_radar`)**
-*   **Role**: *The Validation* (A holistic biopsy).
+*   **Role**: *Holistic Validation*.
 *   **Description**: A spider plot that visualizes the 6 Quality Scores (Q-Scores) simultaneously: Closeness, Coverage, Gap, Regularity, Balance, and Headway.
 *   **Interpretation**: A larger, more symmetric polygon indicates a healthy, "well-rounded" algorithm. Sharp collapses in one axis (e.g., GAP) highlight specific algorithmic pathologies.
 *   **Example**:
@@ -734,7 +741,7 @@ mb.view.clinic_radar(exp)
 When looking at the Radar, observe the "shape" of the search. A symmetric $Q \approx 0.8$ polygon represents a versatile solver. If you see a "spike" pointing inward at **GAP**, your algorithm has converged to the front but has failed to find representative "bridges" between clusters. If **HEADWAY** is high but **CLOSENESS** is low, your algorithm is moving but has not yet reached the "asymptotic" zone of precision.
 
 #### **Instrument 2: The ECDF (`clinic_ecdf`)**
-*   **Role**: *The Judge* (Goal attainment consistency).
+*   **Role**: *Goal Attainment Assessment*.
 *   **Description**: Plots the Empirical Cumulative Distribution Function of a metric.
 *   **Markers**: Automatically shows **Median (50%)** and **Robust Max (95%)** drop-lines.
 *   **Interpretation**: Useful for assessing consistency. A steep curve shifted to the left indicates that most of the population reached a high-quality state. A "long tail" indicates outliers or unstructured search.
@@ -751,7 +758,7 @@ mb.view.clinic_ecdf(exp, metric="coverage")
 The X-axis represents the physical error (Layer 1), and the Y-axis represents the probability. A vertical "cliff" means all solutions reached the same level. A "long tail" on the right signifies that some solutions are still lost in the decision space. The **95% marker** is your "Worst Case" guarantee; if it is beyond the **Rand50** baseline, your algorithm's results are statistically indistinguishable from a random guess.
 
 #### **Instrument 3: The Distribution (`clinic_distribution`)**
-*   **Role**: *The Pathologist* (Error morphology).
+*   **Role**: *Error Morphology Analysis*.
 *   **Description**: A density/histogram plot of point-wise performance.
 *   **Interpretation**: Helps identify the "shape" of the search error. A bimodal distribution might suggest that the algorithm is succeeding in some regions but completely failing in others.
 *   **Example**:
@@ -767,7 +774,7 @@ mb.view.clinic_distribution(exp, metric="coverage")
 Search errors are rarely normal (Gaussian). Look for **Multi-modality**. If you see two distinct peaks, your algorithm has "split" its focus: it found a local optimum for some objectives while being trapped for others. A wide, flat distribution suggests that the populations' proximity to the front is chaotic and unorganized.
 
 #### **Instrument 4: The History (`clinic_history`)**
-*   **Role**: *The Monitor* (Temporal health/stalling).
+*   **Role**: *Temporal Evolution Analysis*.
 *   **Description**: Tracks the evolution of a physical fact over generations across all runs.
 *   **Interpretation**: Differentiates between slow-but-steady convergence and premature stalling.
 *   **Example**:
@@ -784,7 +791,7 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 
 ---
 
-### **9.5. Narrative Reports & Auditing Workflow**
+### **9.5. Reporting Interface and Auditing Workflow**
 
 The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
 
@@ -998,11 +1005,11 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ---
 
-## **16. Architectural Philosophy (ADR)**
+## **16. Architectural Decisions and Engineering Values**
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
-*   **Scientific Narrative (Technical Storytelling)**: We believe code should tell a story. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report_show()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
+*   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report_show()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 

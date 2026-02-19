@@ -77,12 +77,7 @@ class _MB:
         self.topo_attainment = stats.topo_attainment
         self.topo_gap = stats.topo_gap
         
-        # Aliases for legacy support (v0.6.x)
-        self.perf_prob = stats.perf_probability
-        self.perf_dist = stats.perf_distribution
-        self.topo_dist = stats.topo_distribution
-        self.topo_attain = stats.topo_attainment
-
+        
         # Semantic View Shortcuts
         self.topo_shape = view.topo_shape
         self.topo_bands = view.topo_bands
@@ -90,12 +85,9 @@ class _MB:
         self.perf_spread = view.perf_spread
         self.strat_caste = view.strat_caste
         
-        # Legacy Delegates
+        # Legacy Delegates (Supported Aliases)
         self.spaceplot = view.spaceplot
         self.timeplot = view.timeplot
-        self.rankplot = view.rankplot
-        self.casteplot = view.strat_caste
-        self.tierplot = view.tierplot
 
 mb = _MB()
 

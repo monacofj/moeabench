@@ -59,7 +59,7 @@ class save:
             "moeabench": system.version(),
             "python": sys.version.split()[0],
             "platform": sys.platform,
-            "timestamp_utc": datetime.datetime.utcnow().isoformat() + "Z"
+            "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
         }
         
         # Try to capture key dependency versions

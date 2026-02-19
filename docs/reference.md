@@ -41,8 +41,8 @@ This document provides the exhaustive technical specification for the MoeaBench 
 MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
 
 <a name="defaults"></a>
-### **1.2. Global Defaults (`mb.defaults`)**
-The `mb.defaults` object allows centralized control over the library's behavior. These values act as fallback "Honest Defaults"—they are used whenever an explicit value is not provided to a method or constructor.
+### **1.2. Global Configuration (`mb.defaults`)**
+The `mb.defaults` object allows centralized control over the library's behavior. These values act as fallback "Standard Configuration"—they are used whenever an explicit value is not provided to a method or constructor.
 
 **Execution Parameters:**
 *   `population`: Default population size (default: `150`).
@@ -203,18 +203,18 @@ print(others.vars)
 ```
 
 ### **1.4. SmartArray**
-A NumPy array subclass (`np.ndarray`) that carries metadata.
+An annotated NumPy array subclass (`np.ndarray`) that encapsulates lineage and usage metadata.
 *   **Metadata**: `.name`, `.label`, `.gen`, `.source`.
 *   **Behavior**: Behaves exactly like a standard NumPy array for all math operations.
 
 ---
 
 <a name="view"></a>
-## **2. Scientific Perspectives (`mb.view`)**
+## **2. Visualization Perspectives (`mb.view`)**
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
-### **2.1. Topography (`mb.view.topo_*`)**
+### **2.1. Topographic Analysis (`mb.view.topo_*`)**
 
 *   **`topo_shape(*args, objectives=None, mode='auto', ...)`**:
     *   **Permanent Alias**: `spaceplot`. Visualizes solutions in Objective Space (2D or 3D). 
@@ -226,16 +226,16 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 *   **`topo_density(*args, axes=None, space='objs', ...)`**:
     *   Plots Spatial Probability Density via KDE.
 
-### **2.2. Performance (`mb.view.perf_*`)**
+### **2.2. Performance Analysis (`mb.view.perf_*`)**
 
 *   **`perf_history(*args, metric=None, ...)`**:
     *   **Permanent Alias**: `timeplot`. Plots the evolution of a scalar metric over time.
 *   **`perf_spread(*args, metric=None, gen=-1, alpha=None, ...)`**:
     *   Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
 *   **`perf_density(*args, metric=None, gen=-1, ...)`**:
-    *   Plots the probability distribution of a performance metric via KDE.
+    *   Plots the probability distribution of a performance metric via KDE (Stochastic Distribution Analysis).
 
-### **2.3. Stratification (`mb.view.strat_*`)**
+### **2.3. Stratification Analysis (`mb.view.strat_*`)**
 
 *   **`strat_ranks(*args, ...)`**:
     *   Permanent Alias: `rankplot`. Shows frequency distribution across dominance ranks.
@@ -246,9 +246,9 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 *   **`strat_tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
-### **2.5. Clinical Analysis (`mb.view.clinic_*`)**
+### **2.5. Clinical Diagnostics (`mb.view.clinic_*`)**
 
-Specialized diagnostic instruments for deep-dive pathology analysis. All clinical plotters are polymorphic and adhere to the **Smart Dispatch Protocol**, automatically resolving Ground Truth and Resolution Scale from experiments.
+Specialized diagnostic instruments for deep-dive pathology analysis. All clinical plotters are polymorphic and adhere to the **Context-Aware Dispatch Protocol**, automatically resolving Ground Truth and Resolution Scale from experiments.
 
 > [!IMPORTANT]
 > **Functional Parity (All Algorithms are Equal)**
@@ -256,20 +256,20 @@ Specialized diagnostic instruments for deep-dive pathology analysis. All clinica
 > Functionally, the `mb.view.clinic_*` instruments work identically for **any** algorithm (e.g., SPEA2, MOEA/D, or custom plugins). Q-Scores are calculated against the problem's analytical Ground Truth ($GT$), not against other algorithms.
 
 *   **`clinic_radar(target, ground_truth=None, show=True, **kwargs)`**:
-    *   **Role**: *The Validation* (Q-Score Spider Plot).
+    *   **Role**: *Holistic Validation*.
     *   **Logic**: Calculates all 6 Q-Scores (Headway, Closeness, Coverage, Gap, Regularity, Balance) and maps them to a radial chart.
     *   **Grid**: Displays explicit concentric circles at intervals of $0.25$ to indicate quality tiers.
 *   **`clinic_ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *The Judge* (Goal Attainment).
+    *   **Role**: *Goal Attainment Assessment*.
     *   **Logic**: Plots the Empirical Cumulative Distribution Function of the specified metric.
     *   **Static Markers**: Automatically inserts dashed drop-lines for the **Median (50%)** and **Robust Max (95%)**.
     *   **Metric Support**: Supports all Layer 1 Fairview metrics.
 *   **`clinic_distribution(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *The Pathologist* (Point-wise Error Morphology).
+    *   **Role**: *Error Morphology Analysis*.
     *   **Logic**: Renders a Histogram + KDE (Kernel Density Estimate) of the representative FAIR distribution.
     *   **Markers**: Includes median and 95th percentile vertical lines for scale context.
 *   **`clinic_history(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *The Monitor* (Temporal Trajectory).
+    *   **Role**: *Temporal Evolution Analysis*.
     *   **Logic**: Evolution of the representative scalar fact ($f_{val}$) over generations.
     *   **Cloud Support**: If targeting an `Experiment`, it plots trajectories for all runs provided.
 
@@ -423,7 +423,7 @@ mb.metrics.plot_matrix(hv, mode='auto', show_bounds=True)
 <a name="stats"></a>
 ## **6. Statistics (`mb.stats`)**
 
-Utilities for robust non-parametric statistical analysis. Fully supports **"Smart Stats"** (takes `Experiment` objects, functions, or arrays).
+Utilities for robust non-parametric statistical analysis. Fully supports **Context-Aware Statistics** (takes `Experiment` objects, functions, or arrays).
 
 ### **The Rich Result Interface (`StatsResult`)**
 All statistical functions in MoeaBench return objects inheriting from `StatsResult`. These objects provide:
@@ -437,7 +437,7 @@ All statistical functions in MoeaBench return objects inheriting from `StatsResu
 <a name="reportable"></a>
 ## **7. The Reporting Contract (`Reportable`)**
 
-MoeaBench enforces a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
+MoeaBench enforces a **Standardized Reporting Interface**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
 
 ### **The Interface**
 *   **`.report(**kwargs) \to str`**: returns a detailed technical narrative explaining the object's context, data, and scientific meaning.
@@ -567,7 +567,7 @@ MoeaBench uses a standardized ZIP-based persistence format.
 <a name="extensibility"></a>
 ## **9. Extensibility (Plugin API)**
 
-MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots).
+MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots). The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 
 ### **9.1. BaseMop (`mb.mops.BaseMop`)**
 The abstract skeleton for all problem plugins.
@@ -678,11 +678,11 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 
 
 <a name="diagnostics"></a>
-## **12. Automated Diagnostics (`mb.diagnostics`)**
+## **12. Algorithmic Diagnostics and Pathology Detection**
 
-The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Universal Reporting Contract** (`Reportable`), providing narrative insights alongside numerical values.
+The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Standardized Reporting Interface** (`Reportable`), providing narrative insights alongside numerical values.
 
-### **12.1. The Diagnostics Reporting Contract (`Reportable`)**
+### **12.1. Diagnostic Reporting Interface (`Reportable`)**
 
 Instead of returning raw `float` or `ndarray` values, functions return specialized objects that preserve numerical behavior while providing narrative insights.
 
@@ -702,12 +702,12 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 
 ---
 
-### **12.2. The Smart Dispatch Protocol**
+### **12.2. Context-Aware Dispatch Protocol**
 
 > [!NOTE]
 > **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Headway" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
+All functions in `mb.diagnostics` use a **Context-Aware Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
 
 *   **Polymorphic Input**:
     *   `Experiment`: Automatically extracts the **Pareto Front** of the last run, the **Ground Truth** ($GT$) from the MOP, and the **Resolution Scale** ($s_K$).
@@ -721,7 +721,7 @@ All functions in `mb.diagnostics` use a **Smart Dispatch** system (`_resolve_dia
 
 ---
 
-### **12.2. Physical Metrics (Fair Layer)**
+### **12.2. Physical Metrics (Resolution-Normalized)**
 
 These metrics answer: *"What is the physical state of the population?"*
 They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
@@ -758,7 +758,7 @@ They are "Fair" because they are divided by $s_K$, making them scale-invariant a
 
 ---
 
-### **12.3. Clinical Metrics (Q-Scores)**
+### **12.3. Clinical Normalization (Q-Scores)**
 
 These metrics answer: *"Is this good or bad?"*
 They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**.
@@ -780,7 +780,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 ---
 
-### **12.4. Comprehensive Algorithmic Audit**
+### **12.4. Automated Algorithmic Audit**
 
 #### **`audit(data, ground_truth=None) -> DiagnosticResult`**
 *   **Rationale**: The primary entry point for automated performance analysis. It runs the full 6-dimensional clinical suite and synthesizes a high-level verdict.
