@@ -9,6 +9,24 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 This document provides the exhaustive technical specification for the MoeaBench Library API.
 
+## **Summary**
+1.  **[Nomenclature & Abbreviations](#nomenclature)**
+2.  **[Architectural Patterns](#architectural-patterns)** (Smart Arguments, Cloud Delegation)
+3.  **[1. Data Model](#data-model)**
+    *   [1.1. Experiment](#experiment)
+    *   [1.2. Run](#run)
+    *   [1.3. Population](#population)
+    *   [1.4. SmartArray](#smartarray)
+    *   [1.5. Global Configuration](#defaults)
+4.  **[2. Visualization Perspectives](#view)**
+    *   [2.1. Topographic Analysis](#topo)
+    *   [2.2. Performance Analysis](#perf)
+    *   [2.3. Stratification Analysis](#strat)
+    *   [2.4. Clinical Diagnostics](#clinic)
+5.  **[5. Metrics](#metrics)**
+6.  **[6. Statistics](#stats)**
+7.  **[12. Diagnostics](#diagnostics)**
+
 ---
 
 <a name="nomenclature"></a>
@@ -34,13 +52,28 @@ This document provides the exhaustive technical specification for the MoeaBench 
 
 ---
 
+<a name="architectural-patterns"></a>
+## **Architectural Patterns**
+
+MoeaBench is built on two core patterns designed to minimize friction and maximize scientific insight.
+
+### **1. Smart Arguments**
+The "Smart Argument" pattern allow functions to be polymorphic and context-aware. Instead of requiring the user to manually extract raw values (e.g., `exp[0].pop().objs`), all analytical and visual functions accept high-level MoeaBench objects (`experiment`, `Run`, `Population`) directly.
+*   **Automatic Extraction**: If a metric is requested, the function automatically identifies and extracts the required space (Pareto front for experiments, population objectives for snapshots).
+*   **Temporal Slicing (`gens`)**: Numerical arguments passed to `gens` are automatically normalized into slices (e.g., `gens=100` $\to$ `slice(100)`), ensuring intuitive "limit" behavior across the entire API.
+
+### **2. Cloud-centric Delegation**
+The `experiment` object acts as a semantic proxy for all its constituent `Run` instances. Methods called at the experiment level (e.g., `.front()`, `.run()`, `.pop()`) are delegated to the **Aggregated Cloud** of results, returning results that represent the statistical consensus of the multi-run ensemble.
+
+---
+
 <a name="data-model"></a>
 ## **1. Data Model**
 
 MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
 
 <a name="defaults"></a>
-### **1.2. Global Configuration (`mb.defaults`)**
+### **1.5. Global Configuration (`mb.defaults`)**
 The `mb.defaults` object allows centralized control over the library's behavior. These values act as fallback "Standard Configuration"—they are used whenever an explicit value is not provided to a method or constructor.
 
 **Execution Parameters:**
@@ -73,8 +106,8 @@ exp = mb.experiment()        # Will use population=500
 exp.run()                    # Executes with 500
 ```
 
-### **1.3. Experiment**
-The top-level container.
+### **1.1. Experiment (`mb.core.experiment.experiment`)**
+The top-level container for multi-objective optimization research.
 
 **Properties:**
 *   `mop` (*Any*): The problem instance.
@@ -82,124 +115,86 @@ The top-level container.
 *   `stop` (*callable*, optional): Global custom stop criteria function.
 *   `repeat` (*int*): Default number of repetitions (default: 1).
 *   `runs` (*List[Run]*): Access to all execution results.
-*   `last_run` (*Run*): Shortcut to the most recent run (`runs[-1]`).
-*   `last_pop` (*Population*): Shortcut to the final population of the last run.
-*   `.pop(n=-1)` (*JoinedPopulation*): Access the aggregate cloud at generation `n`.
-*   `.optimal(n=500)` (*Population*): Analytical sampling of the true Pareto optimal set and front.
-*   `.optimal_front(n=500)` (*SmartArray*): Shortcut to the analytical true PF.
-*   `.optimal_set(n=500)` (*SmartArray*): Shortcut to the analytical true PS.
-
-**Cloud-centric Delegation (Aggregate Results):**
-These methods operate on the **union of all runs** (The Cloud).
-*   `.front(n=-1)` (*SmartArray*): ND objectives from all runs (Superfront).
-*   `.set(n=-1)` (*SmartArray*): ND variables from all runs (Superset).
-*   `.non_front(n=-1)` (*SmartArray*): Dominated objectives from the cloud.
-*   `.non_set(n=-1)` (*SmartArray*): Dominated variables from the cloud.
-*   `.non_dominated(n=-1)` (*Population*): Aggregate ND population.
-*   `.dominated(n=-1)` (*Population*): Aggregate dominated population.
-*   `.all_fronts(n=-1)` (*List[SmartArray]*): List of Pareto fronts from all runs.
-*   `.all_sets(n=-1)` (*List[SmartArray]*): List of decision sets from all runs.
-
-**Shortcuts:**
-*   `.objectives` (*SmartArray*): Shortcut for the final aggregate objectives (`.pop().objectives`).
-*   `.variables` (*SmartArray*): Shortcut for the final aggregate variables (`.pop().variables`).
 
 **Methods:**
-*   **`.run(repeat=None, workers=None, diagnose=False, **kwargs)`**: Executes the optimization.
-    *   `repeat` (*int*, optional): Number of independent runs. Defaults to `exp.repeat`.
-    *   `workers` (*int*): [DEPRECATED] Parallel execution is no longer supported.
-    *   `diagnose` (*bool*): If `True`, performs automated algorithmic pathology analysis after execution and prints the rationale using `.report_show()`. Defaults to `False`.
-    *   **Reproducibility**: If `repeat > 1`, MoeaBench automatically ensures independence by using `seed + i` for each run `i`. This ensures deterministic results across multiple runs.
-    *   `stop` (*callable*, optional): Custom stop criteria function. Receives a reference to the active **solver** as its context. Returns `True` to halt execution.
-    *   `**kwargs`: Passed to the MOEA execution engine.
-*   **`.calibrate(**kwargs)`**: Shortcut to `exp.mop.calibrate()`. Calibrates the diagnostic baselines using the experiment's problem instance.
-*   **`.save(path, mode='all')`**: Persists the experiment to a compressed ZIP file.
+
+#### **`.run(repeat=None, diagnose=False, stop=None, **kwargs)`**
+*   **Description**: Executes the optimization process.
+*   **Arguments**:
+    *   `repeat` (*int*): Number of independent runs. Defaults to `exp.repeat`.
+    *   `diagnose` (*bool*): If `True`, performs automated pathology analysis after execution. Defaults to `False`.
+    *   `stop` (*callable*): Custom stop criteria function. Returns `True` to halt.
+    *   `**kwargs`: Parameters passed directly to the MOEA engine (e.g., `population`, `generations`, `seed`).
+*   **Returns**: `None`.
+
+#### **`.pop(n=-1)`**
+*   **Description**: Accesses the aggregate cloud (JoinedPopulation) at generation `n`.
+*   **Arguments**:
+    *   `n` (*int*): Generation index. Defaults to `-1` (final).
+*   **Returns**: `JoinedPopulation`.
+
+#### **`.front(n=-1)`**
+*   **Description**: Retrieves non-dominated objectives from the aggregate cloud (Superfront).
+*   **Arguments**:
+    *   `n` (*int*): Generation index. Defaults to `-1`.
+*   **Returns**: `SmartArray` (objectives).
+
+#### **`.optimal(n=500)`**
+*   **Description**: Analytical sampling of the true Pareto optimal set and front.
+*   **Arguments**:
+    *   `n` (*int*): Number of points to sample. Defaults to `500`.
+*   **Returns**: `Population`.
+
+#### **`.save(path, mode='all')`** / **`.load(path, mode='all')`**
+*   **Description**: Persists/Restores the experiment state.
+*   **Arguments**:
     *   `path` (*str*): Filename or folder.
     *   `mode` (*str*): `'all'`, `'config'`, or `'data'`.
-*   **`.load(path, mode='all')`**: Restores the experiment state from a ZIP file.
-*   **`.get_M()`**: Returns the number of objectives.
-*   **`.get_Nvar()`**: Returns the number of decision variables.
-*   **`.get_n_ieq_constr()`**: Returns the number of inequality constraints.
-
-**Usage Example:**
-```python
-import MoeaBench as mb
-
-exp = mb.experiment()
-exp.mop = mb.mops.DTLZ2()
-exp.moea = mb.moeas.NSGA3()
-exp.run(repeat=1)
-
-print(exp.last_run) # Access result
-```
 
 ### **1.2. Run (`mb.core.run.Run`)**
-Represents a single optimization trajectory (history of one seed).
+Represents a single optimization trajectory.
 
-**History Access:**
-*   `.history(type='nd')`: Returns the raw list of arrays for the entire run.
-    *   Types: `'f'` (all objectives), `'x'` (all variables), `'nd'` (non-dominated objectives), `'nd_x'` (non-dominated variables), `'dom'` (dominated objectives), `'dom_x'` (dominated variables).
+**Methods:**
 
-**Filters & Snapshots:**
-*   `.pop(gen=-1)`: Returns the **Population** object at generation `gen`.
-*   `.non_dominated(gen=-1)`: Returns a **Population** containing only non-dominated solutions at `gen`.
-*   `.dominated(gen=-1)`: Returns a **Population** containing only dominated solutions at `gen`.
+#### **`.history(type='nd')`**
+*   **Description**: Retrieves the full temporal evolution of the run.
+*   **Arguments**:
+    *   `type` (*str*): The data type to extract.
+        *   `'f'`: All objectives history (Generations x Populations).
+        *   `'x'`: All variables history.
+        *   `'nd'`: Non-dominated objectives (Pareto Fronts) evolution.
+        *   `'nd_x'`: Non-dominated variables (Pareto Sets) evolution.
+*   **Returns**: `List[np.ndarray]`.
 
-**Shortcuts (Direct Array Access):**
-*   `.front(gen=-1)` $\to$ `SmartArray`
-    *   *Equivalent to*: `.non_dominated(gen).objectives`
-    *   Returns the **Pareto Front** (objectives).
-*   `.set(gen=-1)` $\to$ `SmartArray`
-    *   *Equivalent to*: `.non_dominated(gen).variables`
-    *   Returns the **Pareto Set** (variables).
-*   `.non_front(gen=-1)` $\to$ `SmartArray`
-    *   *Equivalent to*: `.dominated(gen).objectives`
-*   `.non_set(gen=-1)` $\to$ `SmartArray`
-    *   *Equivalent to*: `.dominated(gen).variables`
+#### **`.pop(gen=-1)`**
+*   **Description**: Returns a snapshot of the population at a specific generation.
+*   **Arguments**:
+    *   `gen` (*int*): Generation index. Defaults to `-1` (final).
+*   **Returns**: `Population`.
 
-**Usage Example:**
-```python
-run = exp.last_run
-
-# Get evolution of Pareto Fronts
-history = run.history('nd') 
-
-# Get specific snapshots
-initial_pop = run.pop(0)
-final_front = run.front() # Last generation
-```
+#### **`.front(gen=-1)`** / **`.set(gen=-1)`**
+*   **Description**: Shortcut for non-dominated objectives/variables.
+*   **Arguments**:
+    *   `gen` (*int*): Generation index. Defaults to `-1`.
+*   **Returns**: `SmartArray`.
 
 <a name="smartarray-and-population"></a>
 ### **1.3. Population (`mb.core.run.Population`)**
-A container for a set of solutions at a specific moment.
+A container for a set of solutions.
 
 **Properties:**
-*   `.objectives` (*SmartArray*): Matrix (N x M) of objective values.
-*   `.variables` (*SmartArray*): Matrix (N x D) of decision variables.
+*   `.objectives` (*SmartArray*): Matrix ($N \times M$) of objective values.
+*   `.variables` (*SmartArray*): Matrix ($N \times D$) of decision variables.
 
-**Aliases:**
-*   `.objs` $\to$ `.objectives`
-*   `.vars` $\to$ `.variables`
+**Methods:**
 
-**Filtering Methods:**
-*   `.non_dominated()` $\to$ Returns a new *Population* with only non-dominated individuals.
-*   `.dominated()` $\to$ Returns a new *Population* with only dominated individuals.
+#### **`.non_dominated()`** / **`.dominated()`**
+*   **Description**: Filters individuals based on Pareto dominance.
+*   **Returns**: `Population` (new instance).
 
-**Analysis Methods:**
-*   **`.stratify()`** $\to$ *np.ndarray*: Performs Non-Dominated Sorting (NDS) and returns the integer rank array (1-based) for all individuals.
-
-**Usage Example:**
-```python
-pop = run.pop(100) # Population at gen 100
-
-# Separation
-elite = pop.non_dominated()
-others = pop.dominated()
-
-# Access data
-print(elite.objs)
-print(others.vars)
-```
+#### **`.stratify()`**
+*   **Description**: Performs Non-Dominated Sorting (NDS).
+*   **Returns**: `np.ndarray` (1-based integer ranks).
 
 ### **1.4. SmartArray**
 An annotated NumPy array subclass (`np.ndarray`) that encapsulates lineage and usage metadata.
@@ -215,24 +210,49 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ### **2.1. Topographic Analysis (`mb.view.topo_*`)**
 
-*   **`topo_shape(*args, objectives=None, mode='auto', ...)`**:
-    *   **Permanent Alias**: `spaceplot`. Visualizes solutions in Objective Space (2D or 3D). 
-    *   **Smart Resolution**: Extracts the non-dominated front from experiments.
-*   **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**:
-    *   Visualizes reliability bands using **Empirical Attainment Functions (EAF)**.
-*   **`topo_gap(exp1, exp2, level=0.5, ...)`**:
-    *   Highlights the **Topologic Gap** (coverage difference) between two algorithms.
-*   **`topo_density(*args, axes=None, space='objs', ...)`**:
-    *   Plots Spatial Probability Density via KDE.
+#### **`topo_shape(*args, mode='auto', ...)`**
+*   **Permanent Alias**: `spaceplot`.
+*   **Description**: Visualizes solutions in Objective Space (2D or 3D).
+*   **Arguments**:
+    *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
+    *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
+*   **Returns**: `Figure` (Plotly or Matplotlib).
+
+#### **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
+*   **Description**: Visualizes reliability bands using Empirical Attainment Functions (EAF).
+*   **Arguments**:
+    *   `*args`: `experiment` objects to compare.
+    *   `levels` (*List[float]*): Attainment levels (probability thresholds) to plot.
+*   **Returns**: `Figure`.
+
+#### **`topo_gap(exp1, exp2, level=0.5, ...)`**
+*   **Description**: Highlights the Topologic Gap (coverage difference) between two experiments.
+*   **Arguments**:
+    *   `exp1`, `exp2`: The two `experiment` objects to compare.
+    *   `level` (*float*): The attainment level to visualize. Defaults to `0.5` (median).
+*   **Returns**: `Figure`.
 
 ### **2.2. Performance Analysis (`mb.view.perf_*`)**
 
-*   **`perf_history(*args, metric=None, ...)`**:
-    *   **Permanent Alias**: `timeplot`. Plots the evolution of a scalar metric over time.
-*   **`perf_spread(*args, metric=None, gen=-1, alpha=None, ...)`**:
-    *   Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
-*   **`perf_density(*args, metric=None, gen=-1, ...)`**:
-    *   Plots the probability distribution of a performance metric via KDE (Stochastic Distribution Analysis).
+#### **`perf_history(*args, metric=None, gens=None, ...)`**
+*   **Permanent Alias**: `timeplot`.
+*   **Description**: Plots the evolution of a scalar metric over generations.
+*   **Arguments**:
+    *   `*args`: `experiment`, `Run`, or `MetricMatrix` objects.
+    *   `metric` (*callable*): The metric function to calculate. Defaults to `mb.metrics.hv`.
+        *   **Standard Metrics**: `mb.metrics.hv`, `mb.metrics.igd`, `mb.metrics.gd`, `mb.metrics.emd`.
+        *   **Clinical Metrics**: `mb.diagnostics.headway`, `mb.diagnostics.coverage`, `mb.diagnostics.gap`, `mb.diagnostics.regularity`, `mb.diagnostics.balance`.
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s). 
+        *   Example: `gens=50` (first 50), `gens=slice(20, 80)` (range).
+*   **Returns**: `Figure`.
+
+#### **`perf_spread(*args, metric=None, gen=-1, ...)`**
+*   **Description**: Comparative Boxplot stats with A12 Win Probability.
+*   **Arguments**:
+    *   `*args`: Datasets to compare.
+    *   `metric` (*callable*): Metric to analyze.
+    *   `gen` (*int*): Specific generation to snapshot. Defaults to `-1` (final).
+*   **Returns**: `Figure`.
 
 ### **2.3. Stratification Analysis (`mb.view.strat_*`)**
 
@@ -245,32 +265,29 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 *   **`strat_tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
-### **2.5. Clinical Diagnostics (`mb.view.clinic_*`)**
+### **2.4. Clinical Diagnostics (`mb.view.clinic_*`)**
 
-Specialized diagnostic instruments for deep-dive pathology analysis. All clinical plotters are polymorphic and adhere to the **Context-Aware Dispatch Protocol**, automatically resolving Ground Truth and Resolution Scale from experiments.
+#### **`clinic_radar(target, ground_truth=None, ...)`**
+*   **Description**: Holistic Validation mapping 6 Q-Scores to a radial chart.
+*   **Arguments**:
+    *   `target`: `experiment` or `Run` object.
+    *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
+*   **Returns**: `Figure`.
 
-> [!IMPORTANT]
-> **Functional Parity (All Algorithms are Equal)**
-> While some algorithms (like NSGA-II) are marked as "Certified Baselines" in our documentation, this is a purely administrative distinction for the library's static release report.
-> Functionally, the `mb.view.clinic_*` instruments work identically for **any** algorithm (e.g., SPEA2, MOEA/D, or custom plugins). Q-Scores are calculated against the problem's analytical Ground Truth ($GT$), not against other algorithms.
+#### **`clinic_ecdf(target, metric="closeness", ...)`**
+*   **Description**: Plots the Empirical Cumulative Distribution Function of a clinical metric.
+*   **Arguments**:
+    *   `target`: Input data.
+    *   `metric` (*str*): One of `'closeness'`, `'headway'`, `'coverage'`, `'gap'`, `'regularity'`, or `'balance'`.
+*   **Returns**: `Figure`.
 
-*   **`clinic_radar(target, ground_truth=None, show=True, **kwargs)`**:
-    *   **Role**: *Holistic Validation*.
-    *   **Logic**: Calculates all 6 Q-Scores (Headway, Closeness, Coverage, Gap, Regularity, Balance) and maps them to a radial chart.
-    *   **Grid**: Displays explicit concentric circles at intervals of $0.25$ to indicate quality tiers.
-*   **`clinic_ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *Goal Attainment Assessment*.
-    *   **Logic**: Plots the Empirical Cumulative Distribution Function of the specified metric.
-    *   **Static Markers**: Automatically inserts dashed drop-lines for the **Median (50%)** and **Robust Max (95%)**.
-    *   **Metric Support**: Supports all Layer 1 Fairview metrics.
-*   **`clinic_distribution(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *Error Morphology Analysis*.
-    *   **Logic**: Renders a Histogram + KDE (Kernel Density Estimate) of the representative FAIR distribution.
-    *   **Markers**: Includes median and 95th percentile vertical lines for scale context.
-*   **`clinic_history(target, ground_truth=None, metric="closeness", mode='auto', show=True, **kwargs)`**:
-    *   **Role**: *Temporal Evolution Analysis*.
-    *   **Logic**: Evolution of the representative scalar fact ($f_{val}$) over generations.
-    *   **Cloud Support**: If targeting an `Experiment`, it plots trajectories for all runs provided.
+#### **`clinic_history(target, metric="closeness", gens=None, ...)`**
+*   **Description**: Evolution of a clinical metric over generations.
+*   **Arguments**:
+    *   `target`: `experiment` or `Run`.
+    *   `metric` (*str*): The clinical metric name.
+    *   `gens` (*int* or *slice*): Range of generations to plot.
+*   **Returns**: `Figure`.
 
 ---
 
@@ -354,33 +371,32 @@ exp.run()
 
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
-### **Metric Calculation**
-*   **`mb.metrics.hv(data, ref=None, mode='auto', n_samples=100000)`**: Calculates Hypervolume.
-    *   **Tripartite Output**: Starting with v0.7.6, HV is reported as three distinct measures:
-        1.  **HV Raw**: The physical volume calculated relative to the Reference Point (e.g., $1.15$).
-        2.  **HV Ratio**: Percentage of the Reference Box covered ($HV_{raw} / RefBox_{vol}$). Represents **Coverage**.
-        3.  **HV Rel**: Relative convergence to the Ground Truth ($HV_{sol} / HV_{GT}$). Represents **Convergence**.
-    *   `ref`: Reference Point helper.
-        *   `None` (default): Calculates the reference point automatically from the input `data` (Nadir + offset).
-        *   `list[Experiment]`: Uses the joint range of all provided experiments to calculate a common reference point (Recommended for comparing algorithms).
-        *   `np.ndarray`: Uses the provided array as the explicit reference point.
-    *   `mode` (*str*): Calculation strategy. 
-        *   `'auto'`: Uses the **Exact** algorithm for $M \leq 6$ and switches to **Monte Carlo** for $M > 6$.
-        *   `'exact'`: Forces the Exact (WFG) algorithm (may be slow for high dimensions).
-        *   `'fast'`: Forces Monte Carlo approximation.
-    *   `n_samples` (*int*): Number of points for Monte Carlo sampling (default: $10^5$).
-*   **`mb.metrics.igd(data, ref=None)`**: Calculates IGD (Inverse Generational Distance).
-    *   `ref`: True Pareto Front.
-        *   `None` (default): Attempts to load the analytical optimal front from the MOP (`exp.optimal_front()`).
-        *   `np.ndarray`: Uses the provided array as the True Pareto Front.
-*   **`mb.metrics.gd(data, ref=None)`**: Calculates GD (Generational Distance).
-    *   `ref`: Usage identical to `mb.metrics.igd`.
-*   **`mb.metrics.gdplus(data, ref=None)`**: Calculates GD+ (modified Generational Distance).
-    *   `ref`: Usage identical to `mb.metrics.igd`.
-*   **`mb.metrics.igdplus(data, ref=None)`**: Calculates IGD+ (modified Inverted Generational Distance).
-    *   `ref`: Usage identical to `mb.metrics.igd`.
+### **5.1. Metric Calculation**
 
-**Returns**: `MetricMatrix` object.
+#### **`mb.metrics.hv(data, ref=None, mode='auto', gens=None)`**
+*   **Description**: Calculates Hypervolume evolution ($G \times R$).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, or `Population`.
+    *   `ref`: Reference point (automatic Nadir if `None`).
+    *   `mode` (*str*): `'auto'`, `'exact'`, or `'fast'`.
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+*   **Returns**: `MetricMatrix`.
+
+#### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**
+*   **Description**: Calculates Inverted Generational Distance or Generational Distance.
+*   **Arguments**:
+    *   `data`: Input data.
+    *   `ref` (*np.ndarray*): True Pareto Front (automatic if problem-linked).
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+*   **Returns**: `MetricMatrix`.
+
+#### **`mb.metrics.emd(data, ref=None, gens=None)`**
+*   **Description**: Earth Mover's Distance (Wasserstein) trajectory.
+*   **Arguments**:
+    *   `data`: Input data.
+    *   `ref` (*np.ndarray*): True Pareto Front.
+    *   `gens` (*int* or *slice*): Range of generations.
+*   **Returns**: `MetricMatrix`.
 
 ### **`MetricMatrix` Object**
 A matrix of metric values (Generations x Runs).
@@ -472,14 +488,22 @@ Diagnosis: High Selection Pressure (Phalanx-like convergence).
 
 ---
 
-### **`mb.stats.perf_evidence(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Performs the **Mann-Whitney U** rank-sum test (Win Evidence). Returns a `HypothesisTestResult`.
+### **6.1. Statistical Contrast**
 
-### **`mb.stats.perf_distribution(data1, data2, alternative='two-sided', metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Performs the **Kolmogorov-Smirnov (KS)** two-sample test (Performance Distribution). Returns a `HypothesisTestResult`.
+#### **`mb.stats.perf_evidence(data1, data2, metric=mb.metrics.hv, gen=-1, ...)`**
+*   **Description**: Mann-Whitney U rank-sum test (Win Evidence).
+*   **Arguments**:
+    *   `data1`, `data2`: Datasets to compare.
+    *   `metric` (*callable*): Target performance metric.
+    *   `gen` (*int*): Specific generation to snapshot.
+*   **Returns**: `HypothesisTestResult`.
 
-### **`mb.stats.perf_probability(data1, data2, metric=mb.metrics.hv, gen=-1, **kwargs)`**
-Computes the **Vargha-Delaney $\hat{A}_{12}$** effect size (Win Probability). Returns a `SimpleStatsValue`.
+#### **`mb.stats.perf_probability(data1, data2, metric=mb.metrics.hv, gen=-1, ...)`**
+*   **Description**: Vargha-Delaney $\hat{A}_{12}$ effect size (Win Probability).
+*   **Arguments**:
+    *   `data1`, `data2`: Datasets to compare.
+    *   `gen` (*int*): Snapshot generation.
+*   **Returns**: `SimpleStatsValue`.
 
 ### **`mb.stats.topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs)`**
 Performs multi-axial distribution matching (Topologic Equivalence).
@@ -720,40 +744,31 @@ All functions in `mb.diagnostics` use a **Context-Aware Dispatch** system (`_res
 
 ---
 
-### **12.2. Physical Metrics (Resolution-Normalized)**
+### **12.2. Physical Metrics (Fairview Protocol)**
 
-These metrics answer: *"What is the physical state of the population?"*
-They are "Fair" because they are divided by $s_K$, making them scale-invariant across different problems.
+#### **`headway(data, ref=None, s_k=None)`**
+*   **Description**: Measures Convergence Depth ($GD_{95} / s_K$).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run` or `Population`.
+    *   `ref` (*np.ndarray*): Analytical Ground Truth.
+    *   `s_k` (*float*): Expected resolution noise floor.
+*   **Returns**: `FairResult`.
 
-#### **`headway(data, ref=None, s_k=None) -> FairResult`**
-*   **Definition**: $GD_{95}(P \to GT) / s_K$
-*   **Rationale**: Measures **Convergence Depth**. It filters out the worst 5% outliers (Headway) and normalizes the distance by the expected separation of optimal points ($s_K$).
-*   **Ideal**: $0.0$.
-*   **Interpretation**: Values $< 1.0$ indicate the population is "fitting" the manifold better than the discrete resolution limit.
+#### **`closeness(data, ref=None, s_k=None)`**
+*   **Description**: Distribution of point-wise distances to the manifold.
+*   **Returns**: `np.ndarray` (vector of distances).
 
-#### **`closeness(data, ref=None, s_k=None) -> np.ndarray`**
-*   **Definition**: Vector of point-wise distances: $u_j = \min(\|p_j - GT\|) / s_K$.
-*   **Rationale**: Provides the **Distribution of Closeness**. Unlike a single scalar, this array reveals if the population is uniformly close or if parts of it are drifting.
-*   **Returns**: 1D Array of size $N$.
+#### **`coverage(data, ref=None)`** / **`gap(data, ref=None)`**
+*   **Description**: Global coverage ($IGD_{mean}$) and Worst-case holes ($IGD_{95}$).
+*   **Returns**: `FairResult`.
 
-#### **`coverage(data, ref=None) -> FairResult`**
-*   **Definition**: $IGD_{mean}(GT \to P)$
-*   **Rationale**: Measures **Global Coverage**. It is the average distance from *any* point on the True Front to the nearest solution found.
-*   **Ideal**: $0.0$.
+#### **`regularity(data, ref_distribution=None)`**
+*   **Description**: Structural Uniformity (Wasserstein distance to uniform lattice).
+*   **Returns**: `FairResult`.
 
-#### **`gap(data, ref=None) -> FairResult`**
-*   **Definition**: $IGD_{95}(GT \to P)$
-*   **Rationale**: Measures **worst-case holes** in the coverage. By taking the 95th percentile of the IGD components, it identifies the largest "Gaps" in the manifold approximation.
-
-#### **`regularity(data, ref_distribution=None) -> FairResult`**
-*   **Definition**: $W_1(d_{NN}(P), d_{NN}(U_{ref}))$
-*   **Rationale**: Measures **Structural Uniformity**. It uses the **Wasserstein-1 Distance** (Earth Mover's Distance) to compare the distribution of Nearest-Neighbor distances in $P$ against a perfectly uniform lattice $U_{ref}$.
-*   **Ideal**: $0.0$ (structure matches the lattice).
-
-#### **`balance(data, centroids=None, ref_hist=None) -> FairResult`**
-*   **Definition**: $D_{JS}(H_P || H_{ref})$
-*   **Rationale**: Measures **Manifold Bias**. It partitions the Ground Truth into $C$ clusters and calculates the **Jensen-Shannon Divergence** between the finding rates of the algorithm and the reference density.
-*   **Ideal**: $0.0$ (Balanced occupancy).
+#### **`balance(data, centroids=None)`**
+*   **Description**: Manifold Bias (Jensen-Shannon Divergence of occupancy).
+*   **Returns**: `FairResult`.
 
 ---
 

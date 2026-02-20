@@ -16,8 +16,14 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
 *   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
 *   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
 
-This document provides an introductory guide through the framework. For detailed technical specifications of every method and class, please consult the **[API Reference](reference.md)**. For a certified snapshot of the library's performance, see the official **[Calibration Report](file:///home/monaco/Work/moeabench/tests/CALIBRATION.html)**.
-
+## **Summary**
+1.  **[Introduction: Design Philosophy](#1-introduction-design-philosophy)**
+2.  **[Getting Started: Minimal Example](#2-getting-started-minimal-working-example)**
+3.  **[Statistical Rigor: Stochastic Experimentation](#3-statistical-rigor-stochastic-experimentation)**
+4.  **[Data Architecture & Access Patterns](#4-the-data-hierarchy-accessing-results)**
+5.  **[Data Filtering & Extraction](#5-data-filtering-and-extraction)**
+6.  **[Analytical Domains](#7-analytical-domains)** (Topography, Performance, Stratification)
+7.  **[Algorithmic Diagnostics](#9-algorithmic-diagnostics-and-pathology-detection)** (Clinical Q-Scores)
 
 ---
 
@@ -34,6 +40,8 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
 *   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
+*   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
+*   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
 
 ---
 

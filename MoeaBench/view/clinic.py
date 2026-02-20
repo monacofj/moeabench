@@ -232,6 +232,10 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
     [mb.view.clinic_history] Temporal Health Chart.
     Visualizes the evolution of a metric over generations.
     """
+    # Smart Arguments: Normalize gens (int -> slice)
+    if gens is not None and isinstance(gens, int):
+        gens = slice(gens)
+
     mode = _resolve_mode(mode)
     is_exp = hasattr(target, 'runs')
     is_run = hasattr(target, 'history')

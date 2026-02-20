@@ -16,6 +16,10 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
     if metric is None:
         metric = hypervolume
         
+    # Smart Arguments: Normalize gens (int -> slice)
+    if gens is not None and isinstance(gens, int):
+        gens = slice(gens)
+
     processed_args = []
     from ..metrics.evaluator import MetricMatrix
     
