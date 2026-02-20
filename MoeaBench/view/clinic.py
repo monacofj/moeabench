@@ -227,7 +227,7 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
         if show: fig.show()
         return fig
 
-def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, **kwargs):
+def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, gens: Optional[Union[int, slice]] = None, **kwargs):
     """
     [mb.view.clinic_history] Temporal Health Chart.
     Visualizes the evolution of a metric over generations.
@@ -249,7 +249,12 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
         fig = plt.figure(figsize=defaults.figsize)
         for run in runs:
             # We convert the FairResult to float, which extracts the representative .value
-            timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in run.history('f')]
+            hist = run.history('f')
+            if gens is not None:
+                hist = hist[gens]
+                if isinstance(hist, np.ndarray) and hist.ndim == 1: hist = [hist]
+
+            timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in hist]
             plt.plot(range(len(timeseries)), timeseries, label=run.name)
         plt.title(f"Clinic History: {metric.upper()} Evolution")
         plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{metric}]")
@@ -260,7 +265,12 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
         fig = go.Figure()
         for run in runs:
              # We convert the FairResult to float, which extracts the representative .value
-            timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in run.history('f')]
+            hist = run.history('f')
+            if gens is not None:
+                hist = hist[gens]
+                if isinstance(hist, np.ndarray) and hist.ndim == 1: hist = [hist]
+
+            timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in hist]
             fig.add_trace(go.Scatter(x=list(range(len(timeseries))), y=timeseries, mode='lines', name=run.name))
         fig.update_layout(
             title=dict(text=f"Clinic History: {metric.upper()} Evolution", x=0.5),

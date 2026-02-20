@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from ..defaults import defaults
 from ..metrics.evaluator import plot_matrix, hypervolume
 
-def perf_history(*args, metric=None, **kwargs):
+def perf_history(*args, metric=None, gens=None, **kwargs):
     """
     [mb.view.perf_history] Historic Performance Perspective.
     Visualizes metric evolution over time.
@@ -21,10 +21,11 @@ def perf_history(*args, metric=None, **kwargs):
     
     for arg in args:
         if isinstance(arg, MetricMatrix):
-            processed_args.append(arg)
+            # If a matrix is already provided, slice it if gens is specified
+            processed_args.append(arg[gens] if gens is not None else arg)
         else:
-            # Polymorphism: calculate metric if raw object passed
-            processed_args.append(metric(arg))
+            # Polymorphism: calculate metric if raw object passed, passing gens
+            processed_args.append(metric(arg, gens=gens))
             
     return plot_matrix(processed_args, **kwargs)
 

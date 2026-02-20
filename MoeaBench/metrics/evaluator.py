@@ -5,6 +5,7 @@
 
 import numpy as np
 import logging
+from typing import Optional, Union, Any, List
 from .GEN_hypervolume import GEN_hypervolume
 from .GEN_mc_hypervolume import GEN_mc_hypervolume
 from .GEN_igd import GEN_igd
@@ -142,6 +143,12 @@ class MetricMatrix(Reportable):
         
         return "\n".join(lines)
 
+    def __getitem__(self, key: Union[int, slice]) -> 'MetricMatrix':
+        """Supports slicing of the generation axis."""
+        # _data is (G, R), key slices G
+        new_data = self._data[key]
+        return MetricMatrix(new_data, self.metric_name, self.source_name)
+
     def __repr__(self):
         if self._data.size == 1:
             return f"{self._data.item():.6f}"
@@ -194,7 +201,7 @@ class MetricMatrix(Reportable):
         return self._data
 
 
-def _extract_data(data):
+def _extract_data(data, gens: Optional[Union[int, slice]] = None):
     """
     Refines input into 
     (List[RunHistories], List[FinalFronts], SourceName, NumRuns)
@@ -202,11 +209,20 @@ def _extract_data(data):
     from ..core.run import Run, Population
     from ..core.experiment import experiment
 
+    # If gens is int, treat as slice[:gens]
+    if gens is not None and isinstance(gens, int):
+        gens = slice(gens)
+
     if isinstance(data, experiment):
-        return [r.history('nd') for r in data], [r.front() for r in data], data.name, len(data)
+        histories = [r.history('nd') for r in data]
+        if gens is not None:
+             histories = [h[gens] for h in histories]
+        return histories, [r.front() for r in data], data.name, len(data)
     
     if isinstance(data, Run):
-        return [data.history('nd')], [data.front()], data.name, 1
+        h = data.history('nd')
+        if gens is not None: h = h[gens]
+        return [h], [data.front()], data.name, 1
         
     if isinstance(data, Population):
         return [[data.objectives]], [data.objectives], data.label, 1
@@ -221,16 +237,26 @@ def _extract_data(data):
         fronts = []
         for item in data:
             if hasattr(item, 'history'): # Run-like
-                histories.append(item.history('nd'))
+                h = item.history('nd')
+                if gens is not None:
+                    h = h[gens]
+                    if isinstance(h, np.ndarray) and h.ndim == 1: h = [h] # single pop case
+                histories.append(h)
                 fronts.append(item.front())
             else:
                 histories.append([item])
                 fronts.append(item)
+        
+        # Adjust histories if not Run-like but gens provided for top-level list
+        if gens is not None and not hasattr(data, 'history'):
+            histories = histories[gens]
+            fronts = fronts[gens]
+
         return histories, fronts, None, len(histories)
     except:
         raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
 
-def hypervolume(exp, ref=None, mode='auto', n_samples=100000):
+def hypervolume(exp, ref=None, mode='auto', n_samples=100000, gens=None):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
@@ -240,12 +266,13 @@ def hypervolume(exp, ref=None, mode='auto', n_samples=100000):
         ref: Reference set/experiment for normalization.
         mode (str): 'auto' (default), 'exact', or 'fast'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
+        gens (int or slice): Limit calculation to specific generation(s).
     """
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
     
     # 1. Collect all data
-    F_GENs, Fs, name, n_runs = _extract_data(exp)
+    F_GENs, Fs, name, n_runs = _extract_data(exp, gens=gens)
 
     # 2. Normalize (Find Reference Point)
     min_val, max_val = normalize(ref, Fs)
@@ -323,11 +350,11 @@ def get_reference_front(ref_exps, current_fronts):
              
     return merged[~is_dominated]
 
-def _calc_metric(exp, ref, MetricClass, name):
+def _calc_metric(exp, ref, MetricClass, name, gens=None):
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
     
-    F_GENs, Fs, source_name, n_runs = _extract_data(exp)
+    F_GENs, Fs, source_name, n_runs = _extract_data(exp, gens=gens)
 
     # Helper for Hypervolume normalization
     min_val, max_val = normalize(ref, Fs)
@@ -360,7 +387,7 @@ def _calc_metric(exp, ref, MetricClass, name):
         
     return MetricMatrix(mat, name, source_name=source_name)
 
-def gd(exp, ref=None):
+def gd(exp, ref=None, gens=None):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -377,9 +404,9 @@ def gd(exp, ref=None):
         return MetricMatrix(metric.evaluate(), "GD")
 
     from .GEN_gd import GEN_gd
-    return _calc_metric(exp, ref, GEN_gd, "GD")
+    return _calc_metric(exp, ref, GEN_gd, "GD", gens=gens)
 
-def gdplus(exp, ref=None):
+def gdplus(exp, ref=None, gens=None):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -394,9 +421,9 @@ def gdplus(exp, ref=None):
         return MetricMatrix(metric.evaluate(), "GD+")
 
     from .GEN_gdplus import GEN_gdplus
-    return _calc_metric(exp, ref, GEN_gdplus, "GD+")
+    return _calc_metric(exp, ref, GEN_gdplus, "GD+", gens=gens)
 
-def igd(exp, ref=None):
+def igd(exp, ref=None, gens=None):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -411,9 +438,9 @@ def igd(exp, ref=None):
         return MetricMatrix(metric.evaluate(), "IGD")
 
     from .GEN_igd import GEN_igd
-    return _calc_metric(exp, ref, GEN_igd, "IGD")
+    return _calc_metric(exp, ref, GEN_igd, "IGD", gens=gens)
 
-def emd(exp, ref=None):
+def emd(exp, ref=None, gens=None):
     """
     Computes the Earth Mover's Distance (Wasserstein) between population and reference.
     For multivariate data, this implementation uses the average 1D Wasserstein distance 
@@ -442,7 +469,7 @@ def emd(exp, ref=None):
         #    print(f"PTS Shape: {pts.shape}, REF Shape: {r_pts.shape}")
         return np.mean(w_dists)
 
-    F_GENs, Fs, source_name, n_runs = _extract_data(exp)
+    F_GENs, Fs, source_name, n_runs = _extract_data(exp, gen=gen)
     ref_front = get_reference_front(ref, Fs)
     
     # DEBUG
@@ -464,7 +491,7 @@ def emd(exp, ref=None):
         
     return MetricMatrix(mat, "EMD", source_name=source_name)
 
-def igdplus(exp, ref=None):
+def igdplus(exp, ref=None, gens=None):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -479,7 +506,7 @@ def igdplus(exp, ref=None):
         return MetricMatrix(metric.evaluate(), "IGD+")
 
     from .GEN_igdplus import GEN_igdplus
-    return _calc_metric(exp, ref, GEN_igdplus, "IGD+")
+    return _calc_metric(exp, ref, GEN_igdplus, "IGD+", gens=gens)
 
 def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
     """
