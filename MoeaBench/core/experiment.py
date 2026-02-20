@@ -18,25 +18,25 @@ import warnings
 import datetime
 
 class JoinedPopulation:
-    def __init__(self, pops: List[Population], source: Any = None) -> None:
+    def __init__(self, pops: List[Population], source: Any = None, label: str = "Population") -> None:
         self.pops = pops
         self.source = source
-        self.label = "Population"
-        self.name = getattr(source, 'name', 'Population') if source else 'Population'
+        self.label = label
+        self.name = getattr(source, 'name', 'Experiment') if source else 'Experiment'
         
     @property
     def objectives(self) -> SmartArray:
         if not self.pops:
-             return SmartArray(np.array([]), label="Population", axis_label="Objective")
+             return SmartArray(np.array([]), label=self.label, axis_label="Objective")
         data = np.vstack([p.objectives for p in self.pops])
-        return SmartArray(data, label="Population", axis_label="Objective")
+        return SmartArray(data, label=self.label, axis_label="Objective")
 
     @property
     def variables(self) -> SmartArray:
         if not self.pops:
-             return SmartArray(np.array([]), label="Population", axis_label="Variable")
+             return SmartArray(np.array([]), label=self.label, axis_label="Variable")
         data = np.vstack([p.variables for p in self.pops])
-        return SmartArray(data, label="Population", axis_label="Variable")
+        return SmartArray(data, label=self.label, axis_label="Variable")
 
     @property
     def objs(self) -> SmartArray: return self.objectives
@@ -229,7 +229,8 @@ class experiment(Reportable):
         # But "exp.pop().objectives" implies aggregation.
         
         # Let's create a JoinedPopulation
-        return JoinedPopulation([run.pop(gen) for run in self._runs], source=self)
+        label = self._fmt_label("Population", gen)
+        return JoinedPopulation([run.pop(gen) for run in self._runs], source=self, label=label)
 
     def front(self, gen: int = -1) -> SmartArray:
          """Returns the non-dominated front (objectives) from the aggregate cloud (all runs)."""
@@ -248,21 +249,29 @@ class experiment(Reportable):
         """Returns a list of decision sets from all runs."""
         return [run.set(gen) for run in self._runs]
 
+    def _fmt_label(self, base_label: str, gen: int = -1) -> str:
+        """Helper to append generation context to labels if necessary."""
+        if gen != -1:
+             return f"{base_label}, Gen {gen}"
+        return base_label
+
     def superfront(self, gen: int = -1) -> SmartArray:
         """[Deprecated] Returns the non-dominated front considering all runs combined. Use exp.front() instead."""
         p = self.pop(gen)
         # Create a combined population to apply global filtering
-        combined = Population(p.objectives, p.variables, source=self, label="Non-dominated")
+        label = self._fmt_label("Non-dominated", gen)
+        combined = Population(p.objectives, p.variables, source=self, label=label)
         res = combined.non_dominated().objectives
-        if hasattr(res, 'name'): res.name = self.name
+        if hasattr(res, 'name'): res.name = self.name or "Experiment"
         return res
 
     def superset(self, gen: int = -1) -> SmartArray:
         """[Deprecated] Returns the non-dominated decision set considering all runs combined. Use exp.set() instead."""
         p = self.pop(gen)
-        combined = Population(p.objectives, p.variables, source=self, label="Non-dominated")
+        label = self._fmt_label("Non-dominated", gen)
+        combined = Population(p.objectives, p.variables, source=self, label=label)
         res = combined.non_dominated().variables
-        if hasattr(res, 'name'): res.name = self.name
+        if hasattr(res, 'name'): res.name = self.name or "Experiment"
         return res
 
     def non_front(self, gen: int = -1) -> SmartArray:
@@ -277,14 +286,16 @@ class experiment(Reportable):
          """Returns the dominated Population from the aggregate cloud at gen."""
          p = self.pop(gen)
          # Filter global cloud for dominated individuals
-         pop = Population(p.objectives, p.variables, source=self, label="Dominated", gen=gen)
+         label = self._fmt_label("Dominated", gen)
+         pop = Population(p.objectives, p.variables, source=self, label=label, gen=gen)
          return pop.dominated()
 
     def non_dominated(self, gen: int = -1) -> Population:
          """Returns the non-dominated Population from the aggregate cloud at gen."""
          p = self.pop(gen)
          # Filter global cloud for non-dominated individuals
-         pop = Population(p.objectives, p.variables, source=self, label="Non-dominated", gen=gen)
+         label = self._fmt_label("Non-dominated", gen)
+         pop = Population(p.objectives, p.variables, source=self, label=label, gen=gen)
          return pop.non_dominated()
 
     def optimal(self, n_points: int = 500) -> Population:

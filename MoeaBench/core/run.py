@@ -137,6 +137,19 @@ class Run:
         
         return Population(objs, vars, source=self, gen=gen)
 
+    def _fmt_label(self, base_label: str, gen: int = -1) -> str:
+        """Helper to append run and generation context."""
+        pieces = [base_label]
+        
+        # Always include run index if available to disambiguate from aggregate
+        if self.index is not None:
+            pieces.append(f"Run {self.index}")
+            
+        if gen != -1:
+             pieces.append(f"Gen {gen}")
+             
+        return ", ".join(pieces)
+
     def front(self, gen: int = -1) -> Union[SmartArray, Any]:
         """
         Returns the non-dominated objectives (Pareto Front) at a generation.
@@ -147,60 +160,68 @@ class Run:
         Returns:
             SmartArray: The Pareto front as an objective matrix.
         """
+        request_gen = gen
         if gen < 0:
             gen = len(self._F_nd_history) + gen
             
         if 0 <= gen < len(self._F_nd_history):
+            label = self._fmt_label("Pareto Front", request_gen)
             return SmartArray(self._F_nd_history[gen], 
-                              label="Pareto Front", 
+                              label=label, 
                               axis_label="Objective", 
                               source=self, 
                               gen=gen)
         
         # Fallback to dynamic calculation if history missing
-        return self.non_dominated(gen).objectives
+        return self.non_dominated(request_gen).objectives
 
     def set(self, gen: int = -1) -> Union[SmartArray, Any]:
         """Returns the non-dominated decision variables at a generation."""
+        request_gen = gen
         if gen < 0:
             gen = len(self._X_nd_history) + gen
             
         if 0 <= gen < len(self._X_nd_history):
+            label = self._fmt_label("Pareto Set", request_gen)
             return SmartArray(self._X_nd_history[gen], 
-                              label="Pareto Set", 
+                              label=label, 
                               axis_label="Variable", 
                               source=self, 
                               gen=gen)
         
-        return self.non_dominated(gen).variables
+        return self.non_dominated(request_gen).variables
 
     def non_front(self, gen: int = -1) -> Union[SmartArray, Any]:
         """Returns the dominated objectives at a generation."""
+        request_gen = gen
         if gen < 0:
             gen = len(self._F_dom_history) + gen
             
         if 0 <= gen < len(self._F_dom_history):
+            label = self._fmt_label("Dominated Front", request_gen)
             return SmartArray(self._F_dom_history[gen], 
-                              label="Dominated Front", 
+                              label=label, 
                               axis_label="Objective", 
                               source=self, 
                               gen=gen)
         
-        return self.dominated(gen).objectives
+        return self.dominated(request_gen).objectives
 
     def non_set(self, gen: int = -1) -> Union[SmartArray, Any]:
         """Returns the dominated decision variables at a generation."""
+        request_gen = gen
         if gen < 0:
             gen = len(self._X_dom_history) + gen
             
         if 0 <= gen < len(self._X_dom_history):
+            label = self._fmt_label("Dominated Set", request_gen)
             return SmartArray(self._X_dom_history[gen], 
-                              label="Dominated Set", 
+                              label=label, 
                               axis_label="Variable", 
                               source=self, 
                               gen=gen)
         
-        return self.dominated(gen).variables
+        return self.dominated(request_gen).variables
         
     def non_dominated(self, gen: int = -1) -> 'Population':
         """Returns the non-dominated Population at a generation."""
