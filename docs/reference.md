@@ -400,17 +400,18 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
 
 A matrix of metric values (Generations x Runs).
 
-**Accessors:**
-*   **`.values`** (*np.ndarray*): Raw data matrix.
-*   **`.runs(idx=-1)`**: Returns the metric trajectory over generations for a specific run.
-*   **`.gens(idx=-1)`**: Returns the metric distribution across all runs for a specific generation.
+**Reduction Methods (Return `float`):**
+*   **`.mean(n=-1)`**: Returns the average value of the metric at generation $n$.
+*   **`.std(n=-1)`**: Returns the standard deviation at generation $n$.
+*   **`.best(n=-1)`**: Returns the best value at generation $n$ (handles min/max automatically).
 
-**Convenience Properties (Final State):**
-*   **`.last`** / **`.mean`** (*float*): The average value of the metric in the final generation.
-*   **`.std`** (*float*): The standard deviation in the final generation.
-*   **`.best`** (*float*): The best value in the final generation (handles min/max automatically).
-*   **`.final`** / **`.last_gen`** (*np.ndarray*): The distribution of values (all runs) in the final generation.
-*   **`.last_run`** (*np.ndarray*): The trajectory (all generations) of the final run.
+**Selection Methods (Return `np.ndarray` vector):**
+*   **`.gen(n=-1)`**: Returns the distribution of values (all runs) for generation $n$.
+*   **`.run(i=-1)`**: Returns the trajectory (all generations) for run $i$.
+
+**Property Shortcuts:**
+*   **`.last`**: Property returning the final mean value (shortcut for `.mean()`).
+*   **`.values`**: Raw $G \times R$ data matrix.
 
 **Convenience Features**:
 *   **Float Conversion**: If the matrix contains a single value (e.g., from a single population), it can be cast directly to `float(mat)` or used in f-strings with numeric formatters (e.g., `f"{mat:.4f}"`).

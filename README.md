@@ -18,7 +18,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Introduction
 
-> **Version 0.10.9**
+> **Version 0.11.0**
 
 MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 

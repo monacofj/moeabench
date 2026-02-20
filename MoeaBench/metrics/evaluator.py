@@ -167,79 +167,53 @@ class MetricMatrix(Reportable):
     def __array__(self):
         return self._data
         
-    def runs(self, idx=-1):
+    def run(self, i=-1):
         """
         Returns the metric trajectory (all generations) for a specific run.
         defaults to the last run (-1).
-        
-        Args:
-            idx (int): Run index.
-            
-        Returns:
-            np.ndarray: 1D array of metric values over time.
         """
         if self._data.ndim == 1:
             return self._data
-        return self._data[:, idx]
+        return self._data[:, i]
 
-    def gens(self, idx=-1):
+    def gen(self, n=-1):
         """
         Returns the metric distribution (all runs) for a specific generation.
         Defaults to the last generation (-1).
-        
-        Args:
-            idx (int): Generation index.
-            
-        Returns:
-            np.ndarray: 1D array of metric values across runs.
         """
-        return self._data[idx, :]
+        return self._data[n, :]
+
+    # Legacy Aliases
+    def runs(self, idx=-1): return self.run(idx)
+    def gens(self, idx=-1): return self.gen(idx)
         
     @property
     def values(self):
         """Returns the raw numpy array (Generations x Runs)."""
         return self._data
 
-    @property
-    def last_gen(self):
-        """Returns the distribution of the final generation (alias for .gens(-1))."""
-        return self.gens(-1)
-
-    @property
-    def final(self):
-        """Returns the distribution of the final generation (alias for .gens(-1))."""
-        return self.gens(-1)
-
-    @property
-    def last_run(self):
-        """Returns the trajectory of the final run (alias for .runs(-1))."""
-        return self.runs(-1)
-
-    @property
-    def mean(self):
-        """Returns the mean value of the metric at the final generation."""
-        final_dist = self.gens(-1)
-        return float(np.mean(final_dist[np.isfinite(final_dist)]))
 
     @property
     def last(self):
-        """Returns the mean value of the metric at the final generation (alias for .mean)."""
-        return self.mean
+        """Shortcut for the mean value of the final generation."""
+        return self.mean()
 
-    @property
-    def std(self):
-        """Returns the standard deviation of the metric at the final generation."""
-        final_dist = self.gens(-1)
-        return float(np.std(final_dist[np.isfinite(final_dist)]))
+    def mean(self, n=-1):
+        """Returns the mean value of the metric at generation n."""
+        dist = self.gen(n)
+        return float(np.mean(dist[np.isfinite(dist)]))
 
-    @property
-    def best(self):
-        """Returns the best value of the metric at the final generation (handles minimization for IGD/GD)."""
-        final_dist = self.gens(-1)
-        valid = final_dist[np.isfinite(final_dist)]
+    def std(self, n=-1):
+        """Returns the standard deviation of the metric at generation n."""
+        dist = self.gen(n)
+        return float(np.std(dist[np.isfinite(dist)]))
+
+    def best(self, n=-1):
+        """Returns the best value of the metric at generation n (handles min/max logic)."""
+        dist = self.gen(n)
+        valid = dist[np.isfinite(dist)]
         if not len(valid): return np.nan
         
-        # Check if lower is better
         if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
             return float(np.min(valid))
         return float(np.max(valid))

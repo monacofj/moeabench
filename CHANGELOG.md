@@ -12,6 +12,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.11.0] - 2026-02-20
+
+### Changed
+- **Unified Metric API**: Refactored `MetricMatrix` to a consistent "Reduction vs. Selection" model. Statistics (`mean`, `std`, `best`) are now methods that return scalars by default, while `gen` and `run` methods return vectors. 
+- **API Simplification**: Removed redundant properties (`last_gen`, `last_run`, `final`) in favor of the unified method-based selector.
+- **Convenience Shortcut**: Added `.last` property as a direct shortcut for the final mean performance.
+
 ## [0.10.9] - 2026-02-20
 
 ### Fixed
