@@ -98,27 +98,31 @@ class MetricMatrix(Reportable):
 
     def report(self, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
+        use_md = kwargs.get('markdown', False)
         data = self._data
         if data.size == 0:
+            if use_md:
+                return f"### Metric Report: {self.metric_name}\n**Status**: No data available"
             return f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
 
         # Distribution at the last generation
-        # data is (G, R), so data[-1, :] is the final distribution
         final_dist = data[-1, :]
         valid_final = final_dist[np.isfinite(final_dist)]
         
         if len(valid_final) == 0:
+            if use_md:
+                return f"### Metric Report: {self.metric_name}\n**Status**: All values are NaN"
             return f"--- Metric Report: {self.metric_name} ---\n  Status: All values are NaN"
 
         mean = np.mean(valid_final)
         std = np.std(valid_final)
         best = np.max(valid_final) # Assuming higher is better (Hypervolume)
-        # Check if it might be IGD/GD where lower is better
         if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
             best = np.min(valid_final)
 
         cv = std / (abs(mean) + 1e-9)
         prec = defaults.precision
+        source_info = f" ({self.source_name})" if self.source_name else ""
 
         if cv < defaults.cv_tolerance:
             stability = f"High (CV={cv:.{prec}f} < {defaults.cv_tolerance})"
@@ -127,19 +131,32 @@ class MetricMatrix(Reportable):
         else:
             stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
 
-        source_info = f" ({self.source_name})" if self.source_name else ""
-        
-        lines = [
-            f"--- Metric Report: {self.metric_name}{source_info} ---",
-            f"  Final Performance (Last Gen):",
-            f"    - Mean: {mean:.{prec}f}",
-            f"    - StdDev: {std:.{prec}f}",
-            f"    - Best: {best:.{prec}f}",
-            f"  Search Dynamics:",
-            f"    - Runs: {data.shape[1]}",
-            f"    - Generations: {data.shape[0]}",
-            f"    - Stability: {stability}"
-        ]
+        if use_md:
+            lines = [
+                f"### Metric Report: {self.metric_name}{source_info}",
+                "",
+                "#### Final Performance (Last Gen)",
+                f"- **Mean**: {mean:.{prec}f}",
+                f"- **StdDev**: {std:.{prec}f}",
+                f"- **Best**: {best:.{prec}f}",
+                "",
+                "#### Search Dynamics",
+                f"- **Runs**: {data.shape[1]}",
+                f"- **Generations**: {data.shape[0]}",
+                f"- **Stability**: {stability}"
+            ]
+        else:
+            lines = [
+                f"--- Metric Report: {self.metric_name}{source_info} ---",
+                f"  Final Performance (Last Gen):",
+                f"    - Mean: {mean:.{prec}f}",
+                f"    - StdDev: {std:.{prec}f}",
+                f"    - Best: {best:.{prec}f}",
+                f"  Search Dynamics:",
+                f"    - Runs: {data.shape[1]}",
+                f"    - Generations: {data.shape[0]}",
+                f"    - Stability: {stability}"
+            ]
         
         return "\n".join(lines)
 

@@ -22,5 +22,8 @@ class SimpleStatsValue(StatsResult):
         
     def __float__(self): return float(self.value)
     
-    def report(self) -> str:
+    def report(self, **kwargs) -> str:
+        use_md = kwargs.get('markdown', False)
+        if use_md:
+            return f"**{self.name}**: {self.value:.4f}"
         return f"--- {self.name} ---\n  Value: {self.value:.4f}"

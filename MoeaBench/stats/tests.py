@@ -43,30 +43,59 @@ class HypothesisTestResult(StatsResult):
     def significant(self) -> bool:
         return self.p_value < defaults.alpha if self.p_value is not None else False
 
-    def report(self) -> str:
+    def report(self, **kwargs) -> str:
+        use_md = kwargs.get('markdown', False)
         name1 = getattr(self.data1, 'name', 'Group A')
         name2 = getattr(self.data2, 'name', 'Group B')
+        prec = defaults.precision
         
-        lines = [
-            f"--- {self.name} Test Report ---",
-            f"  Comparison: {name1} vs {name2}",
-            f"  Alternative: {self.alternative}",
-            f"  Statistic: {self.statistic:.4f}",
-        ]
-        
-        if self.p_value is not None:
-            lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha={defaults.alpha})")
+        if use_md:
+            header = f"### {self.name} Test Report"
+            lines = [
+                header,
+                "",
+                f"**Comparison**: {name1} vs {name2}",
+                f"**Alternative**: {self.alternative}",
+                f"**Statistic**: {self.statistic:.4f}",
+            ]
             
-        lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label} [>{defaults.a12_medium} Large])")
-        
-        # Narrative interpretation
-        if self.significant:
-            better = name1 if self.perf_probability > 0.5 else name2
-            lines.append(f"\nConclusion: There is a statistically significant difference (p < {defaults.alpha}) favoring {better}.")
-        elif self.p_value is not None:
-            lines.append(f"\nConclusion: No statistically significant difference detected.")
+            if self.p_value is not None:
+                sig_text = "Significant" if self.significant else "Not Significant"
+                status_color = "green" if self.significant else "gray"
+                lines.append(f"**P-Value**: {self.p_value:.6f} (<span style='color:{status_color}'>{sig_text}</span> at alpha={defaults.alpha})")
+                
+            lines.append(f"**A12 Effect Size**: {self.perf_probability:.4f} ({self.effect_size_label})")
+            
+            # Narrative interpretation
+            if self.significant:
+                better = name1 if self.perf_probability > 0.5 else name2
+                lines.append(f"\n> **Conclusion**: There is a statistically significant difference favoring **{better}**.")
+            elif self.p_value is not None:
+                lines.append(f"\n> **Conclusion**: No statistically significant difference detected.")
+            else:
+                lines.append(f"\n> **Note**: Only Effect Size calculated (A12={self.perf_probability:.4f}).")
+
         else:
-            lines.append(f"\nNote: Only Effect Size calculated (A12={self.perf_prob:.4f}).")
+            lines = [
+                f"--- {self.name} Test Report ---",
+                f"  Comparison: {name1} vs {name2}",
+                f"  Alternative: {self.alternative}",
+                f"  Statistic: {self.statistic:.4f}",
+            ]
+            
+            if self.p_value is not None:
+                lines.append(f"  P-Value:   {self.p_value:.6f} ({'Significant' if self.significant else 'Not Significant'} at alpha={defaults.alpha})")
+                
+            lines.append(f"  A12 Effect Size: {self.perf_probability:.4f} ({self.effect_size_label})")
+            
+            # Narrative interpretation
+            if self.significant:
+                better = name1 if self.perf_probability > 0.5 else name2
+                lines.append(f"\nConclusion: There is a statistically significant difference (p < {defaults.alpha}) favoring {better}.")
+            elif self.p_value is not None:
+                lines.append(f"\nConclusion: No statistically significant difference detected.")
+            else:
+                lines.append(f"\nNote: Only Effect Size calculated (A12={self.perf_probability:.4f}).")
             
         return "\n".join(lines)
 
@@ -210,32 +239,70 @@ class DistMatchResult(StatsResult):
             return [k for k, v in self.results.items() if v >= self.threshold]
         return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < self.alpha]
 
-    def report(self) -> str:
+    def report(self, **kwargs) -> str:
+        use_md = kwargs.get('markdown', False)
         space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
-        lines = [
-            f"--- Distribution Match Report ({self.method.upper()}) ---",
-            f"  Analysed Space: {space_label}",
-            f"  Global Status:  {'CONSISTENT' if self.is_consistent else 'DIVERGENT'}",
-            f"  Criteria:       {'alpha=' + str(self.alpha) if self.method != 'emd' else 'threshold=' + str(self.threshold)}",
-            f"  Dimensions:     {len(self.results)} axes tested",
-            "\n  Dimensional Analysis:"
-        ]
+        status_label = 'CONSISTENT' if self.is_consistent else 'DIVERGENT'
         
-        for idx, res in self.results.items():
-            name = f"Axis {idx + 1}"
-            if self.method == 'emd':
-                val_str = f"EMD={res:.4f}"
-                sig_str = "(Divergent)" if res >= self.threshold else "(Match)"
-            else:
-                p_val = getattr(res, 'p_value', 1.0)
-                val_str = f"p={p_val:.4f}"
-                sig_str = "(Divergent)" if p_val < self.alpha else "(Match)"
-            lines.append(f"    {name:<10}: {val_str:<10} {sig_str}")
+        if use_md:
+            status_color = "green" if self.is_consistent else "red"
+            header = f"### Distribution Match Report ({self.method.upper()})"
+            lines = [
+                header,
+                "",
+                f"**Analysed Space**: {space_label}",
+                f"**Global Status**: <span style='color:{status_color}'>**{status_label}**</span>",
+                f"**Criteria**: {'alpha=' + str(self.alpha) if self.method != 'emd' else 'threshold=' + str(self.threshold)}",
+                f"**Dimensions**: {len(self.results)} axes tested",
+                "",
+                "#### Dimensional Analysis",
+                "| Axis | Result | Verdict |",
+                "| :--- | :--- | :--- |"
+            ]
+            
+            for idx, res in self.results.items():
+                name = f"Axis {idx + 1}"
+                if self.method == 'emd':
+                    val_str = f"{res:.4f}"
+                    match = res < self.threshold
+                else:
+                    p_val = getattr(res, 'p_value', 1.0)
+                    val_str = f"p={p_val:.4f}"
+                    match = p_val >= self.alpha
+                
+                verdict = "Match" if match else "**Divergent**"
+                lines.append(f"| {name} | {val_str} | {verdict} |")
 
-        if not self.is_consistent:
-            lines.append(f"\nConclusion: Topologies differ significantly in dimensions: {self.failed_axes}")
+            if not self.is_consistent:
+                lines.append(f"\n> **Conclusion**: Topologies differ significantly in dimensions: {self.failed_axes}")
+            else:
+                lines.append("\n> **Conclusion**: The distributions are statistically equivalent across all axes.")
+
         else:
-            lines.append("\nConclusion: The distributions are statistically equivalent across all axes.")
+            lines = [
+                f"--- Distribution Match Report ({self.method.upper()}) ---",
+                f"  Analysed Space: {space_label}",
+                f"  Global Status:  {status_label}",
+                f"  Criteria:       {'alpha=' + str(self.alpha) if self.method != 'emd' else 'threshold=' + str(self.threshold)}",
+                f"  Dimensions:     {len(self.results)} axes tested",
+                "\n  Dimensional Analysis:"
+            ]
+            
+            for idx, res in self.results.items():
+                name = f"Axis {idx + 1}"
+                if self.method == 'emd':
+                    val_str = f"EMD={res:.4f}"
+                    sig_str = "(Divergent)" if res >= self.threshold else "(Match)"
+                else:
+                    p_val = getattr(res, 'p_value', 1.0)
+                    val_str = f"p={p_val:.4f}"
+                    sig_str = "(Divergent)" if p_val < self.alpha else "(Match)"
+                lines.append(f"    {name:<10}: {val_str:<10} {sig_str}")
+
+            if not self.is_consistent:
+                lines.append(f"\nConclusion: Topologies differ significantly in dimensions: {self.failed_axes}")
+            else:
+                lines.append("\nConclusion: The distributions are statistically equivalent across all axes.")
             
         return "\n".join(lines)
 

@@ -87,6 +87,56 @@ class experiment(Reportable):
     def name(self, value: str) -> None: self._name = value
     
     @property
+    def year(self) -> int:
+        """Returns the publication/experiment year."""
+        return self._year
+    @year.setter
+    def year(self, value: int) -> None:
+        """Sets the publication/experiment year."""
+        self._year = value
+
+    def report(self, **kwargs) -> str:
+        """Narrative report of the experiment configuration and metadata."""
+        use_md = kwargs.get('markdown', False)
+        
+        mop_name = getattr(self.mop, 'name', str(self.mop)) if self.mop else "None"
+        moea_name = getattr(self.moea, 'name', str(self.moea)) if self.moea else "None"
+        
+        # Meta info
+        n_runs = len(self._runs)
+        status = "Executed" if n_runs > 0 else "Configured (Not run)"
+        
+        if use_md:
+            header = f"# Experiment: {self.name}"
+            lines = [
+                header,
+                "",
+                f"**Status**: {status}",
+                f"**Problem (MOP)**: {mop_name}",
+                f"**Algorithm (MOEA)**: {moea_name}",
+                "",
+                "## Metadata",
+                f"- **Author(s)**: {self.authors or 'Not set'}",
+                f"- **License**: {self.license}",
+                f"- **Year**: {self.year}",
+                f"- **Successful Runs**: {n_runs}"
+            ]
+        else:
+            header = f"--- Experiment Report: {self.name} ---"
+            lines = [
+                header,
+                f"  Status:    {status}",
+                f"  Problem:   {mop_name}",
+                f"  Algorithm: {moea_name}",
+                "  Metadata:",
+                f"    - Authors: {self.authors or 'Not set'}",
+                f"    - License: {self.license}",
+                f"    - Year:    {self.year}",
+                f"    - Runs:    {n_runs}"
+            ]
+            
+        return "\n".join(lines)
+    @property
     def repeat(self) -> int:
         """Returns the default number of repetitions for this experiment."""
         return self._repeat
