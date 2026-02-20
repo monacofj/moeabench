@@ -18,7 +18,7 @@ class Defaults:
     """
     def __init__(self):
         # --- Execution Defaults ---
-        self.population = 150
+        self.population = 100
         self.generations = 300
         self.seed = 1
         

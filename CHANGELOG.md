@@ -12,6 +12,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.7] - 2026-02-20
+
+### Fixed
+- **Algorithm Compatibility**: Updated default population size from 150 to **100** to ensure "out-of-the-box" compatibility with NSGA-II (which requires a multiple of 4 for tournament selection).
+
+## [0.10.6] - 2026-02-20
+
+### Added
+- **Smart Arguments Pattern**: Implemented automatic normalization of the `gens` parameter across the visualization layer. Passing an integer (e.g., `gens=100`) is now correctly interpreted as a slice (`[:100]`), ensuring intuitive "Limit" behavior.
+- **Architectural Documentation**: Added formal definitions for **Smart Arguments** and **Cloud-centric Delegation** patterns in the technical guides.
+- **Documentation Summary**: Introduced Table of Contents with anchor links to `reference.md` and `userguide.md` for improved navigation.
+
+### Changed
+- **API Consistency**: Renamed the `gen` parameter to `gens` across the remaining diagnostic functions for universal consistency with the temporal viz layer.
+
 ## [0.10.1] - 2026-02-19
 
 ### Added
