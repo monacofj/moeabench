@@ -419,8 +419,8 @@ A matrix of metric values (Generations x Runs).
 **Example:**
 ```python
 hv = mb.metrics.hv(exp)
-final_gen_dist = hv.gens() # Distribution at final generation
-first_run_traj = hv.runs(0) # Trajectory of first run
+final_gen_dist = hv.gen() # Distribution at final generation
+first_run_traj = hv.run(0) # Trajectory of first run
 
 # Single value case
 val = mb.metrics.hv(exp.last_pop)

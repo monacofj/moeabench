@@ -18,12 +18,36 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
 
 ## **Summary**
 1.  **[Introduction: Design Philosophy](#1-introduction-design-philosophy)**
-2.  **[Getting Started: Minimal Example](#2-getting-started-minimal-working-example)**
+2.  **[Getting Started: Minimal Working Example](#2-getting-started-minimal-working-example)**
 3.  **[Statistical Rigor: Stochastic Experimentation](#3-statistical-rigor-stochastic-experimentation)**
-4.  **[Data Architecture & Access Patterns](#4-the-data-hierarchy-accessing-results)**
-5.  **[Data Filtering & Extraction](#5-data-filtering-and-extraction)**
-6.  **[Analytical Domains](#7-analytical-domains)** (Topography, Performance, Stratification)
-7.  **[Algorithmic Diagnostics](#9-algorithmic-diagnostics-and-pathology-detection)** (Clinical Q-Scores)
+    - [Repeated Executions](#repeated-executions)
+    - [Cloud Aggregation](#cloud-aggregation)
+    - [Joint Universe (`ref`)](#the-ref-argument-defining-the-universe)
+    - [Custom Stop Criteria](#custom-stop-criteria)
+4.  **[Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**
+    - [Selection Patterns](#example)
+    - [Ergonomic Aliases](#ergonomic-aliases-layer-4)
+5.  **[Data Filtering and Extraction](#5-data-filtering-and-extraction)**
+6.  **[Analytical Domains](#7-analytical-domains)**
+    - [7.1. Topography (Metric Space)](#71-topography-metric-space-analysis)
+    - [7.2. Performance (Metric Trajectories)](#72-performance-metric-trajectories)
+    - [7.3. Stratification (Population Structure)](#73-stratification-population-structure)
+7.  **[Statistical Analysis (`mb.stats`)](#8-statistical-analysis-mbstats)**
+    - [8.1. Hypothesis Testing & Significance](#81-hypothesis-testing--significance)
+8.  **[Algorithmic Diagnostics and Pathology Detection](#9-algorithmic-diagnostics-and-pathology-detection)**
+    - [9.1. Diagnostic Ontology](#91-diagnostic-ontology)
+    - [9.2. Physical Metrics (FAIR Principles)](#92-physical-metrics-fair-principles)
+    - [9.3. Clinical Normalization (Q-Scores)](#93-clinical-normalization-q-scores)
+    - [9.4. Diagnostic Instruments](#94-diagnostic-instruments) (Radar, ECDF, Distribution, History)
+    - [9.5. Reporting Interface & Auditing](#95-reporting-interface-and-auditing-workflow)
+    - [9.6. Validation Hierarchy & Baselines](#96-the-validation-hierarchy)
+9.  **[Extensibility: Custom Plugins](#10-extensibility-plugging-your-algorithm)**
+    - [Custom MOP & MOEA Plugins](#custom-mop-plugin)
+    - [Calibration & Sidecar Workflow](#101-mop-plugin-support-and-calibration)
+10. **[Persistence and Export](#11-persistence-save-and-load)**
+    - [Saving and Loading](#11-persistence-save-and-load)
+    - [Data Export (CSV)](#12-data-export-csv)
+11. **[Architectural Decisions](#16-architectural-decisions-and-engineering-values)**
 
 ---
 
@@ -425,8 +449,9 @@ res.report_show()
 > **Metric Aliases**: For convenience, `mb.metrics.hv` is provided as a permanent alias for `mb.metrics.hypervolume`.
 
 # 2. Raw Access
-raw = res.values   # (G, R) matrix
-last = res.gens()  # Metrics of the last generation
+traj = res.mean        # Vector of all generation means
+last = res.last        # Scalar value of final generation
+dist = res.gen()       # Distribution of final generation
 ```
 
 **The output is something like:**
