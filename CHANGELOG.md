@@ -12,6 +12,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.10.8] - 2026-02-20
+
+### Added
+- **Metric Shortcuts**: Introduced convenience properties to `MetricMatrix` for direct access to final state statistics: `.mean` (or `.last`), `.std`, `.best`, `.final` (distribution), and `.last_run`.
+- **Improved Temporal Slicing**: Fixed a bug where `gens=-1` incorrectly excluded the final generation. It now correctly targets only the last generation.
+
 ## [0.10.7] - 2026-02-20
 
 ### Fixed

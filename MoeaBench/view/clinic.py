@@ -234,7 +234,10 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
     """
     # Smart Arguments: Normalize gens (int -> slice)
     if gens is not None and isinstance(gens, int):
-        gens = slice(gens)
+        if gens == -1:
+            gens = slice(-1, None)
+        else:
+            gens = slice(gens)
 
     mode = _resolve_mode(mode)
     is_exp = hasattr(target, 'runs')

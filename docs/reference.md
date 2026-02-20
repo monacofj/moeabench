@@ -398,15 +398,19 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
     *   `gens` (*int* or *slice*): Range of generations.
 *   **Returns**: `MetricMatrix`.
 
-### **`MetricMatrix` Object**
 A matrix of metric values (Generations x Runs).
 
 **Accessors:**
 *   **`.values`** (*np.ndarray*): Raw data matrix.
-*   **`.runs(idx=-1)`**: Returns the metric trajectory over generations for a specific run index.
-    *   *Default*: Last run (`-1`).
-*   **`.gens(idx=-1)`**: Returns the metric distribution across all runs for a specific generation index.
-    *   *Default*: Last generation (`-1`).
+*   **`.runs(idx=-1)`**: Returns the metric trajectory over generations for a specific run.
+*   **`.gens(idx=-1)`**: Returns the metric distribution across all runs for a specific generation.
+
+**Convenience Properties (Final State):**
+*   **`.last`** / **`.mean`** (*float*): The average value of the metric in the final generation.
+*   **`.std`** (*float*): The standard deviation in the final generation.
+*   **`.best`** (*float*): The best value in the final generation (handles min/max automatically).
+*   **`.final`** / **`.last_gen`** (*np.ndarray*): The distribution of values (all runs) in the final generation.
+*   **`.last_run`** (*np.ndarray*): The trajectory (all generations) of the final run.
 
 **Convenience Features**:
 *   **Float Conversion**: If the matrix contains a single value (e.g., from a single population), it can be cast directly to `float(mat)` or used in f-strings with numeric formatters (e.g., `f"{mat:.4f}"`).

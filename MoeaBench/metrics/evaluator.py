@@ -200,6 +200,50 @@ class MetricMatrix(Reportable):
         """Returns the raw numpy array (Generations x Runs)."""
         return self._data
 
+    @property
+    def last_gen(self):
+        """Returns the distribution of the final generation (alias for .gens(-1))."""
+        return self.gens(-1)
+
+    @property
+    def final(self):
+        """Returns the distribution of the final generation (alias for .gens(-1))."""
+        return self.gens(-1)
+
+    @property
+    def last_run(self):
+        """Returns the trajectory of the final run (alias for .runs(-1))."""
+        return self.runs(-1)
+
+    @property
+    def mean(self):
+        """Returns the mean value of the metric at the final generation."""
+        final_dist = self.gens(-1)
+        return np.mean(final_dist[np.isfinite(final_dist)])
+
+    @property
+    def last(self):
+        """Returns the mean value of the metric at the final generation (alias for .mean)."""
+        return self.mean
+
+    @property
+    def std(self):
+        """Returns the standard deviation of the metric at the final generation."""
+        final_dist = self.gens(-1)
+        return np.std(final_dist[np.isfinite(final_dist)])
+
+    @property
+    def best(self):
+        """Returns the best value of the metric at the final generation (handles minimization for IGD/GD)."""
+        final_dist = self.gens(-1)
+        valid = final_dist[np.isfinite(final_dist)]
+        if not len(valid): return np.nan
+        
+        # Check if lower is better
+        if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
+            return np.min(valid)
+        return np.max(valid)
+
 
 def _extract_data(data, gens: Optional[Union[int, slice]] = None):
     """
@@ -211,7 +255,10 @@ def _extract_data(data, gens: Optional[Union[int, slice]] = None):
 
     # If gens is int, treat as slice[:gens]
     if gens is not None and isinstance(gens, int):
-        gens = slice(gens)
+        if gens == -1:
+            gens = slice(-1, None)
+        else:
+            gens = slice(gens)
 
     if isinstance(data, experiment):
         histories = [r.history('nd') for r in data]

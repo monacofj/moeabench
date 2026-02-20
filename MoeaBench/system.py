@@ -7,84 +7,101 @@ import importlib.util
 
 def version() -> str:
     """Returns the current MoeaBench version."""
-    return "0.10.7"
+    return "0.10.8"
 
 def check_dependencies():
     """Prints a report of installed optional dependencies."""
-    deps = ["pymoo", "deap", "plotly", "pandas", "numpy", "scipy", "tqdm"]
-    print("--- MoeaBench Dependency Check ---")
+    deps = ["numpy", "matplotlib", "pandas", "plotly", "IPython", "joblib"]
+    print(f"--- MoeaBench v{version()} Dependency Report ---")
     for dep in deps:
-        status = "Installed" if importlib.util.find_spec(dep) else "NOT FOUND"
-        print(f"{dep:<15}: {status}")
+        spec = importlib.util.find_spec(dep)
+        status = "INSTALLED" if spec is not None else "MISSING"
+        print(f"  - {dep:<12}: {status}")
+    
+    # Check for moea engines
+    engines = ["pymoo", "deap"]
+    print("\n--- MOEA Engines ---")
+    for eng in engines:
+        spec = importlib.util.find_spec(eng)
+        status = "AVAILABLE" if spec is not None else "UNAVAILABLE"
+        print(f"  - {eng:<12}: {status}")
 
-def export_objectives(data, filename: str = None):
+def export_objectives(data, filename=None):
     """
-    [mb.system.export_objectives] Exports objectives to a CSV file.
+    Exports Pareto Front/objectives to a CSV file.
     
     Args:
-        data: Experiment, Population, or array-like object.
-        filename: Output filename. Defaults to <name>_objectives.csv.
+        data: Experiment, Run, Population or objective array.
+        filename (str): Output CSV path.
     """
-    objs, name = _resolve_data(data, mode='objectives')
-    if not filename:
-        prefix = name if name else "experiment"
-        filename = f"{prefix}_objectives.csv"
+    from .metrics.evaluator import _extract_data
+    _, fronts, name, _ = _extract_data(data)
     
-    _save_to_csv(objs, filename, prefix='f')
-
-def export_variables(data, filename: str = None):
-    """
-    [mb.system.export_variables] Exports decision variables to a CSV file.
-    
-    Args:
-        data: Experiment, Population, or array-like object.
-        filename: Output filename. Defaults to <name>_variables.csv.
-    """
-    vars, name = _resolve_data(data, mode='variables')
-    if not filename:
-        prefix = name if name else "experiment"
-        filename = f"{prefix}_variables.csv"
-        
-    _save_to_csv(vars, filename, prefix='x')
-
-def _resolve_data(data, mode='objectives'):
-    """Internal helper to extract data and name from different MoeaBench objects."""
+    if len(fronts) == 0:
+         print("Warning: No objective data to export.")
+         return
+         
     import numpy as np
+    import os
     
-    name = getattr(data, 'name', None)
-    if not name:
-        name = getattr(data, 'label', None)
+    # Merge if multiple fronts (Experiment case)
+    final_objs = np.vstack(fronts)
     
-    # Empty strings should be treated as None for naming defaults
-    if not name:
-        name = None
-
-    if mode == 'objectives':
-        if hasattr(data, 'front'):
-            return data.front(), name
-        if hasattr(data, 'objs'):
-            return data.objs, name
-    else: # variables
-        if hasattr(data, 'set'):
-            return data.set(), name
-        if hasattr(data, 'vars'):
-            return data.vars, name
-            
-    return np.asarray(data), name
-
-def _save_to_csv(data, filename, prefix='col'):
-    """Internal helper to save data to CSV with optional headers."""
-    import numpy as np
-    data = np.asarray(data)
-    if data.ndim == 1:
-        data = data.reshape(-1, 1)
-        
+    if filename is None:
+        filename = f"{name}_objectives.csv".replace(" ", "_").lower()
+    
+    # Header
+    M = final_objs.shape[1]
+    header = ",".join([f"f{i+1}" for i in range(M)])
+    
     try:
         import pandas as pd
-        cols = [f"{prefix}{i+1}" for i in range(data.shape[1])]
-        df = pd.DataFrame(data, columns=cols)
+        df = pd.DataFrame(final_objs, columns=[f"f{i+1}" for i in range(M)])
         df.to_csv(filename, index=False)
-        print(f"Data exported to {filename}")
     except ImportError:
-        np.savetxt(filename, data, delimiter=",")
-        print(f"Data exported to {filename} (using numpy, no headers)")
+        np.savetxt(filename, final_objs, delimiter=",", header=header, comments='')
+        
+    print(f"Objectives exported to: {os.path.abspath(filename)}")
+
+def export_variables(data, filename=None):
+    """
+    Exports Pareto Set/variables to a CSV file.
+    """
+    from .core.experiment import experiment
+    from .core.run import Run, Population
+    
+    if isinstance(data, experiment):
+        vars_list = [r.variables() for r in data]
+        name = data.name
+    elif isinstance(data, Run):
+        vars_list = [data.variables()]
+        name = data.name
+    elif isinstance(data, Population):
+        vars_list = [data.variables]
+        name = data.label
+    elif isinstance(data, np.ndarray):
+        vars_list = [data]
+        name = "Array"
+    else:
+        print("Error: export_variables requires Experiment, Run, Population or ndarray.")
+        return
+
+    import numpy as np
+    import os
+    
+    final_vars = np.vstack([v for v in vars_list if v is not None])
+    
+    if filename is None:
+        filename = f"{name}_variables.csv".replace(" ", "_").lower()
+        
+    N = final_vars.shape[1]
+    header = ",".join([f"x{i+1}" for i in range(N)])
+
+    try:
+        import pandas as pd
+        df = pd.DataFrame(final_vars, columns=[f"x{i+1}" for i in range(N)])
+        df.to_csv(filename, index=False)
+    except ImportError:
+        np.savetxt(filename, final_vars, delimiter=",", header=header, comments='')
+        
+    print(f"Variables exported to: {os.path.abspath(filename)}")

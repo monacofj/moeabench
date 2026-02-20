@@ -18,7 +18,10 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
         
     # Smart Arguments: Normalize gens (int -> slice)
     if gens is not None and isinstance(gens, int):
-        gens = slice(gens)
+        if gens == -1:
+            gens = slice(-1, None)
+        else:
+            gens = slice(gens)
 
     processed_args = []
     from ..metrics.evaluator import MetricMatrix
