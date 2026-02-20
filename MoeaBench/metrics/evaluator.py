@@ -219,7 +219,7 @@ class MetricMatrix(Reportable):
     def mean(self):
         """Returns the mean value of the metric at the final generation."""
         final_dist = self.gens(-1)
-        return np.mean(final_dist[np.isfinite(final_dist)])
+        return float(np.mean(final_dist[np.isfinite(final_dist)]))
 
     @property
     def last(self):
@@ -230,7 +230,7 @@ class MetricMatrix(Reportable):
     def std(self):
         """Returns the standard deviation of the metric at the final generation."""
         final_dist = self.gens(-1)
-        return np.std(final_dist[np.isfinite(final_dist)])
+        return float(np.std(final_dist[np.isfinite(final_dist)]))
 
     @property
     def best(self):
@@ -241,8 +241,8 @@ class MetricMatrix(Reportable):
         
         # Check if lower is better
         if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
-            return np.min(valid)
-        return np.max(valid)
+            return float(np.min(valid))
+        return float(np.max(valid))
 
 
 def _extract_data(data, gens: Optional[Union[int, slice]] = None):
