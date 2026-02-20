@@ -66,6 +66,8 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 *   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
 *   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
+*   **Scientific Common Goods (CC0)**: By default, experiments with unspecified authors are licensed under **CC0-1.0** to ensure maximum scientific openness and reproducibility.
+*   **Zero-Config Reporting**: Reporting functions (`.report()`) employ introspection to discover variable names and display comprehensive metadata automatically.
 
 ---
 
@@ -96,14 +98,20 @@ The `view.perf_shape` function will produce a plot showing the topography of the
 ![Pareto Front](images/hello_space.png)
 *Figure 1: Spatial Perspective: Final Population snapshot projected in 3D.*
 
+#### **Performance: Convergence trajectories**
+MoeaBench offers several viz perspectives for performance:
+- `mb.view.perf_history`: Evolution of Hypervolume (default), IGD, GD, etc.
+- `mb.view.perf_front_size`: Evolution of the non-dominated front density (ratio).
+- `mb.view.perf_spread`: Comparative performance distributions at specific generations.
+- `mb.view.perf_density`: Statistical density of attainment.
 And the `view.perf_history` function will produce a plot showing the hypervolume convergence along generations.
 
 ![Convergence](images/hello_time.png)
 *Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
 
-*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment.
+*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment. MoeaBench automatically discovers the name of the variable assigned to the experiment object, so `exp.name` is often optional.
 *   `exp.authors = "Monaco F. J."` $\to$ Assigns authorship for reproducibility.
-*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs).
+*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs). If not specified, defaults to **CC0-1.0**.
 *   `exp.year = 2026` $\to$ Sets the publication year.
 *   `exp.run()` $\to$ Orchestrates the actual optimization process.
 *   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.

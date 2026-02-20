@@ -682,4 +682,92 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         )
         fig.show()
 
+def front_size(exp, mode='run', gens=None):
+    """
+    Calculates the proportion of non-dominated individuals (Front Size)
+    relative to the total population size at each generation.
+    Returns a MetricMatrix (G x R) or (G x 1) if mode='consensus'.
+
+    Args:
+        exp: Experiment, Run, or Population object.
+        mode (str): 'run' (per-run ratio) or 'consensus' (superfront density).
+        gens (int or slice): Limit calculation to specific generation(s).
+    """
+    # 1. Data extraction logic
+    from ..core.run import Run, Population
+    from ..core.experiment import experiment
+    from ..stats.stratification import strata
+    
+    if isinstance(exp, experiment):
+        histories = [r.history('f') for r in exp._runs]
+        name = exp.name
+    elif isinstance(exp, Run):
+        histories = [exp.history('f')]
+        name = exp.name
+    elif isinstance(exp, Population):
+        histories = [[exp.objectives]]
+        name = exp.label
+    elif isinstance(exp, np.ndarray):
+        histories = [[exp]]
+        name = "Array"
+    else:
+        from .evaluator import _extract_data
+        histories, _, name, _ = _extract_data(exp, gens=gens)
+
+    # 2. Slice generations if requested
+    if gens is not None and not isinstance(exp, Population):
+        g_slice = slice(-1, None) if gens == -1 else (gens if isinstance(gens, slice) else slice(gens))
+        histories = [h[g_slice] for h in histories]
+
+    n_runs = len(histories)
+    max_gens = max(len(h) for h in histories) if histories else 0
+    mode = str(mode).lower()
+    
+    if mode == 'consensus':
+        # AGGREGATE MODE: (G x 1) matrix
+        mat = np.full((max_gens, 1), np.nan)
+        for g_idx in range(max_gens):
+            pops_at_g = []
+            for r_h in histories:
+                if g_idx < len(r_h) and r_h[g_idx] is not None:
+                    pops_at_g.append(r_h[g_idx])
+            
+            if not pops_at_g:
+                continue
+                
+            combined_objs = np.vstack(pops_at_g)
+            try:
+                # Calculate non-dominance ratio on the combined cloud
+                s_res = strata(Population(combined_objs))
+                n_nd = np.sum(s_res.rank_array == 1)
+                mat[g_idx, 0] = n_nd / len(combined_objs)
+            except Exception:
+                mat[g_idx, 0] = 1.0 # Fallback
+                
+        label = f"Front Size (Consensus)"
+    else:
+        # PER-RUN MODE: (G x R) matrix
+        mat = np.full((max_gens, n_runs), np.nan)
+        for r_idx, h_run in enumerate(histories):
+            for g_idx, pop_data in enumerate(h_run):
+                if pop_data is None or len(pop_data) == 0:
+                    mat[g_idx, r_idx] = 0.0
+                    continue
+                
+                try:
+                    active_pop = Population(pop_data) if isinstance(pop_data, np.ndarray) else pop_data
+                    s_res = strata(active_pop)
+                    n_nd = np.sum(s_res.rank_array == 1)
+                    n_tot = len(pop_data)
+                    mat[g_idx, r_idx] = n_nd / n_tot
+                except Exception:
+                    mat[g_idx, r_idx] = 1.0
+        
+        label = f"Front Size (Ratio)"
+
+    return MetricMatrix(mat, metric_name=label, source_name=name)
+
+# Alias for convenience
+nd_ratio = front_size
+
 # TODO: Add IGD, GD, etc. same pattern.

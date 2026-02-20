@@ -42,8 +42,12 @@ class Reportable:
         return f"<{self.__class__.__name__} (call .report() or .report_show() for context)>"
 
     def _repr_pretty_(self, p, cycle):
-        """Rich representation for Jupyter/IPython."""
+        """Rich representation for Jupyter/IPython (Text)."""
         if cycle:
             p.text(str(self))
             return
-        p.text(self.report())
+        p.text(self.report(markdown=False))
+
+    def _repr_markdown_(self):
+        """Rich representation for Jupyter/IPython (Markdown)."""
+        return self.report(markdown=True)

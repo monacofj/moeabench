@@ -160,3 +160,20 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     
     plt.show()
     return fig
+def perf_front_size(*args, mode='run', title=None, **kwargs):
+    """
+    [mb.view.perf_front_size] Non-Dominated Density Perspective.
+    Visualizes the evolution of the non-dominated front size (percentage) over generations.
+    """
+    from ..metrics.evaluator import front_size
+    if title is None: 
+        if str(mode).lower() == 'consensus':
+            title = "Consensus Ratio (Superfront Density)"
+        else:
+            title = "Non-Dominated Population Ratio"
+            
+    # Wrap metric to pass mode
+    metric_fn = lambda x, gens=None: front_size(x, mode=mode, gens=gens)
+    metric_fn.__name__ = "Ratio"
+    
+    return perf_history(*args, metric=metric_fn, title=title, **kwargs)

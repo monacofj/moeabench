@@ -58,8 +58,8 @@ class experiment(Reportable):
         self._repeat: int = 1
         
         # Scientific Metadata
-        self._authors: Optional[str] = None
-        self._license: str = "GPL-3.0-or-later" # Default project license
+        self._authors: Optional[str] = authors if 'authors' in locals() else None
+        self._license: str = "GPL-3.0-or-later" 
         self._year: int = datetime.date.today().year
 
         
@@ -95,45 +95,102 @@ class experiment(Reportable):
         """Sets the publication/experiment year."""
         self._year = value
 
+    def _repr_markdown_(self):
+        """Rich representation for Jupyter/IPython."""
+        return self.report(markdown=True)
+
     def report(self, **kwargs) -> str:
         """Narrative report of the experiment configuration and metadata."""
         use_md = kwargs.get('markdown', False)
         
-        mop_name = getattr(self.mop, 'name', str(self.mop)) if self.mop else "None"
-        moea_name = getattr(self.moea, 'name', str(self.moea)) if self.moea else "None"
+        # 1. Name Detection (Smart discovery if default)
+        name = self._name
+        if name == "experiment":
+            try:
+                import inspect
+                frame = inspect.currentframe().f_back
+                for var_name, var_val in frame.f_locals.items():
+                    if var_val is self:
+                        name = var_name
+                        break
+            except Exception:
+                pass
+
+        # 2. License/Author logic: If no author, force CC0
+        license_str = self.license
+        if not self.authors or self.authors.strip() == "":
+            license_str = "CC0-1.0"
+
+        # 3. Resolve Component Metadata
+        mop_name = getattr(self.mop, 'name', self.mop.__class__.__name__) if self.mop else "None"
+        moea_name = getattr(self.moea, 'name', self.moea.__class__.__name__) if self.moea else "None"
         
+        mop_info = []
+        if self.mop:
+            if hasattr(self.mop, 'M'): mop_info.append(f"M={self.mop.M}")
+            if hasattr(self.mop, 'N'): mop_info.append(f"N={self.mop.N}")
+        
+        moea_info = []
+        if self.moea:
+            if hasattr(self.moea, 'population'): moea_info.append(f"Pop={self.moea.population}")
+            if hasattr(self.moea, 'generations'): moea_info.append(f"Gens={self.moea.generations}")
+
         # Meta info
         n_runs = len(self._runs)
         status = "Executed" if n_runs > 0 else "Configured (Not run)"
         
+        # Consensus Front Size (Aggregate Cloud Density)
+        consensus_line = None
+        if n_runs > 1:
+            try:
+                from ..metrics.evaluator import front_size
+                # We calculate for the final generation only to keep report fast
+                c_matrix = front_size(self, mode='consensus', gens=-1)
+                c_ratio = float(c_matrix.last)
+                
+                # Total individuals across all runs (final gen)
+                total_inds = sum(len(run.pop()) for run in self._runs)
+                survived = int(round(c_ratio * total_inds))
+                consensus_line = f"{survived}/{total_inds} ({c_ratio*100:.1f}%) globally non-dominated"
+            except Exception:
+                pass
+
         if use_md:
-            header = f"# Experiment: {self.name}"
+            header = f"### Experiment: {name}"
             lines = [
                 header,
-                "",
-                f"**Status**: {status}",
-                f"**Problem (MOP)**: {mop_name}",
-                f"**Algorithm (MOEA)**: {moea_name}",
-                "",
-                "## Metadata",
-                f"- **Author(s)**: {self.authors or 'Not set'}",
-                f"- **License**: {self.license}",
-                f"- **Year**: {self.year}",
-                f"- **Successful Runs**: {n_runs}"
+                f"  - **Status**:    {status}",
+                f"  - **Problem**:   {mop_name} ({', '.join(mop_info)})",
+                f"  - **Algorithm**: {moea_name} ({', '.join(moea_info)})",
+                f"  - **Stop**:      {self.stop or 'Default'}",
+                "  - **Metadata**:"
             ]
-        else:
-            header = f"--- Experiment Report: {self.name} ---"
-            lines = [
-                header,
-                f"  Status:    {status}",
-                f"  Problem:   {mop_name}",
-                f"  Algorithm: {moea_name}",
-                "  Metadata:",
-                f"    - Authors: {self.authors or 'Not set'}",
-                f"    - License: {self.license}",
+            lines.extend([
+                f"    - Authors: {self.authors or 'Anonymous'}",
+                f"    - License: {license_str}",
                 f"    - Year:    {self.year}",
-                f"    - Runs:    {n_runs}"
-            ]
+                f"    - Runs:    {n_runs} of {self.repeat}"
+            ])
+            if consensus_line:
+                lines.append(f"    - Consensus: {consensus_line}")
+                
+            return "\n".join(lines)
+
+        # Plain Text
+        lines = [
+            f"--- Experiment Report: {name} ---",
+            f"  Status:    {status}",
+            f"  Problem:   {mop_name} ({', '.join(mop_info)})",
+            f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
+            f"  Stop:      {self.stop or 'Default'}",
+            "  Metadata:",
+            f"    - Authors: {self.authors or 'Anonymous'}",
+            f"    - License: {license_str}",
+            f"    - Year:    {self.year}",
+            f"    - Runs:    {n_runs} of {self.repeat}"
+        ]
+        if consensus_line:
+            lines.append(f"    - Consensus: {consensus_line}")
             
         return "\n".join(lines)
     @property
@@ -401,36 +458,6 @@ class experiment(Reportable):
         """Delegates evaluation to the internal MOP."""
         return self.mop.evaluation(X, n_ieq_constr)
          
-    # Reporting
-    def report(self, **kwargs) -> str:
-        """Narrative report of the experiment's configuration and status."""
-        mop_name = self.mop.__class__.__name__ if self.mop else "None"
-        moea_name = self.moea.__class__.__name__ if self.moea else "None"
-        
-        m_objs = getattr(self.mop, 'M', '?') if self.mop else '?'
-        n_vars = getattr(self.mop, 'N', '?') if self.mop else '?'
-        
-        n_runs = len(self._runs)
-        status = "[OK] Populated" if n_runs > 0 else "[EMPTY] Empty (Not run)"
-        
-        lines = [
-            f"--- Experiment Report: {self.name} ---",
-            f"  Status: {status}",
-            f"  Problem (MOP): {mop_name} (Objectives={m_objs}, Variables={n_vars})",
-            f"  Algorithm (MOEA): {moea_name}",
-            f"  Configuration: {n_runs}/{self.repeat} runs completed"
-        ]
-        
-        if self.authors:
-            lines.insert(1, f"  Authors: {self.authors}")
-        if self.license:
-            lines.insert(2, f"  License: {self.license} (c) {self.year}")
-        
-        if n_runs > 0:
-            last_gen = len(self._runs[0])
-            lines.append(f"  Timeline: ~{last_gen} generations per run")
-            
-        return "\n".join(lines)
 
     # Execution
     def run(self, repeat: Optional[int] = None, workers: Optional[int] = None, 

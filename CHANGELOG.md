@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unified Metric API**: Refactored `MetricMatrix` to a consistent "Reduction vs. Selection" model. Statistics (`mean`, `std`, `best`) are now methods that return scalars by default, while `gen` and `run` methods return vectors. 
 - **API Simplification**: Removed redundant properties (`last_gen`, `last_run`, `final`) in favor of the unified method-based selector.
 - **Convenience Shortcut**: Added `.last` property as a direct shortcut for the final mean performance.
+- **New Metric: Front Size**: Added `mb.metrics.front_size` (alias `nd_ratio`) to calculate the proportion of non-dominated individuals (0.0 to 1.0) per generation.
+- **New Visualization: Front Density**: Added `mb.view.perf_front_size` to track non-dominated set size evolution.
+- **Advanced Experiment Reporting**: 
+    - Automated **CC0-1.0** license assignment for anonymous authors.
+    - Implementation of **Smart Name Detection** via caller frame introspection.
+    - Enriched metadata display including problem dimensionality, algorithm settings, and stop criteria.
+- **Scientific Persistence Layer v2**: Expanded `metadata.json` schema to include structured context (mop, moea, stop, repeat) for improved structured traceability.
 
 ## [0.10.9] - 2026-02-20
 

@@ -46,6 +46,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
 | **SP** | Spacing | Measure of the spread/uniformity of the solution set. |
+| **ND-Ratio** | Front Size | Proportion of non-dominated individuals (0.0 to 1.0). See `front_size`. |
 | **EMD** | Earth Mover's Distance | Wasserstein metric measuring topological/distributional similarity. |
 | **ADR** | Architecture Decision Record | Document capturing a significant architectural decision. |
 | **EAF** | Empirical Attainment Function | Statistical description of the outcomes of stochastic solvers. |
@@ -62,8 +63,9 @@ The "Smart Argument" pattern allow functions to be polymorphic and context-aware
 *   **Automatic Extraction**: If a metric is requested, the function automatically identifies and extracts the required space (Pareto front for experiments, population objectives for snapshots).
 *   **Temporal Slicing (`gens`)**: Numerical arguments passed to `gens` are automatically normalized into slices (e.g., `gens=100` $\to$ `slice(100)`), ensuring intuitive "limit" behavior across the entire API.
 
-### **2. Cloud-centric Delegation**
-The `experiment` object acts as a semantic proxy for all its constituent `Run` instances. Methods called at the experiment level (e.g., `.front()`, `.run()`, `.pop()`) are delegated to the **Aggregated Cloud** of results, returning results that represent the statistical consensus of the multi-run ensemble.
+*   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
+*   **Scientific Metadata & CC0**: Integrated support for SPDX licenses. If no author is provided, experiments automatically default to **CC0-1.0** to promote scientific common goods.
+*   **Introspective Naming**: Experiments attempt to automatically discover their variable name from the caller's scope for clearer reporting.
 
 ---
 
@@ -144,6 +146,13 @@ The top-level container for multi-objective optimization research.
 *   **Arguments**:
     *   `n` (*int*): Number of points to sample. Defaults to `500`.
 *   **Returns**: `Population`.
+
+#### **`.report(markdown=False)`**
+*   **Description**: Narrative report of the experiment configuration and metadata.
+*   **Arguments**:
+    - `markdown` (*bool*): If `True`, returns rich GitHub-flavored Markdown. Defaults to `False`.
+*   **Returns**: `str`.
+*   **Scientific Logic**: If no author is provided, automatically assigns the **CC0-1.0** license.
 
 #### **`.save(path, mode='all')`** / **`.load(path, mode='all')`**
 *   **Description**: Persists/Restores the experiment state.
@@ -234,16 +243,24 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ### **2.2. Performance Analysis (`mb.view.perf_*`)**
 
-#### **`perf_history(*args, metric=None, gens=None, ...)`**
+#### **`perf_history(*args, metric=hv, ...)`**
 *   **Permanent Alias**: `timeplot`.
-*   **Description**: Plots the evolution of a scalar metric over generations.
+*   **Description**: Primary convergence perspective (Metric Trajectory).
 *   **Arguments**:
-    *   `*args`: `experiment`, `Run`, or `MetricMatrix` objects.
-    *   `metric` (*callable*): The metric function to calculate. Defaults to `mb.metrics.hv`.
+    *   `*args`: Datasets to compare.
+    *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
+    *   `gens` (*int* or *slice*): Specific generations to plot.
         *   **Standard Metrics**: `mb.metrics.hv`, `mb.metrics.igd`, `mb.metrics.gd`, `mb.metrics.emd`.
         *   **Clinical Metrics**: `mb.diagnostics.headway`, `mb.diagnostics.coverage`, `mb.diagnostics.gap`, `mb.diagnostics.regularity`, `mb.diagnostics.balance`.
     *   `gens` (*int* or *slice*): Limit calculation to specific generation(s). 
         *   Example: `gens=50` (first 50), `gens=slice(20, 80)` (range).
+*   **Returns**: `Figure`.
+
+#### **`perf_front_size(*args, mode='run', ...)`**
+*   **Description**: Non-Dominated Density Perspective. Tracks how many individuals are on the Pareto front.
+*   **Arguments**:
+    *   `*args`: Datasets to compare.
+    *   `mode` (*str*): `'run'` or `'consensus'`.
 *   **Returns**: `Figure`.
 
 #### **`perf_spread(*args, metric=None, gen=-1, ...)`**
@@ -372,6 +389,26 @@ exp.run()
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
 ### **5.1. Metric Calculation**
+
+#### **`mb.metrics.front_size(data, mode='run', gens=None)`**
+*   **Description**: Calculates the proportion of non-dominated individuals (Front Size) relative to the total population size (0.0 to 1.0).
+*   **Permanent Alias**: `nd_ratio`.
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, or `Population`.
+    *   `mode` (*str*):
+        - `'run'` (Default): Returns ratio per individual run ($G \times R$).
+        - `'consensus'`: Returns the **Consensus Ratio** ($G \times 1$).
+    *   `gens`: Temporal limit.
+*   **Returns**: `MetricMatrix`.
+
+#### **Scientific Rationale: Consensus Ratio**
+The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independent runs by evaluating the non-dominance of the aggregated population cloud.
+
+| $C_g$ Value | Interpretation | Scientific Insight |
+| :--- | :--- | :--- |
+| **High ($\approx 1.0$)** | **Exploratory** | Runs find completely different regions. Potential lack of convergence or vast front. |
+| **Low ($\to 1/R$)** | **Redundancy** | Runs converge to the same front. Results are highly reliable and saturated. |
+| **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
 #### **`mb.metrics.hv(data, ref=None, mode='auto', gens=None)`**
 *   **Description**: Calculates Hypervolume evolution ($G \times R$).

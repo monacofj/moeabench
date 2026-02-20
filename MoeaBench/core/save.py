@@ -86,7 +86,11 @@ class save:
             "authors": obj.authors,
             "license": obj.license,
             "year": obj.year,
-            "mode": mode
+            "mode": mode,
+            "mop": obj.mop.__class__.__name__ if obj.mop else None,
+            "moea": obj.moea.__class__.__name__ if obj.moea else None,
+            "stop": str(obj.stop) if obj.stop else None,
+            "repeat": obj.repeat
         }
         
         # 0.1 Create README.md with SPDX headers
