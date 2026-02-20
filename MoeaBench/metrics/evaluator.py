@@ -79,18 +79,12 @@ class MetricMatrix(Reportable):
     A matrix (Generations x Runs) of metric values.
     """
     def __init__(self, data, metric_name="Metric", source_name=None):
-        self._data = np.array(data) # Shape (G, R) or (R, G)? 
-        # Usually we want Trajectories as rows or columns?
-        # API says:
-        # hv.runs[i] -> Trajectory (all gens)
-        # hv.gens[i] -> Distribution (all runs)
+        self._data = np.array(data) 
         
-        # Let's say shape is (Runs, Gens) for storage, transposing for API if needed.
-        # But API doc says: "Returns a matrix ... lines are gens, columns are runs"
-        # So shape is (G, R).
-        
+        # Internal Storage Policy: (Generations, Runs)
+        # We ensure it's always 2D
         if self._data.ndim == 1:
-             # Single run case
+             # Case: Array of generations for a single run
              self._data = self._data.reshape(-1, 1)
              
         self.metric_name = metric_name
@@ -161,10 +155,22 @@ class MetricMatrix(Reportable):
         return "\n".join(lines)
 
     def __getitem__(self, key: Union[int, slice]) -> 'MetricMatrix':
-        """Supports slicing of the generation axis."""
-        # _data is (G, R), key slices G
-        new_data = self._data[key]
+        """
+        Selectors: Consistent with Experiment indexing (by Run).
+        Selects columns (Runs) from the Generations x Runs matrix.
+        """
+        # _data is (G, R), key slices R (axis 1)
+        if isinstance(key, int):
+            # Preserve 2D shape (G, 1) to remain a MetricMatrix object
+            new_data = self._data[:, key:key+1]
+        else:
+            new_data = self._data[:, key]
+            
         return MetricMatrix(new_data, self.metric_name, self.source_name)
+
+    def __len__(self):
+        """Returns the number of runs (consistent with Experiment)."""
+        return self._data.shape[1]
 
     def __repr__(self):
         if self._data.size == 1:

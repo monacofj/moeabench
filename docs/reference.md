@@ -435,23 +435,30 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
     *   `gens` (*int* or *slice*): Range of generations.
 *   **Returns**: `MetricMatrix`.
 
-A matrix of metric values (Generations x Runs).
+### **5.2. Unified Metric Analysis API (`MetricMatrix`)**
 
-**Reduction Methods (Return `float`):**
-*   **`.mean(n=-1)`**: Returns the average value of the metric at generation $n$.
-*   **`.std(n=-1)`**: Returns the standard deviation at generation $n$.
-*   **`.best(n=-1)`**: Returns the best value at generation $n$ (handles min/max automatically).
+Performance functions return a `MetricMatrix`, a multi-dimensional diagnostic object that encapsulates the generational trajectories across all experimental runs. It provides a formal, high-level interface for statistical analysis and temporal navigation.
 
-**Selection Methods (Return `np.ndarray` vector):**
-*   **`.gen(n=-1)`**: Returns the distribution of values (all runs) for generation $n$.
-*   **`.run(i=-1)`**: Returns the trajectory (all generations) for run $i$.
+#### **Indexing and Hierarchy**
+The `MetricMatrix` indexing logic is strictly aligned with the `Experiment` hierarchy to preserve conceptual consistency. Every `MetricMatrix` follows a **Run-centric** indexing scheme:
+*   **`mm[i]`**: Selects the temporal trajectory of **Run $i$** (consistent with `exp[i]`). This operation returns a new `MetricMatrix` containing all generations for that specific run, preserving the object-oriented diagnostic capabilities.
+*   **`len(mm)`**: Returns the number of **Runs** present in the dataset (consistent with `len(exp)`).
 
-**Property Shortcuts:**
-*   **`.last`**: Property returning the final mean value (shortcut for `.mean()`).
-*   **`.values`**: Raw $G \times R$ data matrix.
+#### **Temporal vs. Cross-Sectional Selectors**
+To distinguish between temporal trajectories and cross-sectional distributions, the following explicit selectors are provided:
+*   **`.gen(n)`**: Returns a NumPy vector representing the distribution of all runs at generation $n$. By default, $n=-1$ selects the final experimental state.
+*   **`.run(i)`** (Semantically identical to `mm[i]`): Returns the complete trajectory (all generations) for run $i$ as a NumPy vector.
 
-**Convenience Features**:
-*   **Float Conversion**: If the matrix contains a single value (e.g., from a single population), it can be cast directly to `float(mat)` or used in f-strings with numeric formatters (e.g., `f"{mat:.4f}"`).
+#### **Statistical Selectors (Academic Reductions)**
+These methods reduce the multi-run distribution at a specific generation to a single representative scalar ($float$):
+*   **`.mean(n=-1)`**: Computes the arithmetic mean across all runs at generation $n$.
+*   **`.std(n=-1)`**: Computes the standard deviation at generation $n$, serving as a measure of algorithmic stability and reliability.
+*   **`.best(n=-1)`**: Identifies the optimal performance value at generation $n$. This method is context-aware and automatically handles the minimization/maximization logic intrinsic to the specific metric.
+*   **`.last`**: A property shortcut representing the mean performance at the final generation. This is the primary scalar used for peer-reviewed algorithm comparisons.
+
+#### **Advanced Numerical Access**
+*   **`.values`**: Provides direct access to the underlying NumPy matrix of shape $(Generations, Runs)$.
+*   **Polymorphic Casting**: If the `MetricMatrix` contains a single numerical value (e.g., after a reduction), it can be cast directly to a primitive float using `float(mm)` or formatted using standard numeric specifications (e.g., `f"{mm:.4f}"`).
 
 **Example:**
 ```python
