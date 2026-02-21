@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .topo import (topo_shape, topo_bands, topo_gap, topo_density)
-from .perf import perf_history, perf_spread, perf_density, perf_front_size
+from .perf import perf_history, perf_spread, perf_density, perf_front_size, perf_hv
 from .strat import (strat_ranks, strat_caste, strat_tiers)
 from .clinic import (clinic_ecdf, clinic_distribution, clinic_history, clinic_radar)
 
@@ -19,7 +19,8 @@ timeplot = perf_history
 
 __all__ = [
     "topo_shape", "topo_bands", "topo_gap", "topo_density",
-    "perf_history", "perf_spread", "perf_density",
+    "perf_history", "perf_spread", "perf_density", "perf_front_size",
+    "perf_hv",
     "strat_ranks", "strat_caste", "strat_tiers",
     "clinic_ecdf", "clinic_distribution", "clinic_history", "clinic_radar",
     "spaceplot", "timeplot"

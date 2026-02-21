@@ -363,11 +363,17 @@ class experiment(Reportable):
         return base_label
 
     def superfront(self, gen: int = -1) -> SmartArray:
-        """[Deprecated] Returns the non-dominated front considering all runs combined. Use exp.front() instead."""
-        p = self.pop(gen)
-        # Create a combined population to apply global filtering
-        label = self._fmt_label("Non-dominated", gen)
-        combined = Population(p.objectives, p.variables, source=self, label=label)
+        """Returns the non-dominated front considering all runs combined."""
+        fronts = self.all_fronts(gen)
+        if not fronts:
+            return SmartArray(np.array([]), label=self._fmt_label("Superfront", gen), axis_label="Objective")
+            
+        combined_objs = np.vstack(fronts)
+        
+        # apply global filtering
+        from ..core.run import Population
+        label = self._fmt_label("Superfront", gen)
+        combined = Population(combined_objs, label=label)
         res = combined.non_dominated().objectives
         if hasattr(res, 'name'): res.name = self.name or "Experiment"
         return res

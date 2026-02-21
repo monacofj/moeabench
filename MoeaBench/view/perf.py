@@ -23,6 +23,16 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
         else:
             gens = slice(gens)
 
+    # Separate Metric Args from Plotting Args
+    plot_keys = {'title', 'show_bounds', 'mode', 'show'} 
+    metric_kwargs = {k: v for k, v in kwargs.items() if k not in plot_keys}
+
+    # Dynamic Benchmarking (Context Injection): 
+    # If multiple experiments are provided and no reference is specified, 
+    # we use the union of all inputs as the benchmark to ensure comensurability.
+    if 'ref' not in metric_kwargs and len(args) > 1:
+        metric_kwargs['ref'] = list(args)
+
     processed_args = []
     from ..metrics.evaluator import MetricMatrix
     
@@ -177,3 +187,11 @@ def perf_front_size(*args, mode='run', title=None, **kwargs):
     metric_fn.__name__ = "Ratio"
     
     return perf_history(*args, metric=metric_fn, title=title, **kwargs)
+
+def perf_hv(*args, title="Hypervolume Convergence", **kwargs):
+    """
+    [mb.view.perf_hv] Hypervolume Convergence Perspective.
+    Visualizes Hypervolume evolution with automatic Dynamic Referencing.
+    """
+    from ..metrics.evaluator import hypervolume
+    return perf_history(*args, metric=hypervolume, title=title, **kwargs)

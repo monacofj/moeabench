@@ -411,12 +411,16 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 | **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
 #### **`mb.metrics.hv(data, ref=None, mode='auto', gens=None)`**
-*   **Description**: Calculates Hypervolume evolution ($G \times R$).
+*   **Description**: Calculates Hypervolume evolution with **Dynamic Referencing**.
+*   **Behavior**:
+    - **Self-Benchmarking**: `hv(exp)` automatically normalizes all runs by the best front found in the experiment. The best performer reaches **1.0**.
+    - **Comparative Benchmarking**: `hv(exp1, exp2)` normalizes both by the best front found in either. The superior algorithm approaches **1.0**.
+    - **Validation**: `hv(exp, ref=GT)` normalizes by the provided ground truth set.
 *   **Arguments**:
-    *   `data`: `experiment`, `Run`, or `Population`.
-    *   `ref`: Reference point (automatic Nadir if `None`).
-    *   `mode` (*str*): `'auto'`, `'exact'`, or `'fast'`.
-    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+    - `data`: `experiment`, `Run`, or `Population`.
+    - `ref`: Explicit reference set for normalization (Optional).
+    - `mode` (*str*): `'auto'`, `'exact'`, or `'fast'`.
+    - `gens` (*int* or *slice*): Limit calculation to specific generation(s).
 *   **Returns**: `MetricMatrix`.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**

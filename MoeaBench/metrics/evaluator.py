@@ -13,6 +13,7 @@ from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
 from .GEN_igdplus import GEN_igdplus
 from ..core.base import Reportable
+from ..core.run import Population
 from ..defaults import defaults
 
 # We need the helper logic from analyse to calculate reference points
@@ -358,6 +359,35 @@ def hypervolume(exp, ref=None, mode='auto', n_samples=100000, gens=None):
             length = min(len(values), max_gens)
             mat[:length, r_idx] = values[:length]
         
+    # --- 4. Dynamic Benchmarking ---
+    # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling
+    # --- 4. Dynamic Benchmarking ---
+    # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling.
+    if ref:
+        # A) Explicit Reference (e.g., Ground Truth or Baseline Experiment)
+        if not isinstance(ref, list): ref_list = [ref]
+        else: ref_list = ref
+        
+        ref_hvs = []
+        for r in ref_list:
+            _, r_fs, _, _ = _extract_data(r)
+            for f in r_fs:
+                if len(f) > 0:
+                    if mode == 'fast' or (mode == 'auto' and M > 6):
+                        m = GEN_mc_hypervolume([f], M, min_val, max_val, n_samples=n_samples)
+                    else:
+                        m = GEN_hypervolume([f], M, min_val, max_val)
+                    ref_hvs.append(float(m.evaluate()[0]))
+        
+        ref_hv_val = np.max(ref_hvs) if ref_hvs else 0
+    else:
+        # B) Implicit Self-Reference (Best run in current data)
+        # The best final result observed in the provided runs hits 1.0.
+        ref_hv_val = np.nanmax(mat[-1, :]) if mat.size > 0 else 0
+
+    if ref_hv_val > 0:
+        mat /= ref_hv_val
+
     return MetricMatrix(mat, "Hypervolume", source_name=name)
 
 def get_reference_front(ref_exps, current_fronts):
@@ -613,7 +643,8 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         ax.set_xlabel("Generation")
         ax.set_ylabel(plot_name)
         ax.legend()
-        plt.show()
+        if kwargs.get('show', True):
+            plt.show()
         
     else:
         import plotly.graph_objects as go
@@ -686,7 +717,8 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
             yaxis_title=plot_name,
             hovermode='closest'
         )
-        fig.show()
+        if kwargs.get('show', True):
+            fig.show()
 
 def front_size(exp, mode='run', gens=None):
     """
