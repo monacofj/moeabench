@@ -410,18 +410,18 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 | **Low ($\to 1/R$)** | **Redundancy** | Runs converge to the same front. Results are highly reliable and saturated. |
 | **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
-#### **`mb.metrics.hv(data, ref=None, mode='auto', gens=None)`**
-*   **Description**: Calculates Hypervolume evolution with **Dynamic Referencing**.
-*   **Behavior**:
-    - **Self-Benchmarking**: `hv(exp)` automatically normalizes all runs by the best front found in the experiment. The best performer reaches **1.0**.
-    - **Comparative Benchmarking**: `hv(exp1, exp2)` normalizes both by the best front found in either. The superior algorithm approaches **1.0**.
-    - **Validation**: `hv(exp, ref=GT)` normalizes by the provided ground truth set.
-*   **Arguments**:
-    - `data`: `experiment`, `Run`, or `Population`.
-    - `ref`: Explicit reference set for normalization (Optional).
-    - `mode` (*str*): `'auto'`, `'exact'`, or `'fast'`.
-    - `gens` (*int* or *slice*): Limit calculation to specific generation(s).
-*   **Returns**: `MetricMatrix`.
+### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None)`
+
+Calculates the Hypervolume for an experiment, run, or population. Always constructs a dynamic Bounding Box (BBox) that encompasses the worst solutions found by all provided experiments (including the reference, if any).
+
+**Parameters:**
+*   `exp`: The `Experiment`, `Run`, or `Population` object to evaluate.
+*   `ref` (optional): Set of reference experiments used exclusively to expand the Bounding Box.
+*   `mode` (str): Algorithmic choice (`'auto'`, `'fast'`, `'exact'`).
+*   `scale` (str): Narrative choice for the returned MetricMatrix:
+    *   `'raw'` (Default): Returns the absolute physical volume dominated within the BBox. Ensures volumetric invariance for the same BBox, avoiding ratio-induced shifts when worse neighbors are added. Covers the question: *"How much objective space has been physically conquered?"*
+    *   `'ratio'` : Divides the physical volume by the maximum volume found in the session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. 
+*   `gens` (optional): Slice or integer to limit the generation scope.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**
 *   **Description**: Calculates Inverted Generational Distance or Generational Distance.

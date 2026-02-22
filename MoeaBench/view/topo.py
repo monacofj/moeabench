@@ -93,15 +93,17 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         else: objectives = [0, 1, 2]
     
     if len(objectives) == 2:
-        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes)
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, **kwargs)
     else:
         for k in range(len(processed_args)):
              d = processed_args[k]
              if d.shape[1] < 3:
-                  padding = np.zeros((d.shape[0], 3 - d.shape[1]))
-                  processed_args[k] = np.column_stack([d, padding])
+                  # Pad with zeros to allow 3D plotting of 2D data
+                  new_d = np.zeros((d.shape[0], 3))
+                  new_d[:, :d.shape[1]] = d
+                  processed_args[k] = new_d
         while len(objectives) < 3: objectives.append(0)
-        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, **kwargs)
     
     if show:
         s.show()

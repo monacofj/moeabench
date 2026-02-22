@@ -19,7 +19,7 @@ except ImportError:
     pass
 
 class Scatter2D:
-    def __init__(self, names, data_arrays, axis, type='pareto-optimal front', mode='interactive', axis_label='Objective', trace_modes=None):
+    def __init__(self, names, data_arrays, axis, type='pareto-optimal front', mode='interactive', axis_label='Objective', trace_modes=None, **kwargs):
         """
         names: list of names for legend
         data_arrays: list of numpy arrays (Nx2 or more)
@@ -32,6 +32,8 @@ class Scatter2D:
         self.mode = mode
         self.axis_label = axis_label
         self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
+        self.ax = kwargs.get('ax', None)
+        self.show_plot = kwargs.get('show', True)
 
     def show(self):
         # Honor global backend override
@@ -49,7 +51,11 @@ class Scatter2D:
     def configure_static(self):
         import matplotlib.pyplot as plt
         
-        fig, ax = plt.subplots(figsize=defaults.figsize)
+        if self.ax is None:
+            fig, ax = plt.subplots(figsize=defaults.figsize)
+        else:
+            ax = self.ax
+            fig = ax.get_figure()
         
         prop_cycle = plt.rcParams['axes.prop_cycle']
         cycle_colors = prop_cycle.by_key()['color']
@@ -86,8 +92,9 @@ class Scatter2D:
             filename = f"mb_plot_{self.type.replace(' ', '_')}.{defaults.save_format}"
             plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
             # print(f"[MoeaBench] Plot saved as {filename}")
-
-        plt.show()
+        
+        if self.show_plot and self.ax is None:
+            plt.show()
 
     def configure_interactive(self):
         self.figure = go.Figure()

@@ -23,7 +23,7 @@ except ImportError:
 
 
 class Scatter3D:
-     def __init__(self, names, data_arrays, axis, type = 'pareto-optimal front', mode='interactive', axis_label='Objective', trace_modes=None):
+     def __init__(self, names, data_arrays, axis, type = 'pareto-optimal front', mode='interactive', axis_label='Objective', trace_modes=None, **kwargs):
          """
          names: list of names for legend
          data_arrays: list of numpy arrays (Nx3 or more)
@@ -36,6 +36,8 @@ class Scatter3D:
          self.mode = mode
          self.axis_label = axis_label
          self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
+         self.ax = kwargs.get('ax', None)
+         self.show_plot = kwargs.get('show', True)
            
      def show(self):
          # Honor global backend override
@@ -54,24 +56,28 @@ class Scatter3D:
          import matplotlib.pyplot as plt
          import matplotlib.cm as cm
          
-         fig = plt.figure(figsize=defaults.figsize)
-         try:
-             ax = fig.add_subplot(111, projection='3d')
-         except (ValueError, KeyError) as e:
-             plt.close(fig)
-             print("\n[WARNING] MoeaBench: Matplotlib '3d' projection not available. Falling back to 2D visualization (f1, f2).")
+         if self.ax is None:
+             fig = plt.figure(figsize=defaults.figsize)
              try:
-                 from .scatter2d import Scatter2D
-                 s2d = Scatter2D(self.experiments, self.vet_pts, self.axis[:2], 
-                                type=self.type, mode=self.mode, 
-                                axis_label=self.axis_label, trace_modes=self.trace_modes)
-                 s2d.show()
-                 return
-             except Exception as e2:
-                 raise RuntimeError(
-                     "MoeaBench Error: Matplotlib 3D projection '3d' is not available and 2D fallback failed. "
-                     "This often happens due to broken Matplotlib installations."
-                 ) from e2
+                 ax = fig.add_subplot(111, projection='3d')
+             except (ValueError, KeyError) as e:
+                 plt.close(fig)
+                 print("\n[WARNING] MoeaBench: Matplotlib '3d' projection not available. Falling back to 2D visualization (f1, f2).")
+                 try:
+                     from .scatter2d import Scatter2D
+                     s2d = Scatter2D(self.experiments, self.vet_pts, self.axis[:2], 
+                                    type=self.type, mode=self.mode, 
+                                    axis_label=self.axis_label, trace_modes=self.trace_modes)
+                     s2d.show()
+                     return
+                 except Exception as e2:
+                     raise RuntimeError(
+                         "MoeaBench Error: Matplotlib 3D projection '3d' is not available and 2D fallback failed. "
+                         "This often happens due to broken Matplotlib installations."
+                     ) from e2
+         else:
+             ax = self.ax
+             fig = ax.get_figure()
          
          # Use standard property cycle for distinct categorical colors
          prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -89,14 +95,15 @@ class Scatter3D:
                 label = f'{self.experiments[i]}'
                 
                 t_mode = self.trace_modes[i]
-                if 'lines' in t_mode:
-                     ax.plot(ax_data[msk], ay_data[msk], az_data[msk], 
-                             label=label, color=current_color)
-                
                 if 'markers' in t_mode:
                      ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], 
-                                label=label if 'lines' not in t_mode else None, 
+                                label=label, 
                                 color=current_color)
+                
+                if 'lines' in t_mode:
+                     ax.plot(ax_data[msk], ay_data[msk], az_data[msk], 
+                             label=label if 'markers' not in t_mode else None, 
+                             color=current_color)
         
          ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
          ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
@@ -107,8 +114,9 @@ class Scatter3D:
          if defaults.save_format:
              filename = f"mb_plot_{self.type.replace(' ', '_')}.{defaults.save_format}"
              plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
-
-         plt.show()
+ 
+         if self.show_plot and self.ax is None:
+             plt.show()
 
      def configure_interactive(self):
          self.figure=go.Figure()

@@ -90,6 +90,10 @@ class MetricMatrix(Reportable):
              
         self.metric_name = metric_name
         self.source_name = source_name
+        
+        # Determine if this metric is scaled 
+        self.is_ratio = "(Ratio)" in metric_name or "(Rel)" in metric_name
+        self.is_raw = "(Raw)" in metric_name
 
     def report(self, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
@@ -129,7 +133,24 @@ class MetricMatrix(Reportable):
         if use_md:
             lines = [
                 f"### Metric Report: {self.metric_name}{source_info}",
-                "",
+            ]
+            
+            if "Hypervolume" in self.metric_name:
+                if self.is_ratio:
+                    lines.extend([
+                        "> [!IMPORTANT]",
+                        "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
+                        "> *Note: Values are scaled by the maximum session volume ($1.0$ ceiling).* ",
+                        ""
+                    ])
+                elif self.is_raw:
+                    lines.extend([
+                        "> [!NOTE]",
+                        "> **Physical Objective Space**: How much objective space has been physically conquered within the global search boundaries established in this session?",
+                        ""
+                    ])
+
+            lines.extend([
                 "#### Final Performance (Last Gen)",
                 f"- **Mean**: {mean:.{prec}f}",
                 f"- **StdDev**: {std:.{prec}f}",
@@ -139,10 +160,23 @@ class MetricMatrix(Reportable):
                 f"- **Runs**: {data.shape[1]}",
                 f"- **Generations**: {data.shape[0]}",
                 f"- **Stability**: {stability}"
-            ]
+            ])
         else:
             lines = [
-                f"--- Metric Report: {self.metric_name}{source_info} ---",
+                f"--- Metric Report: {self.metric_name}{source_info} ---"
+            ]
+            
+            if "Hypervolume" in self.metric_name:
+                if self.is_ratio:
+                    lines.extend([
+                        "  Question: What is the competitive efficiency relative to best session performance?"
+                    ])
+                elif self.is_raw:
+                    lines.extend([
+                        "  Question: How much objective space has been physically conquered?"
+                    ])
+            
+            lines.extend([
                 f"  Final Performance (Last Gen):",
                 f"    - Mean: {mean:.{prec}f}",
                 f"    - StdDev: {std:.{prec}f}",
@@ -151,7 +185,7 @@ class MetricMatrix(Reportable):
                 f"    - Runs: {data.shape[1]}",
                 f"    - Generations: {data.shape[0]}",
                 f"    - Stability: {stability}"
-            ]
+            ])
         
         return "\n".join(lines)
 
@@ -301,15 +335,16 @@ def _extract_data(data, gens: Optional[Union[int, slice]] = None):
     except:
         raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
 
-def hypervolume(exp, ref=None, mode='auto', n_samples=100000, gens=None):
+def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
 
     Args:
         exp: Experiment, Run, or Population object.
-        ref: Reference set/experiment for normalization.
-        mode (str): 'auto' (default), 'exact', or 'fast'.
+        ref: Reference set/experiment for normalization bounding box.
+        mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
+        scale (str): 'raw' (default absolute volume) or 'ratio' (comparative scaling to 1.0).
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         gens (int or slice): Limit calculation to specific generation(s).
     """
@@ -361,34 +396,42 @@ def hypervolume(exp, ref=None, mode='auto', n_samples=100000, gens=None):
         
     # --- 4. Dynamic Benchmarking ---
     # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling
-    # --- 4. Dynamic Benchmarking ---
-    # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling.
-    if ref:
-        # A) Explicit Reference (e.g., Ground Truth or Baseline Experiment)
-        if not isinstance(ref, list): ref_list = [ref]
-        else: ref_list = ref
-        
-        ref_hvs = []
-        for r in ref_list:
-            _, r_fs, _, _ = _extract_data(r)
-            for f in r_fs:
-                if len(f) > 0:
-                    if mode == 'fast' or (mode == 'auto' and M > 6):
-                        m = GEN_mc_hypervolume([f], M, min_val, max_val, n_samples=n_samples)
-                    else:
-                        m = GEN_hypervolume([f], M, min_val, max_val)
-                    ref_hvs.append(float(m.evaluate()[0]))
-        
-        ref_hv_val = np.max(ref_hvs) if ref_hvs else 0
+    # --- 4. Scale Post-Processing ---
+    scale = str(scale).lower()
+    if scale == 'ratio':
+        if ref:
+            # A) Explicit Reference (e.g., Ground Truth or Baseline Experiment)
+            if not isinstance(ref, list): ref_list = [ref]
+            else: ref_list = ref
+            
+            ref_hvs = []
+            for r in ref_list:
+                _, r_fs, _, _ = _extract_data(r)
+                for f in r_fs:
+                    if len(f) > 0:
+                        if mode == 'fast' or (mode == 'auto' and M > 6):
+                            m = GEN_mc_hypervolume([f], M, min_val, max_val, n_samples=n_samples)
+                        else:
+                            m = GEN_hypervolume([f], M, min_val, max_val)
+                        ref_hvs.append(float(m.evaluate()[0]))
+            
+            ref_hv_val = np.max(ref_hvs) if ref_hvs else 0
+        else:
+            # B) Implicit Self-Reference (Best run in current data)
+            # The best final result observed in the provided runs hits 1.0.
+            ref_hv_val = np.nanmax(mat[-1, :]) if mat.size > 0 else 0
+
+        if ref_hv_val > 0:
+            mat /= ref_hv_val
+            
+        final_name = "Hypervolume (Ratio)"
+    
+    elif scale == 'raw':
+        final_name = "Hypervolume (Raw)"
     else:
-        # B) Implicit Self-Reference (Best run in current data)
-        # The best final result observed in the provided runs hits 1.0.
-        ref_hv_val = np.nanmax(mat[-1, :]) if mat.size > 0 else 0
+        raise ValueError(f"Unknown scale parameter: {scale}. Use 'ratio' or 'raw'.")
 
-    if ref_hv_val > 0:
-        mat /= ref_hv_val
-
-    return MetricMatrix(mat, "Hypervolume", source_name=name)
+    return MetricMatrix(mat, final_name, source_name=name)
 
 def get_reference_front(ref_exps, current_fronts):
     """
@@ -617,7 +660,11 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
     if mode == 'static':
         import matplotlib.pyplot as plt
         
-        fig, ax = plt.subplots(figsize=(10, 6))
+        ax = kwargs.get('ax', None)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 6)))
+        else:
+            fig = ax.get_figure()
         
         for mat in metric_matrices:
              data = mat.values
@@ -643,8 +690,10 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         ax.set_xlabel("Generation")
         ax.set_ylabel(plot_name)
         ax.legend()
-        if kwargs.get('show', True):
+        if kwargs.get('show', True) and kwargs.get('ax') is None:
             plt.show()
+        
+        return fig, ax
         
     else:
         import plotly.graph_objects as go
