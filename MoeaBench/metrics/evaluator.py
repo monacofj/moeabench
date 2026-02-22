@@ -666,9 +666,13 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         else:
             fig = ax.get_figure()
         
-        for mat in metric_matrices:
+        lstyles = kwargs.get('linestyles', ['-', '--', ':', '-.'])
+        if not isinstance(lstyles, (list, tuple)): lstyles = [lstyles]
+        
+        for i, mat in enumerate(metric_matrices):
              data = mat.values
              label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
+             ls = lstyles[i % len(lstyles)]
              
              if data.shape[1] > 1:
                 mean = np.nanmean(data, axis=1)
@@ -677,14 +681,14 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
                 v_min = np.nanmin(data, axis=1)
                 v_max = np.nanmax(data, axis=1)
                 
-                ax.plot(gens, mean, label=label)
+                ax.plot(gens, mean, label=label, linestyle=ls)
                 ax.fill_between(gens, np.maximum(0, mean-std), mean+std, alpha=0.2)
                 
                 if show_bounds:
                     ax.plot(gens, v_min, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
                     ax.plot(gens, v_max, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
              else:
-                ax.plot(np.arange(1, len(data)+1), data[:, 0], label=label)
+                ax.plot(np.arange(1, len(data)+1), data[:, 0], label=label, linestyle=ls)
         
         ax.set_title(final_title)
         ax.set_xlabel("Generation")
