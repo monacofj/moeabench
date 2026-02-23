@@ -86,7 +86,9 @@ def generate_visual_report():
         "<tr><td><b>IGD+</b></td><td><b>IGD (Pareto-Compliant):</b> The gold standard for raw performance.<br><i>Concept:</i> Ensures the population effectively \"covers\" the target manifold.</td></tr>",
         "<tr><td><b>SP</b></td><td><b>Spacing:</b> Standard deviation of neighbor distances.<br><i>Concept:</i> Measures \"Clumping\" vs Uniformity.</td></tr>",
         "<tr><td><b>NEAR@1 / @2</b></td><td><b>High-Precision Count:</b> % of population with error < 1% or 2% of resolution.<br><i>Concept:</i> Density of the \"Elite\" population.</td></tr>",
-        "<tr><td><b>H_rel</b></td><td><b>Relative Hypervolume:</b> Dominated volume normalized by Ideal volume.<br><i>Concept:</i> Fraction of the trade-off space captured.</td></tr>",
+        "<tr><td><b>HV_raw</b></td><td><b>Absolute Physical Volume:</b> Volume of the objective space dominated by the set.<br><i>Concept:</i> Pure search capability, sensitive to objective numeric ranges.</td></tr>",
+        "<tr><td><b>HV_rel</b></td><td><b>Aggregated Efficiency:</b> <code>HV_raw</code> normalized by the session's global Bounding Box.<br><i>Concept:</i> Internal competitive efficiency [0, 1].</td></tr>",
+        "<tr><td><b>HV_abs</b></td><td><b>Theoretical Optimality:</b> <code>HV_raw</code> normalized by the Ground Truth's volume.<br><i>Concept:</i> Absolute proximity to the theoretical maximum volume [0, 1].</td></tr>",
         "<tr><td><b>Stabil.</b></td><td><b>Stabilization Gen:</b> Earliest generation hitting 99.9% of final quality.<br><i>Concept:</i> Learning efficiency.</td></tr>",
         "</table>",
 
@@ -322,8 +324,9 @@ def generate_visual_report():
             gd_std = stats.get('GD_std', 0.0) 
             sp_mean = stats.get('SP_mean', 0.0)
             sp_std = stats.get('SP_std', 0.0)
-            h_raw = stats.get('H_raw', 0.0)
-            h_ratio = stats.get('H_ratio', 0.0)
+            hv_raw = stats.get('HV_raw', 0.0)
+            hv_rel = stats.get('HV_rel', 0.0)
+            hv_abs = stats.get('HV_abs', 0.0)
             
             # Clinical (v0.9)
             igd_p_val = clinical.get('igd_p', {}).get('mean', 0)
@@ -372,9 +375,9 @@ def generate_visual_report():
                 "gd_p": f"{gd_p_val:.4e}",
                 "sp": f"{sp_mean:.4e} &plusmn; {sp_std:.2e}",
                 "emd": f"{emd_val:.4f}", 
-                "h_raw": f"{h_raw:.4f}",
-                "h_ratio": f"{h_ratio:.4f}",
-                "h_rel": f"{stats.get('H_rel',0)*100:.3f}%",
+                "hv_raw": f"{hv_raw:.4f}",
+                "hv_rel": f"{hv_rel*100:.2f}%",
+                "hv_abs": f"{hv_abs*100:.2f}%",
                 "near1": f"{near1:.1f}%",
                 "near2": f"{near2:.1f}%",
                 "time": f"{stats.get('Time_sec',0):.2f}",
@@ -396,9 +399,9 @@ def generate_visual_report():
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
         
         # Numerical Table
-        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>NEAR@1</th><th>NEAR@2</th><th>H_rel</th><th>Time(s)</th><th>Stabil.</th></tr>"]
+        metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>NEAR@1</th><th>NEAR@2</th><th>HV_raw</th><th>HV_rel</th><th>HV_abs</th><th>Time(s)</th><th>Stabil.</th></tr>"]
         for m in mop_metrics:
-            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['near1']}</td><td>{m['near2']}</td><td style='font-weight: 500'>{m['h_rel']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
+            metrics_table.append(f"<tr><td style='font-weight: bold; color: {colors_solid.get(m['alg'], 'black')}'>{m['alg']}</td><td>{m['igd']}</td><td>{m['igd_p']}</td><td>{m['gd']}</td><td>{m['gd_p']}</td><td>{m['sp']}</td><td>{m['near1']}</td><td>{m['near2']}</td><td>{m['hv_raw']}</td><td>{m['hv_rel']}</td><td style='font-weight: 500'>{m['hv_abs']}</td><td>{m['time']}</td><td>Gen {m['t_conv']}</td></tr>")
         metrics_table.append("</table>")
         html_content.append("".join(metrics_table))
 

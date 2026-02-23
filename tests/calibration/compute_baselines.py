@@ -172,15 +172,15 @@ def compute_baselines():
             hv_diff = hv_opt - hv_mean_raw
             
             # --- Nomenclature Standardization ---
-            # H_raw: The absolute value (Ref Point 1.1)
-            # H_ratio: Raw / Volume of Ref Cube (1.1^3). The "Math" Normalization.
-            # H_rel: Raw / H(Ground Truth). The "Convergence" Efficiency.
+            # HV_raw: Physical volume dominated (Ref Point 1.1)
+            # HV_rel: Aggregated Efficiency against Bounding Box (Raw / ref_cube_vol)
+            # HV_abs: Theoretical Optimality against Ground Truth (Raw / HV_opt)
             
             ref_cube_vol = ref_point_norm ** 3
             
             # Calculate metrics
-            h_ratio = hv_mean_raw / ref_cube_vol
-            h_rel = hv_mean_raw / hv_opt if hv_opt > 0 else 0
+            hv_rel = hv_mean_raw / ref_cube_vol
+            hv_abs = hv_mean_raw / hv_opt if hv_opt > 0 else 0
             
             # 6. Meta
             avg_duration = np.mean(group_durations) if group_durations else 0
@@ -202,10 +202,10 @@ def compute_baselines():
                 "SP_mean": sp_mean,
                 "SP_std": sp_std,
                 "KS_p_val": ks_p_val,
-                "H_raw": hv_mean_raw,      # Was "HV_mean"
-                "H_opt": hv_opt,           # The GT raw value
-                "H_ratio": h_ratio,       # NEW: Math [0,1]
-                "H_rel": h_rel,           # NEW: Convergence [0,%]
+                "HV_raw": hv_mean_raw,
+                "HV_rel": hv_rel,
+                "HV_abs": hv_abs,
+                "H_opt": hv_opt,
                 "H_diff": hv_diff,
                 "Ideal_1": min_val[0], "Ideal_2": min_val[1], "Ideal_3": min_val[2],
                 "Nadir_1": max_val[0], "Nadir_2": max_val[1], "Nadir_3": max_val[2],
