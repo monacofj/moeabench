@@ -6,5 +6,5 @@ recursive-include MoeaBench/diagnostics/resources *.json
 recursive-include MoeaBench/diagnostics/resources/references *
 include MoeaBench/requirements.txt
 include README.md
-include LICENSE
+include COPYING
 include CITATION.cff

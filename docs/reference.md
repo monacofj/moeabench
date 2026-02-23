@@ -11,21 +11,20 @@ This document provides the exhaustive technical specification for the MoeaBench 
 
 ## **Summary**
 1.  **[Nomenclature & Abbreviations](#nomenclature)**
-2.  **[Architectural Patterns](#architectural-patterns)** (Smart Arguments, Cloud Delegation)
-3.  **[1. Data Model](#data-model)**
-    *   [1.1. Experiment](#experiment)
-    *   [1.2. Run](#run)
-    *   [1.3. Population](#population)
-    *   [1.4. SmartArray](#smartarray)
-    *   [1.5. Global Configuration](#defaults)
-4.  **[2. Visualization Perspectives](#view)**
-    *   [2.1. Topographic Analysis](#topo)
-    *   [2.2. Performance Analysis](#perf)
-    *   [2.3. Stratification Analysis](#strat)
-    *   [2.4. Clinical Diagnostics](#clinic)
-5.  **[5. Metrics](#metrics)**
-6.  **[6. Statistics](#stats)**
-7.  **[12. Diagnostics](#diagnostics)**
+2.  **[1. Data Model](#data-model)**
+3.  **[2. Architectural Patterns](#architectural-patterns)**
+4.  **[3. Visualization Perspectives](#view)**
+5.  **[4. MOPs](#mops)**
+6.  **[5. Algorithms](#moeas)**
+7.  **[6. Metrics](#metrics)**
+8.  **[7. Statistics](#stats)**
+9.  **[8. Reporting](#reportable)**
+10. **[9. System Utilities](#system)**
+11. **[10. Persistence & Data Format](#persistence)**
+12. **[11. Extensibility](#extensibility)**
+13. **[12. References](#references)**
+14. **[13. Legacy Support](#legacy)**
+15. **[14. Algorithmic Diagnostics](#diagnostics)**
 
 ---
 
@@ -51,23 +50,6 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **ADR** | Architecture Decision Record | Document capturing a significant architectural decision. |
 | **EAF** | Empirical Attainment Function | Statistical description of the outcomes of stochastic solvers. |
 
----
-
-<a name="architectural-patterns"></a>
-## **Architectural Patterns**
-
-MoeaBench is built on two core patterns designed to minimize friction and maximize scientific insight.
-
-### **1. Smart Arguments**
-The "Smart Argument" pattern allow functions to be polymorphic and context-aware. Instead of requiring the user to manually extract raw values (e.g., `exp[0].pop().objs`), all analytical and visual functions accept high-level MoeaBench objects (`experiment`, `Run`, `Population`) directly.
-*   **Automatic Extraction**: If a metric is requested, the function automatically identifies and extracts the required space (Pareto front for experiments, population objectives for snapshots).
-*   **Temporal Slicing (`gens`)**: Numerical arguments passed to `gens` are automatically normalized into slices (e.g., `gens=100` $\to$ `slice(100)`), ensuring intuitive "limit" behavior across the entire API.
-
-*   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
-*   **Scientific Metadata & CC0**: Integrated support for SPDX licenses. If no author is provided, experiments automatically default to **CC0-1.0** to promote scientific common goods.
-*   **Introspective Naming**: Experiments attempt to automatically discover their variable name from the caller's scope for clearer reporting.
-
----
 
 <a name="data-model"></a>
 ## **1. Data Model**
@@ -79,7 +61,7 @@ MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Popula
 The `mb.defaults` object allows centralized control over the library's behavior. These values act as fallback "Standard Configuration"—they are used whenever an explicit value is not provided to a method or constructor.
 
 **Execution Parameters:**
-*   `population`: Default population size (default: `150`).
+*   `population`: Default population size (default: `100`).
 *   `generations`: Default generation count (default: `300`).
 *   `seed`: Default base random seed (default: `1`).
 
@@ -212,8 +194,25 @@ An annotated NumPy array subclass (`np.ndarray`) that encapsulates lineage and u
 
 ---
 
+<a name="architectural-patterns"></a>
+## **2. Architectural Patterns**
+
+MoeaBench is built on two core patterns designed to minimize friction and maximize scientific insight.
+
+### **2.1. Smart Arguments**
+The "Smart Argument" pattern allows functions to be polymorphic and context-aware. Instead of requiring the user to manually extract raw values (e.g., `exp[0].pop().objs`), all analytical and visual functions accept high-level MoeaBench objects (`experiment`, `Run`, `Population`) directly.
+*   **Automatic Extraction**: If a metric is requested, the function automatically identifies and extracts the required space (Pareto front for experiments, population objectives for snapshots).
+*   **Temporal Slicing (`gens`)**: Numerical arguments passed to `gens` are automatically normalized into slices (e.g., `gens=100` $\to$ `slice(100)`), ensuring intuitive "limit" behavior across the entire API.
+
+### **2.2. Cloud-centric Delegation**
+The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
+*   **Scientific Metadata & CC0**: Integrated support for SPDX licenses. If no author is provided, experiments automatically default to **CC0-1.0** to promote scientific common goods.
+*   **Introspective Naming**: Experiments attempt to automatically discover their variable name from the caller's scope for clearer reporting.
+
+---
+
 <a name="view"></a>
-## **2. Visualization Perspectives (`mb.view`)**
+## **3. Visualization Perspectives (`mb.view`)**
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
@@ -320,7 +319,7 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ---
 
-## **3. MOPs (`mb.mops.*`)**
+## **4. MOPs (`mb.mops.*`)**
 
 ### **DTLZ Family**
 `DTLZ1` - `DTLZ9`.
@@ -349,13 +348,13 @@ prob = mb.mops.DPF1(M=3, D=2)
 
 ---
 
-## **4. Algorithms (`mb.moeas.*`)**
+## **5. Algorithms (`mb.moeas.*`)**
 
 Supported: `NSGA3`, `MOEAD`, `SPEA2`, `RVEA`.
 
 **Constructor:**
 ```python
-Algorithm(population=150, generations=300, seed=1, **kwargs)
+Algorithm(population=100, generations=300, seed=1, **kwargs)
 ```
 *   **`**kwargs`**: Any additional parameter is propagated directly to the underlying engine (Pymoo).
     *   *Example*: `mutation_rate=0.1`, `n_neighbors=15`.
@@ -396,11 +395,11 @@ exp.run()
 
 
 <a name="metrics"></a>
-## **5. Metrics (`mb.metrics`)**
+## **6. Metrics (`mb.metrics`)**
 
 Standard multi-objective performance metrics. Functions accept `Experiment`, `Run`, or `Population` objects as input.
 
-### **5.1. Metric Calculation**
+### **6.1. Metric Calculation**
 
 #### **`mb.metrics.front_size(data, mode='run', gens=None)`**
 *   **Description**: Calculates the proportion of non-dominated individuals (Front Size) relative to the total population size (0.0 to 1.0).
@@ -453,7 +452,7 @@ Calculates the Hypervolume for an experiment, run, or population. Always constru
     *   `gens` (*int* or *slice*): Range of generations.
 *   **Returns**: `MetricMatrix`.
 
-### **5.2. Unified Metric Analysis API (`MetricMatrix`)**
+### **6.2. Unified Metric Analysis API (`MetricMatrix`)**
 
 Performance functions return a `MetricMatrix`, a multi-dimensional diagnostic object that encapsulates the generational trajectories across all experimental runs. It provides a formal, high-level interface for statistical analysis and temporal navigation.
 
@@ -503,7 +502,7 @@ mb.metrics.plot_matrix(hv, mode='auto', show_bounds=True)
 ---
 
 <a name="stats"></a>
-## **6. Statistics (`mb.stats`)**
+## **7. Statistics (`mb.stats`)**
 
 Utilities for robust non-parametric statistical analysis. Fully supports **Context-Aware Statistics** (takes `Experiment` objects, functions, or arrays).
 
@@ -517,7 +516,7 @@ All statistical functions in MoeaBench return objects inheriting from `StatsResu
 ---
 
 <a name="reportable"></a>
-## **7. The Reporting Contract (`Reportable`)**
+## **8. The Reporting Contract (`Reportable`)**
 
 MoeaBench enforces a **Standardized Reporting Interface**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
 
@@ -555,7 +554,7 @@ Diagnosis: High Selection Pressure (Phalanx-like convergence).
 
 ---
 
-### **6.1. Statistical Contrast**
+### **7.1. Statistical Contrast**
 
 #### **`mb.stats.perf_evidence(data1, data2, metric=mb.metrics.hv, gen=-1, ...)`**
 *   **Description**: Mann-Whitney U rank-sum test (Win Evidence).
@@ -613,7 +612,7 @@ Computes the **Earth Mover's Distance** between two strata profiles.
 
 ---
 
-## **7. System Utilities (`mb.system`)**
+## **9. System Utilities (`mb.system`)**
 
 The `system` module provides utilities for environmental inspection.
 
@@ -636,7 +635,7 @@ Returns the current library version string.
 ---
 
 <a name="persistence"></a>
-## **8. Persistence & Data Format**
+## **10. Persistence & Data Format**
 
 MoeaBench uses a standardized ZIP-based persistence format.
 
@@ -655,7 +654,7 @@ MoeaBench uses a standardized ZIP-based persistence format.
 ---
 
 <a name="extensibility"></a>
-## **9. Extensibility (Plugin API)**
+## **11. Extensibility (Plugin API)**
 
 MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots). The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 
@@ -731,13 +730,13 @@ class RandomSearch(mb.moeas.BaseMoea):
 
 ---
 
-## **10. References**
+## **12. References**
 For a detailed technical narrative on the implementation history and mathematical nuances of our MOPs, see the **[MOPs Guide](mops.md)**.
 
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
 
-## **11. Legacy Support & Depletion Schedule**
+## **13. Legacy Support & Depletion Schedule**
 
 MoeaBench maintains backward compatibility for its evolutionary analytical layer through two tiers of support.
 
@@ -768,7 +767,7 @@ These functions are maintained for compatibility with versions `v0.6.x` but are 
 
 
 <a name="diagnostics"></a>
-## **12. Algorithmic Diagnostics and Pathology Detection**
+## **14. Algorithmic Diagnostics and Pathology Detection**
 
 The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Standardized Reporting Interface** (`Reportable`), providing narrative insights alongside numerical values.
 
