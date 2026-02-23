@@ -23,13 +23,11 @@ import numpy as np
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("Example 15: The Triple-Mode Perspective")
-    print("=======================================\n")
+    print("Example 15: The Perspective Paradox (Individual vs Joint)")
+    print("========================================================\n")
 
     # 1. Setup the Problem & Calibration
     dtlz2 = mb.mops.DTLZ2(n_var=7, n_obj=3)
-    
-    # Absolute mode requires calibration data (the dense Ground Truth)
     dtlz2.calibrate()
     
     # Configuration A: Baseline (Low budget)
@@ -44,86 +42,77 @@ def main():
     exp2.name = "Premium NSGA-II"
     exp2.run(repeat=5)
 
-    # 2. THE THREE PERSPECTIVES
-    print("\n[Phase 1] Calculating Metrics...")
-    global_ref = [exp1, exp2]
-    
-    # A) Raw: Physical volume conquer (H_raw)
-    hv1_raw = mb.metrics.hv(exp1, ref=global_ref, scale='raw')
-    hv2_raw = mb.metrics.hv(exp2, ref=global_ref, scale='raw')
-
-    # B) Relative: Competitive ranking (H_rel, relative to session best)
-    hv1_rel = mb.metrics.hv(exp1, ref=global_ref, scale='relative')
-    hv2_rel = mb.metrics.hv(exp2, ref=global_ref, scale='relative')
-
-    # C) Absolute: Theoretical optimality (H_abs, relative to GT)
-    hv1_abs = mb.metrics.hv(exp1, scale='absolute')
-    hv2_abs = mb.metrics.hv(exp2, scale='absolute')
-
-    print("\n--- RESULTS AT FINAL GENERATION ---")
-    print(f"-> Raw [Invariant physical volume]:")
-    print(f"     exp1: {hv1_raw.values[-1,:].mean():.4f}")
-    print(f"     exp2: {hv2_raw.values[-1,:].mean():.4f}")
-    
-    print(f"-> Relative [Ranked against session best]:")
-    print(f"     exp1: {hv1_rel.values[-1,:].mean():.4f}")
-    print(f"     exp2: {hv2_rel.values[-1,:].mean():.4f} (Session Winner)")
-    
-    print(f"-> Absolute [Theoretical optimality (vs GT)]:")
-    print(f"     exp1: {hv1_abs.values[-1,:].mean():.4f}")
-    print(f"     exp2: {hv2_abs.values[-1,:].mean():.4f}")
-
-    # 3. Visual Comparison
-    print("\nGenerating comparative plots...")
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 5))
-    
-    # Extract final values for annotations
-    v1_raw, v2_raw = hv1_raw.values[-1,:].mean(), hv2_raw.values[-1,:].mean()
-    v1_rel, v2_rel = hv1_rel.values[-1,:].mean(), hv2_rel.values[-1,:].mean()
-    v1_abs, v2_abs = hv1_abs.values[-1,:].mean(), hv2_abs.values[-1,:].mean()
-
-    # Unified Y-axis based on Raw
-    y_max = max(1.05, v2_raw * 1.05)
-    
-    # Helper function to add annotated horizontal lines
-    def annotate_lines(ax, val1, val2):
-        # Val 1: Blue
-        ax.axhline(val1, color='blue', linestyle=':', alpha=0.5)
-        ax.text(0.5, val1 - y_max*0.01, f"hv1 = {val1:.3f}", 
-                color='blue', fontsize=8, va='top', ha='left')
+    def plot_triple(h1, h2, title_suffix, y_max_raw=None):
+        fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 5))
         
-        # Val 2: Orange
-        ax.axhline(val2, color='darkorange', linestyle=':', alpha=0.5)
-        ax.text(0.5, val2 - y_max*0.01, f"hv2 = {val2:.3f}", 
-                color='darkorange', fontsize=8, va='top', ha='left')
+        v1_raw, v2_raw = h1[0].values[-1,:].mean(), h2[0].values[-1,:].mean()
+        v1_rel, v2_rel = h1[1].values[-1,:].mean(), h2[1].values[-1,:].mean()
+        v1_abs, v2_abs = h1[2].values[-1,:].mean(), h2[2].values[-1,:].mean()
+
+        y_max = y_max_raw if y_max_raw else max(1.05, v2_raw * 1.05)
+
+        def annotate(ax, val1, val2, limit=None, limit_label=None, limit_color='gray'):
+            ax.axhline(val1, color='blue', linestyle=':', alpha=0.5)
+            ax.text(0.5, val1 - y_max*0.01, f"v1={val1:.3f}", color='blue', fontsize=8, va='top')
+            ax.axhline(val2, color='darkorange', linestyle=':', alpha=0.5)
+            ax.text(0.5, val2 - y_max*0.01, f"v2={val2:.3f}", color='darkorange', fontsize=8, va='top')
+            if limit:
+                ax.axhline(limit, color=limit_color, linestyle='--', alpha=0.7, label=limit_label)
+                ax.legend(loc='lower right', fontsize=8)
+            ax.set_ylim([0, y_max])
+
+        # 1. RAW
+        mb.view.perf_history(h1[0], h2[0], ax=ax1, title=f"1. Raw\n{title_suffix}", ylabel="Volume")
+        annotate(ax1, v1_raw, v2_raw)
+
+        # 2. RELATIVE
+        mb.view.perf_history(h1[1], h2[1], ax=ax2, title=f"2. Relative\n{title_suffix}", ylabel="Efficiency")
+        annotate(ax2, v1_rel, v2_rel, limit=1.0, limit_label="Session Max")
+
+        # 3. ABSOLUTE
+        mb.view.perf_history(h1[2], h2[2], ax=ax3, title=f"3. Absolute\n{title_suffix}", ylabel="Optimality")
+        annotate(ax3, v1_abs, v2_abs, limit=1.0, limit_label="Ground Truth", limit_color='gold')
         
-        ax.set_ylim([0, y_max])
-    
-    # Plot 1: RAW
-    # No 'labels' passed -> Engine will use standard 'Name' format for history
-    mb.view.perf_history(hv1_raw, hv2_raw, ax=ax1, 
-                         title="1. Physical (Raw)\n[Invariant Absolute Volume]", 
-                         ylabel="Volumetric Units")
-    annotate_lines(ax1, v1_raw, v2_raw)
+        plt.tight_layout()
+        plt.show()
 
-    # Plot 2: RELATIVE
-    mb.view.perf_history(hv1_rel, hv2_rel, ax=ax2, 
-                         title="2. Competitive (Relative)\n[Forced 1.0 Ceiling]", 
-                         ylabel="Efficiency Ratio")
-    annotate_lines(ax2, v1_rel, v2_rel)
-    ax2.axhline(1.0, color='gray', linestyle='--', alpha=0.7, label="Session Winner (1.0)")
-    ax2.legend(loc='lower right', fontsize=8)
+    # --- BLOCK 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
+    print("\n[Phase 1] Calculating Individual Metrics (joint=False)...")
+    print("Note: Each algorithm is evaluated against its own (local) worst nadir.")
+    h1_ind = [
+        mb.metrics.hv(exp1, scale='raw', joint=False),
+        mb.metrics.hv(exp1, scale='relative', joint=False),
+        mb.metrics.hv(exp1, scale='absolute', joint=False)
+    ]
+    h2_ind = [
+        mb.metrics.hv(exp2, scale='raw', joint=False),
+        mb.metrics.hv(exp2, scale='relative', joint=False),
+        mb.metrics.hv(exp2, scale='absolute', joint=False)
+    ]
+    plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
-    # Plot 3: ABSOLUTE
-    mb.view.perf_history(hv1_abs, hv2_abs, ax=ax3, 
-                         title="3. Theoretical (Absolute)\n[Anchored to GT]", 
-                         ylabel="Optimality Ratio")
-    annotate_lines(ax3, v1_abs, v2_abs)
-    ax3.axhline(1.0, color='gold', linestyle='--', alpha=1.0, label="Ground Truth (1.0)")
-    ax3.legend(loc='lower right', fontsize=8)
-    
-    plt.tight_layout()
-    plt.show()
+    # --- BLOCK 2: JOINT PERSPECTIVE (joint=True) ---
+    print("\n[Phase 2] Calculating Joint Metrics (joint=True)...")
+    print("Note: Both algorithms share the same (global) worst nadir.")
+    ref = [exp1, exp2]
+    h1_jnt = [
+        mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),
+        mb.metrics.hv(exp1, ref=ref, scale='relative', joint=True),
+        mb.metrics.hv(exp1, ref=ref, scale='absolute', joint=True)
+    ]
+    h2_jnt = [
+        mb.metrics.hv(exp2, ref=ref, scale='raw', joint=True),
+        mb.metrics.hv(exp2, ref=ref, scale='relative', joint=True),
+        mb.metrics.hv(exp2, ref=ref, scale='absolute', joint=True)
+    ]
+    # Reuse y_max from the Premium's raw individual volume to see the shift
+    y_max_jnt = h2_ind[0].values[-1,:].mean() * 1.1
+    plot_triple(h1_jnt, h2_jnt, "[Joint Perspective]", y_max_raw=y_max_jnt)
+
+    print("\nObservation:")
+    print("In the Individual Perspective, the Baseline (v1) appears highly competitive.")
+    print("In the Joint Perspective, the Baseline 'shrinks' as the Bounding Box expands")
+    print("to accommodate the superior solutions found by the Premium (v2) configuration.")
 
 if __name__ == "__main__":
     main()

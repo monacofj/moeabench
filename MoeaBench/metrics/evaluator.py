@@ -344,7 +344,7 @@ def _extract_data(data, gens: Optional[Union[int, slice]] = None):
     except:
         raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
 
-def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None):
+def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
@@ -356,9 +356,15 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         scale (str): Scaling perspective: 'raw' (default), 'relative', or 'absolute'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         gens (int or slice): Limit calculation to specific generation(s).
+        joint (bool): If True (default), uses the union of 'exp' and 'ref' to establish 
+                     the bounding box. If False, ignores 'ref' for normalization, 
+                     providing an independent (self-referenced) perspective.
     """
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
+    
+    # Contextual reference: If joint=False, we ignore external references for normalization
+    effective_ref = ref if joint else []
     
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
@@ -385,7 +391,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     F_GENs, Fs, name, n_runs = _extract_data(exp, gens=gens)
 
     # 2. Normalize (Find Reference Point)
-    min_val, max_val = normalize(ref, Fs)
+    min_val, max_val = normalize(effective_ref, Fs)
     
     # 3. Calculate
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
@@ -431,9 +437,9 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         if scale == 'ratio':
             warnings.warn("scale='ratio' is deprecated, use scale='relative' instead.", DeprecationWarning)
             
-        if ref:
+        if effective_ref:
             # A) Explicit Reference (e.g., Competition Mode)
-            ref_list = ref
+            ref_list = effective_ref
             ref_hvs = []
             for r in ref_list:
                 _, r_fs, _, _ = _extract_data(r)

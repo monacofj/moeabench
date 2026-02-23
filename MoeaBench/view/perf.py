@@ -42,7 +42,7 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
             processed_args.append(arg[gens] if gens is not None else arg)
         else:
             # Polymorphism: calculate metric if raw object passed, passing gens
-            processed_args.append(metric(arg, gens=gens))
+            processed_args.append(metric(arg, gens=gens, **metric_kwargs))
             
     return plot_matrix(processed_args, **kwargs)
 

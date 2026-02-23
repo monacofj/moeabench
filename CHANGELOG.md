@@ -12,6 +12,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2026-02-22
+
+### Added
+- **Multi-Perspective Hypervolume (Triple-Mode)**:
+  - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
+  - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).
+  - New `joint` parameter (default `True`) for Hypervolume. `joint=False` enables independent Bounding Box perspectives (Self-Referenced).
+  - Mandatory problem calibration requirement for absolute metrics.
+  - MOP Homogeneity validation protecting against invalid physical comparisons.
+- **Narrative Reporting Suite**:
+  - Semantic reporting for all three Hypervolume perspectives in `.report()`.
+  - Detailed didactic explanation of $H_{raw}$, $H_{rel}$, and $H_{abs}$ in docstrings and reports.
+- **Standardized Plotting Engine**:
+  - Unified legend generation logic: `Name (G: XX, R: YY)`.
+  - Intelligent omission of `G` or `R` labels when redundant.
+- **Example 15: The Perspective Paradox**:
+  - A comprehensive study on how Bounding Box choices affect scientific interpretation of metrics.
+
+### Changed
+- **Legend Metadata**: `plot_matrix` now supports `labels` override and automatic metadata injection.
+- **Diagnostic Tooling**: `mop.calibrate()` now correctly registers Ground Truth for absolute HV evaluation.
+
+### Fixed
+- **Plotting Pipeline**: Fixed a bug in `mb.view.perf_history` where metric keyword arguments (e.g., `scale`, `joint`) were not being propagated to the calculation engine.
+
 ## [0.11.0] - 2026-02-20
 
 ### Changed
@@ -25,22 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Implementation of **Smart Name Detection** via caller frame introspection.
     - Enriched metadata display including problem dimensionality, algorithm settings, and stop criteria.
 - **Scientific Persistence Layer v2**: Expanded `metadata.json` schema to include structured context (mop, moea, stop, repeat) for improved structured traceability.
-
-## [Unreleased]
-
-### Added
-- **Triple-Mode Hypervolume (Phase 2)**:
-  - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
-  - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity.
-  - Mandatory problem calibration requirement for absolute metrics.
-  - MOP Homogeneity validation protecting against invalid physical comparisons.
-- **Narrative Reporting Suite**:
-  - Semantic reporting for all three Hypervolume perspectives in `.report()`.
-  - Detailed didactic explanation of $H_{raw}$, $H_{rel}$, and $H_{abs}$ in docstrings and reports.
-- **Standardized Plotting Engine**:
-  - Unified legend formatting: `Name (G: XX, R: YY)`.
-  - Smart Omission logic: Hides $G$ in history plots and $R$ in full-set aggregations to avoid visual clutter.
-  - Unified Y-axis support for multi-plot comparisons in Example 15.
 
 ## [0.10.9] - 2026-02-20
 

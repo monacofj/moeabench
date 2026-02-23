@@ -410,7 +410,7 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 | **Low ($\to 1/R$)** | **Redundancy** | Runs converge to the same front. Results are highly reliable and saturated. |
 | **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
-### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None)`
+### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True)`
 
 Calculates the Hypervolume for an experiment, run, or population. Always constructs a dynamic Bounding Box (BBox) that encompasses the worst solutions found by all provided experiments (including the reference, if any).
 
@@ -423,6 +423,7 @@ Calculates the Hypervolume for an experiment, run, or population. Always constru
     *   `'relative'`: Divides the physical volume by the maximum volume found in the current session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. (Deprecated alias: `'ratio'`).
     *   `'absolute'`: Normalizes by the **Ground Truth** of the underlying MOP. Requires pre-calibration (via `mop.calibrate()`). Provides a Cross-Session Absolute Score where `1.0` represents mathematical perfection. Answers: *"What is the absolute proximity to the theoretical optimum?"*
 *   `gens` (optional): Slice or integer to limit the generation scope.
+*   `joint` (*bool*): If `True` (default), uses the union of `exp` and `ref` to establish the bounding box. If `False`, ignores `ref` for normalization, providing an independent (self-referenced) perspective.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**
 *   **Description**: Calculates Inverted Generational Distance or Generational Distance.
