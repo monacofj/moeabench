@@ -73,9 +73,20 @@ def calibrate_mop(mop: Any,
     
     # Protocol C: Empirical Search
     if source_search is not None:
-        print(f"MoeaBench: Discovering Ground Truth for '{mop_name}' via empirical search ({source_search.__class__.__name__})...")
+        moea_name = source_search.__class__.__name__
+        pop_size = getattr(source_search, 'population', 'unknown')
+        gens = getattr(source_search, 'generations', 'unknown')
+        
+        effort_msg = ""
+        if isinstance(pop_size, int) and isinstance(gens, int):
+            effort_msg = f" (Estimated Effort: {pop_size * gens:,} evaluations)"
+            
+        print(f"MoeaBench: Discovering Ground Truth for '{mop_name}' via empirical search ({moea_name}){effort_msg}...")
+        print(f"MoeaBench: Warning: This exhaustive search may take from minutes to hours depending on your MOP's complexity.")
+
         from ..core.experiment import experiment
         exp = experiment(mop=mop, moea=source_search)
+        # Ensure progress bar is captured if running in a terminal
         exp.run()
         # Use only non-dominated points as the truth
         gt = exp.non_dominated().objectives
