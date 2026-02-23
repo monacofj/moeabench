@@ -18,8 +18,8 @@ from plotly.subplots import make_subplots
 
 # Paths
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_reference_audit_v0.9.json")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.11.html")
+AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/audit_v0.11.json")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/audit_report_v0.11.html")
 
 # Ensure project root in path for imports
 if PROJ_ROOT not in sys.path:
@@ -62,7 +62,7 @@ def generate_visual_report():
         ".matrix-summary { font-style: italic; color: #64748b; font-size: 0.85rem; min-width: 200px; white-space: normal; }",
         "th, td:not(.matrix-summary) { white-space: normal; }",
         "</style></head><body>",
-        "<h1>MoeaBench v0.9.0 Technical Calibration Report</h1>",
+        "<h1>MoeaBench v0.11.0 Clinical Quality Audit Report</h1>",
         "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
         "<div class='didactic-box' style='background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px;'>",
         "<h2>1. Methodology & Experimental Context</h2>",

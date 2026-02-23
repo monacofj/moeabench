@@ -15,7 +15,7 @@ and purely focused on rendering.
 
 Output:
 -------
-- tests/calibration_audit_v0.9.json
+- tests/audit_v0.11.json
 """
 
 import os
@@ -34,8 +34,8 @@ if PROJ_ROOT not in sys.path:
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.8.0.csv")
-AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_audit_v0.9.json")
+BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.11.csv")
+AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/audit_v0.11.json")
 
 def _load_nd_points(csv_path):
     pts = pd.read_csv(csv_path).values
@@ -139,7 +139,7 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             u_closeness_vals.append(u_dist)
             
             fair_by_k["headway"][K_target].append(float(fair_f))
-            fair_by_k["closeness"][K_target].extend(u_dist.tolist()) # Accumulate points for distributional W1
+            fair_by_k["closeness"][K_target].extend(u_dist.raw_data.tolist()) # Accumulate points for distributional W1
             fair_by_k["cov"][K_target].append(float(fair_c))
             fair_by_k["gap"][K_target].append(float(fair_g))
             fair_by_k["reg"][K_target].append(float(fair_r))
@@ -170,9 +170,10 @@ def _aggregate_clinical(mop_name, alg, F_opt):
         N_IDEAL = 30
         vals = {'headway': [], 'closeness': [], 'cov': [], 'gap': [], 'reg': [], 'bal': []}
         for i in range(N_IDEAL):
+            # Uni: FPS with random start
             pop_uni = base.get_ref_uk(F_opt, k, seed=100+i)
             vals['headway'].append(float(fair.headway(pop_uni, F_opt, s_k=s_k)))
-            vals['closeness'].extend(fair.closeness(pop_uni, F_opt, s_k=s_k).tolist())
+            vals['closeness'].extend(fair.closeness(pop_uni, F_opt, s_k=s_k).raw_data.tolist())
             vals['cov'].append(float(fair.coverage(pop_uni, F_opt)))
             vals['gap'].append(float(fair.gap(pop_uni, F_opt)))
             vals['reg'].append(float(fair.regularity(pop_uni, U_ref)))
@@ -240,7 +241,8 @@ def _aggregate_clinical(mop_name, alg, F_opt):
     mf = {"headway": _med(fair_headway_vals), "cov": _med(fair_cov_vals), "gap": _med(fair_gap_vals), "reg": _med(fair_reg_vals), "bal": _med(fair_bal_vals)}
     if u_closeness_vals:
         # For fair_closeness (physics), we can show the median of all point-distances across all runs
-        mf["closeness"] = _med(np.concatenate(u_closeness_vals))
+        closeness_pts = [v.raw_data for v in u_closeness_vals if hasattr(v, 'raw_data') and v.raw_data is not None]
+        mf["closeness"] = _med(np.concatenate(closeness_pts)) if closeness_pts else np.nan
     else:
         mf["closeness"] = np.nan
 

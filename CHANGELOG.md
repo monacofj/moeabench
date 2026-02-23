@@ -117,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Validation Hierarchy**: Documentation (User Guide 10.3) clarifying the administrative nature of "Certified Baselines" and the analytical origin of Q-Scores.
 - **Functional Parity**: Explicit note in Reference Guide emphasizing that all algorithms (Certified or Compliant) share the same runtime diagnostics capabilities.
-- **Version Abstraction**: Created canonical symlinks (`CALIBRATION.html`, `baselines.json`) to decouple documentation from internal version numbers.
+- **Version Abstraction**: Created canonical symlinks (`audit_report.html`, `baselines.json`) to decouple documentation from internal version numbers.
 
 ### Fixed
 - **Section Numbering**: Corrected duplicate section headers in `userguide.md`, ensuring a sequential flow from 1 to 16.

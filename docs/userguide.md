@@ -912,7 +912,7 @@ A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certif
 The answer is: **Yes, absolutely.** Functionally, there is zero difference.
 
 *   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
-*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Calibration Report** (`tests/CALIBRATION.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
+*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Clinical Quality Audit Report** (`tests/audit_report.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
 *   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
 
 #### **Longitudinal Auditing: Comparing against History**
