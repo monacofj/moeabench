@@ -411,9 +411,11 @@ mb.view.topo_gap(exp1, exp2)
 ### **7.2. Performance (Scalar Metrics)**
 This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
 
-*   **`perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud.
-*   **`perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
-*   **`perf_density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
+*   **`mb.perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud. (Alias: `mb.timeplot`).
+*   **`mb.perf_hv`**: Optimized shortcut for Hypervolume convergence.
+*   **`mb.perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
+*   **`mb.perf_density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
+*   **`mb.perf_front_size`**: Tracks the density of the non-dominated set (Front Size) over time.
 
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
@@ -425,19 +427,18 @@ MoeaBench prioritizes mathematical honesty. When evaluating performance against 
 *   **Performance Saturation (H_abs > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
 *   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
-```python
 # Statistical contrast between two methods
-mb.view.perf_spread(exp1, exp2, metric=mb.metrics.hypervolume)
+mb.perf_spread(exp1, exp2)
 
 # Metric evolution over time
-mb.view.perf_history(exp)
+mb.perf_hv(exp)
 
 # Probability Distribution (Luck Stability)
-mb.view.perf_density(exp1, exp2)
+mb.perf_density(exp1, exp2)
 ```
 
 > [!NOTE]
-> **Legacy Support**: While `mb.view.topo_shape` and `mb.view.perf_history` are the canonical names, the aliases `mb.view.spaceplot` and `mb.view.timeplot` are supported for backward compatibility but are not recommended for new projects.
+> **Convenience API**: While `mb.view.*` remains the canonical internal location, all performance plotters are exposed directly via the `mb` object (e.g., `mb.perf_history`) for faster research iteration.
 
 ![Performance Contrast](images/perf_spread.png)
 *Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*

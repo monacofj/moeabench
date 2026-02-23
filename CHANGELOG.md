@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.12.0] - 2026-02-22
 
 ### Added
+- **Direct API Access**:
+  - Performance views now accessible directly via `mb.perf_history`, `mb.perf_hv`, `mb.perf_density`, and `mb.perf_front_size`.
 - **Multi-Perspective Hypervolume (Triple-Mode)**:
   - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
   - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).

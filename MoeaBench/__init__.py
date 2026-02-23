@@ -83,6 +83,9 @@ class _MB:
         self.topo_bands = view.topo_bands
         self.perf_history = view.perf_history
         self.perf_spread = view.perf_spread
+        self.perf_density = view.perf_density
+        self.perf_front_size = view.perf_front_size
+        self.perf_hv = view.perf_hv
         self.strat_caste = view.strat_caste
         
         # Legacy Delegates (Supported Aliases)

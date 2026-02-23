@@ -243,32 +243,44 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ### **2.2. Performance Analysis (`mb.view.perf_*`)**
 
-#### **`perf_history(*args, metric=hv, ...)`**
-*   **Permanent Alias**: `timeplot`.
+#### **`mb.perf_history(*args, metric=hv, gens=None, ...)`**
+*   **Permanent Alias**: `mb.timeplot`.
 *   **Description**: Primary convergence perspective (Metric Trajectory).
 *   **Arguments**:
     *   `*args`: Datasets to compare.
     *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
     *   `gens` (*int* or *slice*): Specific generations to plot.
-        *   **Standard Metrics**: `mb.metrics.hv`, `mb.metrics.igd`, `mb.metrics.gd`, `mb.metrics.emd`.
-        *   **Clinical Metrics**: `mb.diagnostics.headway`, `mb.diagnostics.coverage`, `mb.diagnostics.gap`, `mb.diagnostics.regularity`, `mb.diagnostics.balance`.
-    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s). 
-        *   Example: `gens=50` (first 50), `gens=slice(20, 80)` (range).
 *   **Returns**: `Figure`.
 
-#### **`perf_front_size(*args, mode='run', ...)`**
+#### **`mb.perf_hv(*args, ...)`**
+*   **Description**: Hypervolume Convergence Perspective. Shortcut for `perf_history(metric=hv)`.
+*   **Arguments**:
+    *   `*args`: Datasets to compare.
+*   **Returns**: `Figure`.
+
+#### **`mb.perf_front_size(*args, mode='run', ...)`**
 *   **Description**: Non-Dominated Density Perspective. Tracks how many individuals are on the Pareto front.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
-    *   `mode` (*str*): `'run'` or `'consensus'`.
+    *   `mode` (*str*):
+        *   `'run'` (Default): Plots evolution for each individual run.
+        *   `'consensus'`: Plots the **Consensus Ratio** (Superfront density).
 *   **Returns**: `Figure`.
 
-#### **`perf_spread(*args, metric=None, gen=-1, ...)`**
+#### **`mb.perf_spread(*args, metric=None, gen=-1, ...)`**
 *   **Description**: Comparative Boxplot stats with A12 Win Probability.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
-    *   `metric` (*callable*): Metric to analyze.
-    *   `gen` (*int*): Specific generation to snapshot. Defaults to `-1` (final).
+    *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
+    *   `gen` (*int*): Specific generation index. Defaults to `-1` (final).
+*   **Returns**: `Figure`.
+
+#### **`mb.perf_density(*args, metric=None, gen=-1, ...)`**
+*   **Description**: Performance Distribution Perspective. Visualizes metric probability density using KDE.
+*   **Arguments**:
+    *   `*args`: Datasets to compare.
+    *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
+    *   `gen` (*int*): Specific generation index. Defaults to `-1`.
 *   **Returns**: `Figure`.
 
 ### **2.3. Stratification Analysis (`mb.view.strat_*`)**
