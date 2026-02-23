@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 09: Selective Persistence (Save and Load)
+Example 09: Serialization and Persistence of Experimental Data
 ------------------------------------------------
 This example demonstrates how to save and load experiments using 
 MoeaBench's selective persistence system. We explore the 'all', 

@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 08: Advanced Population Diagnostics Workshop
+Example 08: Multi-run Population Stratification and Dominance Analysis
 --------------------------------------------------
 This example demonstrates the complete stratification suite, visualizing
 the "Population Geology" (Dominance Structure) of different search algorithms.
@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("--- Advanced Diagnostics Workshop ---\n")
+    print("--- Multi-run Population Stratification analysis ---\n")
 
     # 1. Setup: Standard 3D problem (DTLZ2)
     # NSGA-III vs SPEA2: A classic head-to-head comparison
@@ -54,7 +54,7 @@ def main():
     strat1 = mb.stats.strata(exp1, gen=SNAPSHOT_GEN)
     strat2 = mb.stats.strata(exp2, gen=SNAPSHOT_GEN)
 
-    # 3. Visual Workshop
+    # 3. Stratification Visualization
     print("\nGenerating visual profiles... (Check the plots)")
 
     # A. Micro-Analysis: Population Diversity (Individual Mode)
@@ -78,7 +78,6 @@ def main():
     #    Mutants or Outliers—solutions so unique they break the distribution.
     ax_ind = mb.view.strat_caste(strat1, strat2, mode='individual', 
                  title=f"Individual Perspective: Solution Merit - Gen {SNAPSHOT_GEN}")
-    ax_ind.figure.savefig("caste_individual.png", dpi=300, bbox_inches='tight')
 
     # B. Macro-Analysis: Stochastic Robustness (Collective Mode)
     # Scientific Inquiry: "What is the aggregate performance distribution across runs?"
@@ -92,15 +91,18 @@ def main():
     #   deviations within the sample.
     ax_coll = mb.view.strat_caste(strat1, strat2, mode='collective', 
                  title=f"Macro View: Stochastic Robustness - Gen {SNAPSHOT_GEN}")
-    ax_coll.figure.savefig("caste_collective.png", dpi=300, bbox_inches='tight')
     
     # C. Competitive View (The Tier Duel)
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
     res_tier = mb.stats.tier(exp1, exp2, gen=SNAPSHOT_GEN)
     res_tier.report_show()
     ax_tier = mb.view.strat_tiers(res_tier, title="Competitive Perspective: Tier Duel")
-    ax_tier.figure.savefig("strat_tiers_duel.png", dpi=300, bbox_inches='tight')
-    print("Saved 'strat_tiers_duel.png'")
+    print("Competitive analysis complete.")
+
+    # NEW: Global Rank Distribution (The classic view)
+    # Question: "How 'deep' is the population across dominance layers?"
+    print("\nPlotting Global Rank Distribution (strat_ranks)...")
+    mb.view.strat_ranks(exp1, title="Global Rank Stratification (NSGA-III)")
 
     print("\nVisual profiles generated. Check the PNG files or the window if available.")
     plt.show(block=True)

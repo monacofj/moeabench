@@ -37,8 +37,18 @@ def main():
     hv1.report_show()
 
     # The perf_history automatically computes mean and standard deviation
-    print("Plotting statistical convergence...")
+    print("Plotting statistical convergence (Hypervolume)...")
     mb.view.perf_history(hv1, title="Stability Analysis (5-run HV)")
+
+    # NEW: Population Maturity (Front Size)
+    # Tracks the density of the non-dominated set—a key indicator of selection pressure.
+    print("Plotting Population Maturity (Front Size)...")
+    mb.view.perf_front_size(exp1, title="Selection Pressure Stability (ND-Density)")
+
+    # NEW: Performance Density (Luck Stability)
+    # Visualizes the probability distribution of metric values.
+    print("Plotting Performance Density...")
+    mb.view.perf_density(exp1, title="Stochastic Distribution (HV Density)")
 
     # 4. Aggregated Quality (Topographic Domain)
     # The 'front()' method provides the combined non-dominated solutions 
@@ -62,6 +72,13 @@ if __name__ == "__main__":
 #
 # The 'perf_history' dispersion shadow (mean +/- std) shows the reliability. 
 # A thin shadow indicates high consistency.
+#
+# NEW: The 'perf_front_size' identifies if the algorithm is successfully 
+# pushing the population toward the front or if it's struggling to generate 
+# non-dominated solutions.
+#
+# NEW: The 'perf_density' identifies the "Risk Profile". A wide curve implies 
+# high sensitivity to random seeds (Luck factor).
 #
 # The 'superfront' is the definitive result for the user: it's the best 
 # knowledge we have about the problem after several independent search attempts.

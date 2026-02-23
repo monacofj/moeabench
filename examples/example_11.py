@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 11: Automated Diagnostics (Algorithmic Pathology)
+Example 11: Hierarchical Diagnostic Inference and Pathology Identification
 ---------------------------------------------------------
 This example demonstrates how to use the automated diagnostics module to 
 interpret the health of an optimization search beyond raw numbers.
@@ -29,7 +29,7 @@ def main():
     mb.diagnostics.audit(exp1).report_show()
     
     # --- CASE 2: MOEA/D on DPF2 (Diversity Collapse Vulnerability) ---
-    print("\n[Case 2] MOEA/D on DPF2 (The Paradox of Collapse)")
+    print("\n[Case 2] MOEA/D on DPF2 (Search Collapse Case Study)")
     exp2 = mb.experiment()
     exp2.mop = mb.mops.DPF2(M=3) # Degenerate front known for diversity issues
     exp2.moea = mb.moeas.MOEAD(population=92) 

@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 14: Diagnostic Visualization Suite (The Clinical Layer)
+Example 14: Multivariate Diagnostic Visualization and Instrument Suite
 ---------------------------------------------------------------
 This example demonstrates the 4 primary diagnostic instruments:
 1. clinic_ecdf: Goal attainment (The Judge)
@@ -24,7 +24,7 @@ from MoeaBench import mb
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("Example 14: Exploring Diagnostic Visualizations")
+    print("Example 14: Multivariate Diagnostic Visualization and Instrument Suite")
     print("===============================================")
 
     # 1. Setup Benchmark and Scenario

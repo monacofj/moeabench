@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 01: Basic Experiment Cycle
+Example 01: Fundamentals of the Experimental Workflow
 ----------------------------------
 This example demonstrates the fundamental workflow of MoeaBench:
 defining a problem (MOP), choosing an algorithm (MOEA), 

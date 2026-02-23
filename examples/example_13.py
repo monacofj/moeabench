@@ -6,7 +6,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Example 13: Clinical Quality Audit (Q-Scores)
+Example 13: Reference-based Quality Validation (Q-Scores)
 =====================================================
 
 This example demonstrates the "Clinical Validation" layer of the diagnostic suite.
@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("=== Example 13: Clinical Quality Audit (Q-Scores) ===\n")
+    print("=== Example 13: Reference-based Quality Validation (Q-Scores)")
 
     # 1. Setup: DTLZ2 (3 Objectives) and NSGA-II
     # We use a standard setup but strangle the resources to force a failure.

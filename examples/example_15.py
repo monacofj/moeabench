@@ -5,15 +5,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 15: Triple-Mode Hypervolume (Raw, Relative, Absolute)
+Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives
 -------------------------------------------------------------
-This example demonstrates the three scaling perspectives in MoeaBench:
-1. 'raw': Physical volume conquered (H_raw). Invariant to neighbors.
-2. 'relative': Competitive efficiency (H_rel). Scaled by session best.
-3. 'absolute': Theoretical optimality (H_abs). Scaled by Ground Truth.
+This example demonstrates the three scaling modes in MoeaBench, controlled by 
+the `scale` parameter:
 
-In this example, we compare a Baseline (small budget) vs a Premium (high budget)
-configuration and observe their behavior across different normalizations.
+1. 'raw': Physical volume dominated in the objective space ($H_{raw}$). 
+   Measures absolute search progress in objective units.
+2. 'relative': Aggregated Efficiency ($H_{rel}$). Scaled [0, 1] based on 
+   the range of all solutions present in the session (or specified in `ref`).
+3. 'absolute': Theoretical Optimality ($H_{abs}$). Scaled [0, 1] relative 
+   to the theoretical maximum defined by the Ground Truth.
+
+We also explore the `joint` parameter, which controls whether algorithms 
+share the same Bounding Box (BBox) during auto-normalization.
 """
 
 import mb_path
@@ -23,7 +28,7 @@ import numpy as np
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("Example 15: The Perspective Paradox (Individual vs Joint)")
+    print("Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives")
     print("========================================================\n")
 
     # 1. Setup the Problem & Calibration
@@ -76,9 +81,13 @@ def main():
         plt.tight_layout()
         plt.show()
 
-    # --- BLOCK 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
+    # --- PHASE 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
     print("\n[Phase 1] Calculating Individual Metrics (joint=False)...")
-    print("Note: Each algorithm is evaluated against its own (local) worst nadir.")
+    print("Normalización individual: Each algorithm is evaluated against its local nadir.")
+    print("Scale Mode Details:")
+    print(" - 'raw': Absolute volume dominated (sensitive to objective ranges).")
+    print(" - 'relative': Efficiency normalized [0, 1] against the algorithm's own worst point.")
+    print(" - 'absolute': Optimality reach normalized [0, 1] against the Ground Truth.")
     h1_ind = [
         mb.metrics.hv(exp1, scale='raw', joint=False),
         mb.metrics.hv(exp1, scale='relative', joint=False),
@@ -91,9 +100,14 @@ def main():
     ]
     plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
-    # --- BLOCK 2: JOINT PERSPECTIVE (joint=True) ---
+    # --- PHASE 2: JOINT PERSPECTIVE (joint=True) ---
     print("\n[Phase 2] Calculating Joint Metrics (joint=True)...")
-    print("Note: Both algorithms share the same (global) worst nadir.")
+    print("Default Behavior: By default, MoeaBench uses a global Bounding Box (BBox)")
+    print("to evaluate all algorithms in a common metric grid. This can be")
+    print("manually set via 'ref' or auto-calculated from all involved experiments.")
+    print("\nThe 'joint' parameter specifically controls auto-normalization:")
+    print(" - joint=True (Default): All sets share a global BBox for a fair comparison.")
+    print(" - joint=False: Disables auto-normalization; local BBoxes are used instead.")
     ref = [exp1, exp2]
     h1_jnt = [
         mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),

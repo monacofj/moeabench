@@ -56,6 +56,11 @@ def main():
     # Custom threshold: declare match only if distance < 0.05
     res_emd = mb.stats.topo_distribution(exp1, exp2, method='emd', threshold=0.05)
     res_emd.report_show()
+
+    # NEW: Visualizing the Topological Gap
+    # Question: "Where exactly in the objective space does one algorithm win?"
+    print("\nPlotting Topological Gap (topo_gap)...")
+    mb.view.topo_gap(exp1, exp2, title="Topological Gap Analysis (NSGA-II vs NSGA-III)")
     
     # 6. Visual Verification: Distribution Plots (topo_density)
     # 6. Visual Verification: Documentation Composite (Match vs Mismatch)
@@ -85,18 +90,7 @@ def main():
     ax1.set_title("Objective Match (f1)", fontsize=11, fontweight='bold')
     ax2.set_title("Decision Mismatch (x3)", fontsize=11, fontweight='bold')
 
-    print("Check the generated figures: Figure 1 is Match, Figure 2 is Mismatch.")
-    
-    # Save for documentation (Overwrite the standard figure with this composite)
-    # Ensure the directory exists or just save to relative path if running from root
-    import os
-    save_path = "docs/images/topo_density.png"
-    if os.path.exists("docs/images"):
-        fig.savefig(save_path, dpi=100)
-        print(f"Composite figure saved as '{save_path}' (Documentation Updated)")
-    else:
-        fig.savefig("topo_density_composite.png", dpi=100)
-        print("Composite figure saved as 'topo_density_composite.png' (Docs folder not found)")
+    print("Check the generated figures.")
 
     # Show the interactive window (fixes regression reported by user)
     plt.show()

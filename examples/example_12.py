@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 12: Physical Engineering Audit (FAIR Metrics)
+Example 12: Physical Performance Assessment (FAIR Metrics)
 -----------------------------------------------------
 This example focuses on the "Facts" layer of the diagnostic suite.
 Unlike Q-Scores (which are calibrated interpretations), FAIR metrics 
@@ -22,7 +22,7 @@ from MoeaBench import mb
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("Example 12: Exploring the Physical (FAIR) Layer")
+    print("Example 12: Physical Performance Assessment (FAIR Metrics)")
     print("===============================================")
 
     # Setup: We use DTLZ2 (3 objectives) as our benchmark
