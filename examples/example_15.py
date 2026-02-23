@@ -4,22 +4,23 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+
 """
 Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives
 -------------------------------------------------------------
 This example demonstrates the three scaling modes in MoeaBench, controlled by 
 the `scale` parameter:
 
-1. 'raw': Physical volume dominated in the objective space ($H_{raw}$). 
-   Measures absolute search progress in objective units.
+1. 'raw': Absolute volume dominated in the objective space ($H_{raw}$). 
 2. 'relative': Aggregated Efficiency ($H_{rel}$). Scaled [0, 1] based on 
    the range of all solutions present in the session (or specified in `ref`).
 3. 'absolute': Theoretical Optimality ($H_{abs}$). Scaled [0, 1] relative 
    to the theoretical maximum defined by the Ground Truth.
 
-We also explore the `joint` parameter, which controls whether algorithms 
-share the same Bounding Box (BBox) during auto-normalization.
+We also explore the `joint` parameter, which controls auto-normalization 
+(sharing the same Bounding Box) between different experiments.
 """
+
 
 import mb_path
 from MoeaBench import mb
@@ -101,13 +102,13 @@ def main():
     plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
     # --- PHASE 2: JOINT PERSPECTIVE (joint=True) ---
-    print("\n[Phase 2] Calculating Joint Metrics (joint=True)...")
-    print("Default Behavior: By default, MoeaBench uses a global Bounding Box (BBox)")
+    print("\n[Phase 2] Joint Perspective (Default Behavior)")
+    print("Note: Normally Hypervolume is calculated for all experiments using the same BBox")
     print("to evaluate all algorithms in a common metric grid. This can be")
     print("manually set via 'ref' or auto-calculated from all involved experiments.")
     print("\nThe 'joint' parameter specifically controls auto-normalization:")
-    print(" - joint=True (Default): All sets share a global BBox for a fair comparison.")
-    print(" - joint=False: Disables auto-normalization; local BBoxes are used instead.")
+    print(" - One can pass a global reference via 'ref' or use the default auto-normalization.")
+    print(" - The 'joint' parameter serves specifically to disable this auto-normalization.")
     ref = [exp1, exp2]
     h1_jnt = [
         mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),
