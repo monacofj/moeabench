@@ -18,8 +18,8 @@ from plotly.subplots import make_subplots
 
 # Paths
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_audit_v0.9.json")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.9.html")
+AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/calibration_reference_audit_v0.9.json")
+OUTPUT_HTML = os.path.join(PROJ_ROOT, "tests/CALIBRATION_v0.11.html")
 
 # Ensure project root in path for imports
 if PROJ_ROOT not in sys.path:
