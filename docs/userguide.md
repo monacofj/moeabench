@@ -195,10 +195,15 @@ hv = mb.metrics.hv(exp1)
 
 # Scenario B: Direct Comparison (Fairness between A and B)
 # Note: high-level plots do this automatically!
-hv_a = mb.metrics.hv(expA, ref=expB)
-hv_b = mb.metrics.hv(expB, ref=expA)
+hv_a = mb.metrics.hv(expA, ref=expB, scale='relative')
+hv_b = mb.metrics.hv(expB, ref=expA, scale='relative')
 
-# Scenario C: Absolute consistency (Global Standard)
+# Scenario C: Absolute Certification (Proximity to GT)
+# Requires mop.calibrate() to have been executed.
+# Scale is normalized against theoretical Ground Truth (H_abs).
+hv_abs = mb.metrics.hv(expA, scale='absolute')
+
+# Scenario D: Absolute consistency (Global Standard)
 # Compare A and B, but keep the scale fixed to the "True Front" (exp_truth)
 # Useful so that HV values don't change if you add/remove algorithms later.
 hv_a = mb.metrics.hv(expA, ref=exp_truth)
@@ -413,11 +418,11 @@ This domain reduces high-dimensional outcomes into scalar values (Hypervolume, I
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
 
-*   **Tripartite Hypervolume Reporting**: Starting with v0.7.6, Hypervolume is reported using three standardized measures:
-    1.  **H_raw**: The physical dominated volume.
-    2.  **H_ratio**: Search area coverage (normalized to 1.1 reference).
-    3.  **H_rel**: Convergence to the truth.
-*   **Performance Saturation (H_rel > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
+*   **Triple-Mode Hypervolume Reporting**: Starting with v0.11, Hypervolume is reported using three standardized measures:
+    1.  **H_raw**: The physical dominated volume ($Physical$).
+    2.  **H_rel**: Competitive efficiency (Normalized to $session\_max$).
+    3.  **H_abs**: Theoretical optimality (Normalized to $Ground\_Truth$).
+*   **Performance Saturation (H_abs > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
 *   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
 ```python

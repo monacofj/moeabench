@@ -8,7 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Status
 
-Accepted (Implemented in v0.7.6)
+Accepted (Implemented in v0.7.6; evolved in v0.11.2, see [ADR 0035](0035-dual-mode-hypervolume-reporting.md))
 
 ## Context
 
@@ -18,14 +18,16 @@ Previous versions of MoeaBench reported a single "Hypervolume" value. During the
 
 We decided to decompose the Hypervolume metric into three distinct physical interpretations:
 
-1.  **H_raw (Physical Volume)**: The absolute volume dominated by the solution set relative to the reference point $\vec{r} = [1.1, \dots, 1.1]$.
+1.  **H_raw (Physical Volume)**: The absolute volume dominated by the solution set within the Global Bounding Box.
     *   *Unit*: $Obj_1 \cdot Obj_2 \cdot \dots \cdot Obj_M$.
-2.  **H_ratio (Exploration/Coverage)**: Scaled by the volume of the search area (Reference Box).
-    *   *Formula*: $\frac{H_{raw}}{V_{RefBox}}$ where $V_{RefBox} = \prod (r_i - Ideal_i)$.
-    *   *Interpretation*: 0.0 (nothing found) to 1.0 (perfect coverage of the box).
-3.  **H_rel (Convergence/Truth)**: Scaled by the volume of the optimal set.
+2.  **H_rel (Competitive Efficiency)**: Scaled by the session's maximum found volume. Forces a 1.0 ceiling for the current winner. (Formerly `H_ratio`).
+    *   *Interpretation*: 0.0 to 1.0 (relative to competition).
+3.  **H_abs (Theoretical Optimality)**: Scaled by the volume of the mathematical Ground Truth.
     *   *Formula*: $\frac{H_{sol}}{H_{GT}}$.
-    *   *Interpretation*: 1.0 means the algorithm matched the Ground Truth hypervolume. > 1.0 indicates sampling saturation (filling GT gaps).
+    *   *Interpretation*: 1.0 means mathematical perfection. (Formerly `H_rel`).
+
+> [!NOTE]
+> **v0.11.x Evolution**: Starting with v0.11, the nomenclature was refined for scientific clarity. `H_ratio` was renamed to `H_rel` (Relative Efficiency), and the old `H_rel` (Truth) was renamed to `H_abs` (Absolute Optimality). See **[ADR 0035](0035-triple-mode-hypervolume-reporting.md)** for details.
 
 ## Consequences
 

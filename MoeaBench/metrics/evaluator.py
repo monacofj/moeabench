@@ -15,6 +15,7 @@ from .GEN_igdplus import GEN_igdplus
 from ..core.base import Reportable
 from ..core.run import Population
 from ..defaults import defaults
+import warnings
 
 # We need the helper logic from analyse to calculate reference points
 # Since analyse is a mixin class, we might need to extract 'normalize' to a util or duplicate it.
@@ -94,6 +95,7 @@ class MetricMatrix(Reportable):
         # Determine if this metric is scaled 
         self.is_ratio = "(Ratio)" in metric_name or "(Rel)" in metric_name
         self.is_raw = "(Raw)" in metric_name
+        self.is_abs = "(Abs)" in metric_name
 
     def report(self, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
@@ -147,6 +149,13 @@ class MetricMatrix(Reportable):
                     lines.extend([
                         "> [!NOTE]",
                         "> **Physical Objective Space**: How much objective space has been physically conquered within the global search boundaries established in this session?",
+                        ""
+                    ])
+                elif self.is_abs:
+                    lines.extend([
+                        "> [!TIP]",
+                        "> **Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
+                        "> *Note: Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).* ",
                         ""
                     ])
 
@@ -344,12 +353,33 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         exp: Experiment, Run, or Population object.
         ref: Reference set/experiment for normalization bounding box.
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
-        scale (str): 'raw' (default absolute volume) or 'ratio' (comparative scaling to 1.0).
+        scale (str): Scaling perspective: 'raw' (default), 'relative', or 'absolute'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         gens (int or slice): Limit calculation to specific generation(s).
     """
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
+    
+    # --- 0. MOP Validation & Meta-data ---
+    # Check if we are mixing different problems
+    scale = str(scale).lower()
+    from ..diagnostics.baselines import load_offline_baselines
+    
+    mop_names = []
+    for item in [exp] + ref:
+        if hasattr(item, 'mop'):
+            mop_names.append(getattr(item.mop, 'name', item.mop.__class__.__name__))
+        elif hasattr(item, 'evaluation') and hasattr(item, 'pf'):
+            # It's likely a MOP object
+            mop_names.append(getattr(item, 'name', item.__class__.__name__))
+            
+    if len(set(mop_names)) > 1:
+        msg = f"Hypervolume: Mixed MOPs detected in session: {list(set(mop_names))}. " \
+              f"Comparing different problems yields invalid geometric results."
+        if scale == 'absolute':
+            raise ValueError(msg)
+        else:
+            warnings.warn(msg)
     
     # 1. Collect all data
     F_GENs, Fs, name, n_runs = _extract_data(exp, gens=gens)
@@ -379,7 +409,6 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                 logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
                              f"Switching to Monte Carlo approximation (n={n_samples}).")
             elif mode == 'exact' and M > 8:
-                import warnings
                 warnings.warn(f"Exact Hypervolume calculation for M={M} objectives has exponential complexity O(2^M) "
                               f"and may be extremely slow. Consider using mode='auto' or mode='fast'.")
             
@@ -398,12 +427,13 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling
     # --- 4. Scale Post-Processing ---
     scale = str(scale).lower()
-    if scale == 'ratio':
-        if ref:
-            # A) Explicit Reference (e.g., Ground Truth or Baseline Experiment)
-            if not isinstance(ref, list): ref_list = [ref]
-            else: ref_list = ref
+    if scale in ['relative', 'ratio']:
+        if scale == 'ratio':
+            warnings.warn("scale='ratio' is deprecated, use scale='relative' instead.", DeprecationWarning)
             
+        if ref:
+            # A) Explicit Reference (e.g., Competition Mode)
+            ref_list = ref
             ref_hvs = []
             for r in ref_list:
                 _, r_fs, _, _ = _extract_data(r)
@@ -418,18 +448,48 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
             ref_hv_val = np.max(ref_hvs) if ref_hvs else 0
         else:
             # B) Implicit Self-Reference (Best run in current data)
-            # The best final result observed in the provided runs hits 1.0.
             ref_hv_val = np.nanmax(mat[-1, :]) if mat.size > 0 else 0
 
         if ref_hv_val > 0:
             mat /= ref_hv_val
             
-        final_name = "Hypervolume (Ratio)"
+        final_name = "Hypervolume (Relative)"
     
+    elif scale == 'absolute':
+        # Retrieve Ground Truth from Calibration Registry
+        mop_obj = getattr(exp, 'mop', None)
+        if mop_obj is None:
+             raise ValueError("Hypervolume 'absolute' scale requires an experiment with an associated MOP.")
+             
+        mop_id = getattr(mop_obj, 'name', mop_obj.__class__.__name__)
+        try:
+            bases = load_offline_baselines()
+            gt_registry = bases.get("_gt_registry", {})
+            if mop_id not in gt_registry:
+                raise ValueError(f"MOP '{mop_id}' is not calibrated. Run mop.calibrate() first to enable absolute scale.")
+            
+            gt = np.array(gt_registry[mop_id])
+            
+            # Calculate Reference HV (1.0 Ceiling) using the GT
+            if mode == 'fast' or (mode == 'auto' and M > 6):
+                m = GEN_mc_hypervolume([gt], M, min_val, max_val, n_samples=n_samples)
+            else:
+                m = GEN_hypervolume([gt], M, min_val, max_val)
+            
+            gt_hv = float(m.evaluate()[0])
+            if gt_hv > 0:
+                mat /= gt_hv
+            
+        except Exception as e:
+            if isinstance(e, ValueError): raise e
+            raise RuntimeError(f"Failed to calculate absolute hypervolume: {e}")
+            
+        final_name = "Hypervolume (Absolute)"
+
     elif scale == 'raw':
         final_name = "Hypervolume (Raw)"
     else:
-        raise ValueError(f"Unknown scale parameter: {scale}. Use 'ratio' or 'raw'.")
+        raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw', 'relative', or 'absolute'.")
 
     return MetricMatrix(mat, final_name, source_name=name)
 
@@ -668,10 +728,31 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         
         lstyles = kwargs.get('linestyles', ['-', '--', ':', '-.'])
         if not isinstance(lstyles, (list, tuple)): lstyles = [lstyles]
-        
+
+        labels = kwargs.get('labels', [])
         for i, mat in enumerate(metric_matrices):
              data = mat.values
-             label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
+             
+             if i < len(labels):
+                 label = labels[i]
+             else:
+                 # Standard Legend Logic: Name (G: XX, R: YY)
+                 name = mat.source_name if mat.source_name else mat.metric_name
+                 G, R = data.shape
+                 meta = []
+                 
+                 # Rule: If G=1 (snapshot), specify G. If history (G>1), omit G.
+                 if G == 1:
+                     meta.append(f"G: 1")
+                 
+                 # Rule: If R=1 (single run), specify R. If multiple (aggregated), R is implied 
+                 # unless it's a specific subset (not detectable here yet, so we omit if R > 1).
+                 if R == 1:
+                     meta.append(f"R: 1")
+                     
+                 suffix = f" ({', '.join(meta)})" if meta else ""
+                 label = f"{name}{suffix}"
+             
              ls = lstyles[i % len(lstyles)]
              
              if data.shape[1] > 1:

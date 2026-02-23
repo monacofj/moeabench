@@ -41,8 +41,8 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **PS** | Pareto Set | The values of decision variables in **Decision Space**. |
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
 | **H_raw** | Raw Hypervolume | The absolute numerical value in physical units (e.g., $H_{raw} = 1.15$). |
-| **H_ratio** | Hypervolume Ratio | Normalized by the **Reference Box** (Ideal to Nadir+Offset). Measures exploration. |
-| **H_rel** | Relative Hypervolume | Normalized by the **Ground Truth** performance. Measures convergence. |
+| **H_rel** | Relative Hypervolume | Normalized by the **Session Best**. Measures competitive efficiency. (Pre-v0.11.2: `H_ratio`). |
+| **H_abs** | Absolute Hypervolume | Normalized by the **Ground Truth**. Measures proximity to theoretical optimum. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
 | **SP** | Spacing | Measure of the spread/uniformity of the solution set. |
@@ -418,9 +418,10 @@ Calculates the Hypervolume for an experiment, run, or population. Always constru
 *   `exp`: The `Experiment`, `Run`, or `Population` object to evaluate.
 *   `ref` (optional): Set of reference experiments used exclusively to expand the Bounding Box.
 *   `mode` (str): Algorithmic choice (`'auto'`, `'fast'`, `'exact'`).
-*   `scale` (str): Narrative choice for the returned MetricMatrix:
-    *   `'raw'` (Default): Returns the absolute physical volume dominated within the BBox. Ensures volumetric invariance for the same BBox, avoiding ratio-induced shifts when worse neighbors are added. Covers the question: *"How much objective space has been physically conquered?"*
-    *   `'ratio'` : Divides the physical volume by the maximum volume found in the session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. 
+*   `scale` (str): Narrative perspective for normalization:
+    *   `'raw'` (Default): Returns the absolute physical volume dominated within the Global Bounding Box. Ensures volumetric invariance across comparisons by avoiding ratio-induced shifts. Answers: *"How much objective space has been physically conquered?"*
+    *   `'relative'`: Divides the physical volume by the maximum volume found in the current session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. (Deprecated alias: `'ratio'`).
+    *   `'absolute'`: Normalizes by the **Ground Truth** of the underlying MOP. Requires pre-calibration (via `mop.calibrate()`). Provides a Cross-Session Absolute Score where `1.0` represents mathematical perfection. Answers: *"What is the absolute proximity to the theoretical optimum?"*
 *   `gens` (optional): Slice or integer to limit the generation scope.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**

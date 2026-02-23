@@ -5,17 +5,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 15: Dual-Mode Hypervolume (Raw vs Ratio)
-------------------------------------------------
-This example demonstrates the critical difference between the two 
-hypervolume scaling modes in MoeaBench:
-1. 'raw': The absolute physical volume dominated by the algorithm.
-2. 'ratio': The relative efficiency compared to the maximum volume 
-            found in the current session (forces a 1.0 ceiling).
+Example 15: Triple-Mode Hypervolume (Raw, Relative, Absolute)
+-------------------------------------------------------------
+This example demonstrates the three scaling perspectives in MoeaBench:
+1. 'raw': Physical volume conquered (H_raw). Invariant to neighbors.
+2. 'relative': Competitive efficiency (H_rel). Scaled by session best.
+3. 'absolute': Theoretical optimality (H_abs). Scaled by Ground Truth.
 
-Understanding this difference is key to interpreting whether an algorithm
-is physically dominating more space, or simply changing its rank relative
-to a new competitor.
+In this example, we compare a Baseline (small budget) vs a Premium (high budget)
+configuration and observe their behavior across different normalizations.
 """
 
 import mb_path
@@ -25,82 +23,105 @@ import numpy as np
 
 def main():
     print(f"MoeaBench v{mb.system.version()}")
-    print("Example 15: The Reference Paradox (Raw vs Ratio)")
-    print("==============================================\n")
+    print("Example 15: The Triple-Mode Perspective")
+    print("=======================================\n")
 
-    # 1. Setup the Problem
+    # 1. Setup the Problem & Calibration
     dtlz2 = mb.mops.DTLZ2(n_var=7, n_obj=3)
     
-    print("Running Experiment 1 (Baseline: 20 individuals)...")
+    # Absolute mode requires calibration data (the dense Ground Truth)
+    dtlz2.calibrate()
+    
+    # Configuration A: Baseline (Low budget)
+    print("\nRunning Experiment 1 (Baseline: 20 individuals)...")
     exp1 = mb.experiment(dtlz2, mb.moeas.NSGA2(population=20, generations=50))
     exp1.name = "Baseline NSGA-II"
     exp1.run(repeat=5)
     
-    print("\nRunning Experiment 2 (Superior Competitor: 100 individuals)...")
+    # Configuration B: Premium (High budget)
+    print("\nRunning Experiment 2 (Premium: 100 individuals)...")
     exp2 = mb.experiment(dtlz2, mb.moeas.NSGA2(population=100, generations=50))
     exp2.name = "Premium NSGA-II"
     exp2.run(repeat=5)
 
-    # 2. THE PARADOX DEMONSTRATION
-    print("\n[Phase 1] Calculating Metrics with a Shared Bounding Box...")
-    # To have absolute invariance, we must fix the Bounding Box (Nadir) for all.
-    # In a real session, MoeaBench does this by looking at everyone in the 'ref' list.
+    # 2. THE THREE PERSPECTIVES
+    print("\n[Phase 1] Calculating Metrics...")
     global_ref = [exp1, exp2]
     
-    # Raw HV: Physically Conquer (Invariant if BB is fixed)
-    hv_raw1 = mb.metrics.hv(exp1, ref=global_ref, scale='raw')
-    hv_raw2 = mb.metrics.hv(exp2, ref=global_ref, scale='raw')
+    # A) Raw: Physical volume conquer (H_raw)
+    hv1_raw = mb.metrics.hv(exp1, ref=global_ref, scale='raw')
+    hv2_raw = mb.metrics.hv(exp2, ref=global_ref, scale='raw')
 
-    # Ratio HV: Competitive Efficiency (Relative to best in session)
-    hv_ratio1 = mb.metrics.hv(exp1, ref=global_ref, scale='ratio')
-    hv_ratio2 = mb.metrics.hv(exp2, ref=global_ref, scale='ratio')
+    # B) Relative: Competitive ranking (H_rel, relative to session best)
+    hv1_rel = mb.metrics.hv(exp1, ref=global_ref, scale='relative')
+    hv2_rel = mb.metrics.hv(exp2, ref=global_ref, scale='relative')
 
-    # Now, let's simulate the "Alone" case for exp1.
-    # If exp2 wasn't in the room, exp1 would be its own 1.0 benchmark.
-    # We use its own internal best as denominator.
-    denom_alone = np.nanmax(hv_raw1.values[-1, :])
-    hv_ratio_alone1 = mb.metrics.MetricMatrix(hv_raw1.values / denom_alone, "Hypervolume (Ratio)")
-    hv_ratio_alone1.source_name = exp1.name
+    # C) Absolute: Theoretical optimality (H_abs, relative to GT)
+    hv1_abs = mb.metrics.hv(exp1, scale='absolute')
+    hv2_abs = mb.metrics.hv(exp2, scale='absolute')
 
-    print(f"-> exp1 Ratio (Alone):    {hv_ratio_alone1.values[-1,:].mean():.4f} (Champion!)")
-    print(f"-> exp1 Ratio (vs exp2): {hv_ratio1.values[-1,:].mean():.4f} (Looks worse suddenly!)")
-    print(f"-> exp1 Raw (Alone):     {hv_raw1.values[-1,:].mean():.4f}")
-    print(f"-> exp1 Raw (vs exp2):    {hv_raw1.values[-1,:].mean():.4f} (STABLE!)")
+    print("\n--- RESULTS AT FINAL GENERATION ---")
+    print(f"-> Raw [Invariant physical volume]:")
+    print(f"     exp1: {hv1_raw.values[-1,:].mean():.4f}")
+    print(f"     exp2: {hv2_raw.values[-1,:].mean():.4f}")
+    
+    print(f"-> Relative [Ranked against session best]:")
+    print(f"     exp1: {hv1_rel.values[-1,:].mean():.4f}")
+    print(f"     exp2: {hv2_rel.values[-1,:].mean():.4f} (Session Winner)")
+    
+    print(f"-> Absolute [Theoretical optimality (vs GT)]:")
+    print(f"     exp1: {hv1_abs.values[-1,:].mean():.4f}")
+    print(f"     exp2: {hv2_abs.values[-1,:].mean():.4f}")
 
     # 3. Visual Comparison
     print("\nGenerating comparative plots...")
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(16, 5))
     
-    # Plotting Raw (LEFT): Show the Invariance (Robustness)
-    # We plot the exact same metric data twice (once with a dashed style by default)
-    # to show that it occupies the EXACT same physical space.
-    mb.view.perf_history(hv_raw1, hv_raw1, ax=ax1, 
-                         title="The Raw Invariance (Robustness)", 
-                         labels=["exp1 (Standalone Reference)", "exp1 (Session Reference)"],
-                         ylabel="Absolute Hypervolume")
+    # Extract final values for annotations
+    v1_raw, v2_raw = hv1_raw.values[-1,:].mean(), hv2_raw.values[-1,:].mean()
+    v1_rel, v2_rel = hv1_rel.values[-1,:].mean(), hv2_rel.values[-1,:].mean()
+    v1_abs, v2_abs = hv1_abs.values[-1,:].mean(), hv2_abs.values[-1,:].mean()
 
-    # Plotting Ratio (RIGHT): Show the "Shift" (Fragility)
-    # We compare exp1 (alone) vs exp1 (relative to exp2)
-    mb.view.perf_history(hv_ratio_alone1, hv_ratio1, ax=ax2, 
-                         title="The Ratio Shift (Fragility)", 
-                         labels=["exp1 (Baseline Only)", "exp1 (Competitive Session)"],
-                         ylabel="Hypervolume (Ratio)")
+    # Unified Y-axis based on Raw
+    y_max = max(1.05, v2_raw * 1.05)
     
-    print("\n--- CONCLUSION ---")
-    print("Compare the two plots:")
-    print("1. LEFT (Raw): The algorithm's contribution is physically invariant (curves overlap perfectly).")
-    print("   *Yes, it is only ONE curve visible because they are 100% mathematically identical.*")
-    print("2. RIGHT (Ratio): The same algorithm seems to lose quality just because someone else is better.")
+    # Helper function to add annotated horizontal lines
+    def annotate_lines(ax, val1, val2):
+        # Val 1: Blue
+        ax.axhline(val1, color='blue', linestyle=':', alpha=0.5)
+        ax.text(0.5, val1 - y_max*0.01, f"hv1 = {val1:.3f}", 
+                color='blue', fontsize=8, va='top', ha='left')
+        
+        # Val 2: Orange
+        ax.axhline(val2, color='darkorange', linestyle=':', alpha=0.5)
+        ax.text(0.5, val2 - y_max*0.01, f"hv2 = {val2:.3f}", 
+                color='darkorange', fontsize=8, va='top', ha='left')
+        
+        ax.set_ylim([0, y_max])
     
-    print("\n[Scientific Note on the 'Coincidence']:")
-    print("You might notice that 'Raw' and 'Ratio' values look similar (e.g., 0.84 vs 0.86).")
-    print("This is because in DTLZ benchmarks, the objective space is typically normalized to a")
-    print("unit hypercube (1x1x1). Thus, the physical volume (raw) and the percentage (ratio)")
-    print("converge to similar numbers. In a real-world engineering problem where objectives")
-    print("measure thousands of dollars or kilograms, the numbers would be orders of magnitude apart.")
-    
-    print("\nThis demonstrates why 'raw' is the scientific default in MoeaBench.")
+    # Plot 1: RAW
+    # No 'labels' passed -> Engine will use standard 'Name' format for history
+    mb.view.perf_history(hv1_raw, hv2_raw, ax=ax1, 
+                         title="1. Physical (Raw)\n[Invariant Absolute Volume]", 
+                         ylabel="Volumetric Units")
+    annotate_lines(ax1, v1_raw, v2_raw)
 
+    # Plot 2: RELATIVE
+    mb.view.perf_history(hv1_rel, hv2_rel, ax=ax2, 
+                         title="2. Competitive (Relative)\n[Forced 1.0 Ceiling]", 
+                         ylabel="Efficiency Ratio")
+    annotate_lines(ax2, v1_rel, v2_rel)
+    ax2.axhline(1.0, color='gray', linestyle='--', alpha=0.7, label="Session Winner (1.0)")
+    ax2.legend(loc='lower right', fontsize=8)
+
+    # Plot 3: ABSOLUTE
+    mb.view.perf_history(hv1_abs, hv2_abs, ax=ax3, 
+                         title="3. Theoretical (Absolute)\n[Anchored to GT]", 
+                         ylabel="Optimality Ratio")
+    annotate_lines(ax3, v1_abs, v2_abs)
+    ax3.axhline(1.0, color='gold', linestyle='--', alpha=1.0, label="Ground Truth (1.0)")
+    ax3.legend(loc='lower right', fontsize=8)
+    
     plt.tight_layout()
     plt.show()
 

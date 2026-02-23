@@ -26,6 +26,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Enriched metadata display including problem dimensionality, algorithm settings, and stop criteria.
 - **Scientific Persistence Layer v2**: Expanded `metadata.json` schema to include structured context (mop, moea, stop, repeat) for improved structured traceability.
 
+## [Unreleased]
+
+### Added
+- **Triple-Mode Hypervolume (Phase 2)**:
+  - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
+  - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity.
+  - Mandatory problem calibration requirement for absolute metrics.
+  - MOP Homogeneity validation protecting against invalid physical comparisons.
+- **Narrative Reporting Suite**:
+  - Semantic reporting for all three Hypervolume perspectives in `.report()`.
+  - Detailed didactic explanation of $H_{raw}$, $H_{rel}$, and $H_{abs}$ in docstrings and reports.
+- **Standardized Plotting Engine**:
+  - Unified legend formatting: `Name (G: XX, R: YY)`.
+  - Smart Omission logic: Hides $G$ in history plots and $R$ in full-set aggregations to avoid visual clutter.
+  - Unified Y-axis support for multi-plot comparisons in Example 15.
+
 ## [0.10.9] - 2026-02-20
 
 ### Fixed
