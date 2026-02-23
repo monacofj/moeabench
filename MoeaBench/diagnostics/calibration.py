@@ -27,14 +27,21 @@ N_IDEAL_DRAWS = 30
 K_GRID_DEFAULT = list(range(10, 51)) + [100, 150, 200]
 SEED_START = 1000
 
-def calibrate_mop(mop: Any, baseline: Optional[str] = None, force: bool = False, k_values: Optional[List[int]] = None) -> bool:
+def calibrate_mop(mop: Any, 
+                  source_baseline: Optional[str] = None, 
+                  source_gt: Optional[Union[str, np.ndarray]] = None,
+                  source_search: Optional[Any] = None,
+                  force: bool = False, 
+                  k_values: Optional[List[int]] = None) -> bool:
     """
     Programmatic entry point for MOP calibration.
     
-    Logic:
-    1. Resolve sidecar path (default: <mop_name>.json in MOP's directory).
-    2. If exists and not force: load and register.
-    3. Else: Perform full statistical profiling and save.
+    This function implements the three Ground Truth (GT) protocols:
+    A) Analytical (Default): Calls mop.pf(2000) using the ps() mathematical formula.
+    B) Externally Supplied (source_gt): Uses a provided CSV or array as the "Truth".
+    C) Empirical Search (source_search): Runs a MOEA search to find the GT on-the-fly.
+    
+    The resulting profile is saved as a 'Sidecar' JSON (source_baseline).
     
     Returns:
         bool: True if recalibrated, False if loaded from existing file.
@@ -43,9 +50,9 @@ def calibrate_mop(mop: Any, baseline: Optional[str] = None, force: bool = False,
     if not mop_name:
         mop_name = "UnknownMOP"
 
-    # 1. Resolve Path
-    if baseline:
-        path = baseline
+    # 1. Resolve Sidecar Path
+    if source_baseline:
+        path = source_baseline
     else:
         # Sidecar resolution (proximity to class file)
         try:
@@ -55,24 +62,46 @@ def calibrate_mop(mop: Any, baseline: Optional[str] = None, force: bool = False,
         except:
             path = f"{mop_name}.json"
 
-    # 2. Check Cache/File
+    # 2. Check Cache/File (Protocol: Loader)
     if os.path.exists(path) and not force:
         print(f"MoeaBench: Loading custom baselines for '{mop_name}' from sidecar.")
         base.register_baselines(path)
         return False
 
-    # 3. Perform Calibration
-    print(f"MoeaBench: Calibrating '{mop_name}' (this may take a minute)...")
+    # 3. Resolve Ground Truth (GT)
+    gt = None
     
-    # Materialize Ground Truth
-    gt = mop.pf(n_points=2000)
-    if gt is None or len(gt) == 0:
-        raise ValueError(f"MOP '{mop_name}' returned empty Pareto Front (pf). Cannot calibrate.")
+    # Protocol C: Empirical Search
+    if source_search is not None:
+        print(f"MoeaBench: Discovering Ground Truth for '{mop_name}' via empirical search ({source_search.__class__.__name__})...")
+        from ..core.experiment import experiment
+        exp = experiment(mop=mop, moea=source_search)
+        exp.run()
+        # Use only non-dominated points as the truth
+        gt = exp.non_dominated().objectives
+        
+    # Protocol B: Externally Supplied GT
+    elif source_gt is not None:
+        if isinstance(source_gt, str):
+            print(f"MoeaBench: Loading Ground Truth for '{mop_name}' from CSV: {source_gt}")
+            gt = np.loadtxt(source_gt, delimiter=',')
+        else:
+            gt = np.asanyarray(source_gt)
+            
+    # Protocol A: Analytical (Default)
+    else:
+        print(f"MoeaBench: Generating analytical Ground Truth for '{mop_name}'...")
+        gt = mop.pf(n_points=2000)
 
+    if gt is None or len(gt) == 0:
+        raise ValueError(f"MoeaBench: Calibration failed. Problem '{mop_name}' returned empty Ground Truth.")
+
+    # 4. Perform Statistical Calibration
+    print(f"MoeaBench: Calibrating noisy baselines (this may take a minute)...")
     k_grid = k_values or K_GRID_DEFAULT
     problem_data = _generate_baselines(mop_name, gt, k_grid)
 
-    # 4. Save Sidecar
+    # 5. Save Sidecar
     sidecar_data = {
         "problem_id": mop_name,
         "gt_reference": gt.tolist(),
@@ -84,7 +113,7 @@ def calibrate_mop(mop: Any, baseline: Optional[str] = None, force: bool = False,
     with open(path, "w") as f:
         json.dump(sidecar_data, f, indent=None)
 
-    # 5. Register in current session
+    # 6. Register in current session
     base.register_baselines(sidecar_data)
     
     print(f"MoeaBench: Calibration complete. Profile saved to: {path}")

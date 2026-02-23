@@ -54,7 +54,7 @@ class TestMOPCalibration(unittest.TestCase):
         # Using Mop-level method
         print("\nRunning fresh calibration...")
         # Reduce k_grid for speed in tests
-        recal = mop.calibrate(baseline=self.json_path, k_values=[20, 50])
+        recal = mop.calibrate(source_baseline=self.json_path, k_values=[20, 50])
         self.assertTrue(recal, "Should have performed recalibration")
         self.assertTrue(os.path.exists(self.json_path), "Sidecar JSON should exist")
         
@@ -69,7 +69,7 @@ class TestMOPCalibration(unittest.TestCase):
         
         # 3. Reload (Idempotency)
         print("Running reload (should be instant)...")
-        recal_2 = mop.calibrate(baseline=self.json_path)
+        recal_2 = mop.calibrate(source_baseline=self.json_path)
         self.assertFalse(recal_2, "Should have loaded from cache, not recalibrated")
         
         # 4. Diagnostic Integration

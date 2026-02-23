@@ -658,16 +658,40 @@ MoeaBench uses a standardized ZIP-based persistence format.
 
 MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots). The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 
-### **9.1. BaseMop (`mb.mops.BaseMop`)**
-The abstract skeleton for all problem plugins.
+### **11.1. BaseMop (`mb.mops.BaseMop`)**
+The abstract skeleton for all problem plugins. To create a new problem, you must inherit from this class and implement its core mathematical definitions.
 
-**Methods to Override:**
-*   **`evaluation(X)`**: Must return `{'F': obj_matrix}`.
-*   **`ps(n)`**: [MANDATORY for Validation] Returns $n$ Pareto Set decision variable samples.
+**Core Mathematical Contract (Methods to Override):**
+*   **`evaluation(self, X)`**: Receives a population matrix $X$ ($PopSize \times N$). Must return a dictionary `{'F': obj_matrix}` where `obj_matrix` is ($PopSize \times M$).
+*   **`ps(self, n)`**: [MANDATORY for Diagnostics] Samples the true Pareto Set (decision space). 
+    *   **Argument `n`**: An integer dictating the number of points to sample along the continuous mathematical manifold.
+    *   **Returns**: A NumPy matrix of shape `(n, N)` containing the ideal decision variables.
+    *   **Role**: This is the analytical bedrock (Protocol A). It allows the framework to instantly sample the analytical truth instead of relying on exhaustive empirical searches.
 
-**API Methods:**
-*   **`calibrate(baseline=None, force=False, **kwargs)`**: Performs automated calibration and generates a Sidecar JSON file.
-*   **`pf(n)`**: Samples the true Pareto Front (objectives).
+**Diagnostic API (Provided by BaseMop):**
+*   **`pf(self, n)`**: Samples the true Pareto Front (objective space). By default, it calls your `ps(n)` and maps it through `evaluation()`.
+*   **`calibrate(source_baseline=None, source_gt=None, source_search=None, force=False, **kwargs)`**: The engine that certifies your problem. This method implements the three Ground Truth (GT) protocols defined by the framework:
+
+| Protocol | Strategy | Argument | Description |
+| :--- | :--- | :--- | :--- |
+| **A** | **Analytical** | *None (Default)* | Calls `ps(n)` to generate the GT using formulaic math. |
+| **B** | **Static** | `source_gt` | Loads the GT from an external `.csv` file or NumPy array. |
+| **C** | **Empirical** | `source_search` | Runs a high-fidelity MOEA (e.g., `NSGA3`) to find the GT on-the-fly. |
+
+**Arguments:**
+*   **`source_baseline`**: Path to the Sidecar JSON file (e.g., `'my_mop.json'`). If `None`, it is auto-resolved in the problem's directory. This file "freezes" the GT and ECDFs for future use.
+*   **`source_gt`**: A path to a CSV file or a NumPy matrix containing objective-space points to be treated as the Absolute Truth.
+*   **`source_search`**: An instance of a MOEA (e.g., `mb.moeas.NSGA3()`) used to Discover the GT. The framework will run this algorithm exaustively and filter the results with `.non_dominated()`.
+*   **`force`**: If `True`, ignores existing Sidecar JSON and forces re-calibration.
+
+>**Protocol C (Example)**
+>If your MOP has no analytical `ps(n)` and no CSV, you can signal an empirical search during calibration:
+>```python
+>mop = MyComplexMop()
+># MoeaBench will discover the truth, freeze it in 'audit.json', 
+># and never run the search again.
+>mop.calibrate(source_search=mb.moeas.NSGA3(pop=200, gen=1000))
+>```
 
 The contract for problems requires implementing a **vectorized** evaluation function. This allows the framework to process entire populations using NumPy's high-performance broadcasting.
 

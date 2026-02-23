@@ -95,7 +95,12 @@ class BaseMop(ABC):
         """
         raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")
 
-    def calibrate(self, baseline: Optional[str] = None, force: bool = False, **kwargs) -> bool:
+    def calibrate(self, 
+                  source_baseline: Optional[str] = None, 
+                  source_gt: Optional[Union[str, np.ndarray]] = None,
+                  source_search: Optional[Any] = None,
+                  force: bool = False, 
+                  **kwargs) -> bool:
         """
         Calibrates the clinical diagnostics for this MOP instance.
         
@@ -104,9 +109,16 @@ class BaseMop(ABC):
         and statistical baselines (ECDF) required for Clinical Radar plots (Q-Scores).
         
         Args:
-            baseline (str, optional): Explicit sidecar path. 
+            source_baseline (str, optional): Explicit sidecar path (JSON).
+            source_gt (str or ndarray, optional): Explicit Ground Truth reference.
+            source_search (Moea, optional): Algorithm instance to discover GT.
             force (bool): If True, ignores the cache and forces re-calibration.
             **kwargs: Passed to the calibration engine (e.g., k_values).
         """
         from ..diagnostics.calibration import calibrate_mop
-        return calibrate_mop(self, baseline=baseline, force=force, **kwargs)
+        return calibrate_mop(self, 
+                             source_baseline=source_baseline, 
+                             source_gt=source_gt,
+                             source_search=source_search,
+                             force=force, 
+                             **kwargs)
