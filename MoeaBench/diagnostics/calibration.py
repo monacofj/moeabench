@@ -243,13 +243,12 @@ def _generate_blur(gt, normals, sigma, rng):
     for i in range(N):
         n = normals[i]
         mag = abs(rng.normal(0, sigma))
-        sign = rng.choice([-1, 1])
         if np.linalg.norm(n) < 1e-12:
             n_rand = rng.normal(size=M)
             n_rand /= np.linalg.norm(n_rand)
-            p_prime = gt[i] + sign * mag * n_rand
+            p_prime = gt[i] + mag * n_rand
         else:
-            p_prime = gt[i] + sign * mag * n
+            p_prime = gt[i] + mag * n
         # Boundary [0, inf)
         blurred[i] = np.maximum(p_prime, 0.0)
     return blurred
@@ -283,6 +282,9 @@ def _estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
         cov = np.dot(centered.T, centered)
         eigvals, eigvecs = np.linalg.eigh(cov)
         n = eigvecs[:, 0]
+        # Orient normal outward from origin (minimization logic)
+        if np.dot(n, gt[i]) < 0:
+            n = -n
         normals[i] = n / (np.linalg.norm(n) + 1e-12)
         
     return normals
