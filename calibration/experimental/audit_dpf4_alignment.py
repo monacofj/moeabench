@@ -47,7 +47,7 @@ def main():
         return
 
     # 2. Compare against Frozen Ground Truth
-    gt_file = os.path.join(PROJ_ROOT, "tests/ground_truth/DPF4_3_optimal.csv")
+    gt_file = os.path.join(PROJ_ROOT, "calibration/data/ground_truth/DPF4_3_optimal.csv")
     print(f"\n2. Checking Frozen Ground Truth: {gt_file}")
     if os.path.exists(gt_file):
         F_frozen = pd.read_csv(gt_file, header=None).values
@@ -68,7 +68,7 @@ def main():
 
     # 3. Analyze Final Populations ($g$-value check)
     print("\n3. Analyzing MOEA Final Populations for Trap Depth...")
-    data_dir = os.path.join(PROJ_ROOT, "tests/calibration_data")
+    data_dir = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
     
     # Search for X files in calibration_data
     found_X = False

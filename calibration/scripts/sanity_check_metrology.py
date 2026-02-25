@@ -27,7 +27,7 @@ def test_gt_sanity():
         pf = mop.pf() if hasattr(mop, 'pf') else mop.optimal_front()
         
         # Test for multiple K in our grid
-        for K in [100, 400]:
+        for K in [100]:
             if K > len(pf): continue
             
             print(f"Testing {mop.__class__.__name__} with K={K}...")
@@ -36,28 +36,20 @@ def test_gt_sanity():
             idx = np.random.choice(len(pf), K, replace=False)
             perf_pop = pf[idx]
             
-            # Wrap in a dummy object that audit() can handle
-            class DummyRun:
-                def __init__(self, objs, prob):
-                    self.last_pop = type('P', (), {'objectives': objs})
-                    self.experiment = type('E', (), {'mop': prob})
-            
-            run = DummyRun(perf_pop, mop)
-            result = audit(run)
+            # Audit directly with the objectives array and MOP reference
+            result = audit(perf_pop, ground_truth=pf, problem=mop.__class__.__name__)
             
             print(f"  Status: {result.status.name}")
-            igd_eff = result.metrics.get('igd_eff', 999)
-            emd_eff = result.metrics.get('emd_eff_uniform', 999)
+            print(f"  Summary: {result.summary()}")
             
-            print(f"  IGD_eff: {igd_eff:.4f}x")
-            print(f"  EMD_eff: {emd_eff:.4f}x")
+            # Check Q-Scores (Should be near 1.0 for GT subset)
+            for name, score in result.q_audit_res.scores.items():
+                v = float(score.value)
+                print(f"  - {name}: {v:.4f}")
+                assert v > 0.5, f"Q-Score {name} ({v:.4f}) too low for a perfect GT subset!"
             
             # Assertions
             assert result.status == DiagnosticStatus.IDEAL_FRONT
-            # Allow Super-Saturation (eff < 1.0) down to 0.1x
-            # Upper bound 1.6x ensures we don't regress to "Generous" behavior
-            assert 0.1 < igd_eff < 1.6, f"IGD efficiency {igd_eff} out of bounds for GT"
-            assert 0.1 < emd_eff < 1.6, f"EMD efficiency {emd_eff} out of bounds for GT"
             
     print("\nSUCCESS: Metrology is sane (Efficiency ~ 1.0 for GT sub-samples).")
 

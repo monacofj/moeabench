@@ -14,8 +14,8 @@ if PROJ_ROOT not in sys.path:
 
 from pymoo.indicators.igd import IGD
 
-DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
-GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
+DATA_DIR = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
+GT_DIR = os.path.join(PROJ_ROOT, "calibration/data/ground_truth")
 
 def analyze():
     mops = ["DTLZ1", "DTLZ2", "DTLZ3", "DTLZ4", "DTLZ5", "DTLZ6", "DTLZ7", "DTLZ8", "DTLZ9", 
@@ -84,7 +84,7 @@ def analyze():
     print(pivot.to_string())
     
     # Save for reference
-    df.to_csv(os.path.join(PROJ_ROOT, "tests/convergence_analysis.csv"), index=False)
+    df.to_csv(os.path.join(PROJ_ROOT, "calibration/reports/convergence_analysis.csv"), index=False)
 
 if __name__ == "__main__":
     analyze()

@@ -41,9 +41,9 @@ from MoeaBench.metrics.evaluator import normalize
 from MoeaBench.metrics.GEN_hypervolume import GEN_hypervolume
 import re
 
-DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
+DATA_DIR = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
 STATS_FILE = os.path.join(DATA_DIR, "generation_stats.csv")
-OUTPUT_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.11.csv")
+OUTPUT_FILE = os.path.join(PROJ_ROOT, "calibration/reports/baselines_v0.12.0.csv")
 
 def compute_baselines():
     if not os.path.exists(DATA_DIR):

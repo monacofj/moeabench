@@ -55,14 +55,14 @@ def main():
     print(f"Target Problem: {mop_name}")
     
     # 1. Load Ground Truth
-    gt_file = os.path.join(PROJ_ROOT, f"tests/ground_truth/{mop_name}_3_optimal.csv")
+    gt_file = os.path.join(PROJ_ROOT, f"calibration/data/ground_truth/{mop_name}_3_optimal.csv")
     if not os.path.exists(gt_file):
         print("GT not found.")
         return
     F_opt = pd.read_csv(gt_file, header=None).values
     
     # 2. Load a solution file (NSGA2 which had high EMD)
-    data_dir = os.path.join(PROJ_ROOT, "tests/calibration_data")
+    data_dir = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
     # Finding a standard run
     sol_file = None
     for f in os.listdir(data_dir):
@@ -133,7 +133,7 @@ def main():
         name='Solution (Norm)'
     ))
     fig.update_layout(title=f"Debug {mop_name} EMD Divergence", scene=dict(aspectmode='cube'))
-    out_file = os.path.join(PROJ_ROOT, "tests/calibration/audit_debug.html")
+    out_file = os.path.join(PROJ_ROOT, "calibration/experimental/audit_debug.html")
     fig.write_html(out_file)
     print(f"Debug plot saved to: {out_file}")
 
