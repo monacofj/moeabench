@@ -129,6 +129,12 @@ The top-level container for multi-objective optimization research.
     *   `n` (*int*): Number of points to sample. Defaults to `500`.
 *   **Returns**: `Population`.
 
+#### **`.optimal_front(n=500)`** / **`.optimal_set(n=500)`**
+*   **Description**: Shortcuts for extracting the non-dominated objectives (front) or variables (set) from the analytically sampled optimum.
+*   **Arguments**:
+    *   `n` (*int*): Number of points to sample. Defaults to `500`.
+*   **Returns**: `SmartArray`.
+
 #### **`.report(markdown=False)`**
 *   **Description**: Narrative report of the experiment configuration and metadata.
 *   **Arguments**:

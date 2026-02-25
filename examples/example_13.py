@@ -56,14 +56,15 @@ def main():
     print("\nDisplaying Topology Shape with Semantic Markers...")
     
     # Standard call as requested: Population object vs Optimal Front points.
-    # We enable semantic markers (Solid/Hollow/Diamond) for the population.
-    # For the GT, we explicitly set a simple circle symbol to keep it "normal".
-    mb.view.topo_shape(exp, gt, 
-                       title="Clinical Validation: DTLZ1 Convergence Trail (G=285)",
-                       labels=["NSGA-II Population", "Optimal Front (GT)"],
-                       markers=True, 
-                       marker_styles=[None, {'color': 'lightgray', 'size': 5, 'symbol': 'circle'}],
-                       show=True) 
+    
+    # User requested specific block for topo_shape:
+    exp = mb.experiment()
+    exp.moea = mb.moeas.NSGA2()
+    exp.mop = mb.mops.DTLZ1()
+    exp.population = 100
+    exp.generations = 300
+    exp.run(seed=1)
+    mb.view.topo_shape(exp, exp.optimal_front(), markers=True)
     print("\nDone.")
 
 if __name__ == "__main__":
