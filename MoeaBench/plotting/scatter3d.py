@@ -134,11 +134,15 @@ class Scatter3D:
                                  elif symbol_type == 'diamond-open':
                                      plt_marker = 'D'
                                      plt_fc = 'none'
+                                 elif symbol_type == 'circle':
+                                     # Solid markers: no border, smaller.
+                                     plt_ec = 'none'
                                  
                                  ax.scatter(ax_data[sub_msk], ay_data[sub_msk], az_data[sub_msk], 
                                             label=label if symbol_type == 'circle' else None, 
                                             facecolors=plt_fc, edgecolors=plt_ec,
-                                            marker=plt_marker, s=plt_size)
+                                            marker=plt_marker, s=plt_size,
+                                            linewidths=1.5 if symbol_type != 'circle' else 0)
                      else:
                          custom_marker = style.get('symbol', 'o')
                          custom_size = style.get('size', 20)
@@ -191,11 +195,11 @@ class Scatter3D:
                             if np.any(sub_msk):
                                  sub_marker = dict(size=sizes[sub_msk])
                                  if symbol_type == 'circle-open':
-                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2)))
+                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0)))
                                  elif symbol_type == 'diamond-open':
-                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=1.5)))
+                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0)))
                                  else:
-                                      sub_marker.update(dict(symbol='circle', opacity=1.0))
+                                      sub_marker.update(dict(symbol='circle', opacity=1.0, line=dict(width=0)))
                                  
                                  self.figure.add_trace(go.Scatter3d(
                                      x=ax[sub_msk], y=ay[sub_msk], z=az[sub_msk],
@@ -211,7 +215,7 @@ class Scatter3D:
                                  ))
                   else:
                        # Static/Standard Marker
-                       marker_config = dict(size=4 if 'lines' in self.trace_modes[i] else 3)
+                       marker_config = dict(size=8, line=dict(width=0))
                        marker_config.update(style)
                        self.figure.add_trace(go.Scatter3d(
                            x=ax[msk], y=ay[msk], z=az[msk],

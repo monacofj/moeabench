@@ -120,11 +120,15 @@ class Scatter2D:
                                 elif symbol_type == 'diamond-open':
                                     plt_marker = 'D'
                                     plt_fc = 'none'
+                                elif symbol_type == 'circle':
+                                    # Solid markers: no border, smaller.
+                                    plt_ec = 'none'
                                 
                                 ax.scatter(ax_data[sub_msk], ay_data[sub_msk], 
                                            label=label if symbol_type == 'circle' and 'lines' not in t_mode else None, 
                                            facecolors=plt_fc, edgecolors=plt_ec,
-                                            marker=plt_marker, s=plt_size)
+                                            marker=plt_marker, s=plt_size,
+                                            linewidths=1.5 if symbol_type != 'circle' else 0)
                     else:
                         custom_marker = style.get('symbol', 'o')
                         custom_size = style.get('size', 20)
@@ -169,22 +173,54 @@ class Scatter2D:
                 line_shape = 'hv' if 'lines' in p_mode else None # hv = horizontal-vertical steps
 
                 # Custom markers support
-                marker_config = dict(size=6 if 'lines' in p_mode else 8)
-                if self.marker_styles[i] is not None:
-                    marker_config.update(self.marker_styles[i])
+                style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
+                
+                # Check for individualized quality markers (list of symbols)
+                if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
+                    symbols = np.array(style['symbol'])
+                    sizes = np.array(style['size']) if 'size' in style else np.full(len(ax), 8)
+                    
+                    for symbol_type in ['circle', 'circle-open', 'diamond-open', 'cross-open']:
+                        sub_msk = (symbols == symbol_type) & msk
+                        if np.any(sub_msk):
+                            sub_marker = dict(size=sizes[sub_msk])
+                            # Style based on audit report aesthetics
+                            if symbol_type == 'circle-open':
+                                 sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0)))
+                            elif symbol_type == 'diamond-open':
+                                 sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0)))
+                            else:
+                                 # Solid markers: no border
+                                 sub_marker.update(dict(symbol='circle', opacity=1.0, line=dict(width=0)))
+                            
+                            self.figure.add_trace(go.Scatter(
+                                x=ax[sub_msk], y=ay[sub_msk],
+                                mode=self.trace_modes[i],
+                                marker=sub_marker,
+                                name=f'{self.experiments[i]}',
+                                legendgroup=f'{self.experiments[i]}',
+                                showlegend=(symbol_type == 'circle'), # Only show one in legend
+                                hovertemplate=(f"{self.experiments[i]}<br>"
+                                               f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                               f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br><extra></extra>"),
+                            ))
+                else:
+                    # Static/Standard Marker
+                    marker_config = dict(size=8, line=dict(width=0))
+                    marker_config.update(style)
 
-                self.figure.add_trace(go.Scatter(
-                    x=x_sorted if 'lines' in p_mode else ax[msk],
-                    y=y_sorted if 'lines' in p_mode else ay[msk],
-                    mode=p_mode,
-                    line=dict(shape=line_shape) if line_shape else None,
-                    marker=marker_config,
-                    name=f'{self.experiments[i]}',
-                    showlegend=True,
-                    hovertemplate=(f"{self.experiments[i]}<br>"
-                                   f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
-                                   f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br><extra></extra>"),
-                ))
+                    self.figure.add_trace(go.Scatter(
+                        x=x_sorted if 'lines' in p_mode else ax[msk],
+                        y=y_sorted if 'lines' in p_mode else ay[msk],
+                        mode=p_mode,
+                        line=dict(shape=line_shape) if line_shape else None,
+                        marker=marker_config,
+                        name=f'{self.experiments[i]}',
+                        showlegend=True,
+                        hovertemplate=(f"{self.experiments[i]}<br>"
+                                       f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                       f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br><extra></extra>"),
+                    ))
 
         self.figure.update_layout(
             xaxis=dict(title=f"{self.axis_label} {self.axis[0]+1}", showgrid=True, gridcolor="LightGray"),

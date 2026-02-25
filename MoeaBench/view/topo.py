@@ -165,8 +165,8 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
                     if marker_styles[i] is None:
                         marker_styles[i] = {}
                     marker_styles[i]['symbol'] = symbols
-                    # High precision sizing (10, 15, 20) for academic look
-                    marker_styles[i]['size'] = [10 if q >= 0.5 else 15 if q >= 0.0 else 20 for q in q_vals]
+                    # High precision sizing (6, 10, 10) for academic look
+                    marker_styles[i]['size'] = [6 if q >= 0.5 else 10 for q in q_vals]
             except Exception as e:
                 # Fail gracefully if metrology metadata is missing
                 # print(f"[MoeaBench] Warning: Could not calculate quality markers for trace {i}: {e}")
