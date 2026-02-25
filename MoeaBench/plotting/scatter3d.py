@@ -8,6 +8,7 @@ from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
 from ..defaults import defaults
+from ..view.style import MOEABENCH_PALETTE
 
 # Remove legacy inheritance
 # from .analyse_pareto import analyse_pareto
@@ -126,7 +127,8 @@ class Scatter3D:
                                  plt_marker = 'o'
                                  plt_fc = opt_color
                                  plt_ec = opt_color
-                                 plt_size = sizes[sub_msk]
+                                 # Scale semantic sizes for Matplotlib (Plotly 6 ~ MPL 20)
+                                 plt_size = np.array(sizes[sub_msk]) * 4 if symbol_type == 'circle' else np.array(sizes[sub_msk]) * 3
                                  
                                  if symbol_type == 'circle-open':
                                      plt_marker = 'o'
@@ -135,7 +137,7 @@ class Scatter3D:
                                      plt_marker = 'D'
                                      plt_fc = 'none'
                                  elif symbol_type == 'circle':
-                                     # Solid markers: no border, smaller.
+                                     # Solid markers: no border
                                      plt_ec = 'none'
                                  
                                  ax.scatter(ax_data[sub_msk], ay_data[sub_msk], az_data[sub_msk], 
@@ -168,74 +170,74 @@ class Scatter3D:
          if defaults.save_format:
              filename = f"mb_plot_{self.type.replace(' ', '_')}.{defaults.save_format}"
              plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
- 
+
          if self.show_plot and self.ax is None:
              plt.show()
 
      def configure_interactive(self):
          if not hasattr(self, 'figure'):
              self.figure=go.Figure()
-         for i in range(0, len(self.vet_pts)):
-                ax = self.vet_pts[i][:,self.axis[0]]
-                ay = self.vet_pts[i][:,self.axis[1]]
-                az = self.vet_pts[i][:,self.axis[2]]
-                msk = ~(np.isnan(ax) | np.isnan(ay) | np.isnan(az))
+         for i in range(len(self.vet_pts)):
+                ax_data = self.vet_pts[i][:,self.axis[0]]
+                ay_data = self.vet_pts[i][:,self.axis[1]]
+                az_data = self.vet_pts[i][:,self.axis[2]]
+                msk = ~(np.isnan(ax_data) | np.isnan(ay_data) | np.isnan(az_data))
+                
                 if np.any(msk):
-                  style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
-                  
-                  # Plotly trace-splitting requires explicit color management
-                  colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
-                  opt_color = style.get('color', colors[i % len(colors)])
-                  
-                  # Plotly Scatter3d does NOT support arrays for 'symbol' or 'opacity'
-                  # We implement trace-splitting to support Audit Report style differentiation
-                  if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
-                       symbols = np.array(style['symbol'])
-                       sizes = np.array(style['size']) if 'size' in style and isinstance(style['size'], (list, np.ndarray)) else np.full(len(ax), 4)
-                       
-                       # Definition: circle (solid), circle-open (hollow), diamond-open (failure)
-                       for symbol_type in ['circle', 'circle-open', 'diamond-open']:
-                            sub_msk = (symbols == symbol_type) & msk
-                            if np.any(sub_msk):
-                                 sub_marker = dict(size=sizes[sub_msk], color=opt_color)
-                                 if symbol_type == 'circle-open':
-                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0, color=opt_color)))
-                                 elif symbol_type == 'diamond-open':
-                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0, color=opt_color)))
-                                 else:
-                                      # Solid markers: no border
-                                      sub_marker.update(dict(symbol='circle', opacity=1.0, line=dict(width=0)))
-                                 
-                                 self.figure.add_trace(go.Scatter3d(
-                                     x=ax[sub_msk], y=ay[sub_msk], z=az[sub_msk],
-                                     mode=self.trace_modes[i],
-                                     marker=sub_marker,
-                                     name=f'{self.experiments[i]}',
-                                     legendgroup=f'{self.experiments[i]}',
-                                     showlegend=(symbol_type == 'circle'), # Only show one in legend
-                                     hovertemplate = (f"{self.experiments[i]}<br>"
-                                                      f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
-                                                      f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
-                                                      f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
-                                 ))
-                  else:
-                       # Static/Standard Marker
-                       marker_config = dict(size=8, line=dict(width=0))
-                       marker_config.update(style)
-                       self.figure.add_trace(go.Scatter3d(
-                           x=ax[msk], y=ay[msk], z=az[msk],
-                           mode=self.trace_modes[i],
-                           marker=marker_config,
-                           name=f'{self.experiments[i]}',                       
-                           showlegend=True,
-                           hovertemplate = (f"{self.experiments[i]}<br>"
-                                            f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
-                                            f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
-                                            f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
-                       ))
-   
-       
-      
+                    style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
+                    
+                    # Plotly trace-splitting requires explicit color management
+                    opt_color = style.get('color', MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)])
+                    
+                    # Plotly Scatter3d does NOT support arrays for 'symbol' or 'opacity'
+                    if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
+                         symbols = np.array(style['symbol'])
+                         sizes = np.array(style['size']) if 'size' in style else np.full(len(ax_data), 6)
+                         
+                         for symbol_type in ['circle', 'circle-open', 'diamond-open']:
+                              sub_msk = (symbols == symbol_type) & msk
+                              if np.any(sub_msk):
+                                   sub_marker = dict(size=sizes[sub_msk], color=opt_color)
+                                   if symbol_type == 'circle-open':
+                                        sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0, color=opt_color)))
+                                   elif symbol_type == 'diamond-open':
+                                        sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0, color=opt_color)))
+                                   else:
+                                        # Solid markers: no border, sync size 6
+                                        sub_marker.update(dict(symbol='circle', opacity=1.0, line=dict(width=0)))
+                                   
+                                   self.figure.add_trace(go.Scatter3d(
+                                       x=ax_data[sub_msk], y=ay_data[sub_msk], z=az_data[sub_msk],
+                                       mode=self.trace_modes[i],
+                                       marker=sub_marker,
+                                       name=f'{self.experiments[i]}',
+                                       legendgroup=f'{self.experiments[i]}',
+                                       showlegend=(symbol_type == 'circle'), # Only show one in legend
+                                       hovertemplate = (f"{self.experiments[i]}<br>"
+                                                        f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                                        f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
+                                                        f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
+                                   ))
+                    else:
+                        # Static/Standard Marker
+                        # Sync with topo_shape solid markers (size 6)
+                        marker_config = dict(size=6, line=dict(width=0))
+                        marker_config.update(style)
+                        if 'color' not in marker_config:
+                             marker_config['color'] = opt_color
+
+                        self.figure.add_trace(go.Scatter3d(
+                            x=ax_data[msk], y=ay_data[msk], z=az_data[msk],
+                            mode=self.trace_modes[i],
+                            marker=marker_config,
+                            name=f'{self.experiments[i]}',                       
+                            showlegend=True,
+                            hovertemplate = (f"{self.experiments[i]}<br>"
+                                             f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                             f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
+                                             f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
+                        ))
+
          self.figure.update_layout(
                 template="moeabench",
                 scene = dict(
@@ -246,8 +248,8 @@ class Scatter3D:
                     aspectratio=dict(x=1,y=1,z=1)
                  ),
                  
-                 width=900,
-                 height=800,
+                 width=defaults.plot_width,
+                 height=defaults.plot_height,
                  margin=dict(l=0,r=0,b=0,t=0),
                  title=dict(
                      text=f'3D Chart for {self.type}',

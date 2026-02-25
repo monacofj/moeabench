@@ -8,6 +8,7 @@ from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
 from ..defaults import defaults
+from ..view.style import MOEABENCH_PALETTE
 
 try:
     import google.colab
@@ -121,19 +122,23 @@ class Scatter2D:
                                     plt_marker = 'D'
                                     plt_fc = 'none'
                                 elif symbol_type == 'circle':
-                                    # Solid markers: no border, smaller.
+                                    # Solid markers: no border
                                     plt_ec = 'none'
+                                
+                                # Scale semantic sizes for Matplotlib (Plotly 6 ~ MPL 24)
+                                plt_size = np.array(sizes[sub_msk]) * 4 if symbol_type == 'circle' else np.array(sizes[sub_msk]) * 3.5
                                 
                                 ax.scatter(ax_data[sub_msk], ay_data[sub_msk], 
                                            label=label if symbol_type == 'circle' and 'lines' not in t_mode else None, 
                                            facecolors=plt_fc, edgecolors=plt_ec,
-                                            marker=plt_marker, s=plt_size,
-                                            linewidths=1.5 if symbol_type != 'circle' else 0)
+                                           marker=plt_marker, s=plt_size,
+                                           linewidths=1.5 if symbol_type != 'circle' else 0)
                     else:
                         custom_marker = style.get('symbol', 'o')
-                        custom_size = style.get('size', 20)
+                        # Sync with topo_shape solid markers (Plotly 6 -> Matplotlib 24)
+                        custom_size = style.get('size', 24)
                         if custom_marker == 'circle': custom_marker = 'o'
-                         
+                        
                         kwa = {'label': label if 'lines' not in t_mode else None, 
                                'color': opt_color, 'marker': custom_marker}
                         if custom_size is not None:
@@ -176,13 +181,12 @@ class Scatter2D:
                 style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
                 
                 # Plotly trace-splitting requires explicit color management
-                colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
-                opt_color = style.get('color', colors[i % len(colors)])
+                opt_color = style.get('color', MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)])
                 
                 # Check for individualized quality markers (list of symbols)
                 if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
                     symbols = np.array(style['symbol'])
-                    sizes = np.array(style['size']) if 'size' in style else np.full(len(ax), 8)
+                    sizes = np.array(style['size']) if 'size' in style else np.full(len(ax), 6)
                     
                     for symbol_type in ['circle', 'circle-open', 'diamond-open', 'cross-open']:
                         sub_msk = (symbols == symbol_type) & msk
@@ -210,8 +214,11 @@ class Scatter2D:
                             ))
                 else:
                     # Static/Standard Marker
-                    marker_config = dict(size=8, line=dict(width=0))
+                    # Sync with topo_shape solid markers (size 6)
+                    marker_config = dict(size=6, line=dict(width=0))
                     marker_config.update(style)
+                    if 'color' not in marker_config:
+                         marker_config['color'] = MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)]
 
                     self.figure.add_trace(go.Scatter(
                         x=x_sorted if 'lines' in p_mode else ax[msk],
