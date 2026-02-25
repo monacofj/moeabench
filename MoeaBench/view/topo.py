@@ -61,21 +61,57 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
              val = arg.objectives
         
         if not name:
-            # Smart Legend Naming
-            # Try to get the name of the object (Experiment Name)
-            obj_name = getattr(val, 'name', None) or getattr(arg, 'name', None)
+            # Smart Legend Naming: Standard Pattern 'Name (run, filter, gen)'
+            exp_name = None
+            run_idx = None
+            filter_name = None
+            gen_idx = None
             
-            # Try to get the specific label (Filter)
-            obj_label = getattr(val, 'label', None) or getattr(arg, 'label', None)
-            
-            if obj_name and obj_label and obj_name != obj_label:
-                name = f"{obj_name} ({obj_label})"
-            elif obj_name:
-                name = obj_name
-            elif obj_label:
-                name = obj_label
+            # 1. Extract Name & Run from metadata
+            for obj in [val, arg]:
+                if hasattr(obj, 'source'):
+                    src_type = type(obj.source).__name__
+                    if src_type == 'Run':
+                        run_idx = getattr(obj.source, 'index', None)
+                        if hasattr(obj.source, 'source'):
+                            exp_name = getattr(obj.source.source, 'name', None)
+                    elif src_type == 'experiment':
+                        exp_name = getattr(obj.source, 'name', None)
+                if exp_name: break
+                
+            if not exp_name:
+                exp_name = getattr(arg, 'name', None) or getattr(val, 'name', None) or f"Data {i+1}"
+                # Strip embedded "(run X)" if it leaked from Run.name
+                import re
+                exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
 
-        if not name: name = f"Data {i+1}"
+            # 2. Extract Filter
+            raw_label = getattr(val, 'label', None) or getattr(arg, 'label', None)
+            if raw_label:
+                 # run.py formats as "BaseLabel, Run X, Gen Y"
+                 filter_name = raw_label.split(',')[0].strip()
+                 
+            # 3. Extract Generation
+            gen_idx = getattr(val, 'gen', None)
+            if gen_idx is None and raw_label and 'Gen ' in raw_label:
+                try:
+                    gen_part = raw_label.split('Gen ')[1].split(',')[0].strip()
+                    gen_idx = int(gen_part)
+                except ValueError: pass
+
+            # 4. Assemble standard pattern
+            pieces = []
+            if run_idx is not None:
+                pieces.append(f"run {run_idx}")
+            if filter_name and filter_name != exp_name:
+                pieces.append(filter_name)
+            if gen_idx is not None and gen_idx >= 0:
+                pieces.append(f"gen {gen_idx}")
+                
+            if pieces:
+                name = f"{exp_name} ({', '.join(pieces)})"
+            else:
+                name = exp_name
              
         if i == 0:
             if hasattr(val, 'label') and val.label and title == "Solution Set Geometry":
@@ -300,7 +336,7 @@ def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, sp
     if show and layout != 'external': plt.show()
     return figures if layout == 'independent' else (ax if layout == 'external' else fig)
 
-def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, **kwargs):
+def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, style='step', **kwargs):
     """
     [mb.view.topo_bands] Search Corridor Perspective.
     Visualizes reliability bands using Empirical Attainment Functions (EAF).
@@ -308,21 +344,52 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
     from ..stats.topo_attainment import topo_attainment
     
     surfaces = []
+    
+    if style == 'fill':
+        if len(levels) >= 3:
+            sorted_levels = sorted(levels)
+            levels = [sorted_levels[0], sorted_levels[len(sorted_levels)//2], sorted_levels[-1]]
+        elif len(levels) == 2:
+            levels = [levels[0], sum(levels)/2.0, levels[1]]
+        else:
+            style = 'spline' # Fallback if not enough bands
+            
     for arg in args:
         if isinstance(arg, AttainmentSurface):
             surfaces.append(arg)
         else:
-            # Calculate median surface by default if Experiment/Runs passed
-            for lv in levels:
-                surf = topo_attainment(arg, level=lv)
-                surf.name = f"{getattr(arg, 'name', 'Exp')} ({lv*100:.0f}%)"
-                surfaces.append(surf)
+            if style == 'fill':
+                # Order matters for band fill logic in Scatter2D: median, low, high
+                lv_low, lv_med, lv_high = levels[0], levels[1], levels[2]
+                
+                surf_med = topo_attainment(arg, level=lv_med)
+                # Keep names simple to avoid legend explosion
+                surf_med.name = f"{getattr(arg, 'name', 'Exp')} Mediana"
+                
+                surf_low = topo_attainment(arg, level=lv_low)
+                surf_low.name = f"{getattr(arg, 'name', 'Exp')} ({lv_low*100:.0f}%)"
+                
+                surf_high = topo_attainment(arg, level=lv_high)
+                surf_high.name = f"{getattr(arg, 'name', 'Exp')} ({lv_high*100:.0f}%)"
+                
+                surfaces.extend([surf_med, surf_low, surf_high])
+            else:
+                for lv in levels:
+                    surf = topo_attainment(arg, level=lv)
+                    surf.name = f"{getattr(arg, 'name', 'Exp')} ({lv*100:.0f}%)"
+                    surfaces.append(surf)
     
     if title is None: title = "Search Corridor (Attainment Bands)"
     
+    if style in ['spline', 'linear']:
+        kwargs['line_shape'] = style
+    elif style == 'fill':
+        kwargs['band_fill'] = True
+        kwargs['line_shape'] = 'spline'
+    
     return topo_shape(*surfaces, objectives=objectives, mode=mode, title=title, **kwargs)
 
-def topo_gap(exp1, exp2, level=0.5, objectives=None, mode='auto', title=None, **kwargs):
+def topo_gap(exp1, exp2, level=0.5, objectives=None, mode='auto', title=None, style='step', **kwargs):
     """
     [mb.view.topo_gap] Topologic Gap Perspective.
     Visualizes the spatial difference region between two algorithms.
@@ -339,6 +406,9 @@ def topo_gap(exp1, exp2, level=0.5, objectives=None, mode='auto', title=None, **
     
     if title is None: 
         title = f"Topologic Gap ({level*100:.0f}% Attainment)"
+        
+    if style in ['spline', 'linear']:
+        kwargs['line_shape'] = style
         
     # TODO: In the future, specialized plotting for the AttainmentDiff object 
     # to highlight the area/volume between them.

@@ -12,6 +12,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.1] - 2026-02-25
+
+### Changed
+- **Unified Legend Formatting**: Standardized the legend naming convention across all primary plotting functions (`mb.view.topo_shape`, `mb.view.perf_spread`, `mb.view.perf_density`) to strictly follow the canonical pattern `Name (run X, filter, gen Y)`. Redundant information is intelligently suppressed, improving chart legibility for scientific reports.
+
 ## [0.12.0] - 2026-02-22
 
 ### Added

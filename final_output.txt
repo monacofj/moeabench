@@ -1,24 +1,0 @@
-MoeaBench v0.12.0
-=== Example 13: Reference-based Quality Validation (Q-Scores)
-Running optimization with limited resources...
-  Run 1/1:   0%|          | 0/100 [00:00<?, ?gen/s]  Run 1/1:   3%|          | 3/100 [00:00<00:04, 23.87gen/s]  Run 1/1:   6%|          | 6/100 [00:00<00:03, 26.51gen/s]  Run 1/1:   9%|          | 9/100 [00:00<00:03, 27.61gen/s]  Run 1/1:  13%|-         | 13/100 [00:00<00:02, 29.05gen/s]  Run 1/1:  17%|-         | 17/100 [00:00<00:02, 29.94gen/s]  Run 1/1:  21%|--        | 21/100 [00:00<00:02, 30.41gen/s]  Run 1/1:  25%|--        | 25/100 [00:00<00:02, 30.56gen/s]  Run 1/1:  29%|--        | 29/100 [00:00<00:02, 31.00gen/s]  Run 1/1:  33%|---       | 33/100 [00:01<00:02, 31.28gen/s]  Run 1/1:  37%|---       | 37/100 [00:01<00:02, 31.19gen/s]  Run 1/1:  41%|----      | 41/100 [00:01<00:01, 31.41gen/s]  Run 1/1:  45%|----      | 45/100 [00:01<00:01, 31.58gen/s]  Run 1/1:  49%|----      | 49/100 [00:01<00:01, 31.80gen/s]  Run 1/1:  53%|-----     | 53/100 [00:01<00:01, 32.10gen/s]  Run 1/1:  57%|-----     | 57/100 [00:01<00:01, 32.41gen/s]  Run 1/1:  61%|------    | 61/100 [00:01<00:01, 32.32gen/s]  Run 1/1:  65%|------    | 65/100 [00:02<00:01, 32.09gen/s]  Run 1/1:  69%|------    | 69/100 [00:02<00:00, 31.51gen/s]  Run 1/1:  73%|-------   | 73/100 [00:02<00:00, 31.13gen/s]  Run 1/1:  77%|-------   | 77/100 [00:02<00:00, 30.60gen/s]  Run 1/1:  81%|--------  | 81/100 [00:02<00:00, 30.79gen/s]  Run 1/1:  85%|--------  | 85/100 [00:02<00:00, 30.73gen/s]  Run 1/1:  89%|--------  | 89/100 [00:02<00:00, 30.92gen/s]  Run 1/1:  93%|--------- | 93/100 [00:03<00:00, 31.16gen/s]  Run 1/1:  97%|--------- | 97/100 [00:03<00:00, 31.68gen/s]  Run 1/1: 100%|----------| 100/100 [00:03<00:00, 31.09gen/s]
-Running Clinical Quality Audit...
-
---- Clinical Quality Report ---
-
-
-=== CLINICAL QUALITY AUDIT: DTLZ3 (K=100) ===
----------------------------------------------
-  Q_CLOSENESS  : 0.000 [Remote] - Worse than random baseline.
-  Q_COVERAGE   : 0.000 [Collapsed] - Measures how well the population spans the entire front.
-  Q_GAP        : 0.000 [Fragmented] - Measures the continuity of the front (lack of large holes).
-  Q_REGULARITY : 0.000 [Unstructured] - Measures the uniformity of point spacing (lattice order).
-  Q_BALANCE    : 0.000 [Skewed] - Measures the equitable mass distribution across the manifold.
-  Q_HEADWAY    : 0.000 [Static/Random] - Measures the algorithmic progress (headway) made beyond the random bounding box.
-
---- Clinical Narrative Summary ---
-Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile.
-
-Displaying Topology Shape with Semantic Markers...
-
-Done.

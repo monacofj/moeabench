@@ -75,7 +75,27 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
         # For boxplots, we usually want to resolve all vs the global set
         v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
         samples.append(v)
-        labels.append(getattr(arg, 'name', f"Data {i+1}"))
+        
+        # Legend Pattern: 'Name (run, gen)'
+        exp_name = None
+        run_idx = None
+        if type(arg).__name__ == 'Run':
+            run_idx = getattr(arg, 'index', None)
+            if hasattr(arg, 'source'):
+                exp_name = getattr(arg.source, 'name', None)
+        elif type(arg).__name__ == 'experiment':
+            exp_name = getattr(arg, 'name', None)
+            
+        if not exp_name:
+            exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+            import re
+            exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+            
+        pieces = []
+        if run_idx is not None: pieces.append(f"run {run_idx}")
+        if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+        
+        labels.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
     
     # 2. Setup Plot
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -134,7 +154,27 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     for i, arg in enumerate(args):
         v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
         samples.append(v)
-        names.append(getattr(arg, 'name', f"Data {i+1}"))
+        
+        # Legend Pattern: 'Name (run, gen)'
+        exp_name = None
+        run_idx = None
+        if type(arg).__name__ == 'Run':
+            run_idx = getattr(arg, 'index', None)
+            if hasattr(arg, 'source'):
+                exp_name = getattr(arg.source, 'name', None)
+        elif type(arg).__name__ == 'experiment':
+            exp_name = getattr(arg, 'name', None)
+            
+        if not exp_name:
+            exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+            import re
+            exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+            
+        pieces = []
+        if run_idx is not None: pieces.append(f"run {run_idx}")
+        if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+        
+        names.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
     
     fig, ax = plt.subplots(figsize=(8, 5))
     

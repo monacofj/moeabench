@@ -24,43 +24,59 @@ def main():
     print("--- Example 16: Comparative Performance Contrast and Stochastic Reliability")
 
     # 1. Setup: A competitive comparison on DTLZ2 (3 Objectives)
-    mop = mb.mops.DTLZ2(M=3)
+    print("\n--- Part A: 3-Objective Analysis ---")
+    mop3 = mb.mops.DTLZ2(M=3)
     
-    # We compare NSGA-II vs MOEA/D
-    exp1 = mb.experiment()
-    exp1.name = "NSGA-II"
-    exp1.mop = mop
-    exp1.moea = mb.moeas.NSGA2(population=100, generations=100)
-
-    exp2 = mb.experiment()
-    exp2.name = "MOEA/D"
-    exp2.mop = mop
-    exp2.moea = mb.moeas.MOEAD(population=100, generations=100)
-
-    # 2. Execution: Multiple runs are required for statistical rigor
-    REPEATS = 15
-    print(f"Running {exp1.name} ({REPEATS} times)...")
-    exp1.run(repeat=REPEATS)
+    exp1_3D = mb.experiment()
+    exp1_3D.name = "NSGA-II (3D)"
+    exp1_3D.mop = mop3
+    exp1_3D.moea = mb.moeas.NSGA2(population=100, generations=100)
     
-    print(f"Running {exp2.name} ({REPEATS} times)...")
-    exp2.run(repeat=REPEATS)
+    exp2_3D = mb.experiment()
+    exp2_3D.name = "MOEA/D (3D)"
+    exp2_3D.mop = mop3
+    exp2_3D.moea = mb.moeas.MOEAD(population=100, generations=100)
 
-    # 3. Performance Contrast (The Publication Chart)
-    # Questions: 
-    # - "Is the difference statistically significant (p < 0.05)?"
-    # - "What is the probability that Alg A outperforms Alg B (A12)?"
-    print("\nPlotting Performance Contrast (perf_spread)...")
-    mb.view.perf_spread(exp1, exp2, title="Metric Contrast: NSGA-II vs MOEA/D")
+    REPEATS = 10
+    print(f"Running 3D experiments ({REPEATS} times)...")
+    exp1_3D.run(repeat=REPEATS)
+    exp2_3D.run(repeat=REPEATS)
 
-    # 4. Stochastic Reliability (EAF Bands)
-    # Question: "What is the search corridor reached by at least 50% of the runs?"
-    # The 'topo_bands' highlights the median attainment and the 10%-90% reliability envelope.
-    print("\nPlotting Reliability Envelopes (topo_bands)...")
-    mb.view.topo_bands(exp1, exp2, 
-                       levels=[0.1, 0.5, 0.9], 
-                       title="Search Corridors: Stochastic Reliability (EAF Bands)")
+    print("\nPlotting Reliability Envelopes 3D (topo_bands) - Style: STEP...")
+    mb.view.topo_bands(exp1_3D, exp2_3D, levels=[0.1, 0.5, 0.9], style='step', title="3D Search Corridors (STEP)")
 
-    print("\nScientific plots generated. Review the figures to see A12 and EAF envelopes.")
+    print("\nPlotting Reliability Envelopes 3D (topo_bands) - Style: SPLINE...")
+    mb.view.topo_bands(exp1_3D, exp2_3D, levels=[0.1, 0.5, 0.9], style='spline', title="3D Search Corridors (SPLINE)")
+
+
+    # 2. Setup: 2-Objective Analysis for Band Fill
+    print("\n--- Part B: 2-Objective Analysis ---")
+    mop2 = mb.mops.DTLZ2(M=2)
+    
+    exp1_2D = mb.experiment()
+    exp1_2D.name = "NSGA-II (2D)"
+    exp1_2D.mop = mop2
+    exp1_2D.moea = mb.moeas.NSGA2(population=100, generations=100)
+    
+    exp2_2D = mb.experiment()
+    exp2_2D.name = "MOEA/D (2D)"
+    exp2_2D.mop = mop2
+    exp2_2D.moea = mb.moeas.MOEAD(population=100, generations=100)
+
+    print(f"Running 2D experiments ({REPEATS} times)...")
+    exp1_2D.run(repeat=REPEATS)
+    exp2_2D.run(repeat=REPEATS)
+
+    print("\nPlotting Reliability Envelopes 2D (topo_bands) - Style: FILL...")
+    mb.view.topo_bands(exp1_2D, exp2_2D, levels=[0.1, 0.5, 0.9], style='fill', title="2D Search Corridors (FILL)")
+
+    print("\nPlotting Reliability Envelopes 2D (topo_bands) - Style: SPLINE...")
+    mb.view.topo_bands(exp1_2D, exp2_2D, levels=[0.1, 0.5, 0.9], style='spline', title="2D Search Corridors (SPLINE)")
+                       
+    print("\nPlotting Reliability Envelopes 2D (topo_bands) - Style: STEP...")
+    mb.view.topo_bands(exp1_2D, exp2_2D, levels=[0.1, 0.5, 0.9], style='step', title="2D Search Corridors (STEP)")
+
+    print("\nScientific plots generated.")
     plt.show()
 
 if __name__ == "__main__":
