@@ -463,22 +463,31 @@ class experiment(Reportable):
     def evaluation(self, X: np.ndarray, n_ieq_constr: int = 0) -> Dict[str, np.ndarray]:
         """Delegates evaluation to the internal MOP."""
         return self.mop.evaluation(X, n_ieq_constr)
+
+    def clear(self) -> None:
+        """Clears all runs and results from the experiment."""
+        self._runs = []
+        self.result = None
          
 
     # Execution
-    def run(self, repeat: Optional[int] = None, workers: Optional[int] = None, 
-            diagnose: bool = False, **kwargs) -> None:
+    def run(self, repeat: Optional[int] = None, append: bool = False,
+            workers: Optional[int] = None, diagnose: bool = False, **kwargs) -> None:
         """
         Executes the optimization experiment for one or more runs.
 
         Args:
             repeat (int): Number of independent runs to perform. Defaults to self.repeat.
+            append (bool): If False (default), clears previous runs before execution. 
+                           If True, appends new runs to the existing ones.
             workers (int): [DEPRECATED] Parallel execution is no longer supported. 
                            All runs are performed serially for stability.
             diagnose (bool): If True, performs automated algorithmic pathology analysis 
                              after execution and prints the rationale. Defaults to False.
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
+        if not append:
+            self.clear()
         if repeat is not None:
             self.repeat = repeat
         else:
