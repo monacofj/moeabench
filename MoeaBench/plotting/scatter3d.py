@@ -183,6 +183,10 @@ class Scatter3D:
                 if np.any(msk):
                   style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
                   
+                  # Plotly trace-splitting requires explicit color management
+                  colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
+                  opt_color = style.get('color', colors[i % len(colors)])
+                  
                   # Plotly Scatter3d does NOT support arrays for 'symbol' or 'opacity'
                   # We implement trace-splitting to support Audit Report style differentiation
                   if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):

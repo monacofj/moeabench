@@ -175,6 +175,10 @@ class Scatter2D:
                 # Custom markers support
                 style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
                 
+                # Plotly trace-splitting requires explicit color management
+                colors = ['#636EFA', '#EF553B', '#00CC96', '#AB63FA', '#FFA15A', '#19D3F3', '#FF6692', '#B6E880', '#FF97FF', '#FECB52']
+                opt_color = style.get('color', colors[i % len(colors)])
+                
                 # Check for individualized quality markers (list of symbols)
                 if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
                     symbols = np.array(style['symbol'])
