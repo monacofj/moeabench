@@ -220,8 +220,8 @@ class Scatter3D:
                                    ))
                     else:
                         # Static/Standard Marker
-                        # Sync with topo_shape solid markers (size 6)
-                        marker_config = dict(size=6, line=dict(width=0))
+                        # Sync with topo_shape solid markers (size 6) by using an array to trigger Plotly's array sizing logic
+                        marker_config = dict(size=np.full(msk.sum(), 6), line=dict(width=0))
                         marker_config.update(style)
                         if 'color' not in marker_config:
                              marker_config['color'] = opt_color

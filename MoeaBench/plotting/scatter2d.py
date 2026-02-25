@@ -215,7 +215,7 @@ class Scatter2D:
                 else:
                     # Static/Standard Marker
                     # Sync with topo_shape solid markers (size 6)
-                    marker_config = dict(size=6, line=dict(width=0))
+                    marker_config = dict(size=np.full(msk.sum(), 6), line=dict(width=0))
                     marker_config.update(style)
                     if 'color' not in marker_config:
                          marker_config['color'] = MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)]
