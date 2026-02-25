@@ -21,8 +21,15 @@ from scipy.cluster.vq import kmeans2
 from contextlib import contextmanager
 
 # Path to the Authorized Offline Baselines
-# Path to the Authorized Offline Baselines
-BASELINE_JSON_PATH = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
+def _get_default_baseline_path() -> str:
+    from ..system import version
+    ver = version()
+    # Try specific version first, then fallback to canonical link
+    specific = os.path.join(os.path.dirname(__file__), f"resources/baselines_v{ver}.json")
+    canonical = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
+    return specific if os.path.exists(specific) else canonical
+
+BASELINE_JSON_PATH = _get_default_baseline_path()
 _CACHE = None
 _REGISTERED_SOURCES = [] # List of dicts or paths
 
@@ -212,35 +219,61 @@ def get_baseline_ecdf(problem: str, k: int, metric: str) -> Tuple[float, float, 
         raise UndefinedBaselineError(f"Invalid baseline data for {problem}, K={k}: {e}")
 
 
+# Internal cache for Reference Sets (FPS)
+_FPS_CACHE = {}
+
+def clear_baselines_cache():
+    global _FPS_CACHE
+    _FPS_CACHE = {}
+
 def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     """
     Generates the Deterministic Reference $U_K$ (Uniform-at-K).
-    
     Logic: Farthest Point Sampling (FPS) subset of GT.
+    Optimized with internal caching.
     """
     if len(gt) <= k:
         return gt
         
-    # Standard FPS (Greedy)
-    # Using simple euclidean metric
+    # Use id of data, shape and seed as key to avoid collisions from memory reuse
+    key = (id(gt), gt.shape, seed)
+    
+    # Check cache
+    if key in _FPS_CACHE:
+        cached_indices = _FPS_CACHE[key]
+        if len(cached_indices) >= k:
+            return gt[cached_indices[:k]]
+    else:
+        cached_indices = []
+
+    # Resume FPS or start fresh
     rng = np.random.RandomState(seed)
-    # Start with random point to avoid bias of index 0 if GT is sorted
-    start_idx = rng.randint(0, len(gt))
     
-    indices = [start_idx]
-    # Distances to current set
-    min_dists = cdist(gt[start_idx:start_idx+1], gt, metric='euclidean')[0]
+    if not cached_indices:
+        start_idx = rng.randint(0, len(gt))
+        cached_indices = [start_idx]
+        min_dists = cdist(gt[start_idx:start_idx+1], gt, metric='euclidean')[0]
+    else:
+        # Re-derive min_dists for the current set
+        # This is slightly expensive but only happens once when expanding K
+        points = gt[cached_indices]
+        d = cdist(points, gt, metric='euclidean')
+        min_dists = np.min(d, axis=0)
+
+    # Grow to target k or a reasonable buffer (e.g. 200)
+    target_k = max(k, 200)
+    target_k = min(target_k, len(gt))
     
-    for _ in range(k - 1):
-        # Select point with max min_dist
+    for _ in range(len(cached_indices), target_k):
         next_idx = np.argmax(min_dists)
-        indices.append(next_idx)
+        cached_indices.append(next_idx)
         
         # Update distances
         new_dists = cdist(gt[next_idx:next_idx+1], gt, metric='euclidean')[0]
         min_dists = np.minimum(min_dists, new_dists)
         
-    return gt[indices]
+    _FPS_CACHE[key] = cached_indices
+    return gt[cached_indices[:k]]
 
 def get_ref_clusters(gt: np.ndarray, c: int = 32, seed: int = 0) -> Any:
     """

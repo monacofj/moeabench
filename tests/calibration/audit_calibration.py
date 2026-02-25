@@ -34,8 +34,8 @@ if PROJ_ROOT not in sys.path:
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "tests/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.11.csv")
-AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/audit_v0.11.json")
+BASELINE_FILE = os.path.join(PROJ_ROOT, "tests/baselines_v0.12.0.csv")
+AUDIT_JSON = os.path.join(PROJ_ROOT, "tests/audit_v0.12.0.json")
 
 def _load_nd_points(csv_path):
     pts = pd.read_csv(csv_path).values
