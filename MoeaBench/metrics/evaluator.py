@@ -652,11 +652,8 @@ def emd(exp, ref=None, gens=None):
         #    print(f"PTS Shape: {pts.shape}, REF Shape: {r_pts.shape}")
         return np.mean(w_dists)
 
-    F_GENs, Fs, source_name, n_runs = _extract_data(exp, gen=gen)
+    F_GENs, Fs, source_name, n_runs = _extract_data(exp, gens=gens)
     ref_front = get_reference_front(ref, Fs)
-    
-    # DEBUG
-    print(f"DEBUG: ref_front shape: {ref_front.shape if ref_front is not None else 'None'}")
     
     if ref_front is None:
         return MetricMatrix(np.full((1, n_runs), np.nan), "EMD")
