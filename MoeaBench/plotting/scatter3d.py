@@ -40,6 +40,7 @@ class Scatter3D:
          self.ax = kwargs.get('ax', None)
          self.show_plot = kwargs.get('show', True)
          self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
+         self.gray_gt = kwargs.get('gray_gt', True)
          self.figure = go.Figure()
          self._build()
            
@@ -109,6 +110,9 @@ class Scatter3D:
                 # Pick color from cycle
                 current_color = cycle_colors[i % len(cycle_colors)]
                 label = f'{self.experiments[i]}'
+                
+                if self.gray_gt and ('gt' in str(label).lower() or 'reference' in str(label).lower()):
+                    current_color = '#d3d3d3'
                 
                 t_mode = self.trace_modes[i]
                 style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
@@ -187,7 +191,11 @@ class Scatter3D:
                     style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
                     
                     # Plotly trace-splitting requires explicit color management
-                    opt_color = style.get('color', MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)])
+                    base_color = MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)]
+                    label_str = str(self.experiments[i]).lower()
+                    if self.gray_gt and ('gt' in label_str or 'reference' in label_str):
+                        base_color = '#d3d3d3'
+                    opt_color = style.get('color', base_color)
                     
                     # Plotly Scatter3d does NOT support arrays for 'symbol' or 'opacity'
                     if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):

@@ -218,13 +218,14 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ### **2.1. Topographic Analysis (`mb.view.topo_*`)**
 
-#### **`topo_shape(*args, mode='auto', ...)`**
+#### **`topo_shape(*args, mode='auto', markers=False, ...)`**
 *   **Permanent Alias**: `spaceplot`.
-*   **Description**: Visualizes solutions in Objective Space (2D or 3D).
+*   **Description**: Visualizes solutions in Objective Space (2D or 3D). 
+    *   **GT Density**: To increase the number of points plotted for the Ground Truth (GT), do not rely on implicit GT extraction. Instead, explicitly sample the analytical optimum and pass it to the plotter: `mb.view.topo_shape(exp, exp.optimal_front(n=5000))`.
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
-    *   `markers` (*bool*): Enables Visual Quality Markers (Solid Circle, Open Circle, Open Diamond) based on algorithmic health/Q-Score (default `False`).
+    *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the function will automatically look for a provided Reference GT in `*args` to compute the clinical metrics.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
 
 #### **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
@@ -935,6 +936,12 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 | **`mb.diagnostics.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
 | **`mb.diagnostics.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
 | **`mb.diagnostics.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
+
+#### **`.reset_baselines()`**
+*   **Description**: Clears any custom or sidecar baseline configurations loaded during the session (via `register_baselines` or auto-discovery). 
+*   **Behavior**: Reverts the internal baseline cache (`_CACHE`) entirely back to the canonical library defaults (the internal `baselines_v4.json`). Ensures global state cleanliness when running multiple disparate evaluations in the same kernel.
+*   **Arguments**: None.
+*   **Returns**: `None`.
 
 ---
 

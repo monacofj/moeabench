@@ -10,7 +10,7 @@ from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
 
-def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, markers=False, **kwargs):
+def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, markers=False, gray_gt=True, **kwargs):
     """
     [mb.view.topo_shape] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
@@ -183,7 +183,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         else: objectives = [0, 1, 2]
     
     if len(objectives) == 2:
-        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, **kwargs)
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, **kwargs)
     else:
         for k in range(len(processed_args)):
              d = processed_args[k]
@@ -193,7 +193,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
                   new_d[:, :d.shape[1]] = d
                   processed_args[k] = new_d
         while len(objectives) < 3: objectives.append(0)
-        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, **kwargs)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, **kwargs)
     
     if show:
         s.show()
