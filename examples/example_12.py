@@ -53,8 +53,8 @@ def main():
     # This is the raw data used for the "Validation" layer.
     u_dist = mb.diagnostics.closeness(exp1, ground_truth=gt)
     print("\n--- Physical Insight: Closeness (Raw Distribution) ---")
-    print(f"- Mean Distance: {np.mean(u_dist):.4f} resolution-units")
-    print(f"- Max Distance (95th percentile): {np.percentile(u_dist, 95):.4f}")
+    print(f"- Mean Distance: {np.mean(u_dist.raw_data):.4f} resolution-units")
+    print(f"- Max Distance (95th percentile): {np.percentile(u_dist.raw_data, 95):.4f}")
     
     # B. Scalar Clinical/Fair Results
     # We compute the scalar versions of FAIR metrics

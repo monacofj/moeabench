@@ -129,7 +129,9 @@ class BaseMoea(ABC):
         Returns:
             dict: Evaluation results containing 'F' (objectives) and optionally 'G' (constraints).
         """
-        return self.get_problem().evaluation(np.array([X]), self.get_n_ieq_constr())
+        # Ensure X is 2D (either a single individual or a population)
+        X_eval = np.atleast_2d(X)
+        return self.get_problem().evaluation(X_eval, self.get_n_ieq_constr())
 
     def __getstate__(self) -> Dict[str, Any]:
         """Custom state for pickling to avoid non-picklable attributes."""

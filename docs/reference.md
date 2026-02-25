@@ -743,10 +743,9 @@ class RandomSearch(mb.moeas.BaseMoea):
         # 2. Evaluate using the framework's helper
         res = self.evaluation_benchmark(X)
         
-        # 3. Return final objectives (F) and variables (X)
-        # For simple plugins, returning the final population suffice.
-        # More advanced wrapping allows for generational history.
-        return res['F'], X, res['F'], None, None, None, None
+        # 3. Return generational history (List[np.ndarray])
+        # For simple plugins, returning a single-element list suffices.
+        return [res['F']], [X], res['F'], [res['F']], [X], [np.array([])], [np.array([])]
 ```
 > [!TIP]
 > For a detailed walkthrough on implementing and using custom plugins, see **`examples/example_05.py`**.

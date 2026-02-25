@@ -323,8 +323,8 @@ ref  = exp.optimal()          # Analytical reference (Truth)
 
 # --- Single-run access (Specific Trajectory) ---
 nd_1 = exp[0].non_dominated()      # Elite of the first run only
-nd_n = exp.pop(50).non_dominated() # Elite of generation 50 across all runs
-
+nd_n = exp.non_dominated(50) # Elite of generation 50 across all runs
+first_obj = nd_n.objectives[0] # Objective vector of the first elite individual
 # --- Visualization (Extracting Space) ---
 mb.view.topo_shape(nd.objs, ref.objs)
 ```
@@ -341,10 +341,10 @@ MoeaBench employs a delegation mechanism to streamline access to nested data. At
 | :--- | :--- | :--- |
 | **`exp.last_run`** | The most recent trajectory. | `exp.runs[-1]` |
 | **`exp.last_pop`** | Final population of the last run. | `exp.last_run.pop(-1)` |
-| **`exp.front()`**  | **Superfront**: ND objectives across *all* runs. | `exp.pop().non_dominated().objs` |
-| **`exp.set()`**    | **Superset**: ND variables across *all* runs. | `exp.pop().non_dominated().vars` |
-| **`exp.non_front()`**| **Dominance Cloud**: Concatenated dominated objectives. | `exp.pop().dominated().objs` |
-| **`exp.non_set()`**  | **Inverse Cloud**: Concatenated dominated variables. | `exp.pop().dominated().vars` |
+| **`exp.front()`**  | **Superfront**: ND objectives across *all* runs. | `exp.non_dominated().objs` |
+| **`exp.set()`**    | **Superset**: ND variables across *all* runs. | `exp.non_dominated().vars` |
+| **`exp.non_front()`**| **Dominance Cloud**: Concatenated dominated objectives. | `exp.dominated().objs` |
+| **`exp.non_set()`**  | **Inverse Cloud**: Concatenated dominated variables. | `exp.dominated().vars` |
 | **`exp.objectives`**| Raw cloud objectives (all final runs combined). | `exp.pop().objs` |
 | **`exp.variables`** | Raw cloud variables (all final runs combined).| `exp.pop().vars` |
 | **`exp.optimal_front()`**| The True (Analytical) Pareto Front. | `exp.optimal().objs` |

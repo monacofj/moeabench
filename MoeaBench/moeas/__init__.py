@@ -46,6 +46,7 @@ from .U_NSGA3 import U_NSGA3
 from .SPEA2 import SPEA2
 from .MOEAD import MOEAD
 from .RVEA import RVEA
+from ..core.base_moea import BaseMoea
 
 # Optional: Convenience alias for NSGA2
 NSGA2 = NSGA2deap
