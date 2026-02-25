@@ -10,11 +10,13 @@ from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
 
-def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, **kwargs):
+def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, markers=False, **kwargs):
     """
     [mb.view.topo_shape] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
     """
+    from ..diagnostics.qscore import q_closeness_points
+    
     # Environment detection for 'auto' mode
     if mode == 'auto':
         try:
@@ -84,7 +86,91 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         val = np.array(val)
         processed_args.append(val)
         names.append(name)
-        trace_modes.append(t_mode)
+        
+        # Override with explicit keyword traces if passed
+        passed_traces = kwargs.get('trace_modes', None)
+        if passed_traces and i < len(passed_traces) and passed_traces[i] is not None:
+             trace_modes.append(passed_traces[i])
+        else:
+             trace_modes.append(t_mode)
+        
+    # Intercept custom marker_styles to avoid overwriting them
+    marker_styles = kwargs.pop('marker_styles', [None] * len(processed_args))
+    kwargs.pop('trace_modes', None) # We already parsed it into trace_modes
+    
+    # Automatic Reference Detection for Clinical Markers
+    auto_ref = kwargs.get('ref', None)
+    if markers and auto_ref is None:
+        for i, arg in enumerate(args):
+            # If an argument is clearly a reference front (optimal_front or analytical)
+            if labels and i < len(labels) and "GT" in labels[i].upper():
+                auto_ref = processed_args[i]
+                break
+            # Or if it's the second argument in a standard call topo_shape(exp, pf)
+            if i == 1 and len(args) == 2:
+                auto_ref = processed_args[i]
+
+    if markers:
+        # Clinical Quality Markers logic (Q-Closeness)
+        for i, val in enumerate(processed_args):
+            if trace_modes[i] != 'markers': continue
+            
+            # If the user already provided a specific symbol for this trace,
+            # we don't overwrite it with semantic quality markers.
+            if marker_styles[i] and 'symbol' in marker_styles[i]:
+                continue
+                
+            try:
+                # The original source object (carrying context like mop/problem)
+                orig_obj = args[i]
+
+                # Inject auto_ref if found and not explicitly overridden
+                call_kwargs = kwargs.copy()
+                if auto_ref is not None and 'ref' not in call_kwargs:
+                    call_kwargs['ref'] = auto_ref
+                
+                # Clinical Sensitivity Adjustment:
+                # DTLZ1 global baseline is very large (~2.0), which makes 
+                # points at 0.8 (visurally far) look like Solids.
+                # We apply a didactic tightening (s_k=0.02) for better visual feedback.
+                if 'problem' in call_kwargs:
+                    pname = str(call_kwargs['problem']).upper()
+                elif hasattr(orig_obj, 'mop'):
+                    pname = str(orig_obj.mop.name).upper()
+                else: pname = ""
+                
+                if "DTLZ1" in pname and 's_k' not in call_kwargs:
+                    # DTLZ1 global baseline is very large (~2.0), making small errors look like Solids.
+                    # We use a very strict 0.02 factor to match human visual perception in [0, 1] scale.
+                    call_kwargs['s_k'] = 0.02 
+                
+                q_vals = q_closeness_points(orig_obj, **call_kwargs)
+                
+                # Fallback, if orig_obj failed (e.g. Population lacking context) but 'val' is a valid array
+                if len(q_vals) == 0 and isinstance(val, (np.ndarray, list)):
+                     try: q_vals = q_closeness_points(val, **call_kwargs)
+                     except: pass
+                
+                if len(q_vals) > 0:
+                    # Audit Report Parity:
+                    # Q >= 0.5: Solid Circle
+                    # 0.0 <= Q < 0.5: Hollow Circle
+                    # Q < 0.0: Diamond Open
+                    symbols = []
+                    for q in q_vals:
+                        if q >= 0.5: symbols.append('circle')
+                        elif q >= 0.0: symbols.append('circle-open')
+                        else: symbols.append('diamond-open')
+                    
+                    if marker_styles[i] is None:
+                        marker_styles[i] = {}
+                    marker_styles[i]['symbol'] = symbols
+                    # High precision sizing (10, 15, 20) for academic look
+                    marker_styles[i]['size'] = [10 if q >= 0.5 else 15 if q >= 0.0 else 20 for q in q_vals]
+            except Exception as e:
+                # Fail gracefully if metrology metadata is missing
+                # print(f"[MoeaBench] Warning: Could not calculate quality markers for trace {i}: {e}")
+                pass
         
     if objectives is None:
         dims = [d.shape[1] for d in processed_args if len(d.shape) > 1]
@@ -93,7 +179,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         else: objectives = [0, 1, 2]
     
     if len(objectives) == 2:
-        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, **kwargs)
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, **kwargs)
     else:
         for k in range(len(processed_args)):
              d = processed_args[k]
@@ -103,7 +189,7 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
                   new_d[:, :d.shape[1]] = d
                   processed_args[k] = new_d
         while len(objectives) < 3: objectives.append(0)
-        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, **kwargs)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, **kwargs)
     
     if show:
         s.show()

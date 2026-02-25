@@ -38,8 +38,11 @@ class Scatter3D:
          self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
          self.ax = kwargs.get('ax', None)
          self.show_plot = kwargs.get('show', True)
+         self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
+         self.figure = go.Figure()
+         self._build()
            
-     def show(self):
+     def _build(self):
          # Honor global backend override
          mode = self.mode
          if defaults.backend == 'matplotlib':
@@ -51,6 +54,18 @@ class Scatter3D:
              self.configure_static()
          else:
              self.configure_interactive()
+
+     def show(self):
+         if not self.show_plot: return
+         mode = self.mode
+         if defaults.backend == 'matplotlib': mode = 'static'
+         elif defaults.backend == 'plotly': mode = 'interactive'
+         
+         if mode == 'static':
+             import matplotlib.pyplot as plt
+             plt.show()
+         else:
+             self.figure.show()
 
      def configure_static(self):
          import matplotlib.pyplot as plt
@@ -95,15 +110,50 @@ class Scatter3D:
                 label = f'{self.experiments[i]}'
                 
                 t_mode = self.trace_modes[i]
+                style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
+                
+                # Retrieve explicit static color if set, else fallback to prop_cycle
+                opt_color = style.get('color', current_color)
+                
                 if 'markers' in t_mode:
-                     ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], 
-                                label=label, 
-                                color=current_color)
+                     if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
+                         symbols = np.array(style['symbol'])
+                         sizes = np.array(style['size']) if 'size' in style else np.full(len(ax_data), 20)
+                         
+                         for symbol_type in ['circle', 'circle-open', 'diamond-open']:
+                             sub_msk = (symbols == symbol_type) & msk
+                             if np.any(sub_msk):
+                                 plt_marker = 'o'
+                                 plt_fc = opt_color
+                                 plt_ec = opt_color
+                                 plt_size = sizes[sub_msk]
+                                 
+                                 if symbol_type == 'circle-open':
+                                     plt_marker = 'o'
+                                     plt_fc = 'none'
+                                 elif symbol_type == 'diamond-open':
+                                     plt_marker = 'D'
+                                     plt_fc = 'none'
+                                 
+                                 ax.scatter(ax_data[sub_msk], ay_data[sub_msk], az_data[sub_msk], 
+                                            label=label if symbol_type == 'circle' else None, 
+                                            facecolors=plt_fc, edgecolors=plt_ec,
+                                            marker=plt_marker, s=plt_size)
+                     else:
+                         custom_marker = style.get('symbol', 'o')
+                         custom_size = style.get('size', 20)
+                         if custom_marker == 'circle': custom_marker = 'o'
+                         
+                         kwa = {'label': label, 'color': opt_color, 'marker': custom_marker}
+                         if custom_size is not None:
+                             kwa['s'] = custom_size
+                             
+                         ax.scatter(ax_data[msk], ay_data[msk], az_data[msk], **kwa)
                 
                 if 'lines' in t_mode:
                      ax.plot(ax_data[msk], ay_data[msk], az_data[msk], 
                              label=label if 'markers' not in t_mode else None, 
-                             color=current_color)
+                             color=opt_color)
         
          ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
          ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
@@ -119,24 +169,62 @@ class Scatter3D:
              plt.show()
 
      def configure_interactive(self):
-         self.figure=go.Figure()
+         if not hasattr(self, 'figure'):
+             self.figure=go.Figure()
          for i in range(0, len(self.vet_pts)):
                 ax = self.vet_pts[i][:,self.axis[0]]
                 ay = self.vet_pts[i][:,self.axis[1]]
                 az = self.vet_pts[i][:,self.axis[2]]
                 msk = ~(np.isnan(ax) | np.isnan(ay) | np.isnan(az))
                 if np.any(msk):
-                 self.figure.add_trace(go.Scatter3d(
-                 x=ax, y=ay, z=az,
-                 mode=self.trace_modes[i],
-                 marker=dict(size=4 if 'lines' in self.trace_modes[i] else 3),  
-                 name=f'{self.experiments[i]}',                       
-                 showlegend=True,
-                 hovertemplate = (f"{self.experiments[i]}<br>"
-                                  f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
-                                  f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
-                                  f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
-                 ))   
+                  style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
+                  
+                  # Plotly Scatter3d does NOT support arrays for 'symbol' or 'opacity'
+                  # We implement trace-splitting to support Audit Report style differentiation
+                  if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
+                       symbols = np.array(style['symbol'])
+                       sizes = np.array(style['size']) if 'size' in style and isinstance(style['size'], (list, np.ndarray)) else np.full(len(ax), 4)
+                       
+                       # Definition: circle (solid), circle-open (hollow), diamond-open (failure)
+                       for symbol_type in ['circle', 'circle-open', 'diamond-open']:
+                            sub_msk = (symbols == symbol_type) & msk
+                            if np.any(sub_msk):
+                                 sub_marker = dict(size=sizes[sub_msk])
+                                 if symbol_type == 'circle-open':
+                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2)))
+                                 elif symbol_type == 'diamond-open':
+                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=1.5)))
+                                 else:
+                                      sub_marker.update(dict(symbol='circle', opacity=1.0))
+                                 
+                                 self.figure.add_trace(go.Scatter3d(
+                                     x=ax[sub_msk], y=ay[sub_msk], z=az[sub_msk],
+                                     mode=self.trace_modes[i],
+                                     marker=sub_marker,
+                                     name=f'{self.experiments[i]}',
+                                     legendgroup=f'{self.experiments[i]}',
+                                     showlegend=(symbol_type == 'circle'), # Only show one in legend
+                                     hovertemplate = (f"{self.experiments[i]}<br>"
+                                                      f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                                      f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
+                                                      f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
+                                 ))
+                  else:
+                       # Static/Standard Marker
+                       marker_config = dict(size=4 if 'lines' in self.trace_modes[i] else 3)
+                       marker_config.update(style)
+                       self.figure.add_trace(go.Scatter3d(
+                           x=ax[msk], y=ay[msk], z=az[msk],
+                           mode=self.trace_modes[i],
+                           marker=marker_config,
+                           name=f'{self.experiments[i]}',                       
+                           showlegend=True,
+                           hovertemplate = (f"{self.experiments[i]}<br>"
+                                            f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                            f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br>"
+                                            f"{self.axis_label} {self.axis[2]+1}: %{{z}}<br><extra></extra>"),
+                       ))
+   
        
       
          self.figure.update_layout(
@@ -169,4 +257,3 @@ class Scatter3D:
                 ),
                 hovermode='closest'
             )
-         self.figure.show()

@@ -34,8 +34,11 @@ class Scatter2D:
         self.trace_modes = trace_modes if trace_modes else ['markers'] * len(names)
         self.ax = kwargs.get('ax', None)
         self.show_plot = kwargs.get('show', True)
+        self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
+        self.figure = go.Figure()
+        self._build()
 
-    def show(self):
+    def _build(self):
         # Honor global backend override
         mode = self.mode
         if defaults.backend == 'matplotlib':
@@ -47,6 +50,18 @@ class Scatter2D:
             self.configure_static()
         else:
             self.configure_interactive()
+
+    def show(self):
+        if not self.show_plot: return
+        mode = self.mode
+        if defaults.backend == 'matplotlib': mode = 'static'
+        elif defaults.backend == 'plotly': mode = 'interactive'
+        
+        if mode == 'static':
+            import matplotlib.pyplot as plt
+            plt.show()
+        else:
+            self.figure.show()
 
     def configure_static(self):
         import matplotlib.pyplot as plt
@@ -80,7 +95,47 @@ class Scatter2D:
                     ax.plot(x_sorted, y_sorted, label=label, color=current_color, drawstyle='steps-post')
                 
                 if 'markers' in t_mode:
-                    ax.scatter(ax_data[msk], ay_data[msk], label=label if 'lines' not in t_mode else None, color=current_color)
+                    style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
+                    
+                    # Retrieve explicit static color if set, else fallback to prop_cycle
+                    opt_color = style.get('color', current_color)
+                    
+                    if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
+                        symbols = np.array(style['symbol'])
+                        sizes = np.array(style['size']) if 'size' in style else np.full(len(ax_data), 20)
+                        
+                        # Note: 2D drawing requires sorting logic to be independent of scatter 
+                        # but markers themselves don't strictly need sorting except for Z-order overlap.
+                        for symbol_type in ['circle', 'circle-open', 'diamond-open']:
+                            sub_msk = (symbols == symbol_type) & msk
+                            if np.any(sub_msk):
+                                plt_marker = 'o'
+                                plt_fc = opt_color
+                                plt_ec = opt_color
+                                plt_size = sizes[sub_msk]
+                                
+                                if symbol_type == 'circle-open':
+                                    plt_marker = 'o'
+                                    plt_fc = 'none'
+                                elif symbol_type == 'diamond-open':
+                                    plt_marker = 'D'
+                                    plt_fc = 'none'
+                                
+                                ax.scatter(ax_data[sub_msk], ay_data[sub_msk], 
+                                           label=label if symbol_type == 'circle' and 'lines' not in t_mode else None, 
+                                           facecolors=plt_fc, edgecolors=plt_ec,
+                                            marker=plt_marker, s=plt_size)
+                    else:
+                        custom_marker = style.get('symbol', 'o')
+                        custom_size = style.get('size', 20)
+                        if custom_marker == 'circle': custom_marker = 'o'
+                         
+                        kwa = {'label': label if 'lines' not in t_mode else None, 
+                               'color': opt_color, 'marker': custom_marker}
+                        if custom_size is not None:
+                            kwa['s'] = custom_size
+                            
+                        ax.scatter(ax_data[msk], ay_data[msk], **kwa)
         
         ax.set_xlabel(f"{self.axis_label} {self.axis[0]+1}")
         ax.set_ylabel(f"{self.axis_label} {self.axis[1]+1}")
@@ -97,7 +152,8 @@ class Scatter2D:
             plt.show()
 
     def configure_interactive(self):
-        self.figure = go.Figure()
+        if not hasattr(self, 'figure'):
+            self.figure = go.Figure()
         for i in range(len(self.vet_pts)):
             ax = self.vet_pts[i][:, self.axis[0]]
             ay = self.vet_pts[i][:, self.axis[1]]
@@ -112,12 +168,17 @@ class Scatter2D:
                 p_mode = self.trace_modes[i]
                 line_shape = 'hv' if 'lines' in p_mode else None # hv = horizontal-vertical steps
 
+                # Custom markers support
+                marker_config = dict(size=6 if 'lines' in p_mode else 8)
+                if self.marker_styles[i] is not None:
+                    marker_config.update(self.marker_styles[i])
+
                 self.figure.add_trace(go.Scatter(
                     x=x_sorted if 'lines' in p_mode else ax[msk],
                     y=y_sorted if 'lines' in p_mode else ay[msk],
                     mode=p_mode,
                     line=dict(shape=line_shape) if line_shape else None,
-                    marker=dict(size=6 if 'lines' in p_mode else 8),
+                    marker=marker_config,
                     name=f'{self.experiments[i]}',
                     showlegend=True,
                     hovertemplate=(f"{self.experiments[i]}<br>"
@@ -144,4 +205,3 @@ class Scatter2D:
             hovermode='closest',
             template=defaults.theme if defaults.theme != 'moeabench' else 'moeabench'
         )
-        self.figure.show()

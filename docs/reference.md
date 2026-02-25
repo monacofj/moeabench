@@ -224,6 +224,7 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
+    *   `markers` (*bool*): Enables Visual Quality Markers (Solid Circle, Open Circle, Open Diamond) based on algorithmic health/Q-Score (default `False`).
 *   **Returns**: `Figure` (Plotly or Matplotlib).
 
 #### **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**

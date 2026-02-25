@@ -11,7 +11,7 @@ Example 13: Reference-based Quality Validation (Q-Scores)
 
 This example demonstrates the "Clinical Validation" layer of the diagnostic suite.
 We simulate a "Collapsed Front" pathology by running a real optimizer (NSGA-II)
-with extremely limited resources (5 generations).
+with 285 generations).
 
 This forces the algorithm to fail in converging, producing a population that is:
 1. "Remote" (Far from the optimal front)
@@ -29,45 +29,41 @@ def main():
     print(f"MoeaBench v{mb.system.version()}")
     print("=== Example 13: Reference-based Quality Validation (Q-Scores)")
 
-    # 1. Setup: DTLZ2 (3 Objectives) and NSGA-II
-    # We use a standard setup but strangle the resources to force a failure.
+    # 1. Setup: DTLZ1 (3 Objectives) and NSGA-II
+    # Using the specific configuration requested by the user:
     exp = mb.experiment()
-    exp.mop = mb.mops.DTLZ2(M=3)
-    
-    # "Strangled" Configuration: Only 52 individuals and 40 generations.
-    # A healthy run usually requires 100+ generations.
-    # Note: Population must be a multiple of 4 for minimal compatibility with TournamentDCD
-    exp.moea = mb.moeas.NSGA2(population=52, generations=40)
+    exp.mop = mb.mops.DTLZ1(M=3)
+    exp.moea = mb.moeas.NSGA2(population=100, generations=280)
     exp.name = "Strangled NSGA-II"
 
-    # 2. Execution: Run the optimization
-    print("Running optimization with limited resources (simulating failure)...")
-    exp.run()
+    # 2. Execution: Run the optimization with seed=1
+    print("Running optimization with limited resources...")
+    exp.run(seed=1)
 
     # 3. Validation Data: Ground Truth
-    # Needed for the audit to know what "Perfection" looks like.
-    gt = exp.mop.pf(n_points=1000)
+    # We use a standard analytical optimal front (a point cloud).
+    gt = exp.optimal_front()
 
     # 4. Run Clinical Audit (Q-Scores)
     print("Running Clinical Quality Audit...")
     q_res = mb.diagnostics.q_audit(exp, ground_truth=gt)
 
     # 5. Report Results
-    # This uses the new elegant terminal format.
     print("\n--- Clinical Quality Report ---\n")
     q_res.report_show()
     
-    # 5.1 Clinical Narrative Summary (Hierarchical Decision Tree)
-    print("\n--- Clinical Narrative Summary ---")
-    print(q_res.summary())
-    
     # 6. Visual Confirmation
-    # Visually compare the "Strangled" population against the true front.
-    print("\nDisplaying Topology Shape (Close setting window to finish)...")
+    print("\nDisplaying Topology Shape with Semantic Markers...")
+    
+    # Standard call as requested: Population object vs Optimal Front points.
+    # We enable semantic markers (Solid/Hollow/Diamond) for the population.
+    # For the GT, we explicitly set a simple circle symbol to keep it "normal".
     mb.view.topo_shape(exp, gt, 
-                       title="Pathology: Resource Starvation (Collapsed Front)",
-                       labels=["Strangled Pop", "Optimal Front (GT)"],
-                       show=False) # Headless mode safety
+                       title="Clinical Validation: DTLZ1 Convergence Trail (G=285)",
+                       labels=["NSGA-II Population", "Optimal Front (GT)"],
+                       markers=True, 
+                       marker_styles=[None, {'color': 'lightgray', 'size': 5, 'symbol': 'circle'}],
+                       show=True) 
     print("\nDone.")
 
 if __name__ == "__main__":
