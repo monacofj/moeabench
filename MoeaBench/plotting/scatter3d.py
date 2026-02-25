@@ -193,12 +193,13 @@ class Scatter3D:
                        for symbol_type in ['circle', 'circle-open', 'diamond-open']:
                             sub_msk = (symbols == symbol_type) & msk
                             if np.any(sub_msk):
-                                 sub_marker = dict(size=sizes[sub_msk])
+                                 sub_marker = dict(size=sizes[sub_msk], color=opt_color)
                                  if symbol_type == 'circle-open':
-                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0)))
+                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0, color=opt_color)))
                                  elif symbol_type == 'diamond-open':
-                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0)))
+                                      sub_marker.update(dict(symbol='diamond-open', line=dict(width=2.0, color=opt_color)))
                                  else:
+                                      # Solid markers: no border
                                       sub_marker.update(dict(symbol='circle', opacity=1.0, line=dict(width=0)))
                                  
                                  self.figure.add_trace(go.Scatter3d(
