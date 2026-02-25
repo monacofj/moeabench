@@ -318,6 +318,38 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `gens` (*int* or *slice*): Range of generations to plot.
 *   **Returns**: `Figure`.
 
+### **3.5. Aesthetic & Styling System**
+
+MoeaBench maintains a high-precision visual identity designed for academic publications. The system handles colors and sizing consistently across Plotly and Matplotlib backends.
+
+#### **Global Theme Configuration**
+Use `mb.view.apply_style()` to configure the global visual environment.
+
+*   **`apply_style(theme='moeabench')`**: 
+    - Applies the official **MoeaBench Ocean Palette**.
+    - Sets Matplotlib's color cycle and grid defaults.
+    - Creates and activates the `moeabench` Plotly template.
+    - This is the default behavior at library import.
+
+#### **Per-Trace Customization (`marker_styles`)**
+For granular control, plotters accept a `marker_styles` list (one dictionary per dataset).
+
+*   **`color`**: Explicit hex or CSS color (e.g., `{'color': '#FF5733'}`).
+*   **`symbol`**: Overrides the marker shape (e.g., `'circle'`, `'diamond'`).
+*   **`size`**: Overrides the standard sizing logic.
+
+#### **Standard Sizing Rules (Academic Presets)**
+When using `topo_shape` or standard plotters, the following rules apply to maintain diagnostic weight:
+
+| Marker Type | Purpose | Plotly Size | Matplotlib Size ($s$) |
+| :--- | :--- | :--- | :--- |
+| **Standard / GT / Solid** | Ideal/Healthy Solutions | **6** | **24** |
+| **Hollow Circles** | Near-miss pathologies | **10** | **35-40** |
+| **Diamonds** | Critical failure pathologies | **9** | **31-36** |
+
+> [!NOTE]
+> **Visual Weight Balancing**: In MoeaBench, Diamonds are set to size 9 (instead of 10) to visually compensate for their larger geometric area compared to circles, ensuring they don't appear disproportionately large.
+
 ---
 
 ## **4. MOPs (`mb.mops.*`)**
