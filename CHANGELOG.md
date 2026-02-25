@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Direct API Access**:
   - Performance views now accessible directly via `mb.perf_history`, `mb.perf_hv`, `mb.perf_density`, and `mb.perf_front_size`.
+- **Clinical Metrology Engine Optimization**:
+  - Upgraded distance computation underlying `mb.diagnostics.closeness` with logarithmic **KDTree** spatial indexing from SciPy, eradicating combinatorial dense-matrix bottlenecks for multi-thousand point Ground Truths.
+  - Implemented dynamic baseline resolution (e.g., `baselines_v0.12.0.json`), allowing parallel co-existence of multi-generation calibration caches.
+- **Geometric Integrity Protocol (Half-Normal Projection)**:
+  - Transitioned the default baseline error model for `q_closeness` from Spherical Normal Blur to strict **Half-Normal Projection**. This fundamentally acknowledges the mathematical fact that errors can only extend *outward* from the true Pareto boundary, eliminating anomalous pseudo-super-optimal scores caused by symmetric density penetration into the infeasible space.
 - **Multi-Perspective Hypervolume (Triple-Mode)**:
   - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
   - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).

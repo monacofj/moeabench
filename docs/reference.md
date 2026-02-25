@@ -845,7 +845,7 @@ All functions in `mb.diagnostics` use a **Context-Aware Dispatch** system (`_res
 *   **Returns**: `FairResult`.
 
 #### **`closeness(data, ref=None, s_k=None)`**
-*   **Description**: Distribution of point-wise distances to the manifold.
+*   **Description**: Distribution of point-wise distances to the manifold. Computed optimally using a `scipy.spatial.KDTree` spatial index for $O(N \log M)$ performance on large manifolds.
 *   **Returns**: `np.ndarray` (vector of distances).
 
 #### **`coverage(data, ref=None)`** / **`gap(data, ref=None)`**
@@ -875,8 +875,9 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ to distinguish "Super-converged" solutions from merely "Good" ones.
 
 #### **`q_closeness(data, ...) -> QResult`**
-*   **Baselines**: Ideal=$0.0$, Random=$ECDF(G_{blur})$ (Gaussian-blurred GT).
+*   **Baselines**: Ideal=$0.0$, Random=$ECDF(R_d)$ (Half-Normal Projected Error Distribution).
 *   **Mapping**: **Wasserstein-1**. Computes the topological similarity between the finding distribution and the noise model.
+*   **Note (v0.12.0)**: Random noise assumes a positive-only metric space penalty enforced through Half-Normal absolute validation, prohibiting points from bleeding inside the non-dominated Pareto wall.
 
 #### **`q_coverage`, `q_gap`, `q_regularity`, `q_balance` -> `QResult`**
 *   **Baselines**: Ideal=$Uni_{50}$ (Median of FPS subsets), Random=$Rand_{50}$ (Median of Random subsets).

@@ -672,6 +672,7 @@ These metrics provide raw, resolution-invariant physical facts about the populat
 
 #### **`closeness`**
 - **Rationale**: Measures the **approximation to the optimum**. It returns the raw distribution of distances for every point in the population to the nearest point in the Ground Truth ($P \to GT$), normalized by $s_K$. It quantifies the median precision/sharpness of the convergence.
+- **Physical Optimization**: In v0.12.0, this calculation was upgraded from brute-force dense matrices to logarithmic **KDTree** spatial indexing. This means querying distances against massive analytical manifolds (e.g., 10,000 GT points) executes almost instantly.
 - **Example**:
 ```python
 u_vals = mb.diagnostics.closeness(exp)
@@ -728,6 +729,7 @@ The scale is divided into five diagnostic tiers:
 
 #### **`q_closeness` (ECDF Scale)**
 - **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
+- **Geometric Integrity (Half-Normal Projection)**: Since v0.12.0, the baseline random noise is modeled strictly as a **Half-Normal Projection** ($| \mathcal{N}(0, \sigma^2) |$). Prior to this, adding spherical noise around the Ground Truth allowed baseline points to mathematically fall *behind* the Pareto boundary, violating the definition of Pareto optimality. Metaphorically, the true Pareto front is an unbreakable wall; errors can only bounce outwards, not penetrate it. The Half-Normal model rigidly enforces this geometric physical law.
 - **Example**:
 ```python
 score = mb.diagnostics.q_closeness(exp)
