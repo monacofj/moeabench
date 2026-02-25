@@ -24,10 +24,8 @@ from contextlib import contextmanager
 def _get_default_baseline_path() -> str:
     from ..system import version
     ver = version()
-    # Try specific version first, then fallback to canonical link
-    specific = os.path.join(os.path.dirname(__file__), f"resources/baselines_v{ver}.json")
-    canonical = os.path.join(os.path.dirname(__file__), "resources/baselines_v4.json")
-    return specific if os.path.exists(specific) else canonical
+    # Canonical version-specific path
+    return os.path.join(os.path.dirname(__file__), f"resources/baselines_v{ver}.json")
 
 BASELINE_JSON_PATH = _get_default_baseline_path()
 _CACHE = None
