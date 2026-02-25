@@ -4,3 +4,4 @@ tests/*.html linguist-generated=true
 
 # Mark documentation HTML as documentation
 docs/**/*.html linguist-documentation=true
+calibration/**/*.html linguist-documentation=true
