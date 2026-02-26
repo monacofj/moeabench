@@ -70,7 +70,7 @@ Use the `test.py` script in the root directory to run the test suite.
 ### Testing Tiers
 - **Unit Tests (`--unit`)**: Functional validation of core classes (`Population`, `Experiment`), metrics, and persistence.
 - **Light Tier (`--light`)**: Mathematical invariants of benchmarks (e.g., DTLZ/DPF geometry) without stochastic execution.
-- **Regression Tier (`--regression`)**: Certified numerical reproducibility. Verifies if Q-Scores and FAIR metrics match the Calibration Reference targets down to 6 decimal places.
+- **Regression Tier (`--regression`)**: Validated numerical reproducibility. Verifies if Q-Scores and FAIR metrics match the Calibration Reference targets down to 6 decimal places.
 - **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the release baselines (IGD thresholds).
 - **Heavy Tier (`--heavy`)**: Full statistical calibration (N=30) and hypothesis testing for large-scale performance verification.
 
@@ -80,11 +80,11 @@ Use the `test.py` script in the root directory to run the test suite.
 - Avoid adding tests that depend on heavy CPU usage or GUI backends.
 
 ### Calibration and Baselines
-Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (e.g., `tests/baselines_v0.8.0.csv`) and a **Calibration Report** (e.g., `tests/CALIBRATION_v0.8.0.html`).
+Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (e.g., `calibration/data/baselines.csv`) and a **Calibration Report** (e.g., `calibration/audit_report.html`).
 - If your contribution affects the core IGD/HV performance, you MUST regenerate the baselines and the report.
 - The framework also utilizes **Calibration Reference Data** (JSON) for numerical regression testing.
-- Raw calibration traces are stored in `tests/calibration_data/`.
-- Use `tests/calibration/compute_baselines.py` and `tests/calibration/generate_visual_report.py` to maintain these artifacts.
+- Raw calibration traces are stored in `calibration/data/calibration_data/`.
+- Use `calibration/scripts/generate_baselines.py` and `calibration/scripts/generate_visual_report.py` to maintain these artifacts.
 
 ---
 

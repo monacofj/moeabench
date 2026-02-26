@@ -945,7 +945,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 #### **`.reset_baselines()`**
 *   **Description**: Clears any custom or sidecar baseline configurations loaded during the session (via `register_baselines` or auto-discovery). 
-*   **Behavior**: Reverts the internal baseline cache (`_CACHE`) entirely back to the canonical library defaults (the internal `baselines_v4.json`). Ensures global state cleanliness when running multiple disparate evaluations in the same kernel.
+*   **Behavior**: Reverts the internal baseline cache (`_CACHE`) entirely back to the canonical library defaults (the internal `baselines.json`). Ensures global state cleanliness when running multiple disparate evaluations in the same kernel.
 *   **Arguments**: None.
 *   **Returns**: `None`.
 
@@ -953,7 +953,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 ### **12.4. Offline Calibration Method**
 
-MoeaBench uses a strict **Fail-Closed** calibration system (`baselines_v4.json`).
+MoeaBench uses a strict **Fail-Closed** calibration system (`baselines.json`).
 
 1.  **Discrete Sampling**: Baselines are pre-computed for finite population sizes $K \in \{10..50, 100, 150, 200\}$.
 2.  **$Uni_{50}$ (The Anchor)**: Generated using **Farthest Point Sampling (FPS)** on the Ground Truth. Represents the "best possible" distribution for a discrete set of size $K$.

@@ -81,7 +81,7 @@ We use ADRs to document the "DNA" of the project's evolution. Any significant de
 Reproducibility is non-negotiable. The library maintains strict management of random seeds across single and multi-run experiments to ensure that every experiment can be reconstructed exactly.
 
 ### Calibration Reports
-For every major release, a full **Calibration Report** (Interactive HTML) is generated and audited. This report serves as a "Precision Certificate", documenting the benchmark's performance and verifying that metrics (HV, IGD, EMD) remain consistent across updates.
+For every major release, a full **Calibration Report** (Interactive HTML) is generated and audited. This report serves as a "Precision Validation Report", documenting the benchmark's performance and verifying that metrics (HV, IGD, EMD) remain consistent across updates.
 
 ### Mirror Parity
 For every narrative script in [examples/](../examples/), there must be a corresponding Jupyter Notebook (`.ipynb`). This ensures that the library's features are accessible both as production-ready scripts and as interactive research environments.

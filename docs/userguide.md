@@ -198,7 +198,7 @@ hv = mb.metrics.hv(exp1)
 hv_a = mb.metrics.hv(expA, ref=expB, scale='relative')
 hv_b = mb.metrics.hv(expB, ref=expA, scale='relative')
 
-# Scenario C: Absolute Certification (Proximity to GT)
+# Scenario C: Absolute Validation (Proximity to GT)
 # Requires mop.calibrate() to have been executed.
 # Scale is normalized against theoretical Ground Truth (H_abs).
 hv_abs = mb.metrics.hv(expA, scale='absolute')
@@ -909,12 +909,12 @@ fact.report_show()
 
 ### **9.6. The Validation Hierarchy**
 
-A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Certified' while others (like SPEA2) are not? Can I still use SPEA2?"*
+A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Validated' while others (like SPEA2) are not? Can I still use SPEA2?"*
 
 The answer is: **Yes, absolutely.** Functionally, there is zero difference.
 
 *   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
-*   **The Difference (Static vs. Dynamic)**: The term "Certified" simply means that the algorithm is included in the library's official, static **Clinical Quality Audit Report** (`tests/audit_report.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
+*   **The Difference (Static vs. Dynamic)**: The term "Validated" simply means that the algorithm is included in the library's official, static **Clinical Quality Audit Report** (`calibration/audit_report.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
 *   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
 
 #### **Longitudinal Auditing: Comparing against History**
@@ -926,7 +926,7 @@ To verify if a new algorithm version is better relative to an *older* baseline (
 
 ```python
 # Directly from mb.diagnostics
-with mb.diagnostics.use_baselines("references/baselines_v0.8.json"):
+with mb.diagnostics.use_baselines("references/baselines.json"):
     res = mb.diagnostics.audit(exp)
     res.report_show()
 ```
@@ -975,7 +975,7 @@ To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing th
 MoeaBench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
 
 #### **The "One-Click" Calibration Workflow**
-For a custom MOP to be clinically certified, it needs a **Sidecar JSON** file containing its Ground Truth (GT) and statistical baselines (ECDF). You can generate this automatically:
+For a custom MOP to be clinically validated, it needs a **Sidecar JSON** file containing its Ground Truth (GT) and statistical baselines (ECDF). You can generate this automatically:
 
 ```python
 # 1. Instantiate your custom MOP
@@ -1034,7 +1034,7 @@ exp.load("results", mode="data")
 
 #### **Enhanced Scientific Metadata (v2)**
 Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
-- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines_v4.json` data package used).
+- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
 - **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
 
 ---
@@ -1071,7 +1071,7 @@ MoeaBench is built on a set of core engineering values designed to balance scien
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 
-*   **Rigor & Calibration**: Reliability is certified through regular **Calibration Reports** that audit metric precision. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
+*   **Rigor & Calibration**: Reliability is validated through regular **Calibration Reports** that audit metric precision. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
 
 *   **Reproducibility**: We enforce **Determinism by Design** through strict seed management, ensuring every run can be reconstructed exactly. Additionally, our **Mirror Parity** policy ensures that every production script in `examples/` has a corresponding interactive Notebook (`.ipynb`), making research both deployable and explorable.
 
