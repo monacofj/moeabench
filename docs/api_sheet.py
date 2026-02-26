@@ -143,9 +143,11 @@ mb.view.topo_shape(exp)                 # 2D/3D Scatter (was 'spaceplot')
 mb.view.topo_bands(exp)                 # Reliability Confidence Bands (2D)
 mb.view.topo_density(exp)               # Kernel Density Estimation (Heatmap)
 
-# B. Performance (Time Series)
+# B. Performance (Time Series & Distributions)
 mb.view.perf_history(exp)               # Convergence Profile (was 'timeplot')
+mb.view.perf_front_size(exp)            # Non-Dominated Population Ratio over time
 mb.view.perf_spread(exp, metric=mb.metrics.hypervolume) # Distribution Boxplots
+mb.view.perf_density(exp)               # Metric Probability Density (KDE)
 
 # C. Clinical (Q-Score Visualization)
 # Requires valid baselines/calibration.
