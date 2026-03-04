@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-moeabench API Cheat Sheet (v0.10.5)
+moeabench API Cheat Sheet (v0.13.0)
 ===================================
 Information Interpretation for Multi-objective Evolutionary Algorithms.
 
