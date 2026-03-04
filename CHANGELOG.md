@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Refactored version management to ensure consistency across the analytical toolkit.
+- Renamed diagnostic baseline file to version 0.13.0 for regression testing integrity.
 
 ## [0.12.1] - 2026-02-25
 
