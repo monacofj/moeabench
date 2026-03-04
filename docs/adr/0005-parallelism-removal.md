@@ -11,7 +11,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Date**: 2026-01-14
 
 ## Context
-MoeaBench initially attempted to implement process-based parallelism (`multiprocessing`) to leverage multi-core CPUs during multi-run experiments. However, we encountered the "Catch-22" of Python concurrency:
+moeabench initially attempted to implement process-based parallelism (`multiprocessing`) to leverage multi-core CPUs during multi-run experiments. However, we encountered the "Catch-22" of Python concurrency:
 - **Threads** are neutered by the Global Interpreter Lock (GIL) and cannot scale CPU-bound search tasks.
 - **Processes** avoid the GIL but suffer from massive memory overhead due to process duplication.
 

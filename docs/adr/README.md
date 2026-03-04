@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Architecture Decision Records (ADR)
 
-This directory contains records of the key architectural decisions made during the evolution of MoeaBench.
+This directory contains records of the key architectural decisions made during the evolution of moeabench.
 
 | ID | Title | Status | Date |
 |---|---|---|---|

@@ -13,10 +13,10 @@ interpret the health of an optimization search beyond raw numbers.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # --- CASE 1: NSGA-III on DPF1 (Optimal Solution) ---
     print("\n[Case 1] NSGA-III on DPF1 (Linear Front)")
     exp1 = mb.experiment()

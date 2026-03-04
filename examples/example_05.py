@@ -8,13 +8,13 @@
 """
 Example 05: Custom Benchmark Implementation
 ------------------------------------------
-This example demonstrates how to extend MoeaBench by creating your 
+This example demonstrates how to extend moeabench by creating your 
 own vectorized multi-objective problem (MOP), allowing you to optimize 
 custom domains with the same analytical tools.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import numpy as np
 
 # 1. Component: Custom Problem Logic
@@ -55,7 +55,7 @@ class MyProblem(mb.mops.BaseMop):
         return res
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 2. Setup: Instantiate and use the custom benchmark
     mop1 = MyProblem()
     
@@ -88,7 +88,7 @@ if __name__ == "__main__":
 # --- Interpretation ---
 #
 # Creating custom problems is as simple as defining the 'evaluation' function. 
-# Because MoeaBench expects a vectorized input (X), you can leverage 
+# Because moeabench expects a vectorized input (X), you can leverage 
 # the full speed of NumPy.
 #
 # Once defined, your custom mops becomes a "first-class citizen" 

@@ -6,7 +6,7 @@ import unittest
 import numpy as np
 import os
 import json
-from MoeaBench.diagnostics import baselines
+from moeabench.diagnostics import baselines
 
 class TestGoldenDTLZ6(unittest.TestCase):
     """
@@ -26,7 +26,7 @@ class TestGoldenDTLZ6(unittest.TestCase):
         
         # Where is DTLZ6 GT?
         # It's in diagnostics/resources/references/DTLZ6/calibration_package.npz['gt_norm']
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "MoeaBench"))
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "moeabench"))
         pkg_path = os.path.join(repo_root, "diagnostics/resources/references/DTLZ6/calibration_package.npz")
         
         if not os.path.exists(pkg_path):
@@ -48,7 +48,7 @@ class TestGoldenDTLZ6(unittest.TestCase):
     def test_baseline_v3_migration(self):
         """Verifies that baselines_v3.json contains the correctly rescaled fit.rand50."""
         # Load v3 JSON directly
-        v3_path = os.path.join(os.path.dirname(__file__), "MoeaBench/diagnostics/resources/baselines_v3.json")
+        v3_path = os.path.join(os.path.dirname(__file__), "moeabench/diagnostics/resources/baselines_v3.json")
         
         with open(v3_path, 'r') as f:
             data = json.load(f)

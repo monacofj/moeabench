@@ -14,10 +14,10 @@ It visualizes the reliability bands of a search process.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("--- Empirical Attainment Workshop ---\n")
     
     # 1. Setup: 2D problem for clear staircase visualization

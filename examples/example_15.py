@@ -8,7 +8,7 @@
 """
 Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives
 -------------------------------------------------------------
-This example demonstrates the three scaling modes in MoeaBench, controlled by 
+This example demonstrates the three scaling modes in moeabench, controlled by 
 the `scale` parameter:
 
 1. 'raw': Absolute volume dominated in the objective space ($H_{raw}$). 
@@ -23,12 +23,12 @@ We also explore the `joint` parameter, which controls auto-normalization
 
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import matplotlib.pyplot as plt
 import numpy as np
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives")
     print("========================================================\n")
 

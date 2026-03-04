@@ -18,10 +18,10 @@ leaving large gaps and irregular clusters.
 
 import mb_path
 import numpy as np
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("Example 12: Physical Performance Assessment (FAIR Metrics)")
     print("===============================================")
 

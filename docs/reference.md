@@ -5,9 +5,9 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# MoeaBench API Reference Guide
+# moeabench API Reference Guide
 
-This document provides the exhaustive technical specification for the MoeaBench Library API.
+This document provides the exhaustive technical specification for the moeabench Library API.
 
 ## **Summary**
 1.  **[Nomenclature & Abbreviations](#nomenclature)**
@@ -54,7 +54,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 <a name="data-model"></a>
 ## **1. Data Model**
 
-MoeaBench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
+moeabench uses a hierarchical data model: `experiment` $\to$ `Run` $\to$ `Population` $\to$ `SmartArray`. All components are designed to be intuitive and chainable.
 
 <a name="defaults"></a>
 ### **1.5. Global Configuration (`mb.defaults`)**
@@ -83,7 +83,7 @@ The `mb.defaults` object allows centralized control over the library's behavior.
 
 **Usage Example:**
 ```python
-import MoeaBench as mb
+import moeabench as mb
 
 mb.defaults.population = 500  # Set global default
 exp = mb.experiment()        # Will use population=500
@@ -203,10 +203,10 @@ An annotated NumPy array subclass (`np.ndarray`) that encapsulates lineage and u
 <a name="architectural-patterns"></a>
 ## **2. Architectural Patterns**
 
-MoeaBench is built on two core patterns designed to minimize friction and maximize scientific insight.
+moeabench is built on two core patterns designed to minimize friction and maximize scientific insight.
 
 ### **2.1. Smart Arguments**
-The "Smart Argument" pattern allows functions to be polymorphic and context-aware. Instead of requiring the user to manually extract raw values (e.g., `exp[0].pop().objs`), all analytical and visual functions accept high-level MoeaBench objects (`experiment`, `Run`, `Population`) directly.
+The "Smart Argument" pattern allows functions to be polymorphic and context-aware. Instead of requiring the user to manually extract raw values (e.g., `exp[0].pop().objs`), all analytical and visual functions accept high-level moeabench objects (`experiment`, `Run`, `Population`) directly.
 *   **Automatic Extraction**: If a metric is requested, the function automatically identifies and extracts the required space (Pareto front for experiments, population objectives for snapshots).
 *   **Temporal Slicing (`gens`)**: Numerical arguments passed to `gens` are automatically normalized into slices (e.g., `gens=100` $\to$ `slice(100)`), ensuring intuitive "limit" behavior across the entire API.
 
@@ -220,7 +220,7 @@ The experiment object aggregates results across multiple runs automatically, pro
 <a name="view"></a>
 ## **3. Visualization Perspectives (`mb.view`)**
 
-MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
+moeabench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
 ### **2.1. Topographic Analysis (`mb.view.topo_*`)**
 
@@ -327,13 +327,13 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
 
 ### **3.5. Aesthetic & Styling System**
 
-MoeaBench maintains a high-precision visual identity designed for academic publications. The system handles colors and sizing consistently across Plotly and Matplotlib backends.
+moeabench maintains a high-precision visual identity designed for academic publications. The system handles colors and sizing consistently across Plotly and Matplotlib backends.
 
 #### **Global Theme Configuration**
 Use `mb.view.apply_style()` to configure the global visual environment.
 
 *   **`apply_style(theme='moeabench')`**: 
-    - Applies the official **MoeaBench Ocean Palette**.
+    - Applies the official **moeabench Ocean Palette**.
     - Sets Matplotlib's color cycle and grid defaults.
     - Creates and activates the `moeabench` Plotly template.
     - This is the default behavior at library import.
@@ -355,7 +355,7 @@ When using `topo_shape` or standard plotters, the following rules apply to maint
 | **Diamonds** | Critical failure pathologies | **9** | **31-36** |
 
 > [!NOTE]
-> **Visual Weight Balancing**: In MoeaBench, Diamonds are set to size 9 (instead of 10) to visually compensate for their larger geometric area compared to circles, ensuring they don't appear disproportionately large.
+> **Visual Weight Balancing**: In moeabench, Diamonds are set to size 9 (instead of 10) to visually compensate for their larger geometric area compared to circles, ensuring they don't appear disproportionately large.
 
 ---
 
@@ -547,7 +547,7 @@ mb.metrics.plot_matrix(hv, mode='auto', show_bounds=True)
 Utilities for robust non-parametric statistical analysis. Fully supports **Context-Aware Statistics** (takes `Experiment` objects, functions, or arrays).
 
 ### **The Rich Result Interface (`StatsResult`)**
-All statistical functions in MoeaBench return objects inheriting from `StatsResult`. These objects provide:
+All statistical functions in moeabench return objects inheriting from `StatsResult`. These objects provide:
 *   **`.report()` $\to$ `str`**: Returns a detailed narrative string. Useful for logging or file output.
 *   **`.report_show()`**: Displays the report appropriately for the environment.
     *   **Terminal**: Automatically calls `print(res.report())`.
@@ -558,7 +558,7 @@ All statistical functions in MoeaBench return objects inheriting from `StatsResu
 <a name="reportable"></a>
 ## **8. The Reporting Contract (`Reportable`)**
 
-MoeaBench enforces a **Standardized Reporting Interface**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
+moeabench enforces a **Standardized Reporting Interface**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
 
 ### **The Interface**
 *   **`.report(**kwargs) \to str`**: returns a detailed technical narrative explaining the object's context, data, and scientific meaning.
@@ -677,7 +677,7 @@ Returns the current library version string.
 <a name="persistence"></a>
 ## **10. Persistence & Data Format**
 
-MoeaBench uses a standardized ZIP-based persistence format.
+moeabench uses a standardized ZIP-based persistence format.
 
 ### **Experiment Interface**
 *   **`.save(path, mode='all')`**:
@@ -696,7 +696,7 @@ MoeaBench uses a standardized ZIP-based persistence format.
 <a name="extensibility"></a>
 ## **11. Extensibility (Plugin API)**
 
-MoeaBench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots). The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
+moeabench is designed as a **host framework**. By inheriting from our base classes, your custom logic becomes a "first-class citizen," gaining instant access to the entire analytical suite (metrics, persistence, and specialized plots). The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 
 ### **11.1. BaseMop (`mb.mops.BaseMop`)**
 The abstract skeleton for all problem plugins. To create a new problem, you must inherit from this class and implement its core mathematical definitions.
@@ -728,7 +728,7 @@ The abstract skeleton for all problem plugins. To create a new problem, you must
 >If your MOP has no analytical `ps(n)` and no CSV, you can signal an empirical search during calibration:
 >```python
 >mop = MyComplexMop()
-># MoeaBench will discover the truth, freeze it in 'audit.json', 
+># moeabench will discover the truth, freeze it in 'audit.json', 
 ># and never run the search again.
 >mop.calibrate(source_search=mb.moeas.NSGA3(pop=200, gen=1000))
 >```
@@ -742,7 +742,7 @@ The contract for problems requires implementing a **vectorized** evaluation func
 **Example: A Simple Convex Problem**
 ```python
 import numpy as np
-from MoeaBench import mb
+from moeabench import mb
 
 class MyConvexProblem(mb.mops.BaseMop):
     def __init__(self):
@@ -764,12 +764,12 @@ To wrap your own search algorithm, inherit from `BaseMoea`. This ensures that yo
 
 **The Contract:**
 *   **`evaluation(self)`**: This is the entry point for the search. When `exp.run()` is called, it triggers this method.
-*   **Data Return**: For full compatibility with MoeaBench's history tools, the method should return the final population and, ideally, the objective/variable trajectories.
+*   **Data Return**: For full compatibility with moeabench's history tools, the method should return the final population and, ideally, the objective/variable trajectories.
 *   **Narrative Reporting**: If your algorithm provides internal diagnostics, consider returning a `StatsResult` object (or subclass) to leverage the `.report_show()` system.
 
 **Example: A Random Search Skeleton**
 ```python
-from MoeaBench import mb
+from moeabench import mb
 import numpy as np
 
 class RandomSearch(mb.moeas.BaseMoea):
@@ -801,7 +801,7 @@ For a detailed technical narrative on the implementation history and mathematica
 
 ## **13. Legacy Support & Depletion Schedule**
 
-MoeaBench maintains backward compatibility for its evolutionary analytical layer through two tiers of support.
+moeabench maintains backward compatibility for its evolutionary analytical layer through two tiers of support.
 
 ### **11.1. Permanent Aliases**
 The following functions have been promoted to permanent status due to their widespread use in the standard optimization literature. They function identically to their taxonomical successors.
@@ -953,7 +953,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 ### **12.4. Offline Calibration Method**
 
-MoeaBench uses a strict **Fail-Closed** calibration system (`baselines.json`).
+moeabench uses a strict **Fail-Closed** calibration system (`baselines.json`).
 
 1.  **Discrete Sampling**: Baselines are pre-computed for finite population sizes $K \in \{10..50, 100, 150, 200\}$.
 2.  **$Uni_{50}$ (The Anchor)**: Generated using **Farthest Point Sampling (FPS)** on the Ground Truth. Represents the "best possible" distribution for a discrete set of size $K$.

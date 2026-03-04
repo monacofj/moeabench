@@ -16,13 +16,13 @@ import pandas as pd
 from scipy.stats import wasserstein_distance
 from scipy.spatial.distance import cdist
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-import MoeaBench as mb
-from MoeaBench.metrics.evaluator import normalize
+import moeabench as mb
+from moeabench.metrics.evaluator import normalize
 
 def emd_classic(F_a, F_b):
     """

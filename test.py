@@ -5,7 +5,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-test.py: Unified test orchestrator for MoeaBench.
+test.py: Unified test orchestrator for moeabench.
 Runs functional unit tests and calibration tiers.
 """
 
@@ -50,7 +50,7 @@ def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
-    parser = argparse.ArgumentParser(description="MoeaBench Test Orchestrator")
+    parser = argparse.ArgumentParser(description="moeabench Test Orchestrator")
     parser.add_argument("--unit", action="store_true", help="Run functional unit tests")
     parser.add_argument("--light", action="store_true", help="Run Light Tier (Math Invariants)")
     parser.add_argument("--smoke", action="store_true", help="Run Smoke Tier (Convergence Regression)")

@@ -14,7 +14,7 @@ There is a need for an expert system layer that translates numerical signatures 
 
 ## Decision
 
-We will implement a `MoeaBench.diagnostics` module (Algorithmic Pathology) that:
+We will implement a `moeabench.diagnostics` module (Algorithmic Pathology) that:
 1.  **Audits** metrics (IGD, GD, EMD, H_rel).
 2.  **Classifies** behavior into standardized pathologies (`DiagnosticStatus`):
     - `DIVERSITY_COLLAPSE`: Good Convergence / Poor Coverage.

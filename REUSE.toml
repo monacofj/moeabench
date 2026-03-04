@@ -25,7 +25,7 @@ SPDX-FileCopyrightText = [
 SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
-path = "MoeaBench/stats/__pycache__/*"
+path = "moeabench/stats/__pycache__/*"
 SPDX-FileCopyrightText = [
     "2025 Monaco F. J. <monaco@usp.br>",
     "2025 Silva F. F. <fernandoferreira.silva42@usp.br>"
@@ -43,7 +43,7 @@ path = [
     "docs/adr/0018-consolidated-scientific-report-and-gt-density-refinement.md",
     "docs/SCIENTIFIC_RIGOR.md",
     "misc/sandbox.ipynb",
-    "MoeaBench/mops/data/*.csv",
+    "moeabench/mops/data/*.csv",
     "tests/calibration_data/*.csv",
     "tests/ground_truth/*.csv",
     "tests/convergence_analysis.csv",
@@ -69,7 +69,7 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
 path = [
-    "MoeaBench/diagnostics/resources/**/*",
+    "moeabench/diagnostics/resources/**/*",
     "aux/**/*",
     "docs/adr/*.md",
     "tests/**/*",

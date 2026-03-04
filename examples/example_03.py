@@ -14,10 +14,10 @@ and compare early vs. late stages of a single execution.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 1. Setup: Run a longer experiment to see convergence
     exp1 = mb.experiment()
     exp1.name = "NSGA-III"

@@ -14,7 +14,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Python is notoriously slow for iterative numerical tasks (like evaluating a population of 1000 individuals across 500 generations). In the legacy codebase, most Multi-Objective Problems (MOPs) and performance metrics were implemented using nested `for` loops. This created a significant performance ceiling, especially when running the high-dimensional benchmarks (e.g., DTLZ with 10+ objectives).
 
 ## Decision
-We decided to enforce a **Strict Vectorization Policy**. All core mathematical operations in MoeaBench must be implemented using NumPy broadcasting and vectorized functions to bypass Python-level iteration.
+We decided to enforce a **Strict Vectorization Policy**. All core mathematical operations in moeabench must be implemented using NumPy broadcasting and vectorized functions to bypass Python-level iteration.
 
 ### Key Implementation Details
 1.  **Vectorized MOPs**: Standard problems (like the DTLZ family) were rewritten to evaluate entire population matrices in a single NumPy call. For example, instead of looping through individuals, we use broadcasting (`x**2` applied to a multi-dimensional array) which executes in optimized C/Fortran code.
@@ -22,7 +22,7 @@ We decided to enforce a **Strict Vectorization Policy**. All core mathematical o
 3.  **Vectorized Dominance Calculations**: The non-dominated sorting logic was refactored to use chunked broadcasting, balancing the speed of O(N^2) comparisons with memory safety.
 
 ## Rationale
-"Python is a great way to write C code without writing C." By using NumPy correctly, we offload the heavy lifting to native code while keeping the high-level logic flexible and readable. This allows MoeaBench to perform like a library written in C/C++, provided the operations are sufficiently large to amortize the minor overhead of the Python-to-C bridge.
+"Python is a great way to write C code without writing C." By using NumPy correctly, we offload the heavy lifting to native code while keeping the high-level logic flexible and readable. This allows moeabench to perform like a library written in C/C++, provided the operations are sufficiently large to amortize the minor overhead of the Python-to-C bridge.
 
 ## Consequences
 - **Positive**: Huge performance gains (often 10x-50x faster) for population evaluation and metric calculation.

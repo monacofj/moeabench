@@ -6,13 +6,13 @@ import os
 import json
 import numpy as np
 from scipy.spatial.distance import cdist
-import MoeaBench.diagnostics.baselines as base
+import moeabench.diagnostics.baselines as base
 
 def fix_dpf5():
     # Load DPF5 Calibration
     print("Loading DPF5 calibration...")
     # This ensures we use the NEW package with valid s_GT
-    pkg_path = "MoeaBench/diagnostics/resources/references/DPF5/calibration_package.npz"
+    pkg_path = "moeabench/diagnostics/resources/references/DPF5/calibration_package.npz"
     pkg = np.load(pkg_path)
     ideal = pkg['ideal']
     gt_norm = pkg['gt_norm']
@@ -50,7 +50,7 @@ def fix_dpf5():
     print(f"Calculated fit.rand50: {fit_val}")
     
     # Update JSON
-    v3_path = "MoeaBench/diagnostics/resources/baselines_v3.json"
+    v3_path = "moeabench/diagnostics/resources/baselines_v3.json"
     with open(v3_path, "r") as f:
         data = json.load(f)
     

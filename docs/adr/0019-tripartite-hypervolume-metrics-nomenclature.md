@@ -12,7 +12,7 @@ Accepted (Implemented in v0.7.6; evolved in v0.11.2, see [ADR 0035](0035-dual-mo
 
 ## Context
 
-Previous versions of MoeaBench reported a single "Hypervolume" value. During the v0.7.6 audit, this was found to be ambiguous, leading to confusion when values exceeded 100% (due to discrete sampling) or when different reference points were used. Peer reviewers requested a clearer distinction between physical volume, coverage of the reference box, and convergence to the ground truth.
+Previous versions of moeabench reported a single "Hypervolume" value. During the v0.7.6 audit, this was found to be ambiguous, leading to confusion when values exceeded 100% (due to discrete sampling) or when different reference points were used. Peer reviewers requested a clearer distinction between physical volume, coverage of the reference box, and convergence to the ground truth.
 
 ## Technical Decision
 

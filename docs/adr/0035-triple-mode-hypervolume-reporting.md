@@ -6,7 +6,7 @@ Accepted
 ## Context
 When calculating the Hypervolume of multiple algorithms/experiments in a dynamic environment (without a pre-defined maximum bounding box or Ground Truth), the Bounding Box (BBox) must dynamically expand to accommodate the worst solutions found by any algorithm in the set.
 
-Previously, `MoeaBench` implemented a dynamic normalization step where the calculated absolute volume of each algorithm was subsequently divided by the **maximum volume found in the session**. 
+Previously, `moeabench` implemented a dynamic normalization step where the calculated absolute volume of each algorithm was subsequently divided by the **maximum volume found in the session**. 
 
 This forced the best algorithm to naturally hit a `1.0` ceiling. However, this caused a significant "Perspective Illusion":
 1. When Algorithm A (highly stable, but perhaps suboptimal) is evaluated alone, its maximum performance is `1.0`. Due to internal variances, its average performance across runs might be reported as, e.g., `0.77`.
@@ -26,7 +26,7 @@ To prevent invalid geometric comparisons (e.g., comparing Hypervolumes across di
 - `raw` and `relative` scales issue a **Warning** if mixed problems are detected.
 - `absolute` scale issues a **ValueError**, as normalizing against a mismatched Ground Truth produces a scientifically fraudulent score.
 
-By making `raw` the default, `MoeaBench` prioritizes scientific measurement and numerical stability over competitive ranking. If a competitive ranking is desired, the user must explicitly opt-in via `scale='ratio'`.
+By making `raw` the default, `moeabench` prioritizes scientific measurement and numerical stability over competitive ranking. If a competitive ranking is desired, the user must explicitly opt-in via `scale='ratio'`.
 
 If true immutability is required across different plotting/analysis sessions, the user **must explicitly provide a fixed referencing point** (`nadir=[x, y, z]`).
 

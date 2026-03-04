@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench API Cheat Sheet (v0.10.5)
+moeabench API Cheat Sheet (v0.10.5)
 ===================================
 Information Interpretation for Multi-objective Evolutionary Algorithms.
 
@@ -13,12 +13,12 @@ It covers configuration, execution, diagnostics, metrics, and extensibility.
 NOTE: This file is for REFERENCE ONLY and is not intended for direct execution.
 """
 import sys
-import MoeaBench as mb
+import moeabench as mb
 import numpy as np
 
 # Abort execution if run directly
 if __name__ == "__main__":
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("This script is a syntax reference only and cannot be executed directly.")
     sys.exit(0)
 

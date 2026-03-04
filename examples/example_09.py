@@ -9,16 +9,16 @@
 Example 09: Serialization and Persistence of Experimental Data
 ------------------------------------------------
 This example demonstrates how to save and load experiments using 
-MoeaBench's selective persistence system. We explore the 'all', 
+moeabench's selective persistence system. We explore the 'all', 
 'config', and 'data' modes to manage experimental results efficiently.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import os
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 1. Setup and Run a small experiment
     print("--- Phase 1: Creating and Running Experiment ---")
     exp = mb.experiment()
@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
 # --- Interpretation ---
 #
-# MoeaBench's persistence system is designed for scientific reproducibility 
+# moeabench's persistence system is designed for scientific reproducibility 
 # and data manageability.
 #
 # 1. 'all' mode: Essential for deep analysis. It serializes the entire 

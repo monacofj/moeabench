@@ -13,10 +13,10 @@ between two algorithms using non-parametric tests and effect size measures.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("--- Statistical Analysis Workshop ---\n")
     
     # 1. Setup: Compare NSGA-III and SPEA2 with 10 repetitions
@@ -64,5 +64,5 @@ if __name__ == "__main__":
 # The Mann-Whitney U test tells us if one algorithm is significantly better 
 # than the other based on the median performance.
 #
-# In MoeaBench, these tests are highly integrated: they automatically handle the 
+# In moeabench, these tests are highly integrated: they automatically handle the 
 # extraction of metrics (like Hypervolume) and set a common reference point.

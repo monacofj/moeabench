@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Baseline Generator
+moeabench Baseline Generator
 ============================
 
 Generates statistical baselines (floors) for clinical metrics (IGD, EMD)
@@ -16,7 +16,7 @@ Methodology:
    b. Compute IGD(Subset, GT) -> Distribution -> P10, P50 (Med), P90.
    c. Compute EMD(SubsetA, SubsetB) -> Distribution -> P10, P50, P90.
       (Paired EMD isolates discretization noise from cardinality effects).
-3. Save results to MoeaBench/diagnostics/resources/baselines.json.
+3. Save results to moeabench/diagnostics/resources/baselines.json.
 """
 
 import os
@@ -31,18 +31,18 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-from MoeaBench.metrics.GEN_igd import GEN_igd
+from moeabench.metrics.GEN_igd import GEN_igd
 try:
-    from MoeaBench.metrics.GEN_emd import GEN_emd
+    from moeabench.metrics.GEN_emd import GEN_emd
 except ImportError:
     # Fallback if GEN_emd is not exposed directly, though it should be.
     # We will implement a direct caller if needed or use stats.topo
     pass
 
-from MoeaBench.stats import topo_distribution
+from moeabench.stats import topo_distribution
 
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
-OUTPUT_FILE = os.path.join(PROJ_ROOT, "MoeaBench/diagnostics/resources/baselines.json")
+OUTPUT_FILE = os.path.join(PROJ_ROOT, "moeabench/diagnostics/resources/baselines.json")
 
 # Configuration
 MOPS = []
@@ -106,8 +106,8 @@ def compute_baselines():
             # Using Pymoo's IGD for speed/consistency if available, or internal
             from pymoo.indicators.igd import IGD
             metric_igd = IGD(gt_data) # Pymoo normalizes internally if requested, carefully check
-            # Actually, let's use raw distance to match MoeaBench robustly
-            # MoeaBench IGD takes (Pop, GT)
+            # Actually, let's use raw distance to match moeabench robustly
+            # moeabench IGD takes (Pop, GT)
             
             # Pre-compute normalization? 
             # Consistent with Report: No internal normalization if inputs are within range?

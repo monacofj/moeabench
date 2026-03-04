@@ -14,7 +14,7 @@ Accepted
 
 ## Context
 
-MoeaBench evolved to v0.7.6 with significant improvements in MOP definitions (especially DPF family rectifications) and core architecture. However, during the transition, a critical gap emerged: **the absence of a scientifically validated baseline for performance regression testing.**
+moeabench evolved to v0.7.6 with significant improvements in MOP definitions (especially DPF family rectifications) and core architecture. However, during the transition, a critical gap emerged: **the absence of a scientifically validated baseline for performance regression testing.**
 
 Previous tests relied on "checkouts" or visual inspections in notebooks, which are subjective and non-automatable. Furthermore, an audit revealed a severe defect in the widely used seeding strategy, where `default` arguments in constructors locked the stochastic behavior of algorithms, rendering statistical analysis void.
 

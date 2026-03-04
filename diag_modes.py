@@ -1,6 +1,6 @@
-import MoeaBench as mb
-from MoeaBench.mops import DTLZ2
-from MoeaBench.core import Experiment
+import moeabench as mb
+from moeabench.mops import DTLZ2
+from moeabench.core import Experiment
 import logging
 
 logging.basicConfig(level=logging.ERROR)

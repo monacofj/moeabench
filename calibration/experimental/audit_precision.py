@@ -20,7 +20,7 @@ import sys
 import pandas as pd
 import numpy as np
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
@@ -62,7 +62,7 @@ def audit_precision():
 
     # 2. Audit Metric Internals (Simulated)
     print("\n[2] Verifying Metric Internal Precision...")
-    from MoeaBench.metrics.evaluator import normalize
+    from moeabench.metrics.evaluator import normalize
     
     # Create float64 arrays
     A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=np.float64)

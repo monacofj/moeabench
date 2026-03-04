@@ -65,8 +65,8 @@ def patch():
     # SP (final).
     # Time? We can't know time.
     
-    from MoeaBench.mops import DTLZ7
-    from MoeaBench import metrics as mb
+    from moeabench.mops import DTLZ7
+    from moeabench import metrics as mb
     
     mop = DTLZ7()
     pf = mop.pf(n_points=1000) # Generating Ref Front

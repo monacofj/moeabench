@@ -1,7 +1,7 @@
 # ADR 0033: Flexible Reference Management for Longitudinal Auditing
 
 ## Context
-Scientific research often requires comparing new results against historical benchmarks or alternative references. MoeaBench's diagnostic suite previously relied on a hardcoded internal baseline file (`baselines_v4.json`). While `register_baselines()` allowed adding new problems, there was no safe way to temporarily *swap* the entire reference system for legacy comparison without affecting the global state of the library.
+Scientific research often requires comparing new results against historical benchmarks or alternative references. moeabench's diagnostic suite previously relied on a hardcoded internal baseline file (`baselines_v4.json`). While `register_baselines()` allowed adding new problems, there was no safe way to temporarily *swap* the entire reference system for legacy comparison without affecting the global state of the library.
 
 ## Decision
 1.  **Contextual Baseline Switching**: Introduced `mb.diagnostics.baselines.use_baselines(source)`. This context manager allows a user to run a block of code (e.g., an audit) against a specific historical baseline file, automatically restoring the default system state upon exit.

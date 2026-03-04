@@ -17,11 +17,11 @@ It focuses on the new `strat_caste` visualizer (v0.8.0), exploring:
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("--- Multi-run Population Stratification analysis ---\n")
 
     # 1. Setup: Standard 3D problem (DTLZ2)

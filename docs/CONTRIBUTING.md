@@ -5,9 +5,9 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Contributing to MoeaBench
+# Contributing to moeabench
 
-Thank you for your interest in MoeaBench! This document outlines the process for contributing to the framework and the coding standards we maintain to ensure quality and consistency.
+Thank you for your interest in moeabench! This document outlines the process for contributing to the framework and the coding standards we maintain to ensure quality and consistency.
 
 ## 1. Contributor Workflow
 
@@ -39,7 +39,7 @@ We strive for high-quality, "Pythonic" code that is efficient and easy to mainta
 ### Documentation (Docstrings)
 - **Standard Format**: Use the NumPy/Google docstring format.
 - **Clarity**: Docstrings should explain parameters, return values, and any exceptions raised. 
-- **The Analytical Tone**: Since MoeaBench is an analysis-driven tool, avoid overly cryptic language. Explain the "why" in complex functions.
+- **The Analytical Tone**: Since moeabench is an analysis-driven tool, avoid overly cryptic language. Explain the "why" in complex functions.
 
 ### Performance and Data Handling
 - **Vectorization**: This is our core technical style. Never iterate over populations in Python loops. Use **NumPy** vectorized operations exclusively.

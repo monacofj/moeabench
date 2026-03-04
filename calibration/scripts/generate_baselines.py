@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Baseline Generator v4 (ECDF-based)
+moeabench Baseline Generator v4 (ECDF-based)
 ============================================
 
 Generates baselines_v4.json containing ECDF profiles for ALL clinical metrics:
@@ -36,14 +36,14 @@ if PROJ_ROOT not in sys.path:
 
 import json
 import numpy as np
-import MoeaBench.diagnostics.baselines as base
-import MoeaBench.diagnostics.fair as fair
+import moeabench.diagnostics.baselines as base
+import moeabench.diagnostics.fair as fair
 from scipy.spatial.distance import cdist
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 
 # Configuration
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../MoeaBench/diagnostics/resources/baselines_v0.12.0.json")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines_v0.12.0.json")
 N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
 N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
@@ -334,7 +334,7 @@ def main():
     
     # Locate references
     # Assuming code is running from tests/calibration/
-    ref_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../MoeaBench/diagnostics/resources/references"))
+    ref_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/references"))
     
     problems = []
     if os.path.exists(ref_dir):

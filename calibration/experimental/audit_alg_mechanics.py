@@ -19,7 +19,7 @@ Usage:
 import sys
 import os
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
@@ -27,7 +27,7 @@ if PROJ_ROOT not in sys.path:
 import numpy as np
 import pandas as pd
 from pymoo.algorithms.moo.nsga2 import NSGA2
-from MoeaBench.mops.DPF3 import DPF3
+from moeabench.mops.DPF3 import DPF3
 from pymoo.optimize import minimize
 from pymoo.core.callback import Callback
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Calibration Auditor (v0.9.0)
+moeabench Calibration Auditor (v0.9.0)
 =====================================
 
 This script acts as the "Analytical Intelligence" layer. It processes raw 
@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter, defaultdict
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
@@ -44,19 +44,19 @@ def _load_nd_points(csv_path):
     if pts.shape[1] != 3:
         raise ValueError(f"Expected 3 objectives, got {pts.shape[1]}")
     try:
-        from MoeaBench.core.utils import is_non_dominated
+        from moeabench.core.utils import is_non_dominated
         pts = pts[is_non_dominated(pts)]
     except Exception:
         pass
     return pts
 
 def _aggregate_clinical(mop_name, alg, F_opt):
-    import MoeaBench.diagnostics.fair as fair
-    import MoeaBench.diagnostics.qscore as qscore
-    import MoeaBench.diagnostics.baselines as base
-    from MoeaBench.metrics.GEN_igdplus import GEN_igdplus
-    from MoeaBench.metrics.GEN_gdplus import GEN_gdplus
-    from MoeaBench.diagnostics.auditor import QualityAuditResult
+    import moeabench.diagnostics.fair as fair
+    import moeabench.diagnostics.qscore as qscore
+    import moeabench.diagnostics.baselines as base
+    from moeabench.metrics.GEN_igdplus import GEN_igdplus
+    from moeabench.metrics.GEN_gdplus import GEN_gdplus
+    from moeabench.diagnostics.auditor import QualityAuditResult
 
     pattern = os.path.join(DATA_DIR, f"{mop_name}_{alg}_standard_run[0-9][0-9].csv")
     run_files = sorted(glob.glob(pattern))

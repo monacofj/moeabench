@@ -11,7 +11,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Accepted
 
 ## Context
-As MoeaBench matured from a collection of scripts into a benchmark library for researchers, the function names in `mb.stats` and `mb.view` remained tied to their underlying implementation details (e.g., `mann_whitney`, `ks_test`, `a12`, `attainment`). This technical-centric naming required users to possess prior knowledge of the statistical tests before understanding the investigative purpose of the tool. Furthermore, the lack of symmetry between statistical analysis (`stats`) and its corresponding visualization (`view`) created cognitive overhead.
+As moeabench matured from a collection of scripts into a benchmark library for researchers, the function names in `mb.stats` and `mb.view` remained tied to their underlying implementation details (e.g., `mann_whitney`, `ks_test`, `a12`, `attainment`). This technical-centric naming required users to possess prior knowledge of the statistical tests before understanding the investigative purpose of the tool. Furthermore, the lack of symmetry between statistical analysis (`stats`) and its corresponding visualization (`view`) created cognitive overhead.
 
 ## Decision
 We have implemented a **Semantic Taxonomy** that reorganizes the library's analytical capabilities into two distinct domains based on the researcher's intent:

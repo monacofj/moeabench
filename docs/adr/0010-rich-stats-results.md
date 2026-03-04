@@ -36,5 +36,5 @@ Every metric displayed in the narrative report must be accessible as a first-cla
 ## Consequences
 
 - **Analytical Value**: Example scripts become much cleaner, using `print(res.report())` instead of complex manual formatting.
-- **API Consistency**: Users can expect a similar "feeling" when using any statistical tool in MoeaBench.
+- **API Consistency**: Users can expect a similar "feeling" when using any statistical tool in moeabench.
 - **Efficiency**: Large experiments can return result objects quickly, with expensive secondary metrics deferred until needed.

@@ -12,7 +12,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Context
 
-The legacy version of MoeaBench relied on a fragmented, script-based approach for evaluating standard Multi-Objective Problems (MOPs). While functional for its time, this architecture suffered from three critical bottlenecks:
+The legacy version of moeabench relied on a fragmented, script-based approach for evaluating standard Multi-Objective Problems (MOPs). While functional for its time, this architecture suffered from three critical bottlenecks:
 1.  **Iterative Sluggishness**: Evaluation logic was implemented using nested Python `for` loops, which evaluated individuals sequentially. As research shifted toward many-objective optimization ($M > 10$), this created a performance ceiling that hindered large-scale statistical experiments.
 2.  **API Fragmentation**: The implementation of various benchmarks (DTLZ, DPF) was scattered across multiple interface files (`I_*.py`), often with conflicting logic or missing metadata, making it difficult to automate analysis.
 3.  **Visualization Gap**: Comparison with the theoretical "Ground Truth" (the Pareto Front) required external files or manual data loading, adding friction to the research workflow.
@@ -37,15 +37,15 @@ We identified that researchers spend a disproportionate amount of time seeking a
 In our reimbursement, every DTLZ and DPF class implements its own `.ps()` and `.pf()` sampling logic based on the original publications. This means that comparison is no longer an external task; it is a native method. You can now execute `mb.view.spaceplot(exp.optimal(), exp)` and see your performance against the theoretical limit instantly.
 
 ### 4. Deterministic Reproducibility
-Finally, we addressed the "Ghost in the Machine": non-deterministic randomness. In legacy MoeaBench, problems shared global random states with the solvers, leading to "leaky" seeds. Our reimplementation decoupling these states. Every benchmark instance now manages its internal state in coordination with the `Experiment` seed logic. If you run the same experiment twice, the vectorized mathematical engine will produce bit-identical results, ensuring absolute scientific rigor.
+Finally, we addressed the "Ghost in the Machine": non-deterministic randomness. In legacy moeabench, problems shared global random states with the solvers, leading to "leaky" seeds. Our reimplementation decoupling these states. Every benchmark instance now manages its internal state in coordination with the `Experiment` seed logic. If you run the same experiment twice, the vectorized mathematical engine will produce bit-identical results, ensuring absolute scientific rigor.
 
 ## Rationale: Sustainability over Legacy Preservation
 
-We explicitly chose to break backward compatibility with the legacy code structure in favor of a clean, sustainable API. By replacing the "slow and fragmented" with the "vectorized and unified," we ensure that MoeaBench remains a viable tool for the next generation of high-dimensional MOEA research.
+We explicitly chose to break backward compatibility with the legacy code structure in favor of a clean, sustainable API. By replacing the "slow and fragmented" with the "vectorized and unified," we ensure that moeabench remains a viable tool for the next generation of high-dimensional MOEA research.
 
 ## Consequences
 - **Positive**: 10x-50x performance gains on population evaluations.
 - **Positive**: Zero-boilerplate comparison with theoretical optima via `.optimal()`.
 - **Positive**: Robust metadata propagation through the `SmartArray` and `BaseMop` architecture.
-- **Negative**: Legacy MoeaBench scripts require slight syntax adjustments to use the new object-oriented classes.
+- **Negative**: Legacy moeabench scripts require slight syntax adjustments to use the new object-oriented classes.
 - **Neutral**: Requires `numpy` and `scipy` as hard dependencies (which aligns with modern scientific Python standards).

@@ -1,7 +1,7 @@
 # ADR 0032: Enhanced Persistence Metadata and Diagnostic Simplification
 
 ## Context
-As MoeaBench matures into a scientific research tool, the ability to reproduce and audit results over time becomes critical. Previous persistence versions (Schema v1) relied on binary serialization (joblib) without explicit library or environment metadata. Furthermore, the "Diagnostic Profile" (Industry, Research) was based on arbitrary absolute thresholds that were superseded by the relative, baseline-anchored Q-Score system introduced in v0.9.
+As moeabench matures into a scientific research tool, the ability to reproduce and audit results over time becomes critical. Previous persistence versions (Schema v1) relied on binary serialization (joblib) without explicit library or environment metadata. Furthermore, the "Diagnostic Profile" (Industry, Research) was based on arbitrary absolute thresholds that were superseded by the relative, baseline-anchored Q-Score system introduced in v0.9.
 
 ## Decision
 1.  **Enhanced Persistence (Schema v2)**: The persistence layer now generates a structured `metadata.json` and a human-readable `README.md` inside every experiment ZIP.

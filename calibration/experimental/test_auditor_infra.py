@@ -10,8 +10,8 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-from MoeaBench.diagnostics import auditor
-from MoeaBench.diagnostics.enums import DiagnosticStatus
+from moeabench.diagnostics import auditor
+from moeabench.diagnostics.enums import DiagnosticStatus
 
 
 def test_fail_closed_when_baseline_unavailable():

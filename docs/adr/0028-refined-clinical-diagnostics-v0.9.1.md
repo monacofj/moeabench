@@ -10,7 +10,7 @@
 
 ## 1. Abstract
 
-This Architectural Decision Record (ADR) formalizes the refinement of the *MoeaBench* diagnostic framework (v0.9.1 Standard) to address semantic ambiguities and mathematical inconsistencies identified in the initial Clinical Metrology implementation (ADR 0026). Specifically, this decision:
+This Architectural Decision Record (ADR) formalizes the refinement of the *moeabench* diagnostic framework (v0.9.1 Standard) to address semantic ambiguities and mathematical inconsistencies identified in the initial Clinical Metrology implementation (ADR 0026). Specifically, this decision:
 1.  **Renames** the convergence metric `FIT` to `DENOISE` to accurately reflect its physical meaning ("progress beyond random noise").
 2.  **Implements** a strictly monotonic "Gate Rule" for `Q_CLOSENESS`, ensuring that performance worse than the baseline saturates at $0.0$ rather than artificially increasing.
 3.  **Eliminates** qualitative verdicts ("Fail", "Industry", "Research") from the reporting layer, enforcing a strict separation between quantitative measurement (Q-Scores) and structural diagnosis (Pathologies).
@@ -119,4 +119,4 @@ Validating the new framework against known problematic cases:
 The Gate Rule successfully corrects the anomaly in DTLZ8/9, ensuring the score reflects the reality that the algorithm is indistinguishable from (or worse than) noise.
 
 ## 6. Conclusion
-This refinement aligns *MoeaBench* with the highest standards of scientific metrology. By rigidly defining the baseline as a "Gate" and removing subjective nomenclature, we provide a tool that is mathematically consistent and suitable for rigorous academic peer review.
+This refinement aligns *moeabench* with the highest standards of scientific metrology. By rigidly defining the baseline as a "Gate" and removing subjective nomenclature, we provide a tool that is mathematically consistent and suitable for rigorous academic peer review.

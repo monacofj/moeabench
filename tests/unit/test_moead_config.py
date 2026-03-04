@@ -9,7 +9,7 @@ import os
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from MoeaBench.moeas.moead_configs import get_moead_params
+from moeabench.moeas.moead_configs import get_moead_params
 from pymoo.decomposition.pbi import PBI
 from pymoo.decomposition.tchebicheff import Tchebicheff
 
@@ -51,7 +51,7 @@ def test_moead_instantiation_safety():
     pymoo decomposition instances.
     """
     try:
-        from MoeaBench.moeas.MOEAD import MOEAD
+        from moeabench.moeas.MOEAD import MOEAD
         # Since MOEAD applies params lazily at __call__, we only verify class existence here.
         alg = MOEAD(problem_name="DTLZ3")
         assert alg is not None

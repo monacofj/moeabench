@@ -22,11 +22,11 @@ The Q-Score system will automatically detect these failures and assign "Red" ver
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("=== Example 13: Reference-based Quality Validation (Q-Scores)")
 
     # 1. Setup: DTLZ1 (3 Objectives) and NSGA-II

@@ -5,7 +5,7 @@
 import sys
 
 def inspect():
-    print("CRITICAL: This script depends on the deprecated 'MoeaBench.clinic' module.")
+    print("CRITICAL: This script depends on the deprecated 'moeabench.clinic' module.")
     print("Please use 'tests/calibration/generate_visual_report.py' for the new Clinical Metrology (Fair/Q-Score).")
     sys.exit(1)
 

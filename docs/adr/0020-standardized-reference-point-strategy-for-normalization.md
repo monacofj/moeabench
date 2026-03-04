@@ -12,7 +12,7 @@ Accepted (Implemented in v0.7.6)
 
 ## Context
 
-MoeaBench normalizes all search data to a unit hypercube $[0, 1]^M$ based on the joint range of the Ground Truth and all algorithm populations. However, calculating Hypervolume at the exact boundary ($1.1$ or $1.0$) can lead to numerical artifacts where points on the boundary are ignored or contribute zero volume. Peer review suggested a consistent offset to ensure stability.
+moeabench normalizes all search data to a unit hypercube $[0, 1]^M$ based on the joint range of the Ground Truth and all algorithm populations. However, calculating Hypervolume at the exact boundary ($1.1$ or $1.0$) can lead to numerical artifacts where points on the boundary are ignored or contribute zero volume. Peer review suggested a consistent offset to ensure stability.
 
 ## Technical Decision
 

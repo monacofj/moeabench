@@ -8,16 +8,16 @@
 """
 Example 01: Fundamentals of the Experimental Workflow
 ----------------------------------
-This example demonstrates the fundamental workflow of MoeaBench:
+This example demonstrates the fundamental workflow of moeabench:
 defining a problem (MOP), choosing an algorithm (MOEA), 
 running the experiment, and visualizing the Pareto Front.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 1. Setup: Define a 3-objective DTLZ2 problem and NSGA-III
     exp1 = mb.experiment()
     exp1.mop = mb.mops.DTLZ2(M=3)
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
 # --- Interpretation ---
 #
-# In this first example, we see how MoeaBench encapsulates the optimization cycle.
+# In this first example, we see how moeabench encapsulates the optimization cycle.
 # The 'mb.view' layer provides scientific perspectives on the results.
 # 
 # 1. 'topo_shape' (Topography): Shows the distribution of non-dominated solutions.

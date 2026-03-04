@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Regression Tier Testing Suite
+moeabench Regression Tier Testing Suite
 =======================================
 
 This tier contains strict numerical reproducibility tests against established 
@@ -21,8 +21,8 @@ import time
 import json
 import os
 import numpy as np
-from MoeaBench.diagnostics import auditor, baselines
-from MoeaBench import metrics
+from moeabench.diagnostics import auditor, baselines
+from moeabench import metrics
 
 # Load Calibration Reference Data (Module Level)
 DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.9.json")

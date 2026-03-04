@@ -11,14 +11,14 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Date**: 2026-01-14
 
 ## Context
-The legacy MoeaBench codebase was a monolithic and procedural collection of scripts. It suffered from several critical architectural flaws:
+The legacy moeabench codebase was a monolithic and procedural collection of scripts. It suffered from several critical architectural flaws:
 1.  **Inconsistent Naming**: Files were prefixed with cryptic codes (e.g., `I_*.py`, `H_*.py`), which obscured the project structure and made discoverability nearly impossible.
 2.  **Global State Dependency**: Data flow relied on implicit global variables and a brittle file-based caching system, leading to "spooky action at a distance" where changing one parameter could break distant modules.
 3.  **Procedural Bloat**: Experiments were defined by modifying large, flat scripts rather than interacting with a clean API, making it difficult to automate large-scale benchmarks.
 4.  **Opaque Data Structures**: Populations and results were passed around as raw dictionaries or lists of lists, making it hard to track what metadata (labels, seeds, generations) belonged to which data point.
 
 ## Decision
-We decided to dismantle the legacy procedural scripts and rebuild MoeaBench as a structured Python package based on a clear **Object-Oriented Data Hierarchy**.
+We decided to dismantle the legacy procedural scripts and rebuild moeabench as a structured Python package based on a clear **Object-Oriented Data Hierarchy**.
 
 ### 1. The Hierarchical Model
 We established a chain of command for data:
@@ -29,10 +29,10 @@ We established a chain of command for data:
 
 ### 2. Package Modularity
 We moved away from the "flat directory" model to logical sub-packages:
-- `MoeaBench.core`: The fundamental data structures and execution engine.
-- `MoeaBench.mops`: Standard and custom multi-objective problems.
-- `MoeaBench.moeas`: The execution wrappers for algorithm engines.
-- `MoeaBench.stats` & `MoeaBench.metrics`: Specialized tools for analysis.
+- `moeabench.core`: The fundamental data structures and execution engine.
+- `moeabench.mops`: Standard and custom multi-objective problems.
+- `moeabench.moeas`: The execution wrappers for algorithm engines.
+- `moeabench.stats` & `moeabench.metrics`: Specialized tools for analysis.
 
 ### 3. Modern Tooling
 - **Type Hinting**: Implemented comprehensive Python type hints (`List`, `Optional`, `Any`) across the API to allow for static analysis and superior IDE autocomplete.

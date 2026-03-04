@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Smoke Tier Testing Suite (Regression)
+moeabench Smoke Tier Testing Suite (Regression)
 ===============================================
 
 This is the second level of the testing pyramid, focused on **basic convergence**.
@@ -31,8 +31,8 @@ import pandas as pd
 import numpy as np
 import sys
 sys.path.append(os.path.abspath("."))
-import MoeaBench as mb
-from MoeaBench.metrics.GEN_igd import GEN_igd
+import moeabench as mb
+from moeabench.metrics.GEN_igd import GEN_igd
 
 BASELINE_FILE = "tests/baselines_v0.8.0.csv"
 

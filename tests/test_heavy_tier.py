@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Heavy Tier Testing Suite (Deep Calibration)
+moeabench Heavy Tier Testing Suite (Deep Calibration)
 =======================================================
 
 This is the deepest level of the testing pyramid, intended for **Scientific Calibration**.
@@ -33,8 +33,8 @@ import scipy.stats as stats
 import sys
 import zlib
 sys.path.append(os.path.abspath("."))
-import MoeaBench as mb
-from MoeaBench.metrics.GEN_igd import GEN_igd
+import moeabench as mb
+from moeabench.metrics.GEN_igd import GEN_igd
 
 BASELINE_FILE = "tests/baselines_v0.8.0.csv"
 RUN_HEAVY = os.getenv("MOEABENCH_RUN_HEAVY", "").strip() in {"1", "true", "TRUE", "yes", "YES"}

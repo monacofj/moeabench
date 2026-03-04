@@ -20,10 +20,10 @@ is close to the front but highly clustered.
 import mb_path
 import numpy as np
 import matplotlib.pyplot as plt
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     print("Example 14: Multivariate Diagnostic Visualization and Instrument Suite")
     print("===============================================")
 

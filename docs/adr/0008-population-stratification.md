@@ -36,7 +36,7 @@ Unlike an asymmetric class method, this symmetric function treats both algorithm
 
 ## Rationale: Diagnostics as a Research Foundation
 
-This implementation aligns with the MoeaBench commitment to "Analysis-First" research. By exposing the sub-Pareto layers, we empower researchers to detect issues like "Dominance Resistance" in many-objective problems or "Loss of Diversity" in stagnant populations—insights that are completely invisible to standard metrics like Hypervolume.
+This implementation aligns with the moeabench commitment to "Analysis-First" research. By exposing the sub-Pareto layers, we empower researchers to detect issues like "Dominance Resistance" in many-objective problems or "Loss of Diversity" in stagnant populations—insights that are completely invisible to standard metrics like Hypervolume.
 
 ## Consequences
 - **Positive**: New diagnostic depth for multi-run experiments.

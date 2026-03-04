@@ -8,8 +8,8 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "MoeaBench"
-version = "0.10.5"
+name = "moeabench"
+version = "0.12.1"
 authors = [
   { name = "Silva F. F.", email = "fernandoferreira.silva42@usp.br" },
   { name = "Monaco F. J.", email = "monaco@usp.br" },
@@ -45,7 +45,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["MoeaBench*"]
+include = ["moeabench*"]
 
 [tool.setuptools.package-data]
-"MoeaBench" = ["requirements.txt", "diagnostics/resources/*.json", "diagnostics/resources/references/**/*"]
+"moeabench" = ["requirements.txt", "diagnostics/resources/*.json", "diagnostics/resources/references/**/*"]

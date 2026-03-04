@@ -5,20 +5,20 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# MoeaBench Design Philosophy
+# moeabench Design Philosophy
 
-MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
+moeabench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. It achieves this by organizing stochastic search data into a structured semantic model and transforming raw performance metrics into descriptive, narrative-driven results.
 
 ---
 
 ## 1. Documentation: Technical Storytelling (Scientific Narrative)
 
-The most fundamental principle of MoeaBench is that code should be an instrument of insight. We believe that a researcher's tools should not only provide answers but also tell the story of the search process.
+The most fundamental principle of moeabench is that code should be an instrument of insight. We believe that a researcher's tools should not only provide answers but also tell the story of the search process.
 
 ### Technical Storytelling
 - **Narratives over Synopses**: We avoid dry bullet points. We prefer an elegant technical narrative that explains *why* a particular method was chosen or what a specific result implies for the search dynamics.
 - **The "Scientific Journey"**: When documenting the codebase or design decisions, we value the narrative of evolution: "We initially attempted approach A, encountered trade-off B, and ultimately derived solution C."
-- **Example-Driven Learning**: Every example in MoeaBench is a workshop. They follow a specific structure (Docstring Goal -> Implementation -> Interpretation) to ensure the user learns the "geology" of the problem as they run the code.
+- **Example-Driven Learning**: Every example in moeabench is a workshop. They follow a specific structure (Docstring Goal -> Implementation -> Interpretation) to ensure the user learns the "geology" of the problem as they run the code.
 
 ---
 
@@ -60,7 +60,7 @@ Direct plotting functions belong **exclusively** to the `mb.view` namespace and 
 
 ## 4. Performance: Mandatory Vectorization
 
-MoeaBench aims for sustainable high performance on standard hardware.
+moeabench aims for sustainable high performance on standard hardware.
 
 ### The "Loop-Free" Rule
 We have a strict policy against iterating over population arrays using native Python loops. 
@@ -90,7 +90,7 @@ For every narrative script in [examples/](../examples/), there must be a corresp
 
 ## 6. Analytical Architecture
 
-The MoeaBench architecture is designed as a pipeline that transforms raw evolutionary data into scientific insight. It follows a modular structure where decoupled components interact through a unified API.
+The moeabench architecture is designed as a pipeline that transforms raw evolutionary data into scientific insight. It follows a modular structure where decoupled components interact through a unified API.
 
 ### High-Level Architecture Flow
 
@@ -121,4 +121,4 @@ Building upon the vectorized engine, the Diagnostic Pipeline introduces the libr
 The final stage of the pipeline is the Scientific View Layer, which translates abstract data into a spatial story. Functions like `mb.view.spaceplot`, `mb.view.rankplot`, `mb.view.casteplot`, and `mb.view.tierplot` are polymorphic by design, allowing them to accept various core objects (Experiments, Runs) or pre-calculated Rich Results. This layer ensures that the mathematical truth discovered by the stats module is rendered with aesthetic excellence and narrative clarity.
 
 ### Why this matters
-By integrating these layers, MoeaBench ensures that logic, state, and visualization remain decoupled and consistent. This allows researchers to extend the framework—by adding new metrics or visualizers—without disrupting the existing analytical flow, maintaining a system that is both technically robust and analytically elegant.
+By integrating these layers, moeabench ensures that logic, state, and visualization remain decoupled and consistent. This allows researchers to extend the framework—by adding new metrics or visualizers—without disrupting the existing analytical flow, maintaining a system that is both technically robust and analytically elegant.

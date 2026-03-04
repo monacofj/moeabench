@@ -38,7 +38,7 @@ This allows instruments to automatically extract the correct distribution for an
 ### 3. Visual Standard & Scale Invariance
 Clinical plots must follow a strict aesthetic and metrological standard:
 - **Less is Better**: All clinical physical metrics are normalized such that $0.0$ is the ideal state. Visualizations emphasize the "Distance from Zero".
-- **Scale Invariance**: Vertical and horizontal "drop-lines" at the **Median (50%)** and **Robust Max (95%)** are required in ECDF plots to provide scale-invariant anchors according to the MoeaBench resolution factor ($s_k$).
+- **Scale Invariance**: Vertical and horizontal "drop-lines" at the **Median (50%)** and **Robust Max (95%)** are required in ECDF plots to provide scale-invariant anchors according to the moeabench resolution factor ($s_k$).
 - **Color Consistency**: Teal is used for the current solution; Red is used for critical thresholds (Headway/95th percentile).
 
 ## Consequences

@@ -5,7 +5,7 @@
 
 """
 Helper module to allow running examples without installing the package.
-It adds the parent directory to sys.path so 'import MoeaBench' works.
+It adds the parent directory to sys.path so 'import moeabench' works.
 """
 import sys
 import os

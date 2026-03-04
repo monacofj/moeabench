@@ -17,9 +17,9 @@ def test_audit():
     # OR we use the high-level audit() with a mock MOP.
     
     # Since PerformanceAuditor.audit was removed, let's use the actual synthesis logic
-    from MoeaBench.diagnostics.auditor import PerformanceAuditor
-    from MoeaBench.diagnostics.qscore import QResult
-    from MoeaBench.diagnostics.fair import FairResult
+    from moeabench.diagnostics.auditor import PerformanceAuditor
+    from moeabench.diagnostics.qscore import QResult
+    from moeabench.diagnostics.fair import FairResult
     
     q_scores = {k: QResult(value=v, name=k.upper()) for k, v in metrics.items() if k.startswith("q_")}
     f_metrics = {k: FairResult(value=v, name=k.upper(), description="Mock") for k, v in metrics.items() if k.startswith("q_")}

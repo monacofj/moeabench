@@ -13,8 +13,8 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-import MoeaBench as mb
-from MoeaBench.mops.base_mop import BaseMop
+import moeabench as mb
+from moeabench.mops.base_mop import BaseMop
 
 class DummySphere(BaseMop):
     """Simple Sphere MOP for testing calibration."""

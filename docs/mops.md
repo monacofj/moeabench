@@ -5,11 +5,11 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Multi-Objective Problems (MOPs): DTLZ and DPF in MoeaBench
+# Multi-Objective Problems (MOPs): DTLZ and DPF in moeabench
 
 In the world of Multi-Objective Evolutionary Algorithms (MOEAs), benchmarks are not just sets of equations—they are the proving grounds where performance distributions are mapped and algorithmic limits are tested.
 
-MoeaBench provides native, high-performance implementations of two critical benchmark families: **DTLZ** and **DPF**. Below, we document our journey in implementing these methods, from their theoretical foundations to our optimized, vectorized codebase.
+moeabench provides native, high-performance implementations of two critical benchmark families: **DTLZ** and **DPF**. Below, we document our journey in implementing these methods, from their theoretical foundations to our optimized, vectorized codebase.
 
 ---
 
@@ -21,7 +21,7 @@ The **DTLZ** (Deb-Thiele-Laumanns-Zitzler) problem set is arguably the most infl
 In many legacy implementations, DTLZ problems were coded using nested loops to evaluate one individual at a time. While this approach is functional, it fails as we scale to many-objective optimization (10+ objectives).
 
 ### Our Narrative: The Shift to Vectorization
-When we refactored the DTLZ engine for MoeaBench, we prioritized "matrix thinking." We realized that the standard DTLZ evaluation functions (spherical, linear, etc.) could be entirely expressed through linear algebra and broadcasting.
+When we refactored the DTLZ engine for moeabench, we prioritized "matrix thinking." We realized that the standard DTLZ evaluation functions (spherical, linear, etc.) could be entirely expressed through linear algebra and broadcasting.
 
 For example, in `DTLZ1`, the $g$ factor calculation:
 $$g = 100 \left[ K + \sum_{i \in M} (x_i - 0.5)^2 - \cos(20\pi(x_i - 0.5)) \right]$$
@@ -52,9 +52,9 @@ Implementing DPF was significantly more complex than DTLZ. The core logic involv
 > **Mathematical Restoration (v0.4.1 - v0.7.6)**: 
 > We identified and fixed a critical discrepancy in the DPF implementations. The chaotic weights are now **static and unsorted**, restoring the characteristic "stepped" geometry. 
 > 
-> Furthermore, in **v0.7.6**, we transitioned from random Monte Carlo sampling to **Structured Analytical Sampling** in `ps()`. Instead of "clouds" of points, MoeaBench now generates perfectly geometric reference fronts. For instance, in DPF2, the ground truth is now a precise spherical curve, allowing for surgical precision in IGD and distribution audits.
+> Furthermore, in **v0.7.6**, we transitioned from random Monte Carlo sampling to **Structured Analytical Sampling** in `ps()`. Instead of "clouds" of points, moeabench now generates perfectly geometric reference fronts. For instance, in DPF2, the ground truth is now a precise spherical curve, allowing for surgical precision in IGD and distribution audits.
 
-We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
+We implemented this logic in `moeabench/mops/base_dpf.py`, ensuring that even these complex projections are vectorized for performance.
 
 **Reference:**
 *   L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." *IEEE Transactions on Evolutionary Computation*, vol. 22, no. 5, 2018.
@@ -63,7 +63,7 @@ We implemented this logic in `MoeaBench/mops/base_dpf.py`, ensuring that even th
 
 ## 3. The Implementation Journey: From Legacy to Clean API
 
-MoeaBench was born from the need to move away from fragmented script-based benchmarks. In early iterations, we had multiple `I_*.py` files with conflicting evaluation logics. 
+moeabench was born from the need to move away from fragmented script-based benchmarks. In early iterations, we had multiple `I_*.py` files with conflicting evaluation logics. 
 
 We consolidated everything into a clean, object-oriented structure:
 1.  **Base Classes**: All problems now inherit from `BaseMop`, ensuring consistent metadata handling.

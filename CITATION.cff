@@ -22,13 +22,13 @@ authors:
     given-names: "F. F. S."
     affiliation: "University of São Paulo (ICMC-USP)"
     email: "fernandoferreira.silva42@usp.br"
-title: "MoeaBench: An Extensible Analytical Toolkit for Multi-Objective Evolutionary Algorithm Research"
+title: "moeabench: An Extensible Analytical Toolkit for Multi-Objective Evolutionary Algorithm Research"
 version: 0.10.5
 date-released: 2026-02-19
 url: "https://github.com/monacofj/moeabench"
 repository-code: "https://github.com/monacofj/moeabench"
 license: GPL-3.0-or-later
 abstract: >-
-  MoeaBench is a Python framework designed for multi-objective optimization research.
+  moeabench is a Python framework designed for multi-objective optimization research.
   It combines a high-performance vectorized engine with a Technical Storytelling
   (Scientific Narrative) style for algorithm diagnostics and visualization.

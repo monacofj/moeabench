@@ -4,7 +4,7 @@
 Proposed/Accepted (v0.11.0)
 
 ## Context
-In MoeaBench, an `Experiment` is a collection of `Run` objects. Correspondingly, a performance metric (e.g., Hypervolume, Front Size) is a collection of trajectories, one for each run. 
+In moeabench, an `Experiment` is a collection of `Run` objects. Correspondingly, a performance metric (e.g., Hypervolume, Front Size) is a collection of trajectories, one for each run. 
 
 Prior to v0.11.0, the `MetricMatrix` indexed the **Generation** axis by default (axis 0). This created two significant issues:
 1. **Conceptual Inconsistency**: `exp[i]` selected a Run, but `metric(exp)[i]` selected a Generation.

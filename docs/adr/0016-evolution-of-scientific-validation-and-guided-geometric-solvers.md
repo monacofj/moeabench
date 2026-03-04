@@ -26,7 +26,7 @@ We established the audit against the `legacy2_optimal` as a scientific validatio
 *   **Rigor**: Parity invariants ($\sum f = c$ or $\sum f^2 = c$) are verified in each audit to ensure that numerical precision maintains a residual error of less than $10^{-8}$.
 
 ## Narrative Interpretation and Consequences
-This change marks the transition of MoeaBench from an "Optimization Framework" to a "Scientific Metrology Instrument". 
+This change marks the transition of moeabench from an "Optimization Framework" to a "Scientific Metrology Instrument". 
 
 *   **Superior Rigor**: v0.7.6 now imposes a mathematical truth that is, in many cases, superior to data produced by state-of-the-art algorithms running for thousands of generations.
 *   **Metric Stability**: Convergence metrics now operate on uniform density targets, reducing spurious variations in IGD and HV results caused by poor sampling of the optimal front.

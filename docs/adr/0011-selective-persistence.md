@@ -11,7 +11,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 Accepted
 
 ## Context
-The MoeaBench library (v0.3.0) transition to a trajectory-based architecture, where an `experiment` contains multiple `Run` objects with full generational history, created a need for a more robust persistence system. The legacy "capture-based" saving system was incompatible with the new data model and lacked the flexibility required for scientific workflows where data volume and configuration reproducibility are distinct concerns.
+The moeabench library (v0.3.0) transition to a trajectory-based architecture, where an `experiment` contains multiple `Run` objects with full generational history, created a need for a more robust persistence system. The legacy "capture-based" saving system was incompatible with the new data model and lacked the flexibility required for scientific workflows where data volume and configuration reproducibility are distinct concerns.
 
 Additionally, internal components like DEAP algorithm wrappers introduced non-serializable attributes (e.g., `base.Toolbox`), which caused failures during standard object pickling.
 

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Light Tier Testing Suite
+moeabench Light Tier Testing Suite
 ==================================
 
-This is the first level of the MoeaBench testing pyramid.
+This is the first level of the moeabench testing pyramid.
 The goal of this tier is to validate **mathematical invariants** and fundamental
 geometric properties of the problems (MOPs) without relying on stochastic algorithms.
 
@@ -31,7 +31,7 @@ import numpy as np
 import sys
 import os
 sys.path.append(os.path.abspath("."))
-import MoeaBench as mb
+import moeabench as mb
 
 @pytest.mark.parametrize("mop_name, invariant_type, expected_val", [
     ("DTLZ1", "sum", 0.5),
@@ -79,7 +79,7 @@ def test_dominance_operator():
     3. Identical points do not dominate each other.
     4. Indifferent points (conflicting objectives) do not dominate each other.
     """
-    from MoeaBench.core.run import Population
+    from moeabench.core.run import Population
     
     # Minimization assumed
     objs = np.array([

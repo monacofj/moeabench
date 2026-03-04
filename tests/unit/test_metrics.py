@@ -9,7 +9,7 @@ import numpy as np
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from MoeaBench import mb
+from moeabench import mb
 
 def test_hv_normalization():
     """Verify Hypervolume normalization and reference points."""
@@ -24,12 +24,12 @@ def test_hv_normalization():
     # Normalize logic: global_max is [1.0, 1.0], global_min is [0.5, 0.5]
     # Actually, evaluator.normalize takes ref_exps and all_current_objs_list.
     # ref point is max_val * 1.1 usually in some systems, 
-    # but MoeaBench uses internal normalization.
+    # but moeabench uses internal normalization.
     
     assert hv_res.values.size == 1
     val = float(hv_res)
     assert val > 0
-    # In MoeaBench, HV normalization adds a 10% margin to the bounding box.
+    # In moeabench, HV normalization adds a 10% margin to the bounding box.
     # [0.5, 0.5] in normalized box [0, 0] to [1.1, 1.1] gives 1.1 * 1.1 = 1.21
     assert np.allclose(val, 1.21, atol=1e-5)
 

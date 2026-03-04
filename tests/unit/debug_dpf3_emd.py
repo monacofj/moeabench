@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import MoeaBench as mb
-from MoeaBench.mops import DPF3
-from MoeaBench.metrics import emd
+import moeabench as mb
+from moeabench.mops import DPF3
+from moeabench.metrics import emd
 
 def debug_dpf3():
     print("--- Debugging DPF3 EMD Anomaly ---")
@@ -33,7 +33,7 @@ def debug_dpf3():
 
     # DEBUG ANALYSIS
     # Hypothesis: DPF3 collapses to corners due to x^100
-    from MoeaBench.metrics.evaluator import get_reference_front, _extract_data
+    from moeabench.metrics.evaluator import get_reference_front, _extract_data
     
     _, Fs, _, _ = _extract_data(gt)
     ref_front = get_reference_front(gt, Fs) # This performs NDS

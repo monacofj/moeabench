@@ -13,10 +13,10 @@ the same problem, visualizing their final fronts and convergence rates.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 1. Setup: Compare two algorithms on DTLZ2
     exp1 = mb.experiment()
     exp1.name = "NSGA-III"

@@ -5,7 +5,7 @@
 
 import unittest
 import numpy as np
-from MoeaBench.diagnostics import qscore
+from moeabench.diagnostics import qscore
 
 class TestQScoreECDF(unittest.TestCase):
     

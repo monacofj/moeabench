@@ -16,7 +16,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## 1. Abstract
 
-This Architectural Decision Record documents the metrological upgrade implemented in MoeaBench `v0.12.0`. Specifically, this decision:
+This Architectural Decision Record documents the metrological upgrade implemented in moeabench `v0.12.0`. Specifically, this decision:
 1. **Replaces the Spherical Noise model with a Half-Normal Projection** for establishing the random baseline in `q_closeness`.
 2. **Replaces the exhaustive `cdist` (Distance Matrix) calculation with `scipy.spatial.KDTree`** in the core physical metrics module (`fair.py`).
 3. **Introduces Dynamic Baseline Versioning** (`baselines_v0.12.0.json`) to isolate these strict geometric evaluations from legacy approximations.
@@ -61,4 +61,4 @@ To ensure consistency, the framework now ships with `baselines_v0.12.0.json`. Th
 ---
 
 ## 4. Conclusion
-MoeaBench's diagnostic suite is meant to rival the accuracy of a micrometer. Transitioning to the Half-Normal Projection guarantees strict topological adherence to the fundamental Pareto boundary constraint, removing systemic sampling errors. Simultaneously, KDTree integration allows this micrometer to scale effortlessly to massive topologies.
+moeabench's diagnostic suite is meant to rival the accuracy of a micrometer. Transitioning to the Half-Normal Projection guarantees strict topological adherence to the fundamental Pareto boundary constraint, removing systemic sampling errors. Simultaneously, KDTree integration allows this micrometer to scale effortlessly to massive topologies.

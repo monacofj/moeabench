@@ -14,11 +14,11 @@ distributions in both the objective and decision spaces.
 """
 
 import mb_path
-from MoeaBench import mb
+from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"MoeaBench v{mb.system.version()}")
+    print(f"moeabench v{mb.system.version()}")
     # 1. Setup: Compare NSGA-II vs NSGA-III on DTLZ2
     # We use a 3-objective problem (M=3)
     exp1 = mb.experiment()

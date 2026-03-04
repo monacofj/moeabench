@@ -8,7 +8,7 @@ import sys
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from MoeaBench import mb
+from moeabench import mb
 
 def test_version():
     """Verify that the library version is a non-empty string."""

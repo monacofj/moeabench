@@ -1,4 +1,4 @@
-import MoeaBench as mb
+import moeabench as mb
 import numpy as np
 
 # 1. Exp2: Small population (Narrow front, unstable)

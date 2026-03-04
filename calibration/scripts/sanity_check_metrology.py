@@ -12,12 +12,12 @@ PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-from MoeaBench.diagnostics.auditor import audit
-from MoeaBench.mops import DTLZ2, DPF4
-from MoeaBench.diagnostics.enums import DiagnosticStatus
+from moeabench.diagnostics.auditor import audit
+from moeabench.mops import DTLZ2, DPF4
+from moeabench.diagnostics.enums import DiagnosticStatus
 
 def test_gt_sanity():
-    print("MoeaBench Metrology Sanity Check")
+    print("moeabench Metrology Sanity Check")
     print("================================")
     
     test_cases = [DTLZ2, DPF4]

@@ -9,7 +9,7 @@
 
 ## 1. Abstract
 
-This Architectural Decision Record (ADR) formalizes the transition of the *MoeaBench* diagnostic system from a threshold-based heuristic model to a **Clinical Metrology** architecture. The central innovation is the decoupling of physical measurements ("Fair Metrics") from their engineering interpretation ("Q-Scores"). We demonstrate that finite sampling regimes ($N \approx 100-200$) in high-dimensional manifolds ($M \ge 3$) impose intrinsic geometric limitations ("The Sparsity Law") that render fixed-threshold metrics scientifically unrealistically exigent. To address this, we introduce a **3-Layer Architecture** (Raw $\to$ Fair $\to$ Q-Score) anchored by rigorous statistical baselines. This system provides a scale-invariant, audit-proof framework for certifying algorithmic performance, distinguishing fundamental physical bounds from actual search failures.
+This Architectural Decision Record (ADR) formalizes the transition of the *moeabench* diagnostic system from a threshold-based heuristic model to a **Clinical Metrology** architecture. The central innovation is the decoupling of physical measurements ("Fair Metrics") from their engineering interpretation ("Q-Scores"). We demonstrate that finite sampling regimes ($N \approx 100-200$) in high-dimensional manifolds ($M \ge 3$) impose intrinsic geometric limitations ("The Sparsity Law") that render fixed-threshold metrics scientifically unrealistically exigent. To address this, we introduce a **3-Layer Architecture** (Raw $\to$ Fair $\to$ Q-Score) anchored by rigorous statistical baselines. This system provides a scale-invariant, audit-proof framework for certifying algorithmic performance, distinguishing fundamental physical bounds from actual search failures.
 
 ---
 
@@ -36,13 +36,13 @@ Evaluating an algorithm against $IGD=0.0$ imposes an unfair penalty, effectively
 
 To resolve these inconsistencies, we adopt a **Clinical Metrology** approach, separating the physics of measurement from the judgment of quality.
 
-### 3.1 Layer 0: Raw Metrics (`MoeaBench.metrics`)
+### 3.1 Layer 0: Raw Metrics (`moeabench.metrics`)
 *   **Definition:** Pure mathematical distances in the Euclidean objective space ($\mathbb{R}^M$).
 *   **Role:** The absolute "truth" of position. Uncorrected and unnormalized.
 *   **Examples:** $GD(P, GT)$, $IGD(P, GT)$, $W_1(P, GT)$.
 *   **Status:** Immutable. These are the primitives upon which all higher logic is built.
 
-### 3.2 Layer 1: Fair Metrics (`MoeaBench.diagnostics.fair`)
+### 3.2 Layer 1: Fair Metrics (`moeabench.diagnostics.fair`)
 *   **Definition:** Physically meaningful quantities, corrected for scale and resolution artifacts.
 *   **Direction:** **Low-is-Better** (Physical Error).
 *   **Role:** To characterize specific "pathologies" (e.g., Non-convergence, Gaps, Irregularity) in a way that is comparable across different problems.
@@ -66,7 +66,7 @@ To resolve these inconsistencies, we adopt a **Clinical Metrology** approach, se
         $$ \mathcal{F}_{bal} = D_{JS}(\text{Hist}(P) || \text{Hist}(U_{ref})) $$
         *Jensen-Shannon divergence of cluster occupancy.*
 
-### 3.3 Layer 2: Q-Scores (`MoeaBench.diagnostics.qscore`)
+### 3.3 Layer 2: Q-Scores (`moeabench.diagnostics.qscore`)
 ### 3. The Clinical Q-Score ($Q$)
 
 The **Q-Score** is a $[0, 1]$ scalar that maps raw FAIR metrics into a clinical verdict.
@@ -119,7 +119,7 @@ To prevent grade inflation, the baselines are generated with rigorous statistica
     *   $\mathcal{F}_{ideal} = \text{Median}(FPS(GT, K))$
     *   $\mathcal{F}_{random} = \text{Median}(RandSubset(GT, K))$
 
-### 4.3 Modular Architecture (`MoeaBench.diagnostics`)
+### 4.3 Modular Architecture (`moeabench.diagnostics`)
 The architecture is reified in a clean Python package:
 *   `fair.py`: Pure physics engines (scipy-based). No domain logic.
 *   `qscore.py`: The "Judge". Holds the normalization logic and baseline connectivity.
@@ -141,7 +141,7 @@ The shape of the CDF curve allows for the "physical biopsy" of algorithmic failu
 4.  **Discontinuous Plateaus:** Vertical gaps in the CDF indicate "empty" regions in the Pareto approxmiation. Direct evidence for high **GAP** indices.
 
 ### 6.2 Conclusion
-By institutionalizing the CDF as a mandatory validation view, *MoeaBench* ensures that every quantitative Q-Score is accompanied by a transparent, visually inspectable proof of the underlying search pathology.
+By institutionalizing the CDF as a mandatory validation view, *moeabench* ensures that every quantitative Q-Score is accompanied by a transparent, visually inspectable proof of the underlying search pathology.
 
 ---
 

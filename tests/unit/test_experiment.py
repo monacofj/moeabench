@@ -11,7 +11,7 @@ import shutil
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from MoeaBench import mb
+from moeabench import mb
 
 def test_optimal_sampling():
     """Verify Pareto optimal sampling (ps) for analytical problems."""
@@ -21,7 +21,7 @@ def test_optimal_sampling():
     n_points = 100
     opt = exp.optimal(n_points=n_points)
     
-    from MoeaBench.core.run import Population
+    from moeabench.core.run import Population
     assert isinstance(opt, Population)
     assert len(opt) == n_points
     assert opt.objectives.shape == (n_points, 2)

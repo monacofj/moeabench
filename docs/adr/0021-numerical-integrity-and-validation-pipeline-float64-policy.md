@@ -12,7 +12,7 @@ Accepted (Implemented in v0.7.6)
 
 ## Context
 
-With MoeaBench measuring performance differences at the scale of $10^{-4}$ or $10^{-5}$, the risk of floating-point truncation (using `float32`) became a critical concern for scientific validity. It was necessary to certify that no part of the ingestion or computation pipeline downcasts data.
+With moeabench measuring performance differences at the scale of $10^{-4}$ or $10^{-5}$, the risk of floating-point truncation (using `float32`) became a critical concern for scientific validity. It was necessary to certify that no part of the ingestion or computation pipeline downcasts data.
 
 ## Technical Decision
 

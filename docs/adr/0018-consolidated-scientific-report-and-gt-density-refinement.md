@@ -12,7 +12,7 @@ Accepted (Implemented in v0.7.6)
 
 ## Context
 
-As MoeaBench v0.7.6 reached its final calibration phase, a peer review of the DPF4 (Degenerate Pareto Front) results revealed a significant artifact: the Hypervolume Ratio exceeded 100% (reaching ~127%). This occurred because the Ground Truth (GT) was a discrete sample of 2,000 points. Since DPF4 is a 1D curve in 3D space, the discrete sampling left "gaps" that the algorithm filled, resulting in a dominates volume greater than the discretized reference.
+As moeabench v0.7.6 reached its final calibration phase, a peer review of the DPF4 (Degenerate Pareto Front) results revealed a significant artifact: the Hypervolume Ratio exceeded 100% (reaching ~127%). This occurred because the Ground Truth (GT) was a discrete sample of 2,000 points. Since DPF4 is a 1D curve in 3D space, the discrete sampling left "gaps" that the algorithm filled, resulting in a dominates volume greater than the discretized reference.
 
 Furthermore, the terminology "Max Theoretical Hypervolume" was found to be misleading when applied to sampled reference sets, as it implies a continuum limit that the project does not analytically compute for all geometries.
 

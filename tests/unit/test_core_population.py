@@ -10,7 +10,7 @@ import os
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from MoeaBench.core.run import Population
+from moeabench.core.run import Population
 
 def test_population_creation():
     """Verify basic instantiation and shape validation."""
@@ -42,7 +42,7 @@ def test_population_algebra_getitem():
     pop = Population(objs, vars)
     
     ind = pop[1]
-    # In MoeaBench, indexing might return a Population of size 1 or an individual struct.
+    # In moeabench, indexing might return a Population of size 1 or an individual struct.
     # Current implementation returns a Population of size 1 for consistency.
     assert isinstance(ind, Population)
     assert len(ind) == 1
@@ -54,7 +54,7 @@ def test_population_algebra_concatenation():
     pop2 = Population(np.zeros((5, 2)), np.zeros((5, 2)))
     
     # Assumes the __add__ operator is implemented or use a merge utility
-    # Checking if MoeaBench.core.run.Population supports + operator
+    # Checking if moeabench.core.run.Population supports + operator
     try:
         merged = pop1 + pop2
         assert len(merged) == 15

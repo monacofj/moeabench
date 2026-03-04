@@ -5,9 +5,9 @@
 import numpy as np
 import json
 import os
-from MoeaBench.mops import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
-from MoeaBench.mops import DPF1, DPF2, DPF3, DPF4, DPF5
-from MoeaBench import metrics as mb_metrics
+from moeabench.mops import DTLZ1, DTLZ2, DTLZ3, DTLZ4, DTLZ5, DTLZ6, DTLZ7, DTLZ8, DTLZ9
+from moeabench.mops import DPF1, DPF2, DPF3, DPF4, DPF5
+from moeabench import metrics as mb_metrics
 
 def calibrate():
     mops = [
@@ -60,7 +60,7 @@ def calibrate():
             }
             
     # Save results
-    output_path = "MoeaBench/diagnostics/resources/baselines.json"
+    output_path = "moeabench/diagnostics/resources/baselines.json"
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         json.dump(results, f, indent=4)

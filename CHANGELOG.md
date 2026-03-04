@@ -180,7 +180,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Q-Score Layer**: Standardized engineering grades [0.0, 1.0] normalized against "Ideal" (FPS) and "Random" (Subset/BBox) baselines.
 - **Fail-Closed Baseline Policy**: Enforced strict algorithmic auditing. Missing baselines in `baselines_v2.json` now trigger an `UndefinedBaselineError` instead of silent fallbacks, ensuring scientific integrity.
 - **Enhanced Auditability**: Calibration reports now feature comprehensive tooltips for every quality cell, exposing the full derivation chain (Fair value, Ideal/Random references, and K-sampling metadata).
-- **Consolidated Diagnostics Namespace**: Migrated all clinical and diagnostic logic from `MoeaBench.clinic` (deprecated) to `MoeaBench.diagnostics`.
+- **Consolidated Diagnostics Namespace**: Migrated all clinical and diagnostic logic from `moeabench.clinic` (deprecated) to `moeabench.diagnostics`.
 
 ### Changed
 - **Renamed Metrics**: Standardized "Density" to **"Gap"** to correctly reflect the topological nature of holes in the Pareto approximation.
@@ -293,7 +293,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | `topo_attain` | `topo_attainment` | Topography (EAF) |
 
 ### Changed
-- **Modular Architecture**: Visualization layer refactored into domain-specific modules (`MoeaBench/view/topo.py`, `perf.py`, `strat.py`).
+- **Modular Architecture**: Visualization layer refactored into domain-specific modules (`moeabench/view/topo.py`, `perf.py`, `strat.py`).
 - **Stability Policy (Legacy Support)**: Established a two-tier support system:
   - **Permanent Aliases**: `spaceplot`, `timeplot`, and `rankplot` are maintained as first-class citizens.
   - **Soft-Deprecated**: Other legacy functions (`casteplot`, `tierplot`, `topo_dist`, `perf_prob`, etc.) are maintained for compatibility but will be restricted in future major releases.
@@ -372,20 +372,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DPF Mathematical Restoration**: Corrected a fundamental error in the Degenerate Pareto Front (DPF) benchmark engine. Chaotic weights are now **static and unsorted** (stored in `__init__`), restoring the characteristic "stepped" front geometry in DPF1-5.
 - **Tabula Rasa v2 (Code Cleanup)**: Permanently removed the legacy code graveyard, including `problem_benchmark/`, `kernel_moea/`, and multiple orphan factory files (`problems.py`, `I_problems.py`, etc.).
 - **Architecture Integrity**: Refactored `mops` and `moeas` module initializers to use explicit, modern imports, eliminating unsafe dynamic loading loops (`os.walk`).
-- **Algorithm Reorganization**: Migrated essential `pymoo` kernels directly into `MoeaBench/moeas/` as internal helpers (`_*.py`), streamlining the internal execution layer.
+- **Algorithm Reorganization**: Migrated essential `pymoo` kernels directly into `moeabench/moeas/` as internal helpers (`_*.py`), streamlining the internal execution layer.
 
 ## [0.4.0] - 2026-01-18
 
 ### Added
 - **Ocean Palette**: Implemented a new custom categorical color palette for all visualizations. The 9-color sequence (Indigo → Emerald → Plum → Jade → Bordeaux → Deep Teal → Orange → Red → Yellow) provides a premium, high-contrast visual identity.
-- **Centralized Style System**: Infrastructure for global theme management added in `MoeaBench/view/style.py`, ensuring consistent aesthetics between Matplotlib and Plotly backends.
+- **Centralized Style System**: Infrastructure for global theme management added in `moeabench/view/style.py`, ensuring consistent aesthetics between Matplotlib and Plotly backends.
 - **Selective Persistence (Save/Load)**: Implemented a new, robust persistence system for experiments.
     - Added `mode` argument (`all`, `config`, `data`) to `exp.save()` and `exp.load()`.
     - ZIP-based archive format containing standardized CSVs (`result.csv`), metadata (`problem.txt`), and serialized trajectories (`Moeabench.joblib`).
     - Integrated with `joblib` for high-performance NumPy-aware serialization.
 
 ### Changed
-- **Automatic Branding**: The new "Ocean" visual identity is now automatically applied upon importing `MoeaBench.view`.
+- **Automatic Branding**: The new "Ocean" visual identity is now automatically applied upon importing `moeabench.view`.
 - **Documentation Audit**: Completed a thorough audit of all guides (`userguide.md`, `reference.md`, `design.md`), renaming the benchmarks technical guide to `docs/mops.md` and standardizing all references to the namespaced API.
 - **Reference Provenance**: Added formal DOI and arXiv links for DTLZ and DPF references across all documentation guides.
 
@@ -443,10 +443,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Terminology**: Renamed `benchmarks` to **`mops`** and `BaseBenchmark` to **`BaseMop`** globally for technical accuracy and brevity.
-- **Major API Refactoring**: Restructured `MoeaBench` to follow a new object-oriented design (e.g., `mb.experiment`, `mb.moeas`, `mb.mops`).
+- **Major API Refactoring**: Restructured `moeabench` to follow a new object-oriented design (e.g., `mb.experiment`, `mb.moeas`, `mb.mops`).
 - **Clean Namespace**: Standardized filenames to `snake_case` and removed 20+ legacy interface files (`I_*.py`, `H_*.py`) and the `CACHE` system.
 - **Dependency Hygiene**: Pruned unused packages (`ordered_set`, `deepdiff`, `PyGithub`) from `requirements.txt`.
-- `example_01.py` updated to use the new `MoeaBench` API and `DTLZ2` benchmark.
+- `example_01.py` updated to use the new `moeabench` API and `DTLZ2` benchmark.
 - `README.md` Quick Start example updated to match the new API.
 
 ### Removed
@@ -467,4 +467,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial import of project files from `fervat40`'s repository.
 
 ### Added
-- **Automated Diagnostics**: New `MoeaBench.diagnostics` module for algorithmic pathology (Diversity Collapse detection, etc.).
+- **Automated Diagnostics**: New `moeabench.diagnostics` module for algorithmic pathology (Diversity Collapse detection, etc.).

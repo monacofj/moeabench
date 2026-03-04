@@ -1,4 +1,4 @@
-MoeaBench Testing Infrastructure (v0.9+)
+moeabench Testing Infrastructure (v0.9+)
 ========================================
 
 The project utilizes a testing pyramid structure to ensure the functional,
@@ -34,7 +34,7 @@ Note: Unit Tests run automatically as a FOUNDATION for all tiers.
 
 Calibration and Reference Data
 ------------------------------
-The scientific integrity of MoeaBench is anchored in the following artifacts:
+The scientific integrity of moeabench is anchored in the following artifacts:
 
 - calibration_reference_audit_v0.9.json: Raw coordinates for 42 reference 
   scenarios. Used as input for the Regression Tier.

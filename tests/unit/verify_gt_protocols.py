@@ -2,8 +2,8 @@
 import numpy as np
 import os
 import shutil
-from MoeaBench import mb
-from MoeaBench.moeas import NSGA3
+from moeabench import mb
+from moeabench.moeas import NSGA3
 
 def test_protocol_a():
     print("\n>>> Testing Protocol A: Analytical (Default)")

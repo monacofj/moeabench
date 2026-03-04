@@ -5,13 +5,13 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Future Directions: Enhancing MoeaBench's Statistical Narrative
+# Future Directions: Enhancing moeabench's Statistical Narrative
 
-To enrich the scientific narrative of MoeaBench and elevate the technical discourse the framework facilitates, we envision several statistical additions. These enhancements focus on multi-algorithm comparison, the nuances of stochastic robustness, and the underlying geometry of the search process. Aligned with our **Technical Storytelling** philosophy, these features aim to transform raw data into a compelling scientific journey.
+To enrich the scientific narrative of moeabench and elevate the technical discourse the framework facilitates, we envision several statistical additions. These enhancements focus on multi-algorithm comparison, the nuances of stochastic robustness, and the underlying geometry of the search process. Aligned with our **Technical Storytelling** philosophy, these features aim to transform raw data into a compelling scientific journey.
 
 ## 1. Multi-Algorithm Analysis: The "Tier" Narrative
 
-While MoeaBench currently excels at pairwise comparisons through tools like Mann-Whitney and the KS-test, comprehensive benchmarking often demands a broader perspective. We need to determine if, out of a group of multiple algorithms, any real difference exists or if the results are merely artifacts of stochastic noise.
+While moeabench currently excels at pairwise comparisons through tools like Mann-Whitney and the KS-test, comprehensive benchmarking often demands a broader perspective. We need to determine if, out of a group of multiple algorithms, any real difference exists or if the results are merely artifacts of stochastic noise.
 
 To address this, we propose integrating the **Friedman Test** paired with **Nemenyi Post-hoc** analysis. The Friedman test provides a global view of the group's performance variance. If global significance is detected, the post-hoc analysis identifies the specific pairs of algorithms that truly diverge. This would be visually anchored by **Critical Difference (CD) Diagrams**, providing the definitive "battle map" for any research paper.
 
@@ -23,7 +23,7 @@ We believe that **Dolan-Moré Performance Profiles** are the solution. By plotti
 
 ## 3. Stability Dynamics: The "Reliability" Narrative
 
-MoeaBench's commitment to documenting the "scientific journey" implies that we should not only report final results but also the evolution of reliability.
+moeabench's commitment to documenting the "scientific journey" implies that we should not only report final results but also the evolution of reliability.
 
 We plan to introduce **Confidence Bands** within the `timeplot` convention. By surrounding the median Hypervolume with an **Interquartile Range (IQR)** cloud, we can visually pinpoint the exact transition from exploratory search to stable convergence. Furthermore, metrics like **Success Rate** and **Time-to-Target (TTT)** will allow us to frame performance not just as a matter of "quality," but as one of "cost-effectiveness"—measuring the generation-count "investment" required to reach a specific performance threshold.
 

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Baseline Analysis Engine
+moeabench Baseline Analysis Engine
 ==================================
 
 This script acts as the analytical intelligence layer of the testing framework.
@@ -29,16 +29,16 @@ python tests/calibration/compute_baselines.py
 import os
 import sys
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
 import numpy as np
 import pandas as pd
-import MoeaBench as mb
-from MoeaBench.metrics.evaluator import normalize
-from MoeaBench.metrics.GEN_hypervolume import GEN_hypervolume
+import moeabench as mb
+from moeabench.metrics.evaluator import normalize
+from moeabench.metrics.GEN_hypervolume import GEN_hypervolume
 import re
 
 DATA_DIR = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
@@ -78,7 +78,7 @@ def compute_baselines():
     total_groups = len(groups)
     current_group = 0
 
-    print(f"=== MoeaBench Baseline Analysis (Phase 1B-B) ===")
+    print(f"=== moeabench Baseline Analysis (Phase 1B-B) ===")
     print(f"Processing {total_groups} experiment groups...")
     print("-" * 70)
 
@@ -128,7 +128,7 @@ def compute_baselines():
             # 1. IGD Metrics
             igd_values = []
             for F_obs in all_fronts:
-                from MoeaBench.metrics.GEN_igd import GEN_igd
+                from moeabench.metrics.GEN_igd import GEN_igd
                 engine = GEN_igd([F_obs], F_opt)
                 igd_values.append(engine.evaluate()[0])
             
@@ -138,7 +138,7 @@ def compute_baselines():
             # 2. GD Metrics
             gd_values = []
             for F_obs in all_fronts:
-                from MoeaBench.metrics.GEN_gd import GEN_gd
+                from moeabench.metrics.GEN_gd import GEN_gd
                 engine = GEN_gd([F_obs], F_opt)
                 gd_values.append(engine.evaluate()[0])
             

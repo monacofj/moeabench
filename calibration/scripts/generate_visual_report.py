@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-MoeaBench Calibration Visual Report Generator (v0.9.0)
+moeabench Calibration Visual Report Generator (v0.9.0)
 =====================================================
 
 Decoupled Renderer: Consumes pre-calculated audit data from JSON.
@@ -25,7 +25,7 @@ OUTPUT_HTML = os.path.join(PROJ_ROOT, "calibration/reports/audit_report_v0.12.0.
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-from MoeaBench.diagnostics import qscore
+from moeabench.diagnostics import qscore
 
 
 def generate_visual_report():
@@ -47,7 +47,7 @@ def generate_visual_report():
     mops = sorted(problems.keys(), key=mop_sort_key)
 
     html_content = [
-        "<html><head><title>MoeaBench v0.9.0 Calibration</title>",
+        "<html><head><title>moeabench v0.9.0 Calibration</title>",
         "<style>",
         "body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 2rem; }",
         "h1 { color: #0f172a; border-left: 5px solid #6366f1; padding-left: 1rem; margin-bottom: 0; }",
@@ -62,8 +62,8 @@ def generate_visual_report():
         ".matrix-summary { font-style: italic; color: #64748b; font-size: 0.85rem; min-width: 200px; white-space: normal; }",
         "th, td:not(.matrix-summary) { white-space: normal; }",
         "</style></head><body>",
-        "<h1>MoeaBench v0.12.0 Clinical Quality Audit Report</h1>",
-        "<p>This report serves as the official scientific audit for <b>MoeaBench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
+        "<h1>moeabench v0.12.0 Clinical Quality Audit Report</h1>",
+        "<p>This report serves as the official scientific audit for <b>moeabench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
         "<div class='didactic-box' style='background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px;'>",
         "<h2>1. Methodology & Experimental Context</h2>",
         "<p>The goal is to certify algorithmic performance against rigorous mathematical <b>Ground Truth (GT)</b> benchmarks.</p>",
@@ -190,7 +190,7 @@ def generate_visual_report():
                 # Calculate Q-Score using s_fit normalization (Harmonized with QScore.py)
                 try:
                     # K discretization to match Auditor (Fixed K-Target Policy)
-                    from MoeaBench.diagnostics import baselines as base
+                    from moeabench.diagnostics import baselines as base
                     K_raw = len(front)
                     
                     # Strict Snap (Floor) matches Auditor

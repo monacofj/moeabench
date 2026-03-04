@@ -7,12 +7,12 @@ import sys
 import pandas as pd
 import numpy as np
 
-# Ensure local MoeaBench is importable
+# Ensure local moeabench is importable
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
 
-import MoeaBench as mb
+import moeabench as mb
 
 GT_DIR = os.path.join(PROJ_ROOT, "tests/ground_truth")
 os.makedirs(GT_DIR, exist_ok=True)
