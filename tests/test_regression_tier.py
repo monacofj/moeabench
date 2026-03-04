@@ -26,7 +26,7 @@ from moeabench import metrics
 
 # Load Calibration Reference Data (Module Level)
 DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.9.json")
-TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_targets.json")
+TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "..", "calibration", "data", "calibration_reference_targets.json")
 
 print(f"Loading Calibration Reference Data from {DATA_JSON_PATH}...")
 with open(DATA_JSON_PATH, "r") as f:

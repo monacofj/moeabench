@@ -77,7 +77,7 @@
   },
   "DPF2/NSGA2": {
     "q_scores": {
-      "Q_CLOSENESS": 0.9977268831810413,
+      "Q_CLOSENESS": 0.9977316045751616,
       "Q_COVERAGE": 1.0,
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
@@ -96,7 +96,7 @@
   },
   "DPF2/NSGA3": {
     "q_scores": {
-      "Q_CLOSENESS": 0.9977983111029889,
+      "Q_CLOSENESS": 0.9978028841385898,
       "Q_COVERAGE": 1.0,
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
@@ -628,7 +628,7 @@
   },
   "DTLZ7/MOEAD": {
     "q_scores": {
-      "Q_CLOSENESS": 0.9840074953784792,
+      "Q_CLOSENESS": 0.9837659940913156,
       "Q_COVERAGE": 0.9299999999999999,
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
@@ -647,7 +647,7 @@
   },
   "DTLZ7/NSGA2": {
     "q_scores": {
-      "Q_CLOSENESS": 0.9856694201052038,
+      "Q_CLOSENESS": 0.9854530158309324,
       "Q_COVERAGE": 1.0,
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
@@ -666,7 +666,7 @@
   },
   "DTLZ7/NSGA3": {
     "q_scores": {
-      "Q_CLOSENESS": 0.989377537357708,
+      "Q_CLOSENESS": 0.9892171275885729,
       "Q_COVERAGE": 1.0,
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
@@ -685,7 +685,7 @@
   },
   "DTLZ8/NSGA2": {
     "q_scores": {
-      "Q_CLOSENESS": 0.8114508926894802,
+      "Q_CLOSENESS": 0.8122247884378312,
       "Q_COVERAGE": 0.0,
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
@@ -704,7 +704,7 @@
   },
   "DTLZ8/NSGA3": {
     "q_scores": {
-      "Q_CLOSENESS": 0.9929280697356546,
+      "Q_CLOSENESS": 0.9929583053741854,
       "Q_COVERAGE": 1.0,
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,

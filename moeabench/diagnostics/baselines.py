@@ -14,6 +14,7 @@ This module handles:
 import os
 import json
 import warnings
+import hashlib
 import numpy as np
 from typing import Optional, Dict, Any, Tuple, Union
 from scipy.spatial.distance import cdist
@@ -233,8 +234,10 @@ def get_ref_uk(gt: np.ndarray, k: int, seed: int = 0) -> np.ndarray:
     if len(gt) <= k:
         return gt
         
-    # Use id of data, shape and seed as key to avoid collisions from memory reuse
-    key = (id(gt), gt.shape, seed)
+    # Enforce hash-based key for FPS to avoid collisions across problems
+    # but keep id(gt) for speed if it's the same object reference
+    data_hash = hashlib.sha256(gt.tobytes()).hexdigest()
+    key = (data_hash, k, seed)
     
     # Check cache
     if key in _FPS_CACHE:
