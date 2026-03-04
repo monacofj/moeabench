@@ -5,9 +5,9 @@ SPDX-FileCopyrightText: 2025 Silva F. F. <fernandoferreira.silva42@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# moeabench User Guide
+# MoeaBench User Guide
 
-moeabench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
+MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutionary Optimization research that adds a layer of data interpretation and visualization over standard benchmark engines. The framework establishes an intuitive abstraction layer for configuring and executing sophisticated quantitative analysis, transparently handling normalization, numerical reproducibility, and statistical validation. By transforming raw performance metrics into descriptive, narrative-driven results, it facilitates rigorous algorithmic auditing and promotes systematic, reproducible experimental comparisons.
 
 To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
@@ -53,7 +53,7 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
 
 ## **1. Introduction: Design Philosophy**
 
-moeabench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
+MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the infrastructure—metrics, statistics, and plots—so you can focus on the core logic of your algorithm.
 
 ### **Key Features**
 *   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
@@ -73,9 +73,9 @@ moeabench operates on a **Plugin Architecture**. Its purpose is to provide the i
 
 ## **2. Getting Started: Minimal Working Example**
 
-The smallest meaningful unit in moeabench is the **Experiment**. An experiment establishes the link between a problem (MOP) and an algorithm (MOEA).
+The smallest meaningful unit in MoeaBench is the **Experiment**. An experiment establishes the link between a problem (MOP) and an algorithm (MOEA).
 
-### **Hello moeabench!**
+### **Hello MoeaBench!**
 Let's solve the DTLZ2 benchmark (3 objectives) using the NSGA-III algorithm:
 
 ```python
@@ -99,7 +99,7 @@ The `view.perf_shape` function will produce a plot showing the topography of the
 *Figure 1: Spatial Perspective: Final Population snapshot projected in 3D.*
 
 #### **Performance: Convergence trajectories**
-moeabench offers several viz perspectives for performance:
+MoeaBench offers several viz perspectives for performance:
 - `mb.view.perf_history`: Evolution of Hypervolume (default), IGD, GD, etc.
 - `mb.view.perf_front_size`: Evolution of the non-dominated front density (ratio).
 - `mb.view.perf_spread`: Comparative performance distributions at specific generations.
@@ -109,7 +109,7 @@ And the `view.perf_history` function will produce a plot showing the hypervolume
 ![Convergence](images/hello_time.png)
 *Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
 
-*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment. moeabench automatically discovers the name of the variable assigned to the experiment object, so `exp.name` is often optional.
+*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment. MoeaBench automatically discovers the name of the variable assigned to the experiment object, so `exp.name` is often optional.
 *   `exp.authors = "Monaco F. J."` $\to$ Assigns authorship for reproducibility.
 *   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs). If not specified, defaults to **CC0-1.0**.
 *   `exp.year = 2026` $\to$ Sets the publication year.
@@ -136,20 +136,20 @@ exp.run()
 ```
 
 ### **Reproducibility & Seeds**
-Rigorous benchmarking necessitates distinct control over stochastic processes. moeabench treats random seeds as fundamental metadata to ensure experiments are perfectly replicable.
+Rigorous benchmarking necessitates distinct control over stochastic processes. MoeaBench treats random seeds as fundamental metadata to ensure experiments are perfectly replicable.
 
 *   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
-*   **Multi-Run Sequence**: When running `repeat=N`, moeabench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
+*   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
 
 > [!TIP]
 > **Global Defaults**: You can define default values for population, generations, seeds, and statistical thresholds globally using `mb.defaults`. This allows you to set a baseline for your entire project in a single place. See the **[API Reference](reference.md#defaults)** for the complete list of parameters.
 *   **Traceability**: Every `Run` object stores the exact seed used for its execution.
-*   **Automatic Seed Generation**: If you do not provide a seed, moeabench automatically generates a random one for you. This seed is then fixed and stored in the experiment metadata, ensuring that even "random" executions can be traced and reproduced later.
+*   **Automatic Seed Generation**: If you do not provide a seed, MoeaBench automatically generates a random one for you. This seed is then fixed and stored in the experiment metadata, ensuring that even "random" executions can be traced and reproduced later.
 
 ---
 
 ### **Cloud Aggregation**
-When handling multiple runs, moeabench performs **Cloud Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
+When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
 
 For instance, visualizing a multi-run experiment showing the mean performance and variance:
 ```python
@@ -174,7 +174,7 @@ moeabench handles this automatically through its **"Joint Universe"** logic.
 
 #### **The `ref` Argument: Defining the Universe**
 
-The `ref` argument tells moeabench **"What is the world?"** for the purpose of normalization. It defines the Ideal and Nadir points (the bounding box) used to scale objective values. Your choice of `ref` depends entirely on your analytical goal:
+The `ref` argument tells MoeaBench **"What is the world?"** for the purpose of normalization. It defines the Ideal and Nadir points (the bounding box) used to scale objective values. Your choice of `ref` depends entirely on your analytical goal:
 
 **1. Self-Reference (Default)**
 If you are analyzing a single experiment in isolation, you might not strictly need `ref`.
@@ -217,7 +217,7 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 
 Usually, an experiment runs for a given number of generations (default 300)
 
-moeabench allows you to inject custom logic to halt the search process based on dynamic conditions (e.g., convergence, time limits, or specific targets). This can be set globally for the experiment or per execution.
+MoeaBench allows you to inject custom logic to halt the search process based on dynamic conditions (e.g., convergence, time limits, or specific targets). This can be set globally for the experiment or per execution.
 
 The stop function receives a reference to the **Active Solver** as its context, allowing access to the current state of the optimization, including the generation count (`solver.n_gen`), the current population (`solver.pop`), and the problem definition (`solver.problem`). For an exhaustive list of accessible properties, consult the **[API Reference](reference.md#solver-state)**.
 
@@ -418,7 +418,7 @@ This domain reduces high-dimensional outcomes into scalar values (Hypervolume, I
 *   **`mb.perf_front_size`**: Tracks the density of the non-dominated set (Front Size) over time.
 
 #### **Metric Rigor and Interpretation**
-moeabench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
+MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
 
 *   **Triple-Mode Hypervolume Reporting**: Starting with v0.11, Hypervolume is reported using three standardized measures:
     1.  **H_raw**: The physical dominated volume ($Physical$).
@@ -575,7 +575,7 @@ ratio = t_res.dominance_ratio      # [0.6, 0.4] means Exp1 holds 60% of Rank 1
 ## **8. Statistical Analysis (`mb.stats`)**
 
 The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. 
-A core philosophy of moeabench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report_show()` method that handles display for you.
+A core philosophy of MoeaBench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report_show()` method that handles display for you.
 
 ### **8.1. Hypothesis Testing & Significance**
 These tools answer the critical question: *"Is the difference purely due to luck?"*
@@ -637,14 +637,14 @@ topo_res.report_show()
     
 Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
 
-moeabench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnostics`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
+MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnostics`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
 
 > [!TIP]
 > **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
 ### **9.1. Diagnostic Ontology**
 
-moeabench transforms raw performance data into a "detailed diagnostic assessment". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
+MoeaBench transforms raw performance data into a "detailed diagnostic assessment". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
 
 | Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
 | :--- | :--- | :--- |
@@ -661,7 +661,7 @@ In ideal multi-objective optimization, the Pareto front is often a continuous ma
 1. **Discrete Ground Truth**: Our analytical reference is usually a finite set of points sampled from the true front.
 2. **Finite Population**: The algorithm's output is also a finite set of points.
 
-Because of this, it is physically impossible to achieve an "error of zero" unless the population points exactly coincide with the GT samples. To account for this, moeabench uses **Resolution-Based Normalization**. 
+Because of this, it is physically impossible to achieve an "error of zero" unless the population points exactly coincide with the GT samples. To account for this, MoeaBench uses **Resolution-Based Normalization**. 
 
 We define the **Resolution Scale** ($s_K$) as the expected average distance between points in a "perfectly" distributed population of size $K$. By dividing physical distances by $s_K$, we move from absolute units to "Resolution Units". 
 
@@ -780,7 +780,7 @@ score = mb.diagnostics.q_headway(exp)
 
 ### **9.4. Diagnostic Instruments**
 
-moeabench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (Physical) or Layer 2 (Clinical). These instruments are polymorphic and agnostic to the underlying metric.
+MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (Physical) or Layer 2 (Clinical). These instruments are polymorphic and agnostic to the underlying metric.
 
 #### **Instrument 1: The Radar (`clinic_radar`)**
 *   **Role**: *Holistic Validation*.
@@ -919,7 +919,7 @@ The answer is: **Yes, absolutely.** Functionally, there is zero difference.
 
 #### **Longitudinal Auditing: Comparing against History**
 
-Scientific progress is longitudinal. moeabench provides two mechanisms to audit current results against historical or alternative reference systems.
+Scientific progress is longitudinal. MoeaBench provides two mechanisms to audit current results against historical or alternative reference systems.
 
 #### **Mechanism A: Contextual Baseline Switching**
 To verify if a new algorithm version is better relative to an *older* baseline (e.g., from v0.8.0), use the `use_baselines` context manager:
@@ -936,7 +936,7 @@ with mb.diagnostics.use_baselines("references/baselines.json"):
 You can audit against a specific Ground Truth file (saved from a previous publication) simply by passing the path:
 
 ```python
-# moeabench automatically detects .npy, .npz, and .csv formats
+# MoeaBench automatically detects .npy, .npz, and .csv formats
 mb.diagnostics.audit(exp, ground_truth="data/published_gt.npz")
 ```
 
@@ -944,7 +944,7 @@ mb.diagnostics.audit(exp, ground_truth="data/published_gt.npz")
 
 ## **10. Extensibility: Plugging your Algorithm**
 
-Extensibility is the core reason for moeabench's existence. You use the framework to evaluate **your** code.
+Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
 ### **Custom MOP Plugin**
 To add a new problem, inherit from `mb.mops.BaseMop` and implement the `evaluation` method. 
@@ -968,11 +968,11 @@ class MyProblem(mb.mops.BaseMop):
 ```
 
 ### **Custom MOEA Plugin**
-To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of moeabench's infrastructure (automated runs, seeds, and persistence).
+To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
 ### **10.1. MOP Plugin Support and Calibration**
 
-moeabench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
+MoeaBench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
 
 #### **The "One-Click" Calibration Workflow**
 For a custom MOP to be clinically validated, it needs a **Sidecar JSON** file containing its Ground Truth (GT) and statistical baselines (ECDF). You can generate this automatically:
@@ -993,7 +993,7 @@ mb.view.clinic_radar(exp) # Works perfectly with custom baselines!
 
 #### **How it Works: The Sidecar Pattern**
 - **Persistence**: `mop.calibrate()` creates a JSON file (e.g., `MyProblem.json`) next to your Python class.
-- **Portability**: You can share this JSON file along with your code. moeabench will automatically find and load it if it's in the same directory as the problem definition.
+- **Portability**: You can share this JSON file along with your code. MoeaBench will automatically find and load it if it's in the same directory as the problem definition.
 - **Scientific Integrity**: The sidecar stores a "frozen" Ground Truth, ensuring that your Q-Scores remain comparable even if you change your sampling logic later.
 
 > [!IMPORTANT]
@@ -1013,7 +1013,7 @@ class MyProblem(mb.mops.BaseMop):
 
 ## **11. Persistence (`save` and `load`)**
 
-moeabench allows you to persist experiments to disk as compressed ZIP files. 
+MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
 ```python
 # 1. Save the complete state (Config + All Runs)
@@ -1034,14 +1034,14 @@ exp.load("results", mode="data")
 
 #### **Enhanced Scientific Metadata (v2)**
 Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
-- **`metadata.json`**: Machine-readable provenance (moeabench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
+- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
 - **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
 
 ---
 
 ## **12. Data Export (CSV)**
 
-moeabench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
+MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
 ```python
 # 1. Export results from a named experiment
@@ -1065,11 +1065,11 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 ## **16. Architectural Decisions and Engineering Values**
 
-moeabench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
+MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
 *   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report_show()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
 
-*   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), moeabench scales efficiently without the performance penalty of native Python iterations.
+*   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 
 *   **Rigor & Calibration**: Reliability is validated through regular **Calibration Reports** that audit metric precision. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
 
