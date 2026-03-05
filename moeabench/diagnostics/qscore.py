@@ -46,7 +46,7 @@ class QResult(DiagnosticValue):
                     return matrix[thresh]
         return "Undefined"
     
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         q = float(self.value)
         label = "Undefined"
         if self.name in self._LABELS:
@@ -57,12 +57,14 @@ class QResult(DiagnosticValue):
                     break
         
         if kwargs.get('markdown', True):
-            return f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
-        
-        # Clean terminal output: pad name to width if provided
-        width = kwargs.get('width', len(self.name))
-        name_str = f"{self.name}".ljust(width)
-        return f"{name_str} : {q:.3f} [{label}] - {self.description}"
+            content = f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
+        else:
+            # Clean terminal output: pad name to width if provided
+            width = kwargs.get('width', len(self.name))
+            name_str = f"{self.name}".ljust(width)
+            content = f"{name_str} : {q:.3f} [{label}] - {self.description}"
+            
+        return self._render_report(content, show, **kwargs)
 
 
 def _wasserstein_1d(u: np.ndarray, v: np.ndarray) -> float:

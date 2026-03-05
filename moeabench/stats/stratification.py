@@ -177,7 +177,7 @@ class StratificationResult(StatsResult):
             }
         return CasteSummary(stats)
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         """
         Generates an analytical narrative report of the population strata.
         """
@@ -209,6 +209,8 @@ class StratificationResult(StatsResult):
                 lines.append("\n> **Diagnosis**: High Selection Pressure (Phalanx-like convergence).")
             elif self.selection_pressure < 0.2:
                 lines.append("\n> **Diagnosis**: Low Selection Pressure (Exploratory/Scattered architecture).")
+            
+            content = "\n".join(lines)
         else:
             lines = [
                 f"--- Population Strata Report: {name} ---",
@@ -228,7 +230,9 @@ class StratificationResult(StatsResult):
             elif self.selection_pressure < 0.2:
                 lines.append("\nDiagnosis: Low Selection Pressure (Exploratory/Scattered architecture).")
             
-        return "\n".join(lines)
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
     def __repr__(self) -> str:
         name = getattr(self.source, 'name', 'Population')
@@ -353,7 +357,7 @@ class TierResult(StratificationResult):
         """F1 Metaphor: Displacement depth (where the rival starts to appear)."""
         return self.displacement_depth
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         """Generates a competitive narrative report using Tier/F1 metaphors."""
         use_md = kwargs.get('markdown', False)
         nameA, nameB = self.group_labels
@@ -378,6 +382,8 @@ class TierResult(StratificationResult):
             lines.append(f"\n> **Diagnosis**: **{better}** occupies the Pole Position.")
             if self.gap > defaults.large_gap_threshold:
                 lines.append(f"> **Observation**: {better} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
+            
+            content = "\n".join(lines)
         else:
             lines = [
                 f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
@@ -397,7 +403,9 @@ class TierResult(StratificationResult):
             if self.gap > defaults.large_gap_threshold:
                 lines.append(f"Observation: {better} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
             
-        return "\n".join(lines)
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
 def tier(exp1, exp2, gen=-1):
     """

@@ -548,10 +548,8 @@ Utilities for robust non-parametric statistical analysis. Fully supports **Conte
 
 ### **The Rich Result Interface (`StatsResult`)**
 All statistical functions in MoeaBench return objects inheriting from `StatsResult`. These objects provide:
-*   **`.report()` $\to$ `str`**: Returns a detailed narrative string. Useful for logging or file output.
-*   **`.report_show()`**: Displays the report appropriately for the environment.
-    *   **Terminal**: Automatically calls `print(res.report())`.
-    *   **Jupyter**: Renders a formatted **Markdown** block using `display(Markdown(...))`.
+*   **`.report()` $\to$ `str`**: Returns a detailed narrative string. By default, it also displays the report appropriately for the environment.
+*   **`.report_show(**kwargs)`**: [DEPRECATED] Use `.report()` instead.
 
 ---
 
@@ -561,8 +559,10 @@ All statistical functions in MoeaBench return objects inheriting from `StatsResu
 MoeaBench enforces a **Standardized Reporting Interface**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits from the `Reportable` mixin.
 
 ### **The Interface**
-*   **`.report(**kwargs) \to str`**: returns a detailed technical narrative explaining the object's context, data, and scientific meaning.
-*   **`.report_show(**kwargs)`**: adaptive display method (Terminal vs. Notebook).
+*   **`.report(show=True, **kwargs) \to str`**: Returns a detailed technical narrative explaining the object's context, data, and scientific meaning.
+    *   **`show=True` (Default)**: Automatically detects the environment (Console vs. Jupyter) and displays the report.
+    *   **`show=False`**: Silent mode; only returns the string without printing.
+*   **`.report_show(**kwargs)`**: [DEPRECATED] Use `.report()` instead.
 
 ### **Participating Objects**
 1.  **`mb.experiment`**: Summarizes the experimental protocol (MOP, MOEA, Status).
@@ -765,7 +765,7 @@ To wrap your own search algorithm, inherit from `BaseMoea`. This ensures that yo
 **The Contract:**
 *   **`evaluation(self)`**: This is the entry point for the search. When `exp.run()` is called, it triggers this method.
 *   **Data Return**: For full compatibility with MoeaBench's history tools, the method should return the final population and, ideally, the objective/variable trajectories.
-*   **Narrative Reporting**: If your algorithm provides internal diagnostics, consider returning a `StatsResult` object (or subclass) to leverage the `.report_show()` system.
+*   **Narrative Reporting**: If your algorithm provides internal diagnostics, consider returning a `StatsResult` object (or subclass) to leverage the `.report()` system.
 
 **Example: A Random Search Skeleton**
 ```python
@@ -840,12 +840,10 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 
 *   **`DiagnosticValue`**: The base class for single-metric results.
     *   **Numerical Fallback**: Objects can be cast directly to `float()`.
-    *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights.
+    *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights. By default, it also displays the report.
     *   **`exp.authors`**: `str` Optional author metadata for persistence.
     *   **`exp.license`**: `str` SPDX License ID (e.g., 'MIT').
     *   **`exp.year`**: `int` Publication year.
-    *   **`exp.report()`**: `str` Narrative report of configuration.
-    *   **`.report_show()`**: Renders the narrative report with rich formatting.
 
 | Result Class | Returner functions | Characteristics |
 | :--- | :--- | :--- |
@@ -933,7 +931,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
     1.  Calculates all 6 Q-Scores.
     2.  Applies the **Performance Auditor** expert system.
     3.  Classifies the algorithm into the **8-State Pathology Ontology**.
-*   **Return**: A `DiagnosticResult` object that provides the full narrative biopsy via `.report_show()`.
+*   **Return**: A `DiagnosticResult` object that provides the full narrative biopsy via `.report()`.
 
 ### **12.5. Baseline Management**
 

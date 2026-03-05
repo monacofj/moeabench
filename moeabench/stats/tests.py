@@ -43,7 +43,7 @@ class HypothesisTestResult(StatsResult):
     def significant(self) -> bool:
         return self.p_value < defaults.alpha if self.p_value is not None else False
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', False)
         name1 = getattr(self.data1, 'name', 'Group A')
         name2 = getattr(self.data2, 'name', 'Group B')
@@ -75,6 +75,7 @@ class HypothesisTestResult(StatsResult):
             else:
                 lines.append(f"\n> **Note**: Only Effect Size calculated (A12={self.perf_probability:.4f}).")
 
+            content = "\n".join(lines)
         else:
             lines = [
                 f"--- {self.name} Test Report ---",
@@ -97,7 +98,9 @@ class HypothesisTestResult(StatsResult):
             else:
                 lines.append(f"\nNote: Only Effect Size calculated (A12={self.perf_probability:.4f}).")
             
-        return "\n".join(lines)
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
 def _resolve_samples(data1, data2, metric=None, gen=-1, **kwargs):
     """
@@ -239,7 +242,7 @@ class DistMatchResult(StatsResult):
             return [k for k, v in self.results.items() if v >= self.threshold]
         return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < self.alpha]
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', False)
         space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
         status_label = 'CONSISTENT' if self.is_consistent else 'DIVERGENT'
@@ -278,6 +281,7 @@ class DistMatchResult(StatsResult):
             else:
                 lines.append("\n> **Conclusion**: The distributions are statistically equivalent across all axes.")
 
+            content = "\n".join(lines)
         else:
             lines = [
                 f"--- Distribution Match Report ({self.method.upper()}) ---",
@@ -304,7 +308,9 @@ class DistMatchResult(StatsResult):
             else:
                 lines.append("\nConclusion: The distributions are statistically equivalent across all axes.")
             
-        return "\n".join(lines)
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
 def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, threshold=None, **kwargs):
     """

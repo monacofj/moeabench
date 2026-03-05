@@ -97,14 +97,16 @@ class MetricMatrix(Reportable):
         self.is_raw = "(Raw)" in metric_name
         self.is_abs = "(Abs)" in metric_name
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
         use_md = kwargs.get('markdown', False)
         data = self._data
         if data.size == 0:
             if use_md:
-                return f"### Metric Report: {self.metric_name}\n**Status**: No data available"
-            return f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
+                content = f"### Metric Report: {self.metric_name}\n**Status**: No data available"
+            else:
+                content = f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
+            return self._render_report(content, show, **kwargs)
 
         # Distribution at the last generation
         final_dist = data[-1, :]
@@ -112,8 +114,10 @@ class MetricMatrix(Reportable):
         
         if len(valid_final) == 0:
             if use_md:
-                return f"### Metric Report: {self.metric_name}\n**Status**: All values are NaN"
-            return f"--- Metric Report: {self.metric_name} ---\n  Status: All values are NaN"
+                content = f"### Metric Report: {self.metric_name}\n**Status**: All values are NaN"
+            else:
+                content = f"--- Metric Report: {self.metric_name} ---\n  Status: All values are NaN"
+            return self._render_report(content, show, **kwargs)
 
         mean = np.mean(valid_final)
         std = np.std(valid_final)
@@ -170,6 +174,7 @@ class MetricMatrix(Reportable):
                 f"- **Generations**: {data.shape[0]}",
                 f"- **Stability**: {stability}"
             ])
+            content = "\n".join(lines)
         else:
             lines = [
                 f"--- Metric Report: {self.metric_name}{source_info} ---"
@@ -195,8 +200,9 @@ class MetricMatrix(Reportable):
                 f"    - Generations: {data.shape[0]}",
                 f"    - Stability: {stability}"
             ])
+            content = "\n".join(lines)
         
-        return "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
     def __getitem__(self, key: Union[int, slice]) -> 'MetricMatrix':
         """
@@ -944,5 +950,3 @@ def front_size(exp, mode='run', gens=None):
 
 # Alias for convenience
 nd_ratio = front_size
-
-# TODO: Add IGD, GD, etc. same pattern.

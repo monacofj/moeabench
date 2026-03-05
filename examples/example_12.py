@@ -68,7 +68,7 @@ def main():
     # 3. Consolidated FAIR Audit
     print("\nStep 2: Performing a Full Physical Engineering Audit...")
     # This aggregates all FAIR metrics (Closeness, Coverage, Gap, Regularity, Balance)
-    mb.diagnostics.fair_audit(exp1, ground_truth=gt).report_show()
+    mb.diagnostics.fair_audit(exp1, ground_truth=gt).report()
 
     # 4. Full Diagnostic Biopsy (Executive Narrative)
     print("\nStep 3: Performing Full Diagnostic Biopsy...")

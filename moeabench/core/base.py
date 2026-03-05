@@ -5,18 +5,27 @@
 
 class Reportable:
     """
-    Mixin for objects that support narrative reporting in moeabench.
+    Mixin for objects that support narrative reporting in MoeaBench.
     Provides a consistent interface for environment-aware diagnostics.
     """
-    def report(self, **kwargs) -> str:
-        """Returns a human-readable narrative report of the object's state."""
+    def report(self, show: bool = True, **kwargs) -> str:
+        """
+        Returns a human-readable narrative report of the object's state.
+        
+        Args:
+            show (bool): If True (default), displays the report appropriately 
+                         for the environment (prints or renders Markdown).
+            **kwargs: Configuration for the report generation.
+        """
         raise NotImplementedError("Subclasses must implement .report()")
 
-    def report_show(self, **kwargs):
+    def _render_report(self, content: str, show: bool = True, **kwargs) -> str:
         """
-        Displays the report appropriately for the environment.
-        Prints clean text to console in scripts, renders Markdown in Notebooks.
+        Internal helper to handle the display logic of reports.
         """
+        if not show:
+            return content
+
         # Check if running in Jupyter/IPython
         try:
             from IPython import get_ipython
@@ -24,10 +33,6 @@ class Reportable:
         except (ImportError, NameError):
             is_notebook = False
 
-        # Request appropriate format from the report() implementation
-        # (Defaulting to markdown=True for backward compatibility if not explicitly handled)
-        content = self.report(markdown=is_notebook, **kwargs)
-        
         if is_notebook:
             try:
                 from IPython.display import display, Markdown
@@ -36,18 +41,27 @@ class Reportable:
                 print(content)
         else:
             print(content)
+            
+        return content
+
+    def report_show(self, **kwargs):
+        """
+        [DEPRECATED] Displays the report appropriately for the environment.
+        Use .report(show=True) instead.
+        """
+        return self.report(show=True, **kwargs)
 
     def __repr__(self):
         # Concise representation that hints at report availability
-        return f"<{self.__class__.__name__} (call .report() or .report_show() for context)>"
+        return f"<{self.__class__.__name__} (call .report() for narrative context)>"
 
     def _repr_pretty_(self, p, cycle):
         """Rich representation for Jupyter/IPython (Text)."""
         if cycle:
             p.text(str(self))
             return
-        p.text(self.report(markdown=False))
+        p.text(self.report(show=False, markdown=False))
 
     def _repr_markdown_(self):
         """Rich representation for Jupyter/IPython (Markdown)."""
-        return self.report(markdown=True)
+        return self.report(show=False, markdown=True)

@@ -50,7 +50,7 @@ def main():
 
     # 5. Report Results
     print("\n--- Clinical Quality Report ---\n")
-    q_res.report_show()
+    q_res.report()
     
     # 6. Visual Confirmation
     print("\nDisplaying Topology Shape with Semantic Markers...")

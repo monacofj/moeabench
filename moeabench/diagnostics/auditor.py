@@ -28,7 +28,7 @@ class QualityAuditResult(Reportable):
         """Returns a dictionary of human-readable labels for each Q-Score."""
         return {name: qres.verdict for name, qres in self.scores.items()}
     
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
         if use_md:
             header = f"# Clinical Quality Audit: {self.mop_name} (K={self.k})"
@@ -57,10 +57,11 @@ class QualityAuditResult(Reportable):
             width = max(len(name) for name in self.scores.keys()) if self.scores else 0
             
             for name, qres in self.scores.items():
-                 # We call report with markdown=False and alignment width
-                 lines.append(f"  {qres.report(markdown=False, width=width)}")
+                 # We call report with show=False to get the string
+                 lines.append(f"  {qres.report(show=False, markdown=False, width=width)}")
                 
-        return "\n".join(lines)
+        content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
     def summary(self) -> str:
         """ Hierarchical clinical interpretation (The Decision Tree). """
@@ -109,7 +110,7 @@ class FairAuditResult(Reportable):
     """ Results of a physical engineering audit. """
     metrics: Dict[str, fair.FairResult]
     
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
         header = "# Physical Engineering Audit" if use_md else "\n=== PHYSICAL ENGINEERING AUDIT ==="
         lines = [header, ""]
@@ -119,7 +120,8 @@ class FairAuditResult(Reportable):
             else:
                 # Remove brackets and align colons (using 12 chars padding)
                 lines.append(f"  {name:<12} : {float(fres.value):.4f} - {fres.description}")
-        return "\n".join(lines)
+        content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
 @dataclass
 class DiagnosticResult(Reportable):
@@ -150,10 +152,10 @@ class DiagnosticResult(Reportable):
             return self.q_audit_res.summary()
         return self.description
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
         if use_md:
-            header = "# moeabench Diagnostic Biopsy"
+            header = "# MoeaBench Diagnostic Biopsy"
             status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"**Executive Summary**: {self.description}"
             sub_q = "## 1. Clinical Quality (Validation)"
@@ -165,18 +167,23 @@ class DiagnosticResult(Reportable):
             sub_q = ">> LAYER 1: CLINICAL QUALITY"
             sub_f = ">> LAYER 2: PHYSICAL EVIDENCE"
 
+        # We call nested reports with show=False to gather their strings
+        q_rep = self.q_audit_res.report(show=False, **kwargs) if self.q_audit_res else "N/A"
+        f_rep = self.fair_audit_res.report(show=False, **kwargs) if self.fair_audit_res else "N/A"
+
         lines = [
             header,
             status_line,
             exec_line,
             "",
             sub_q,
-            self.q_audit_res.report(**kwargs) if self.q_audit_res else "N/A",
+            q_rep,
             "",
             sub_f,
-            self.fair_audit_res.report(**kwargs) if self.fair_audit_res else "N/A"
+            f_rep
         ]
-        return "\n".join(lines)
+        content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
 class PerformanceAuditor:
     """ Expert system for interpreting Clinical Quality Scores. """
@@ -194,7 +201,7 @@ class PerformanceAuditor:
 
     @staticmethod
     def audit_synthesis(q_res: QualityAuditResult, 
-                        f_res: FairAuditResult) -> DiagnosticResult:
+                         f_res: FairAuditResult) -> DiagnosticResult:
         """ 
         The 'Biopsy' Logic. 
         Identifies pathologies without subjective weighting.

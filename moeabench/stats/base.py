@@ -7,10 +7,10 @@ from ..core.base import Reportable
 
 class StatsResult(Reportable):
     """
-    Base class for statistical result objects in moeabench.
+    Base class for statistical result objects in MoeaBench.
     Provides narrative reporting and consistent representation.
     """
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         """Returns a human-readable narrative report of the results."""
         raise NotImplementedError("Subclasses must implement .report()")
 
@@ -22,8 +22,10 @@ class SimpleStatsValue(StatsResult):
         
     def __float__(self): return float(self.value)
     
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', False)
         if use_md:
-            return f"**{self.name}**: {self.value:.4f}"
-        return f"--- {self.name} ---\n  Value: {self.value:.4f}"
+            content = f"**{self.name}**: {self.value:.4f}"
+        else:
+            content = f"--- {self.name} ---\n  Value: {self.value:.4f}"
+        return self._render_report(content, show, **kwargs)

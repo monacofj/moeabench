@@ -26,7 +26,7 @@ def main():
 
     # Explicitly show Data vs Reference
     mb.view.topo_shape(exp1, exp1.optimal_front(), title="Geometry: NSGA-III (Healthy)")
-    mb.diagnostics.audit(exp1).report_show()
+    mb.diagnostics.audit(exp1).report()
     
     # --- CASE 2: MOEA/D on DPF2 (Diversity Collapse Vulnerability) ---
     print("\n[Case 2] MOEA/D on DPF2 (Search Collapse Case Study)")
@@ -37,7 +37,7 @@ def main():
 
     # Visualizing the pathology (Clumping should be visible)
     mb.view.topo_shape(exp2, exp2.optimal_front(), title="Geometry: MOEA/D (Collapse)")
-    mb.diagnostics.audit(exp2).report_show()
+    mb.diagnostics.audit(exp2).report()
 
     print("\nDiagnostics showcase completed.")
 

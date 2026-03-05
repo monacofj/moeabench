@@ -99,7 +99,7 @@ class experiment(Reportable):
         """Rich representation for Jupyter/IPython."""
         return self.report(markdown=True)
 
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the experiment configuration and metadata."""
         use_md = kwargs.get('markdown', False)
         
@@ -174,25 +174,27 @@ class experiment(Reportable):
             if consensus_line:
                 lines.append(f"    - Consensus: {consensus_line}")
                 
-            return "\n".join(lines)
-
-        # Plain Text
-        lines = [
-            f"--- Experiment Report: {name} ---",
-            f"  Status:    {status}",
-            f"  Problem:   {mop_name} ({', '.join(mop_info)})",
-            f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
-            f"  Stop:      {self.stop or 'Default'}",
-            "  Metadata:",
-            f"    - Authors: {self.authors or 'Anonymous'}",
-            f"    - License: {license_str}",
-            f"    - Year:    {self.year}",
-            f"    - Runs:    {n_runs} of {self.repeat}"
-        ]
-        if consensus_line:
-            lines.append(f"    - Consensus: {consensus_line}")
+            content = "\n".join(lines)
+        else:
+            # Plain Text
+            lines = [
+                f"--- Experiment Report: {name} ---",
+                f"  Status:    {status}",
+                f"  Problem:   {mop_name} ({', '.join(mop_info)})",
+                f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
+                f"  Stop:      {self.stop or 'Default'}",
+                "  Metadata:",
+                f"    - Authors: {self.authors or 'Anonymous'}",
+                f"    - License: {license_str}",
+                f"    - Year:    {self.year}",
+                f"    - Runs:    {n_runs} of {self.repeat}"
+            ]
+            if consensus_line:
+                lines.append(f"    - Consensus: {consensus_line}")
+                
+            content = "\n".join(lines)
             
-        return "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
     @property
     def repeat(self) -> int:
         """Returns the default number of repetitions for this experiment."""

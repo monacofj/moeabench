@@ -44,8 +44,8 @@ def main():
     exp2.run(repeat=repeats)
 
     # NEW: Summary of both experimental protocols
-    exp1.report_show()
-    exp2.report_show()
+    exp1.report()
+    exp2.report()
 
     # 2. Analysis: Snapshot at Early Search (Gen 10)
     SNAPSHOT_GEN = 10
@@ -95,7 +95,7 @@ def main():
     # C. Competitive View (The Tier Duel)
     print(f"\n--- Competitive Tier Duel (F1 Pole/Gap) ---")
     res_tier = mb.stats.tier(exp1, exp2, gen=SNAPSHOT_GEN)
-    res_tier.report_show()
+    res_tier.report()
     ax_tier = mb.view.strat_tiers(res_tier, title="Competitive Perspective: Tier Duel")
     print("Competitive analysis complete.")
 

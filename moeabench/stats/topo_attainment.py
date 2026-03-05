@@ -161,7 +161,7 @@ class AttainmentDiff(StatsResult):
         """Difference in volume (S1 - S2). Positive means S1 is better."""
         return self.surf1.volume() - self.surf2.volume()
 
-    def report(self) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         v1 = self.surf1.volume()
         v2 = self.surf2.volume()
         dv = v1 - v2
@@ -174,7 +174,8 @@ class AttainmentDiff(StatsResult):
             f"  - Absolute Difference: {abs(dv):.6f}",
             f"\nDiagnosis: {better} dominates a larger objective region at this probability level."
         ]
-        return "\n".join(lines)
+        content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
     def __repr__(self):
         return f"<AttainmentDiff {self.surf1.name} vs {self.surf2.name}>"

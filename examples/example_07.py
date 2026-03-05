@@ -64,7 +64,7 @@ def main():
     #             .volume_diff     difference in attained volumes
     #             .report()        narrative summary
     res1 = mb.stats.topo_gap(exp1, exp2, level=0.5)
-    print(res1.report())
+    res1.report()
     
     # The diff object is iterable, returning (surf1, surf2) for plotting (Topographic Domain)
     mb.view.topo_shape(*res1, title="Median Attainment: NSGA-II vs SPEA2")

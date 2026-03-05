@@ -41,10 +41,12 @@ def clear_fair_cache():
 
 class FairResult(DiagnosticValue):
     """ Specialized result for Physical (Fair) metrics. """
-    def report(self, **kwargs) -> str:
+    def report(self, show: bool = True, **kwargs) -> str:
         if kwargs.get('markdown', True):
-            return f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
-        return f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
+            content = f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
+        else:
+            content = f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
+        return self._render_report(content, show, **kwargs)
 
 def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""

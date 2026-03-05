@@ -456,7 +456,7 @@ You can access the raw metric data displayed in these plots using the `mb.metric
 ```python
 # 1. Quick Performance Diagnosis
 res = mb.metrics.hypervolume(exp)
-res.report_show()
+res.report()
 ```
 
 > [!NOTE]
@@ -530,7 +530,7 @@ res = mb.stats.strata(exp)
 
 # 0. Quick Diagnosis
 # Generates a narrative summary (Markdown in notebooks, print in console)
-res.report_show()
+res.report()
 
 # 1. Basic Properties
 dist = res.frequencies()        # [0.5, 0.3, ...]: Proportion per rank
@@ -575,7 +575,7 @@ ratio = t_res.dominance_ratio      # [0.6, 0.4] means Exp1 holds 60% of Rank 1
 ## **8. Statistical Analysis (`mb.stats`)**
 
 The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. 
-A core philosophy of MoeaBench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report_show()` method that handles display for you.
+A core philosophy of MoeaBench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report()` method that handles display for you.
 
 ### **8.1. Hypothesis Testing & Significance**
 These tools answer the critical question: *"Is the difference purely due to luck?"*
@@ -590,7 +590,7 @@ res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
 
 # 2. Get a narrative diagnosis
 # Automatically prints or renders Markdown
-res.report_show() 
+res.report() 
 ```
 
 The output is something like:
@@ -625,7 +625,7 @@ To verify if two algorithms found the same regions of the objective space (e.g.,
 topo_res = mb.stats.topo_distribution(exp_baseline, exp_optimized)
 
 # Hybrid Output: renders Markdown in notebooks, prints in terminal
-topo_res.report_show()
+topo_res.report()
 ```
 
 > [!NOTE]
@@ -866,10 +866,10 @@ exp.run()
 res = mb.diagnostics.audit(exp)
 
 # 2. Display interactive report (Rich Markdown in Notebooks)
-res.report_show()
+res.report()
 
 # 3. Access narrative summary as a string (if needed)
-# text = res.report()
+# text = res.report(show=False)
 # print(res.verdicts) # {'Q_HEADWAY': 'Effective', ...}
 ```
 
@@ -884,7 +884,7 @@ q = mb.diagnostics.q_headway(exp)
 print(f"Current Q_HEADWAY: {float(q):.4f}")
 
 # Explain the clinical significance mapping
-q.report_show()
+q.report()
 ```
 
 #### **Scenario C: Manual/Raw Data**
@@ -902,7 +902,7 @@ s_k = 0.05    # Your estimated resolution scale
 
 # Calculate Physical Metric and report physical meaning
 fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
-fact.report_show()
+fact.report()
 ```
 
 
@@ -928,7 +928,7 @@ To verify if a new algorithm version is better relative to an *older* baseline (
 # Directly from mb.diagnostics
 with mb.diagnostics.use_baselines("references/baselines.json"):
     res = mb.diagnostics.audit(exp)
-    res.report_show()
+    res.report()
 ```
 # System automatically reverts to the current library baselines here
 
@@ -1067,7 +1067,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
-*   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report_show()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
+*   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 
