@@ -5,8 +5,9 @@
 
 import numpy as np
 from typing import Optional, List, Union, Tuple, Any
+from .base import Reportable
 
-class SmartArray(np.ndarray):
+class SmartArray(np.ndarray, Reportable):
     """
     Numpy array wrapper that carries metadata about the data it holds (label, axis_label, name).
     """
@@ -30,7 +31,38 @@ class SmartArray(np.ndarray):
             
         obj.name = name 
         obj.source = source
+        obj.gen = gen
         return obj
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        """Narrative report of the array metadata and statistics."""
+        use_md = kwargs.get('markdown', False)
+        name = self.name if self.name else "Array"
+        label = self.label if self.label else "Data"
+        
+        v_min = np.min(self) if self.size > 0 else np.nan
+        v_max = np.max(self) if self.size > 0 else np.nan
+        
+        if use_md:
+            header = f"### Data Report: {label} ({name})"
+            lines = [
+                header,
+                f"  - **Type**:   {self.__class__.__name__}",
+                f"  - **Shape**:  {self.shape}",
+                f"  - **Range**:  [{v_min:.4f}, {v_max:.4f}]",
+                f"  - **Gen**:    {self.gen if self.gen is not None else 'N/A'}"
+            ]
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"--- Data Report: {label} ({name}) ---",
+                f"  Shape: {self.shape}",
+                f"  Range: [{v_min:.4f}, {v_max:.4f}]",
+                f"  Gen:   {self.gen if self.gen is not None else 'N/A'}"
+            ]
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
     def __array_finalize__(self, obj: Optional[Any]) -> None:
         if obj is None: return
@@ -40,7 +72,7 @@ class SmartArray(np.ndarray):
         self.source = getattr(obj, 'source', None)
         self.gen = getattr(obj, 'gen', None)
 
-class Run:
+class Run(Reportable):
     """
     Represents a single trajectory (one run) of an evolutionary algorithm.
     
@@ -91,6 +123,34 @@ class Run:
         if base_name and self.index is not None and self.source and len(self.source) > 1:
             return f"{base_name} (run {self.index})"
         return base_name
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        """Narrative report of the run configuration and state."""
+        use_md = kwargs.get('markdown', False)
+        n_gens = len(self)
+        name = self.name or "Unnamed Run"
+        
+        if use_md:
+            header = f"### Run Report: {name}"
+            lines = [
+                header,
+                f"  - **Status**:      Executed",
+                f"  - **Generations**: {n_gens}",
+                f"  - **Seed**:        {self.seed}",
+                f"  - **Index**:       {self.index if self.index else 'N/A'}"
+            ]
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"--- Run Report: {name} ---",
+                f"  Status:      Executed",
+                f"  Generations: {n_gens}",
+                f"  Seed:        {self.seed}",
+                f"  Index:       {self.index if self.index else 'N/A'}"
+            ]
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
     def __repr__(self) -> str:
         return f"<Run generations={len(self)}>"
@@ -237,7 +297,7 @@ class Run:
         return self.pop()
 
 
-class Population:
+class Population(Reportable):
     """
     Container for individuals at a specific point in the search.
     
@@ -268,6 +328,54 @@ class Population:
         self.label = label
         self.gen = gen
         
+    def report(self, show: bool = True, **kwargs) -> str:
+        """Narrative report of the population density and bounds."""
+        use_md = kwargs.get('markdown', False)
+        n_inds = len(self)
+        m = self.objectives.shape[1]
+        n_var = self.variables.shape[1]
+        prec = kwargs.get('precision', 4)
+        
+        # Calculate non-dominance ratio
+        is_dom = self._calc_domination()
+        n_nd = np.sum(~is_dom)
+        nd_ratio = n_nd / n_inds if n_inds > 0 else 0
+        
+        # Bounds
+        obj_min = np.min(self.objectives, axis=0) if n_inds > 0 else []
+        obj_max = np.max(self.objectives, axis=0) if n_inds > 0 else []
+        
+        if use_md:
+            header = f"### Population Report: {self.label}"
+            lines = [
+                header,
+                f"  - **Size**:          {n_inds} individuals",
+                f"  - **Dimensions**:    M={m}, N={n_var}",
+                f"  - **Non-dominated**: {n_nd} ({nd_ratio*100:.1f}%)",
+                "",
+                "#### Objective Ranges",
+                "| Obj | Min | Max |",
+                "| :--- | :--- | :--- |"
+            ]
+            for i in range(m):
+                lines.append(f"| f{i+1} | {obj_min[i]:.{prec}f} | {obj_max[i]:.{prec}f} |")
+                
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"--- Population Report: {self.label} ---",
+                f"  Size:          {n_inds} individuals",
+                f"  Dimensions:    M={m}, N={n_var}",
+                f"  Non-dominated: {n_nd} ({nd_ratio*100:.1f}%)",
+                "\n  Objective Ranges:"
+            ]
+            for i in range(m):
+                lines.append(f"    f{i+1}: [{obj_min[i]:.{prec}f}, {obj_max[i]:.{prec}f}]")
+                
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
+
     @property
     def name(self) -> Optional[str]:
         """Delegates name access to the source (simulating SmartArray behavior)."""

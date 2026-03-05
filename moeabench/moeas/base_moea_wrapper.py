@@ -4,8 +4,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from ..defaults import defaults
+from ..core.base import Reportable
 
-class BaseMoeaWrapper:
+class BaseMoeaWrapper(Reportable):
     """
     Base class for MOEA wrappers that bridge between the user-facing API 
     and the internal optimization engines.
@@ -21,6 +22,51 @@ class BaseMoeaWrapper:
         self._kwargs = kwargs # Store user parameters
         self._instance = None
         self.problem = None # Set by Experiment
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        """Narrative report of the algorithm configuration and parameters."""
+        use_md = kwargs.get('markdown', False)
+        
+        # Determine algorithm name
+        name = getattr(self, 'name', self.__class__.__name__)
+        engine = self._engine_class.__name__ if self._engine_class else "Unknown"
+        
+        # Collect parameters
+        params = {
+            "Population": self.population,
+            "Generations": self.generations,
+            "Seed": self.seed
+        }
+        # Add extra kwargs
+        for k, v in self._kwargs.items():
+            params[k.capitalize()] = v
+            
+        if use_md:
+            header = f"### Algorithm Report: {name}"
+            lines = [
+                header,
+                f"  - **Engine**:     {engine}",
+                f"  - **Status**:     {'Initialized' if self._instance else 'Configured'}",
+                "",
+                "#### Hyperparameters"
+            ]
+            for k, v in params.items():
+                lines.append(f"  - **{k}**: {v}")
+                
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"--- Algorithm Report: {name} ---",
+                f"  Engine:     {engine}",
+                f"  Status:     {'Initialized' if self._instance else 'Configured'}",
+                "\n  Hyperparameters:"
+            ]
+            for k, v in params.items():
+                lines.append(f"    {k}: {v}")
+                
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
     def __call__(self, experiment, default=None, stop=None, seed=None):
         """Specializes the MOEA for a specific experiment."""

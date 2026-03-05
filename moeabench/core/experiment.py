@@ -17,12 +17,48 @@ from typing import Optional, List, Union, Any, Iterator, Dict
 import warnings
 import datetime
 
-class JoinedPopulation:
+class JoinedPopulation(Reportable):
     def __init__(self, pops: List[Population], source: Any = None, label: str = "Population") -> None:
         self.pops = pops
         self.source = source
         self.label = label
         self.name = getattr(source, 'name', 'Experiment') if source else 'Experiment'
+        
+    def report(self, show: bool = True, **kwargs) -> str:
+        """Narrative report of the aggregate cloud density and bounds."""
+        use_md = kwargs.get('markdown', False)
+        n_runs = len(self.pops)
+        n_inds = len(self)
+        
+        # Calculate global non-dominance
+        from .run import Population
+        combined = Population(self.objectives, self.variables, label=self.label)
+        n_nd = len(combined.non_dominated())
+        nd_ratio = n_nd / n_inds if n_inds > 0 else 0
+        
+        if use_md:
+            header = f"### Aggregate Population: {self.label}"
+            lines = [
+                header,
+                f"  - **Runs**:          {n_runs}",
+                f"  - **Total Items**:   {n_inds}",
+                f"  - **Consensus Size**: {n_nd} ({nd_ratio*100:.1f}% globally non-dominated)",
+                "",
+                "> [!NOTE]",
+                "> This is a virtual population aggregated from multiple stochastic trials."
+            ]
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"--- Aggregate Population: {self.label} ---",
+                f"  Runs:          {n_runs}",
+                f"  Total Items:   {n_inds}",
+                f"  Consensus:     {n_nd} ({nd_ratio*100:.1f}%)",
+                "\n  Aggregate cloud from multiple stochastic runs."
+            ]
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
         
     @property
     def objectives(self) -> SmartArray:

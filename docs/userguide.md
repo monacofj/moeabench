@@ -67,7 +67,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
 *   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
 *   **Scientific Common Goods (CC0)**: By default, experiments with unspecified authors are licensed under **CC0-1.0** to ensure maximum scientific openness and reproducibility.
-*   **Zero-Config Reporting**: Reporting functions (`.report()`) employ introspection to discover variable names and display comprehensive metadata automatically.
+*   **Universal Reporting Interface**: Every object returned by `moeabench` (Experiments, Runs, Populations, Problems, and Algorithms) implements a standard `.report()` method. This employs introspection to automatically discover context and display comprehensive metadata.
 
 ---
 
@@ -1067,7 +1067,7 @@ mb.system.export_objectives(pop, "final_pop_objs.csv")
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
-*   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical object (`Experiment`, `MetricMatrix`, `StatsResult`) inherits a standard `.report()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
+*   **Scientific Narrative (Technical Storytelling)**: The architecture prioritizes narrative clarity in data representation. The library avoids 'black boxes' by implementing a **Universal Reporting Contract**. Every analytical and structural object (`mb`, `experiment`, `Run`, `Population`, `BaseMop`, `BaseMoea`, `StatsResult`) inherits a standard `.report()` interface, augmenting raw numbers with descriptive insights to help researchers bridge the gap between calculation and interpretation.
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 

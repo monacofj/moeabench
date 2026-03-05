@@ -28,6 +28,7 @@ except (ImportError, AttributeError, Exception):
 from .core.experiment import experiment
 from .core.run import Run
 from .core.base_moea import BaseMoea
+from .core.base import Reportable
 
 # Submodules
 from . import mops
@@ -40,7 +41,7 @@ from .defaults import defaults
 from . import diagnostics
 
 # MB Wrapper for direct access
-class _MB:
+class _MB(Reportable):
     """
     Wrapper class to provide easy access via 'mb' object.
     """
@@ -91,6 +92,59 @@ class _MB:
         # Legacy Delegates (Supported Aliases)
         self.spaceplot = view.spaceplot
         self.timeplot = view.timeplot
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        """
+        [mb.report]
+        Provides a human-readable narrative report of the moeabench environment.
+        """
+        from .system import version
+        use_md = kwargs.get('markdown', False)
+        
+        v = version()
+        
+        if use_md:
+            header = f"## moeabench v{v} Analytical Toolkit"
+            lines = [
+                header,
+                "",
+                "**MoeaBench** is an extensible framework for scientific auditing of evolutionary algorithms.",
+                "",
+                "### Environment Status",
+                f"- **Version**: {v}",
+                f"- **Python**:  {sys.version.split()[0]}",
+                f"- **OS**:      {sys.platform}",
+                "",
+                "### Default Session Settings",
+                f"- **Population**:  {defaults.population}",
+                f"- **Generations**: {defaults.generations}",
+                f"- **Alpha**:        {defaults.alpha} (Stat Significance)",
+                "",
+                "> [!TIP]",
+                "> Run `mb.system.check_dependencies()` for a detailed report on installed MOEA engines and optional modules."
+            ]
+            content = "\n".join(lines)
+        else:
+            header = f"--- moeabench v{v} Analytical Toolkit ---"
+            lines = [
+                header,
+                "Scientific auditing framework for evolutionary optimization.",
+                "",
+                "Environment Status:",
+                f"  - Version: {v}",
+                f"  - Python:  {sys.version.split()[0]}",
+                f"  - OS:      {sys.platform}",
+                "",
+                "Default Session Settings:",
+                f"  - Population:  {defaults.population}",
+                f"  - Generations: {defaults.generations}",
+                f"  - Alpha:        {defaults.alpha}",
+                "",
+                "Run 'mb.system.check_dependencies()' for details on optional engines."
+            ]
+            content = "\n".join(lines)
+            
+        return self._render_report(content, show, **kwargs)
 
 mb = _MB()
 
