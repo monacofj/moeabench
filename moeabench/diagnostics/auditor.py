@@ -63,10 +63,11 @@ class QualityAuditResult(Reportable):
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
-    def summary(self) -> str:
+    def summary(self, show: bool = True, **kwargs) -> str:
         """ Hierarchical clinical interpretation (The Decision Tree). """
         s = self.scores
         def q(n): return float(s[n].value) if n in s else 0.0
+
 
         # Gate 1: Proximity (Closeness)
         q_close = q("Q_CLOSENESS")
@@ -74,7 +75,7 @@ class QualityAuditResult(Reportable):
             msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
             if q("Q_HEADWAY") >= THRESH_RESEARCH:
                 msg = f"Poor Convergence: Despite effective progress in headway, the algorithm failed to approach the optimal manifold."
-            return msg
+            return self._render_report(msg, show, **kwargs)
 
         # Gate 2: Spatial Extent (Coverage & Gap)
         q_cov = q("Q_COVERAGE")
@@ -82,7 +83,8 @@ class QualityAuditResult(Reportable):
         
         # Worst Quartile check (0.25)
         if q_cov < 0.25 and q_gap < 0.25:
-             return "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
+             content = "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
+             return self._render_report(content, show, **kwargs)
 
         # Level 3: Distribution Quality (Order)
         pathologies = []
@@ -101,9 +103,11 @@ class QualityAuditResult(Reportable):
         base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
         
         if not pathologies:
-            return f"{base} Overall structural integrity meets validation standards."
+            content = f"{base} Overall structural integrity meets validation standards."
+        else:
+            content = f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
             
-        return f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
+        return self._render_report(content, show, **kwargs)
 
 @dataclass
 class FairAuditResult(Reportable):
@@ -125,7 +129,7 @@ class FairAuditResult(Reportable):
 
 @dataclass
 class DiagnosticResult(Reportable):
-    """ High-level synthesis of an algorithmic audit (The Biopsy). """
+    """ High-level synthesis of an algorithmic audit. """
     q_audit_res: QualityAuditResult
     fair_audit_res: FairAuditResult
     status: DiagnosticStatus
@@ -146,11 +150,11 @@ class DiagnosticResult(Reportable):
         """Proxy to access Q-Score verdicts directly."""
         return self.q_audit_res.verdicts
 
-    def summary(self) -> str:
+    def summary(self, show: bool = True, **kwargs) -> str:
         """ Preferred fluid narrative for executive reporting. """
         if self.q_audit_res:
-            return self.q_audit_res.summary()
-        return self.description
+            return self.q_audit_res.summary(show=show, **kwargs)
+        return self._render_report(self.description, show, **kwargs)
 
     def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
@@ -203,7 +207,7 @@ class PerformanceAuditor:
     def audit_synthesis(q_res: QualityAuditResult, 
                          f_res: FairAuditResult) -> DiagnosticResult:
         """ 
-        The 'Biopsy' Logic. 
+        The 'Synthesis' Logic. 
         Identifies pathologies without subjective weighting.
         """
         if q_res is None or f_res is None:
