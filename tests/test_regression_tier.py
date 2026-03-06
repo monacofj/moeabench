@@ -88,7 +88,7 @@ def test_calibration_reference_reproducibility(problem_name, alg_name):
             f"Regression in {key} for {problem_name}/{alg_name}"
 
     # 4. Verify Raw Fair Metrics
-    fair_audit = report.fair_audit_res
+    fair_audit = report.fr_audit_res
     if fair_audit is None:
          pytest.fail(f"Audit failed to produce Fair Metrics for {problem_name}/{alg_name}")
 

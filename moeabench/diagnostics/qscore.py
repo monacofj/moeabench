@@ -19,7 +19,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from . import baselines
 from .utils import _resolve_diagnostic_context
-from . import fair
+from . import fr
 from .base import DiagnosticValue
 from typing import Any, Optional
 
@@ -99,7 +99,7 @@ def compute_q_wasserstein(front_samples: np.ndarray, ideal_samples: np.ndarray, 
     Definition:
         Q = d(F, R) / (d(F, R) + d(F, I))
 
-    where d is Wasserstein-1 on the same scalar FAIR metric.
+    where d is Wasserstein-1 on the same scalar FR metric.
     """
     f = np.asarray(front_samples, dtype=float)
     i = np.asarray(ideal_samples, dtype=float)
@@ -119,7 +119,7 @@ def compute_q_wasserstein(front_samples: np.ndarray, ideal_samples: np.ndarray, 
         return 1.0
     return float(d_r / denom)
 
-def _compute_q_linear(fair_val: float, ideal: float, rand50: float) -> float:
+def _compute_q_linear(fr_val: float, ideal: float, rand50: float) -> float:
     """
     Linear Q-Score formula.
     
@@ -129,9 +129,9 @@ def _compute_q_linear(fair_val: float, ideal: float, rand50: float) -> float:
     
     # Safety: If baseline is degenerate (ideal and rand are too close)
     if denom <= 1e-12:
-         return 1.0 if fair_val <= ideal + 1e-12 else 0.0
+         return 1.0 if fr_val <= ideal + 1e-12 else 0.0
 
-    num = fair_val - ideal
+    num = fr_val - ideal
     
     # Error Score (0=Ideal, 1=Random)
     error_score = num / denom
@@ -140,11 +140,11 @@ def _compute_q_linear(fair_val: float, ideal: float, rand50: float) -> float:
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
 
-def _compute_q_loglinear(fair_val: float, ideal: float, rand50: float) -> float:
+def _compute_q_loglinear(fr_val: float, ideal: float, rand50: float) -> float:
     """Log-linear variant of the Q-score mapping.
 
     Keeps the same anchors as the linear mapping (Q=1 at `ideal`, Q=0 at
-    `rand50`), but expands resolution near Q~1 when `fair_val` is small.
+    `rand50`), but expands resolution near Q~1 when `fr_val` is small.
 
         q = 1 - clip( log1p(fair-ideal) / log1p(rand50-ideal) )
 
@@ -153,10 +153,10 @@ def _compute_q_loglinear(fair_val: float, ideal: float, rand50: float) -> float:
     """
     denom_raw = rand50 - ideal
     if denom_raw <= 1e-12:
-        return 1.0 if fair_val <= ideal + 1e-12 else 0.0
+        return 1.0 if fr_val <= ideal + 1e-12 else 0.0
 
     # Ensure non-negative arguments to log1p.
-    num_raw = max(fair_val - ideal, 0.0)
+    num_raw = max(fr_val - ideal, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
         return 1.0 if num_raw <= 1e-12 else 0.0
@@ -164,7 +164,7 @@ def _compute_q_loglinear(fair_val: float, ideal: float, rand50: float) -> float:
     error_score = np.log1p(num_raw) / denom
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
-def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.ndarray) -> float:
+def _compute_q_ecdf(fr_val: float, ideal: float, rand50: float, rand_ecdf: np.ndarray) -> float:
     """
     ECDF Q-Score formula.
     
@@ -175,7 +175,7 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
     # Probability P(X < value) ~ index / N
     N = len(rand_ecdf)
     
-    idx_fair = np.searchsorted(rand_ecdf, fair_val, side='right')
+    idx_fair = np.searchsorted(rand_ecdf, fr_val, side='right')
     F_fair = idx_fair / N
     
     idx_ideal = np.searchsorted(rand_ecdf, ideal, side='right')
@@ -193,7 +193,7 @@ def _compute_q_ecdf(fair_val: float, ideal: float, rand50: float, rand_ecdf: np.
          # If fair is physically close to ideal (within epsilon), it's perfect.
          # Otherwise it's worse (0.0), assuming ideal is the target.
          # Otherwise it's worse (0.0), assuming ideal is the target.
-         val = 1.0 if abs(fair_val - ideal) <= 1e-9 else 0.0
+         val = 1.0 if abs(fr_val - ideal) <= 1e-9 else 0.0
          return val
 
     # 3. Interpolate
@@ -206,7 +206,7 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Rand50).
     """
     s_fit = s_k if s_k is not None else 1.0
-    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -217,7 +217,7 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     else:
         P, GT, s_ctx, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
         s_fit = s_ctx
-        f_val = float(fair.headway(P, GT, s_fit))
+        f_val = float(fr.headway(P, GT, s_fit))
     
     # Snap K to supported baseline grid
     k_snap = baselines.snap_k(k)
@@ -225,7 +225,7 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     # Ideal = 0.0 (Better-than-noise progress)
     _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
     
-    # Normalize baseline to match FAIR units (s_fit)
+    # Normalize baseline to match FR units (s_fit)
     rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
 
     q_val = _compute_q_loglinear(f_val, 0.0, rand50)
@@ -251,7 +251,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
         k = kwargs.get('k', 100)
     else:
         P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        res = fair.closeness(P, GT, s_fit)
+        res = fr.closeness(P, GT, s_fit)
         u_dist = res.raw_data
     
     if u_dist is None or u_dist.size == 0:
@@ -286,7 +286,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
 
 def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_COVERAGE using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -296,7 +296,7 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = float(fair.coverage(P, GT))
+        f_val = float(fr.coverage(P, GT))
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov")
@@ -305,7 +305,7 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
 
 def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_GAP using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -315,7 +315,7 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = kwargs.get('k', 100)
     else:
         P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = float(fair.gap(P, GT))
+        f_val = float(fr.gap(P, GT))
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap")
@@ -324,7 +324,7 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
 
 def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_REGULARITY using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -334,7 +334,7 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = float(fair.regularity(P, ref_distribution))
+        f_val = float(fr.regularity(P, ref_distribution))
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg")
@@ -343,7 +343,7 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
 
 def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_BALANCE using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
+    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -353,7 +353,7 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
         k = kwargs.get('k', 100)
     else:
         P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = float(fair.balance(P, centroids, ref_hist))
+        f_val = float(fr.balance(P, centroids, ref_hist))
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal")
@@ -380,9 +380,9 @@ def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
         u_vals = np.min(d, axis=1)
 
     # Apply resolution scaling
-    fair_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
+    fr_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
     
-    # 2. Get Baseline (Rand50 in FAIR space)
+    # 2. Get Baseline (Rand50 in FR space)
     k_snap = baselines.snap_k(k)
     _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
     rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
@@ -391,9 +391,9 @@ def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     denom_raw = max(rand50, 0.0)
     denom = np.log1p(denom_raw)
     if denom <= 1e-12:
-        return np.where(fair_vals <= 1e-12, 1.0, 0.0)
+        return np.where(fr_vals <= 1e-12, 1.0, 0.0)
 
-    num_raw = np.maximum(fair_vals, 0.0)
+    num_raw = np.maximum(fr_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
     return 1.0 - np.clip(error_score, 0.0, 1.0)
 
@@ -418,7 +418,7 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
     # Apply resolution scaling
     u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
     
-    # 2. Get Baseline (Rand50 in FAIR space)
+    # 2. Get Baseline (Rand50 in FR space)
     k_snap = baselines.snap_k(k)
     _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness")
 

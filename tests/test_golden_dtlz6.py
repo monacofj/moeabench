@@ -45,28 +45,27 @@ class TestGoldenDTLZ6(unittest.TestCase):
         self.assertAlmostEqual(s_k, EXPECTED_S_K, places=15, 
                                msg="Critical: s_K runtime calculation diverged from Golden Value.")
 
-    def test_baseline_v3_migration(self):
-        """Verifies that baselines_v3.json contains the correctly rescaled fit.rand50."""
-        # Load v3 JSON directly
-        v3_path = os.path.join(os.path.dirname(__file__), "moeabench/diagnostics/resources/baselines_v3.json")
+    def test_baseline_v0131_integrity(self):
+        """Verifies that baselines_v0.13.1.json contains the valid structure and metrics."""
+        # Load JSON directly
+        v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines_v0.13.1.json")
         
-        with open(v3_path, 'r') as f:
+        with open(v_path, 'r') as f:
             data = json.load(f)
             
-        # Traverse to DTLZ6 -> 200 -> fit -> rand50
+        # Traverse to DTLZ6 -> 200 -> closeness -> rand50
         try:
-            rand50 = data["problems"]["DTLZ6"]["200"]["fit"]["rand50"]
+            rand50 = data["problems"]["DTLZ6"]["200"]["closeness"]["rand50"]
         except KeyError:
-            self.fail("DTLZ6/200/fit/rand50 missing from baselines_v3.json")
+            self.fail("DTLZ6/200/closeness/rand50 missing from baselines_v0.13.1.json")
             
-        # Golden Value from Plan (s_gt/s_k * 209 = ~23.8)
-        # Expected: 23.827020470485664
-        EXPECTED_RAND = 23.827020470485664
+        # Updated Golden Value for closeness rand50
+        EXPECTED_RAND = 1.995441442341559
         
-        print(f"[Golden Check] V3 fit.rand50 (DTLZ6, K=200): {rand50}")
+        print(f"[Golden Check] V0.13.1 closeness.rand50 (DTLZ6, K=200): {rand50}")
         # Allow small float wiggle room due to arch differences, but should be tiny
         self.assertAlmostEqual(rand50, EXPECTED_RAND, places=8,
-                               msg="Critical: V3 Baseline migration failed to match Golden Value.")
+                               msg="Critical: Baseline integrity check failed to match Expected Value.")
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-moeabench Clinical Fair Metrics (Physical Layer)
+moeabench Clinical FR Metrics (Physical Layer)
 ================================================
 
-This module implements the "Fair" / "Clinical" metrics logic.
+This module implements the "FR" / "Clinical" metrics logic.
 These metrics are:
 1.  Physically grounded (Distances, Divergences).
 2.  Corrected for basic scale artifacts (e.g., divided by resolution).
@@ -39,14 +39,18 @@ def clear_fair_cache():
     from .baselines import clear_baselines_cache
     clear_baselines_cache()
 
-class FairResult(DiagnosticValue):
-    """ Specialized result for Physical (Fair) metrics. """
+class FrResult(DiagnosticValue):
+    """ Specialized result for Physical (FR) metrics. """
     def report(self, show: bool = True, **kwargs) -> str:
         if kwargs.get('markdown', True):
             content = f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
         else:
             content = f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"
         return self._render_report(content, show, **kwargs)
+
+# Compatibility Alias
+FairResult = FrResult
+
 
 def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     r"""
@@ -59,7 +63,7 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
     
     if P is None or GT is None or len(P) == 0:
-        return FairResult(np.inf, "HEADWAY", "No points to evaluate.", raw_data=np.array([]))
+        return FrResult(np.inf, "HEADWAY", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances to GT (Optimized via KDTree if GT is large)
     if len(GT) > 1000:
@@ -77,14 +81,14 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
     f_val = float(np.percentile(u_vals, 95))
     
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="HEADWAY",
         description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth (95th percentile).",
         raw_data=u_vals
     )
 
-def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FairResult:
+def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FrResult:
     """
     [Smart API] Calculates the distribution of normalized distances to GT.
     
@@ -93,7 +97,7 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return FairResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
+        return FrResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
         
     # 1. Compute Distances to GT (Optimized via KDTree if GT is large)
     if len(GT) > 1000:
@@ -108,7 +112,7 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
     f_val = float(np.median(u_vals))
     
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="CLOSENESS",
         description="Median distance to ground truth manifold.",
@@ -126,7 +130,7 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return FairResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
+        return FrResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
     if len(P) > 1000:
@@ -139,7 +143,7 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     
     # 2. Mean (IGD)
     f_val = float(np.mean(min_d))
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="COVERAGE",
         description=f"Average distance from target manifold to nearest solution is {f_val:.4f}.",
@@ -157,7 +161,7 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
 
     if P is None or GT is None or len(P) == 0:
-        return FairResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
+        return FrResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
     if len(P) > 1000:
@@ -170,7 +174,7 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     
     # 2. Percentile 95 (Robust Max)
     f_val = float(np.percentile(min_d, 95))
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="GAP",
         description=f"Largest hole detected on the manifold is {f_val:.4f}.",
@@ -190,7 +194,7 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     U_ref = ref_distribution
 
     if P is None or len(P) < 2 or U_ref is None or len(U_ref) < 2:
-        return FairResult(np.inf, "REGULARITY", "Insufficient points for regularity.", raw_data=np.array([]))
+        return FrResult(np.inf, "REGULARITY", "Insufficient points for regularity.", raw_data=np.array([]))
 
     # 1. Nearest Neighbors within P (excluding self)
     d_p = cdist(P, P)
@@ -204,7 +208,7 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     
     # 3. Wasserstein Distance
     f_val = float(wasserstein_distance(nn_p, nn_u))
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="REGULARITY",
         description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance).",
@@ -222,7 +226,7 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
 
     if P is None or len(P) == 0 or centroids is None or ref_hist is None:
-        return FairResult(1.0, "BALANCE", "Missing context for balance.", raw_data=np.array([]))
+        return FrResult(1.0, "BALANCE", "Missing context for balance.", raw_data=np.array([]))
 
     # 1. Assign points to clusters
     d = cdist(P, centroids)
@@ -236,7 +240,7 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     # 3. JS Divergence
     # Base 2 gives range [0, 1] for JS
     f_val = float(jensenshannon(hist_p, ref_hist, base=2.0))
-    return FairResult(
+    return FrResult(
         value=f_val,
         name="BALANCE",
         description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence).",
