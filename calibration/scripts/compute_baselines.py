@@ -43,99 +43,7 @@ import re
 
 DATA_DIR = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
 STATS_FILE = os.path.join(DATA_DIR, "generation_stats.csv")
-OUTPUT_FILE = os.path.join(PROJ_ROOT, "calibration/reports/baselines_v0.13.1.csv")
-
-def _analyze_group(mop_name, alg_name, int_name, group_files, durations):
-    """Worker function for parallel analysis."""
-    try:
-        # Instantiate MOP and get Ground Truth
-        try:
-            mop = getattr(mb.mops, mop_name)(M=3)
-        except TypeError:
-            mop = getattr(mb.mops, mop_name)(M=3, D=2)
-        
-        # Increase GT density for DPF curves to avoid "HV > 100%" artifact
-        n_gt_points = 10000 if "DPF" in mop_name else 2000
-        
-        exp_ref = mb.experiment(mop=mop)
-        F_opt = exp_ref.optimal(n_points=n_gt_points).objs
-        
-        # Load all runs in the group
-        all_fronts = []
-        group_durations = []
-        for f in group_files:
-            df_run = pd.read_csv(os.path.join(DATA_DIR, f))
-            all_fronts.append(df_run.values)
-            if f in durations:
-                group_durations.append(durations[f])
-        
-        # Determine normalization bounds
-        min_val, max_val = normalize([F_opt], all_fronts)
-        
-        # Hypervolume Reference
-        ref_point_norm = 1.1
-        hv_opt_engine = GEN_hypervolume([F_opt], 3, min_val, max_val, ref_point=ref_point_norm)
-        hv_opt = float(hv_opt_engine.evaluate()[0])
-        
-        # IGD
-        from moeabench.metrics.GEN_igd import GEN_igd
-        igd_values = [GEN_igd([F_obs], F_opt).evaluate()[0] for F_obs in all_fronts]
-        igd_mean = np.mean(igd_values)
-        igd_std = np.std(igd_values)
-
-        # GD
-        from moeabench.metrics.GEN_gd import GEN_gd
-        gd_values = [GEN_gd([F_obs], F_opt).evaluate()[0] for F_obs in all_fronts]
-        gd_mean = np.mean(gd_values)
-        gd_std = np.std(gd_values)
-
-        # SP
-        def calc_spacing(F):
-            if len(F) < 2: return 0.0
-            from scipy.spatial.distance import cdist
-            d = cdist(F, F)
-            np.fill_diagonal(d, np.inf)
-            d_min = np.min(d, axis=1)
-            return np.sqrt(np.mean((d_min - np.mean(d_min))**2))
-
-        sp_values = [calc_spacing(F_obs) for F_obs in all_fronts]
-        sp_mean = np.mean(sp_values)
-        sp_std = np.std(sp_values)
-        
-        # KS
-        combined_front = np.vstack(all_fronts)
-        topo_match = mb.stats.topo_distribution(combined_front, F_opt)
-        ks_p_val = np.mean(list(topo_match.p_values.values()))
-        
-        # HV
-        hv_engine = GEN_hypervolume(all_fronts, 3, min_val, max_val, ref_point=ref_point_norm)
-        hv_results = hv_engine.evaluate()
-        hv_mean_raw = np.mean(hv_results)
-        
-        ref_cube_vol = ref_point_norm ** 3
-        hv_rel = hv_mean_raw / ref_cube_vol
-        hv_abs = hv_mean_raw / hv_opt if hv_opt > 0 else 0
-        
-        avg_duration = np.mean(group_durations) if group_durations else 0
-        pop = 52 if int_name == "light" else 200
-        gen = 100 if int_name == "light" else 1000
-        
-        return {
-            "MOP": mop_name, "Algorithm": alg_name, "Intensity": int_name,
-            "Pop": pop, "Gen": gen,
-            "IGD_mean": igd_mean, "IGD_std": igd_std,
-            "GD_mean": gd_mean, "GD_std": gd_std,
-            "SP_mean": sp_mean, "SP_std": sp_std,
-            "KS_p_val": ks_p_val,
-            "HV_raw": hv_mean_raw, "HV_rel": hv_rel, "HV_abs": hv_abs,
-            "H_opt": hv_opt, "H_diff": hv_opt - hv_mean_raw,
-            "Ideal_1": min_val[0], "Ideal_2": min_val[1], "Ideal_3": min_val[2],
-            "Nadir_1": max_val[0], "Nadir_2": max_val[1], "Nadir_3": max_val[2],
-            "Time_sec": avg_duration
-        }
-    except Exception as e:
-        print(f"FAILED: {mop_name} | {alg_name}: {str(e)}")
-        return None
+OUTPUT_FILE = os.path.join(PROJ_ROOT, "calibration/reports/baselines_v0.12.0.csv")
 
 def compute_baselines():
     if not os.path.exists(DATA_DIR):
@@ -168,23 +76,147 @@ def compute_baselines():
 
     results = []
     total_groups = len(groups)
+    current_group = 0
 
     print(f"=== moeabench Baseline Analysis (Phase 1B-B) ===")
-    print(f"Processing {total_groups} experiment groups in parallel...")
+    print(f"Processing {total_groups} experiment groups...")
     print("-" * 70)
 
-    from concurrent.futures import ProcessPoolExecutor
-
-    with ProcessPoolExecutor() as executor:
-        futures = []
-        for (mop_name, alg_name, int_name), group_files in groups.items():
-            futures.append(executor.submit(_analyze_group, mop_name, alg_name, int_name, group_files, durations))
+    for (mop_name, alg_name, int_name), group_files in groups.items():
+        current_group += 1
+        print(f"[{current_group}/{total_groups}] Analyzing {mop_name} | {alg_name} | {int_name} ... ", end="", flush=True)
         
-        for i, future in enumerate(futures):
-            res = future.result()
-            if res:
-                results.append(res)
-                print(f"[{i+1}/{total_groups}] {res['MOP']} | {res['Algorithm']} | {res['Intensity']} ... Done.")
+        try:
+            # Instantiate MOP and get Ground Truth
+            try:
+                mop = getattr(mb.mops, mop_name)(M=3)
+            except TypeError:
+                mop = getattr(mb.mops, mop_name)(M=3, D=2)
+            
+            # Increase GT density for DPF curves to avoid "HV > 100%" artifact
+            # DPF fronts are 1D curves in 3D space, requiring higher density than DTLZ surfaces.
+            n_gt_points = 10000 if "DPF" in mop_name else 2000
+            
+            exp_ref = mb.experiment(mop=mop)
+            F_opt = exp_ref.optimal(n_points=n_gt_points).objs
+            
+            # Load all runs in the group first to determine bounds
+            all_fronts = []
+            group_durations = []
+            for f in group_files:
+                df_run = pd.read_csv(os.path.join(DATA_DIR, f))
+                all_fronts.append(df_run.values)
+                if f in durations:
+                    group_durations.append(durations[f])
+            
+            # Determine normalization bounds (Ground Truth + All Observations)
+            min_val, max_val = normalize([F_opt], all_fronts)
+            
+            # Theoretical max HV
+            # We use a Reference Point of 1.1 (Normalized Space) to ensure boundary points contribution
+            ref_point_norm = 1.1
+            hv_opt_engine = GEN_hypervolume([F_opt], 3, min_val, max_val, ref_point=ref_point_norm)
+            hv_opt = float(hv_opt_engine.evaluate()[0])
+
+            # Sanity Warning for Topic A (HV > 100%)
+            # If Ref Point is 1.1, the bounding box volume is 1.1^3 ~ 1.331.
+            # HV can lawfully be > 1.0. We verify if it exceeds the bounding box.
+            max_theoretical_vol = ref_point_norm ** 3
+            if hv_opt > max_theoretical_vol:
+                 print(f"  WARNING: HV_opt ({hv_opt:.4f}) > Max Theoretical Volume ({max_theoretical_vol:.4f})! Normalization Error?")
+            
+            # 1. IGD Metrics
+            igd_values = []
+            for F_obs in all_fronts:
+                from moeabench.metrics.GEN_igd import GEN_igd
+                engine = GEN_igd([F_obs], F_opt)
+                igd_values.append(engine.evaluate()[0])
+            
+            igd_mean = np.mean(igd_values)
+            igd_std = np.std(igd_values)
+
+            # 2. GD Metrics
+            gd_values = []
+            for F_obs in all_fronts:
+                from moeabench.metrics.GEN_gd import GEN_gd
+                engine = GEN_gd([F_obs], F_opt)
+                gd_values.append(engine.evaluate()[0])
+            
+            gd_mean = np.mean(gd_values)
+            gd_std = np.std(gd_values)
+
+            # 3. SP (Spacing) Metrics
+            def calc_spacing(F):
+                if len(F) < 2: return 0.0
+                from scipy.spatial.distance import cdist
+                d = cdist(F, F)
+                np.fill_diagonal(d, np.inf)
+                d_min = np.min(d, axis=1)
+                d_mean = np.mean(d_min)
+                return np.sqrt(np.mean((d_min - d_mean)**2))
+
+            sp_values = [calc_spacing(F_obs) for F_obs in all_fronts]
+            sp_mean = np.mean(sp_values)
+            sp_std = np.std(sp_values)
+            
+            # 4. KS Metrics (Topology)
+            # Combine all fronts for a high-fidelity distribution check
+            combined_front = np.vstack(all_fronts)
+            topo_match = mb.stats.topo_distribution(combined_front, F_opt)
+            ks_p_val = np.mean(list(topo_match.p_values.values()))
+            
+            # 5. HV Metrics
+            hv_engine = GEN_hypervolume(all_fronts, 3, min_val, max_val, ref_point=ref_point_norm)
+            hv_results = hv_engine.evaluate()
+            hv_mean_raw = np.mean(hv_results)
+            hv_diff = hv_opt - hv_mean_raw
+            
+            # --- Nomenclature Standardization ---
+            # HV_raw: Physical volume dominated (Ref Point 1.1)
+            # HV_rel: Aggregated Efficiency against Bounding Box (Raw / ref_cube_vol)
+            # HV_abs: Theoretical Optimality against Ground Truth (Raw / HV_opt)
+            
+            ref_cube_vol = ref_point_norm ** 3
+            
+            # Calculate metrics
+            hv_rel = hv_mean_raw / ref_cube_vol
+            hv_abs = hv_mean_raw / hv_opt if hv_opt > 0 else 0
+            
+            # 6. Meta
+            avg_duration = np.mean(group_durations) if group_durations else 0
+            
+            # Detect Pop/Gen from filename or metadata (we know the defaults)
+            pop = 52 if int_name == "light" else 200
+            gen = 100 if int_name == "light" else 1000
+            
+            res_row = {
+                "MOP": mop_name,
+                "Algorithm": alg_name,
+                "Intensity": int_name,
+                "Pop": pop,
+                "Gen": gen,
+                "IGD_mean": igd_mean,
+                "IGD_std": igd_std,
+                "GD_mean": gd_mean,
+                "GD_std": gd_std,
+                "SP_mean": sp_mean,
+                "SP_std": sp_std,
+                "KS_p_val": ks_p_val,
+                "HV_raw": hv_mean_raw,
+                "HV_rel": hv_rel,
+                "HV_abs": hv_abs,
+                "H_opt": hv_opt,
+                "H_diff": hv_diff,
+                "Ideal_1": min_val[0], "Ideal_2": min_val[1], "Ideal_3": min_val[2],
+                "Nadir_1": max_val[0], "Nadir_2": max_val[1], "Nadir_3": max_val[2],
+                "Time_sec": avg_duration
+            }
+            results.append(res_row)
+            print("Done.")
+            
+        except Exception as e:
+            print(f"FAILED: {str(e)}")
+            continue
 
     if results:
         pd.DataFrame(results).to_csv(OUTPUT_FILE, index=False)

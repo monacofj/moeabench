@@ -6,9 +6,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Any, Dict, Optional, Tuple, List, Union
-from .base import Reportable
 
-class BaseMoea(ABC, Reportable):
+class BaseMoea(ABC):
     """
     Abstract Base Class for all Multi-Objective Evolutionary Algorithms (MOEAs).
     
@@ -45,50 +44,6 @@ class BaseMoea(ABC, Reportable):
         self.generations = generations
         self.seed = seed
         self.stop = None
-
-    def report(self, show: bool = True, **kwargs) -> str:
-        """Narrative report of the algorithm configuration and parameters."""
-        use_md = kwargs.get('markdown', False)
-        
-        # Determine algorithm name
-        name = getattr(self, 'name', self.__fullname__)
-        
-        # Collect parameters
-        params = {
-            "Population": self.population,
-            "Generations": self.generations,
-            "Seed": self.seed
-        }
-            
-        if use_md:
-            header = f"### Algorithm Report: {name}"
-            lines = [
-                header,
-                f"  - **Type**:       {self.__class__.__name__}",
-                "",
-                "#### Hyperparameters"
-            ]
-            for k, v in params.items():
-                lines.append(f"  - **{k}**: {v}")
-                
-            content = "\n".join(lines)
-        else:
-            lines = [
-                f"--- Algorithm Report: {name} ---",
-                f"  Type:       {self.__class__.__name__}",
-                "\n  Hyperparameters:"
-            ]
-            for k, v in params.items():
-                lines.append(f"    {k}: {v}")
-                
-            content = "\n".join(lines)
-            
-        return self._render_report(content, show, **kwargs)
-
-    @property
-    def __fullname__(self) -> str:
-        """Returns the full name of the algorithm class."""
-        return f"{self.__class__.__module__}.{self.__class__.__name__}"
 
     @abstractmethod
     def evaluation(self) -> Any:

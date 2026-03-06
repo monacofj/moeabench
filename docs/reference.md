@@ -175,10 +175,6 @@ Represents a single optimization trajectory.
     *   `gen` (*int*): Generation index. Defaults to `-1`.
 *   **Returns**: `SmartArray`.
 
-#### **`.report(show=True, **kwargs)`**
-*   **Description**: Returns a narrative summary of the run (Seed, Index, Gens).
-*   **Returns**: `str`.
-
 <a name="smartarray-and-population"></a>
 ### **1.3. Population (`mb.core.run.Population`)**
 A container for a set of solutions.
@@ -197,16 +193,10 @@ A container for a set of solutions.
 *   **Description**: Performs Non-Dominated Sorting (NDS).
 *   **Returns**: `np.ndarray` (1-based integer ranks).
 
-#### **`.report(show=True, **kwargs)`**
-*   **Description**: Narrative report of population density, ranges, and non-dominance ratio.
-*   **Returns**: `str`.
-
 ### **1.4. SmartArray**
 An annotated NumPy array subclass (`np.ndarray`) that encapsulates lineage and usage metadata.
 *   **Metadata**: `.name`, `.label`, `.gen`, `.source`.
 *   **Behavior**: Behaves exactly like a standard NumPy array for all math operations.
-*   **Methods**:
-    *   **`.report()`**: Narrative summary of metadata and physical range ($[\min, \max]$).
 
 ---
 
@@ -371,17 +361,6 @@ When using `topo_shape` or standard plotters, the following rules apply to maint
 
 ## **4. MOPs (`mb.mops.*`)**
 
-Standard problem benchmarks.
-
-**Methods:**
-
-#### **`.report(show=True, **kwargs)`**
-*   **Description**: Narrative report of the problem configuration (M, N) and **Calibration status**.
-*   **Returns**: `str`.
-
-#### **`.calibrate(**kwargs)`**
-*   **Description**: Calculates or loads clinical baselines for this problem instance.
-
 ### **DTLZ Family**
 `DTLZ1` - `DTLZ9`.
 *   **Args**: `M` (Objectives), `K` (Distance vars), `**kwargs`.
@@ -412,12 +391,6 @@ prob = mb.mops.DPF1(M=3, D=2)
 ## **5. Algorithms (`mb.moeas.*`)**
 
 Supported: `NSGA3`, `MOEAD`, `SPEA2`, `RVEA`.
-
-**Methods:**
-
-#### **`.report(show=True, **kwargs)`**
-*   **Description**: Narrative report of the algorithm configuration and hyperparameters (Population, Seed, etc.).
-*   **Returns**: `str`.
 
 **Constructor:**
 ```python

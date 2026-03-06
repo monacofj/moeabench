@@ -6,9 +6,8 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Optional, Dict, Any, Union
-from ..core.base import Reportable
 
-class BaseMop(ABC, Reportable):
+class BaseMop(ABC):
     """
     Abstract Base Class for all Multi-Objective Problems (MOPs) in moeabench.
     """
@@ -33,46 +32,6 @@ class BaseMop(ABC, Reportable):
 
         # Validation hook
         self.validate()
-
-    def report(self, show: bool = True, **kwargs) -> str:
-        """Narrative report of the problem configuration and calibration status."""
-        use_md = kwargs.get('markdown', False)
-        
-        # Check calibration status (look for cached baselines)
-        is_calibrated = False
-        if hasattr(self, 'get_CACHE'):
-            try:
-                # get_CACHE is typically provided by the @problem decorator
-                cache = self.get_CACHE()
-                is_calibrated = cache is not None
-            except:
-                pass
-        
-        if use_md:
-            header = f"### Problem Report: {self.name}"
-            lines = [
-                header,
-                f"  - **Type**:          {self.__class__.__name__}",
-                f"  - **Objectives (M)**: {self.M}",
-                f"  - **Variables (N)**:  {self.N if self.N is not None else 'Dynamic'}",
-                f"  - **Calibration**:    {'v0.13.1 Active' if is_calibrated else 'Missing (Run mb.calibrate)'}",
-                "",
-                "> [!TIP]",
-                "> Calibrated problems support Q-Scores and Clinical Radar plots."
-            ]
-            content = "\n".join(lines)
-        else:
-            lines = [
-                f"--- Problem Report: {self.name} ---",
-                f"  Type:          {self.__class__.__name__}",
-                f"  Objectives:    {self.M}",
-                f"  Variables:     {self.N if self.N is not None else 'Dynamic'}",
-                f"  Calibration:   {'Active' if is_calibrated else 'Missing'}",
-                "\n  Use mb.calibrate(mop) to enable clinical diagnostics."
-            ]
-            content = "\n".join(lines)
-            
-        return self._render_report(content, show, **kwargs)
 
     def validate(self):
         """
