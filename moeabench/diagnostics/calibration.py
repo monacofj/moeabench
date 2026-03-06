@@ -156,16 +156,27 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
         hist_ref = np.bincount(lab_u, minlength=len(c_cents)).astype(float)
         hist_ref /= np.sum(hist_ref)
         
-        # CLOSENESS (Blur)
+        # CLOSENESS (Blur + Ideal Residue)
         sigma, u_blur = _calibrate_and_blur(gt, normals, s_fit, SEED_START + k)
         u_blur_ecdf = _downsample_ecdf(np.sort(u_blur))
+        
+        # PROPOSAL: Calculate Finite-Resolution Ideal Residue (epsilon)
+        # We need a fresh analytical sample if available, or a different FPS subset.
+        # Protocol: If GT is large enough, use a different FPS slice. 
+        # Better: use a higher seed for get_ref_uk to simulate a "perfect" but non-identical front.
+        u_ideal_sample = base.get_ref_uk(gt, k, seed=999) 
+        d_ideal = cdist(u_ideal_sample, gt)
+        min_d_ideal = np.min(d_ideal, axis=1)
+        u_ideal_vals = min_d_ideal / s_fit if s_fit > 1e-12 else min_d_ideal
+        ideal_res = float(np.median(u_ideal_vals))
         
         # Metrics storage
         k_data = {
             "closeness": {
                 "uni50": 0.0,
                 "rand50": float(np.median(u_blur)),
-                "rand_ecdf": [float(x) for x in u_blur_ecdf]
+                "rand_ecdf": [float(x) for x in u_blur_ecdf],
+                "ideal_res": ideal_res
             }
         }
         

@@ -95,6 +95,14 @@ def load_offline_baselines() -> Dict[str, Any]:
     try:
         with open(BASELINE_JSON_PATH, "r") as f:
             full_data = json.load(f)
+            
+        # 1.5 Populate GT registry from primary data if present
+        if "problems" in full_data:
+            if "_gt_registry" not in full_data:
+                full_data["_gt_registry"] = {}
+            for prob_id, prob_data in full_data["problems"].items():
+                if "gt_reference" in prob_data:
+                    full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
     except Exception as e:
         raise UndefinedBaselineError(f"Failed to parse primary baseline file: {e}")
     

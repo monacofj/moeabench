@@ -109,13 +109,28 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
         min_d = np.min(d, axis=1) # (N,)
     
     # 2. Normalize by Resolution
-    u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
+    u_vals_raw = min_d / s_fit if s_fit > 1e-12 else min_d
+    
+    # 3. Apply Plausible Ideal Correction (Residue Subtraction)
+    # We try to find if a baseline with 'ideal_res' exists for this context
+    from . import baselines as base
+    ideal_res = 0.0
+    try:
+        # Resolve context to get problem name and k
+        _, _, _, problem_name, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        if problem_name and k:
+            b_data = base.get_baseline_data(problem_name, k, "closeness")
+            ideal_res = b_data.get("ideal_res", 0.0)
+    except:
+        pass
+    
+    u_vals = np.maximum(0.0, u_vals_raw - ideal_res)
     f_val = float(np.median(u_vals))
     
     return FrResult(
         value=f_val,
         name="CLOSENESS",
-        description="Median distance to ground truth manifold.",
+        description=f"Median distance to ground truth manifold (corrected by ideal residue: {ideal_res:.4f}).",
         raw_data=u_vals
     )
 

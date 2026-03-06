@@ -34,9 +34,8 @@ if PROJ_ROOT not in sys.path:
 # Paths
 DATA_DIR = os.path.join(PROJ_ROOT, "calibration/data/calibration_data")
 GT_DIR = os.path.join(PROJ_ROOT, "calibration/data/ground_truth")
-BASELINE_FILE = os.path.join(PROJ_ROOT, "calibration/reports/baselines_v0.12.0.csv")
-AUDIT_JSON = os.path.join(PROJ_ROOT, "calibration/reports/audit_v0.12.0.json")
-
+BASELINE_FILE = os.path.join(PROJ_ROOT, "calibration/reports/baselines_v0.13.0.csv")
+AUDIT_JSON = os.path.join(PROJ_ROOT, "calibration/reports/audit_v0.13.1.json")
 def _load_nd_points(csv_path):
     pts = pd.read_csv(csv_path).values
     if pts.shape[1] > 3:
@@ -51,7 +50,7 @@ def _load_nd_points(csv_path):
     return pts
 
 def _aggregate_clinical(mop_name, alg, F_opt):
-    import moeabench.diagnostics.fair as fair
+    import moeabench.diagnostics.fr as fair
     import moeabench.diagnostics.qscore as qscore
     import moeabench.diagnostics.baselines as base
     from moeabench.metrics.GEN_igdplus import GEN_igdplus

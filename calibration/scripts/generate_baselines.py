@@ -37,13 +37,13 @@ if PROJ_ROOT not in sys.path:
 import json
 import numpy as np
 import moeabench.diagnostics.baselines as base
-import moeabench.diagnostics.fair as fair
+import moeabench.diagnostics.fr as fair
 from scipy.spatial.distance import cdist
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 
 # Configuration
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines_v0.12.0.json")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines_v0.13.1.json")
 N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
 N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
@@ -268,6 +268,13 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
         else:
             u_blur_ecdf = u_blur_sorted
             
+        # --- GENERATION (IDEAL RESIDUE) ---
+        # Calculate Finite-Resolution Ideal Residue (epsilon)
+        u_ideal_sample = base.get_ref_uk(gt_norm, k, seed=999)
+        d_ideal, _ = tree.query(u_ideal_sample, k=1)
+        u_ideal_vals = d_ideal / s_fit if s_fit > 1e-12 else d_ideal
+        ideal_res = float(np.median(u_ideal_vals))
+            
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
         rand_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
@@ -318,12 +325,16 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             "uni50": 0.0,
             "rand50": float(med_blur),
             "rand_ecdf": [float(x) for x in u_blur_ecdf],
+            "ideal_res": ideal_res,
             "sigma": float(sigma),
             "p95": float(p95_blur),
             "seed": SEED_START + k
         }
         
         problem_data[k_str] = k_data
+        
+    # Include GT reference for offline auditing
+    problem_data["gt_reference"] = gt_norm.tolist()
         
     return problem_data
 
