@@ -9,8 +9,8 @@ moeabench Regression Tier Testing Suite
 This tier contains strict numerical reproducibility tests against established 
 Calibration Reference Data.
 
-Data Source 1 (Points):  `tests/calibration_reference_audit_v0.9.json`
-Data Source 2 (Targets): `tests/calibration_reference_targets.json`
+Data Source 1 (Points):  `tests/calibration_reference_audit_v0.13.1.json`
+Data Source 2 (Targets): `tests/calibration_reference_targets_v0.13.1.json`
 
 Logic: Verifies that the current diagnostic pipeline reproduces the reference
 clinical scores and physical metrics for a variety of MOPs and MOEAs.
@@ -25,8 +25,8 @@ from moeabench.diagnostics import auditor, baselines
 from moeabench import metrics
 
 # Load Calibration Reference Data (Module Level)
-DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.9.json")
-TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "..", "calibration", "data", "calibration_reference_targets.json")
+DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.13.1.json")
+TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_targets_v0.13.1.json")
 
 print(f"Loading Calibration Reference Data from {DATA_JSON_PATH}...")
 with open(DATA_JSON_PATH, "r") as f:
