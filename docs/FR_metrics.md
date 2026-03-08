@@ -102,9 +102,9 @@ Interpretation: $s_K$ is a *typical spacing* expected for a set of $K$ points th
 
 ### 3.3 Where $s_K$ is used
 In the current MoeaBench diagnostics pipeline, $s_K$ plays a central role in:
-- `HEADWAY` (and thus `Q_HEADWAY`),
-- `CLOSENESS` (and thus `Q_CLOSENESS`),
-and it is also used when generating baseline distributions (notably the **GT-blur** baseline for closeness).
+- `CLOSENESS` (as the fundamental ruler),
+- `HEADWAY` (as an intermediate normalization before the random-ratio),
+and it is also used when generating baseline distributions (notably the **Half-Normal** baseline for closeness).
 
 Other FR metrics (coverage, gap, regularity, balance) are defined directly in objective-space terms or in probability/divergence terms, and are interpreted clinically through their own baselines.
 
@@ -117,29 +117,23 @@ FR metrics are “physical facts.” They are intentionally **not** mapped into 
 
 All FR metrics are implemented in `moeabench.diagnostics.fair`.
 
-### 4.1 FR `HEADWAY` — search progress relative to the null hypothesis (resolution units)
+### 4.1 FR `HEADWAY` — residual search error relative to the null hypothesis (adimensional)
 **Purpose.** Measure the algorithmic progress (advancement) of the optimizer toward the GT manifold, relative to the expected distance of a random search (the null hypothesis) in the objective space.
 
 **Definition.**
-Let $GD_{95}(P \to R)$ be the 95th percentile distance of the produced set $P$ to the reference $R$. The `HEADWAY` metric captures this result in resolution units:
+Let $GD_{95}(P \to R)$ be the 95th percentile distance of the produced set $P$ to the reference $R$ (normalized by $s_K$). Let $GD_{95}(Random \to R)$ be the same distance for a random bounding-box search. The `HEADWAY` metric is the ratio of these two:
 $$
-\mathrm{HEADWAY}(P,R) = \frac{GD_{95}(P \to R)}{s_K}
+\mathrm{HEADWAY}(P,R) = \frac{GD_{95}(P \to R)}{GD_{95}(Random \to R)}
 $$
-While the raw value is a physical distance (error units), its clinical interpretation (via `Q_HEADWAY`) implicitly compares this merit against the $GD_{95}$ behavior of a random bounding-box search, effectively quantifying the "advance" or search headway beyond a no-search condition.
-
-**Why the 95th percentile?**
-The 95th percentile reflects the "bulk" of the population while remaining sensitive to non-trivial progress lags. It ensures the measurement is robust to single outliers but penalizes populations that failed to advance as a whole.
-
-**Implementation notes.**
-- If $|R|$ is large, MoeaBench uses a KDTree for the nearest-neighbor queries.
-- The function returns a `FairResult` with:
-  - `.value` = the scalar headway,
-  - `.raw_data` = the distribution of normalized point-to-GT distances (useful for plotting and additional diagnostics).
 
 **Interpretation.**
-- Values near 0 indicate that the search has successfully progressed to the neighborhood of the GT manifold (maximum headway).
-- Values significantly smaller than the random baseline ($GD_{95, \text{random}} / s_K$) quantify the effective search headway gained through optimization.
-- Values near or above the random baseline indicate "stasis" or a failed search, where the population remains as remote from the truth as it would be under a no-search (random bounding-box) condition.
+- **0.0 (Ideal)**: The search has successfully reached the manifold.
+- **1.0 (Random)**: The algorithm has made no progress beyond what is expected from a random guess.
+- **Values < 1.0**: Represent the **fraction of the initial search error that remains**. For example, 0.1 means 90% of the initial search error has been eliminated.
+- **Values > 1.0**: Indicate a failed search that is performing worse than random guessing (pathological behavior).
+
+**Why this definition?**
+By normalizing by the global search radius (random baseline) instead of the local resolution ($s_K$), `HEADWAY` becomes a distinct measure of global search drive, complementing `CLOSENESS` which focuses on local convergence precision.
 
 ---
 
@@ -147,13 +141,9 @@ The 95th percentile reflects the "bulk" of the population while remaining sensit
 **Purpose.** Quantify the sharpness and precision of convergence relative to the "blur" expected from a failed or noisy approximation.
 
 **Definition.**
-Compute normalized point-to-manifold distances:
+Compute normalized point-to-manifold distances ($u_j = d(p_j,R)/s_K$) and define $u_{raw} = \mathrm{median}(\{u_j\})$. To account for finite-resolution effects, we subtract the $ideal\_res$ (the median residue expected for a perfect front):
 $$
-u_j = \frac{d(p_j,R)}{s_K}
-$$
-Then:
-$$
-\mathrm{CLOSENESS}(P,R) = \mathrm{median}(\{u_j\})
+\mathrm{CLOSENESS}(P,R) = \max(0, u_{raw} - ideal\_res)
 $$
 
 **Why the median?**
