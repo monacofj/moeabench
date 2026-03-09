@@ -844,6 +844,7 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
     *   **`exp.authors`**: `str` Optional author metadata for persistence.
     *   **`exp.license`**: `str` SPDX License ID (e.g., 'MIT').
     *   **`exp.year`**: `int` Publication year.
+    *   **`reproducibility`**: `dict` Environment DNA block (Python/NumPy versions, Baseline version, Platform, Timestamp).
 
 | Result Class | Returner functions | Characteristics |
 | :--- | :--- | :--- |
@@ -942,6 +943,9 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 | **`mb.diagnostics.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
 | **`mb.diagnostics.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
 | **`mb.diagnostics.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
+
+#### **`ReproducibilityWarning`**
+*   **Description**: A custom warning issued during `load_offline_baselines()` when a mismatch is detected between the current environment (Python/NumPy) and the environment that generated the baseline. It supports the library's "Fail-Safe" compatibility protocol.
 
 #### **`.reset_baselines()`**
 *   **Description**: Clears any custom or sidecar baseline configurations loaded during the session (via `register_baselines` or auto-discovery). 

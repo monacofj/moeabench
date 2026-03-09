@@ -32,9 +32,48 @@ BASELINE_JSON_PATH = _get_default_baseline_path()
 _CACHE = None
 _REGISTERED_SOURCES = [] # List of dicts or paths
 
-class UndefinedBaselineError(Exception):
-    """Raised when a required baseline is missing (Fail-Closed)."""
+class ReproducibilityWarning(UserWarning):
+    """Issued when a baseline environment mismatch is detected."""
     pass
+
+def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary"):
+    """Internal helper to verify Environment DNA in baseline JSON."""
+    from ..system import version as lib_version
+    b_ver = data.get("version")
+    b_py = data.get("python_version")
+    b_np = data.get("numpy_version")
+    b_schema = data.get("schema")
+    
+    # Schema Check (Fail-Closed)
+    if b_schema != "baselines_v4_ecdf" and b_schema is not None:
+         raise UndefinedBaselineError(f"Incompatible baseline schema in {source_name}: {b_schema}")
+
+    # Version Check (Warning only)
+    if b_ver and b_ver != lib_version():
+        warnings.warn(
+            f"MoeaBench Version Mismatch ({source_name}): Baseline is {b_ver}, library is {lib_version()}. "
+            "Numerical scores may differ across major/minor versions.",
+            ReproducibilityWarning
+        )
+
+    # Environment DNA Check
+    import sys
+    import numpy as np
+    sys_py = sys.version.split()[0]
+    sys_np = np.__version__
+    
+    if b_py and b_py != sys_py:
+        warnings.warn(
+            f"Python Environment Shift ({source_name}): Baseline was calibrated on {b_py}, system is {sys_py}. "
+            "Bit-for-bit RNG reproducibility is not guaranteed.",
+            ReproducibilityWarning
+        )
+    if b_np and b_np != sys_np:
+        warnings.warn(
+            f"NumPy Environment Shift ({source_name}): Baseline was calibrated on {b_np}, system is {sys_np}. "
+            "RNG implementation shifts may affect diagnostic consistency.",
+            ReproducibilityWarning
+        )
 
 # Track if cache is stale
 _CACHE_DIRTY = True
@@ -96,6 +135,9 @@ def load_offline_baselines() -> Dict[str, Any]:
         with open(BASELINE_JSON_PATH, "r") as f:
             full_data = json.load(f)
             
+        # 1.1 Environment DNA/Compatibility Verification
+        _verify_baseline_dna(full_data, "Primary")
+
         # 1.5 Populate GT registry from primary data if present
         if "problems" in full_data:
             if "_gt_registry" not in full_data:
@@ -114,6 +156,7 @@ def load_offline_baselines() -> Dict[str, Any]:
                 try:
                     with open(src, "r") as f:
                         src_data = json.load(f)
+                        _verify_baseline_dna(src_data, os.path.basename(src))
                 except Exception as e:
                     # Log warning but continue? 
                     # For strictness in research, maybe we should fail.

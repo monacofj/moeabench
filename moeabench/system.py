@@ -26,6 +26,24 @@ def check_dependencies():
         status = "AVAILABLE" if spec is not None else "UNAVAILABLE"
         print(f"  - {eng:<12}: {status}")
 
+def reproducibility_info() -> dict:
+    """
+    Returns a dictionary with environment metadata for scientific reproducibility.
+    Includes versions of Python, NumPy, and MoeaBench.
+    """
+    import sys
+    import platform
+    import numpy as np
+    from datetime import datetime
+    
+    return {
+        "moeabench_version": version(),
+        "python_version": sys.version.split()[0],
+        "numpy_version": np.__version__,
+        "platform": platform.platform(),
+        "timestamp": datetime.now().isoformat()
+    }
+
 def export_objectives(data, filename=None):
     """
     Exports Pareto Front/objectives to a CSV file.

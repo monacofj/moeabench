@@ -43,7 +43,7 @@ from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 
 # Configuration
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines_v0.13.1.json")
+OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines_v0.13.2.json")
 N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
 N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
@@ -360,7 +360,10 @@ def main():
     print(f"Found {len(problems)} problems: {problems}")
     
     final_json = {
+        "version": base.version(),
         "schema": "baselines_v4_ecdf",
+        "python_version": sys.version.split()[0],
+        "numpy_version": np.__version__,
         "rand_ecdf_n": N_SAMPLES,
         "problems": {}
     }

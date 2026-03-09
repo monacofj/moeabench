@@ -213,9 +213,13 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 > [!TIP]
 > **Best Practice**: For academic studies, it is often best to use the **External Reference** approach (Scenario C) by passing `exp.optimal_front()` or a large collection of all algorithms as `ref`. This ensures that your metric values are absolute and don't fluctuate depending on which subset of algorithms you are currently plotting.
 
-### **Control: Custom Stop Criteria**
+### 3.1 Reproducibility & Seeds
 
-Usually, an experiment runs for a given number of generations (default 300)
+In scientific research, bit-for-bit reproducibility is non-negotiable. MoeaBench enforces **RNG Localization** and **Environment DNA Tracking**:
+- **Localized State**: Algorithms do not use the global Python `random` seed. Each instance has its own `self.rng` to prevent interference.
+- **Environment DNA**: The library captures Python and NumPy versions used during both calibration (baselines) and execution (audits), issuing warnings if environment shifts are detected.
+
+For a detailed protocol, see the [Reproducibility Guide](reproducibility.md).
 
 MoeaBench allows you to inject custom logic to halt the search process based on dynamic conditions (e.g., convergence, time limits, or specific targets). This can be set globally for the experiment or per execution.
 
@@ -852,7 +856,7 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 
 ### **9.5. Reporting Interface and Auditing Workflow**
 
-The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, all results support a **Universal Reporting Contract**.
+The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
 
 #### **Scenario A: Full Audit**
 The `audit()` function performs a comprehensive check and returns a `DiagnosticResult` with a rich reporting interface:

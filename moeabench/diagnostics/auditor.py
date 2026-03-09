@@ -138,6 +138,7 @@ class DiagnosticResult(Reportable):
     fair_audit_res: FairAuditResult
     status: DiagnosticStatus
     description: str
+    reproducibility: Optional[Dict[str, Any]] = None
 
     @property
     def quality(self) -> QualityAuditResult:
@@ -197,6 +198,13 @@ class DiagnosticResult(Reportable):
             sub_f,
             f_rep
         ]
+
+        if self.reproducibility:
+            sub_r = "## 3. Reproducibility Metadata" if use_md else ">> LAYER 3: REPRODUCIBILITY"
+            r_info = [f"- **{k.replace('_', ' ').title()}**: {v}" for k, v in self.reproducibility.items()] if use_md else \
+                     [f"{k.replace('_', ' ').title()}: {v}" for k, v in self.reproducibility.items()]
+            lines += ["", sub_r] + r_info
+
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
@@ -220,13 +228,14 @@ class PerformanceAuditor:
 
     @staticmethod
     def audit_synthesis(q_res: QualityAuditResult, 
-                         f_res: FairAuditResult) -> DiagnosticResult:
+                         f_res: FairAuditResult,
+                         reproducibility: Optional[Dict[str, Any]] = None) -> DiagnosticResult:
         """ 
         The 'Synthesis' Logic. 
         Identifies pathologies without subjective weighting.
         """
         if q_res is None or f_res is None:
-             return DiagnosticResult(None, None, DiagnosticStatus.UNDEFINED, "Audit failed or missing baselines.")
+             return DiagnosticResult(None, None, DiagnosticStatus.UNDEFINED, "Audit failed or missing baselines.", reproducibility=reproducibility)
 
         # 1. Detect Pathologies (Q < 0.34)
         anomalies = []
@@ -262,7 +271,8 @@ class PerformanceAuditor:
             q_audit_res=q_res,
             fair_audit_res=f_res,
             status=status,
-            description=desc
+            description=desc,
+            reproducibility=reproducibility
         )
 
 def fair_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> FairAuditResult:
@@ -286,6 +296,18 @@ def audit(target: Any,
     Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor for synthesis.
     """
     from .utils import _resolve_diagnostic_context
+    from ..system import reproducibility_info
+    
+    # 0. Capture Reproducibility Metadata
+    r_info = reproducibility_info()
+    
+    # 0.1 Append Baseline DNA
+    try:
+        bases = baselines.load_offline_baselines()
+        r_info["baseline_version"] = bases.get("version", "Unknown")
+        r_info["baseline_schema"] = bases.get("schema", "Legacy")
+    except:
+        r_info["baseline_version"] = "None"
     
     # 1. Resolve Context (P, GT, s_k, Name, K)
     ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
@@ -358,9 +380,9 @@ def audit(target: Any,
         q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
         
         # 5. Synthesis (The Biopsy)
-        return PerformanceAuditor.audit_synthesis(q_res, fr_res)
+        return PerformanceAuditor.audit_synthesis(q_res, fr_res, reproducibility=r_info)
         
     except baselines.UndefinedBaselineError:
-        return PerformanceAuditor.audit_synthesis(None, None) 
+        return PerformanceAuditor.audit_synthesis(None, None, reproducibility=r_info) 
     except Exception as e:
         raise e

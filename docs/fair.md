@@ -527,15 +527,9 @@ A common pattern is to:
 
 For example:
 
-```python
-import moeabench as mb
 
-# P: array of objective points from your MOEA
-# GT: reference point set (analytical PF, external GT, or sidecar GT)
-res = mb.diagnostics.audit(P, ground_truth=GT, problem="DTLZ2")
+---
 
-res.report() 
+## 8. Scientific Reproducibility
 
-# Compact clinical synthesis (Auto-renders or prints)
-res.summary()
-```
+For details on how MoeaBench ensures bit-for-bit stability and environment metadata capture for research, see the [Reproducibility Guide](reproducibility.md).

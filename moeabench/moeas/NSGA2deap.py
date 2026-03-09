@@ -52,12 +52,12 @@ class NSGA2deap(BaseMoea):
             )
 
         self.toolbox = base.Toolbox()
+        self.rng = random.Random(self.seed)
         self.toolbox.register("attr_float", self.uniform, 0, 1, self.get_N())
         self.toolbox.register("individual", tools.initIterate, IndividualCls, self.toolbox.attr_float)
         self.toolbox.register("population", tools.initRepeat, list, self.toolbox.individual)
         self.toolbox.register("evaluate", self._evaluate_ind)
         
-        random.seed(self.seed)
         self.toolbox.decorate("evaluate", tools.DeltaPenality(self._feasible_ind, 1000))
         self.toolbox.register("mate", tools.cxSimulatedBinaryBounded, low=0, up=1, eta=20)
         self.toolbox.register("mutate", tools.mutPolynomialBounded, low=0, up=1, eta=20, indpb=1/self.get_N())
@@ -66,9 +66,9 @@ class NSGA2deap(BaseMoea):
     def uniform(self, low, up, size=None):
         """Generates uniform random values for individuals."""
         try:
-            return [random.uniform(a, b) for a, b in zip(low, up)]
+            return [self.rng.uniform(a, b) for a, b in zip(low, up)]
         except TypeError:
-            return [random.uniform(a, b) for a, b in zip([low]*size, [up]*size)]
+            return [self.rng.uniform(a, b) for a, b in zip([low]*size, [up]*size)]
 
     def _evaluate_ind(self, ind):
         """Evaluates a single DEAP individual."""
@@ -137,7 +137,7 @@ class NSGA2deap(BaseMoea):
             offspring = [self.toolbox.clone(ind) for ind in offspring]
             
             for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
-                if random.random() <= 0.9:
+                if self.rng.random() <= 0.9:
                     self.toolbox.mate(ind1, ind2)
                 self.toolbox.mutate(ind1)
                 self.toolbox.mutate(ind2)
