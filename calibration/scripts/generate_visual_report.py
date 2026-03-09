@@ -190,6 +190,14 @@ def generate_visual_report():
         "<li>○ <b>Hollow Circle:</b> Standard precision (0 &le; Q &lt; 0.5). Converged, but with residual error approaching the noise floor.</li>",
         "<li>◇ <b>Diamond Open:</b> Failure (Q &lt; 0). Points statistically indistinguishable from random noise or Gaussian blur.</li>",
         "</ul>",
+        "<h3>Tier 5: Reading the Distance-to-GT CDF Plot</h3>",
+        "<ul>",
+        "<li><b>The Axes:</b> <b>X</b> = Physical Error (Distance to Utopia). <b>Y</b> = % of the population.</li>",
+        "<li><b>The 95% Target:</b> The vertical drop-line at Y=0.95 isolates the <i>Worst-Case Error</i> of the effective population (ignoring the 5% worst as noise).</li>",
+        "<li>🧗 <b>The Wall (Steep & Left):</b> High Precision Convergence. Almost 100% of the population found the true front simultaneously.</li>",
+        "<li>🐢 <b>The Long Tail (Slow climb to 95%):</b> Fragmented Population. The algorithm found the front but left a large trail of low-quality <i>stragglers</i> behind.</li>",
+        "<li>🧱 <b>The Staircase (Wide steps):</b> Clumping / Local Optima. The population broke into isolated clusters trapped at different error distances.</li>",
+        "</ul>",
         "</div>"
     ]
 
@@ -527,6 +535,7 @@ def generate_visual_report():
         matrix_table.append("</table>")
         
         html_content.append(fig.to_html(full_html=False, include_plotlyjs='cdn' if mop_name == mops[0] else False))
+        
         html_content.append("".join(matrix_table))
         html_content.append("</div>")
 
