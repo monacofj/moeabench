@@ -75,7 +75,9 @@ MoeaBench resolves these challenges by introducing a **Clinical Metrology** arch
 
 This is implemented via a **3-Layer Architecture**:
 
-### Layer 1: The Physical Layer (FR Metrics)
+### Layer 1: The Physical Layer (FAIR Metrics)
+
+For detailed mathematical definitions, see the [FAIR Metrics documentation](fair.md).
 This layer handles the raw physics of measurement, corrected for the Sparsity Law.
 
 *   **Resolution Scale ($s_K$)**: Instead of using an absolute ruler, we define a "Macroscopic Ruler." $s_K$ is calculated as the expected nearest-neighbor distance of a finite random population of size $K$.

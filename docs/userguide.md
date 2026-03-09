@@ -36,7 +36,7 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
     - [8.1. Hypothesis Testing & Significance](#81-hypothesis-testing--significance)
 8.  **[Algorithmic Diagnostics and Pathology Detection](#9-algorithmic-diagnostics-and-pathology-detection)**
     - [9.1. Diagnostic Ontology](#91-diagnostic-ontology)
-    - [9.2. Physical Metrics (FR Metrics)](#92-physical-metrics-fr-metrics)
+    - [9.2. Physical Metrics (FAIR Metrics)](#92-physical-metrics-fair-metrics)
     - [9.3. Clinical Normalization (Q-Scores)](#93-clinical-normalization-q-scores)
     - [9.4. Diagnostic Instruments](#94-diagnostic-instruments) (Radar, ECDF, Distribution, History)
     - [9.5. Reporting Interface & Auditing](#95-reporting-interface-and-auditing-workflow)
@@ -655,7 +655,9 @@ MoeaBench transforms raw performance data into a "detailed diagnostic assessment
 | **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
 | **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
 
-### **9.2. Physical Metrics (FR Metrics)**
+### **9.2. Physical Metrics (FAIR Metrics)**
+
+For detailed mathematical definitions, see the [FAIR Metrics documentation](fair.md).
 
 In ideal multi-objective optimization, the Pareto front is often a continuous manifold. In practice, however, we deal with two physical constraints:
 1. **Discrete Ground Truth**: Our analytical reference is usually a finite set of points sampled from the true front.
@@ -665,7 +667,7 @@ Because of this, it is physically impossible to achieve an "error of zero" unles
 
 We define the **Resolution Scale** ($s_K$) as the expected average distance between points in a "perfectly" distributed population of size $K$. By dividing physical distances by $s_K$, we move from absolute units to "Resolution Units". 
 
-> **The Target of Success**: In the physical layer (FR), these metrics represent **Error** or **Distance**. Consequently, the analytical ideal is **0.0** (perfect match). The Resolution Scale ($s_K$) acts as a "Macroscopic Ruler" to make these errors comparable across problems, but it does not shift the mathematical target of zero error.
+> **The Target of Success**: In the physical layer (FAIR), these metrics represent **Error** or **Distance**. Consequently, the analytical ideal is **0.0** (perfect match). The Resolution Scale ($s_K$) acts as a "Macroscopic Ruler" to make these errors comparable across problems, but it does not shift the mathematical target of zero error.
 
 These metrics provide raw, resolution-invariant physical facts about the population:
 
@@ -779,7 +781,7 @@ score = mb.diagnostics.q_headway(exp)
 
 ### **9.4. Diagnostic Instruments**
 
-MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (FR/Physical) or Layer 2 (Clinical/Q-Score). These instruments are polymorphic and agnostic to the underlying metric.
+MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (FAIR/Physical) or Layer 2 (Clinical/Q-Score). These instruments are polymorphic and agnostic to the underlying metric.
 
 #### **Instrument 1: The Radar (`clinic_radar`)**
 *   **Role**: *Holistic Validation*.

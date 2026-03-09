@@ -5,8 +5,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 12: Physical Performance Assessment (FAIR Metrics)
+Example 12: Finite Approximation-Induced Resolution (FAIR) Metrics
 -----------------------------------------------------
+For detailed documentation on FAIR metrics, see `docs/fair.md`.
+
 This example focuses on the "Facts" layer of the diagnostic suite.
 Unlike Q-Scores (which are calibrated interpretations), FAIR metrics 
 provide raw, physical measurements of the population's health.
@@ -22,7 +24,7 @@ from moeabench import mb
 
 def main():
     print(f"moeabench v{mb.system.version()}")
-    print("Example 12: Physical Performance Assessment (FAIR Metrics)")
+    print("Example 12: Finite Approximation-Induced Resolution (FAIR) Metrics")
     print("===============================================")
 
     # Setup: We use DTLZ2 (3 objectives) as our benchmark

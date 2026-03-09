@@ -143,7 +143,7 @@ class experiment(Reportable):
         consensus_line = None
         if n_runs > 1:
             try:
-                from ..metrics.evaluator import front_size
+                from ..metrics.evaluator import fairont_size
                 # We calculate for the final generation only to keep report fast
                 c_matrix = front_size(self, mode='consensus', gens=-1)
                 c_ratio = float(c_matrix.last)

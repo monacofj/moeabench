@@ -19,7 +19,7 @@ from scipy.spatial.distance import cdist
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 from . import baselines as base
-from . import fr
+from . import fair
 
 # Defaults aligned with baselines_v4
 N_SAMPLES_ECDF = 200
@@ -160,7 +160,7 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
         sigma, u_blur = _calibrate_and_blur(gt, normals, s_fit, SEED_START + k)
         u_blur_ecdf = _downsample_ecdf(np.sort(u_blur))
         
-        # PROPOSAL: Calculate Finite-Resolution Ideal Residue (epsilon)
+        # PROPOSAL: Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
         # We need a fresh analytical sample if available, or a different FPS subset.
         # Protocol: If GT is large enough, use a different FPS slice. 
         # Better: use a higher seed for get_ref_uk to simulate a "perfect" but non-identical front.
@@ -215,11 +215,11 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
 def _calc_all(p, gt, s_fit, u_ref, c_cents, hist_ref):
     """Calculates all fair metrics for a sample."""
     return {
-        "headway": fr.headway(p, gt, s_fit).value,
-        "cov": fr.coverage(p, gt).value,
-        "gap": fr.gap(p, gt).value,
-        "reg": fr.regularity(p, u_ref).value,
-        "bal": fr.balance(p, c_cents, hist_ref).value
+        "headway": fair.headway(p, gt, s_fit).value,
+        "cov": fair.coverage(p, gt).value,
+        "gap": fair.gap(p, gt).value,
+        "reg": fair.regularity(p, u_ref).value,
+        "bal": fair.balance(p, c_cents, hist_ref).value
     }
 
 def _downsample_ecdf(sorted_vals: np.ndarray) -> np.ndarray:

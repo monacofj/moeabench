@@ -873,6 +873,8 @@ All functions in `mb.diagnostics` use a **Context-Aware Dispatch** system (`_res
 
 ### **12.2. Physical Metrics (Fairview Protocol)**
 
+For detailed definitions, see the [FAIR Metrics documentation](fair.md).
+
 #### **`headway(data, ref=None, s_k=None)`**
 *   **Description**: Measures Convergence Depth ($GD_{95} / s_K$).
 *   **Arguments**:

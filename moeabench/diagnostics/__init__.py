@@ -13,13 +13,13 @@ Divided into:
 - Calibration (Plugin Support): mb.diagnostics.calibrate, mb.diagnostics.register_baselines
 """
 
-from .auditor import audit, fr_audit, fair_audit, q_audit, DiagnosticResult, FrAuditResult, FairAuditResult, QualityAuditResult
+from .auditor import audit, fair_audit, fair_audit, q_audit, DiagnosticResult, FairAuditResult, FairAuditResult, QualityAuditResult
 from .enums import DiagnosticStatus
 from .baselines import register_baselines, reset_baselines, use_baselines
 from .calibration import calibrate_mop as calibrate
 
-# FR Metrics (Physical Layer)
-from .fr import (
+# FAIR Metrics (Physical Layer)
+from .fair import (
     headway,
     closeness,
     coverage,
@@ -41,8 +41,8 @@ from .qscore import (
 )
 
 __all__ = [
-    "audit", "fr_audit", "fair_audit", "q_audit", 
-    "DiagnosticResult", "FrAuditResult", "FairAuditResult", "QualityAuditResult",
+    "audit", "fair_audit", "fair_audit", "q_audit", 
+    "DiagnosticResult", "FairAuditResult", "FairAuditResult", "QualityAuditResult",
     "DiagnosticStatus",
     "register_baselines", "reset_baselines", "use_baselines", "calibrate",
     "headway", "closeness", "coverage", "gap", "regularity", "balance",

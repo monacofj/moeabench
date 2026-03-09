@@ -12,10 +12,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.13.0] - 2026-03-04
+## [0.13.2] - 2026-03-09
+
+### Added
+- **FAIR Metrics Framework (Finite Approximation-Induced Resolution)**: 
+    - Completed the project-wide rebranding from "Finite-Resolution Evaluation Framework" (FREF) to the **FAIR Metrics Framework**.
+    - New didactic documentation in `docs/fair.md` providing technical depth and numerical examples for all diagnostic dimensions.
+- **Longitudinal Search-Drive Assessment (Headway)**:
+    - Redefined the `HEADWAY` metric as a longitudinal measure of search efficiency. It now explicitly computes progress relative to the initial population ($P_0$), providing a direct measure of an algorithm's "Search Drive" over time.
+    - Updated `q_headway` to use a log-linear physical scale anchored to the noise floor of the initial generation.
 
 ### Changed
-- Refactored version management to ensure consistency across the analytical toolkit.
+- **Nomenclature Synchronization**: Refined the FAIR acronym definition to **Finite Approximation-Induced Resolution**, ensuring consistent branding across all documentation, codebases, and architectural decision records.
+- **Core Identifiers**: Renamed internal diagnostic modules and objects (`fr.py` $\to$ `fair.py`, `FrResult` $\to$ `FairResult`, `fr_audit` $\to$ `fair_audit`).
+- **Regression Tier v2**: Refreshed the calibration reference targets to account for the new longitudinal Headway logic.
+
+## [0.13.1] - 2026-03-09
+
+### Changed
+- **Internal Rebranding**: Initial transition of the diagnostic suite to the FAIR (Finite Approximation-Inherent Resolution) nomenclature. (Superseded by v0.13.2 refinement).
+- **Core Renaming**: Migrated `moeabench/diagnostics/fr.py` to `fair.py`.
+
+## [0.13.0] - 2026-03-04
 
 ## [0.12.1] - 2026-02-25
 

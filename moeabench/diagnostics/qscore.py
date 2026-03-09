@@ -19,7 +19,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 from . import baselines
 from .utils import _resolve_diagnostic_context
-from . import fr
+from . import fair
 from .base import DiagnosticValue
 from typing import Any, Optional
 
@@ -99,7 +99,7 @@ def compute_q_wasserstein(front_samples: np.ndarray, ideal_samples: np.ndarray, 
     Definition:
         Q = d(F, R) / (d(F, R) + d(F, I))
 
-    where d is Wasserstein-1 on the same scalar FR metric.
+    where d is Wasserstein-1 on the same scalar FAIR metric.
     """
     f = np.asarray(front_samples, dtype=float)
     i = np.asarray(ideal_samples, dtype=float)
@@ -202,25 +202,33 @@ def _compute_q_ecdf(fr_val: float, ideal: float, rand50: float, rand_ecdf: np.nd
     
     return float(1.0 - np.clip(error_score, 0.0, 1.0))
 
-def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
-    """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Rand50).
+def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> QResult:
+    """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Pop 0).
     """
-    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
     elif isinstance(data, (float, int, np.number)):
         f_val = float(data)
     else:
-        P, GT, s_ctx, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        f_val = float(fr.headway(P, GT, s_ctx, **kwargs))
+        # Leverage the longitudinal logic in fair.headway
+        res = fair.headway(data, ref, s_k, **kwargs)
+        f_val = float(res.value)
     
-    # The physical HEADWAY is now pre-normalized such that:
-    # Ideal = 0.0, Random = 1.0
+    if np.isnan(f_val):
+        return QResult(
+            value=np.nan,
+            name="Q_HEADWAY",
+            description="Unavailable: Longitudinal context (Pop 0) missing. Pass Experiment/Run object."
+        )
+
+    # The physical HEADWAY (ratio) range is [0, 1] (where 0=Ideal, 1=No progress)
+    # We map this to [1, 0] using log-linear expansion
     q_val = _compute_q_loglinear(f_val, 0.0, 1.0)
     
     return QResult(
         value=q_val,
         name="Q_HEADWAY",
-        description="Measures the algorithmic progress (headway) made beyond the random bounding box."
+        description="Measures the algorithmic progress (headway) made beyond the initial population."
     )
 
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
@@ -237,8 +245,13 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        res = fr.closeness(P, GT, s_fit)
+        ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        P = ctx['P_final']
+        GT = ctx['GT']
+        s_fit = ctx['s_k']
+        problem = ctx['problem']
+        k = ctx['k']
+        res = fair.closeness(P, GT, s_fit, problem=problem, k=k)
         u_dist = res.raw_data
     
     if u_dist is None or u_dist.size == 0:
@@ -273,7 +286,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
 
 def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_COVERAGE using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -282,8 +295,12 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = float(fr.coverage(P, GT))
+        ctx = _resolve_diagnostic_context(data, ref, **kwargs)
+        P = ctx['P_final']
+        GT = ctx['GT']
+        problem = ctx['problem']
+        k = ctx['k']
+        f_val = float(fair.coverage(P, GT).value)
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov")
@@ -292,7 +309,7 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
 
 def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_GAP using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -301,8 +318,12 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, GT, _, problem, k = _resolve_diagnostic_context(data, ref, **kwargs)
-        f_val = float(fr.gap(P, GT))
+        ctx = _resolve_diagnostic_context(data, ref, **kwargs)
+        P = ctx['P_final']
+        GT = ctx['GT']
+        problem = ctx['problem']
+        k = ctx['k']
+        f_val = float(fair.gap(P, GT).value)
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap")
@@ -311,7 +332,7 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
 
 def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_REGULARITY using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -320,8 +341,11 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = float(fr.regularity(P, ref_distribution))
+        ctx = _resolve_diagnostic_context(data, **kwargs)
+        P = ctx['P_final']
+        problem = ctx['problem']
+        k = ctx['k']
+        f_val = float(fair.regularity(P, ref_distribution).value)
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg")
@@ -330,7 +354,7 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
 
 def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_BALANCE using ECDF."""
-    if hasattr(data, 'value') and isinstance(data, fr.FrResult):
+    if hasattr(data, 'value') and isinstance(data, fair.FairResult):
         f_val = float(data.value)
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
@@ -339,8 +363,11 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
         problem = kwargs.get('problem', "Unknown")
         k = kwargs.get('k', 100)
     else:
-        P, _, _, problem, k = _resolve_diagnostic_context(data, **kwargs)
-        f_val = float(fr.balance(P, centroids, ref_hist))
+        ctx = _resolve_diagnostic_context(data, **kwargs)
+        P = ctx['P_final']
+        problem = ctx['problem']
+        k = ctx['k']
+        f_val = float(fair.balance(P, centroids, ref_hist).value)
         
     k_snap = baselines.snap_k(k)
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal")
@@ -352,7 +379,13 @@ def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     [Smart API] Vectorized Q-Score calculation for point cloud (HEADWAY).
     Supports either (P, GT) or pre-calculated dists.
     """
-    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    P = ctx['P_final']
+    P_i = ctx['P_initial']
+    GT = ctx['GT']
+    s_fit = ctx['s_k']
+    problem = ctx['problem']
+    k = ctx['k']
     
     if P is None or len(P) == 0:
         return np.array([])
@@ -389,7 +422,12 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
     [Smart API] Vectorized Q-Score calculation for point cloud (CLOSENESS).
     Supports either (P, GT) or pre-calculated dists.
     """
-    P, GT, s_fit, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
+    s_fit = ctx['s_k']
+    problem = ctx['problem']
+    k = ctx['k']
 
     if P is None or len(P) == 0:
         return np.array([])

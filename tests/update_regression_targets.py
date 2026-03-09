@@ -4,8 +4,8 @@ import numpy as np
 import moeabench as mb
 from moeabench.diagnostics import auditor
 
-DATA_JSON_PATH = "tests/calibration_reference_audit_v0.13.1.json"
-TARGETS_JSON_PATH = "tests/calibration_reference_targets_v0.13.1.json"
+DATA_JSON_PATH = "tests/calibration_reference_audit_v0.13.2.json"
+TARGETS_JSON_PATH = "tests/calibration_reference_targets_v0.13.2.json"
 
 def update_targets():
     print(f"Loading Reference Data from {DATA_JSON_PATH}...")
@@ -32,7 +32,7 @@ def update_targets():
                 
                 # Extract metrics
                 q_scores = {k: float(v.value) for k, v in report.q_audit_res.scores.items()}
-                raw_metrics = {k: float(v.value) for k, v in report.fr_audit_res.metrics.items()}
+                raw_metrics = {k: float(v.value) for k, v in report.fair_audit_res.metrics.items()}
                 
                 new_targets[f"{prob}/{alg}"] = {
                     "status": "OK",

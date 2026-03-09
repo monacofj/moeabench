@@ -123,26 +123,42 @@ def _aggregate_clinical(mop_name, alg, F_opt):
             hist_ref /= np.sum(hist_ref)
 
             # Metrics
-            # Using s_fit (s_K) instead of s_gt for Clinical consistency (ADR 0026)
-            fair_f = fair.headway(P_eval, F_opt, s_k=s_fit) # Updated name and s_k
-            fair_c = fair.coverage(P_eval, F_opt)
-            fair_g = fair.gap(P_eval, F_opt)
-            fair_r = fair.regularity(P_eval, U_ref)
-            fair_b = fair.balance(P_eval, C_cents, hist_ref)
+            # --- HEADWAY (Restored via Random Baseline Proxy) ---
+            # Generate a random population in [0, 1]^M as the "Initial State"
+            # for the longitudinal ratio, since we don't have _gen0.csv files.
+            rng_rand = np.random.RandomState(42) # Deterministic baseline
+            P_rand = rng_rand.rand(len(P_eval), F_opt.shape[1])
+            
+            # Use the new longitudinal headway
+            f_headway_res = fair.headway(P_eval, F_opt, s_k=s_fit, initial_data=P_rand)
+            fair_f = float(f_headway_res.value)
+            
+            fair_cov_res = fair.coverage(P_eval, F_opt)
+            fair_c = float(fair_cov_res.value)
+            
+            fair_gap_res = fair.gap(P_eval, F_opt)
+            fair_g = float(fair_gap_res.value)
+            
+            fair_reg_res = fair.regularity(P_eval, U_ref)
+            fair_r = float(fair_reg_res.value)
+            
+            fair_bal_res = fair.balance(P_eval, C_cents, hist_ref)
+            fair_b = float(fair_bal_res.value)
             
             # New: Closeness distribution
-            u_dist = fair.closeness(P_eval, F_opt, s_k=s_fit)
+            u_dist_res = fair.closeness(P_eval, F_opt, s_k=s_fit)
+            u_dist = u_dist_res.raw_data
             
             # Store FAIR values (per-run) and also bucket by K for distributional Q
-            fair_headway_vals.append(float(fair_f)); fair_cov_vals.append(float(fair_c)); fair_gap_vals.append(float(fair_g)); fair_reg_vals.append(float(fair_r)); fair_bal_vals.append(float(fair_b))
+            fair_headway_vals.append(fair_f); fair_cov_vals.append(fair_c); fair_gap_vals.append(fair_g); fair_reg_vals.append(fair_r); fair_bal_vals.append(fair_b)
             u_closeness_vals.append(u_dist)
             
-            fair_by_k["headway"][K_target].append(float(fair_f))
-            fair_by_k["closeness"][K_target].extend(u_dist.raw_data.tolist()) # Accumulate points for distributional W1
-            fair_by_k["cov"][K_target].append(float(fair_c))
-            fair_by_k["gap"][K_target].append(float(fair_g))
-            fair_by_k["reg"][K_target].append(float(fair_r))
-            fair_by_k["bal"][K_target].append(float(fair_b))
+            fair_by_k["headway"][K_target].append(fair_f)
+            fair_by_k["closeness"][K_target].extend(u_dist.tolist()) # Accumulate points for distributional W1
+            fair_by_k["cov"][K_target].append(fair_c)
+            fair_by_k["gap"][K_target].append(fair_g)
+            fair_by_k["reg"][K_target].append(fair_r)
+            fair_by_k["bal"][K_target].append(fair_b)
             k_used_vals.append(K_target); k_raw_vals.append(K_raw)
             igd_p_vals.append(GEN_igdplus([F_run], F_opt).evaluate()[0])
             gd_p_vals.append(GEN_gdplus([F_run], F_opt).evaluate()[0])

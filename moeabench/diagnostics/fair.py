@@ -39,7 +39,7 @@ def clear_fair_cache():
     from .baselines import clear_baselines_cache
     clear_baselines_cache()
 
-class FrResult(DiagnosticValue):
+class FairResult(DiagnosticValue):
     """ Specialized result for Physical (FR) metrics. """
     def report(self, show: bool = True, **kwargs) -> str:
         if kwargs.get('markdown', True):
@@ -49,79 +49,92 @@ class FrResult(DiagnosticValue):
         return self._render_report(content, show, **kwargs)
 
 # Compatibility Alias
-FairResult = FrResult
+FairResult = FairResult
 
 
-def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FrResult:
+def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FairResult:
     r"""
-    [Smart API] Calculates HEADWAY (Algorithmic Progress over BBox).
+    [Smart API] Calculates HEADWAY (Longitudinal Search Drive).
     
-    Definition: $GD_{95}(P \to GT) / s_{FIT}$
-    Meaning: How far P is from GT, in units of s_fit (resolution at K).
-    Ideal: 0.0
+    Definition: $GD_{95}(P_{final} \to GT) / GD_{95}(P_{initial} \to GT)$
+    Meaning: The fraction of the initial search error that remains unreduced.
+    Ideal: 0.0 (Search successfully reached the target).
+    Failure: 1.0 (Algorithm did not move from its starting position).
     
-    If raw=True, returns the resolution-normalized distance (error units).
-    If raw=False (default), returns the ratio relative to the random baseline.
+    If 'data' is an Experiment/Run, P_initial is automatically extracted from Gen 0.
+    Otherwise, users can provide 'initial_data' via kwargs.
     """
-    P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    P_f = ctx['P_final']
+    P_i = ctx['P_initial']
+    GT = ctx['GT']
+    res = ctx['s_k']
     
-    if P is None or GT is None or len(P) == 0:
-        return FrResult(np.inf, "HEADWAY", "No points to evaluate.", raw_data=np.array([]))
+    if P_f is None or GT is None or len(P_f) == 0:
+        return FairResult(np.inf, "HEADWAY", "No points to evaluate.", raw_data=np.array([]))
 
-    # 1. Compute Distances to GT (Optimized via KDTree if GT is large)
-    if len(GT) > 1000:
-        tree = _get_kdtree(GT)
-        d, _ = tree.query(P, k=1)
-        min_d = d
-    else:
-        d = cdist(P, GT, metric='euclidean')
-        min_d = np.min(d, axis=1) # (N,)
-    
-    # 2. Robust Metric (Percentile 95)
-    gd95 = np.percentile(min_d, 95)
-    
-    # 3. Normalize by Resolution (Scale Invariance)
-    u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
-    curr_h_norm = float(np.percentile(u_vals, 95))
+    # Helper to compute GD95 (Distance to GT)
+    def _get_gd95(P):
+        if P is None or len(P) == 0: return np.nan
+        if len(GT) > 1000:
+            tree = _get_kdtree(GT)
+            d, _ = tree.query(P, k=1)
+            min_d = d
+        else:
+            d = cdist(P, GT, metric='euclidean')
+            min_d = np.min(d, axis=1)
+        return float(np.percentile(min_d, 95)), min_d
+
+    # 1. Compute Final Distance
+    dist_f, min_d_f = _get_gd95(P_f)
+    u_vals_f = min_d_f / res if res > 1e-12 else min_d_f
     
     if kwargs.get('raw', False):
-        return FrResult(
-            value=curr_h_norm,
+        return FairResult(
+            value=dist_f / res if res > 1e-12 else dist_f,
             name="HEADWAY",
-            description=f"Population is {curr_h_norm:.2f} resolution-units (s_fit) away from truth.",
-            raw_data=u_vals
+            description=f"Final distance is {dist_f/res if res > 1e-12 else dist_f:.2f} resolution units.",
+            raw_data=u_vals_f
         )
 
-    # 4. Normalize by Random Baseline (Search Drive)
-    # This makes Headway a "residual search error" in [0, 1] range relative to chaos.
-    from . import baselines as base
-    try:
-        _, _, _, problem_name, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        k_snap = base.snap_k(k)
-        rand50_norm = base.get_baseline_data(problem_name, k_snap, "headway").get("rand50", 1.0)
-    except:
-        rand50_norm = 1.0 # Fallback 
+    # 2. Compute Initial Distance for the Progress Ratio
+    if P_i is None:
+        # Fallback: if we don't have P_0, we cannot calculate search drive fairly.
+        return FairResult(
+            value=np.nan,
+            name="HEADWAY",
+            description="Unavailable: Longitudinal context (Pop 0) missing. Pass Experiment/Run object.",
+            raw_data=u_vals_f
+        )
     
-    # Final physical f_val is the fraction of search error remaining
-    f_val = curr_h_norm / rand50_norm if rand50_norm > 1e-12 else curr_h_norm
+    dist_i, _ = _get_gd95(P_i)
     
-    return FrResult(
-        value=f_val,
+    # 3. Calculate Ratio (Residual Search Error)
+    # If dist_i is 0 (unlikely in real search), headway is 1.0 unless dist_f is also 0.
+    f_val = dist_f / dist_i if dist_i > 1e-12 else (1.0 if dist_f > 1e-12 else 0.0)
+    
+    return FairResult(
+        value=float(f_val),
         name="HEADWAY",
-        description=f"Algorithm left {f_val*100:.1f}% of the initial random search error unreduced.",
-        raw_data=u_vals
+        description=f"Algorithm left {f_val*100:.1f}% of the initial search error unreduced.",
+        raw_data=u_vals_f
     )
 
-def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FrResult:
+def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FairResult:
     """
     [Smart API] Calculates the distribution of normalized distances to GT.
     
     Returns u_j = min_dist(p_j, GT) / s_fit
     """
-    P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
+    s_fit = ctx['s_k']
+    problem_name = ctx['problem']
+    k = ctx['k']
 
     if P is None or GT is None or len(P) == 0:
-        return FrResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
+        return FairResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
         
     # 1. Compute Distances to GT (Optimized via KDTree if GT is large)
     if len(GT) > 1000:
@@ -136,12 +149,9 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     u_vals_raw = min_d / s_fit if s_fit > 1e-12 else min_d
     
     # 3. Apply Plausible Ideal Correction (Residue Subtraction)
-    # We try to find if a baseline with 'ideal_res' exists for this context
     from . import baselines as base
     ideal_res = 0.0
     try:
-        # Resolve context to get problem name and k
-        _, _, _, problem_name, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
         if problem_name and k:
             b_data = base.get_baseline_data(problem_name, k, "closeness")
             ideal_res = b_data.get("ideal_res", 0.0)
@@ -151,14 +161,14 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     u_vals = np.maximum(0.0, u_vals_raw - ideal_res)
     f_val = float(np.median(u_vals))
     
-    return FrResult(
+    return FairResult(
         value=f_val,
         name="CLOSENESS",
         description=f"Median distance to ground truth manifold (corrected by ideal residue: {ideal_res:.4f}).",
         raw_data=u_vals
     )
 
-def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     r"""
     [Smart API] Calculates COVERAGE.
     
@@ -166,10 +176,12 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     Meaning: Average distance from ANY point in GT to the nearest point in P.
     Ideal: 0.0 (Complete coverage)
     """
-    P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
 
     if P is None or GT is None or len(P) == 0:
-        return FrResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
+        return FairResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
     if len(P) > 1000:
@@ -182,14 +194,14 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     
     # 2. Mean (IGD)
     f_val = float(np.mean(min_d))
-    return FrResult(
+    return FairResult(
         value=f_val,
         name="COVERAGE",
         description=f"Average distance from target manifold to nearest solution is {f_val:.4f}.",
         raw_data=min_d
     )
 
-def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
+def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     r"""
     [Smart API] Calculates GAP (formerly Density).
     
@@ -197,10 +209,12 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     Meaning: The size of the "large holes" in coverage (ignoring worst 5% outliers).
     Ideal: 0.0
     """
-    P, GT, _, _, _ = _resolve_diagnostic_context(data, ref, **kwargs)
+    ctx = _resolve_diagnostic_context(data, ref, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
 
     if P is None or GT is None or len(P) == 0:
-        return FrResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
+        return FairResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
 
     # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
     if len(P) > 1000:
@@ -213,14 +227,14 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     
     # 2. Percentile 95 (Robust Max)
     f_val = float(np.percentile(min_d, 95))
-    return FrResult(
+    return FairResult(
         value=f_val,
         name="GAP",
         description=f"Largest hole detected on the manifold is {f_val:.4f}.",
         raw_data=min_d
     )
 
-def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
+def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> FairResult:
     r"""
     [Smart API] Calculates REGULARITY (formerly Uniformity).
     
@@ -229,11 +243,12 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
              and that of a reference distribution (usually from a Uniform lattice).
     Ideal: 0.0
     """
-    P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
+    ctx = _resolve_diagnostic_context(data, **kwargs)
+    P = ctx['P_final']
     U_ref = ref_distribution
 
     if P is None or len(P) < 2 or U_ref is None or len(U_ref) < 2:
-        return FrResult(np.inf, "REGULARITY", "Insufficient points for regularity.", raw_data=np.array([]))
+        return FairResult(np.inf, "REGULARITY", "Insufficient points for regularity.", raw_data=np.array([]))
 
     # 1. Nearest Neighbors within P (excluding self)
     d_p = cdist(P, P)
@@ -247,14 +262,14 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     
     # 3. Wasserstein Distance
     f_val = float(wasserstein_distance(nn_p, nn_u))
-    return FrResult(
+    return FairResult(
         value=f_val,
         name="REGULARITY",
         description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance).",
         raw_data=nn_p # Plot the distribution of NN distances
     )
 
-def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
+def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> FairResult:
     r"""
     [Smart API] Calculates BALANCE.
     
@@ -262,10 +277,11 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     Meaning: Jensen-Shannon divergence between cluster occupancy histograms.
     Ideal: 0.0
     """
-    P, _, _, _, _ = _resolve_diagnostic_context(data, **kwargs)
+    ctx = _resolve_diagnostic_context(data, **kwargs)
+    P = ctx['P_final']
 
     if P is None or len(P) == 0 or centroids is None or ref_hist is None:
-        return FrResult(1.0, "BALANCE", "Missing context for balance.", raw_data=np.array([]))
+        return FairResult(1.0, "BALANCE", "Missing context for balance.", raw_data=np.array([]))
 
     # 1. Assign points to clusters
     d = cdist(P, centroids)
@@ -279,7 +295,7 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     # 3. JS Divergence
     # Base 2 gives range [0, 1] for JS
     f_val = float(jensenshannon(hist_p, ref_hist, base=2.0))
-    return FrResult(
+    return FairResult(
         value=f_val,
         name="BALANCE",
         description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence).",

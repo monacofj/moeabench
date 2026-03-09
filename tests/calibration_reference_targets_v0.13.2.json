@@ -7,7 +7,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.4796711998447213
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.3879028376101801,
@@ -15,7 +15,7 @@
       "GAP": 0.6913164040040891,
       "REGULARITY": 0.005817043784013566,
       "BALANCE": 0.6202454718931922,
-      "HEADWAY": 0.4342820935557627
+      "HEADWAY": NaN
     }
   },
   "DPF1/MOEAD": {
@@ -26,7 +26,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.4734290157704226
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.3787323664201504,
@@ -34,7 +34,7 @@
       "GAP": 0.6907986644351959,
       "REGULARITY": 0.007791220153195201,
       "BALANCE": 0.74951114335574,
-      "HEADWAY": 0.44050132171836043
+      "HEADWAY": NaN
     }
   },
   "DPF1/NSGA3": {
@@ -45,7 +45,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.48169294310747524
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.37670975541515417,
@@ -53,7 +53,7 @@
       "GAP": 0.6911841381729628,
       "REGULARITY": 0.007223905610881963,
       "BALANCE": 0.6275520878748382,
-      "HEADWAY": 0.43227354759070885
+      "HEADWAY": NaN
     }
   },
   "DPF2/NSGA2": {
@@ -64,7 +64,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 8.056046255977009,
@@ -72,7 +72,7 @@
       "GAP": 5.611836639257685,
       "REGULARITY": 0.013673124231151149,
       "BALANCE": 0.9714202672743112,
-      "HEADWAY": 10.875428780030903
+      "HEADWAY": NaN
     }
   },
   "DPF2/MOEAD": {
@@ -83,7 +83,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 4.35445092724669,
@@ -91,7 +91,7 @@
       "GAP": 5.612021683962661,
       "REGULARITY": 0.014394507127107088,
       "BALANCE": 0.9714202672743112,
-      "HEADWAY": 4.541575662158993
+      "HEADWAY": NaN
     }
   },
   "DPF2/NSGA3": {
@@ -102,7 +102,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 6.731344890920842,
@@ -110,7 +110,7 @@
       "GAP": 5.612435069287368,
       "REGULARITY": 0.01520310980530981,
       "BALANCE": 0.9714202672743112,
-      "HEADWAY": 10.7152830287109
+      "HEADWAY": NaN
     }
   },
   "DPF3/NSGA2": {
@@ -121,7 +121,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.26923996219501434
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.4125959716060851,
@@ -129,7 +129,7 @@
       "GAP": 0.6626488536961412,
       "REGULARITY": 0.006015873585827554,
       "BALANCE": 0.5127848236541912,
-      "HEADWAY": 0.6595131228676103
+      "HEADWAY": NaN
     }
   },
   "DPF3/MOEAD": {
@@ -140,7 +140,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.268977745070646
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.4056719405854686,
@@ -148,7 +148,7 @@
       "GAP": 0.6982977421896767,
       "REGULARITY": 0.041284421565235575,
       "BALANCE": 0.5353181467495327,
-      "HEADWAY": 0.659814775188163
+      "HEADWAY": NaN
     }
   },
   "DPF3/NSGA3": {
@@ -159,7 +159,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.26889272327032
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.39210205745626414,
@@ -167,7 +167,7 @@
       "GAP": 0.6628754247705552,
       "REGULARITY": 0.009245219352737996,
       "BALANCE": 0.5572983913192449,
-      "HEADWAY": 0.6599125953059112
+      "HEADWAY": NaN
     }
   },
   "DPF4/NSGA2": {
@@ -178,7 +178,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0869394181349481
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.2060364179135054,
@@ -186,7 +186,7 @@
       "GAP": 0.885775759414777,
       "REGULARITY": 0.006693882553090831,
       "BALANCE": 0.6979962018153136,
-      "HEADWAY": 0.8830360001504224
+      "HEADWAY": NaN
     }
   },
   "DPF4/MOEAD": {
@@ -197,7 +197,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.6612524117188099
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.20929740982661604,
@@ -205,7 +205,7 @@
       "GAP": 1.0896095245222608,
       "REGULARITY": 0.012702752136061262,
       "BALANCE": 0.949818277829408,
-      "HEADWAY": 0.26465826032105993
+      "HEADWAY": NaN
     }
   },
   "DPF4/NSGA3": {
@@ -216,7 +216,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.10775194281250233
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.18924210594582935,
@@ -224,7 +224,7 @@
       "GAP": 0.8857770796164978,
       "REGULARITY": 0.011053536678413266,
       "BALANCE": 0.7730084245044395,
-      "HEADWAY": 0.8560660577663811
+      "HEADWAY": NaN
     }
   },
   "DPF5/NSGA2": {
@@ -235,7 +235,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.76,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9729165572104019
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.005836261452882076,
@@ -243,7 +243,7 @@
       "GAP": 0.11895123050070786,
       "REGULARITY": 0.03889894111584174,
       "BALANCE": 0.46341187844597037,
-      "HEADWAY": 0.018950129086894207
+      "HEADWAY": NaN
     }
   },
   "DPF5/MOEAD": {
@@ -254,7 +254,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9764893080857925
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.005601201613855444,
@@ -262,7 +262,7 @@
       "GAP": 0.05767017397334521,
       "REGULARITY": 0.029485619401916453,
       "BALANCE": 0.3177816879401247,
-      "HEADWAY": 0.01642987990519875
+      "HEADWAY": NaN
     }
   },
   "DPF5/NSGA3": {
@@ -273,7 +273,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9834000294470754
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.005435350594266199,
@@ -281,7 +281,7 @@
       "GAP": 0.056118491715548786,
       "REGULARITY": 0.029595384432403282,
       "BALANCE": 0.19245923721429936,
-      "HEADWAY": 0.01157267399042613
+      "HEADWAY": NaN
     }
   },
   "DTLZ1/NSGA2": {
@@ -292,7 +292,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.628770984354593
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.2926270448752831,
@@ -300,7 +300,7 @@
       "GAP": 0.45591416590997846,
       "REGULARITY": 0.04731593465702484,
       "BALANCE": 0.6117332379814805,
-      "HEADWAY": 0.2934542405211454
+      "HEADWAY": NaN
     }
   },
   "DTLZ1/MOEAD": {
@@ -311,7 +311,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.6291555127082293
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.2919527470221208,
@@ -319,7 +319,7 @@
       "GAP": 0.4551258940825035,
       "REGULARITY": 0.05048348698616851,
       "BALANCE": 0.5924368318381614,
-      "HEADWAY": 0.29310953596596545
+      "HEADWAY": NaN
     }
   },
   "DTLZ1/NSGA3": {
@@ -330,7 +330,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.6287464477679451
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.29257791108738423,
@@ -338,7 +338,7 @@
       "GAP": 0.45592347906190756,
       "REGULARITY": 0.025755243906859644,
       "BALANCE": 0.6398248510785038,
-      "HEADWAY": 0.2934762390870461
+      "HEADWAY": NaN
     }
   },
   "DTLZ2/NSGA2": {
@@ -349,7 +349,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.95,
-      "Q_HEADWAY": 0.9692888474115723
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.00949230393494458,
@@ -357,7 +357,7 @@
       "GAP": 0.09466804798997001,
       "REGULARITY": 0.03692744133248237,
       "BALANCE": 0.21110324136116115,
-      "HEADWAY": 0.021515540762476876
+      "HEADWAY": NaN
     }
   },
   "DTLZ2/MOEAD": {
@@ -368,7 +368,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.976733725007113
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.007401025056704787,
@@ -376,7 +376,7 @@
       "GAP": 0.060064637510404896,
       "REGULARITY": 0.010944933568562689,
       "BALANCE": 0.1526670908971534,
-      "HEADWAY": 0.01625769409199029
+      "HEADWAY": NaN
     }
   },
   "DTLZ2/NSGA3": {
@@ -387,7 +387,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9766749856007523
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.0073904188771512745,
@@ -395,7 +395,7 @@
       "GAP": 0.06009379353867504,
       "REGULARITY": 0.010952793424986808,
       "BALANCE": 0.1526670908971534,
-      "HEADWAY": 0.01629907192113287
+      "HEADWAY": NaN
     }
   },
   "DTLZ3/NSGA2": {
@@ -406,7 +406,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.35,
-      "Q_HEADWAY": 0.9804960615717557
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.006232340691175958,
@@ -414,7 +414,7 @@
       "GAP": 0.1050893759299204,
       "REGULARITY": 0.041615141830148125,
       "BALANCE": 0.24483249081100117,
-      "HEADWAY": 0.013610896163855487
+      "HEADWAY": NaN
     }
   },
   "DTLZ3/MOEAD": {
@@ -425,7 +425,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 5.005899185926247,
@@ -433,7 +433,7 @@
       "GAP": 5.012390808501299,
       "REGULARITY": 0.25984748870148244,
       "BALANCE": 0.34602946168184384,
-      "HEADWAY": 5.0069900654563595
+      "HEADWAY": NaN
     }
   },
   "DTLZ3/NSGA3": {
@@ -444,7 +444,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9752150067038009
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.006923951863271452,
@@ -452,7 +452,7 @@
       "GAP": 0.06030325243779063,
       "REGULARITY": 0.01003185238921371,
       "BALANCE": 0.16168216704856045,
-      "HEADWAY": 0.01732806708978928
+      "HEADWAY": NaN
     }
   },
   "DTLZ4/NSGA2": {
@@ -463,7 +463,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.99,
-      "Q_HEADWAY": 0.9705657983293708
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.00895783906333869,
@@ -471,7 +471,7 @@
       "GAP": 0.09225625996474501,
       "REGULARITY": 0.038907388810737714,
       "BALANCE": 0.20946306843038262,
-      "HEADWAY": 0.020611782131900548
+      "HEADWAY": NaN
     }
   },
   "DTLZ4/MOEAD": {
@@ -482,7 +482,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.42000000000000004,
-      "Q_HEADWAY": 0.9784360870348259
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.005165774260482505,
@@ -490,7 +490,7 @@
       "GAP": 0.09740319452795079,
       "REGULARITY": 0.058283214343409474,
       "BALANCE": 0.31229508455611793,
-      "HEADWAY": 0.015059230002705095
+      "HEADWAY": NaN
     }
   },
   "DTLZ4/NSGA3": {
@@ -501,7 +501,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9760103812429082
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.006478662367719688,
@@ -509,7 +509,7 @@
       "GAP": 0.05986162490235307,
       "REGULARITY": 0.010326626086865007,
       "BALANCE": 0.16921021371654021,
-      "HEADWAY": 0.01676735688301992
+      "HEADWAY": NaN
     }
   },
   "DTLZ5/NSGA2": {
@@ -520,7 +520,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.97,
-      "Q_HEADWAY": 0.5160535153075524
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.12268998014436208,
@@ -528,7 +528,7 @@
       "GAP": 0.4117621146429893,
       "REGULARITY": 0.003414662038861641,
       "BALANCE": 0.28741679321594665,
-      "HEADWAY": 0.3985642034573121
+      "HEADWAY": NaN
     }
   },
   "DTLZ5/MOEAD": {
@@ -539,7 +539,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.5172389279906252
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.11014710804494882,
@@ -547,7 +547,7 @@
       "GAP": 0.411772379178345,
       "REGULARITY": 0.015781696848703917,
       "BALANCE": 0.31102905525760444,
-      "HEADWAY": 0.39741552353896903
+      "HEADWAY": NaN
     }
   },
   "DTLZ5/NSGA3": {
@@ -558,7 +558,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.5025788637429247
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.05710259395378808,
@@ -566,7 +566,7 @@
       "GAP": 0.41202073454252713,
       "REGULARITY": 0.005984314581820575,
       "BALANCE": 0.4125783207469397,
-      "HEADWAY": 0.4116878682404298
+      "HEADWAY": NaN
     }
   },
   "DTLZ6/NSGA2": {
@@ -577,7 +577,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.6000177781374698
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.09111275392071533,
@@ -585,7 +585,7 @@
       "GAP": 0.299391507109807,
       "REGULARITY": 0.007630592557080461,
       "BALANCE": 0.25375510928046624,
-      "HEADWAY": 0.31949165075409003
+      "HEADWAY": NaN
     }
   },
   "DTLZ6/MOEAD": {
@@ -596,7 +596,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.60375605119893
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.12079115680079673,
@@ -604,7 +604,7 @@
       "GAP": 0.3124829967827308,
       "REGULARITY": 0.008331818665619849,
       "BALANCE": 0.27592453060855643,
-      "HEADWAY": 0.31607704487251237
+      "HEADWAY": NaN
     }
   },
   "DTLZ6/NSGA3": {
@@ -615,7 +615,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.597078659465226
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.22999126854494706,
@@ -623,7 +623,7 @@
       "GAP": 0.30938947620097484,
       "REGULARITY": 0.006533757425808409,
       "BALANCE": 0.257782770013056,
-      "HEADWAY": 0.32218251436673606
+      "HEADWAY": NaN
     }
   },
   "DTLZ7/NSGA2": {
@@ -634,7 +634,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 3.4585525421482224,
@@ -642,7 +642,7 @@
       "GAP": 2.4540495995439353,
       "REGULARITY": 0.04112049122198421,
       "BALANCE": 0.8958486866634447,
-      "HEADWAY": 4.854098552710163
+      "HEADWAY": NaN
     }
   },
   "DTLZ7/MOEAD": {
@@ -653,7 +653,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 2.1801625389484314,
@@ -661,7 +661,7 @@
       "GAP": 2.475029885131966,
       "REGULARITY": 0.07444975010149316,
       "BALANCE": 0.9153185078592871,
-      "HEADWAY": 4.42722088078115
+      "HEADWAY": NaN
     }
   },
   "DTLZ7/NSGA3": {
@@ -672,7 +672,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 3.8034379456476795,
@@ -680,7 +680,7 @@
       "GAP": 2.497911597272436,
       "REGULARITY": 0.04456901679745901,
       "BALANCE": 0.8937054631758452,
-      "HEADWAY": 4.784289720794617
+      "HEADWAY": NaN
     }
   },
   "DTLZ8/NSGA2": {
@@ -691,7 +691,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.46752860124037976
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.4417647415493825,
@@ -699,7 +699,7 @@
       "GAP": 0.9306166279905235,
       "REGULARITY": 0.07127446686252113,
       "BALANCE": 0.9280076111397416,
-      "HEADWAY": 0.4464048282695508
+      "HEADWAY": NaN
     }
   },
   "DTLZ8/MOEAD": {
@@ -710,7 +710,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9127458898203592
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.05249325543592101,
@@ -718,7 +718,7 @@
       "GAP": 0.6196235882707495,
       "REGULARITY": 0.053541587027313674,
       "BALANCE": 0.7706815852642106,
-      "HEADWAY": 0.06234628718223546
+      "HEADWAY": NaN
     }
   },
   "DTLZ8/NSGA3": {
@@ -729,7 +729,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9179322964122496
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.03445993585404755,
@@ -737,7 +737,7 @@
       "GAP": 0.24481884310063354,
       "REGULARITY": 0.039225487716482245,
       "BALANCE": 0.5217652416308074,
-      "HEADWAY": 0.05853406917956364
+      "HEADWAY": NaN
     }
   },
   "DTLZ9/NSGA2": {
@@ -748,7 +748,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 1730.7598516188666,
@@ -756,7 +756,7 @@
       "GAP": 1731.141848010022,
       "REGULARITY": 0.008894363681013524,
       "BALANCE": 0.9566706042713519,
-      "HEADWAY": 1730.7598516188666
+      "HEADWAY": NaN
     }
   },
   "DTLZ9/MOEAD": {
@@ -767,7 +767,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8862456833836534
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.030428399467862792,
@@ -775,7 +775,7 @@
       "GAP": 0.644123203629952,
       "REGULARITY": 0.0035601104809451674,
       "BALANCE": 0.8790120207898311,
-      "HEADWAY": 0.08204036304770733
+      "HEADWAY": NaN
     }
   },
   "DTLZ9/NSGA3": {
@@ -786,7 +786,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.7835626940693243
+      "Q_HEADWAY": NaN
     },
     "raw_metrics": {
       "CLOSENESS": 0.05415447692732919,
@@ -794,7 +794,7 @@
       "GAP": 0.5350350038888053,
       "REGULARITY": 0.006979144043701999,
       "BALANCE": 0.6646953356517469,
-      "HEADWAY": 0.16186085876631742
+      "HEADWAY": NaN
     }
   }
 }

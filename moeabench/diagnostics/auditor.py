@@ -7,7 +7,7 @@ import os
 from typing import Optional, Any, Dict, List
 from dataclasses import dataclass
 from .enums import DiagnosticStatus
-from . import fr, qscore, baselines
+from . import fair, qscore, baselines
 from .base import Reportable
 
 # Thresholds for Q-Score (High-is-Better)
@@ -110,9 +110,9 @@ class QualityAuditResult(Reportable):
         return self._render_report(content, show, **kwargs)
 
 @dataclass
-class FrAuditResult(Reportable):
+class FairAuditResult(Reportable):
     """ Results of a physical engineering audit. """
-    metrics: Dict[str, fr.FrResult]
+    metrics: Dict[str, fair.FairResult]
     
     def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
@@ -128,14 +128,14 @@ class FrAuditResult(Reportable):
         return self._render_report(content, show, **kwargs)
 
 # Compatibility Alias
-FairAuditResult = FrAuditResult
+FairAuditResult = FairAuditResult
 
 
 @dataclass
 class DiagnosticResult(Reportable):
     """ High-level synthesis of an algorithmic audit. """
     q_audit_res: QualityAuditResult
-    fr_audit_res: FrAuditResult
+    fair_audit_res: FairAuditResult
     status: DiagnosticStatus
     description: str
 
@@ -145,15 +145,15 @@ class DiagnosticResult(Reportable):
         return self.q_audit_res
 
     @property
-    def fr(self) -> FrAuditResult:
+    def fr(self) -> FairAuditResult:
         """Access the FR (Physical) audit results."""
-        return self.fr_audit_res
+        return self.fair_audit_res
 
     # Compatibility Alias
     @property
-    def fair(self) -> FrAuditResult:
+    def fair(self) -> FairAuditResult:
         """Alias for fr to maintain backward compatibility."""
-        return self.fr_audit_res
+        return self.fair_audit_res
 
 
     @property
@@ -184,7 +184,7 @@ class DiagnosticResult(Reportable):
 
         # We call nested reports with show=False to gather their strings
         q_rep = self.q_audit_res.report(show=False, **kwargs) if self.q_audit_res else "N/A"
-        f_rep = self.fr_audit_res.report(show=False, **kwargs) if self.fr_audit_res else "N/A"
+        f_rep = self.fair_audit_res.report(show=False, **kwargs) if self.fair_audit_res else "N/A"
 
         lines = [
             header,
@@ -204,9 +204,9 @@ class PerformanceAuditor:
     """ Expert system for interpreting Clinical Quality Scores. """
     
     @staticmethod
-    def audit_fr(metrics: Dict[str, fr.FrResult]) -> FrAuditResult:
+    def audit_fr(metrics: Dict[str, fair.FairResult]) -> FairAuditResult:
         """ Aggregates physical Fact results. """
-        return FrAuditResult(metrics=metrics)
+        return FairAuditResult(metrics=metrics)
 
     # Compatibility Alias
     audit_fair = audit_fr
@@ -220,7 +220,7 @@ class PerformanceAuditor:
 
     @staticmethod
     def audit_synthesis(q_res: QualityAuditResult, 
-                         f_res: FrAuditResult) -> DiagnosticResult:
+                         f_res: FairAuditResult) -> DiagnosticResult:
         """ 
         The 'Synthesis' Logic. 
         Identifies pathologies without subjective weighting.
@@ -260,18 +260,18 @@ class PerformanceAuditor:
 
         return DiagnosticResult(
             q_audit_res=q_res,
-            fr_audit_res=f_res,
+            fair_audit_res=f_res,
             status=status,
             description=desc
         )
 
-def fr_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> FrAuditResult:
+def fair_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> FairAuditResult:
     """ Aggregates all physical (fr) metrics. """
     res = audit(target, ground_truth)
-    return res.fr_audit_res
+    return res.fair_audit_res
 
 # Compatibility Alias
-fair_audit = fr_audit
+fair_audit = fair_audit
 
 def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAuditResult:
     """ Aggregates all clinical (q) scores. """
@@ -288,7 +288,12 @@ def audit(target: Any,
     from .utils import _resolve_diagnostic_context
     
     # 1. Resolve Context (P, GT, s_k, Name, K)
-    P, GT, s_k_mop, mop_name, K_raw = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
+    ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
+    s_k_mop = ctx['s_k']
+    mop_name = ctx['problem']
+    K_raw = ctx['k']
 
     if P is None or GT is None:
          return PerformanceAuditor.audit_synthesis(None, None)
@@ -317,12 +322,12 @@ def audit(target: Any,
         s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
         # C. Compute FR Metrics (Physics)
-        f_headway = fr.headway(P, GT, s_k, problem=mop_name, k=K_target)
-        f_closeness_val = fr.closeness(P, GT, s_k, problem=mop_name, k=K_target) 
-        f_cov = fr.coverage(P, GT, problem=mop_name, k=K_target)
-        f_gap = fr.gap(P, GT, problem=mop_name, k=K_target)
-        f_reg = fr.regularity(P, U_ref, problem=mop_name, k=K_target)
-        f_bal = fr.balance(P, centroids, hist_ref, problem=mop_name, k=K_target)
+        f_headway = fair.headway(P, GT, s_k, problem=mop_name, k=K_target, initial_data=ctx.get('P_initial'))
+        f_closeness_val = fair.closeness(P, GT, s_k, problem=mop_name, k=K_target) 
+        f_cov = fair.coverage(P, GT, problem=mop_name, k=K_target)
+        f_gap = fair.gap(P, GT, problem=mop_name, k=K_target)
+        f_reg = fair.regularity(P, U_ref, problem=mop_name, k=K_target)
+        f_bal = fair.balance(P, centroids, hist_ref, problem=mop_name, k=K_target)
         
         f_metrics = {
             "CLOSENESS": f_closeness_val, 

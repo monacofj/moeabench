@@ -215,7 +215,7 @@ def perf_front_size(*args, mode='run', title=None, **kwargs):
     [mb.view.perf_front_size] Non-Dominated Density Perspective.
     Visualizes the evolution of the non-dominated front size (percentage) over generations.
     """
-    from ..metrics.evaluator import front_size
+    from ..metrics.evaluator import fairont_size
     if title is None: 
         if str(mode).lower() == 'consensus':
             title = "Consensus Ratio (Superfront Density)"

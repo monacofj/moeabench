@@ -269,7 +269,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             u_blur_ecdf = u_blur_sorted
             
         # --- GENERATION (IDEAL RESIDUE) ---
-        # Calculate Finite-Resolution Ideal Residue (epsilon)
+        # Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
         u_ideal_sample = base.get_ref_uk(gt_norm, k, seed=999)
         d_ideal, _ = tree.query(u_ideal_sample, k=1)
         u_ideal_vals = d_ideal / s_fit if s_fit > 1e-12 else d_ideal

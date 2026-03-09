@@ -45,10 +45,10 @@ class TestGoldenDTLZ6(unittest.TestCase):
         self.assertAlmostEqual(s_k, EXPECTED_S_K, places=15, 
                                msg="Critical: s_K runtime calculation diverged from Golden Value.")
 
-    def test_baseline_v0131_integrity(self):
-        """Verifies that baselines_v0.13.1.json contains the valid structure and metrics."""
+    def test_baseline_v0132_integrity(self):
+        """Verifies that baselines_v0.13.2.json contains the valid structure and metrics."""
         # Load JSON directly
-        v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines_v0.13.1.json")
+        v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines_v0.13.2.json")
         
         with open(v_path, 'r') as f:
             data = json.load(f)
@@ -57,12 +57,12 @@ class TestGoldenDTLZ6(unittest.TestCase):
         try:
             rand50 = data["problems"]["DTLZ6"]["200"]["closeness"]["rand50"]
         except KeyError:
-            self.fail("DTLZ6/200/closeness/rand50 missing from baselines_v0.13.1.json")
+            self.fail("DTLZ6/200/closeness/rand50 missing from baselines_v0.13.2.json")
             
         # Updated Golden Value for closeness rand50
         EXPECTED_RAND = 1.995441442341559
         
-        print(f"[Golden Check] V0.13.1 closeness.rand50 (DTLZ6, K=200): {rand50}")
+        print(f"[Golden Check] V0.13.2 closeness.rand50 (DTLZ6, K=200): {rand50}")
         # Allow small float wiggle room due to arch differences, but should be tiny
         self.assertAlmostEqual(rand50, EXPECTED_RAND, places=8,
                                msg="Critical: Baseline integrity check failed to match Expected Value.")

@@ -9,8 +9,8 @@ moeabench Regression Tier Testing Suite
 This tier contains strict numerical reproducibility tests against established 
 Calibration Reference Data.
 
-Data Source 1 (Points):  `tests/calibration_reference_audit_v0.13.1.json`
-Data Source 2 (Targets): `tests/calibration_reference_targets_v0.13.1.json`
+Data Source 1 (Points):  `tests/calibration_reference_audit_v0.13.2.json`
+Data Source 2 (Targets): `tests/calibration_reference_targets_v0.13.2.json`
 
 Logic: Verifies that the current diagnostic pipeline reproduces the reference
 clinical scores and physical metrics for a variety of MOPs and MOEAs.
@@ -25,8 +25,8 @@ from moeabench.diagnostics import auditor, baselines
 from moeabench import metrics
 
 # Load Calibration Reference Data (Module Level)
-DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.13.1.json")
-TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_targets_v0.13.1.json")
+DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.13.2.json")
+TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_targets_v0.13.2.json")
 
 print(f"Loading Calibration Reference Data from {DATA_JSON_PATH}...")
 with open(DATA_JSON_PATH, "r") as f:
@@ -84,11 +84,11 @@ def test_calibration_reference_reproducibility(problem_name, alg_name):
             continue
         
         computed_val = float(q_audit.scores[key].value)
-        assert computed_val == pytest.approx(target_val, abs=1e-6), \
+        assert computed_val == pytest.approx(target_val, abs=1e-6, nan_ok=True), \
             f"Regression in {key} for {problem_name}/{alg_name}"
 
     # 4. Verify Raw Fair Metrics
-    fair_audit = report.fr_audit_res
+    fair_audit = report.fair_audit_res
     if fair_audit is None:
          pytest.fail(f"Audit failed to produce Fair Metrics for {problem_name}/{alg_name}")
 
@@ -97,5 +97,5 @@ def test_calibration_reference_reproducibility(problem_name, alg_name):
             continue
             
         computed_val = float(fair_audit.metrics[key].value)
-        assert computed_val == pytest.approx(target_val, abs=1e-6), \
+        assert computed_val == pytest.approx(target_val, abs=1e-6, nan_ok=True), \
             f"Regression in Raw {key} for {problem_name}/{alg_name}"

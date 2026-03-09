@@ -10,31 +10,46 @@ import numpy as np
 import os
 from typing import Any, Tuple, Optional
 
-def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **kwargs) -> Tuple[np.ndarray, np.ndarray, float, str, int]:
+def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **kwargs) -> dict:
     """
     Polymorphic resolver for diagnostic data.
     
     Returns:
-        tuple: (front_array, ref_array, s_k_value, problem_name, k)
+        dict: {
+            'P_final': np.ndarray,      # The evaluated population/front
+            'P_initial': np.ndarray,    # The starting population (if available)
+            'GT': np.ndarray,           # Ground Truth
+            's_k': float,               # Resolution factor
+            'problem': str,             # Problem name
+            'k': int,                   # Number of points
+            'is_container': bool        # True if data was a Run/Experiment
+        }
     """
-    front = None
+    p_final = None
+    p_initial = kwargs.get('initial_data', None)
     gt = ref
     res = s_k
     problem_name = kwargs.get('problem', None)
     k_val = kwargs.get('k', None)
+    is_container = False
 
-    # 1. Resolve Front from Data
-    if hasattr(data, 'front') and callable(data.front):
+    # 1. Resolve Populations from Data
+    if hasattr(data, 'pop') and callable(data.pop):
         # Experiment or Run
-        front = data.front()
+        is_container = True
+        p_final = data.pop(-1).objectives if not hasattr(data, 'front') else data.front(-1)
+        try:
+            p_initial = data.pop(0).objectives
+        except:
+            pass
     elif hasattr(data, 'objectives'):
-        # Population
-        front = data.objectives
+        # Single Population object
+        p_final = data.objectives
     elif isinstance(data, np.ndarray):
-        front = data
+        p_final = data
     else:
         try:
-            front = np.asarray(data)
+            p_final = np.asarray(data)
         except:
              raise TypeError(f"Unsupported data type for diagnostics: {type(data)}")
 
@@ -49,10 +64,9 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
         problem_name = mop.name if hasattr(mop, 'name') else mop.__class__.__name__
     
     if k_val is None:
-        if isinstance(front, np.ndarray) and front.ndim > 1:
-            k_val = len(front)
-        elif hasattr(data, 'pop'):
-            # Experiment
+        if isinstance(p_final, np.ndarray) and p_final.ndim > 1:
+            k_val = len(p_final)
+        elif is_container:
             try:
                 p = data.pop()
                 k_val = len(p)
@@ -72,7 +86,7 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
             elif hasattr(src, 'mop') and hasattr(src.mop, 'pf'):
                 gt = src.mop.pf()
         
-        # 3.1 Sidecar/Cache Look-up (Plugin support)
+        # 3.1 Sidecar/Cache Look-up
         if gt is None and problem_name is not None:
              from .baselines import load_offline_baselines
              try:
@@ -82,20 +96,18 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
              except:
                  pass
         
-    # 3.2 File Path Resolution (Polymorphic loading)
+    # 3.2 File Path Resolution
     if isinstance(gt, str) and os.path.exists(gt):
         try:
             if gt.endswith(".npy"):
                 gt = np.load(gt)
             elif gt.endswith(".npz"):
                 data_npz = np.load(gt)
-                # Take first array or 'F'
                 key = 'F' if 'F' in data_npz else data_npz.files[0]
                 gt = data_npz[key]
             elif gt.endswith(".csv"):
                 gt = np.genfromtxt(gt, delimiter=',', skip_header=1)
-        except Exception as e:
-            # Fallback/Log if file is invalid
+        except:
             pass
     
     # 4. Resolve Resolution Scale (s_k)
@@ -105,4 +117,12 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
         else:
             res = 1.0
 
-    return np.asarray(front), np.asarray(gt) if gt is not None else None, float(res), str(problem_name or "Unknown"), int(k_val or 0)
+    return {
+        'P_final': np.asarray(p_final),
+        'P_initial': np.asarray(p_initial) if p_initial is not None else None,
+        'GT': np.asarray(gt) if gt is not None else None,
+        's_k': float(res),
+        'problem': str(problem_name or "Unknown"),
+        'k': int(k_val or 0),
+        'is_container': is_container
+    }
