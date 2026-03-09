@@ -140,8 +140,15 @@ $$
 The main idea is to measure the "microscopic precision" of convergence: how "glued" the points are to the ideal surface (Ground Truth - GT).
 But there is a practical limiting problem: the GT we use in the computer is not a perfect continuous surface, it is formed by a finite and discrete set of points. Therefore, even a strictly perfect algorithm will never be able to nail a "zero distance", because its mathematical points will invariably fall into the spaces ("holes") between the discrete GT points.
 
-To be fair to the algorithms, we thought: what would be the expected error of an excellent algorithm, given these geometric constraints? We expect that, at the very least, it approaches the GT front forming at worst a cloud of tolerable and modelable error (a "Half-Gaussian Blur") in the positive orthogonal direction — that is, points bumping and bouncing "out" of the optimal wall, without crossing it.
-*Closeness* indirectly evaluates the mathematical effort needed to "pull" empirical points from your algorithm into this theoretical ideal blur. The reported physical distance is how much distance remains after we discount the geometric margin of error of the benchmark itself ($ideal\_res$).
+To be fair to the algorithms, we must discount this intrinsic benchmark error. What would be the expected residual error of a theoretically perfect front when measured against this discrete GT? We call this baseline geometric error the $ideal\_res$. 
+*Closeness* measures the raw physical distance of your empirical front to the GT, and then **normalizes it by the resolution factor $s_K$**. This transforms the absolute distance (which depends on the coordinate scale of the problem) into a **relative distance** expressed in "typical gap units". Finally, it subtracts the $ideal\_res$ margin to account for the discrete nature of the GT.
+
+**Why normalize by $s_K$?**
+Without $s_K$, a distance of $0.001$ would be impossible to interpret: is it a great result or a poor one? 
+- On a small, simple front, $0.001$ might be a huge error.
+- On a massive, high-dimensional front with $10^6$ variables, $0.001$ might be remarkably precise.
+By dividing by $s_K$ (the typical spacing between $K$ points on that specific manifold), we create a **scale-invariant ruler**. A value of $1.0$ always means "you are exactly one typical-grid-step away from the target," regardless of the problem's physical units.
+
 
 **Definition.**
 Compute normalized point-to-manifold distances ($u_j = d(p_j,R)/s_K$) and define $u_{raw} = \mathrm{median}(\{u_j\})$. To account for finite-resolution effects, we subtract the $ideal\_res$ (the median residue expected for a perfect front):
