@@ -52,13 +52,16 @@ class FrResult(DiagnosticValue):
 FairResult = FrResult
 
 
-def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
+def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FrResult:
     r"""
     [Smart API] Calculates HEADWAY (Algorithmic Progress over BBox).
     
     Definition: $GD_{95}(P \to GT) / s_{FIT}$
     Meaning: How far P is from GT, in units of s_fit (resolution at K).
     Ideal: 0.0
+    
+    If raw=True, returns the resolution-normalized distance (error units).
+    If raw=False (default), returns the ratio relative to the random baseline.
     """
     P, GT, s_fit, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
     
@@ -79,12 +82,33 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     
     # 3. Normalize by Resolution (Scale Invariance)
     u_vals = min_d / s_fit if s_fit > 1e-12 else min_d
-    f_val = float(np.percentile(u_vals, 95))
+    curr_h_norm = float(np.percentile(u_vals, 95))
+    
+    if kwargs.get('raw', False):
+        return FrResult(
+            value=curr_h_norm,
+            name="HEADWAY",
+            description=f"Population is {curr_h_norm:.2f} resolution-units (s_fit) away from truth.",
+            raw_data=u_vals
+        )
+
+    # 4. Normalize by Random Baseline (Search Drive)
+    # This makes Headway a "residual search error" in [0, 1] range relative to chaos.
+    from . import baselines as base
+    try:
+        _, _, _, problem_name, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        k_snap = base.snap_k(k)
+        rand50_norm = base.get_baseline_data(problem_name, k_snap, "headway").get("rand50", 1.0)
+    except:
+        rand50_norm = 1.0 # Fallback 
+    
+    # Final physical f_val is the fraction of search error remaining
+    f_val = curr_h_norm / rand50_norm if rand50_norm > 1e-12 else curr_h_norm
     
     return FrResult(
         value=f_val,
         name="HEADWAY",
-        description=f"Population is {f_val:.2f} resolution-units (s_fit) away from the truth (95th percentile).",
+        description=f"Algorithm left {f_val*100:.1f}% of the initial random search error unreduced.",
         raw_data=u_vals
     )
 

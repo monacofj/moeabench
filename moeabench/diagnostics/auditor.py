@@ -317,12 +317,12 @@ def audit(target: Any,
         s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
         
         # C. Compute FR Metrics (Physics)
-        f_headway = fr.headway(P, GT, s_k)
-        f_closeness_val = fr.closeness(P, GT, s_k) 
-        f_cov = fr.coverage(P, GT)
-        f_gap = fr.gap(P, GT)
-        f_reg = fr.regularity(P, U_ref)
-        f_bal = fr.balance(P, centroids, hist_ref)
+        f_headway = fr.headway(P, GT, s_k, problem=mop_name, k=K_target)
+        f_closeness_val = fr.closeness(P, GT, s_k, problem=mop_name, k=K_target) 
+        f_cov = fr.coverage(P, GT, problem=mop_name, k=K_target)
+        f_gap = fr.gap(P, GT, problem=mop_name, k=K_target)
+        f_reg = fr.regularity(P, U_ref, problem=mop_name, k=K_target)
+        f_bal = fr.balance(P, centroids, hist_ref, problem=mop_name, k=K_target)
         
         f_metrics = {
             "CLOSENESS": f_closeness_val, 

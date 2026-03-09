@@ -118,7 +118,8 @@ FR metrics are “physical facts.” They are intentionally **not** mapped into 
 All FR metrics are implemented in `moeabench.diagnostics.fair`.
 
 ### 4.1 FR `HEADWAY` — residual search error relative to the null hypothesis (adimensional)
-**Purpose.** Measure the algorithmic progress (advancement) of the optimizer toward the GT manifold, relative to the expected distance of a random search (the null hypothesis) in the objective space.
+**The Rationale (Intuition).**
+Imagine you drop the algorithm blindfolded into the search space (purely random sampling). It would land at a certain distance from the goal. *Headway* measures the algorithm's "driving force": how much of the path it managed to cover from that worst-case scenario of complete ignorance, until it reached the target. It is a measure of global search effort.
 
 **Definition.**
 Let $GD_{95}(P \to R)$ be the 95th percentile distance of the produced set $P$ to the reference $R$ (normalized by $s_K$). Let $GD_{95}(Random \to R)$ be the same distance for a random bounding-box search. The `HEADWAY` metric is the ratio of these two:
@@ -132,13 +133,15 @@ $$
 - **Values < 1.0**: Represent the **fraction of the initial search error that remains**. For example, 0.1 means 90% of the initial search error has been eliminated.
 - **Values > 1.0**: Indicate a failed search that is performing worse than random guessing (pathological behavior).
 
-**Why this definition?**
-By normalizing by the global search radius (random baseline) instead of the local resolution ($s_K$), `HEADWAY` becomes a distinct measure of global search drive, complementing `CLOSENESS` which focuses on local convergence precision.
-
 ---
 
 ### 4.2 FR `CLOSENESS` — median proximity to the manifold (resolution units)
-**Purpose.** Quantify the sharpness and precision of convergence relative to the "blur" expected from a failed or noisy approximation.
+**The Rationale (Intuition).**
+The main idea is to measure the "microscopic precision" of convergence: how "glued" the points are to the ideal surface (Ground Truth - GT).
+But there is a practical limiting problem: the GT we use in the computer is not a perfect continuous surface, it is formed by a finite and discrete set of points. Therefore, even a strictly perfect algorithm will never be able to nail a "zero distance", because its mathematical points will invariably fall into the spaces ("holes") between the discrete GT points.
+
+To be fair to the algorithms, we thought: what would be the expected error of an excellent algorithm, given these geometric constraints? We expect that, at the very least, it approaches the GT front forming at worst a cloud of tolerable and modelable error (a "Half-Gaussian Blur") in the positive orthogonal direction — that is, points bumping and bouncing "out" of the optimal wall, without crossing it.
+*Closeness* indirectly evaluates the mathematical effort needed to "pull" empirical points from your algorithm into this theoretical ideal blur. The reported physical distance is how much distance remains after we discount the geometric margin of error of the benchmark itself ($ideal\_res$).
 
 **Definition.**
 Compute normalized point-to-manifold distances ($u_j = d(p_j,R)/s_K$) and define $u_{raw} = \mathrm{median}(\{u_j\})$. To account for finite-resolution effects, we subtract the $ideal\_res$ (the median residue expected for a perfect front):
@@ -149,18 +152,11 @@ $$
 **Why the median?**
 The median is robust to tails and is intended to represent “typical closeness.” In practice, it complements `HEADWAY`, which is more tail-sensitive.
 
-**Implementation notes.**
-- Like `HEADWAY`, it uses KDTree when helpful.
-- It returns `FairResult` with `.raw_data = \{u_j\}` so the full distribution is available.
-
-**Interpretation.**
-- Small values mean the population is tightly concentrated near the manifold.
-- Larger values suggest “blurry” convergence: the population may be near the right region but still spread away from the manifold.
-
 ---
 
 ### 4.3 FR `COVERAGE` — average extent of approximation (objective-space distance)
-**Purpose.** Measure how well the produced front spans the full GT manifold.
+**The Rationale (Intuition).**
+Managing to arrive perfectly at the optimum (Closeness) is not of much use if the algorithm only found a tiny piece of the curve and ignored the rest. *Coverage* checks if the algorithm managed to spread out and discover the entire extent (the extremes and the "middle") of the ideal frontier. Think of it like laying a stretched sheet over a huge bed: Coverage answers geometrically if the entire bed, right up to the edges, was covered or if pieces are missing around the edges.
 
 **Definition.**
 For each reference point $r_i \in R$, compute distance to the nearest produced point:
@@ -169,22 +165,14 @@ $$
 $$
 Then:
 $$
-\mathrm{COVERAGE}(P,R) = \mathrm{mean}(\{\delta_i\})
+\mathrm{COVERAGE}(P,R) = \mathrm{mean}(\{\delta_i\})  
 $$
-This is essentially an IGD-mean-style extent measure (direction $R \to P$).
-
-**Implementation notes.**
-- KDTree is used when $|P|$ is large.
-- Returned `raw_data` contains the $\{\delta_i\}$ values over the GT.
-
-**Interpretation.**
-- Smaller values generally indicate a front that “covers” the reference manifold more completely.
-- In finite sampling regimes, this value typically does not reach zero unless $P$ matches $R$ very closely everywhere.
 
 ---
 
 ### 4.4 FR `GAP` — robust worst-case coverage hole (objective-space distance)
-**Purpose.** Detect large holes and fragmentation in the approximation.
+**The Rationale (Intuition).**
+While *Coverage* looks at the "coverage on average", the *Gap* is the strict auditor of critical "holes". An algorithm can have a reasonable average coverage, but still leave a gigantic tear in the middle of the Pareto frontier (exactly where the niche solutions that the business needs most could be). The Gap actively looks for the worst continuity failures (isolating statistical distortions via the 95th percentile) and reports the size of the worst empty "tunnel" in the frontier.
 
 **Definition.**
 Using the same $\delta_i = d(r_i,P)$ distances as in coverage:
@@ -192,63 +180,49 @@ $$
 \mathrm{GAP}(P,R) = \mathrm{percentile}_{95}(\{\delta_i\})
 $$
 
-**Why a 95th percentile “max”?**
-A strict max can be dominated by a tiny number of extreme reference points or numerical artifacts. The 95th percentile is intended to reflect “large holes that matter” while remaining somewhat robust.
-
-**Interpretation.**
-- A low gap suggests the manifold is covered continuously without severe holes.
-- A high gap suggests significant missing regions (fragmentation).
-
 ---
 
 ### 4.5 FR `REGULARITY` — spacing order relative to a uniform-at-K reference
-**Purpose.** Measure whether the spacing among points in $P$ resembles a well-ordered “uniform” spacing pattern at size $K$.
+**The Rationale (Intuition).**
+Imagine that the algorithm covered the whole frontier, but did so in a "clumped" way: points crowded and colliding in one region, while others are excessively sparse. For the human decision-maker, the ideal is to have evenly spaced progressive options (as if they were samples in a well-organized grid mesh). *Regularity* compares the "vibe" of the real spacing against that of a perfect grid. The lower the value, the better the distribution; high values indicate clumping and spatial chaos.
 
 **Definition.**
-Let $NN(P)$ be the empirical distribution of nearest-neighbor distances within $P$ (excluding self):
-$$
-NN_P(j) = \min_{l\ne j}\|p_j - p_l\|_2
-$$
-Let $U_K$ be the uniform-at-K reference subset derived from $R$, and similarly define $NN(U_K)$.
-Then `REGULARITY` is the 1D Wasserstein distance between these two distributions:
+Let $NN(P)$ be the empirical distribution of nearest-neighbor distances within $P$, and let $NN(U_K)$ be the empirical distribution of nearest-neighbor distances within the uniform-at-K reference subset $U_K$. Then `REGULARITY` is the 1D Wasserstein distance between these two spacing patterns:
 $$
 \mathrm{REGULARITY}(P,R) = W_1\big(NN(P), NN(U_K)\big)
 $$
 
-**Why Wasserstein on NN distances?**
-Nearest-neighbor spacing captures local “order” vs “clumping.” Wasserstein distance provides a stable way to compare one-dimensional distributions (spacing patterns), often more informative than comparing only means/variances.
-
-**Interpretation.**
-- Values near 0 indicate spacing patterns close to the reference uniform lattice.
-- Larger values indicate irregular spacing, clumping, or noisy scatter.
-
 ---
 
 ### 4.6 FR `BALANCE` — regional parity of mass over the manifold
-**Purpose.** Measure whether the produced points are distributed evenly across “regions” of the GT manifold.
+**The Rationale (Intuition).**
+Unlike Regularity, which looks at micro-spacing, *Balance* is a metric of macro-population proportion ("demographic justice"). If we slice the ideal Ground Truth into "electoral regions" (centroids), we check if the algorithm's population distributed its individuals proportionally to the "size" of those slices. If the algorithm allocated 90% of its processing power discovering irrelevant solutions for only 10% of the surface, Balance will trigger, warning that a Severe Demographic Bias occurred, alerting that the exploration was not fair (paritative) across the scope of the problem.
 
 **Definition.**
-- Fit a fixed set of centroids (e.g., k-means on $R$, with deterministic seed), obtaining $C = \{c_m\}$.
-- Assign each $p\in P$ to its nearest centroid, producing an occupancy histogram $H_P$.
-- Compute the same histogram for $U_K$, yielding $H_{ref}$.
+- Fit a fixed set of centroids on $R$ (obtaining $C = \{c_m\}$).
+- Assign each $p\in P$ to its nearest centroid to get histogram $H_P$.
+- Compute the ideal histogram $H_{ref}$ using $U_K$.
 Then:
 $$
 \mathrm{BALANCE}(P,R) = D_{JS}\big(H_P \,\|\, H_{ref}\big)
 $$
-where $D_{JS}$ is Jensen–Shannon divergence (base 2), which lies in $[0,1]$.
-
-**Interpretation.**
-- Values near 0 indicate parity close to the reference occupancy.
-- Larger values indicate bias: an over-concentration in some regions and under-coverage in others.
-
----
 
 ## 5. Q-scores (Clinical layer): per-metric mappings and baseline rationale
-Q-scores map FR values into a $[0,1]$ quality axis:
-- $Q \approx 1$: behavior close to the **ideal baseline**,
-- $Q \approx 0$: behavior at or worse than the **worst-case/random baseline**.
+
+**The Rationale (Intuition).**
+Physical Metrics (FR) measure the raw geometric reality (e.g., "The distance is 3.4"). But for an engineer or decision-maker, the business question is: "Is this good or bad? Is it acceptable?".
+The **Q-Score** (Clinical Score) translates the physical metric into a **score from 0 to 1** that categorically answers this question. To be fair, the Q-Score calibrates the result against two empirical "reality sensors" from the benchmark (the *baselines*):
+
+1. **The $Q=1.0$ Baseline (The Plausible Ideal):**
+   What would we demand from a "dream algorithm"? We cannot demand continuous mathematical perfection, because the computational benchmark is discrete and finite. Therefore, $Q=1.0$ represents the *best empirically plausible performance* if a perfectly guided algorithm tried to solve the problem knowing the calculation limits. It is the practical maximum score.
+
+2. **The $Q=0.0$ Baseline (The Worst Acceptable / The Limit of Chaos):**
+   Where do we draw the line for summary failure? $Q=0.0$ is the statistical behavior we would achieve "blindfolded" — that is, sampling points **completely randomly** (blind chaos), or (in the specific case of *Closeness*) hitting the threshold of *tolerable half-gaussian noise*. If an algorithm delivers a Q-Score of 0.0, it technically tied (or lost) to pure luck/mathematical ignorance.
+
+In short, the baselines guarantee that the required score is **realistic** (100% is not impossible) and **strict** (0% is indeed a broken algorithm).
 
 In MoeaBench, baselines are stored per triple:
+
 $$
 (\text{problem}, K, \text{metric})
 $$

@@ -205,30 +205,17 @@ def _compute_q_ecdf(fr_val: float, ideal: float, rand50: float, rand_ecdf: np.nd
 def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
     """[Smart API] Computes Q_HEADWAY using a log-linear baseline (Ideal -> Rand50).
     """
-    s_fit = s_k if s_k is not None else 1.0
     if hasattr(data, 'value') and isinstance(data, fr.FrResult):
         f_val = float(data.value)
-        problem = kwargs.get('problem', "Unknown")
-        k = kwargs.get('k', 100)
     elif isinstance(data, (float, int, np.number)):
         f_val = float(data)
-        problem = kwargs.get('problem', "Unknown")
-        k = kwargs.get('k', 100)
     else:
-        P, GT, s_ctx, problem, k = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
-        s_fit = s_ctx
-        f_val = float(fr.headway(P, GT, s_fit))
+        P, GT, s_ctx, _, _ = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
+        f_val = float(fr.headway(P, GT, s_ctx, **kwargs))
     
-    # Snap K to supported baseline grid
-    k_snap = baselines.snap_k(k)
-    
-    # Ideal = 0.0 (Better-than-noise progress)
-    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
-    
-    # Normalize baseline to match FR units (s_fit)
-    rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
-
-    q_val = _compute_q_loglinear(f_val, 0.0, rand50)
+    # The physical HEADWAY is now pre-normalized such that:
+    # Ideal = 0.0, Random = 1.0
+    q_val = _compute_q_loglinear(f_val, 0.0, 1.0)
     
     return QResult(
         value=q_val,

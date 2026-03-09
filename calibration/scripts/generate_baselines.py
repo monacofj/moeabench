@@ -188,7 +188,7 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
     metrics = {}
     
     # 1. HEADWAY (Proximity)
-    metrics['headway'] = fair.headway(samples, gt_norm, s_k=s_fit).value
+    metrics['headway'] = fair.headway(samples, gt_norm, s_k=s_fit, raw=True).value
 
     # 2. COV (Coverage)
     metrics['cov'] = fair.coverage(samples, gt_norm).value

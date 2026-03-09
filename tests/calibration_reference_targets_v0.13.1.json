@@ -7,7 +7,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9143436900652104
+      "Q_HEADWAY": 0.4796711998447213
     },
     "raw_metrics": {
       "CLOSENESS": 0.3879028376101801,
@@ -26,7 +26,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9133161043279255
+      "Q_HEADWAY": 0.4734290157704226
     },
     "raw_metrics": {
       "CLOSENESS": 0.3787323664201504,
@@ -45,7 +45,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9146765085973989
+      "Q_HEADWAY": 0.48169294310747524
     },
     "raw_metrics": {
       "CLOSENESS": 0.37670975541515417,
@@ -64,7 +64,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.34313154039426585
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 8.056046255977009,
@@ -83,7 +83,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.5454617250077264
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 4.35445092724669,
@@ -102,7 +102,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.34673572480429604
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 6.731344890920842,
@@ -121,7 +121,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8903948148782308
+      "Q_HEADWAY": 0.26923996219501434
     },
     "raw_metrics": {
       "CLOSENESS": 0.4125959716060851,
@@ -140,7 +140,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8443807354239415
+      "Q_HEADWAY": 0.268977745070646
     },
     "raw_metrics": {
       "CLOSENESS": 0.4056719405854686,
@@ -159,7 +159,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8903427332308312
+      "Q_HEADWAY": 0.26889272327032
     },
     "raw_metrics": {
       "CLOSENESS": 0.39210205745626414,
@@ -178,7 +178,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8511053721254972
+      "Q_HEADWAY": 0.0869394181349481
     },
     "raw_metrics": {
       "CLOSENESS": 0.2060364179135054,
@@ -197,7 +197,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.944759748583728
+      "Q_HEADWAY": 0.6612524117188099
     },
     "raw_metrics": {
       "CLOSENESS": 0.20929740982661604,
@@ -216,7 +216,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8544993124384865
+      "Q_HEADWAY": 0.10775194281250233
     },
     "raw_metrics": {
       "CLOSENESS": 0.18924210594582935,
@@ -235,7 +235,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.76,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9917932702471567
+      "Q_HEADWAY": 0.9729165572104019
     },
     "raw_metrics": {
       "CLOSENESS": 0.005836261452882076,
@@ -254,7 +254,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9928758726746377
+      "Q_HEADWAY": 0.9764893080857925
     },
     "raw_metrics": {
       "CLOSENESS": 0.005601201613855444,
@@ -273,7 +273,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9949699352002127
+      "Q_HEADWAY": 0.9834000294470754
     },
     "raw_metrics": {
       "CLOSENESS": 0.005435350594266199,
@@ -292,7 +292,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9003888647280734
+      "Q_HEADWAY": 0.628770984354593
     },
     "raw_metrics": {
       "CLOSENESS": 0.2926270448752831,
@@ -311,7 +311,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9004920444479652
+      "Q_HEADWAY": 0.6291555127082293
     },
     "raw_metrics": {
       "CLOSENESS": 0.2919527470221208,
@@ -330,7 +330,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9003822808751183
+      "Q_HEADWAY": 0.6287464477679451
     },
     "raw_metrics": {
       "CLOSENESS": 0.29257791108738423,
@@ -349,7 +349,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.95,
-      "Q_HEADWAY": 0.9897054163143875
+      "Q_HEADWAY": 0.9692888474115723
     },
     "raw_metrics": {
       "CLOSENESS": 0.00949230393494458,
@@ -368,7 +368,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9922009890616413
+      "Q_HEADWAY": 0.976733725007113
     },
     "raw_metrics": {
       "CLOSENESS": 0.007401025056704787,
@@ -387,7 +387,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9921812992198915
+      "Q_HEADWAY": 0.9766749856007523
     },
     "raw_metrics": {
       "CLOSENESS": 0.0073904188771512745,
@@ -406,7 +406,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.35,
-      "Q_HEADWAY": 0.9934902542845249
+      "Q_HEADWAY": 0.9804960615717557
     },
     "raw_metrics": {
       "CLOSENESS": 0.006232340691175958,
@@ -444,7 +444,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9917276192953745
+      "Q_HEADWAY": 0.9752150067038009
     },
     "raw_metrics": {
       "CLOSENESS": 0.006923951863271452,
@@ -463,7 +463,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.99,
-      "Q_HEADWAY": 0.989985651432603
+      "Q_HEADWAY": 0.9705657983293708
     },
     "raw_metrics": {
       "CLOSENESS": 0.00895783906333869,
@@ -482,7 +482,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.42000000000000004,
-      "Q_HEADWAY": 0.9910740517945897
+      "Q_HEADWAY": 0.9784360870348259
     },
     "raw_metrics": {
       "CLOSENESS": 0.005165774260482505,
@@ -501,7 +501,7 @@
       "Q_GAP": 1.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9918380526531417
+      "Q_HEADWAY": 0.9760103812429082
     },
     "raw_metrics": {
       "CLOSENESS": 0.006478662367719688,
@@ -520,7 +520,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.97,
-      "Q_HEADWAY": 0.929164100126309
+      "Q_HEADWAY": 0.5160535153075524
     },
     "raw_metrics": {
       "CLOSENESS": 0.12268998014436208,
@@ -539,7 +539,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9171261637148764
+      "Q_HEADWAY": 0.5172389279906252
     },
     "raw_metrics": {
       "CLOSENESS": 0.11014710804494882,
@@ -558,7 +558,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9271917971976671
+      "Q_HEADWAY": 0.5025788637429247
     },
     "raw_metrics": {
       "CLOSENESS": 0.05710259395378808,
@@ -577,7 +577,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.941401747395776
+      "Q_HEADWAY": 0.6000177781374698
     },
     "raw_metrics": {
       "CLOSENESS": 0.09111275392071533,
@@ -596,7 +596,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.932399837706405
+      "Q_HEADWAY": 0.60375605119893
     },
     "raw_metrics": {
       "CLOSENESS": 0.12079115680079673,
@@ -615,7 +615,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 1.0,
-      "Q_HEADWAY": 0.9409711602122057
+      "Q_HEADWAY": 0.597078659465226
     },
     "raw_metrics": {
       "CLOSENESS": 0.22999126854494706,
@@ -634,7 +634,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.0564358560844449
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 3.4585525421482224,
@@ -653,7 +653,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.096863731446303
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 2.1801625389484314,
@@ -672,7 +672,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.06284135125114565
+      "Q_HEADWAY": 0.0
     },
     "raw_metrics": {
       "CLOSENESS": 3.8034379456476795,
@@ -691,7 +691,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.8389753660983637
+      "Q_HEADWAY": 0.46752860124037976
     },
     "raw_metrics": {
       "CLOSENESS": 0.4417647415493825,
@@ -710,7 +710,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9736134913897366
+      "Q_HEADWAY": 0.9127458898203592
     },
     "raw_metrics": {
       "CLOSENESS": 0.05249325543592101,
@@ -729,7 +729,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 0.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9751819122000742
+      "Q_HEADWAY": 0.9179322964122496
     },
     "raw_metrics": {
       "CLOSENESS": 0.03445993585404755,
@@ -767,7 +767,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9829652404728544
+      "Q_HEADWAY": 0.8862456833836534
     },
     "raw_metrics": {
       "CLOSENESS": 0.030428399467862792,
@@ -786,7 +786,7 @@
       "Q_GAP": 0.0,
       "Q_REGULARITY": 1.0,
       "Q_BALANCE": 0.0,
-      "Q_HEADWAY": 0.9675884171352624
+      "Q_HEADWAY": 0.7835626940693243
     },
     "raw_metrics": {
       "CLOSENESS": 0.05415447692732919,
