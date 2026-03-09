@@ -117,25 +117,7 @@ FR metrics are “physical facts.” They are intentionally **not** mapped into 
 
 All FR metrics are implemented in `moeabench.diagnostics.fair`.
 
-### 4.1 FR `HEADWAY` — residual search error relative to the null hypothesis (adimensional)
-**The Rationale (Intuition).**
-Imagine you drop the algorithm blindfolded into the search space (purely random sampling). It would land at a certain distance from the goal. *Headway* measures the algorithm's "driving force": how much of the path it managed to cover from that worst-case scenario of complete ignorance, until it reached the target. It is a measure of global search effort.
-
-**Definition.**
-Let $GD_{95}(P \to R)$ be the 95th percentile distance of the produced set $P$ to the reference $R$ (normalized by $s_K$). Let $GD_{95}(Random \to R)$ be the same distance for a random bounding-box search. The `HEADWAY` metric is the ratio of these two:
-$$
-\mathrm{HEADWAY}(P,R) = \frac{GD_{95}(P \to R)}{GD_{95}(Random \to R)}
-$$
-
-**Interpretation.**
-- **0.0 (Ideal)**: The search has successfully reached the manifold.
-- **1.0 (Random)**: The algorithm has made no progress beyond what is expected from a random guess.
-- **Values < 1.0**: Represent the **fraction of the initial search error that remains**. For example, 0.1 means 90% of the initial search error has been eliminated.
-- **Values > 1.0**: Indicate a failed search that is performing worse than random guessing (pathological behavior).
-
----
-
-### 4.2 FR `CLOSENESS` — median proximity to the manifold (resolution units)
+### 4.1 FR `CLOSENESS` — median proximity to the manifold (resolution units)
 **The Rationale (Intuition).**
 The main idea is to measure the "microscopic precision" of convergence: how "glued" the points are to the ideal surface (Ground Truth - GT).
 But there is a practical limiting problem: the GT we use in the computer is not a perfect continuous surface, it is formed by a finite and discrete set of points. Therefore, even a strictly perfect algorithm will never be able to nail a "zero distance", because its mathematical points will invariably fall into the spaces ("holes") between the discrete GT points.
@@ -159,6 +141,36 @@ $$
 **Why the median?**
 The median is robust to tails and is intended to represent “typical closeness.” In practice, it complements `HEADWAY`, which is more tail-sensitive.
 
+**Examples:**
+- **Raw Closeness = 0.1**: This means excellent precision. The points are, on average, only 1/10th of a typical grid-step ($s_K$) away from the manifold.
+- **Raw Closeness = 2.0**: This means significant blur. The points are two full grid-steps away, indicating a systematic bias or lack of convergence pressure.
+- **Contrast (Good Closeness vs. Bad Coverage)**: An algorithm might hit one point perfectly (Raw Closeness = 0.0) but fail to find any other points on the front. In this case, it has perfect precision but terrible scope.
+
+---
+
+### 4.2 FR `HEADWAY` — residual search error relative to initial state (adimensional)
+**The Rationale (Intuition).**
+Instead of using a generic random box, *Headway* now measures the algorithm's actual "Search Drive" by comparing its final position against its own starting point (Generation 0). It answers: "Of the total distance the algorithm needed to cover to reach the target, how much remains unaddressed?" It is a measure of global search effort and convergence merit.
+
+**Definition.**
+Let $GD_{95}(P \to R)$ be the 95th percentile distance of a population $P$ to the reference $R$. The `HEADWAY` metric is the ratio of the final distance over the initial distance:
+$$
+\mathrm{HEADWAY}(P_{final}, P_{initial}, R) = \frac{GD_{95}(P_{final} \to R)}{GD_{95}(P_{initial} \to R)}
+$$
+
+**Interpretation (Physical Ratio - Lower is Better).**
+*Important: Do not confuse this raw ratio with the Clinical Q-Score. Here, the metric represents physical distance framing, so **0 is perfect** and **1 is failure**.*
+- **0.0 (Ideal)**: The search has successfully reached the manifold (0% error remaining).
+- **1.0 (No Progress)**: The algorithm has made no progress beyond its starting point (100% error remaining).
+- **Values between 0 and 1**: Represent the **fraction of the initial search error that remains**. For example, a raw Headway of 0.1 means 10% of the initial gap remains (the algorithm eliminated 90% of the error).
+- **Values > 1.0**: Indicate a diverging search that finished further from the target than it started (pathological behavior).
+
+**Examples:**
+- **Raw Headway = 0.05**: This means excellent search drive. The algorithm eliminated 95% of the distance from its starting state.
+- **Raw Headway = 0.90**: This means poor search drive. Only 10% of the initial gap was closed; the result is almost indistinguishable from a static population.
+- **Contrast (Bad Closeness vs. Good Headway)**: An algorithm might obtain a bad Closeness score because the Ground Truth is extremely challenging or because it stopped slightly early. However, a good Headway score reveals that it still managed to reduce the initial search error significantly. Headway allows us to differentiate an algorithm that "tried hard and progressed" from one that "barely moved".
+- **Contrast (Good Closeness vs. Bad Headway)**: An algorithm might have good closeness (points near the manifold) but bad headway if the initial population was already very close to the target. In this case, the algorithm didn't actually "search"—it just stayed where it started.
+
 ---
 
 ### 4.3 FR `COVERAGE` — average extent of approximation (objective-space distance)
@@ -175,6 +187,11 @@ $$
 \mathrm{COVERAGE}(P,R) = \mathrm{mean}(\{\delta_i\})  
 $$
 
+**Examples:**
+- **Raw Coverage = 0.05**: This means excellent coverage. The average uncovered gap between the Ground Truth and the produced front is only 0.05 units in objective space.
+- **Raw Coverage = 0.50**: This means poor coverage. Large regions of the Pareto front are completely unexplored, leading to an average gap of 0.50 units.
+- **Contrast (Good Coverage vs. Bad Gap)**: An algorithm might stretch from one end of the front to the other (good average coverage), but if it has one giant hole in the middle, the Gap metric will penalize it, while Coverage might still look "okayish".
+
 ---
 
 ### 4.4 FR `GAP` — robust worst-case coverage hole (objective-space distance)
@@ -187,6 +204,11 @@ $$
 \mathrm{GAP}(P,R) = \mathrm{percentile}_{95}(\{\delta_i\})
 $$
 
+**Examples:**
+- **Raw Gap = 0.08**: This means strong continuity. The 95th percentile worst "hole" in the front is only 0.08 units wide.
+- **Raw Gap = 0.60**: This means severe fragmentation. There is a massive "desert" of 0.60 units somewhere in the middle of the front that the algorithm failed to bridge.
+- **Contrast (Good Gap vs. Bad Regularity)**: An algorithm might have no large holes (good Gap), but the points within those regions might be distributed in chaotic clumps rather than a smooth grid (bad Regularity).
+
 ---
 
 ### 4.5 FR `REGULARITY` — spacing order relative to a uniform-at-K reference
@@ -198,6 +220,11 @@ Let $NN(P)$ be the empirical distribution of nearest-neighbor distances within $
 $$
 \mathrm{REGULARITY}(P,R) = W_1\big(NN(P), NN(U_K)\big)
 $$
+
+**Examples:**
+- **Raw Regularity = 0.02**: This means high uniformity. The points are distributed perfectly matching the spacing pattern of the uniform reference.
+- **Raw Regularity = 0.30**: This means chaotic distribution. Points are clumped together in some spots and sparse in others, causing a large Wasserstein distance.
+- **Contrast (Good Gap vs. Bad Regularity)**: Gap measures the *maximum* hole size, while Regularity measures the *distribution* of all spacings. A front can have a great Gap (no huge holes) but terrible Regularity (lots of micro-clumps and medium-holes everywhere).
 
 ---
 
@@ -213,6 +240,11 @@ Then:
 $$
 \mathrm{BALANCE}(P,R) = D_{JS}\big(H_P \,\|\, H_{ref}\big)
 $$
+
+**Examples:**
+- **Raw Balance = 0.05**: This means perfect parity. The algorithm distributed its points proportionally across all objective regions, matching the ideal histogram.
+- **Raw Balance = 0.70**: This means extreme regional bias. The algorithm focused 90% of its effort on "Objective 1" while neglecting others, resulting in a high Jensen-Shannon divergence.
+- **Contrast (Good Coverage vs. Bad Balance)**: The algorithm might reach all corners of the problem (good extent/coverage), but if it places 99% of its points in one small corner and only 1 point in the other corners, it lacks balance.
 
 ## 5. Q-scores (Clinical layer): per-metric mappings and baseline rationale
 
@@ -257,9 +289,9 @@ MoeaBench adopts pessimistic null models depending on the dimension being assess
 
 - For `CLOSENESS`, the random baseline is not bounding-box random. Instead, it uses a **GT-blur** model: points are displaced from the manifold along estimated normal directions with a calibrated noise level. This baseline is designed to produce a “plausible near-manifold but still incorrect” proximity distribution, which can improve resolution when distinguishing “sharp convergence” from “blurry convergence.”
 
-- For `HEADWAY`, the clinical anchor uses:
-  - **ideal** = 0 (no distance to the manifold),
-  - **random** = headway distribution under the bounding-box null.
+- For `HEADWAY`, the random baseline is the **Initial State** ($t=0$).
+  - **ideal** = 0 (perfect convergence),
+  - **random** = 1 (no progress relative to population 0).
 
 #### 5.1.3 Why use medians (`uni50`, `rand50`)?
 Using medians tends to provide a stable “typical” anchor in the presence of skewed distributions. This is especially relevant when the random baseline distribution has a long tail. In addition, the ECDF mapping uses the full baseline distribution, so the median acts mainly as a robust quality threshold.
@@ -321,21 +353,43 @@ Intuition:
 
 ---
 
-### 5.3 The Q-scores, one by one
+### 5.3 Clinical Q-Scores: Baselines and Interpretations
 
-#### 5.3.1 `Q_HEADWAY`
-- **Input FAIR metric:** `HEADWAY`.
-- **Ideal anchor:** $0$.
-- **Worst-case/random anchor:** `rand50` from the headway baseline distribution (bounding-box null).
-- **Mapping:** log-linear.
-- **Meaning:** how much progress was made toward the manifold beyond what would be expected under a no-search (random box) behavior.
-
-#### 5.3.2 `Q_CLOSENESS`
+#### 5.3.1 `Q_CLOSENESS`
 - **Input FAIR metric:** full distribution of normalized distances from `CLOSENESS.raw_data`.
 - **Ideal anchor:** all zeros (perfect sharp convergence).
 - **Worst-case/random anchor:** GT-blur distribution (`closeness.rand_ecdf`).
 - **Mapping:** Wasserstein distributional ratio with a monotonicity gate.
 - **Meaning:** sharpness and precision of convergence, beyond merely “being in the right region.”
+
+**Q=1 Baseline (The Plausible Ideal):**
+To establish the ideal anchor ($Q=1$), MoeaBench avoids the mathematically unattainable target of zero absolute distance. Instead, it defines an ideal distribution analytically composed of values equal to the discrete dataset's intrinsic error margin ($ideal\_res$). This margin is empirically discovered offline by sampling an alternative Uniform-at-K subset and measuring its median residual to the discrete ground truth. It serves as a rigorously fair target for microscopic precision in finite-resolution domains.
+
+**Q=0 Baseline (The Limit of Chaos):**
+The failure anchor ($Q=0$) is determined through an offline empirical calibration process using a "GT-blur" model. Rather than placing points purely randomly (which would lead to trivially large distances), the calibration engine systematically displaces Ground Truth points outward along estimated normal vectors using Gaussian noise. The standard deviation ($\sigma$) of this noise is discovered iteratively via a secant-like numerical search. The algorithm stops when the resulting blurred cloud exhibits a median distance of exactly $2 s_K$ from the original manifold. This calibrated noise distribution is then sampled 200 times to construct a robust empirical cumulative distribution function (ECDF), mathematically defining the exact boundary of intolerable blurry convergence.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.95**: Microscopic precision. The points are "glued" to the manifold with minimal residual variance.
+- **Q = 0.25**: Blurry convergence. The algorithm is in the right area but lacks the precision to resolve the Pareto front details.
+- **Contrast (Q-Closeness vs. Q-Coverage)**: An algorithm can score $Q_{close}=0.99$ by finding just one single optimal point, completely failing to explore the trade-offs ($Q_{cov}=0.0$). High Closeness does not imply a complete Pareto front.
+
+#### 5.3.2 `Q_HEADWAY`
+- **Input FAIR metric:** `HEADWAY` (Longitudinal Ratio).
+- **Ideal anchor:** $0$.
+- **Worst-case/random anchor:** $1$.
+- **Mapping:** log-linear.
+- **Meaning:** how much progress was made toward the manifold relative to the algorithm's own starting point.
+
+**Q=1 Baseline (The Plausible Ideal):**
+The ideal anchor ($Q=1$) is exactly $0.0$ for the raw Headway ratio. This represents a scenario where the algorithm has completely eliminated its initial search error, driving the population all the way from its starting state (Generation 0) to land exactly on the Ground Truth.
+
+**Q=0 Baseline (The Limit of Chaos):**
+The failure anchor ($Q=0$) is $1.0$ for the raw Headway ratio. This baseline represents an algorithm that, despite running through generations, ended up exactly as far from the target as it started. In essence, the algorithm made no net progress (or diverged), which is the definition of a stalled search.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.85**: Strong search drive. The algorithm efficiently moved from its initial state towards the target.
+- **Q = 0.15**: Stalled search. The distance reduction is minimal, and the result is almost indistinguishable from the initial population.
+- **Contrast (Q-Headway vs. Q-Closeness)**: $Q_{headway}$ evaluates the *effort* or distance traveled, while $Q_{close}$ evaluates the *final position*. An algorithm can have an excellent $Q_{headway}=0.90$ (e.g., eliminating 90% of the error in a truly massive search space) but still have a poor $Q_{close}=0.10$ if the absolute remaining distance is still large compared to the GT resolution.
 
 #### 5.3.3 `Q_COVERAGE`
 - **Input FAIR metric:** `COVERAGE`.
@@ -344,12 +398,34 @@ Intuition:
 - **Mapping:** ECDF.
 - **Meaning:** whether the front spans the manifold broadly, given finite $K$.
 
+**Q=1 Baseline (The Plausible Ideal):**
+The ideal anchor ($Q=1$) is empirically derived offline by executing Farthest Point Sampling (FPS) on the Ground Truth multiple times using varying seed initializations. By measuring the median coverage distance across these independent "Uniform-at-K" draws, MoeaBench establishes a statistically robust lower bound for the best possible structural extent an algorithm can achieve with exactly $K$ points.
+
+**Q=0 Baseline (The Limit of Chaos):**
+The failure anchor ($Q=0$) is fundamentally anchored to the thermodynamics of unguided search. During offline calibration, the engine generates 200 independent point clouds of size $K$, drawn from a uniform probability distribution enclosed strictly within the bounding box of the objective space. The median coverage distance across this empirical cumulative distribution function (ECDF) defines $Q=0$. Therefore, scoring zero implies the algorithm's coverage is statistically indistinguishable from placing coordinates at random.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.80**: Broad extent. The algorithm successfully identified the "extremes" and the middle of the Pareto front.
+- **Q = 0.20**: Restricted search. The algorithm only discovered a small "niche" area, ignoring most of the potential trade-offs.
+- **Contrast (Q-Coverage vs. Q-Gap)**: $Q_{cov}$ is an average measure. An algorithm might achieve a decent $Q_{cov}=0.60$ by covering the extremes and the center, but if it leaves a massive unmapped void in between, $Q_{gap}$ will critically fail ($Q_{gap}=0.10$).
+
 #### 5.3.4 `Q_GAP`
 - **Input FAIR metric:** `GAP`.
 - **Ideal anchor:** `uni50`.
 - **Worst-case/random anchor:** `rand50`.
 - **Mapping:** ECDF.
 - **Meaning:** continuity of coverage (absence of large holes), anchored by the random baseline.
+
+**Q=1 Baseline (The Plausible Ideal):**
+The ideal anchor ($Q=1$) is geometrically formulated offline by extracting the 95th percentile gap size from the optimally organized "Uniform-at-K" baseline distributions. Because a discrete set of $K$ coordinates will intrinsically present gaps between adjacent nodes, this calibration provides the critical threshold representing the smallest structurally unavoidable hole, thus preventing unwarranted algorithmic penalization.
+
+**Q=0 Baseline (The Limit of Chaos):**
+Analogous to Coverage, the failure baseline ($Q=0$) is synthesized offline via 200 independent generations of $K$ uniform random coordinates scattered within the problem's numerical bounding box. By isolating the median of the 95th percentile gap across these 200 unguided samples, the framework establishes the specific width of a "hole" that characterizes complete spatial fragmentation and loss of structural cohesion.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.90**: Continuous frontier. The approximation is smooth and free of significant gaps.
+- **Q = 0.10**: Fragmented search. The front is broken into isolated "islands," posing a risk for decision-making.
+- **Contrast (Q-Gap vs. Q-Regularity)**: $Q_{gap}$ tracks the absolute worst hole, while $Q_{reg}$ tracks the overall uniformity. You can have a perfect $Q_{gap}=0.95$ (no huge holes) but a terrible $Q_{reg}=0.20$ if the points are clustered chaotically throughout the front instead of being laid out as a neat grid.
 
 #### 5.3.5 `Q_REGULARITY`
 - **Input FAIR metric:** `REGULARITY`.
@@ -358,12 +434,34 @@ Intuition:
 - **Mapping:** ECDF.
 - **Meaning:** whether the spacing pattern resembles an ordered uniform-at-K pattern.
 
+**Q=1 Baseline (The Plausible Ideal):**
+The reference marker for $Q=1$ is mathematically fixed by computing the Wasserstein distance between the nearest-neighbor distribution of the algorithm's population and that of the offline-generated "Uniform-at-K" crystalline lattice. While a value approaching zero demonstrates perfect isomorphic regularity, the empirical baseline acknowledges minor structural variance by evaluating multiple ideal deterministic configurations.
+
+**Q=0 Baseline (The Limit of Chaos):**
+The structural threshold for failure ($Q=0$) relies on the spatial distribution tendencies of a Poisson process. The offline calibration routine iterates 200 instances of bounding-box random sampling, computing the discrete Wasserstein distance for each unstructured point cloud. The empirical distribution of these distances determines the $Q=0$ threshold, successfully distinguishing structurally designed frontiers from naturally clumped stochastic randomness.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.85**: Highly regular. Spacing is uniform, resembling a professional data grid.
+- **Q = 0.20**: Chaotic clumping. Points are "fighting" for the same space while leaving other areas sparse.
+- **Contrast (Q-Regularity vs. Q-Balance)**: Regularity is a *micro-level* metric (point-to-point spacing), while Balance is a *macro-level* metric (population mass per region). A front could be perfectly regular ($Q_{reg}=0.90$) within a specific sub-region, yet totally fail $Q_{balance}$ because it ignored the rest of the objective space.
+
 #### 5.3.6 `Q_BALANCE`
 - **Input FAIR metric:** `BALANCE`.
 - **Ideal anchor:** `uni50` (often near 0).
 - **Worst-case/random anchor:** `rand50`.
 - **Mapping:** ECDF.
 - **Meaning:** whether mass is distributed equitably across manifold regions, compared to the reference occupancy.
+
+**Q=1 Baseline (The Plausible Ideal):**
+The ideal anchor ($Q=1$) relies upon a predefined spatial partitioning. During calibration, deterministic k-means is used offline to partition the Ground Truth into representative spatial clusters. The perfectly proportional allocation histogram observed when evaluating the "Uniform-at-K" distribution against these specific centroids serves as the Jensen-Shannon divergence benchmark for absolute demographic parity.
+
+**Q=0 Baseline (The Limit of Chaos):**
+The failure threshold ($Q=0$) maps the expected histogram imbalances of an unguided search. By projecting the 200 random objective-box samples into the previously defined spatial clusters, the calibration offline-engine naturally observes profound regional skewness. The statistical median of this divergence dictates $Q=0$, establishing the definitive boundary for severe regional oversight and algorithmic demographic injustice.
+
+**Clinical Examples & Contrasts:**
+- **Q = 0.90**: Equitable distribution. The algorithm explored all problem regions with appropriate parity.
+- **Q = 0.10**: Severe regional bias. The algorithm is "obsessed" with one objective region and ignores others.
+- **Contrast (Q-Balance vs. Q-Coverage)**: $Q_{cov}$ evaluates if the algorithm *reached* the regions, but $Q_{balance}$ evaluates if it allocated *proportional processing effort/points* to them. You could have points in all regions ($Q_{cov}=0.80$), but if 95% of the population is crowded in one corner, $Q_{balance}$ will be extremely low ($0.15$).
 
 ---
 
@@ -381,16 +479,20 @@ MoeaBench exposes three “cascade” entry points in `moeabench.diagnostics.aud
 - `audit(target, ground_truth=GT, ...)`
   Runs both layers and returns a **diagnostic result** object (`DiagnosticResult`) with a synthesis verdict.
 
-### 6.2 What can be passed as `target`
-The diagnostics context resolver accepts:
-- a raw numpy array of objective points,
-- a Population-like object with `.objectives`,
-- an Experiment or Run; the front will be automatically extracted via `.front()`.
+### 6.2 The "Smart API Contract" for containers
+The diagnostics context resolver polymorphically accepts different data containers. This is designed to maximize context recovery (especially for longitudinal metrics like Headway):
 
-When passing raw arrays, it is recommended to also provide:
-- `ground_truth=...` and
-- `problem="DTLZ2"` (or similar),
-so baseline selection can be performed deterministically.
+- **`Experiment` or `Run`**: This is the preferred input. The engine automatically extracts:
+    - `P_final`: The population from the last generation.
+    - `P_initial`: The population from Generation 0 (used for Headway).
+    - `GT`: The problem's Pareto Front (via `mop.pf()`).
+    - `s_K`: The problem's resolution factor.
+
+- **`Population`**: The engine extracts the objectives and attempts to work back to the `GT` via the population's `source` property.
+
+- **`np.ndarray`**: Interpreted as a static "Front." 
+    - For metrics requiring a ground truth (all except Balance/Regularity), you **must** provide `ground_truth=...`.
+    - For `HEADWAY`, you **must** provide `initial_data=...` to define the baseline, otherwise the metric will return `NaN`.
 
 ### 6.3 Baseline loading and fail-closed policy
 Baselines are stored offline in a JSON file and are loaded through:
