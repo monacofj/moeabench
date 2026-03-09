@@ -45,6 +45,46 @@ def generate_visual_report():
         
     mops = sorted(problems.keys(), key=mop_sort_key)
 
+    MOP_PARAMS = {
+        "DTLZ1": "M=3, N=7, K=5",
+        "DTLZ2": "M=3, N=12, K=10",
+        "DTLZ3": "M=3, N=12, K=10",
+        "DTLZ4": "M=3, N=12, K=10",
+        "DTLZ5": "M=3, N=12, K=10",
+        "DTLZ6": "M=3, N=12, K=10",
+        "DTLZ7": "M=3, N=22, K=20",
+        "DTLZ8": "M=3, N=10",
+        "DTLZ9": "M=3, N=10",
+        "DPF1": "M=3, N=6, K=5",
+        "DPF2": "M=3, N=6, K=5",
+        "DPF3": "M=3, N=6, K=5",
+        "DPF4": "M=3, N=6, K=5",
+        "DPF5": "M=3, N=6, K=5",
+    }
+    
+    def get_moead_setup(mop):
+        configs = {
+            "DTLZ1": "Decomp: PBI(&theta;=0.5), Neighbors: 20",
+            "DTLZ3": "Decomp: Tchebicheff, Neighbors: 30",
+            "DTLZ4": "Decomp: Tchebicheff, Neighbors: 30",
+            "DTLZ5": "Decomp: Tchebicheff, Neighbors: 20",
+            "DTLZ6": "Decomp: Tchebicheff, Neighbors: 30",
+            "DPF1": "Decomp: PBI(&theta;=0.5), Neighbors: 30",
+            "DPF2": "Decomp: PBI(&theta;=0.5), Neighbors: 30",
+            "DPF3": "Decomp: Tchebicheff, Neighbors: 30",
+            "DPF4": "Decomp: PBI(&theta;=0.5), Neighbors: 20",
+        }
+        return configs.get(mop, "Decomp: PBI(&theta;=5.0), Neighbors: 15")
+
+    def get_alg_setup(alg, mop):
+        if alg == "MOEAD":
+            return get_moead_setup(mop)
+        elif alg == "NSGA2":
+            return "Cross: SBX(&eta;=20, p=0.9), Mut: Poly(&eta;=20, p=1/N)"
+        elif alg == "NSGA3":
+            return "Cross: SBX(&eta;=30, p=1.0), Mut: Poly(&eta;=20, p=1/N), RefDirs: Das-Dennis"
+        return "Default parameters"
+
     html_content = [
         "<html><head><title>moeabench v0.9.0 Calibration</title>",
         "<style>",
@@ -412,6 +452,20 @@ def generate_visual_report():
         )
 
         html_content.append(f"<div class='mop-section'><h2>{mop_name} Benchmark Analysis</h2>")
+        
+        # Add Setup Block
+        mop_info = MOP_PARAMS.get(mop_name, "M=3")
+        setup_html = [
+            f"<div style='background: #f8fafc; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #e2e8f0;'>",
+            f"<div style='font-size: 0.85rem; color: #475569; margin-bottom: 5px;'><b>Problem Setup:</b> {mop_info}</div>",
+            f"<div style='font-size: 0.85rem; color: #475569;'><b>Algorithm Setup:</b></div>",
+            f"<ul style='margin: 0; padding-left: 20px; font-size: 0.8rem; color: #64748b;'>"
+        ]
+        for alg in algs:
+            setup_html.append(f"<li style='margin-bottom: 3px;'><b>{alg}:</b> {get_alg_setup(alg, mop_name)}</li>")
+        setup_html.append("</ul></div>")
+        
+        html_content.append("".join(setup_html))
         
         # Numerical Table
         metrics_table = ["<table><tr><th>Algorithm</th><th>IGD (&plusmn; s)</th><th>IGD+</th><th>GD (&plusmn; s)</th><th>GD+</th><th>SP (&plusmn; s)</th><th>NEAR@1</th><th>NEAR@2</th><th>HV_raw</th><th>HV_rel</th><th>HV_abs</th><th>Time(s)</th><th>Stabil.</th></tr>"]
