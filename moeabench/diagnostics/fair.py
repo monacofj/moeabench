@@ -26,9 +26,8 @@ _TREE_CACHE = {}
 
 def _get_kdtree(data):
     from scipy.spatial import KDTree
-    # Use id of data to avoid double storage, but careful with mutations.
-    # For GT in baselines, it's usually static.
-    key = id(data)
+    # Use (shape, id) as key to avoid dimension leaks and handle array reallocations.
+    key = (data.shape, id(data))
     if key not in _TREE_CACHE:
         _TREE_CACHE[key] = KDTree(data)
     return _TREE_CACHE[key]
@@ -76,7 +75,7 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     # Helper to compute GD95 (Distance to GT)
     def _get_gd95(P):
         if P is None or len(P) == 0: return np.nan
-        if len(GT) > 1000:
+        if len(GT) > 1000 or True: # Use tree consistently for safety
             tree = _get_kdtree(GT)
             d, _ = tree.query(P, k=1)
             min_d = d
@@ -136,14 +135,10 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     if P is None or GT is None or len(P) == 0:
         return FairResult(0.0, "CLOSENESS", "No points to evaluate.", raw_data=np.array([]))
         
-    # 1. Compute Distances to GT (Optimized via KDTree if GT is large)
-    if len(GT) > 1000:
-        tree = _get_kdtree(GT)
-        d, _ = tree.query(P, k=1)
-        min_d = d
-    else:
-        d = cdist(P, GT, metric='euclidean')
-        min_d = np.min(d, axis=1) # (N,)
+    # 1. Compute Distances to GT (Optimized via KDTree)
+    tree = _get_kdtree(GT)
+    d, _ = tree.query(P, k=1)
+    min_d = d
     
     # 2. Normalize by Resolution
     u_vals_raw = min_d / s_fit if s_fit > 1e-12 else min_d
@@ -183,14 +178,10 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     if P is None or GT is None or len(P) == 0:
         return FairResult(np.inf, "COVERAGE", "No points to evaluate.", raw_data=np.array([]))
 
-    # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
-    if len(P) > 1000:
-        tree = _get_kdtree(P)
-        d, _ = tree.query(GT, k=1)
-        min_d = d
-    else:
-        d = cdist(GT, P, metric='euclidean') # Note: IGD is GT -> P
-        min_d = np.min(d, axis=1) # (|GT|,)
+    # 1. Compute Distances from GT to P (Optimized via KDTree)
+    tree = _get_kdtree(P)
+    d, _ = tree.query(GT, k=1)
+    min_d = d
     
     # 2. Mean (IGD)
     f_val = float(np.mean(min_d))
@@ -216,14 +207,10 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     if P is None or GT is None or len(P) == 0:
         return FairResult(np.inf, "GAP", "No points to evaluate.", raw_data=np.array([]))
 
-    # 1. Compute Distances from GT to P (Optimized via KDTree if P is large)
-    if len(P) > 1000:
-        tree = _get_kdtree(P)
-        d, _ = tree.query(GT, k=1)
-        min_d = d
-    else:
-        d = cdist(GT, P, metric='euclidean')
-        min_d = np.min(d, axis=1) # (|GT|,)
+    # 1. Compute Distances from GT to P (Optimized via KDTree)
+    tree = _get_kdtree(P)
+    d, _ = tree.query(GT, k=1)
+    min_d = d
     
     # 2. Percentile 95 (Robust Max)
     f_val = float(np.percentile(min_d, 95))

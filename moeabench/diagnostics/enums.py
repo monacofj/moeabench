@@ -18,6 +18,7 @@ class DiagnosticStatus(Enum):
     SEARCH_FAILURE = auto()       # High nGD, High nIGD, High nEMD
     
     SUPER_SATURATION = auto()     # H_rel > 100%
-    UNDEFINED_BASELINE = auto()   # Missing/mismatched reference package
+    MISSING_BASELINE = auto()     # Pre-calculated baseline not found for dim/size
+    UNDEFINED_BASELINE = MISSING_BASELINE 
     UNDEFINED_INPUT = auto()      # Invalid/unsupported input (e.g., dim mismatch)
     UNDEFINED = auto()            # Insufficient data

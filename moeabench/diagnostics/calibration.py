@@ -32,7 +32,9 @@ def calibrate_mop(mop: Any,
                   source_gt: Optional[Union[str, np.ndarray]] = None,
                   source_search: Optional[Any] = None,
                   force: bool = False, 
-                  k_values: Optional[List[int]] = None) -> bool:
+                  k_values: Optional[List[int]] = None,
+                  population_size: Optional[int] = None,
+                  size: Optional[int] = None) -> bool:
     """
     Programmatic entry point for MOP calibration.
     
@@ -49,6 +51,9 @@ def calibrate_mop(mop: Any,
     mop_name = getattr(mop, 'name', mop.__class__.__name__)
     if not mop_name:
         mop_name = "UnknownMOP"
+
+    # Avoid dimension leaks between different MOPs or M dimensions
+    fair.clear_fair_cache()
 
     # 1. Resolve Sidecar Path
     if source_baseline:
@@ -109,7 +114,17 @@ def calibrate_mop(mop: Any,
 
     # 4. Perform Statistical Calibration
     print(f"moeabench: Calibrating noisy baselines (this may take a minute)...")
-    k_grid = k_values or K_GRID_DEFAULT
+    
+    # Resolve K-Grid
+    final_size = population_size or size
+    if k_values:
+        k_grid = k_values
+    elif final_size:
+        # Calibrate specifically for the requested size
+        k_grid = [final_size]
+    else:
+        k_grid = K_GRID_DEFAULT
+        
     problem_data = _generate_baselines(mop_name, gt, k_grid)
 
     # 5. Save Sidecar

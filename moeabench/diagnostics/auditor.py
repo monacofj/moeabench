@@ -4,10 +4,10 @@
 
 import numpy as np
 import os
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict, List, Union
 from dataclasses import dataclass
 from .enums import DiagnosticStatus
-from . import fair, qscore, baselines
+from . import fair, qscore, baselines, calibration
 from .base import Reportable
 
 # Thresholds for Q-Score (High-is-Better)
@@ -137,8 +137,9 @@ class DiagnosticResult(Reportable):
     q_audit_res: QualityAuditResult
     fair_audit_res: FairAuditResult
     status: DiagnosticStatus
-    description: str
-    reproducibility: Optional[Dict[str, Any]] = None
+    description: str = ""
+    reproducibility: Optional[Dict[str, Any]] = None,
+    diagnostic_context: Optional[Dict[str, Any]] = None
 
     @property
     def quality(self) -> QualityAuditResult:
@@ -164,8 +165,10 @@ class DiagnosticResult(Reportable):
 
     def summary(self, show: bool = True, **kwargs) -> str:
         """ Preferred fluid narrative for executive reporting. """
+        if self.status == DiagnosticStatus.MISSING_BASELINE:
+             return self._render_report(self.description, show, **kwargs)
         if self.q_audit_res:
-            return self.q_audit_res.summary(show=show, **kwargs)
+             return self.q_audit_res.summary(show=show, **kwargs)
         return self._render_report(self.description, show, **kwargs)
 
     def report(self, show: bool = True, **kwargs) -> str:
@@ -184,7 +187,10 @@ class DiagnosticResult(Reportable):
             sub_f = ">> LAYER 2: PHYSICAL EVIDENCE"
 
         # We call nested reports with show=False to gather their strings
-        q_rep = self.q_audit_res.report(show=False, **kwargs) if self.q_audit_res else "N/A"
+        if self.status == DiagnosticStatus.MISSING_BASELINE:
+             q_rep = self.description
+        else:
+             q_rep = self.q_audit_res.report(show=False, **kwargs) if self.q_audit_res else "N/A"
         f_rep = self.fair_audit_res.report(show=False, **kwargs) if self.fair_audit_res else "N/A"
 
         lines = [
@@ -216,6 +222,15 @@ class PerformanceAuditor:
         """ Aggregates physical Fact results. """
         return FairAuditResult(metrics=metrics)
 
+    @staticmethod
+    def calibrate(mop: Any, population_size: Optional[int] = None, 
+                 size: Optional[int] = None, **kwargs) -> bool:
+        """ 
+        [mb.diagnostics.PerformanceAuditor.calibrate]
+        Generates Clinical Baselines for a MOP with a specific population size.
+        """
+        return calibration.calibrate_mop(mop, population_size=population_size, size=size, **kwargs)
+
     # Compatibility Alias
     audit_fair = audit_fr
 
@@ -227,15 +242,19 @@ class PerformanceAuditor:
         return QualityAuditResult(scores=q_scores, mop_name=mop, k=k)
 
     @staticmethod
-    def audit_synthesis(q_res: QualityAuditResult, 
-                         f_res: FairAuditResult,
+    def audit_synthesis(q_res: Optional[QualityAuditResult], 
+                         f_res: Optional[FairAuditResult],
+                         status: DiagnosticStatus = DiagnosticStatus.UNDEFINED,
+                         description: str = "Audit failed.",
                          reproducibility: Optional[Dict[str, Any]] = None) -> DiagnosticResult:
         """ 
         The 'Synthesis' Logic. 
         Identifies pathologies without subjective weighting.
         """
         if q_res is None or f_res is None:
-             return DiagnosticResult(None, None, DiagnosticStatus.UNDEFINED, "Audit failed or missing baselines.", reproducibility=reproducibility)
+             if status == DiagnosticStatus.MISSING_BASELINE:
+                 return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility)
+             return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=DiagnosticStatus.UNDEFINED, description="Audit failed or missing baselines.", reproducibility=reproducibility)
 
         # 1. Detect Pathologies (Q < 0.34)
         anomalies = []
@@ -290,6 +309,7 @@ def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAu
 
 def audit(target: Any, 
           ground_truth: Optional[np.ndarray] = None,
+          source_baseline: Optional[Union[str, Dict[str, Any]]] = None,
           **kwargs) -> DiagnosticResult:
     """
     [Cascade Entry Point]
@@ -309,80 +329,96 @@ def audit(target: Any,
     except:
         r_info["baseline_version"] = "None"
     
-    # 1. Resolve Context (P, GT, s_k, Name, K)
-    ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
-    P = ctx['P_final']
-    GT = ctx['GT']
-    s_k_mop = ctx['s_k']
-    mop_name = ctx['problem']
-    K_raw = ctx['k']
+    # 0.2 Clear Caches
+    fair.clear_fair_cache()
 
-    if P is None or GT is None:
-         return PerformanceAuditor.audit_synthesis(None, None)
+    # 0.3 Context Manager for External Baselines
+    from contextlib import nullcontext
+    cm = baselines.use_baselines(source_baseline) if source_baseline else nullcontext()
+    
+    with cm:
+        # 1. Resolve Context (P, GT, s_k, Name, K)
+        ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
+        P = ctx['P_final']
+        GT = ctx['GT']
+        s_k_mop = ctx['s_k']
+        mop_name = ctx['problem']
+        K_raw = ctx['k']
 
-    # 2. K-Selection logic 
-    K_target = baselines.snap_k(K_raw)
-        
-    # 4. Compute Fair Metrics & Q-Scores
-    try:
-        bases = baselines.load_offline_baselines()
-        if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
-             GT = np.array(bases["_gt_registry"][mop_name])
+        if P is None or GT is None:
+             return PerformanceAuditor.audit_synthesis(None, None)
 
-        # A. Shared Reference Objects
-        U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
-        centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
-        
-        # Reference Histogram for Balance
-        d_u = baselines.cdist(U_ref, centroids)
-        lab_u = np.argmin(d_u, axis=1)
-        hist_ref = np.bincount(lab_u, minlength=len(centroids)).astype(float)
-        hist_ref /= np.sum(hist_ref)
-        
-        # B. Normalization Resolution
-        # Use s_k from mop if available, otherwise calculate from GT
-        s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
-        
-        # C. Compute FR Metrics (Physics)
-        f_headway = fair.headway(P, GT, s_k, problem=mop_name, k=K_target, initial_data=ctx.get('P_initial'))
-        f_closeness_val = fair.closeness(P, GT, s_k, problem=mop_name, k=K_target) 
-        f_cov = fair.coverage(P, GT, problem=mop_name, k=K_target)
-        f_gap = fair.gap(P, GT, problem=mop_name, k=K_target)
-        f_reg = fair.regularity(P, U_ref, problem=mop_name, k=K_target)
-        f_bal = fair.balance(P, centroids, hist_ref, problem=mop_name, k=K_target)
-        
-        f_metrics = {
-            "CLOSENESS": f_closeness_val, 
-            "COVERAGE": f_cov,
-            "GAP": f_gap,
-            "REGULARITY": f_reg,
-            "BALANCE": f_bal,
-            "HEADWAY": f_headway
-        }
-        fr_res = PerformanceAuditor.audit_fr(f_metrics)
-        
-        # D. Compute Q-Scores (Engineering)
-        q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
-        q_clo = qscore.q_closeness(f_closeness_val, problem=mop_name, k=K_target)
-        q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
-        q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
-        q_r = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)
-        q_b = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
-        
-        q_scores = {
-            "Q_CLOSENESS": q_clo,
-            "Q_COVERAGE": q_c,
-            "Q_GAP": q_g,
-            "Q_REGULARITY": q_r,
-            "Q_BALANCE": q_b,
-            "Q_HEADWAY": q_h
-        }
-        q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
-        
-        # 5. Synthesis (The Biopsy)
-        return PerformanceAuditor.audit_synthesis(q_res, fr_res, reproducibility=r_info)
-        
-    except baselines.UndefinedBaselineError:
-        return PerformanceAuditor.audit_synthesis(None, None, reproducibility=r_info) 
-    except Exception as e:
-        raise e
+        # 2. K-Selection logic 
+        K_target = baselines.snap_k(K_raw, problem=mop_name)
+            
+        # 4. Compute Fair Metrics & Q-Scores
+        try:
+            bases = baselines.load_offline_baselines()
+            if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
+                 GT_raw = np.array(bases["_gt_registry"][mop_name])
+                 if GT_raw.shape[1] == P.shape[1]:
+                     GT = GT_raw
+                 else:
+                     # Force baseline missing if dimensions don't match
+                     raise baselines.UndefinedBaselineError(f"Dimension mismatch: P={P.shape[1]}, GT_registry={GT_raw.shape[1]}")
+
+            # A. Shared Reference Objects
+            U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
+            centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
+            
+            # Reference Histogram for Balance
+            d_u = baselines.cdist(U_ref, centroids)
+            lab_u = np.argmin(d_u, axis=1)
+            hist_ref = np.bincount(lab_u, minlength=len(centroids)).astype(float)
+            hist_ref /= np.sum(hist_ref)
+            
+            # B. Normalization Resolution
+            # Use s_k from mop if available, otherwise calculate from GT
+            s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+            
+            # C. Compute FR Metrics (Physics)
+            f_headway = fair.headway(P, GT, s_k, problem=mop_name, k=K_target, initial_data=ctx.get('P_initial'))
+            f_closeness_val = fair.closeness(P, GT, s_k, problem=mop_name, k=K_target) 
+            f_cov = fair.coverage(P, GT, problem=mop_name, k=K_target)
+            f_gap = fair.gap(P, GT, problem=mop_name, k=K_target)
+            f_reg = fair.regularity(P, U_ref, problem=mop_name, k=K_target)
+            f_bal = fair.balance(P, centroids, hist_ref, problem=mop_name, k=K_target)
+            
+            f_metrics = {
+                "CLOSENESS": f_closeness_val, 
+                "COVERAGE": f_cov,
+                "GAP": f_gap,
+                "REGULARITY": f_reg,
+                "BALANCE": f_bal,
+                "HEADWAY": f_headway
+            }
+            fr_res = PerformanceAuditor.audit_fr(f_metrics)
+            
+            # D. Compute Q-Scores (Engineering)
+            q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
+            q_clo = qscore.q_closeness(f_closeness_val, problem=mop_name, k=K_target)
+            q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
+            q_g = qscore.q_gap(f_gap, problem=mop_name, k=K_target)
+            q_r = qscore.q_regularity(f_reg, problem=mop_name, k=K_target)
+            q_b = qscore.q_balance(f_bal, problem=mop_name, k=K_target)
+            
+            q_scores = {
+                "Q_CLOSENESS": q_clo,
+                "Q_COVERAGE": q_c,
+                "Q_GAP": q_g,
+                "Q_REGULARITY": q_r,
+                "Q_BALANCE": q_b,
+                "Q_HEADWAY": q_h
+            }
+            q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
+            
+            # 5. Synthesis (The Biopsy)
+            return PerformanceAuditor.audit_synthesis(q_res, fr_res, reproducibility=r_info)
+            
+        except baselines.UndefinedBaselineError as e:
+            desc = (f"Clinical baseline missing for {mop_name} (M={P.shape[1]}, K={K_target}). "
+                    "Run 'mb.diagnostics.PerformanceAuditor.calibrate(mop, size=K)' to enable Q-Scores.")
+            return PerformanceAuditor.audit_synthesis(None, None, status=DiagnosticStatus.MISSING_BASELINE, 
+                                                   description=desc, reproducibility=r_info)
+        except Exception as e:
+            raise e

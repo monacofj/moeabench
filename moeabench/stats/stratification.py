@@ -287,6 +287,14 @@ def strata(data, gen=-1):
         h, o, r = _collect_run_data(data, gen)
         return StratificationResult(h, source=data, gen=gen, objectives=o, rank_array=r)
 
+    # 3. Handle Raw Objective Matrices (np.ndarray, SmartArray, list)
+    if isinstance(data, (np.ndarray, list, tuple)):
+        # Convert to Population to reuse stratification logic
+        pop = Population(np.asarray(data))
+        ranks = pop.stratify()
+        hist = _calc_rank_hist(ranks)
+        return StratificationResult(hist, source=data, gen=gen, objectives=pop.objectives, rank_array=ranks)
+
     raise TypeError(f"Unsupported data type for stratification: {type(data)}")
 
 def _calc_rank_hist(ranks):

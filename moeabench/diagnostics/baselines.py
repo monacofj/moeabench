@@ -110,6 +110,7 @@ def use_baselines(source: Union[str, Dict[str, Any]]):
     global _CACHE, _CACHE_DIRTY, _REGISTERED_SOURCES
     old_sources = list(_REGISTERED_SOURCES)
     old_cache = _CACHE
+    old_dirty = _CACHE_DIRTY
     
     try:
         reset_baselines()
@@ -118,7 +119,7 @@ def use_baselines(source: Union[str, Dict[str, Any]]):
     finally:
         _REGISTERED_SOURCES = old_sources
         _CACHE = old_cache
-        _CACHE_DIRTY = True
+        _CACHE_DIRTY = old_dirty
 
 def load_offline_baselines() -> Dict[str, Any]:
     """
@@ -208,7 +209,21 @@ def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float
     # Structure: problems -> {problem} -> {k} -> {metric} -> {uni50, rand50}
     try:
         p_data = bases.get("problems", {}).get(problem, {})
-        k_data = p_data.get(str(k), {})
+        
+        # Fuzzy K-match logic for local sidecars
+        if str(k) in p_data:
+            k_data = p_data[str(k)]
+        else:
+            # Try to find the closest k available in p_data
+            available_ks = [int(x) for x in p_data.keys() if x.isdigit()]
+            if not available_ks:
+                raise ValueError(f"No K-data for problem {problem}")
+            closest_k = min(available_ks, key=lambda x: abs(x - k))
+            # Only allow a small drift (e.g. 5%) for clinical validity
+            if abs(closest_k - k) / max(1, k) > 0.1:
+                raise ValueError(f"K={k} too far from closest baseline K={closest_k}")
+            k_data = p_data[str(closest_k)]
+            
         m_data = k_data.get(metric, {})
         
         uni = m_data.get("uni50")
@@ -239,7 +254,19 @@ def get_baseline_ecdf(problem: str, k: int, metric: str) -> Tuple[float, float, 
 
     try:
         p_data = bases.get("problems", {}).get(problem, {})
-        k_data = p_data.get(str(k), {})
+        
+        # Fuzzy K-match logic
+        if str(k) in p_data:
+            k_data = p_data[str(k)]
+        else:
+            available_ks = [int(x) for x in p_data.keys() if x.isdigit()]
+            if not available_ks:
+                raise ValueError(f"No K-data for problem {problem}")
+            closest_k = min(available_ks, key=lambda x: abs(x - k))
+            if abs(closest_k - k) / max(1, k) > 0.1:
+                raise ValueError(f"K={k} too far from closest baseline K={closest_k}")
+            k_data = p_data[str(closest_k)]
+            
         m_data = k_data.get(metric, {})
         
         uni = m_data.get("uni50")
@@ -380,16 +407,25 @@ def get_resolution_factor_k(gt: np.ndarray, k: int, seed: int = 0) -> float:
     min_d = np.min(d, axis=1)
     return float(np.median(min_d))
 
-def snap_k(k_raw: int) -> int:
+def snap_k(k_raw: int, problem: Optional[str] = None) -> int:
     """
     Snaps the raw population size K to the nearest supported baseline K
     using a strict 'floor' logic for consistency with the audit protocol.
     
-    Rules:
-    - K < 10: Returns 10 (Minimum supported)
-    - 10 <= K < 50: Returns K (Exact match)
-    - K >= 50: Returns max(grid <= K) where grid=[50, 100, 150, 200]
+    If 'problem' is provided, it first checks the registered baselines (including sidecars)
+    to see what K values are actually available for that problem.
     """
+    if problem:
+        try:
+            bases = load_offline_baselines()
+            p_data = bases.get("problems", {}).get(problem, {})
+            available_ks = [int(x) for x in p_data.keys() if x.isdigit()]
+            if available_ks:
+                # Return closest K among available ones
+                return min(available_ks, key=lambda x: abs(x - k_raw))
+        except:
+            pass
+
     if k_raw < 10:
         return 10
     if k_raw < 50:

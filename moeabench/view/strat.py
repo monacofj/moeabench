@@ -43,7 +43,7 @@ def _resolve_to_result(args, target_type, resolve_fn):
             labels.append(name)
     return results, labels
 
-def strat_ranks(*args, title=None, **kwargs):
+def strat_ranks(*args, title=None, show=True, **kwargs):
     """
     [mb.view.strat_ranks] Structural Perspective.
     Visualizes frequency distribution across dominance ranks.
@@ -69,11 +69,12 @@ def strat_ranks(*args, title=None, **kwargs):
     ax.set_title(title if title else "Rank Structure (Selection Pressure)")
     ax.legend()
     ax.grid(True, axis='y', alpha=0.3)
-    plt.show()
+    if show:
+        plt.show()
     return ax
 
 def strat_caste(*args, labels=None, title=None, metric=None, mode='collective', 
-                 show_quartiles=True, **kwargs):
+                 show_quartiles=True, show=True, **kwargs):
     """
     [mb.view.strat_caste] Advanced Hierarchical Perspective.
     Visualizes Quality vs Density profile using Variable-Width Boxplots.
@@ -222,10 +223,11 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
     ax.grid(True, axis='y', alpha=0.3)
     ax.set_ylim(0, 1.2)
     
-    plt.show()
+    if show:
+        plt.show()
     return ax
 
-def strat_tiers(exp1, exp2=None, title=None, **kwargs):
+def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
     """
     [mb.view.strat_tiers] Competitive Perspective (Tier/Duel).
     Visualizes relative dominance proportion between two experiments.
@@ -263,5 +265,6 @@ def strat_tiers(exp1, exp2=None, title=None, **kwargs):
         if pB > 0.05:
             ax.text(i+1, vA + vB/2, f"{pB*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
 
-    plt.show()
+    if show:
+        plt.show()
     return ax
