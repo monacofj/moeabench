@@ -36,6 +36,10 @@ class ReproducibilityWarning(UserWarning):
     """Issued when a baseline environment mismatch is detected."""
     pass
 
+class UndefinedBaselineError(Exception):
+    """Raised when no technical baseline is found for the requested context."""
+    pass
+
 def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary"):
     """Internal helper to verify Environment DNA in baseline JSON."""
     from ..system import version as lib_version

@@ -22,6 +22,10 @@ class SimpleStatsValue(StatsResult):
         
     def __float__(self): return float(self.value)
     
+    def __format__(self, format_spec):
+        """Supports standard float formatting (e.g. .2%)."""
+        return format(float(self.value), format_spec)
+    
     def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', False)
         if use_md:
