@@ -63,9 +63,9 @@ def calibrate_mop(mop: Any,
         try:
             origin_file = inspect.getfile(mop.__class__)
             origin_dir = os.path.dirname(os.path.abspath(origin_file))
-            path = os.path.join(origin_dir, f"{mop_name}.json")
+            path = os.path.join(origin_dir, f"{mop_name}_M{mop.M}.json")
         except:
-            path = f"{mop_name}.json"
+            path = f"{mop_name}_M{mop.M}.json"
 
     # 2. Check Cache/File (Protocol: Loader)
     if os.path.exists(path) and not force:
@@ -128,8 +128,18 @@ def calibrate_mop(mop: Any,
     problem_data = _generate_baselines(mop_name, gt, k_grid)
 
     # 5. Save Sidecar
+    import datetime
+    import sys
+    from ..system import version as lib_version
+    
     sidecar_data = {
         "problem_id": mop_name,
+        "mop_dimension": mop.M,
+        "version": lib_version(),
+        "python_version": sys.version.split()[0],
+        "numpy_version": np.__version__,
+        "timestamp": datetime.datetime.now().isoformat(),
+        "schema": "baselines_v4_ecdf",
         "gt_reference": gt.tolist(),
         "problems": {
             mop_name: problem_data

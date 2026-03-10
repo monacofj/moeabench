@@ -40,7 +40,7 @@ class UndefinedBaselineError(Exception):
     """Raised when no technical baseline is found for the requested context."""
     pass
 
-def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary"):
+def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary", target_m: Optional[int] = None):
     """Internal helper to verify Environment DNA in baseline JSON."""
     from ..system import version as lib_version
     b_ver = data.get("version")
@@ -51,6 +51,11 @@ def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary"):
     # Schema Check (Fail-Closed)
     if b_schema != "baselines_v4_ecdf" and b_schema is not None:
          raise UndefinedBaselineError(f"Incompatible baseline schema in {source_name}: {b_schema}")
+
+    # Dimension Check (Fail-Closed for MaOP consistency)
+    b_m = data.get("mop_dimension")
+    if target_m is not None and b_m is not None and b_m != target_m:
+         raise UndefinedBaselineError(f"Dimension mismatch in {source_name}: baseline is M={b_m}, expected M={target_m}")
 
     # Version Check (Warning only)
     if b_ver and b_ver != lib_version():
@@ -121,7 +126,7 @@ def use_baselines(source: Union[str, Dict[str, Any]]):
         _CACHE = old_cache
         _CACHE_DIRTY = old_dirty
 
-def load_offline_baselines() -> Dict[str, Any]:
+def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
     """
     Loads and merges all offline baseline sources.
     Uses Fail-Closed logic for the primary resource.
@@ -129,6 +134,7 @@ def load_offline_baselines() -> Dict[str, Any]:
     global _CACHE, _CACHE_DIRTY
     
     # Return valid cache if available and not dirty
+    # If target_m is provided, we still need to verify the cache's dimension
     if _CACHE is not None and not _CACHE_DIRTY:
         return _CACHE
     
@@ -141,7 +147,7 @@ def load_offline_baselines() -> Dict[str, Any]:
             full_data = json.load(f)
             
         # 1.1 Environment DNA/Compatibility Verification
-        _verify_baseline_dna(full_data, "Primary")
+        _verify_baseline_dna(full_data, "Primary", target_m=target_m)
 
         # 1.5 Populate GT registry from primary data if present
         if "problems" in full_data:
@@ -150,6 +156,8 @@ def load_offline_baselines() -> Dict[str, Any]:
             for prob_id, prob_data in full_data["problems"].items():
                 if "gt_reference" in prob_data:
                     full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
+    except UndefinedBaselineError:
+        raise
     except Exception as e:
         raise UndefinedBaselineError(f"Failed to parse primary baseline file: {e}")
     
@@ -161,10 +169,11 @@ def load_offline_baselines() -> Dict[str, Any]:
                 try:
                     with open(src, "r") as f:
                         src_data = json.load(f)
-                        _verify_baseline_dna(src_data, os.path.basename(src))
+                        _verify_baseline_dna(src_data, os.path.basename(src), target_m=target_m)
+                except UndefinedBaselineError as e:
+                    # Specific dimension mismatch is fatal for this source
+                    continue 
                 except Exception as e:
-                    # Log warning but continue? 
-                    # For strictness in research, maybe we should fail.
                     continue
         elif isinstance(src, dict):
             src_data = src
@@ -191,18 +200,12 @@ def load_offline_baselines() -> Dict[str, Any]:
     _CACHE_DIRTY = False
     return _CACHE
 
-def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float]:
+def get_baseline_values(problem: str, k: int, metric: str, target_m: Optional[int] = None) -> Tuple[float, float]:
     """
     Retrieves (uni50, rand50) for a given (problem, k, metric).
-    
-    Returns:
-        (uni50, rand50)
-        
-    Raises:
-        UndefinedBaselineError: If baseline is missing (Strict).
     """
     try:
-        bases = load_offline_baselines()
+        bases = load_offline_baselines(target_m=target_m)
     except UndefinedBaselineError:
         raise
 
@@ -237,18 +240,12 @@ def get_baseline_values(problem: str, k: int, metric: str) -> Tuple[float, float
     except (AttributeError, ValueError):
         raise UndefinedBaselineError(f"Missing baseline for {problem}, K={k}, {metric}")
 
-def get_baseline_ecdf(problem: str, k: int, metric: str) -> Tuple[float, float, np.ndarray]:
+def get_baseline_ecdf(problem: str, k: int, metric: str, target_m: Optional[int] = None) -> Tuple[float, float, np.ndarray]:
     """
     Retrieves (uni50, rand50, rand_ecdf) for a given (problem, k, metric).
-    
-    Returns:
-        (uni50, rand50, rand_ecdf)
-        
-    Raises:
-        UndefinedBaselineError: If baseline is missing or invalid (Strict).
     """
     try:
-        bases = load_offline_baselines()
+        bases = load_offline_baselines(target_m=target_m)
     except UndefinedBaselineError:
         raise
 

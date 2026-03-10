@@ -257,11 +257,12 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
     if u_dist is None or u_dist.size == 0:
         return QResult(0.0, "Q_CLOSENESS", "Empty distribution (Failed).")
         
-    # Snap K to supported baseline grid
-    k_snap = baselines.snap_k(k)
+    # 1. Snap K to supported baseline grid (Problem-Aware)
+    k_snap = baselines.snap_k(k, problem=problem)
     
     # 1. Get Baseline (G_blur ECDF)
-    _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "closeness")
+    target_m = kwargs.get('mop_dimension')
+    _, _, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "closeness", target_m=target_m)
     
     # 2. Stability: Explicit ideal samples (all zeros, same size as u_dist)
     ideal_samples = np.zeros_like(u_dist)
@@ -302,8 +303,9 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = ctx['k']
         f_val = float(fair.coverage(P, GT).value)
         
-    k_snap = baselines.snap_k(k)
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_COVERAGE", description="Measures how well the population spans the entire front.")
 
@@ -325,8 +327,9 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
         k = ctx['k']
         f_val = float(fair.gap(P, GT).value)
         
-    k_snap = baselines.snap_k(k)
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_GAP", description="Measures the continuity of the front (lack of large holes).")
 
@@ -347,8 +350,9 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
         k = ctx['k']
         f_val = float(fair.regularity(P, ref_distribution).value)
         
-    k_snap = baselines.snap_k(k)
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_REGULARITY", description="Measures the uniformity of point spacing (lattice order).")
 
@@ -369,8 +373,9 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
         k = ctx['k']
         f_val = float(fair.balance(P, centroids, ref_hist).value)
         
-    k_snap = baselines.snap_k(k)
-    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
     return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
 
@@ -403,8 +408,9 @@ def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] 
     fr_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
     
     # 2. Get Baseline (Rand50 in FR space)
-    k_snap = baselines.snap_k(k)
-    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway", target_m=target_m)
     rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
 
     # 3. Vectorized log-linear mapping
@@ -444,8 +450,9 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
     u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
     
     # 2. Get Baseline (Rand50 in FR space)
-    k_snap = baselines.snap_k(k)
-    _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness")
+    k_snap = baselines.snap_k(k, problem=problem)
+    target_m = kwargs.get('mop_dimension')
+    _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness", target_m=target_m)
 
     # 3. Vectorized log-linear mapping
     denom_raw = max(rand50, 0.0)

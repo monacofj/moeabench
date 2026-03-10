@@ -315,45 +315,61 @@ def audit(target: Any,
     [Cascade Entry Point]
     Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor for synthesis.
     """
+    import os
+    import inspect
     from .utils import _resolve_diagnostic_context
     from ..system import reproducibility_info
     
-    # 0. Capture Reproducibility Metadata
+    # 0. Resolve Context (P, GT, s_k, Name, K)
+    ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
+    P = ctx['P_final']
+    GT = ctx['GT']
+    s_k_mop = ctx['s_k']
+    mop_name = ctx['problem']
+    K_raw = ctx['k']
+    
+    if P is None or GT is None:
+         return PerformanceAuditor.audit_synthesis(None, None)
+
+    # 1. Capture Reproducibility Metadata (Dimension-Aware)
     r_info = reproducibility_info()
+    target_m = P.shape[1] if P is not None else None
     
-    # 0.1 Append Baseline DNA
-    try:
-        bases = baselines.load_offline_baselines()
-        r_info["baseline_version"] = bases.get("version", "Unknown")
-        r_info["baseline_schema"] = bases.get("schema", "Legacy")
-    except:
-        r_info["baseline_version"] = "None"
-    
-    # 0.2 Clear Caches
+    # 1.1 Smart Sidecar Discovery (Dimension-Aware)
+    if not source_baseline and P is not None:
+        mop = getattr(target, 'mop', None) or getattr(getattr(target, 'source', None), 'mop', None)
+        if mop and hasattr(mop, 'M'):
+            try:
+                origin_file = inspect.getfile(mop.__class__)
+                origin_dir = os.path.dirname(os.path.abspath(origin_file))
+                sidecar_m = os.path.join(origin_dir, f"{mop_name}_M{mop.M}.json")
+                if os.path.exists(sidecar_m):
+                    source_baseline = sidecar_m
+            except:
+                pass
+
+    # 1.2 Clear Caches
     fair.clear_fair_cache()
 
-    # 0.3 Context Manager for External Baselines
+    # 1.3 Context Manager for External Baselines
     from contextlib import nullcontext
     cm = baselines.use_baselines(source_baseline) if source_baseline else nullcontext()
     
     with cm:
-        # 1. Resolve Context (P, GT, s_k, Name, K)
-        ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
-        P = ctx['P_final']
-        GT = ctx['GT']
-        s_k_mop = ctx['s_k']
-        mop_name = ctx['problem']
-        K_raw = ctx['k']
-
-        if P is None or GT is None:
-             return PerformanceAuditor.audit_synthesis(None, None)
+        # 1.4 Append Baseline DNA (after CM to capture sidecar info)
+        try:
+            bases = baselines.load_offline_baselines(target_m=target_m)
+            r_info["baseline_version"] = bases.get("version", "Unknown")
+            r_info["baseline_schema"] = bases.get("schema", "Legacy")
+        except:
+            r_info["baseline_version"] = "None"
 
         # 2. K-Selection logic 
         K_target = baselines.snap_k(K_raw, problem=mop_name)
             
         # 4. Compute Fair Metrics & Q-Scores
         try:
-            bases = baselines.load_offline_baselines()
+            bases = baselines.load_offline_baselines(target_m=target_m)
             if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
                  GT_raw = np.array(bases["_gt_registry"][mop_name])
                  if GT_raw.shape[1] == P.shape[1]:
