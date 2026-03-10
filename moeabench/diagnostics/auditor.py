@@ -174,13 +174,13 @@ class DiagnosticResult(Reportable):
     def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', True)
         if use_md:
-            header = "# MoeaBench Diagnostic Biopsy"
+            header = "# MoeaBench Clinical Report"
             status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"**Executive Summary**: {self.description}"
             sub_q = "## 1. Clinical Quality (Validation)"
             sub_f = "## 2. Physical Evidence (Facts)"
         else:
-            header = "=== MOEABENCH DIAGNOSTIC BIOPSY ==="
+            header = "=== MOEABENCH CLINICAL REPORT ==="
             status_line = f"Primary Status: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"Executive Summary: {self.description}"
             sub_q = ">> LAYER 1: CLINICAL QUALITY"
@@ -412,7 +412,7 @@ def audit(target: Any,
             }
             q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
             
-            # 5. Synthesis (The Biopsy)
+            # 5. Synthesis (The Clinical Report)
             return PerformanceAuditor.audit_synthesis(q_res, fr_res, reproducibility=r_info)
             
         except baselines.UndefinedBaselineError as e:
