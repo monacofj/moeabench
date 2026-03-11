@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 # from .I_UserExperiment import I_UserExperiment # Legacy removed
-from .base import Reportable
+from .base import Reportable, emit_output
 from .run import Run, SmartArray, Population
 import numpy as np
 import inspect
 import os
+import io
+from contextlib import nullcontext, redirect_stderr, redirect_stdout
 import numpy as np
 import inspect
 import os
@@ -81,8 +83,28 @@ class experiment(Reportable):
     def __len__(self) -> int:
         return len(self._runs)
 
+    def _infer_default_name(self) -> str:
+        """Infer variable name for unnamed experiments from caller frames."""
+        if self._name != "experiment":
+            return self._name
+        try:
+            frame = inspect.currentframe()
+            if frame is None:
+                return self._name
+            caller = frame.f_back
+            while caller is not None:
+                for var_name, var_val in caller.f_locals.items():
+                    if var_val is self and var_name != "self":
+                        self._name = var_name
+                        return self._name
+                caller = caller.f_back
+        except Exception:
+            return self._name
+        return self._name
+
     @property
-    def name(self) -> str: return self._name
+    def name(self) -> str:
+        return self._infer_default_name()
     @name.setter
     def name(self, value: str) -> None: self._name = value
     
@@ -101,20 +123,10 @@ class experiment(Reportable):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the experiment configuration and metadata."""
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         
-        # 1. Name Detection (Smart discovery if default)
-        name = self._name
-        if name == "experiment":
-            try:
-                import inspect
-                frame = inspect.currentframe().f_back
-                for var_name, var_val in frame.f_locals.items():
-                    if var_val is self:
-                        name = var_name
-                        break
-            except Exception:
-                pass
+        # 1. Resolve experiment name
+        name = self.name
 
         # 2. License/Author logic: If no author, force CC0
         license_str = self.license
@@ -474,7 +486,7 @@ class experiment(Reportable):
 
     # Execution
     def run(self, repeat: Optional[int] = None, append: bool = False,
-            workers: Optional[int] = None, diagnose: bool = False, **kwargs) -> None:
+            workers: Optional[int] = None, diagnose: bool = False, silent: bool = False, **kwargs) -> None:
         """
         Executes the optimization experiment for one or more runs.
 
@@ -486,6 +498,7 @@ class experiment(Reportable):
                            All runs are performed serially for stability.
             diagnose (bool): If True, performs automated algorithmic pathology analysis 
                              after execution and prints the rationale. Defaults to False.
+            silent (bool): If True, suppresses run output (prints and progress bars).
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
         if not append:
@@ -513,70 +526,78 @@ class experiment(Reportable):
         if hasattr(self.moea, 'stop') and (stop_criteria is not None or 'stop' in kwargs):
             self.moea.stop = stop_criteria
 
-        # Execute serially
-        self._run_serial(repeat, base_seed)
+        sink = io.StringIO()
+        out_ctx = redirect_stdout(sink) if silent else nullcontext()
+        err_ctx = redirect_stderr(sink) if silent else nullcontext()
+        with out_ctx, err_ctx:
+            emit_output(f"Running {self.name}", markdown=f"### Running **{self.name}**")
 
-        if diagnose and self._runs:
-            # Import metrics and diagnostics here to avoid circular dependencies
-            from .. import diagnostics, metrics
-            
-            # Diagnose the last run (most representative of current state)
-            run = self.last_run
-            try:
-                # Calculate quick metrics for diagnosis
-                diagnosis_metrics = {}
-                
-                # Check for Ground Truth
-                pf = None
-                if hasattr(self.mop, 'pf'):
-                    pf = self.mop.pf()
-                elif hasattr(self.mop, 'optimal_front'):
-                    pf = self.mop.optimal_front()
-                elif hasattr(self.mop, 'pareto_front'):
-                    pf = self.mop.pareto_front()
-                
-                if pf is not None:
-                     # Calculate GD and IGD for the last population
-                     pop_f = run.last_pop.objectives
-                     
-                     # Using the public metrics API which returns a MetricMatrix
-                     # We extract the float value for auditing
-                     m_gd = metrics.gd(pop_f, ref=pf)
-                     m_igd = metrics.igd(pop_f, ref=pf)
-                     
-                     diagnosis_metrics['gd'] = float(m_gd)
-                     diagnosis_metrics['igd'] = float(m_igd)
-                     
-                     # Try H_rel if HV available
-                     try:
-                         m_hv = metrics.hv(pop_f, ref=pf)
-                         # Assuming reference set comparison for normalization
-                         # For now, we take the raw value as an indicator
-                         diagnosis_metrics['h_rel'] = float(m_hv)
-                     except:
-                         pass
-                
-                # Perform Audit Using the Textbook Truth Table
-                result = diagnostics.audit(diagnosis_metrics)
-                result.report_show()
-                
-            except Exception as e:
-                # Silently fail or minimal log to not disrupt main execution
-                pass
+            # Execute serially
+            self._run_serial(repeat, base_seed, silent=silent)
 
-    def _run_serial(self, repeat: int, base_seed: int) -> None:
+            if diagnose and self._runs:
+                # Import metrics and diagnostics here to avoid circular dependencies
+                from .. import diagnostics, metrics
+                
+                # Diagnose the last run (most representative of current state)
+                run = self.last_run
+                try:
+                    # Calculate quick metrics for diagnosis
+                    diagnosis_metrics = {}
+                    
+                    # Check for Ground Truth
+                    pf = None
+                    if hasattr(self.mop, 'pf'):
+                        pf = self.mop.pf()
+                    elif hasattr(self.mop, 'optimal_front'):
+                        pf = self.mop.optimal_front()
+                    elif hasattr(self.mop, 'pareto_front'):
+                        pf = self.mop.pareto_front()
+                    
+                    if pf is not None:
+                         # Calculate GD and IGD for the last population
+                         pop_f = run.last_pop.objectives
+                         
+                         # Using the public metrics API which returns a MetricMatrix
+                         # We extract the float value for auditing
+                         m_gd = metrics.gd(pop_f, ref=pf)
+                         m_igd = metrics.igd(pop_f, ref=pf)
+                         
+                         diagnosis_metrics['gd'] = float(m_gd)
+                         diagnosis_metrics['igd'] = float(m_igd)
+                         
+                         # Try H_rel if HV available
+                         try:
+                             m_hv = metrics.hv(pop_f, ref=pf)
+                             # Assuming reference set comparison for normalization
+                             # For now, we take the raw value as an indicator
+                             diagnosis_metrics['h_rel'] = float(m_hv)
+                         except:
+                             pass
+                    
+                    # Perform Audit Using the Textbook Truth Table
+                    result = diagnostics.audit(diagnosis_metrics)
+                    result.report_show()
+                    
+                except Exception as e:
+                    # Silently fail or minimal log to not disrupt main execution
+                    pass
+
+    def _run_serial(self, repeat: int, base_seed: int, silent: bool = False) -> None:
         total_gens = getattr(self.moea, 'generations', None)
         outer_pbar = None
-        if repeat > 1:
+        if repeat > 1 and not silent:
             outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name}", position=0)
 
         for i in range(repeat):
             seed = base_seed + i
             
-            inner_pbar = get_progress_bar(total=total_gens, 
-                                         desc=f"  Run {i+1}/{repeat}", 
-                                         position=1 if repeat > 1 else 0,
-                                         leave=False if repeat > 1 else True)
+            inner_pbar = None
+            if not silent:
+                inner_pbar = get_progress_bar(total=total_gens, 
+                                             desc=f"  Run {i+1}/{repeat}", 
+                                             position=1 if repeat > 1 else 0,
+                                             leave=False if repeat > 1 else True)
             set_active_pbar(inner_pbar)
 
             try:
@@ -584,7 +605,8 @@ class experiment(Reportable):
                 new_run = Run(run_data, seed, experiment=self, index=i+1)
                 self._runs.append(new_run)
             finally:
-                inner_pbar.close()
+                if inner_pbar:
+                    inner_pbar.close()
                 set_active_pbar(None)
                 if outer_pbar:
                     outer_pbar.update_to(i + 1)

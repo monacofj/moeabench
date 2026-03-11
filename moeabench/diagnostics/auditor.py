@@ -29,7 +29,7 @@ class QualityAuditResult(Reportable):
         return {name: qres.verdict for name, qres in self.scores.items()}
     
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', True)
+        use_md = kwargs.get('markdown', self._is_notebook())
         if use_md:
             header = f"# Clinical Quality Audit: {self.mop_name} (K={self.k})"
             sep = ""
@@ -115,7 +115,7 @@ class FairAuditResult(Reportable):
     metrics: Dict[str, fair.FairResult]
     
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', True)
+        use_md = kwargs.get('markdown', self._is_notebook())
         header = "# Physical Engineering Audit" if use_md else "\n=== PHYSICAL ENGINEERING AUDIT ==="
         lines = [header, ""]
         for name, fres in self.metrics.items():
@@ -172,7 +172,7 @@ class DiagnosticResult(Reportable):
         return self._render_report(self.description, show, **kwargs)
 
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', True)
+        use_md = kwargs.get('markdown', self._is_notebook())
         if use_md:
             header = "# MoeaBench Clinical Report"
             status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"

@@ -4,30 +4,37 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import importlib.util
+from .core.base import emit_output
 
 def version(show: bool = True) -> str:
     """Returns the current moeabench version and optionally prints it."""
     v = "0.13.2"
     if show:
-        print(f"moeabench v{v}")
+        emit_output(f"moeabench v{v}", markdown=f"**moeabench** `v{v}`")
     return v
 
 def check_dependencies():
     """Prints a report of installed optional dependencies."""
     deps = ["numpy", "matplotlib", "pandas", "plotly", "IPython", "joblib"]
-    print(f"--- moeabench v{version(show=False)} Dependency Report ---")
+    lines = [f"moeabench v{version(show=False)} dependency report"]
+    md_lines = [f"### moeabench `v{version(show=False)}` Dependency Report", ""]
     for dep in deps:
         spec = importlib.util.find_spec(dep)
         status = "INSTALLED" if spec is not None else "MISSING"
-        print(f"  - {dep:<12}: {status}")
+        lines.append(f"- {dep:<12}: {status}")
+        md_lines.append(f"- **{dep}**: `{status}`")
     
     # Check for moea engines
     engines = ["pymoo", "deap"]
-    print("\n--- MOEA Engines ---")
+    lines.append("")
+    lines.append("moea engines")
+    md_lines.extend(["", "#### MOEA Engines"])
     for eng in engines:
         spec = importlib.util.find_spec(eng)
         status = "AVAILABLE" if spec is not None else "UNAVAILABLE"
-        print(f"  - {eng:<12}: {status}")
+        lines.append(f"- {eng:<12}: {status}")
+        md_lines.append(f"- **{eng}**: `{status}`")
+    emit_output("\n".join(lines), markdown="\n".join(md_lines))
 
 def reproducibility_info() -> dict:
     """
@@ -59,7 +66,7 @@ def export_objectives(data, filename=None):
     _, fronts, name, _ = _extract_data(data)
     
     if len(fronts) == 0:
-         print("Warning: No objective data to export.")
+         emit_output("Warning: no objective data to export.", markdown="> Warning: no objective data to export.")
          return
          
     import numpy as np
@@ -82,7 +89,8 @@ def export_objectives(data, filename=None):
     except ImportError:
         np.savetxt(filename, final_objs, delimiter=",", header=header, comments='')
         
-    print(f"Objectives exported to: {os.path.abspath(filename)}")
+    path = os.path.abspath(filename)
+    emit_output(f"Objectives exported to: {path}", markdown=f"Objectives exported to: `{path}`")
 
 def export_variables(data, filename=None):
     """
@@ -104,7 +112,10 @@ def export_variables(data, filename=None):
         vars_list = [data]
         name = "Array"
     else:
-        print("Error: export_variables requires Experiment, Run, Population or ndarray.")
+        emit_output(
+            "Error: export_variables requires Experiment, Run, Population or ndarray.",
+            markdown="**Error**: `export_variables` requires `Experiment`, `Run`, `Population`, or `ndarray`."
+        )
         return
 
     import numpy as np
@@ -125,4 +136,5 @@ def export_variables(data, filename=None):
     except ImportError:
         np.savetxt(filename, final_vars, delimiter=",", header=header, comments='')
         
-    print(f"Variables exported to: {os.path.abspath(filename)}")
+    path = os.path.abspath(filename)
+    emit_output(f"Variables exported to: {path}", markdown=f"Variables exported to: `{path}`")

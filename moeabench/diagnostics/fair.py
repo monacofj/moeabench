@@ -41,7 +41,7 @@ def clear_fair_cache():
 class FairResult(DiagnosticValue):
     """ Specialized result for Physical (FR) metrics. """
     def report(self, show: bool = True, **kwargs) -> str:
-        if kwargs.get('markdown', True):
+        if kwargs.get('markdown', self._is_notebook()):
             content = f"**{self.name}** (Physical): {self.value:.4f}\n- *Meaning*: {self.description}"
         else:
             content = f"{self.name} (Physical): {self.value:.4f}\n  Meaning: {self.description}"

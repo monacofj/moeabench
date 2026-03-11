@@ -48,6 +48,7 @@ This directory contains records of the key architectural decisions made during t
 | [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Accepted | 2026-02-25 |
 | [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Superceded | 2026-02-25 |
 | [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Accepted | 2026-03-08 |
+| [0038](0038-runtime-output-and-sidecar-hygiene-v0.13.3.md) | Runtime Output Control and Sidecar Hygiene (v0.13.3) | Accepted | 2026-03-11 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*

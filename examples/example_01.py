@@ -24,7 +24,6 @@ def main():
     exp1.moea = mb.moeas.NSGA3(population=50, generations=50)
 
     # 2. Execution: Run the optimization
-    print("Running experiment...")
     exp1.run()
     
     # NEW: Quick narrative diagnosis of the experiment

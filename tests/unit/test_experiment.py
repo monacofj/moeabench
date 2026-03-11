@@ -13,6 +13,17 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from moeabench import mb
 
+def test_default_name_uses_variable_name():
+    """Unnamed experiments should infer the object variable name."""
+    exp1 = mb.experiment()
+    assert exp1.name == "exp1"
+
+def test_explicit_name_has_precedence():
+    """Explicitly assigned names should not be overridden by inference."""
+    exp1 = mb.experiment()
+    exp1.name = "CustomExperiment"
+    assert exp1.name == "CustomExperiment"
+
 def test_optimal_sampling():
     """Verify Pareto optimal sampling (ps) for analytical problems."""
     exp = mb.experiment()
@@ -37,7 +48,7 @@ def test_optimal_sampling():
     assert exp.optimal_front(n_points=n_points).shape == (n_points, 2)
     assert exp.optimal_set(n_points=n_points).shape == (n_points, exp.mop.N)
 
-def test_experiment_run():
+def test_experiment_run(capsys):
     """Verify that an experiment execution stores runs correctly."""
     exp = mb.experiment()
     exp.mop = mb.mops.DTLZ2(M=2)
@@ -45,15 +56,28 @@ def test_experiment_run():
     
     repeats = 2
     exp.run(repeat=repeats)
+    captured = capsys.readouterr()
     
     assert len(exp.runs) == repeats
-    assert exp.name == "experiment"  # Default name from base experiment
+    assert exp.name == "exp"  # Default name inferred from object variable
+    assert "Running exp\n" in captured.out
     
     # Check if last run has data
     last_run = exp.last_run
     assert last_run.front().shape[1] == 2
     # history includes gen 0 (initial pop) + 10 generations = 11 entries
     assert len(last_run.history('nd')) == 11
+
+def test_experiment_run_silent(capsys):
+    """Verify that run(..., silent=True) suppresses run output."""
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=2)
+    exp.moea = mb.moeas.NSGA2deap(population=12, generations=3)
+
+    exp.run(repeat=1, silent=True)
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
 
 def test_persistence():
     """Verify save and load integrity."""

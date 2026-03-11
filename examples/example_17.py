@@ -33,7 +33,6 @@ def main():
     exp.moea = mb.moeas.NSGA2(population=100, generations=50)
 
     # 2. Execution
-    print(f"Running {exp.name}...")
     exp.run(repeat=1) # Single run for metric trajectory analysis
 
     # 3. Calculating the Portfolio

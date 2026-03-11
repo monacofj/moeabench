@@ -8,6 +8,15 @@ class Reportable:
     Mixin for objects that support narrative reporting in MoeaBench.
     Provides a consistent interface for environment-aware diagnostics.
     """
+    @staticmethod
+    def _is_notebook() -> bool:
+        """Returns True when running inside IPython/Jupyter."""
+        try:
+            from IPython import get_ipython
+            return get_ipython() is not None
+        except (ImportError, NameError):
+            return False
+
     def report(self, show: bool = True, **kwargs) -> str:
         """
         Returns a human-readable narrative report of the object's state.
@@ -26,12 +35,7 @@ class Reportable:
         if not show:
             return content
 
-        # Check if running in Jupyter/IPython
-        try:
-            from IPython import get_ipython
-            is_notebook = get_ipython() is not None
-        except (ImportError, NameError):
-            is_notebook = False
+        is_notebook = self._is_notebook()
 
         if is_notebook:
             try:
@@ -40,9 +44,23 @@ class Reportable:
             except ImportError:
                 print(content)
         else:
-            print(content)
+            print(self._to_plain_sober(content))
             
         return content
+
+    @staticmethod
+    def _to_plain_sober(content: str) -> str:
+        """Light cleanup for terminal output to keep reports sober and readable."""
+        lines = []
+        for line in content.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("### "):
+                line = stripped[4:]
+            if stripped.startswith("--- ") and stripped.endswith(" ---") and len(stripped) > 8:
+                line = stripped[4:-4].strip()
+            line = line.replace("**", "")
+            lines.append(line)
+        return "\n".join(lines)
 
     def report_show(self, **kwargs):
         """
@@ -65,3 +83,26 @@ class Reportable:
     def _repr_markdown_(self):
         """Rich representation for Jupyter/IPython (Markdown)."""
         return self.report(show=False, markdown=True)
+
+
+def emit_output(text: str, markdown: str | None = None) -> str:
+    """
+    Environment-aware output helper for non-report functions.
+    Uses Markdown rendering in notebooks when provided.
+    """
+    try:
+        from IPython import get_ipython
+        is_notebook = get_ipython() is not None
+    except (ImportError, NameError):
+        is_notebook = False
+
+    if is_notebook and markdown is not None:
+        try:
+            from IPython.display import display, Markdown
+            display(Markdown(markdown))
+            return text
+        except ImportError:
+            pass
+
+    print(Reportable._to_plain_sober(text))
+    return text

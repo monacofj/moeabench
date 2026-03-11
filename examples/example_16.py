@@ -38,7 +38,6 @@ def main():
     exp2_3D.moea = mb.moeas.MOEAD(population=100, generations=100)
 
     REPEATS = 10
-    print(f"Running 3D experiments ({REPEATS} times)...")
     exp1_3D.run(repeat=REPEATS)
     exp2_3D.run(repeat=REPEATS)
 
@@ -63,7 +62,6 @@ def main():
     exp2_2D.mop = mop2
     exp2_2D.moea = mb.moeas.MOEAD(population=100, generations=100)
 
-    print(f"Running 2D experiments ({REPEATS} times)...")
     exp1_2D.run(repeat=REPEATS)
     exp2_2D.run(repeat=REPEATS)
 

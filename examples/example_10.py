@@ -32,10 +32,8 @@ def main():
     exp2.moea = mb.moeas.NSGA3(population=100, generations=50)
 
     # 2. Execution: Run both experiments
-    print("Running NSGA-II...")
     exp1.run()
     
-    print("Running NSGA-III...")
     exp2.run()
 
     # 3. Topological Analysis: Objective Space

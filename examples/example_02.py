@@ -29,10 +29,8 @@ def main():
     exp2.moea = mb.moeas.SPEA2(population=50, generations=50)
 
     # 2. Execution: Run both experiments
-    print(f"Running {exp1.name}...")
     exp1.run()
     
-    print(f"Running {exp2.name}...")
     exp2.run()
     
     # 3. Comparative Visualization (Topographic Domain)

@@ -102,14 +102,16 @@ The top-level container for multi-objective optimization research.
 
 **Methods:**
 
-#### **`.run(repeat=None, diagnose=False, stop=None, **kwargs)`**
+#### **`.run(repeat=None, diagnose=False, silent=False, stop=None, **kwargs)`**
 *   **Description**: Executes the optimization process.
 *   **Arguments**:
     *   `repeat` (*int*): Number of independent runs. Defaults to `exp.repeat`.
     *   `diagnose` (*bool*): If `True`, performs automated pathology analysis after execution. Defaults to `False`.
+    *   `silent` (*bool*): If `True`, suppresses runtime output (`Running {exp.name}` banner, progress bars, and run-triggered diagnostic prints). Defaults to `False`.
     *   `stop` (*callable*): Custom stop criteria function. Returns `True` to halt.
     *   `**kwargs`: Parameters passed directly to the MOEA engine (e.g., `population`, `generations`, `seed`).
 *   **Returns**: `None`.
+*   **Runtime Behavior**: By default, the method prints `Running {exp.name}` at the beginning of execution.
 
 #### **`.pop(n=-1)`**
 *   **Description**: Accesses the aggregate cloud (JoinedPopulation) at generation `n`.
@@ -213,7 +215,7 @@ The "Smart Argument" pattern allows functions to be polymorphic and context-awar
 ### **2.2. Cloud-centric Delegation**
 The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
 *   **Scientific Metadata & CC0**: Integrated support for SPDX licenses. If no author is provided, experiments automatically default to **CC0-1.0** to promote scientific common goods.
-*   **Introspective Naming**: Experiments attempt to automatically discover their variable name from the caller's scope for clearer reporting.
+*   **Introspective Naming**: Unnamed experiments automatically resolve `exp.name` from the caller's variable identifier (e.g., `exp1`), improving reporting and runtime banners without mandatory manual naming.
 
 ---
 
@@ -669,8 +671,9 @@ Exports decision variables to a CSV file.
 *   **data**: `Experiment`, `Population`, or raw array.
 *   **filename**: Optional custom filename.
 
-### **`mb.system.version()`**
+### **`mb.system.version(show=True)`**
 Returns the current library version string.
+*   **show** (*bool*): If `True` (default), prints the version banner to terminal/notebook and returns the version string. If `False`, returns the version silently.
 
 ---
 
@@ -719,7 +722,7 @@ The abstract skeleton for all problem plugins. To create a new problem, you must
 | **C** | **Empirical** | `source_search` | Runs a high-fidelity MOEA (e.g., `NSGA3`) to find the GT on-the-fly. |
 
 **Arguments:**
-*   **`source_baseline`**: Path to the Sidecar JSON file (e.g., `'my_mop.json'`). If `None`, it is auto-resolved in the problem's directory. This file "freezes" the GT and ECDFs for future use.
+*   **`source_baseline`**: Path to the Sidecar JSON file (e.g., `'my_mop_M3.json'`). If `None`, it is auto-resolved as `<ProblemName>_M<M>.json` in the problem's directory. This file "freezes" the GT and ECDFs for future use.
 *   **`source_gt`**: A path to a CSV file or a NumPy matrix containing objective-space points to be treated as the Absolute Truth.
 *   **`source_search`**: An instance of a MOEA (e.g., `mb.moeas.NSGA3()`) used to Discover the GT. The framework will run this algorithm exaustively and filter the results with `.non_dominated()`.
 *   **`force`**: If `True`, ignores existing Sidecar JSON and forces re-calibration.
@@ -728,7 +731,7 @@ The abstract skeleton for all problem plugins. To create a new problem, you must
 >If your MOP has no analytical `ps(n)` and no CSV, you can signal an empirical search during calibration:
 >```python
 >mop = MyComplexMop()
-># MoeaBench will discover the truth, freeze it in 'audit.json', 
+># MoeaBench will discover the truth, freeze it in '<ProblemName>_M<M>.json', 
 ># and never run the search again.
 >mop.calibrate(source_search=mb.moeas.NSGA3(pop=200, gen=1000))
 >```

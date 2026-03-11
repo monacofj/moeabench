@@ -39,7 +39,6 @@ def main():
     exp2.mop = mop
     exp2.moea = mb.moeas.SPEA2(population=100, generations=50, seed=42)
 
-    print(f"Running experiments ({repeats} repeats each)...")
     exp1.run(repeat=repeats)
     exp2.run(repeat=repeats)
 

@@ -25,7 +25,6 @@ def main():
     exp1.moea = mb.moeas.NSGA3(population=100, generations=100)
 
     # 2. Execution
-    print("Running experiment...")
     exp1.run()
     
     # 3. Visualization: Front vs. Background Population (Topographic Domain)

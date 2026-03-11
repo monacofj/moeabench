@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 from typing import Optional, Any, Union
 from ..defaults import defaults
+from ..core.base import emit_output
 from ..diagnostics import audit, headway, closeness, coverage, gap, regularity, balance
 from ..diagnostics import q_headway, q_closeness, q_coverage, q_gap, q_regularity, q_balance
 from ..diagnostics import q_headway_points, q_closeness_points
@@ -186,7 +187,10 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
     mode = _resolve_mode(mode)
     res = audit(target, ground_truth)
     if not res or not res.q_audit_res:
-        print("Warning: [mb.view.clinic_radar] No baseline data found for this problem/population-size combo. Call mop.calibrate() first.")
+        emit_output(
+            "Warning: [mb.view.clinic_radar] no baseline data found for this problem/population-size combo. Call mop.calibrate() first.",
+            markdown="> Warning: `clinic_radar` found no baseline data for this problem/population-size combo. Call `mop.calibrate()` first."
+        )
         return None
 
     scores = res.q_audit_res.scores
@@ -243,7 +247,10 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
     is_exp = hasattr(target, 'runs')
     is_run = hasattr(target, 'history')
     if not (is_exp or is_run) or not hasattr(target, 'mop'):
-        print("Warning: clinic_history requires an Experiment or Run with history enabled.")
+        emit_output(
+            "Warning: clinic_history requires an Experiment or Run with history enabled.",
+            markdown="> Warning: `clinic_history` requires an `Experiment` or `Run` with history enabled."
+        )
         return None
         
     mop = target.mop

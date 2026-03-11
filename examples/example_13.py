@@ -37,7 +37,6 @@ def main():
     exp.name = "Strangled NSGA-II"
 
     # 2. Execution: Run the optimization with seed=1
-    print("Running optimization with limited resources...")
     exp.run(seed=1)
 
     # 3. Validation Data: Ground Truth
@@ -45,7 +44,6 @@ def main():
     gt = exp.optimal_front()
 
     # 4. Run Clinical Audit (Q-Scores)
-    print("Running Clinical Quality Audit...")
     q_res = mb.diagnostics.q_audit(exp, ground_truth=gt)
 
     # 5. Report Results

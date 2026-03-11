@@ -81,6 +81,9 @@ Let's solve the DTLZ2 benchmark (3 objectives) using the NSGA-III algorithm:
 ```python
 import moeabench as mb
 
+# Optional: print current library version
+mb.system.version()           # same as mb.system.version(show=True)
+
 # 1. Configure an experiment
 exp = mb.experiment()                   # Instantiate an experiment
 exp.mop = mb.mops.DTLZ2()               # Choose a benchmark problem
@@ -113,7 +116,8 @@ And the `view.perf_history` function will produce a plot showing the hypervolume
 *   `exp.authors = "Monaco F. J."` $\to$ Assigns authorship for reproducibility.
 *   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs). If not specified, defaults to **CC0-1.0**.
 *   `exp.year = 2026` $\to$ Sets the publication year.
-*   `exp.run()` $\to$ Orchestrates the actual optimization process.
+*   `exp.run()` $\to$ Orchestrates the actual optimization process and prints `Running {exp.name}` by default.
+*   `exp.run(silent=True)` $\to$ Executes silently (no banner/progress/diagnostic output emitted by `run()`).
 *   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.
 *Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.perf_history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
 
@@ -133,6 +137,9 @@ exp.run(repeat=10)
 # Option B: Set default property
 exp.repeat = 10
 exp.run()
+
+# Option C: Silent execution (batch scripts / CI)
+exp.run(repeat=10, silent=True)
 ```
 
 ### **Reproducibility & Seeds**
@@ -395,6 +402,10 @@ mb.view.topo_density(exp1, exp2, space='objs', title="Pareto Front Topology (Mat
 mb.view.topo_density(exp1, exp2, space='vars', title="Search Strategy (Mismatch)")
 mb.view.topo_gap(exp1, exp2)
 ```
+
+> [!TIP]
+> For many-objective cases (`M > 3`), explicitly project the axes when plotting fronts and GT together:
+> `mb.view.topo_shape(exp1, exp2, mop.pf(n_points=3000), objectives=[0,1,2], labels=["A", "B", "GT"])`.
 
 
 ![Reliability Bands](images/topo_bands.png)
@@ -997,9 +1008,10 @@ mb.view.clinic_radar(exp) # Works perfectly with custom baselines!
 ```
 
 #### **How it Works: The Sidecar Pattern**
-- **Persistence**: `mop.calibrate()` creates a JSON file (e.g., `MyProblem.json`) next to your Python class.
+- **Persistence**: `mop.calibrate()` creates a dimension-aware sidecar JSON file (e.g., `MyProblem_M3.json`) next to your Python class.
 - **Portability**: You can share this JSON file along with your code. MoeaBench will automatically find and load it if it's in the same directory as the problem definition.
 - **Scientific Integrity**: The sidecar stores a "frozen" Ground Truth, ensuring that your Q-Scores remain comparable even if you change your sampling logic later.
+- **Repository Hygiene**: Sidecars are local artifacts. Keep them out of version control (project `.gitignore` ignores `*_M[0-9]*.json`).
 
 > [!IMPORTANT]
 > **Pareto Set Requirement**: To use `calibrate()`, your custom MOP **must** implement the `ps(n)` method, which provides the analytical Pareto Set (decision variables) sample. This is the source of "truth" for all subsequent calibrations.

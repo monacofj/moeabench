@@ -20,6 +20,7 @@ from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 from . import baselines as base
 from . import fair
+from ..core.base import emit_output
 
 # Defaults aligned with baselines_v4
 N_SAMPLES_ECDF = 200
@@ -69,7 +70,10 @@ def calibrate_mop(mop: Any,
 
     # 2. Check Cache/File (Protocol: Loader)
     if os.path.exists(path) and not force:
-        print(f"moeabench: Loading custom baselines for '{mop_name}' from sidecar.")
+        emit_output(
+            f"moeabench: loading custom baselines for '{mop_name}' from sidecar.",
+            markdown=f"Loading custom baselines for **{mop_name}** from sidecar."
+        )
         base.register_baselines(path)
         return False
 
@@ -86,8 +90,14 @@ def calibrate_mop(mop: Any,
         if isinstance(pop_size, int) and isinstance(gens, int):
             effort_msg = f" (Estimated Effort: {pop_size * gens:,} evaluations)"
             
-        print(f"moeabench: Discovering Ground Truth for '{mop_name}' via empirical search ({moea_name}){effort_msg}...")
-        print(f"moeabench: Warning: This exhaustive search may take from minutes to hours depending on your MOP's complexity.")
+        emit_output(
+            f"moeabench: discovering Ground Truth for '{mop_name}' via empirical search ({moea_name}){effort_msg}...",
+            markdown=f"Discovering Ground Truth for **{mop_name}** via empirical search (`{moea_name}`){effort_msg}."
+        )
+        emit_output(
+            "moeabench: warning: this exhaustive search may take from minutes to hours depending on your MOP's complexity.",
+            markdown="> Warning: this exhaustive search may take from minutes to hours depending on your MOP's complexity."
+        )
 
         from ..core.experiment import experiment
         exp = experiment(mop=mop, moea=source_search)
@@ -99,21 +109,30 @@ def calibrate_mop(mop: Any,
     # Protocol B: Externally Supplied GT
     elif source_gt is not None:
         if isinstance(source_gt, str):
-            print(f"moeabench: Loading Ground Truth for '{mop_name}' from CSV: {source_gt}")
+            emit_output(
+                f"moeabench: loading Ground Truth for '{mop_name}' from CSV: {source_gt}",
+                markdown=f"Loading Ground Truth for **{mop_name}** from CSV: `{source_gt}`"
+            )
             gt = np.loadtxt(source_gt, delimiter=',')
         else:
             gt = np.asanyarray(source_gt)
             
     # Protocol A: Analytical (Default)
     else:
-        print(f"moeabench: Generating analytical Ground Truth for '{mop_name}'...")
+        emit_output(
+            f"moeabench: generating analytical Ground Truth for '{mop_name}'...",
+            markdown=f"Generating analytical Ground Truth for **{mop_name}**."
+        )
         gt = mop.pf(n_points=2000)
 
     if gt is None or len(gt) == 0:
         raise ValueError(f"moeabench: Calibration failed. Problem '{mop_name}' returned empty Ground Truth.")
 
     # 4. Perform Statistical Calibration
-    print(f"moeabench: Calibrating noisy baselines (this may take a minute)...")
+    emit_output(
+        "moeabench: calibrating noisy baselines (this may take a minute)...",
+        markdown="Calibrating noisy baselines (this may take a minute)."
+    )
     
     # Resolve K-Grid
     final_size = population_size or size
@@ -152,7 +171,10 @@ def calibrate_mop(mop: Any,
     # 6. Register in current session
     base.register_baselines(sidecar_data)
     
-    print(f"moeabench: Calibration complete. Profile saved to: {path}")
+    emit_output(
+        f"moeabench: calibration complete. profile saved to: {path}",
+        markdown=f"Calibration complete. Profile saved to: `{path}`"
+    )
     return True
 
 def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[str, Any]:

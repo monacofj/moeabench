@@ -164,6 +164,16 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
                 call_kwargs = kwargs.copy()
                 if auto_ref is not None and 'ref' not in call_kwargs:
                     call_kwargs['ref'] = auto_ref
+                # Baseline K must match calibration population size, not len(front).
+                # For Experiment/Run objects, infer K from solver configuration when available.
+                if 'k' not in call_kwargs:
+                    pop_k = None
+                    if hasattr(orig_obj, 'moea') and hasattr(orig_obj.moea, 'population'):
+                        pop_k = getattr(orig_obj.moea, 'population', None)
+                    elif hasattr(orig_obj, 'source') and hasattr(orig_obj.source, 'moea'):
+                        pop_k = getattr(orig_obj.source.moea, 'population', None)
+                    if isinstance(pop_k, int) and pop_k > 0:
+                        call_kwargs['k'] = pop_k
                 
                 # Clinical Sensitivity Adjustment:
                 # DTLZ1 global baseline is very large (~2.0), which makes 

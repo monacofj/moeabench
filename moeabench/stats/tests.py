@@ -44,7 +44,7 @@ class HypothesisTestResult(StatsResult):
         return self.p_value < defaults.alpha if self.p_value is not None else False
 
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         name1 = getattr(self.data1, 'name', 'Group A')
         name2 = getattr(self.data2, 'name', 'Group B')
         prec = defaults.precision
@@ -243,7 +243,7 @@ class DistMatchResult(StatsResult):
         return [k for k, v in self.results.items() if getattr(v, 'p_value', 1.0) < self.alpha]
 
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
         status_label = 'CONSISTENT' if self.is_consistent else 'DIVERGENT'
         

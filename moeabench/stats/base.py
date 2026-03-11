@@ -27,7 +27,7 @@ class SimpleStatsValue(StatsResult):
         return format(float(self.value), format_spec)
     
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         if use_md:
             content = f"**{self.name}**: {self.value:.4f}"
         else:

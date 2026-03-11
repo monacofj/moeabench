@@ -35,14 +35,29 @@ def main():
     exp2.moea = mb.moeas.NSGA3(population=120, generations=200)
 
     # Execute Multi-run (3 runs each for stability)
-    print("Running NSGA-II...")
     exp1.run(repeat=3)
 
-    print("Running NSGA-III...")
     exp2.run(repeat=3)
 
-    # 2. Physical Metrics & Statistics
-    print("\n2. Analyzing Physical Metrics...")
+    # Calibrate before plotting so clinical markers are available in topo_shape.
+    print(f"Calibrating baselines for {mop.name} (M=4, K=120)...")
+    mop.calibrate(size=120)
+
+    # 2. Visual Analysis (Both fronts + GT)
+    # For M=4, topo_shape projects to 3 axes for visualization.
+    gt = mop.pf(n_points=3000)
+    mb.view.topo_shape(
+        exp1,
+        exp2,
+        gt,
+        labels=["NSGA-II", "NSGA-III", "GT"],
+        objectives=[0, 1, 2],
+        title="DTLZ2 (M=4) - Fronts vs GT (f1,f2,f3 projection)",
+        markers=True
+    )
+
+    # 3. Physical Metrics & Statistics
+    print("\n3. Analyzing Physical Metrics...")
     igdp1 = mb.metrics.igdplus(exp1)
     igdp2 = mb.metrics.igdplus(exp2)
 
@@ -55,11 +70,6 @@ def main():
     # Performance Probability
     prob = mb.stats.perf_probability(igdp2, igdp1)
     print(f"\nProbability NSGA-III > NSGA-II (based on IGD+): {float(prob):.2%}")
-
-    # 3. Visual Analysis
-    # (Visualization requires a display environment; skipping interactive plots in script)
-    # But we can still compute them or use non-blocking versions if needed.
-    print("\n3. Visual Analysis (Skipping interactive plots in script)...")
 
     # 4. Stratification Analysis
     print("\n4. Stratification Analysis...")
@@ -74,10 +84,6 @@ def main():
 
     # 5. Clinical Report (FAIR Framework)
     print("\n5. Clinical Report (FAIR Framework)...")
-    
-    # Calibrate clinical baselines for M=4 main scenario
-    print(f"Calibrating baselines for {mop.name} (M=4, K=120)...")
-    mb.calibrate(mop, size=120, force=True)
 
     # Execute Analytical Multi-run Audit
     audit1 = mb.diagnostics.audit(exp1)

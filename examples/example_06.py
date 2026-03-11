@@ -34,7 +34,6 @@ def main():
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=pop_size, generations=gens)
 
-    print(f"Running {repeats} repetitions for each algorithm...")
     exp1.run(repeat=repeats)
     exp2.run(repeat=repeats)
 

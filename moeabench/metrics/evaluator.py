@@ -99,7 +99,7 @@ class MetricMatrix(Reportable):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         data = self._data
         if data.size == 0:
             if use_md:

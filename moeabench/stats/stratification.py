@@ -181,7 +181,7 @@ class StratificationResult(StatsResult):
         """
         Generates an analytical narrative report of the population strata.
         """
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         metric = kwargs.get('metric', None)
         import moeabench.metrics.evaluator as eval_mod
         m_func = metric if metric else eval_mod.hypervolume
@@ -367,7 +367,7 @@ class TierResult(StratificationResult):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Generates a competitive narrative report using Tier/F1 metaphors."""
-        use_md = kwargs.get('markdown', False)
+        use_md = kwargs.get('markdown', self._is_notebook())
         nameA, nameB = self.group_labels
         ratioA, ratioB = self.pole
         

@@ -12,6 +12,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Execution Silence Control**: Added `silent` parameter to `experiment.run(...)`. When `silent=True`, run-time output is fully suppressed (startup banner, progress bars, and run-triggered diagnostic prints).
+- **Run Startup Banner**: `experiment.run()` now prints `Running {exp.name}` by default for clearer CLI/notebook traceability.
+- **Version Output Toggle**: Added `show` parameter to `mb.system.version(show=True)`, allowing explicit silent retrieval via `show=False`.
+- **Default Name Inference at Property Level**: `experiment.name` now resolves unnamed objects to their variable identifier (e.g., `exp1.name == "exp1"`), not only in report rendering.
+
+### Changed
+- **Internal Version Calls Are Silent**: Internal calls that use the library version for metadata/resolution now use `show=False` to avoid unintended output during imports and diagnostics.
+- **Examples Output Policy**: Examples now call `mb.system.version()` directly (without wrapping `print(...)`) and remove redundant "Running..." prints now emitted by `run()`.
+- **Many-objective Visual Example**: `examples/example_full.py` now visualizes both experiment fronts plus GT immediately after execution using `mb.view.topo_shape(exp1, exp2, gt, objectives=[0,1,2])` for `M=4` projection.
+- **Calibration Sidecar Hygiene**: Removed generated local sidecars from tracked files and expanded `.gitignore` with `*_M[0-9]*.json` to prevent accidental commits of calibration artifacts.
+
 ## [0.13.2] - 2026-03-09
 
 ### Added
