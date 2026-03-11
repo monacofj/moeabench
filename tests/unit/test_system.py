@@ -10,12 +10,18 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 from moeabench import mb
 
-def test_version():
-    """Verify that the library version is a non-empty string."""
-    v = mb.system.version()
+def test_version(capsys):
+    """Verify return value and show behavior of version()."""
+    v = mb.system.version(show=False)
+    captured = capsys.readouterr()
+    assert captured.out == ""
     assert isinstance(v, str)
     assert len(v) > 0
-    print(f"Library Version: {v}")
+
+    v2 = mb.system.version(show=True)
+    captured = capsys.readouterr()
+    assert v2 == v
+    assert f"moeabench v{v}\n" == captured.out
 
 def test_mb_object():
     """Verify the existence and structure of the 'mb' object."""

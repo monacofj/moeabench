@@ -56,7 +56,7 @@ class save:
         
         # 0. Generate metadata.json (Scientific Reproducibility)
         m_provenance = {
-            "moeabench": system.version(),
+            "moeabench": system.version(show=False),
             "python": sys.version.split()[0],
             "platform": sys.platform,
             "timestamp_utc": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")

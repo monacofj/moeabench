@@ -24,7 +24,7 @@ from contextlib import contextmanager
 # Path to the Authorized Offline Baselines
 def _get_default_baseline_path() -> str:
     from ..system import version
-    ver = version()
+    ver = version(show=False)
     # Canonical version-specific path
     return os.path.join(os.path.dirname(__file__), f"resources/baselines_v{ver}.json")
 
@@ -58,9 +58,9 @@ def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary", tar
          raise UndefinedBaselineError(f"Dimension mismatch in {source_name}: baseline is M={b_m}, expected M={target_m}")
 
     # Version Check (Warning only)
-    if b_ver and b_ver != lib_version():
+    if b_ver and b_ver != lib_version(show=False):
         warnings.warn(
-            f"MoeaBench Version Mismatch ({source_name}): Baseline is {b_ver}, library is {lib_version()}. "
+            f"MoeaBench Version Mismatch ({source_name}): Baseline is {b_ver}, library is {lib_version(show=False)}. "
             "Numerical scores may differ across major/minor versions.",
             ReproducibilityWarning
         )

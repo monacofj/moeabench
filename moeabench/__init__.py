@@ -94,6 +94,6 @@ class _MB:
 
 mb = _MB()
 
-__version__ = system.version()
+__version__ = system.version(show=False)
 
 __all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb"]

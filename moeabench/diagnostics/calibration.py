@@ -135,7 +135,7 @@ def calibrate_mop(mop: Any,
     sidecar_data = {
         "problem_id": mop_name,
         "mop_dimension": mop.M,
-        "version": lib_version(),
+        "version": lib_version(show=False),
         "python_version": sys.version.split()[0],
         "numpy_version": np.__version__,
         "timestamp": datetime.datetime.now().isoformat(),

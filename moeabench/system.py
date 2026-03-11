@@ -5,14 +5,17 @@
 
 import importlib.util
 
-def version() -> str:
-    """Returns the current moeabench version."""
-    return "0.13.2"
+def version(show: bool = True) -> str:
+    """Returns the current moeabench version and optionally prints it."""
+    v = "0.13.2"
+    if show:
+        print(f"moeabench v{v}")
+    return v
 
 def check_dependencies():
     """Prints a report of installed optional dependencies."""
     deps = ["numpy", "matplotlib", "pandas", "plotly", "IPython", "joblib"]
-    print(f"--- moeabench v{version()} Dependency Report ---")
+    print(f"--- moeabench v{version(show=False)} Dependency Report ---")
     for dep in deps:
         spec = importlib.util.find_spec(dep)
         status = "INSTALLED" if spec is not None else "MISSING"
@@ -37,7 +40,7 @@ def reproducibility_info() -> dict:
     from datetime import datetime
     
     return {
-        "moeabench_version": version(),
+        "moeabench_version": version(show=False),
         "python_version": sys.version.split()[0],
         "numpy_version": np.__version__,
         "platform": platform.platform(),

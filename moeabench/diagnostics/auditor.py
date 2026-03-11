@@ -364,12 +364,18 @@ def audit(target: Any,
         except:
             r_info["baseline_version"] = "None"
 
-        # 2. K-Selection logic 
-        K_target = baselines.snap_k(K_raw, problem=mop_name)
+        # 2. K-Selection logic (Standardized snap grid)
+        # Use MOP name if provided to avoid snapping errors in localMaOP cases
+        # LEGACY/REPRODUCIBILITY: Only enable smart snapping for MaOP (M > 3) 
+        # to ensure standard benchmarks stick to the canonical [50, 100, 150, 200] grid.
+        K_target = baselines.snap_k(K_raw, problem=mop_name if (target_m or 0) > 3 else None)
             
         # 4. Compute Fair Metrics & Q-Scores
         try:
             bases = baselines.load_offline_baselines(target_m=target_m)
+            
+            # Smart GT resolution: allow registry to provide the canonical 10k-point reference
+            # if the dimension matches. This is necessary for numerical consistency across versions.
             if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
                  GT_raw = np.array(bases["_gt_registry"][mop_name])
                  if GT_raw.shape[1] == P.shape[1]:
