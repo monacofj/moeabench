@@ -7,6 +7,34 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ..defaults import defaults
 from ..metrics.evaluator import plot_matrix, hypervolume
+from ..core.base import emit_output
+
+
+def _perf_metric_error(method_name, metric, exc):
+    metric_name = getattr(metric, "__name__", str(metric))
+    lines = [
+        f"{method_name}: incompatible metric or data for '{metric_name}'.",
+        f"Reason: {type(exc).__name__}: {exc}",
+        "Accepted metric profile:",
+        "- callable metric(data, gens=..., **kwargs) returning MetricMatrix-like output",
+        "Typical metrics:",
+        "- mb.metrics.hv",
+        "- mb.metrics.gd",
+        "- mb.metrics.gdplus",
+        "- mb.metrics.igd",
+        "- mb.metrics.igdplus",
+        "- mb.metrics.emd",
+        "- mb.metrics.front_size",
+    ]
+    text = "\n".join(lines)
+    md = "\n".join([
+        f"**{method_name}**: incompatible metric or data for `{metric_name}`.",
+        f"- **Reason**: `{type(exc).__name__}: {exc}`",
+        "- **Accepted metric profile**: callable `metric(data, gens=..., **kwargs)` returning MetricMatrix-like output.",
+        "- **Typical metrics**: `mb.metrics.hv`, `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_size`.",
+    ])
+    emit_output(text, markdown=md)
+    return None
 
 def perf_history(*args, metric=None, gens=None, **kwargs):
     """
@@ -35,16 +63,18 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
 
     processed_args = []
     from ..metrics.evaluator import MetricMatrix
-    
-    for arg in args:
-        if isinstance(arg, MetricMatrix):
-            # If a matrix is already provided, slice it if gens is specified
-            processed_args.append(arg[gens] if gens is not None else arg)
-        else:
-            # Polymorphism: calculate metric if raw object passed, passing gens
-            processed_args.append(metric(arg, gens=gens, **metric_kwargs))
-            
-    return plot_matrix(processed_args, **kwargs)
+
+    try:
+        for arg in args:
+            if isinstance(arg, MetricMatrix):
+                # If a matrix is already provided, slice it if gens is specified
+                processed_args.append(arg[gens] if gens is not None else arg)
+            else:
+                # Polymorphism: calculate metric if raw object passed, passing gens
+                processed_args.append(metric(arg, gens=gens, **metric_kwargs))
+        return plot_matrix(processed_args, **kwargs)
+    except Exception as exc:
+        return _perf_metric_error("mb.view.perf_history", metric, exc)
 
 def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     """
@@ -55,7 +85,11 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     from ..stats.tests import perf_evidence
     
     if len(args) < 1:
-        raise ValueError("perf_spread requires at least one dataset.")
+        emit_output(
+            "mb.view.perf_spread requires at least one dataset.",
+            markdown="**mb.view.perf_spread** requires at least one dataset."
+        )
+        return None
 
     alpha = alpha if alpha is not None else defaults.alpha
 
@@ -67,35 +101,38 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     labels = []
     
     # 1. Collect all distributions
-    for i, arg in enumerate(args):
-        # We reuse perf_evidence's _resolve_samples logic indirectly
-        # but here we need them for plotting
-        from ..stats.tests import _resolve_samples
-        # Pairwise resolution vs others to get fair reference points if needed
-        # For boxplots, we usually want to resolve all vs the global set
-        v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
-        samples.append(v)
+    try:
+        for i, arg in enumerate(args):
+            # We reuse perf_evidence's _resolve_samples logic indirectly
+            # but here we need them for plotting
+            from ..stats.tests import _resolve_samples
+            # Pairwise resolution vs others to get fair reference points if needed
+            # For boxplots, we usually want to resolve all vs the global set
+            v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
+            samples.append(v)
         
-        # Legend Pattern: 'Name (run, gen)'
-        exp_name = None
-        run_idx = None
-        if type(arg).__name__ == 'Run':
-            run_idx = getattr(arg, 'index', None)
-            if hasattr(arg, 'source'):
-                exp_name = getattr(arg.source, 'name', None)
-        elif type(arg).__name__ == 'experiment':
-            exp_name = getattr(arg, 'name', None)
+            # Legend Pattern: 'Name (run, gen)'
+            exp_name = None
+            run_idx = None
+            if type(arg).__name__ == 'Run':
+                run_idx = getattr(arg, 'index', None)
+                if hasattr(arg, 'source'):
+                    exp_name = getattr(arg.source, 'name', None)
+            elif type(arg).__name__ == 'experiment':
+                exp_name = getattr(arg, 'name', None)
+                
+            if not exp_name:
+                exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+                import re
+                exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+                
+            pieces = []
+            if run_idx is not None: pieces.append(f"run {run_idx}")
+            if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
             
-        if not exp_name:
-            exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
-            import re
-            exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
-            
-        pieces = []
-        if run_idx is not None: pieces.append(f"run {run_idx}")
-        if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
-        
-        labels.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+            labels.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+    except Exception as exc:
+        return _perf_metric_error("mb.view.perf_spread", metric, exc)
     
     # 2. Setup Plot
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -141,7 +178,11 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     from ..stats.tests import perf_distribution
     
     if len(args) < 1:
-        raise ValueError("perf_density requires at least one dataset.")
+        emit_output(
+            "mb.view.perf_density requires at least one dataset.",
+            markdown="**mb.view.perf_density** requires at least one dataset."
+        )
+        return None
 
     alpha = alpha if alpha is not None else defaults.alpha
 
@@ -151,30 +192,33 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     samples = []
     names = []
     from ..stats.tests import _resolve_samples
-    for i, arg in enumerate(args):
-        v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
-        samples.append(v)
+    try:
+        for i, arg in enumerate(args):
+            v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
+            samples.append(v)
         
-        # Legend Pattern: 'Name (run, gen)'
-        exp_name = None
-        run_idx = None
-        if type(arg).__name__ == 'Run':
-            run_idx = getattr(arg, 'index', None)
-            if hasattr(arg, 'source'):
-                exp_name = getattr(arg.source, 'name', None)
-        elif type(arg).__name__ == 'experiment':
-            exp_name = getattr(arg, 'name', None)
+            # Legend Pattern: 'Name (run, gen)'
+            exp_name = None
+            run_idx = None
+            if type(arg).__name__ == 'Run':
+                run_idx = getattr(arg, 'index', None)
+                if hasattr(arg, 'source'):
+                    exp_name = getattr(arg.source, 'name', None)
+            elif type(arg).__name__ == 'experiment':
+                exp_name = getattr(arg, 'name', None)
+                
+            if not exp_name:
+                exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+                import re
+                exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+                
+            pieces = []
+            if run_idx is not None: pieces.append(f"run {run_idx}")
+            if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
             
-        if not exp_name:
-            exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
-            import re
-            exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
-            
-        pieces = []
-        if run_idx is not None: pieces.append(f"run {run_idx}")
-        if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
-        
-        names.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+            names.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+    except Exception as exc:
+        return _perf_metric_error("mb.view.perf_density", metric, exc)
     
     fig, ax = plt.subplots(figsize=(8, 5))
     
