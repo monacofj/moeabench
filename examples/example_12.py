@@ -76,7 +76,7 @@ def main():
     print("\nStep 3: Performing Full Diagnostic Biopsy...")
     diag_res = mb.diagnostics.audit(exp1, ground_truth=gt)
     print("\n--- Executive Summary ---")
-    print(diag_res.summary())
+    print(diag_res.report(show=False, full=False))
 
     print("\nExample 12 completed.")
 

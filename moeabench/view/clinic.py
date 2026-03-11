@@ -185,18 +185,63 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
     Visualizes the 6 Quality Scores (Q-Scores) in a single polygon.
     """
     mode = _resolve_mode(mode)
-    res = audit(target, ground_truth)
-    if not res or not res.q_audit_res:
+
+    # Polymorphic input:
+    # 1) Pre-computed results (DiagnosticResult / QualityAuditResult / scores=)
+    # 2) Raw targets (Experiment/Run/Population/ndarray), resolved via diagnostics.audit()
+    scores = kwargs.get("scores", None)
+    if scores is None:
+        if hasattr(target, "q_audit_res") and getattr(target, "q_audit_res") is not None:
+            scores = getattr(target.q_audit_res, "scores", None)
+        elif hasattr(target, "scores"):
+            scores = getattr(target, "scores", None)
+        else:
+            res = audit(target, ground_truth)
+            if res and getattr(res, "q_audit_res", None):
+                scores = getattr(res.q_audit_res, "scores", None)
+
+    # Fallback for DiagnosticResult objects that carry only FAIR evidence.
+    # We attempt to re-derive Q-scores from FAIR metrics when enough context is available.
+    if not scores and hasattr(target, "fair_audit_res") and getattr(target, "fair_audit_res") is not None:
+        fmetrics = getattr(target.fair_audit_res, "metrics", {}) or {}
+        problem = kwargs.get("problem", "Unknown")
+        k = int(kwargs.get("k", 100))
+        try:
+            if hasattr(target, "q_audit_res") and target.q_audit_res is not None:
+                problem = getattr(target.q_audit_res, "mop_name", problem)
+                k = int(getattr(target.q_audit_res, "k", k))
+        except Exception:
+            pass
+        if hasattr(target, "diagnostic_context") and isinstance(target.diagnostic_context, dict):
+            problem = target.diagnostic_context.get("problem", problem)
+            k = int(target.diagnostic_context.get("k", k))
+
+        if fmetrics:
+            scores = {
+                "Q_CLOSENESS": q_closeness(fmetrics.get("CLOSENESS"), problem=problem, k=k) if "CLOSENESS" in fmetrics else 0.0,
+                "Q_COVERAGE": q_coverage(fmetrics.get("COVERAGE"), problem=problem, k=k) if "COVERAGE" in fmetrics else 0.0,
+                "Q_GAP": q_gap(fmetrics.get("GAP"), problem=problem, k=k) if "GAP" in fmetrics else 0.0,
+                "Q_REGULARITY": q_regularity(fmetrics.get("REGULARITY"), problem=problem, k=k) if "REGULARITY" in fmetrics else 0.0,
+                "Q_BALANCE": q_balance(fmetrics.get("BALANCE"), problem=problem, k=k) if "BALANCE" in fmetrics else 0.0,
+                "Q_HEADWAY": q_headway(fmetrics.get("HEADWAY"), problem=problem, k=k) if "HEADWAY" in fmetrics else 0.0,
+            }
+
+    if not scores:
         emit_output(
-            "Warning: [mb.view.clinic_radar] no baseline data found for this problem/population-size combo. Call mop.calibrate() first.",
-            markdown="> Warning: `clinic_radar` found no baseline data for this problem/population-size combo. Call `mop.calibrate()` first."
+            "Warning: [mb.view.clinic_radar] no quality scores available for this input.",
+            markdown="> Warning: `clinic_radar` could not resolve quality scores for this input."
         )
         return None
 
-    scores = res.q_audit_res.scores
     cat = ["Q_CLOSENESS", "Q_COVERAGE", "Q_GAP", "Q_REGULARITY", "Q_BALANCE", "Q_HEADWAY"]
     labels = [c.replace("Q_", "").title() for c in cat]
-    values = [float(scores.get(c).value) if c in scores else 0.0 for c in cat]
+    values = []
+    for c in cat:
+        if c not in scores:
+            values.append(0.0)
+            continue
+        qv = scores[c]
+        values.append(float(qv.value) if hasattr(qv, "value") else float(qv))
     
     if mode == 'static':
         angles = np.linspace(0, 2 * np.pi, len(cat), endpoint=False).tolist()

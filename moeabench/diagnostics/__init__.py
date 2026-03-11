@@ -13,7 +13,7 @@ Divided into:
 - Calibration (Plugin Support): mb.diagnostics.calibrate, mb.diagnostics.register_baselines
 """
 
-from .auditor import audit, fair_audit, q_audit, PerformanceAuditor, DiagnosticResult, FairAuditResult, QualityAuditResult
+from .auditor import audit, PerformanceAuditor, DiagnosticResult, FairAuditResult, QualityAuditResult
 from .enums import DiagnosticStatus
 from .baselines import register_baselines, reset_baselines, use_baselines
 from .calibration import calibrate_mop as calibrate
@@ -41,7 +41,7 @@ from .qscore import (
 )
 
 __all__ = [
-    "audit", "fair_audit", "q_audit", "PerformanceAuditor",
+    "audit", "PerformanceAuditor",
     "DiagnosticResult", "FairAuditResult", "QualityAuditResult",
     "DiagnosticStatus",
     "register_baselines", "reset_baselines", "use_baselines", "calibrate",

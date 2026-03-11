@@ -16,6 +16,44 @@ THRESH_RESEARCH = 0.67
 THRESH_INDUSTRY = 0.34
 # Less strict profiles can be lower if needed, but 1/3 is the absolute floor.
 
+def _quality_executive_summary(scores: Dict[str, qscore.QResult]) -> str:
+    """Hierarchical clinical interpretation (decision tree)."""
+    def q(name: str) -> float:
+        return float(scores[name].value) if name in scores else 0.0
+
+    # Gate 1: Proximity (Closeness)
+    q_close = q("Q_CLOSENESS")
+    if q_close < THRESH_INDUSTRY:
+        msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
+        if q("Q_HEADWAY") >= THRESH_RESEARCH:
+            msg = "Poor Convergence: Despite effective progress in headway, the algorithm failed to approach the optimal manifold."
+        return msg
+
+    # Gate 2: Spatial Extent (Coverage & Gap)
+    q_cov = q("Q_COVERAGE")
+    q_gap = q("Q_GAP")
+    if q_cov < 0.25 and q_gap < 0.25:
+        return "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
+
+    # Gate 3: Distribution Quality (Order)
+    pathologies = []
+    if q_cov < THRESH_INDUSTRY: pathologies.append("collapsed coverage")
+    elif q_cov < THRESH_RESEARCH: pathologies.append("limited coverage")
+
+    if q_gap < THRESH_INDUSTRY: pathologies.append("severe fragmentation")
+    elif q_gap < THRESH_RESEARCH: pathologies.append("continuity breaches")
+
+    if q("Q_REGULARITY") < THRESH_INDUSTRY: pathologies.append("unstructured spacing")
+    elif q("Q_REGULARITY") < THRESH_RESEARCH: pathologies.append("irregular distribution")
+
+    if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("skewed parity")
+    elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("distribution bias")
+
+    base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
+    if not pathologies:
+        return f"{base} Overall structural integrity meets validation standards."
+    return f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
+
 @dataclass
 class QualityAuditResult(Reportable):
     """ Results of a clinical quality validation. """
@@ -28,7 +66,10 @@ class QualityAuditResult(Reportable):
         """Returns a dictionary of human-readable labels for each Q-Score."""
         return {name: qres.verdict for name, qres in self.scores.items()}
     
-    def report(self, show: bool = True, **kwargs) -> str:
+    def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
+        if not full:
+            return self._render_report(_quality_executive_summary(self.scores), show, **kwargs)
+
         use_md = kwargs.get('markdown', self._is_notebook())
         if use_md:
             header = f"# Clinical Quality Audit: {self.mop_name} (K={self.k})"
@@ -63,58 +104,12 @@ class QualityAuditResult(Reportable):
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
-    def summary(self, show: bool = True, **kwargs) -> str:
-        """ Hierarchical clinical interpretation (The Decision Tree). """
-        s = self.scores
-        def q(n): return float(s[n].value) if n in s else 0.0
-
-
-        # Gate 1: Proximity (Closeness)
-        q_close = q("Q_CLOSENESS")
-        if q_close < THRESH_INDUSTRY:
-            msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
-            if q("Q_HEADWAY") >= THRESH_RESEARCH:
-                msg = f"Poor Convergence: Despite effective progress in headway, the algorithm failed to approach the optimal manifold."
-            return self._render_report(msg, show, **kwargs)
-
-        # Gate 2: Spatial Extent (Coverage & Gap)
-        q_cov = q("Q_COVERAGE")
-        q_gap = q("Q_GAP")
-        
-        # Worst Quartile check (0.25)
-        if q_cov < 0.25 and q_gap < 0.25:
-             content = "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
-             return self._render_report(content, show, **kwargs)
-
-        # Level 3: Distribution Quality (Order)
-        pathologies = []
-        if q_cov < THRESH_INDUSTRY: pathologies.append("collapsed coverage")
-        elif q_cov < THRESH_RESEARCH: pathologies.append("limited coverage")
-        
-        if q_gap < THRESH_INDUSTRY: pathologies.append("severe fragmentation")
-        elif q_gap < THRESH_RESEARCH: pathologies.append("continuity breaches")
-        
-        if q("Q_REGULARITY") < THRESH_INDUSTRY: pathologies.append("unstructured spacing")
-        elif q("Q_REGULARITY") < THRESH_RESEARCH: pathologies.append("irregular distribution")
-        
-        if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("skewed parity")
-        elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("distribution bias")
-
-        base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
-        
-        if not pathologies:
-            content = f"{base} Overall structural integrity meets validation standards."
-        else:
-            content = f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
-            
-        return self._render_report(content, show, **kwargs)
-
 @dataclass
 class FairAuditResult(Reportable):
     """ Results of a physical engineering audit. """
     metrics: Dict[str, fair.FairResult]
     
-    def report(self, show: bool = True, **kwargs) -> str:
+    def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
         use_md = kwargs.get('markdown', self._is_notebook())
         header = "# Physical Engineering Audit" if use_md else "\n=== PHYSICAL ENGINEERING AUDIT ==="
         lines = [header, ""]
@@ -163,15 +158,14 @@ class DiagnosticResult(Reportable):
         """Proxy to access Q-Score verdicts directly."""
         return self.q_audit_res.verdicts
 
-    def summary(self, show: bool = True, **kwargs) -> str:
-        """ Preferred fluid narrative for executive reporting. """
-        if self.status == DiagnosticStatus.MISSING_BASELINE:
-             return self._render_report(self.description, show, **kwargs)
-        if self.q_audit_res:
-             return self.q_audit_res.summary(show=show, **kwargs)
-        return self._render_report(self.description, show, **kwargs)
+    def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
+        if not full:
+            if self.status == DiagnosticStatus.MISSING_BASELINE:
+                return self._render_report(self.description, show, **kwargs)
+            if self.q_audit_res:
+                return self._render_report(_quality_executive_summary(self.q_audit_res.scores), show, **kwargs)
+            return self._render_report(self.description, show, **kwargs)
 
-    def report(self, show: bool = True, **kwargs) -> str:
         use_md = kwargs.get('markdown', self._is_notebook())
         if use_md:
             header = "# MoeaBench Clinical Report"
@@ -190,8 +184,8 @@ class DiagnosticResult(Reportable):
         if self.status == DiagnosticStatus.MISSING_BASELINE:
              q_rep = self.description
         else:
-             q_rep = self.q_audit_res.report(show=False, **kwargs) if self.q_audit_res else "N/A"
-        f_rep = self.fair_audit_res.report(show=False, **kwargs) if self.fair_audit_res else "N/A"
+             q_rep = self.q_audit_res.report(show=False, full=True, **kwargs) if self.q_audit_res else "N/A"
+        f_rep = self.fair_audit_res.report(show=False, full=True, **kwargs) if self.fair_audit_res else "N/A"
 
         lines = [
             header,
@@ -310,10 +304,11 @@ def q_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> QualityAu
 def audit(target: Any, 
           ground_truth: Optional[np.ndarray] = None,
           source_baseline: Optional[Union[str, Dict[str, Any]]] = None,
+          quality: bool = True,
           **kwargs) -> DiagnosticResult:
     """
     [Cascade Entry Point]
-    Computes FAIR metrics and Q-SCORES, then delegates to PerformanceAuditor for synthesis.
+    Computes FAIR metrics and, optionally, Q-SCORES, then delegates to synthesis.
     """
     import os
     import inspect
@@ -415,6 +410,17 @@ def audit(target: Any,
                 "HEADWAY": f_headway
             }
             fr_res = PerformanceAuditor.audit_fr(f_metrics)
+
+            # Optional quality stage: return FAIR-only diagnostics when disabled.
+            if not quality:
+                return DiagnosticResult(
+                    q_audit_res=None,
+                    fair_audit_res=fr_res,
+                    status=DiagnosticStatus.UNDEFINED,
+                    description="Physical audit complete. Clinical Q-Scores disabled (quality=False).",
+                    reproducibility=r_info,
+                    diagnostic_context=ctx
+                )
             
             # D. Compute Q-Scores (Engineering)
             q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
