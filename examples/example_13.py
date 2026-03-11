@@ -27,7 +27,6 @@ import matplotlib.pyplot as plt
 
 def main():
     mb.system.version()
-    print("=== Example 13: Reference-based Quality Validation (Q-Scores)")
 
     # 1. Setup: DTLZ1 (3 Objectives) and NSGA-II
     # Using the specific configuration requested by the user:
@@ -44,26 +43,23 @@ def main():
     gt = exp.optimal_front()
 
     # 4. Run Clinical Audit (Q-Scores)
-    q_res = mb.diagnostics.q_audit(exp, ground_truth=gt)
+    q_res = mb.clinic.audit(exp, ground_truth=gt).quality
 
     # 5. Report Results
-    print("\n--- Clinical Quality Report ---\n")
-    q_res.report()
+    q_res.report(full=True)
     
     # 6. Visual Confirmation
-    print("\nDisplaying Topology Shape with Semantic Markers...")
     
     # Standard call as requested: Population object vs Optimal Front points.
     
-    # User requested specific block for topo_shape:
+    # User requested specific block for topology:
     exp = mb.experiment()
     exp.moea = mb.moeas.NSGA2()
     exp.mop = mb.mops.DTLZ1()
     exp.population = 100
     exp.generations = 300
     exp.run(seed=1)
-    mb.view.topo_shape(exp, exp.optimal_front(), markers=True)
-    print("\nDone.")
+    mb.view.topology(exp, exp.optimal_front(), markers=True)
 
 if __name__ == "__main__":
     main()

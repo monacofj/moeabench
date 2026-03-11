@@ -9,6 +9,7 @@ from ..defaults import defaults
 from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
+from ..core.display import show_matplotlib
 
 def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, markers=False, gray_gt=True, **kwargs):
     """
@@ -343,7 +344,8 @@ def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, sp
         else:
             fig.suptitle(title, fontsize=14)
             
-    if show and layout != 'external': plt.show()
+    if show and layout != 'external':
+        show_matplotlib(fig)
     return figures if layout == 'independent' else (ax if layout == 'external' else fig)
 
 def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, style='step', **kwargs):

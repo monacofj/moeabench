@@ -22,7 +22,7 @@ To prevent interference between parallel experiments or global state side effect
 - **Rationale**: Relying on the global `random.seed()` is vulnerable to other libraries or user scripts altering the global state mid-execution. Localized state ensures that each algorithm instance is an isolated, deterministic unit.
 
 ### C. Environment Metadata Capture
-Every diagnostic biopsy performed via `mb.diagnostics.audit()` automatically captures **Reproducibility Metadata**:
+Every diagnostic biopsy performed via `mb.clinic.audit()` automatically captures **Reproducibility Metadata**:
 - Python version
 - NumPy version
 - MoeaBench version

@@ -17,7 +17,6 @@ from moeabench import mb
 
 def main():
     mb.system.version()
-    print("--- Statistical Analysis Workshop ---\n")
     
     # 1. Setup: Compare NSGA-III and SPEA2 with 10 repetitions
     repeats = 10
@@ -38,22 +37,23 @@ def main():
     exp2.run(repeat=repeats)
 
     # 2. Statistical Inference
-    print("\n--- Inferential Statistics ---")
     
-    # res1 contains:
-    #             .statistic       test statistic (U)
-    #             .p_value         probability of observing the data by chance
-    #             .significant    # 4. Statistical Analysis
-    # [mb.stats.perf_evidence] Uses Mann-Whitney U test to check for significant differences
-    res1 = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
+    # [mb.stats.perf_shift] uses Mann-Whitney U
+    # Equivalent to mb.stats.perf_compare(method='shift').
+    # to check for significant location differences.
+    res1 = mb.stats.perf_shift(exp1, exp2, metric=mb.metrics.hv)
     res1.report()
     
-    # [mb.stats.perf_distribution] Uses Kolmogorov-Smirnov (KS) test to compare distribution shapes
-    res2 = mb.stats.perf_distribution(exp1, exp2, metric=mb.metrics.hv)
+    # [mb.stats.perf_match] uses Kolmogorov-Smirnov (KS)
+    # Equivalent to mb.stats.perf_compare(method='match').
+    # to compare distribution shapes.
+    res2 = mb.stats.perf_match(exp1, exp2, metric=mb.metrics.hv)
     res2.report()
     
-    # [mb.stats.perf_probability] Uses Vargha-Delaney A12 effect size to calculate win probability
-    res3 = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
+    # [mb.stats.perf_win] uses Vargha-Delaney A12
+    # Equivalent to mb.stats.perf_compare(method='win').
+    # to estimate win probability / effect size.
+    res3 = mb.stats.perf_win(exp1, exp2, metric=mb.metrics.hv)
     res3.report()
 
 if __name__ == "__main__":

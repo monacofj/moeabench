@@ -34,9 +34,8 @@ def main():
     exp2.run()
     
     # 3. Comparative Visualization (Topographic Domain)
-    # Passing multiple experiments to topo_shape overlays their fronts.
-    print("Comparing fronts...")
-    mb.view.topo_shape(exp1, exp2, title="Comparison: NSGA-III vs SPEA2")
+    # Passing multiple experiments to topology overlays their fronts.
+    mb.view.topology(exp1, exp2, title="Comparison: NSGA-III vs SPEA2")
 
     # 4. Comparative Visualization (Performance Domain)
     # We use a shared reference to ensure a fair hypervolume comparison.
@@ -46,8 +45,7 @@ def main():
     hv1 = mb.metrics.hv(exp1, ref=ref)
     hv2 = mb.metrics.hv(exp2, ref=ref)
     
-    print("Comparing convergence...")
-    mb.view.perf_history(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)")
+    mb.view.history(hv1, hv2, title="Hypervolume Convergence (Fair Comparison)")
 
 if __name__ == "__main__":
     main()

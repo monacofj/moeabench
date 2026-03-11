@@ -36,8 +36,8 @@ exp.moea = mb.moeas.NSGA3()                     # Select which MOEA to run
 
 exp.run()                                       # Run the optimization process
 
-mb.view.spaceplot(exp)                          # Plot the 3D pareto front
-mb.view.timeplot(exp)                           # Plot Hypervolume convergence
+mb.view.topology(exp)                          # Plot the 3D pareto front
+mb.view.history(exp)                           # Plot Hypervolume convergence
 ```
 
 

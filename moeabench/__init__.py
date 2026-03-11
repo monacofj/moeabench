@@ -37,7 +37,8 @@ from . import stats
 from . import view
 from . import system
 from .defaults import defaults
-from . import diagnostics
+from . import diagnostics as _clinic_module
+clinic = _clinic_module
 
 # MB Wrapper for direct access
 class _MB:
@@ -55,10 +56,10 @@ class _MB:
         self.view = view
         self.system = system
         self.defaults = defaults
-        self.diagnostics = diagnostics
+        self.clinic = _clinic_module
 
 mb = _MB()
 
 __version__ = system.version(show=False)
 
-__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb"]
+__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb", "clinic"]

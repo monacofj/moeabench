@@ -468,16 +468,10 @@ The failure threshold ($Q=0$) maps the expected histogram imbalances of an ungui
 ## 6. Reference implementation in MoeaBench
 
 ### 6.1 Public entry points
-MoeaBench exposes three “cascade” entry points in `moeabench.diagnostics.auditor`:
+MoeaBench exposes one canonical cascade entry point in `moeabench.clinic`:
 
-- `fair_audit(target, ground_truth=GT, ...)`
-  Returns the **physical** FAIR metrics.
-
-- `q_audit(target, ground_truth=GT, ...)`
-  Returns the **clinical** Q-scores.
-
-- `audit(target, ground_truth=GT, ...)`
-  Runs both layers and returns a **diagnostic result** object (`DiagnosticResult`) with a synthesis verdict.
+- `audit(target, ground_truth=GT, quality=True|False, ...)`
+  Runs the physical layer and (optionally) the clinical layer, returning a `DiagnosticResult`.
 
 ### 6.2 The "Smart API Contract" for containers
 The diagnostics context resolver polymorphically accepts different data containers. This is designed to maximize context recovery (especially for longitudinal metrics like Headway):

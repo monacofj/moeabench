@@ -93,8 +93,8 @@ exp.moea = mb.moeas.NSGA3()             # Choose an optimization algorithm
 exp.run()
 
 # 3. Visualization of Results
-mb.view.topo_shape(exp)                 # View the resulting Pareto front  
-mb.view.perf_history(exp)               # View the hypervomume convergence
+mb.view.topology(exp)                 # View the resulting Pareto front  
+mb.view.history(exp)               # View the hypervomume convergence
 ```
 The `view.perf_shape` function will produce a plot showing the topography of the resulting Pareto front.
 
@@ -103,10 +103,10 @@ The `view.perf_shape` function will produce a plot showing the topography of the
 
 #### **Performance: Convergence trajectories**
 MoeaBench offers several viz perspectives for performance:
-- `mb.view.perf_history`: Evolution of Hypervolume (default), IGD, GD, etc.
-- `mb.view.perf_spread`: Comparative performance distributions at specific generations.
-- `mb.view.perf_density`: Statistical density of attainment.
-And the `view.perf_history` function will produce a plot showing the hypervolume convergence along generations.
+- `mb.view.history`: Evolution of Hypervolume (default), IGD, GD, etc.
+- `mb.view.spread`: Comparative performance distributions at specific generations.
+- `mb.view.density`: Statistical density of attainment.
+And the `view.history` function will produce a plot showing the hypervolume convergence along generations.
 
 ![Convergence](images/hello_time.png)
 *Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
@@ -118,7 +118,7 @@ And the `view.perf_history` function will produce a plot showing the hypervolume
 *   `exp.run()` $\to$ Orchestrates the actual optimization process and prints `Running {exp.name}` by default.
 *   `exp.run(silent=True)` $\to$ Executes silently (no banner/progress/diagnostic output emitted by `run()`).
 *   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.
-*Note: In this example, `mb.view.topo_shape(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.perf_history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
+*Note: In this example, `mb.view.topology(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
 
 ---
 
@@ -159,7 +159,7 @@ When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This mean
 
 For instance, visualizing a multi-run experiment showing the mean performance and variance:
 ```python
-mb.view.perf_history(exp)
+mb.view.history(exp)
 ```
 
 ![Convergence History](images/timeplot.png)
@@ -167,7 +167,7 @@ mb.view.perf_history(exp)
 
 To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
 ```python
-mb.view.perf_history(exp[4])   # Run number is 0-indexed
+mb.view.history(exp[4])   # Run number is 0-indexed
 ```
 
 For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.
@@ -188,12 +188,12 @@ If you are analyzing a single experiment in isolation, you might not strictly ne
 
 **2. Comparative Reference (The "Joint Universe")**
 When comparing two algorithms ($A$ and $B$), they must be judged against the same ruler.
-*   **Automatic**: High-level tools like `perf_spread(expA, expB)` automatically calculate the union ($A \cup B$) as the reference.
+*   **Automatic**: High-level tools like `spread(expA, expB)` automatically calculate the union ($A \cup B$) as the reference.
 *   **Manual**: If calculating manually, you **must** enforce this union: `hv(expA, ref=expB)`.
 
 **3. External Reference (Fixed Benchmark)**
 Sometimes, you want to compare $A$ and $B$, but scale them against a third, absolute baseline $C$ (e.g., a "State of the Art" result that isn't being plotted, or the True Pareto Front).
-*   Even in automatic tools, you can inject this external context: `perf_spread(expA, expB, ref=expC)`. This forces $A$ and $B$ to be normalized against the ranges of $C$, ensuring consistency across different studies.
+*   Even in automatic tools, you can inject this external context: `spread(expA, expB, ref=expC)`. This forces $A$ and $B$ to be normalized against the ranges of $C$, ensuring consistency across different studies.
 
 ```python
 # Scenario A: Isolation (Internal consistency only)
@@ -336,7 +336,7 @@ nd_1 = exp[0].non_dominated()      # Elite of the first run only
 nd_n = exp.non_dominated(50) # Elite of generation 50 across all runs
 first_obj = nd_n.objectives[0] # Objective vector of the first elite individual
 # --- Visualization (Extracting Space) ---
-mb.view.topo_shape(nd.objs, ref.objs)
+mb.view.topology(nd.objs, ref.objs)
 ```
 
 *Note: In the methods above, you can pass an optional generation index `n` (e.g., `exp.non_dominated(50)`); leave it empty to retrieve the **final** state by default.*
@@ -379,32 +379,32 @@ moeabench organizes all analytical tools into three fundamental scientific domai
 ### **7.1. Topography (Metric Space Analysis)**
 This domain analyzes the spatial properties of the solution set within the objective space, focusing on coverage, convergence, and diversity.
 
-*   **`topo_shape`**: Visualizes the geometry of the Pareto front or the entire population cloud in 2D or 3D. Supports algorithmic auditing via the `markers=True` argument, which renders Q-Score based semantic shapes (Solid Circles for healthy, Open Diamonds for pathological solutions).
-*   **`topo_bands`**: Visualizes **Search Corridors**. It uses Empirical Attainment Functions (EAF) to show the reliability bands (e.g., the region reached by 50% or 90% of the runs).
-*   **`topo_gap`**: Highlights the **Topologic Gap**. Identifies exactly which regions of the objective space one algorithm covers that the other does not.
-*   **`topo_density`**: Employs Kernel Density Estimation (KDE) to show the spatial probability of solutions along each axis.
+*   **`topology`**: Visualizes the geometry of the Pareto front or the entire population cloud in 2D or 3D. Supports algorithmic auditing via the `markers=True` argument, which renders Q-Score based semantic shapes (Solid Circles for healthy, Open Diamonds for pathological solutions).
+*   **`bands`**: Visualizes **Search Corridors**. It uses Empirical Attainment Functions (EAF) to show the reliability bands (e.g., the region reached by 50% or 90% of the runs).
+*   **`attainment_gap`**: Highlights the **Topologic Gap**. Identifies exactly which regions of the objective space one algorithm covers that the other does not.
+*   **`density`**: Employs Kernel Density Estimation (KDE) to show the spatial probability of solutions along each axis.
 
 ```python
 # The "Research Standard" View
-mb.view.topo_shape(exp.front(), exp.optimal_front())
+mb.view.topology(exp.front(), exp.optimal_front())
 
 # Analyzing Search Reliability (50% and 90% bands)
-mb.view.topo_bands(exp, levels=[0.5, 0.9])
+mb.view.bands(exp, levels=[0.5, 0.9])
 
 # Analyzing Spatial Density and Gaps
 # 1. Verification of Convergence (Match)
 # Do they cover the same Objective Space?
-mb.view.topo_density(exp1, exp2, space='objs', title="Pareto Front Topology (Match)")
+mb.view.density(exp1, exp2, space='objs', domain='topo', title="Pareto Front Topology (Match)")
 
 # 2. Verification of Strategy (Mismatch)
 # Do they use the same variables to get there?
-mb.view.topo_density(exp1, exp2, space='vars', title="Search Strategy (Mismatch)")
-mb.view.topo_gap(exp1, exp2)
+mb.view.density(exp1, exp2, space='vars', domain='topo', title="Search Strategy (Mismatch)")
+mb.view.gap(exp1, exp2)
 ```
 
 > [!TIP]
 > For many-objective cases (`M > 3`), explicitly project the axes when plotting fronts and GT together:
-> `mb.view.topo_shape(exp1, exp2, mop.pf(n_points=3000), objectives=[0,1,2], labels=["A", "B", "GT"])`.
+> `mb.view.topology(exp1, exp2, mop.pf(n_points=3000), objectives=[0,1,2], labels=["A", "B", "GT"])`.
 
 
 ![Reliability Bands](images/topo_bands.png)
@@ -425,9 +425,9 @@ mb.view.topo_gap(exp1, exp2)
 ### **7.2. Performance (Scalar Metrics)**
 This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
 
-*   **`mb.perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud. (Alias: `mb.timeplot`).
-*   **`mb.perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
-*   **`mb.perf_density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
+*   **`mb.view.history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud.
+*   **`mb.view.spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
+*   **`mb.view.density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
 
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
@@ -439,18 +439,19 @@ MoeaBench prioritizes mathematical honesty. When evaluating performance against 
 *   **Performance Saturation (H_abs > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
 *   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
+```python
 # Statistical contrast between two methods
-mb.perf_spread(exp1, exp2)
+mb.view.spread(exp1, exp2)
 
 # Metric evolution over time
-mb.view.perf_history(exp, metric=mb.metrics.hv)
+mb.view.history(exp, metric=mb.metrics.hv)
 
 # Probability Distribution (Luck Stability)
-mb.perf_density(exp1, exp2)
+mb.view.density(exp1, exp2)
 ```
 
 > [!NOTE]
-> **Convenience API**: While `mb.view.*` remains the canonical internal location, all performance plotters are exposed directly via the `mb` object (e.g., `mb.perf_history`) for faster research iteration.
+> **Convenience API**: While `mb.view.*` remains the canonical internal location, all performance plotters are exposed directly via the `mb` object (e.g., `mb.view.history`) for faster research iteration.
 
 ![Performance Contrast](images/perf_spread.png)
 *Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
@@ -474,6 +475,7 @@ res.report()
 > [!NOTE]
 > **Metric Aliases**: For convenience, `mb.metrics.hv` is provided as a permanent alias for `mb.metrics.hypervolume`.
 
+```python
 # 2. Raw Access
 traj = res.mean        # Vector of all generation means
 last = res.last        # Scalar value of final generation
@@ -497,13 +499,13 @@ dist = res.gen()       # Distribution of final generation
 ### **7.3. Stratification (Population Structure)**
 This domain examines the internal organization of the population, analyzing selection pressure and non-domination levels (Pareto ranks).
 
-*   **`strat_ranks`**: Shows the distribution of individuals across non-domination layers (Ranks).
-*   **`strat_caste`**: Maps the relationship between quality and class membership, revealing how the elite differs from the rest of the population.
-*   **`strat_tiers`**: A "Duel of Proportions" that merges two algorithms into global tiers to see who dominates whom in direct competition.
+*   **`ranks`**: Shows the distribution of individuals across non-domination layers (Ranks).
+*   **`caste`**: Maps the relationship between quality and class membership, revealing how the elite differs from the rest of the population.
+*   **`tiers`**: A "Duel of Proportions" that merges two algorithms into global tiers to see who dominates whom in direct competition.
 
 ```python
 # Competitive Tier Analysis
-mb.view.strat_tiers(exp1, exp2)
+mb.view.tiers(exp1, exp2)
 ```
 
 
@@ -511,15 +513,15 @@ mb.view.strat_tiers(exp1, exp2)
 *Figure 9: Global Rank Distribution showing population density across non-domination layers.*
 *Interpretation: This plot reveals a scenario where the population is stratified into multiple layers (5 ranks). While the majority (~50%) are in Rank 0, a significant portion lags in deeper ranks, indicating that the algorithm (MOEA/D on DTLZ1) is struggling to push the entire population to the Pareto front at this stage (Gen 14).*
 
-#### **Visualizing the Hierarchy (`strat_caste`)**
-The `strat_caste` plot maps the "Caste System" of the population, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
+#### **Visualizing the Hierarchy (`caste`)**
+The `caste` plot maps the "Caste System" of the population, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
 
 ```python
 # 1. Individual Merit (Micro View): Diversity distribution within ranks
-mb.view.strat_caste(exp, mode='individual', title="Population Merit")
+mb.view.caste(exp, mode='individual', title="Population Merit")
 
 # 2. Stochastic Stability (Macro View): Robustness across multiple runs
-mb.view.strat_caste(exp, mode='collective', title="Stochastic Robustness")
+mb.view.caste(exp, mode='collective', title="Stochastic Robustness")
 ```
 
 ![Caste Individual](images/caste_individual.png)
@@ -576,10 +578,8 @@ stats = res.caste_summary()      # Helper object for stats
 n_elite = stats.n(rank=1)        # Headcount for Rank 1
 q_median = stats.q(rank=1)       # Median quality for Rank 1
 
-# 4. Competitive Analysis (Tier Duel)
-# Merge two experiments to see who dominates whom
-t_res = mb.stats.tier(exp1, exp2)
-ratio = t_res.dominance_ratio      # [0.6, 0.4] means Exp1 holds 60% of Rank 1
+# 4. Comparative analysis should use perf/topo compare families.
+# (Tier duel API was removed from the public beta surface.)
 ```
 
 ---
@@ -598,7 +598,7 @@ To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g.,
 ```python
 # 1. Test for Statistical Significance (Mann-Whitney U)
 # Answers: "Is the difference real?"
-res = mb.stats.perf_evidence(exp1, exp2, metric=mb.metrics.hv)
+res = mb.stats.perf_compare(exp1, exp2, method='shift', metric=mb.metrics.hv)
 
 # 2. Get a narrative diagnosis
 # Automatically prints or renders Markdown
@@ -626,7 +626,7 @@ Most result objects also allow programmatic access to the underlying metrics:
 if res.is_significant:
     # Measure Effect Size (Vargha-Delaney A12)
     # Answers: "How often does it win?"
-    prob = mb.stats.perf_probability(exp1, exp2, metric=mb.metrics.hv)
+    prob = mb.stats.perf_compare(exp1, exp2, method='win', metric=mb.metrics.hv)
 ```
 
 #### **Testing Topological Consistency**
@@ -634,7 +634,7 @@ To verify if two algorithms found the same regions of the objective space (e.g.,
 
 ```python
 # Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
-topo_res = mb.stats.topo_distribution(exp_baseline, exp_optimized)
+topo_res = mb.stats.topo_compare(exp_baseline, exp_optimized, method='match')
 
 # Hybrid Output: renders Markdown in notebooks, prints in terminal
 topo_res.report()
@@ -649,7 +649,7 @@ topo_res.report()
     
 Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
 
-MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.diagnostics`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
+MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.clinic`) designed to act as an automated expert system. This module moves beyond simple metrics (`float`) to clinical quality scores (`q_score`), interpreting *how* good a result is compared to the physical limits of the problem resolution.
 
 > [!TIP]
 > **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
@@ -688,42 +688,42 @@ These metrics provide raw, resolution-invariant physical facts about the populat
 - **Physical Optimization**: In v0.12.0, this calculation was upgraded from brute-force dense matrices to logarithmic **KDTree** spatial indexing. This means querying distances against massive analytical manifolds (e.g., 10,000 GT points) executes almost instantly.
 - **Example**:
 ```python
-u_vals = mb.diagnostics.closeness(exp)
+u_vals = mb.clinic.closeness(exp)
 ```
 
 #### **`coverage`**
 - **Rationale**: Deviation of the Ground Truth **from** the Population ($GT \to P$). Standard IGD is sensitive to the number of points. `coverage` uses the average distance from the Ground Truth to the population to measure how well the solver has "reached" the entire manifold. It answers: "On average, how far is any optimal point from being found?"
 - **Example**:
 ```python
-cov = mb.diagnostics.coverage(exp)
+cov = mb.clinic.coverage(exp)
 ```
 
 #### **`gap`**
 - **Rationale**: An algorithm might have good average coverage but still leave massive "holes" on the front. `gap` calculates the 95th percentile of the IGD components to quantify the size of the largest coverage failures (the Gaps), ensuring that narrow-but-deep search failures are identified.
 - **Example**:
 ```python
-gap = mb.diagnostics.gap(exp)
+gap = mb.clinic.gap(exp)
 ```
 
 #### **`regularity`**
 - **Rationale**: Measures spatial uniformity. It uses the Wasserstein-1 (EMD) distance to compare the population's nearest-neighbor distribution against a perfectly uniform lattice. This detects if the algorithm is "clumping" or if it has successfully distributed solutions evenly across the front.
 - **Example**:
 ```python
-reg = mb.diagnostics.regularity(exp)
+reg = mb.clinic.regularity(exp)
 ```
 
 #### **`balance`**
 - **Rationale**: High-dimensional manifolds often feature distinct "regions" or clusters. `balance` uses Jensen-Shannon Divergence to check if the algorithm has explored all clusters of the Ground Truth with the same probability as the reference density, detecting manifold occupancy bias.
 - **Example**:
 ```python
-bal = mb.diagnostics.balance(exp)
+bal = mb.clinic.balance(exp)
 ```
 
 #### **`headway`**
 - **Rationale**: Measures **progress away from random**. It quantifies how far the population has traveled from the initial random bounding box towards the manifold. It uses the 95th percentile distance ($GD_{95}(P \to GT)$) normalized by $s_K$ to provide a robust measure of the "gain" achieved by the solver.
 - **Example**:
 ```python
-d = mb.diagnostics.headway(exp)
+d = mb.clinic.headway(exp)
 ```
 
 ---
@@ -745,7 +745,7 @@ The scale is divided into five diagnostic tiers:
 - **Geometric Integrity (Half-Normal Projection)**: Since v0.12.0, the baseline random noise is modeled strictly as a **Half-Normal Projection** ($| \mathcal{N}(0, \sigma^2) |$). Prior to this, adding spherical noise around the Ground Truth allowed baseline points to mathematically fall *behind* the Pareto boundary, violating the definition of Pareto optimality. Metaphorically, the true Pareto front is an unbreakable wall; errors can only bounce outwards, not penetrate it. The Half-Normal model rigidly enforces this geometric physical law.
 - **Example**:
 ```python
-score = mb.diagnostics.q_closeness(exp)
+score = mb.clinic.q_closeness(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: The population's proximity to the front is better than 80% of the random baseline samples. Solution precision approximates the optimum significantly better than random search.
 
@@ -753,7 +753,7 @@ score = mb.diagnostics.q_closeness(exp)
 - **Rationale**: Uses a full **ECDF (Empirical Cumulative Distribution Function)** of random sampling to rank the coverage. A score of $0.5$ means the algorithm is exactly as good as a random target of the front, while $Q > 0.9$ indicates scientific-grade manifold reach.
 - **Example**:
 ```python
-score = mb.diagnostics.q_coverage(exp)
+score = mb.clinic.q_coverage(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: Signifies **Standard Coverage**. The algorithm has successfully mapped the primary features of the manifold, indicating scientific-grade reach.
 
@@ -761,7 +761,7 @@ score = mb.diagnostics.q_coverage(exp)
 - **Rationale**: Ranks the continuity of the front. It identifies if the solver has "broken" the manifold into fragments. Like coverage, it is ranked via ECDF against baseline hole distributions.
 - **Example**:
 ```python
-score = mb.diagnostics.q_gap(exp)
+score = mb.clinic.q_gap(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: Signifies **Managed Gaps**. The solver has successfully maintained the continuity of the manifold, and any remaining fragments are within acceptable scientific limits.
 
@@ -769,7 +769,7 @@ score = mb.diagnostics.q_gap(exp)
 - **Rationale**: Clinical assessment of internal population structure. It quantifies the "Regularity" progress, allowing users to detect if a solver's diversity-maintenance mechanism is working as expected or failing relative to random behavior.
 - **Example**:
 ```python
-score = mb.diagnostics.q_regularity(exp)
+score = mb.clinic.q_regularity(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: Indicates an **Ordered/Consistent** distribution. Solutions are not clumping significantly, and the diversity-maintenance mechanism is working effectively.
 
@@ -777,7 +777,7 @@ score = mb.diagnostics.q_regularity(exp)
 - **Rationale**: The final clinical check for manifold bias. It answers: "Is the distribution of solutions across clusters better than a random draw?" Significant balanced search results in $Q \to 1.0$.
 - **Example**:
 ```python
-score = mb.diagnostics.q_balance(exp)
+score = mb.clinic.q_balance(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: Indicates an **Equitable/Fair** distribution across clusters. Manifold occupancy bias is low.
 
@@ -785,7 +785,7 @@ score = mb.diagnostics.q_balance(exp)
 - **Rationale**: Ranks the **progress gained against random noise**. It uses a **Log-Linear** mapping to provide high resolution as the algorithm escapes the initial bounding box.
 - **Example**:
 ```python
-score = mb.diagnostics.q_headway(exp)
+score = mb.clinic.q_headway(exp)
 ```
 - **Interpretation Example ($Q=0.8$)**: The algorithm has traveled 80% of the log-distance between a random start and the manifold. It indicates the solver has successfully "broken away" from random entropy.
 
@@ -795,14 +795,14 @@ score = mb.diagnostics.q_headway(exp)
 
 MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (FAIR/Physical) or Layer 2 (Clinical/Q-Score). These instruments are polymorphic and agnostic to the underlying metric.
 
-#### **Instrument 1: The Radar (`clinic_radar`)**
+#### **Instrument 1: The Radar (`radar`)**
 *   **Role**: *Holistic Validation*.
 *   **Description**: A spider plot that visualizes the 6 Quality Scores (Q-Scores) simultaneously: Closeness, Coverage, Gap, Regularity, Balance, and Headway.
 *   **Interpretation**: A larger, more symmetric polygon indicates a healthy, "well-rounded" algorithm. Sharp collapses in one axis (e.g., GAP) highlight specific algorithmic pathologies.
 *   **Example**:
 ```python
 # Holistic validation
-mb.view.clinic_radar(exp)
+mb.view.radar(exp)
 ```
 
 ![Clinical Radar](images/clinic_radar.png)
@@ -811,7 +811,7 @@ mb.view.clinic_radar(exp)
 **Didactic Guide**:
 When looking at the Radar, observe the "shape" of the search. A symmetric $Q \approx 0.8$ polygon represents a versatile solver. If you see a "spike" pointing inward at **GAP**, your algorithm has converged to the front but has failed to find representative "bridges" between clusters. If **HEADWAY** is high but **CLOSENESS** is low, your algorithm is moving but has not yet reached the "asymptotic" zone of precision.
 
-#### **Instrument 2: The ECDF (`clinic_ecdf`)**
+#### **Instrument 2: The ECDF (`ecdf`)**
 *   **Role**: *Goal Attainment Assessment*.
 *   **Description**: Plots the Empirical Cumulative Distribution Function of a metric.
 *   **Markers**: Automatically shows **Median (50%)** and **Robust Max (95%)** drop-lines.
@@ -819,7 +819,7 @@ When looking at the Radar, observe the "shape" of the search. A symmetric $Q \ap
 *   **Example**:
 ```python
 # Deep dive into 'Coverage' pathology
-mb.view.clinic_ecdf(exp, metric="coverage")
+mb.view.ecdf(exp, metric="coverage")
 ```
 
 ![Clinical ECDF](images/clinic_ecdf.png)
@@ -828,14 +828,14 @@ mb.view.clinic_ecdf(exp, metric="coverage")
 **Didactic Guide**:
 The X-axis represents the physical error (Layer 1), and the Y-axis represents the probability. A vertical "cliff" means all solutions reached the same level. A "long tail" on the right signifies that some solutions are still lost in the decision space. The **95% marker** is your "Worst Case" guarantee; if it is beyond the **Rand50** baseline, your algorithm's results are statistically indistinguishable from a random guess.
 
-#### **Instrument 3: The Distribution (`clinic_distribution`)**
+#### **Instrument 3: The Density (`density`)**
 *   **Role**: *Error Morphology Analysis*.
 *   **Description**: A density/histogram plot of point-wise performance.
 *   **Interpretation**: Helps identify the "shape" of the search error. A bimodal distribution might suggest that the algorithm is succeeding in some regions but completely failing in others.
 *   **Example**:
 ```python
 # Deep dive into 'Coverage' pathology
-mb.view.clinic_distribution(exp, metric="coverage")
+mb.view.density(exp, domain='clinic', metric="coverage")
 ```
 
 ![Clinical Distribution](images/clinic_distribution.png)
@@ -844,14 +844,14 @@ mb.view.clinic_distribution(exp, metric="coverage")
 **Didactic Guide**:
 Search errors are rarely normal (Gaussian). Look for **Multi-modality**. If you see two distinct peaks, your algorithm has "split" its focus: it found a local optimum for some objectives while being trapped for others. A wide, flat distribution suggests that the populations' proximity to the front is chaotic and unorganized.
 
-#### **Instrument 4: The History (`clinic_history`)**
+#### **Instrument 4: The History (`history`)**
 *   **Role**: *Temporal Evolution Analysis*.
 *   **Description**: Tracks the evolution of a physical fact over generations across all runs.
 *   **Interpretation**: Differentiates between slow-but-steady convergence and premature stalling.
 *   **Example**:
 ```python
 # Monitor 'Balance' over time to check for drift
-mb.view.clinic_history(exp, metric="balance")
+mb.view.history(exp, domain='clinic', metric="balance")
 ```
 
 ![Clinical History](images/clinic_history.png)
@@ -864,7 +864,7 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 
 ### **9.5. Reporting Interface and Auditing Workflow**
 
-The `mb.diagnostics` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
+The `mb.clinic` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
 
 #### **Scenario A: Full Audit**
 The `audit()` function performs a comprehensive check and returns a `DiagnosticResult` with a rich reporting interface:
@@ -876,7 +876,7 @@ exp = mb.experiment(moea="NSGA3", mop="DTLZ2")
 exp.run()
 
 # 1. Perform a scientific audit
-res = mb.diagnostics.audit(exp)
+res = mb.clinic.audit(exp)
 
 # 2. Display interactive report (Rich Markdown in Notebooks)
 res.report()
@@ -891,7 +891,7 @@ Even individual metrics like `q_headway` or `coverage` support the reporting con
 
 ```python
 # Returns an object that acts as a float
-q = mb.diagnostics.q_headway(exp)
+q = mb.clinic.q_headway(exp)
 
 # Use it as a number in calculations
 print(f"Current Q_HEADWAY: {float(q):.4f}")
@@ -914,7 +914,7 @@ true_pf = ... # Your analytical front
 s_k = 0.05    # Your estimated resolution scale
 
 # Calculate Physical Metric and report physical meaning
-fact = mb.diagnostics.closeness(my_front, ref=true_pf, s_k=s_k)
+fact = mb.clinic.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report()
 ```
 
@@ -926,7 +926,7 @@ A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Valida
 
 The answer is: **Yes, absolutely.** Functionally, there is zero difference.
 
-*   **Runtime Equality**: The `mb.diagnostics` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
+*   **Runtime Equality**: The `mb.clinic` module works identically for *any* algorithm. You can generate Q-Scores, Clinical Radars, and perform full audits on SPEA2, MOEA/D, or your own custom plugin. They all use the same mathematical Ground Truth ($GT$) and Baselines found in `baselines.json`.
 *   **The Difference (Static vs. Dynamic)**: The term "Validated" simply means that the algorithm is included in the library's official, static **Clinical Quality Audit Report** (`calibration/audit_report.html`). This is a frozen PDF/HTML document generated at release time to prove the library's correctness.
 *   **Baseline Origin**: The "Baselines" (Random vs. Ideal) used to calculate Q-Scores are derived analytically from the problem's Ground Truth found in `calibration_package.npz`. They are **not** created by running NSGA-II. Thus, the scoring system is unbiased and fair to all solvers.
 
@@ -938,9 +938,9 @@ Scientific progress is longitudinal. MoeaBench provides two mechanisms to audit 
 To verify if a new algorithm version is better relative to an *older* baseline (e.g., from v0.8.0), use the `use_baselines` context manager:
 
 ```python
-# Directly from mb.diagnostics
-with mb.diagnostics.use_baselines("references/baselines.json"):
-    res = mb.diagnostics.audit(exp)
+# Directly from mb.clinic
+with mb.clinic.use_baselines("references/baselines.json"):
+    res = mb.clinic.audit(exp)
     res.report()
 ```
 # System automatically reverts to the current library baselines here
@@ -950,7 +950,7 @@ You can audit against a specific Ground Truth file (saved from a previous public
 
 ```python
 # MoeaBench automatically detects .npy, .npz, and .csv formats
-mb.diagnostics.audit(exp, ground_truth="data/published_gt.npz")
+mb.clinic.audit(exp, ground_truth="data/published_gt.npz")
 ```
 
 ---
@@ -1001,7 +1001,7 @@ mop.calibrate()
 # 3. Everything is now ready for deep diagnostics
 exp = mb.experiment(mop=mop)
 exp.run()
-mb.view.clinic_radar(exp) # Works perfectly with custom baselines!
+mb.view.radar(exp) # Works perfectly with custom baselines!
 ```
 
 #### **How it Works: The Sidecar Pattern**

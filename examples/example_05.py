@@ -70,17 +70,14 @@ def main():
     exp1.moea = mb.moeas.NSGA2deap(population=200, generations=100)
 
     # 3. Execution
-    print(f"Optimizing {exp1.name}...")
     exp1.run()
 
     # 4. Visualization: Standard tools work seamlessly with custom mop
-    print("Plotting results...")
-    mb.view.topo_shape(exp1, title="Final Front of Custom Benchmark")
+    mb.view.topology(exp1, title="Final Front of Custom Benchmark")
     
     # 5. Scientific Validation (v0.9+): Clinical Radar
     # This now works because we called mop1.calibrate()
-    print("Generating clinical diagnostic...")
-    mb.view.clinic_radar(exp1, title="Clinical Performance Profile (Custom MOP)")
+    mb.view.radar(exp1, title="Clinical Performance Profile (Custom MOP)")
 
 if __name__ == "__main__":
     main()

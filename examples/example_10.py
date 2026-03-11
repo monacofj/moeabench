@@ -6,9 +6,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example 10: Topological Equivalence (topo_dist)
+Example 10: Topological Equivalence (aliases of topo_compare)
 -----------------------------------------------
-This example demonstrates how to use the 'topo_dist' tool to determine 
+This example demonstrates how to use aliases of `topo_compare` to determine
 if two different algorithms have converged to statistically equivalent 
 distributions in both the objective and decision spaces.
 """
@@ -16,6 +16,7 @@ distributions in both the objective and decision spaces.
 import mb_path
 from moeabench import mb
 import matplotlib.pyplot as plt
+from moeabench.core.display import show_matplotlib
 
 def main():
     mb.system.version()
@@ -37,32 +38,29 @@ def main():
     exp2.run()
 
     # 3. Topological Analysis: Objective Space
-    # By default, topo_distribution(exp1, exp2) uses space='objs' and alpha=0.05
-    print("\n--- [Analysis 1] Convergence Equivalence (Objective Space) ---")
-    res_objs = mb.stats.topo_distribution(exp1, exp2, alpha=0.01) # Stricter alpha
+    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='match').
+    res_objs = mb.stats.topo_match(exp1, exp2, alpha=0.01) # Stricter alpha
     res_objs.report()
 
     # 4. Topological Analysis: Decision Space
     # We can also check if they found the same solutions in the decision space
-    print("\n--- [Analysis 2] Strategy Equivalence (Decision Space) ---")
-    res_vars = mb.stats.topo_distribution(exp1, exp2, space='vars')
+    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='match').
+    res_vars = mb.stats.topo_match(exp1, exp2, space='vars')
     res_vars.report()
 
     # 5. Advanced: Earth Mover Distance (Geometric Distance)
     # Quantify "how far" the distributions are from each other
-    print("\n--- [Analysis 3] Geometric Distance (EMD) ---")
     # Custom threshold: declare match only if distance < 0.05
-    res_emd = mb.stats.topo_distribution(exp1, exp2, method='emd', threshold=0.05)
+    # [mb.stats.topo_emd] is equivalent to mb.stats.topo_compare(method='emd').
+    res_emd = mb.stats.topo_emd(exp1, exp2, threshold=0.05)
     res_emd.report()
 
     # NEW: Visualizing the Topological Gap
     # Question: "Where exactly in the objective space does one algorithm win?"
-    print("\nPlotting Topological Gap (topo_gap)...")
-    mb.view.topo_gap(exp1, exp2, title="Topological Gap Analysis (NSGA-II vs NSGA-III)")
+    mb.view.gap(exp1, exp2, title="Topological Gap Analysis (NSGA-II vs NSGA-III)")
     
     # 6. Visual Verification: Distribution Plots (topo_density)
     # 6. Visual Verification: Documentation Composite (Match vs Mismatch)
-    print("\n--- [Visual] Generating Documentation Composite (Match vs Mismatch) ---")
     
     # Create a custom figure with 2 subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5), constrained_layout=True)
@@ -76,22 +74,21 @@ def main():
     # so the user knows which is which.
     
     # Plot 1: Objective Space Match (Axis 0 only for clarity)
-    mb.view.topo_density(exp1, exp2, space='objs', axes=[0], alpha=0.01, ax=ax1,
+    mb.view.density(exp1, exp2, space='objs', axes=[0], alpha=0.01, ax=ax1,
                          title="LEFT: Objective Match (Convergence)")
                          
     # Plot 2: Decision Space Mismatch (Axis 2 has strong divergence)
     # Based on previous run, Axis 3-5 were divergent. Let's pick Axis 2 (index 2)
-    mb.view.topo_density(exp1, exp2, space='vars', axes=[2], alpha=0.05, ax=ax2,
+    mb.view.density(exp1, exp2, space='vars', axes=[2], alpha=0.05, ax=ax2,
                          title="RIGHT: Decision Mismatch (Strategy)")
     
     # Set explicit titles on axes since topo_density might skip it in external mode or we want to override
     ax1.set_title("Objective Match (f1)", fontsize=11, fontweight='bold')
     ax2.set_title("Decision Mismatch (x3)", fontsize=11, fontweight='bold')
 
-    print("Check the generated figures.")
 
     # Show the interactive window (fixes regression reported by user)
-    plt.show()
+    show_matplotlib()
 
 if __name__ == "__main__":
     main()
@@ -103,4 +100,3 @@ if __name__ == "__main__":
 #
 # 2. Decision Space Divergence: The separated curves in the second plot 
 #    reveal that they achieve this performance using different variable ranges.
-

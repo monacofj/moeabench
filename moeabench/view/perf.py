@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from ..defaults import defaults
 from ..metrics.evaluator import hypervolume
 from ..core.base import emit_output
+from ..core.display import show_matplotlib
 
 
 def _perf_metric_error(method_name, metric, exc):
@@ -102,7 +103,7 @@ def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title
         ax.set_ylabel(plot_name)
         ax.legend()
         if kwargs.get('show', True) and kwargs.get('ax') is None:
-            plt.show()
+            show_matplotlib(fig)
         return fig, ax
 
     import plotly.graph_objects as go
@@ -268,7 +269,7 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
                 ha='center', va='bottom', fontsize=9, weight='bold')
         ax.set_ylim(top=ann_y + 0.15 * y_range)
 
-    plt.show()
+    show_matplotlib(fig)
     return ax
 
 def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
@@ -354,5 +355,5 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     ax.legend()
     ax.grid(True, alpha=0.2)
     
-    plt.show()
+    show_matplotlib(fig)
     return fig

@@ -26,7 +26,6 @@ def main():
 
     # 2. Execution: Run 5 times with different seeds
     # Running multiple times allows us to calculate confidence intervals.
-    print(f"Executing {exp1.name}...")
     exp1.run(repeat=5)
     
     # 3. Aggregated Convergence (Performance Domain)
@@ -36,30 +35,25 @@ def main():
     # NEW: Statistical summary of multi-run performance
     hv1.report()
 
-    # The perf_history automatically computes mean and standard deviation
-    print("Plotting statistical convergence (Hypervolume)...")
-    mb.view.perf_history(hv1, title="Stability Analysis (5-run HV)")
+    # The history automatically computes mean and standard deviation
+    mb.view.history(hv1, title="Stability Analysis (5-run HV)")
 
     # NEW: Population Maturity (Front Size)
     # Tracks the density of the non-dominated set—a key indicator of selection pressure.
-    print("Plotting Population Maturity (Front Size)...")
-    mb.view.perf_front_size(exp1, title="Selection Pressure Stability (ND-Density)")
+    mb.view.history(mb.metrics.front_size(exp1), title="Selection Pressure Stability (ND-Density)")
 
     # NEW: Performance Density (Luck Stability)
     # Visualizes the probability distribution of metric values.
-    print("Plotting Performance Density...")
-    mb.view.perf_density(exp1, title="Stochastic Distribution (HV Density)")
+    mb.view.density(hv1, title="Stochastic Distribution (HV Density)")
 
     # 4. Aggregated Quality (Topographic Domain)
     # The 'front()' method provides the combined non-dominated solutions 
     # considering the discovery of all runs (The Superfront).
-    print("Plotting Superfront...")
-    mb.view.topo_shape(exp1.front(), title="Combined Global Front (Superfront)")
+    mb.view.topology(exp1.front(), title="Combined Global Front (Superfront)")
 
     # 5. Stability Inspection (Topographic Domain)
     # We can also plot each run's final front independently.
-    print("Comparing individual run stability...")
-    mb.view.topo_shape(*exp1.all_fronts(), title="Individual Run Fronts")
+    mb.view.topology(*exp1.all_fronts(), title="Individual Run Fronts")
 
 if __name__ == "__main__":
     main()
@@ -70,14 +64,14 @@ if __name__ == "__main__":
 # lucky or unlucky. By running multiple times (repeat=5), we get a 
 # "silhouette" of the algorithm's performance.
 #
-# The 'perf_history' dispersion shadow (mean +/- std) shows the reliability. 
+# The 'history' dispersion shadow (mean +/- std) shows the reliability. 
 # A thin shadow indicates high consistency.
 #
 # NEW: The 'perf_front_size' identifies if the algorithm is successfully 
 # pushing the population toward the front or if it's struggling to generate 
 # non-dominated solutions.
 #
-# NEW: The 'perf_density' identifies the "Risk Profile". A wide curve implies 
+# NEW: The 'density' identifies the "Risk Profile". A wide curve implies 
 # high sensitivity to random seeds (Luck factor).
 #
 # The 'superfront' is the definitive result for the user: it's the best 

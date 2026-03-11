@@ -123,40 +123,36 @@ ps = exp.optimal_set(n_points=500)      # Theoretical Pareto Set (N x N_vars)
 
 # A. Full Audit
 # Generates a report with Verdicts (Pass/Fail) and Quality Scores (0-100)
-mb.diagnostics.audit(exp).report_show()
+mb.clinic.audit(exp).report_show()
 
 # B. Calibration (For custom problems)
 # Generates a baseline profile relative to a random search.
 # This creates a sidecar .json file for the MOP.
-# mb.diagnostics.calibrate(exp.mop) 
+# mb.clinic.calibrate(exp.mop) 
 
 # C. Baselines Management
-# mb.diagnostics.use_baselines('user_baselines.json') # Load custom
-# mb.diagnostics.reset_baselines()                    # Revert to system default
+# mb.clinic.use_baselines('user_baselines.json') # Load custom
+# mb.clinic.reset_baselines()                    # Revert to system default
 
 # -----------------------------------------------------------------------------
 # 6. Visualization (Canonical Names)
 # -----------------------------------------------------------------------------
 
 # A. Topography (Shape of the Front)
-mb.view.topo_shape(exp)                 # 2D/3D Scatter (was 'spaceplot')
-mb.view.topo_bands(exp)                 # Reliability Confidence Bands (2D)
-mb.view.topo_density(exp)               # Kernel Density Estimation (Heatmap)
+mb.view.topology(exp)                   # 2D/3D Scatter
+mb.view.bands(exp)                      # Reliability Confidence Bands (2D)
+mb.view.density(exp, domain='topo')     # Kernel Density Estimation (Heatmap)
 
 # B. Performance (Time Series & Distributions)
-mb.view.perf_history(exp)               # Convergence Profile (was 'timeplot')
-mb.view.perf_spread(exp, metric=mb.metrics.hypervolume) # Distribution Boxplots
-mb.view.perf_density(exp)               # Metric Probability Density (KDE)
+mb.view.history(exp)                    # Convergence Profile
+mb.view.spread(exp, metric=mb.metrics.hypervolume) # Distribution Boxplots
+mb.view.density(exp)                    # Metric Probability Density (KDE)
 
 # C. Clinical (Q-Score Visualization)
 # Requires valid baselines/calibration.
-mb.view.clinic_radar(exp)               # 6-Axis Diagnostic Radar
-mb.view.clinic_history(exp)             # Quality Evolution over time
-mb.view.clinic_distribution(exp)        # Q-Score Histograms
-
-# D. Legacy Support (Supported aliases)
-# mb.view.spaceplot(exp)
-# mb.view.timeplot(exp)
+mb.view.radar(exp)                      # 6-Axis Diagnostic Radar
+mb.view.history(exp, domain='clinic')   # Quality Evolution over time
+mb.view.density(exp, domain='clinic')   # Q-Score Histograms
 
 # -----------------------------------------------------------------------------
 # 7. Metrics & Statistics
@@ -181,11 +177,11 @@ exp_b = mb.experiment()                 # Assume another experiment
 # ... setup and run exp_b ...
 
 # Mann-Whitney U Test (Evidence of superiority)
-res_test = mb.stats.perf_evidence(exp_a, exp_b) 
+res_test = mb.stats.perf_compare(exp_a, exp_b, method='shift') 
 res_test.report_show()
 
 # Vargha-Delaney A12 (Effect Size / Win Probability)
-res_prob = mb.stats.perf_probability(exp_a, exp_b)
+res_prob = mb.stats.perf_compare(exp_a, exp_b, method='win')
 res_prob.report_show()
 
 # -----------------------------------------------------------------------------

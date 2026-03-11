@@ -15,6 +15,7 @@ from .GEN_igdplus import GEN_igdplus
 from ..core.base import Reportable
 from ..core.run import Population
 from ..defaults import defaults
+from ..core.display import show_matplotlib
 import warnings
 
 # We need the helper logic from analyse to calculate reference points
@@ -785,7 +786,7 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         ax.set_ylabel(plot_name)
         ax.legend()
         if kwargs.get('show', True) and kwargs.get('ax') is None:
-            plt.show()
+            show_matplotlib(fig)
         
         return fig, ax
         

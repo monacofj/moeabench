@@ -36,25 +36,25 @@ def generate():
     
     # --- Instrument 1: Radar ---
     print("Generating clinic_radar.png...")
-    mb.view.clinic_radar(exp1) 
+    mb.view.radar(exp1)
     plt.savefig(os.path.join(img_dir, "clinic_radar.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
     # --- Instrument 2: ECDF ---
     print("Generating clinic_ecdf.png...")
-    mb.view.clinic_ecdf(exp1, metric="closeness")
+    mb.view.ecdf(exp1, metric="closeness")
     plt.savefig(os.path.join(img_dir, "clinic_ecdf.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
     # --- Instrument 3: Distribution ---
     print("Generating clinic_distribution.png...")
-    mb.view.clinic_distribution(exp1, metric="closeness")
+    mb.view.density(exp1, domain='clinic', metric="closeness")
     plt.savefig(os.path.join(img_dir, "clinic_distribution.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
     # --- Instrument 4: History ---
     print("Generating clinic_history.png...")
-    mb.view.clinic_history(exp1, metric="closeness")
+    mb.view.history(exp1, domain='clinic', metric="closeness")
     plt.savefig(os.path.join(img_dir, "clinic_history.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     

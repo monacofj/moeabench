@@ -17,18 +17,18 @@ def test_perf_taxonomy():
     data_a = np.random.normal(1.0, 0.1, 30)
     data_b = np.random.normal(0.5, 0.1, 30)
     
-    # 1. perf_evidence (Mann-Whitney)
-    res = mb.stats.perf_evidence(data_a, data_b)
+    # 1. perf_compare(method='shift') (Mann-Whitney)
+    res = mb.stats.perf_compare(data_a, data_b, method='shift')
     assert res.p_value < 0.05
-    assert "favoring Group A" in res.report()
+    assert "perf_compare (shift)" in res.report()
     
-    # 2. perf_prob (A12 Win Probability)
-    val = mb.stats.perf_prob(data_a, data_b)
-    assert val.value > 0.9  # Nearly certain A > B
+    # 2. perf_compare(method='win') (A12 Win Probability)
+    val = mb.stats.perf_compare(data_a, data_b, method='win')
+    assert val.effect_size > 0.9  # Nearly certain A > B
     
-    # 3. perf_dist (KS Test)
-    res_ks = mb.stats.perf_dist(data_a, data_b)
-    assert res_ks.significant == True
+    # 3. perf_compare(method='match') (KS Test)
+    res_ks = mb.stats.perf_compare(data_a, data_b, method='match')
+    assert res_ks.p_value < 0.05
 
 def test_topo_attain():
     """Verify Empirical Attainment Functions logic."""
@@ -40,13 +40,13 @@ def test_topo_attain():
     exp1.run(repeat=5)
     
     # Median attainment
-    surf = mb.stats.topo_attain(exp1, level=0.5)
+    surf = mb.stats.attainment(exp1, level=0.5)
     assert hasattr(surf, 'volume')
     assert surf.shape[1] == 2
     
-    # topo_gap (Comparison)
+    # attainment_gap (Comparison)
     # Comparing exp1 with itself at different levels should show gap
-    res = mb.stats.topo_gap(exp1, exp1, level=0.5)
+    res = mb.stats.attainment_gap(exp1, exp1, level=0.5)
     assert res.volume_diff == 0.0 # Same experiment
     assert "Comparison Report" in res.report()
 
@@ -54,7 +54,7 @@ def test_topo_dist():
     """Verify multi-axial topological matching."""
     # Fronts that match perfectly (self-comparison)
     data = np.random.random((50, 2))
-    res = mb.stats.topo_dist(data, data, method='ks')
+    res = mb.stats.topo_compare(data, data, method='match')
     
     assert res.is_consistent is True
     assert len(res.results) == 2 # 2 axis tested
@@ -63,6 +63,6 @@ def test_topo_dist():
     # Fronts that differ significantly on one axis
     data2 = data.copy()
     data2[:, 0] += 5.0 # Shift X axis
-    res2 = mb.stats.topo_dist(data, data2, method='ks')
+    res2 = mb.stats.topo_compare(data, data2, method='match')
     assert res2.is_consistent is False
     assert 0 in res2.failed_axes

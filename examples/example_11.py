@@ -18,28 +18,25 @@ from moeabench import mb
 def main():
     mb.system.version()
     # --- CASE 1: NSGA-III on DPF1 (Optimal Solution) ---
-    print("\n[Case 1] NSGA-III on DPF1 (Linear Front)")
     exp1 = mb.experiment()
     exp1.mop = mb.mops.DPF1(M=3) # Standard linear front
     exp1.moea = mb.moeas.NSGA3(population=92)
     exp1.run(generations=150)
 
     # Explicitly show Data vs Reference
-    mb.view.topo_shape(exp1, exp1.optimal_front(), title="Geometry: NSGA-III (Healthy)")
-    mb.diagnostics.audit(exp1).report()
+    mb.view.topology(exp1, exp1.optimal_front(), title="Geometry: NSGA-III (Healthy)")
+    mb.clinic.audit(exp1).report()
     
     # --- CASE 2: MOEA/D on DPF2 (Diversity Collapse Vulnerability) ---
-    print("\n[Case 2] MOEA/D on DPF2 (Search Collapse Case Study)")
     exp2 = mb.experiment()
     exp2.mop = mb.mops.DPF2(M=3) # Degenerate front known for diversity issues
     exp2.moea = mb.moeas.MOEAD(population=92) 
     exp2.run(generations=150)
 
     # Visualizing the pathology (Clumping should be visible)
-    mb.view.topo_shape(exp2, exp2.optimal_front(), title="Geometry: MOEA/D (Collapse)")
-    mb.diagnostics.audit(exp2).report()
+    mb.view.topology(exp2, exp2.optimal_front(), title="Geometry: MOEA/D (Collapse)")
+    mb.clinic.audit(exp2).report()
 
-    print("\nDiagnostics showcase completed.")
 
 if __name__ == "__main__":
     main()

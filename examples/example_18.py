@@ -17,30 +17,23 @@ def main():
     mb.system.version()
     # 1. The MaOP Challenge
     # 4-objective DTLZ2 problem. 
-    print("\n1. Defining Many-Objective Problem (M=4)...")
     mop = mb.mops.DTLZ2(M=4)
     exp = mb.experiment(mop=mop, moea=mb.moeas.NSGA3(population=40, generations=20))
     exp.run(repeat=1)
 
     # Attempting a Clinical Report without calibration
-    print("\n2. Attempting Clinical Report without calibration...")
-    audit_raw = mb.diagnostics.audit(exp)
-    print(f"Audit Status: {audit_raw.status.name}")
-    print(f"Description: {audit_raw.description}")
+    audit_raw = mb.clinic.audit(exp)
 
     # 2. Local Calibration
-    print("\n3. Generating Local Calibration Sidecar...")
     sidecar_path = "dtlz2_m4_demo.json"
     mop.calibrate(
         size=40, 
         source_baseline=sidecar_path,
         force=True
     )
-    print(f"Sidecar generated at: {sidecar_path}")
 
     # 3. Clinical Report with Sidecars
-    print("\n4. Final Clinical Report using local sidecar...")
-    audit_fixed = mb.diagnostics.audit(exp, source_baseline=sidecar_path)
+    audit_fixed = mb.clinic.audit(exp, source_baseline=sidecar_path)
     audit_fixed.report()
 
 if __name__ == "__main__":

@@ -9,6 +9,63 @@ from functools import cached_property
 from .base import StatsResult, SimpleStatsValue
 from ..defaults import defaults
 
+
+class PerfCompareResult(StatsResult):
+    """Unified result object for performance comparison methods."""
+
+    def __init__(self, method, statistic=None, p_value=None, effect_size=None, decision=None, details=None):
+        self.method = method
+        self.statistic = statistic
+        self.p_value = p_value
+        self.effect_size = effect_size
+        self.decision = decision
+        self.details = details or {}
+
+    def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
+        use_md = kwargs.get('markdown', self._is_notebook())
+        if not full:
+            if use_md:
+                parts = [f"**perf_compare** ({self.method})"]
+                if self.decision:
+                    parts.append(f"- **Decision**: {self.decision}")
+                if self.p_value is not None:
+                    parts.append(f"- **p-value**: {self.p_value:.6f}")
+                if self.effect_size is not None:
+                    parts.append(f"- **effect**: {self.effect_size:.4f}")
+                content = "\n".join(parts)
+            else:
+                parts = [f"perf_compare ({self.method})"]
+                if self.decision:
+                    parts.append(f"  Decision: {self.decision}")
+                if self.p_value is not None:
+                    parts.append(f"  p-value: {self.p_value:.6f}")
+                if self.effect_size is not None:
+                    parts.append(f"  effect: {self.effect_size:.4f}")
+                content = "\n".join(parts)
+            return self._render_report(content, show, **kwargs)
+
+        if use_md:
+            lines = [f"### Performance Compare ({self.method})", ""]
+            if self.decision:
+                lines.append(f"**Decision**: {self.decision}")
+            if self.statistic is not None:
+                lines.append(f"**Statistic**: {self.statistic:.6f}")
+            if self.p_value is not None:
+                lines.append(f"**P-Value**: {self.p_value:.6f}")
+            if self.effect_size is not None:
+                lines.append(f"**Effect Size**: {self.effect_size:.6f}")
+        else:
+            lines = [f"--- Performance Compare ({self.method}) ---"]
+            if self.decision:
+                lines.append(f"  Decision: {self.decision}")
+            if self.statistic is not None:
+                lines.append(f"  Statistic: {self.statistic:.6f}")
+            if self.p_value is not None:
+                lines.append(f"  P-Value:   {self.p_value:.6f}")
+            if self.effect_size is not None:
+                lines.append(f"  Effect:    {self.effect_size:.6f}")
+        return self._render_report("\n".join(lines), show, **kwargs)
+
 class HypothesisTestResult(StatsResult):
     """
     Rich result for hypothesis tests (Mann-Whitney, KS, etc.)
@@ -211,6 +268,57 @@ def perf_distribution(data1, data2, alternative='two-sided', metric=None, gen=-1
                                 name="Kolmogorov-Smirnov (Performance Dist Match)", 
                                 alternative=alternative, metric=metric, gen=gen, **kwargs)
 
+
+def perf_compare(data1, data2, method='match', metric=None, gen=-1, alternative='two-sided', **kwargs):
+    """
+    Unified performance comparator.
+    Methods:
+    - 'shift': Mann-Whitney U (location shift)
+    - 'match': KS two-sample (distribution match)
+    - 'win': Vargha-Delaney A12 (win probability/effect)
+    """
+    method = str(method).lower()
+    if method == 'shift':
+        res = perf_evidence(data1, data2, alternative=alternative, metric=metric, gen=gen, **kwargs)
+        decision = "different" if res.significant else "no-significant-difference"
+        return PerfCompareResult(
+            method='shift',
+            statistic=float(res.statistic),
+            p_value=float(res.p_value),
+            effect_size=float(res.perf_probability),
+            decision=decision,
+            details={"name": res.name},
+        )
+    if method == 'match':
+        res = perf_distribution(data1, data2, alternative=alternative, metric=metric, gen=gen, **kwargs)
+        decision = "match" if not res.significant else "divergent"
+        return PerfCompareResult(
+            method='match',
+            statistic=float(res.statistic),
+            p_value=float(res.p_value),
+            effect_size=float(res.perf_probability),
+            decision=decision,
+            details={"name": res.name},
+        )
+    if method == 'win':
+        res = perf_probability(data1, data2, metric=metric, gen=gen, **kwargs)
+        val = float(res.value)
+        if val > 0.5:
+            decision = "a-better-than-b"
+        elif val < 0.5:
+            decision = "b-better-than-a"
+        else:
+            decision = "tie"
+        return PerfCompareResult(
+            method='win',
+            statistic=val,
+            p_value=None,
+            effect_size=val,
+            decision=decision,
+            details={"name": res.name},
+        )
+    raise ValueError(f"Unknown perf_compare method: {method}. Use 'shift', 'match', or 'win'.")
+
 class DistMatchResult(StatsResult):
     """
     Rich result for multi-axial distribution matching (topology/equivalence).
@@ -383,7 +491,8 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, t
             # Anderson-Darling k-sample
             try:
                 # anderson_ksamp handles multiple samples natively
-                res = anderson_ksamp(samples)
+                # Explicit variant avoids SciPy deprecation warning for `midrank`.
+                res = anderson_ksamp(samples, variant='midrank')
                 results[ax] = SimpleStatsValue(res.pvalue, "Anderson p-value")
                 results[ax].p_value = res.pvalue
             except Exception:
@@ -405,3 +514,21 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, t
                 results[ax] = np.mean(vals)
                 
     return DistMatchResult(results, names, space=space, method=method, alpha=alpha, threshold=threshold)
+
+
+def topo_compare(*args, space='objs', axes=None, method='match', alpha=None, threshold=None, **kwargs):
+    """
+    Unified topology comparator.
+    Methods:
+    - 'match': KS two-sample matching (mapped to internal 'ks')
+    - 'emd': Earth Mover's Distance
+    - 'anderson': Anderson-Darling k-sample
+    """
+    method = str(method).lower()
+    internal = 'ks' if method == 'match' else method
+    if internal not in ('ks', 'emd', 'anderson'):
+        raise ValueError(f"Unknown topo_compare method: {method}. Use 'match', 'emd', or 'anderson'.")
+    res = topo_distribution(*args, space=space, axes=axes, method=internal, alpha=alpha, threshold=threshold, **kwargs)
+    # Preserve canonical method label for new API.
+    res.method = method
+    return res

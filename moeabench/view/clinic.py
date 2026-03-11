@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from typing import Optional, Any, Union
 from ..defaults import defaults
 from ..core.base import emit_output
+from ..core.display import show_matplotlib
 from ..diagnostics import audit, headway, closeness, coverage, gap, regularity, balance
 from ..diagnostics import q_headway, q_closeness, q_coverage, q_gap, q_regularity, q_balance
 from ..diagnostics import q_headway_points, q_closeness_points
@@ -119,7 +120,7 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
         plt.ylabel("Cumulative Probability")
         plt.grid(True, alpha=0.2)
         plt.legend(fontsize=9)
-        if show: plt.show()
+        if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure()
@@ -167,7 +168,7 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
         plt.xlabel(x_label)
         plt.ylabel("Density")
         plt.grid(True, alpha=0.2)
-        if show: plt.show()
+        if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure(data=[go.Histogram(x=data, histnorm='probability density', marker=dict(color='skyblue', line=dict(color='navy', width=1)), name=metric)])
@@ -260,7 +261,7 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
         ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color='gray')
         
         plt.title("Clinical Quality Fingerprint (Q-Scores)")
-        if show: plt.show()
+        if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure()
@@ -318,7 +319,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
         plt.title(f"Clinic History: {metric.upper()} Evolution")
         plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{metric}]")
         plt.grid(True, alpha=0.3); plt.legend()
-        if show: plt.show()
+        if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure()

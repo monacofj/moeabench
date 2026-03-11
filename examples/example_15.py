@@ -25,25 +25,22 @@ We also explore the `joint` parameter, which controls auto-normalization
 import mb_path
 from moeabench import mb
 import matplotlib.pyplot as plt
+from moeabench.core.display import show_matplotlib
 import numpy as np
 
 def main():
     mb.system.version()
-    print("Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives")
-    print("========================================================\n")
 
     # 1. Setup the Problem & Calibration
     dtlz2 = mb.mops.DTLZ2(n_var=7, n_obj=3)
     dtlz2.calibrate()
     
     # Configuration A: Baseline (Low budget)
-    print("\nRunning Experiment 1 (Baseline: 20 individuals)...")
     exp1 = mb.experiment(dtlz2, mb.moeas.NSGA2(population=20, generations=50))
     exp1.name = "Baseline NSGA-II"
     exp1.run(repeat=5)
     
     # Configuration B: Premium (High budget)
-    print("\nRunning Experiment 2 (Premium: 100 individuals)...")
     exp2 = mb.experiment(dtlz2, mb.moeas.NSGA2(population=100, generations=50))
     exp2.name = "Premium NSGA-II"
     exp2.run(repeat=5)
@@ -68,27 +65,21 @@ def main():
             ax.set_ylim([0, y_max])
 
         # 1. RAW
-        mb.view.perf_history(h1[0], h2[0], ax=ax1, title=f"1. Raw\n{title_suffix}", ylabel="Volume")
+        mb.view.history(h1[0], h2[0], ax=ax1, title=f"1. Raw\n{title_suffix}", ylabel="Volume")
         annotate(ax1, v1_raw, v2_raw)
 
         # 2. RELATIVE
-        mb.view.perf_history(h1[1], h2[1], ax=ax2, title=f"2. Relative\n{title_suffix}", ylabel="Efficiency")
+        mb.view.history(h1[1], h2[1], ax=ax2, title=f"2. Relative\n{title_suffix}", ylabel="Efficiency")
         annotate(ax2, v1_rel, v2_rel, limit=1.0, limit_label="Session Max")
 
         # 3. ABSOLUTE
-        mb.view.perf_history(h1[2], h2[2], ax=ax3, title=f"3. Absolute\n{title_suffix}", ylabel="Optimality")
+        mb.view.history(h1[2], h2[2], ax=ax3, title=f"3. Absolute\n{title_suffix}", ylabel="Optimality")
         annotate(ax3, v1_abs, v2_abs, limit=1.0, limit_label="Ground Truth", limit_color='gold')
         
         plt.tight_layout()
-        plt.show()
+        show_matplotlib()
 
     # --- PHASE 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
-    print("\n[Phase 1] Calculating Individual Metrics (joint=False)...")
-    print("Normalización individual: Each algorithm is evaluated against its local nadir.")
-    print("Scale Mode Details:")
-    print(" - 'raw': Absolute volume dominated (sensitive to objective ranges).")
-    print(" - 'relative': Efficiency normalized [0, 1] against the algorithm's own worst point.")
-    print(" - 'absolute': Optimality reach normalized [0, 1] against the Ground Truth.")
     h1_ind = [
         mb.metrics.hv(exp1, scale='raw', joint=False),
         mb.metrics.hv(exp1, scale='relative', joint=False),
@@ -102,13 +93,6 @@ def main():
     plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
     # --- PHASE 2: JOINT PERSPECTIVE (joint=True) ---
-    print("\n[Phase 2] Joint Perspective (Default Behavior)")
-    print("Note: Normally Hypervolume is calculated for all experiments using the same BBox")
-    print("to evaluate all algorithms in a common metric grid. This can be")
-    print("manually set via 'ref' or auto-calculated from all involved experiments.")
-    print("\nThe 'joint' parameter specifically controls auto-normalization:")
-    print(" - One can pass a global reference via 'ref' or use the default auto-normalization.")
-    print(" - The 'joint' parameter serves specifically to disable this auto-normalization.")
     ref = [exp1, exp2]
     h1_jnt = [
         mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),
@@ -124,10 +108,6 @@ def main():
     y_max_jnt = h2_ind[0].values[-1,:].mean() * 1.1
     plot_triple(h1_jnt, h2_jnt, "[Joint Perspective]", y_max_raw=y_max_jnt)
 
-    print("\nObservation:")
-    print("In the Individual Perspective, the Baseline (v1) appears highly competitive.")
-    print("In the Joint Perspective, the Baseline 'shrinks' as the Bounding Box expands")
-    print("to accommodate the superior solutions found by the Premium (v2) configuration.")
 
 if __name__ == "__main__":
     main()

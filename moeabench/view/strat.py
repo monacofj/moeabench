@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from ..stats.stratification import strata, StratificationResult, TierResult, tier
 from ..metrics.evaluator import hypervolume
+from ..core.display import show_matplotlib
 
 def _resolve_to_result(args, target_type, resolve_fn):
     """
@@ -70,7 +71,7 @@ def strat_ranks(*args, title=None, show=True, **kwargs):
     ax.legend()
     ax.grid(True, axis='y', alpha=0.3)
     if show:
-        plt.show()
+        show_matplotlib(fig)
     return ax
 
 def strat_caste(*args, labels=None, title=None, metric=None, mode='collective', 
@@ -224,7 +225,7 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
     ax.set_ylim(0, 1.2)
     
     if show:
-        plt.show()
+        show_matplotlib(fig)
     return ax
 
 def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
@@ -266,5 +267,5 @@ def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
             ax.text(i+1, vA + vB/2, f"{pB*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
 
     if show:
-        plt.show()
+        show_matplotlib(fig)
     return ax

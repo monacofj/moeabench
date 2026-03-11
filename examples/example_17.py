@@ -12,16 +12,16 @@ This example explores the different ways to measure "Quality" in MOAs.
 It demonstrates:
 1. Distance-based metrics: IGD (Inverted Generational Distance), GD (Generational Distance).
 2. Distribution-based metrics: EMD (Earth Mover's Distance/Wasserstein).
-3. Metric Correlation: plot_matrix to see if they agree or diverge.
+3. Metric contrast: spread/history views to see agreement or divergence.
 """
 
 import mb_path
 from moeabench import mb
 import matplotlib.pyplot as plt
+from moeabench.core.display import show_matplotlib
 
 def main():
     mb.system.version()
-    print("--- Example 17: Convergence, Proximity, and Distributional Correlation Analysis")
 
     # 1. Setup: A standard problem (DTLZ2, 2 Objectives for easier visualization)
     mop = mb.mops.DTLZ2(M=2)
@@ -37,7 +37,6 @@ def main():
 
     # 3. Calculating the Portfolio
     # We calculate multiple metrics for the same run to see their agreement
-    print("\nCalculating metrics (IGD, GD, EMD)...")
     
     # Distance to GT: Convergence & Proximity
     res_igd = mb.metrics.igd(exp)
@@ -47,21 +46,22 @@ def main():
     # EMD measures how the "mass" of the population is distributed compared to the GT.
     res_emd = mb.metrics.emd(exp)
 
-    # 4. Metric Correlation Analysis (The plot_matrix)
+    # 4. Metric Contrast Analysis (Public API)
     # Question: "Do these metrics tell the same story?"
-    # The plot_matrix shows the correlation between all calculated metrics.
-    print("\nPlotting Metric Correlation Matrix...")
-    mb.metrics.plot_matrix(res_igd, res_gd, res_emd, 
-                          title="Metric Correlation Portfolio: Do they agree?")
+    # spread compares final-generation distributions side by side.
+    mb.view.spread(
+        res_igd,
+        res_gd,
+        res_emd,
+        title="Metric Portfolio Contrast: Do they agree?",
+    )
 
     # 5. Comparing Trajectories
     # We can plot them over time to see different "Maturity" profiles
-    print("\nComparing Metric Trajectories...")
-    mb.view.perf_history(res_igd, res_gd, res_emd,
+    mb.view.history(res_igd, res_gd, res_emd,
                          title="Metric Trajectories: Distances vs Distribution")
 
-    print("\nMetric Portfolio Analysis completed.")
-    plt.show()
+    show_matplotlib()
 
 if __name__ == "__main__":
     main()

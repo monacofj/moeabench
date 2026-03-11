@@ -224,36 +224,34 @@ The experiment object aggregates results across multiple runs automatically, pro
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
 
-### **2.1. Topographic Analysis (`mb.view.topo_*`)**
+### **2.1. Topographic Analysis (`mb.view`)**
 
-#### **`topo_shape(*args, mode='auto', markers=False, ...)`**
-*   **Permanent Alias**: `spaceplot`.
+#### **`topology(*args, mode='auto', markers=False, ...)`**
 *   **Description**: Visualizes solutions in Objective Space (2D or 3D). 
-    *   **GT Density**: To increase the number of points plotted for the Ground Truth (GT), do not rely on implicit GT extraction. Instead, explicitly sample the analytical optimum and pass it to the plotter: `mb.view.topo_shape(exp, exp.optimal_front(n=5000))`.
+    *   **GT Density**: To increase the number of points plotted for the Ground Truth (GT), do not rely on implicit GT extraction. Instead, explicitly sample the analytical optimum and pass it to the plotter: `mb.view.topology(exp, exp.optimal_front(n=5000))`.
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
     *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the function will automatically look for a provided Reference GT in `*args` to compute the clinical metrics.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
 
-#### **`topo_bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
+#### **`bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
 *   **Description**: Visualizes reliability bands using Empirical Attainment Functions (EAF).
 *   **Arguments**:
     *   `*args`: `experiment` objects to compare.
     *   `levels` (*List[float]*): Attainment levels (probability thresholds) to plot.
 *   **Returns**: `Figure`.
 
-#### **`topo_gap(exp1, exp2, level=0.5, ...)`**
+#### **`gap(exp1, exp2, level=0.5, ...)`**
 *   **Description**: Highlights the Topologic Gap (coverage difference) between two experiments.
 *   **Arguments**:
     *   `exp1`, `exp2`: The two `experiment` objects to compare.
     *   `level` (*float*): The attainment level to visualize. Defaults to `0.5` (median).
 *   **Returns**: `Figure`.
 
-### **2.2. Performance Analysis (`mb.view.perf_*`)**
+### **2.2. Performance Analysis (`mb.view`)**
 
-#### **`mb.perf_history(*args, metric=hv, gens=None, ...)`**
-*   **Permanent Alias**: `mb.timeplot`.
+#### **`mb.view.history(*args, metric=hv, gens=None, ...)`**
 *   **Description**: Primary convergence perspective (Metric Trajectory).
 *   **Arguments**:
     *   `*args`: Datasets to compare.
@@ -261,7 +259,7 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `gens` (*int* or *slice*): Specific generations to plot.
 *   **Returns**: `Figure`.
 
-#### **`mb.perf_spread(*args, metric=None, gen=-1, ...)`**
+#### **`mb.view.spread(*args, metric=None, gen=-1, ...)`**
 *   **Description**: Comparative Boxplot stats with A12 Win Probability.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
@@ -269,7 +267,7 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `gen` (*int*): Specific generation index. Defaults to `-1` (final).
 *   **Returns**: `Figure`.
 
-#### **`mb.perf_density(*args, metric=None, gen=-1, ...)`**
+#### **`mb.view.density(*args, metric=None, gen=-1, ...)`**
 *   **Description**: Performance Distribution Perspective. Visualizes metric probability density using KDE.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
@@ -277,34 +275,32 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `gen` (*int*): Specific generation index. Defaults to `-1`.
 *   **Returns**: `Figure`.
 
-### **2.3. Stratification Analysis (`mb.view.strat_*`)**
+### **2.3. Stratification Analysis (`mb.view`)**
 
-*   **`strat_ranks(*args, ...)`**:
+*   **`ranks(*args, ...)`**:
     *   Permanent Alias: `rankplot`. Shows frequency distribution across dominance ranks.
-*   **`strat_caste(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
+*   **`caste(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
     *   Maps Quality vs Density using parametric modes ('collective' vs 'individual').
-*   **`strat_caste_deprecated(*args, ...)`**:
-    *   [DEPRECATED] Original visualizer. Maps Quality vs Density per dominance layer.
-*   **`strat_tiers(exp1, exp2=None, ...)`**:
+*   **`tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
-### **2.4. Clinical Diagnostics (`mb.view.clinic_*`)**
+### **2.4. Clinical Diagnostics (`mb.view` canonical)**
 
-#### **`clinic_radar(target, ground_truth=None, ...)`**
+#### **`radar(target, ground_truth=None, ...)`**
 *   **Description**: Holistic Validation mapping 6 Q-Scores to a radial chart.
 *   **Arguments**:
     *   `target`: `experiment` or `Run` object.
     *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
 *   **Returns**: `Figure`.
 
-#### **`clinic_ecdf(target, metric="closeness", ...)`**
+#### **`ecdf(target, metric="closeness", ...)`**
 *   **Description**: Plots the Empirical Cumulative Distribution Function of a clinical metric.
 *   **Arguments**:
     *   `target`: Input data.
     *   `metric` (*str*): One of `'closeness'`, `'headway'`, `'coverage'`, `'gap'`, `'regularity'`, or `'balance'`.
 *   **Returns**: `Figure`.
 
-#### **`clinic_history(target, metric="closeness", gens=None, ...)`**
+#### **`history(target, domain='clinic', metric="closeness", gens=None, ...)`**
 *   **Description**: Evolution of a clinical metric over generations.
 *   **Arguments**:
     *   `target`: `experiment` or `Run`.
@@ -333,7 +329,7 @@ For granular control, plotters accept a `marker_styles` list (one dictionary per
 *   **`size`**: Overrides the standard sizing logic.
 
 #### **Standard Sizing Rules (Academic Presets)**
-When using `topo_shape` or standard plotters, the following rules apply to maintain diagnostic weight:
+When using `topology` or standard plotters, the following rules apply to maintain diagnostic weight:
 
 | Marker Type | Purpose | Plotly Size | Matplotlib Size ($s$) |
 | :--- | :--- | :--- | :--- |
@@ -515,7 +511,7 @@ val = mb.metrics.hv(exp.last_pop)
 print(f"Final HV: {val:.4f}") 
 
 # Plotting Metrics
-mb.view.perf_history(hv, mode='auto', show_bounds=True)
+mb.view.history(hv, mode='auto', show_bounds=True)
 ```
 
 ---
@@ -577,40 +573,37 @@ Diagnosis: High Selection Pressure (Phalanx-like convergence).
 
 ### **7.1. Statistical Contrast**
 
-#### **`mb.stats.perf_evidence(data1, data2, metric=mb.metrics.hv, gen=-1, ...)`**
-*   **Description**: Mann-Whitney U rank-sum test (Win Evidence).
+#### **`mb.stats.perf_compare(data1, data2, method='match', metric=mb.metrics.hv, gen=-1, ...)`**
+*   **Description**: Unified performance comparator.
+*   **Methods**:
+    *   `method='shift'`: Mann-Whitney U (location shift).
+    *   `method='match'`: Kolmogorov-Smirnov (distribution match).
+    *   `method='win'`: Vargha-Delaney $\hat{A}_{12}$ (win probability/effect).
 *   **Arguments**:
     *   `data1`, `data2`: Datasets to compare.
     *   `metric` (*callable*): Target performance metric.
     *   `gen` (*int*): Specific generation to snapshot.
-*   **Returns**: `HypothesisTestResult`.
+*   **Returns**: `PerfCompareResult`.
 
-#### **`mb.stats.perf_probability(data1, data2, metric=mb.metrics.hv, gen=-1, ...)`**
-*   **Description**: Vargha-Delaney $\hat{A}_{12}$ effect size (Win Probability).
-*   **Arguments**:
-    *   `data1`, `data2`: Datasets to compare.
-    *   `gen` (*int*): Snapshot generation.
-*   **Returns**: `SimpleStatsValue`.
-
-### **`mb.stats.topo_distribution(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs)`**
+### **`mb.stats.topo_compare(*args, space='objs', axes=None, method='match', alpha=0.05, threshold=0.1, **kwargs)`**
 Performs multi-axial distribution matching (Topologic Equivalence).
 *   **Args**:
     *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).
     *   `space` (*str*): `'objs'` or `'vars'`. Defaults to `'objs'`.
     *   `axes` (*list*): Specific indices to test.
     *   `method` (*str*): 
-        *   `'ks'`: **Kolmogorov-Smirnov** test (Default).
+        *   `'match'`: **Kolmogorov-Smirnov** test (Default).
         *   `'anderson'`: **Anderson-Darling k-sample** test.
         *   `'emd'`: **Earth Mover's Distance** (Wasserstein Metric).
 *   **Returns**: `DistMatchResult`.
 
-### **`mb.stats.topo_attainment(source, level=0.5)`**
+### **`mb.stats.attainment(source, level=0.5)`**
 Calculates the attainment surface reached by $k\%$ of the runs.
 *   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
 *   **Methodology**: Grounded in **Empirical Attainment Functions (EAF)**.
-*   **Returns**: `AttainmentSurface` (SmartArray subclass). Can be plotted using `mb.spaceplot`.
+*   **Returns**: `AttainmentSurface` (SmartArray subclass). Can be plotted using `mb.view.topology`.
 
-### **`mb.stats.topo_gap(exp1, exp2, level=0.5)`**
+### **`mb.stats.attainment_gap(exp1, exp2, level=0.5)`**
 Calculates the spatial Gap in attainment between two groups.
 *   **Methodology**: Based on **EAF Difference** analysis.
 *   **Returns**: `AttainmentDiff` object.
@@ -618,14 +611,6 @@ Calculates the spatial Gap in attainment between two groups.
 ### **`mb.stats.strata(data, gen=-1)`**
 Performs **Population Strata** (Dominance Layer analysis) based on Pareto dominance.
 *   **Returns**: `StratificationResult`.
-
-### **`mb.stats.tier(exp1, exp2, gen=-1)`**
-Performs **Joint Stratification** (Tier analysis) between two experiments.
-*   **Returns**: `TierResult`.
-    *   `.pole` (*np.ndarray*): Proportion of each algorithm in the first rank (Elite).
-    *   `.gap` (*int*): Displacement depth (rank where the loser starts to appear significantly).
-    *   `.dominance_ratio` (*np.ndarray*): Same as `.pole`.
-    *   `.report()`: Generates a competitive narrative ("Pole Position", "Displacement Depth").
 
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** between two strata profiles.
@@ -781,40 +766,20 @@ For a detailed technical narrative on the implementation history and mathematica
 *   **[DTLZ]** K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." Proc. IEEE Congress on Evolutionary Computation (CEC), 2002.
 *   **[DPF]** L. Zhen, M. Li, R. Cheng, D. Peng, and X. Yao. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." IEEE Transactions on Evolutionary Computation, vol. 22, no. 5, 2018.
 
-## **13. Legacy Support & Depletion Schedule**
+## **13. API Status**
 
-MoeaBench maintains backward compatibility for its evolutionary analytical layer through two tiers of support.
+The documentation above reflects the canonical API for the alpha/beta transition:
 
-### **11.1. Permanent Aliases**
-The following functions have been promoted to permanent status due to their widespread use in the standard optimization literature. They function identically to their taxonomical successors.
-
-| New Full Name | Permanent Alias | Scientific Domain |
-| :--- | :--- | :--- |
-| `mb.view.topo_shape` | `mb.spaceplot` | Topography |
-| `mb.view.perf_history` | `mb.timeplot` | Performance |
-| `mb.view.strat_ranks` | `mb.rankplot` | Stratification |
-
-### **11.2. Soft-Deprecated Aliases**
-These functions are maintained for compatibility with versions `v0.6.x` but are scheduled for formal deprecation. They currently act as active delegates but will be replaced by informational stubs (warnings without functionality) in future major releases.
-
-| Legacy Alias | Taxonomical Successor | Domain |
-| :--- | :--- | :--- |
-| `mb.casteplot` | `mb.view.strat_caste_deprecated` | Stratification |
-| `mb.tierplot` | `mb.view.strat_tiers` | Stratification |
-| `mb.view.topo_dist` | `mb.view.topo_density` | Topography |
-| `mb.stats.perf_prob` | `mb.stats.perf_probability` | Performance |
-| `mb.stats.perf_dist` | `mb.stats.perf_distribution` | Performance |
-| `mb.stats.topo_dist` | `mb.stats.topo_distribution` | Topography |
-| `mb.stats.topo_attain` | `mb.stats.topo_attainment` | Topography |
-
-> [!IMPORTANT]
-> **Hard Deprecation Policy**: In future versions, the soft-deprecated items above will only produce a `UserWarning` and will no longer execute logic. We strongly recommend updating your research pipelines to the new nomenclature.
+- `mb.clinic` is the diagnostics namespace.
+- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `caste`, `tiers`, `ecdf`, `radar`).
+- `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_emd`, `topo_anderson`).
+- `summary()` is removed in favor of `report(show=True, full=False)`.
 
 
 <a name="diagnostics"></a>
 ## **14. Algorithmic Diagnostics and Pathology Detection**
 
-The `mb.diagnostics` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Standardized Reporting Interface** (`Reportable`), providing narrative insights alongside numerical values.
+The `mb.clinic` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Standardized Reporting Interface** (`Reportable`), providing narrative insights alongside numerical values.
 
 ### **12.1. Diagnostic Reporting Interface (`Reportable`)**
 
@@ -840,7 +805,7 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 > [!NOTE]
 > **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Headway" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-All functions in `mb.diagnostics` use a **Context-Aware Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
+All functions in `mb.clinic` use a **Context-Aware Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
 
 *   **Polymorphic Input**:
     *   `Experiment`: Automatically extracts the **Pareto Front** of the last run, the **Ground Truth** ($GT$) from the MOP, and the **Resolution Scale** ($s_K$).
@@ -922,9 +887,9 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 
 | Function | Args | Description |
 | :--- | :--- | :--- |
-| **`mb.diagnostics.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
-| **`mb.diagnostics.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
-| **`mb.diagnostics.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
+| **`mb.clinic.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
+| **`mb.clinic.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
+| **`mb.clinic.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
 
 #### **`ReproducibilityWarning`**
 *   **Description**: A custom warning issued during `load_offline_baselines()` when a mismatch is detected between the current environment (Python/NumPy) and the environment that generated the baseline. It supports the library's "Fail-Safe" compatibility protocol.

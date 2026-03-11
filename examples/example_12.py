@@ -24,8 +24,6 @@ from moeabench import mb
 
 def main():
     mb.system.version()
-    print("Example 12: Finite Approximation-Induced Resolution (FAIR) Metrics")
-    print("===============================================")
 
     # Setup: We use DTLZ2 (3 objectives) as our benchmark
     mop = mb.mops.DTLZ2(M=3)
@@ -34,7 +32,6 @@ def main():
     # --- SCENARIO: Good Closeness but Incomplete Coverage ---
     # We run NSGA-II for a limited duration (30 generations).
     # At this stage, it usually "touches" the front but hasn't filled the gaps.
-    print("\n[Scenario] Simulating 'Premature Convergence': On-target but clustered.")
     
     exp1 = mb.experiment()
     exp1.mop = mop
@@ -42,43 +39,30 @@ def main():
     exp1.run()
     
     # 1. Visual Evidence
-    print("\nDisplaying Topology Shape...")
-    mb.view.topo_shape(exp1, gt, 
+    mb.view.topology(exp1, gt, 
                        title="Physical Pathology: Premature Convergence",
                        labels=["Early Population", "Optimal Front (GT)"],
                        show=False) # Headless mode safety
 
     # 2. Individual FAIR Metrics (Manual Calculation)
-    print("\nStep 1: Calculating Individual Physical Metrics (Closeness & Coverage)...")
     
     # A. Closeness (Physical Proximity Distribution)
     # This is the raw data used for the "Validation" layer.
-    u_dist = mb.diagnostics.closeness(exp1, ground_truth=gt)
-    print("\n--- Physical Insight: Closeness (Raw Distribution) ---")
-    print(f"- Mean Distance: {np.mean(u_dist.raw_data):.4f} resolution-units")
-    print(f"- Max Distance (95th percentile): {np.percentile(u_dist.raw_data, 95):.4f}")
+    u_dist = mb.clinic.closeness(exp1, ref=gt)
     
     # B. Scalar Clinical/Fair Results
     # We compute the scalar versions of FAIR metrics
-    f_cov = mb.diagnostics.coverage(exp1, ground_truth=gt)
-    f_gap = mb.diagnostics.gap(exp1, ground_truth=gt)
+    f_cov = mb.clinic.coverage(exp1, ref=gt)
+    f_gap = mb.clinic.gap(exp1, ref=gt)
     
-    print("\n--- Physical Insight: Coverage & Gaps ---")
-    print(f"- Coverage Score: {float(f_cov):.4f} (Avg distance to manifold)")
-    print(f"- Max Gap Detected: {float(f_gap):.4f} (Largest hole size)")
 
     # 3. Consolidated FAIR Audit
-    print("\nStep 2: Performing a Full Physical Engineering Audit...")
     # This aggregates all FAIR metrics (Closeness, Coverage, Gap, Regularity, Balance)
-    mb.diagnostics.fair_audit(exp1, ground_truth=gt).report()
+    mb.clinic.audit(exp1, ground_truth=gt, quality=False).fr.report()
 
     # 4. Full Diagnostic Biopsy (Executive Narrative)
-    print("\nStep 3: Performing Full Diagnostic Biopsy...")
-    diag_res = mb.diagnostics.audit(exp1, ground_truth=gt)
-    print("\n--- Executive Summary ---")
-    print(diag_res.report(show=False, full=False))
+    diag_res = mb.clinic.audit(exp1, ground_truth=gt)
 
-    print("\nExample 12 completed.")
 
 if __name__ == "__main__":
     main()
