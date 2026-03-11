@@ -17,7 +17,7 @@ import mb_path
 from moeabench import mb
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("--- Empirical Attainment Workshop ---\n")
     
     # 1. Setup: 2D problem for clear staircase visualization

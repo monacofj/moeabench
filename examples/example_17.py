@@ -20,7 +20,7 @@ from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("--- Example 17: Convergence, Proximity, and Distributional Correlation Analysis")
 
     # 1. Setup: A standard problem (DTLZ2, 2 Objectives for easier visualization)

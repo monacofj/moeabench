@@ -20,7 +20,7 @@ from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("--- Example 16: Comparative Performance Contrast and Stochastic Reliability")
 
     # 1. Setup: A competitive comparison on DTLZ2 (3 Objectives)

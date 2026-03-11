@@ -17,7 +17,7 @@ import mb_path
 from moeabench import mb
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     # 1. Setup: Define a 3-objective DTLZ2 problem and NSGA-III
     exp1 = mb.experiment()
     exp1.mop = mb.mops.DTLZ2(M=3)

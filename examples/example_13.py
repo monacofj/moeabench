@@ -26,7 +26,7 @@ from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("=== Example 13: Reference-based Quality Validation (Q-Scores)")
 
     # 1. Setup: DTLZ1 (3 Objectives) and NSGA-II

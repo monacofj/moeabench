@@ -28,7 +28,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives")
     print("========================================================\n")
 

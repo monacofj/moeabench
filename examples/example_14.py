@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 from moeabench import mb
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("Example 14: Multivariate Diagnostic Visualization and Instrument Suite")
     print("===============================================")
 

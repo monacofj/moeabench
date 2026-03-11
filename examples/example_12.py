@@ -23,7 +23,7 @@ import numpy as np
 from moeabench import mb
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("Example 12: Finite Approximation-Induced Resolution (FAIR) Metrics")
     print("===============================================")
 

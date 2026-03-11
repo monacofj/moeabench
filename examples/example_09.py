@@ -18,7 +18,7 @@ from moeabench import mb
 import os
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     # 1. Setup and Run a small experiment
     print("--- Phase 1: Creating and Running Experiment ---")
     exp = mb.experiment()

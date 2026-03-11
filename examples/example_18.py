@@ -14,8 +14,7 @@ from moeabench import mb
 import numpy as np
 
 def main():
-    print(f"MoeaBench version: {mb.system.version()}")
-
+    mb.system.version()
     # 1. The MaOP Challenge
     # 4-objective DTLZ2 problem. 
     print("\n1. Defining Many-Objective Problem (M=4)...")

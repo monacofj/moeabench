@@ -21,7 +21,7 @@ from moeabench import mb
 import matplotlib.pyplot as plt
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("--- Multi-run Population Stratification analysis ---\n")
 
     # 1. Setup: Standard 3D problem (DTLZ2)

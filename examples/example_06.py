@@ -16,7 +16,7 @@ import mb_path
 from moeabench import mb
 
 def main():
-    print(f"moeabench v{mb.system.version()}")
+    mb.system.version()
     print("--- Statistical Analysis Workshop ---\n")
     
     # 1. Setup: Compare NSGA-III and SPEA2 with 10 repetitions
