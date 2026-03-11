@@ -14,17 +14,86 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-03-11
+
 ### Added
-- **Execution Silence Control**: Added `silent` parameter to `experiment.run(...)`. When `silent=True`, run-time output is fully suppressed (startup banner, progress bars, and run-triggered diagnostic prints).
-- **Run Startup Banner**: `experiment.run()` now prints `Running {exp.name}` by default for clearer CLI/notebook traceability.
-- **Version Output Toggle**: Added `show` parameter to `mb.system.version(show=True)`, allowing explicit silent retrieval via `show=False`.
-- **Default Name Inference at Property Level**: `experiment.name` now resolves unnamed objects to their variable identifier (e.g., `exp1.name == "exp1"`), not only in report rendering.
+- **Canonical Compare Aliases**:
+  - Performance: `mb.stats.perf_shift`, `mb.stats.perf_match`, `mb.stats.perf_win` (equivalent to `perf_compare(method='shift'|'match'|'win')`).
+  - Topography: `mb.stats.topo_match`, `mb.stats.topo_emd`, `mb.stats.topo_anderson` (equivalent to `topo_compare(method='match'|'emd'|'anderson')`).
+- **Headless-Safe Display Layer**:
+  - Added `moeabench.core.display.show_matplotlib(...)` to preserve plotting behavior in both interactive and non-interactive backends.
+  - Interactive backends keep window display (`plt.show()`), while headless backends perform deterministic canvas rendering (`canvas.draw()`) without interactive warnings.
+- **API Breakage Tests**:
+  - New unit coverage to assert removal of legacy public names and enforce canonical API surface.
 
 ### Changed
-- **Internal Version Calls Are Silent**: Internal calls that use the library version for metadata/resolution now use `show=False` to avoid unintended output during imports and diagnostics.
-- **Examples Output Policy**: Examples now call `mb.system.version()` directly (without wrapping `print(...)`) and remove redundant "Running..." prints now emitted by `run()`.
-- **Many-objective Visual Example**: `examples/example_full.py` now visualizes both experiment fronts plus GT immediately after execution using `mb.view.topo_shape(exp1, exp2, gt, objectives=[0,1,2])` for `M=4` projection.
-- **Calibration Sidecar Hygiene**: Removed generated local sidecars from tracked files and expanded `.gitignore` with `*_M[0-9]*.json` to prevent accidental commits of calibration artifacts.
+- **Major API Consolidation (Breaking)**:
+  - Canonical diagnostics namespace is now `mb.clinic`.
+  - Canonical view API is now chart-oriented:
+    - `mb.view.topology`, `mb.view.bands`, `mb.view.gap`, `mb.view.density`, `mb.view.history`, `mb.view.spread`, `mb.view.ranks`, `mb.view.caste`, `mb.view.tiers`, `mb.view.ecdf`, `mb.view.radar`.
+  - Canonical stats names:
+    - `mb.stats.attainment` and `mb.stats.attainment_gap`.
+    - Unified comparison APIs: `mb.stats.perf_compare(...)`, `mb.stats.topo_compare(...)`, with standardized result object for performance comparison (`PerfCompareResult`).
+- **Diagnostics Contract Simplification**:
+  - Public diagnostics reduced to `audit(...)` for high-level use.
+  - Reporting standardized on `.report(show=True, full=False)`.
+  - `summary()` removed from the diagnostic result objects.
+- **Examples and Notebooks Fully Migrated**:
+  - All example scripts and notebooks were rewritten to canonical API names.
+  - Legacy method names were removed from executable paths and replaced with canonical calls (including compare aliases where method is explicit).
+  - Verbose procedural terminal prints in examples were removed in favor of code comments.
+- **Documentation Realignment**:
+  - `reference.md`, `userguide.md`, and `api_sheet.py` now document canonical API only.
+  - Legacy naming sections were removed/reworked; migration intent is now explicit.
+
+### Fixed
+- **Plot Rendering Robustness**:
+  - Resolved warnings/errors in non-interactive plotting flows by removing direct `plt.show()` assumptions from core plotting paths.
+  - Plotting now behaves consistently across desktop, notebook, and CI/headless environments.
+- **API/Example Drift**:
+  - Fixed multiple example and notebook mismatches introduced during rename transitions.
+  - Corrected incomplete `example_05.ipynb` to mirror `example_05.py`.
+- **Markdown/Docs Integrity**:
+  - Fixed broken code fences and malformed snippets caused by intermediate mass renaming.
+  - Corrected image references and mapping tables after function renames.
+
+### Removed
+- **Legacy Public Endpoints (Breaking)**:
+  - Diagnostics:
+    - `mb.diagnostics` as canonical user entrypoint (replaced by `mb.clinic` in user-facing API).
+    - `fair_audit()` and `q_audit()` as public primary endpoints.
+  - View:
+    - `topo_shape`, `topo_bands`, `topo_gap`, `topo_density`,
+    - `perf_history`, `perf_spread`, `perf_density`,
+    - `strat_ranks`, `strat_caste`, `strat_tiers`,
+    - `clinic_radar`.
+  - Stats:
+    - `perf_evidence`, `perf_distribution`, `perf_probability`, `perf_prob`,
+    - `topo_distribution`, `topo_dist`, `topo_attain`, `topo_attainment`, `topo_gap`.
+
+### Migration Guide
+- Diagnostics:
+  - `mb.diagnostics.audit(...)` -> `mb.clinic.audit(...)`
+  - `result.summary()` -> `result.report(show=True, full=False)`
+- View:
+  - `mb.view.topo_shape(...)` -> `mb.view.topology(...)`
+  - `mb.view.topo_bands(...)` -> `mb.view.bands(...)`
+  - `mb.view.topo_gap(...)` -> `mb.view.gap(...)`
+  - `mb.view.topo_density(...)` -> `mb.view.density(..., domain='topo')`
+  - `mb.view.perf_history(...)` -> `mb.view.history(...)`
+  - `mb.view.perf_spread(...)` -> `mb.view.spread(...)`
+  - `mb.view.perf_density(...)` -> `mb.view.density(...)`
+  - `mb.view.strat_ranks(...)` -> `mb.view.ranks(...)`
+  - `mb.view.strat_caste(...)` -> `mb.view.caste(...)`
+  - `mb.view.strat_tiers(...)` -> `mb.view.tiers(...)`
+  - `mb.view.clinic_radar(...)` -> `mb.view.radar(...)`
+- Stats:
+  - `mb.stats.topo_attain(...)`/`topo_attainment(...)` -> `mb.stats.attainment(...)`
+  - `mb.stats.topo_gap(...)` -> `mb.stats.attainment_gap(...)`
+  - `mb.stats.perf_evidence(...)` -> `mb.stats.perf_shift(...)` or `mb.stats.perf_compare(..., method='shift')`
+  - `mb.stats.perf_distribution(...)` -> `mb.stats.perf_match(...)` or `mb.stats.perf_compare(..., method='match')`
+  - `mb.stats.perf_probability(...)`/`perf_prob(...)` -> `mb.stats.perf_win(...)` or `mb.stats.perf_compare(..., method='win')`
+  - `mb.stats.topo_dist(...)`/`topo_distribution(...)` -> `mb.stats.topo_match(...)` or `mb.stats.topo_compare(..., method='match')`
 
 ## [0.13.2] - 2026-03-09
 
