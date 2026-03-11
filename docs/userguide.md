@@ -104,7 +104,6 @@ The `view.perf_shape` function will produce a plot showing the topography of the
 #### **Performance: Convergence trajectories**
 MoeaBench offers several viz perspectives for performance:
 - `mb.view.perf_history`: Evolution of Hypervolume (default), IGD, GD, etc.
-- `mb.view.perf_front_size`: Evolution of the non-dominated front density (ratio).
 - `mb.view.perf_spread`: Comparative performance distributions at specific generations.
 - `mb.view.perf_density`: Statistical density of attainment.
 And the `view.perf_history` function will produce a plot showing the hypervolume convergence along generations.
@@ -427,10 +426,8 @@ mb.view.topo_gap(exp1, exp2)
 This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
 
 *   **`mb.perf_history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud. (Alias: `mb.timeplot`).
-*   **`mb.perf_hv`**: Optimized shortcut for Hypervolume convergence.
 *   **`mb.perf_spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
 *   **`mb.perf_density`**: Shows the "Stochastic Distribution Analysis"—the probability distribution of metric values, identifying if an algorithm is stable or outlier-prone.
-*   **`mb.perf_front_size`**: Tracks the density of the non-dominated set (Front Size) over time.
 
 #### **Metric Rigor and Interpretation**
 MoeaBench prioritizes mathematical honesty. When evaluating performance against a **Ground Truth (GT)**, the following protocols apply:
@@ -446,7 +443,7 @@ MoeaBench prioritizes mathematical honesty. When evaluating performance against 
 mb.perf_spread(exp1, exp2)
 
 # Metric evolution over time
-mb.perf_hv(exp)
+mb.view.perf_history(exp, metric=mb.metrics.hv)
 
 # Probability Distribution (Luck Stability)
 mb.perf_density(exp1, exp2)

@@ -145,7 +145,6 @@ mb.view.topo_density(exp)               # Kernel Density Estimation (Heatmap)
 
 # B. Performance (Time Series & Distributions)
 mb.view.perf_history(exp)               # Convergence Profile (was 'timeplot')
-mb.view.perf_front_size(exp)            # Non-Dominated Population Ratio over time
 mb.view.perf_spread(exp, metric=mb.metrics.hypervolume) # Distribution Boxplots
 mb.view.perf_density(exp)               # Metric Probability Density (KDE)
 

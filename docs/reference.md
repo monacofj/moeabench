@@ -261,21 +261,6 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `gens` (*int* or *slice*): Specific generations to plot.
 *   **Returns**: `Figure`.
 
-#### **`mb.perf_hv(*args, ...)`**
-*   **Description**: Hypervolume Convergence Perspective. Shortcut for `perf_history(metric=hv)`.
-*   **Arguments**:
-    *   `*args`: Datasets to compare.
-*   **Returns**: `Figure`.
-
-#### **`mb.perf_front_size(*args, mode='run', ...)`**
-*   **Description**: Non-Dominated Density Perspective. Tracks how many individuals are on the Pareto front.
-*   **Arguments**:
-    *   `*args`: Datasets to compare.
-    *   `mode` (*str*):
-        *   `'run'` (Default): Plots evolution for each individual run.
-        *   `'consensus'`: Plots the **Consensus Ratio** (Superfront density).
-*   **Returns**: `Figure`.
-
 #### **`mb.perf_spread(*args, metric=None, gen=-1, ...)`**
 *   **Description**: Comparative Boxplot stats with A12 Win Probability.
 *   **Arguments**:
@@ -530,14 +515,8 @@ val = mb.metrics.hv(exp.last_pop)
 print(f"Final HV: {val:.4f}") 
 
 # Plotting Metrics
-mb.metrics.plot_matrix(hv, mode='auto', show_bounds=True)
+mb.view.perf_history(hv, mode='auto', show_bounds=True)
 ```
-
-### **Metric Visualization (`mb.metrics.plot_matrix`)**
-*   **`plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs)`**:
-    *   Visualizes one or more `MetricMatrix` objects.
-    *   `mode`: `'auto'` (default), `'interactive'` (Plotly), or `'static'` (Matplotlib).
-    *   `show_bounds`: If `True`, displays min/max bounds as dashed lines.
 
 ---
 

@@ -10,7 +10,6 @@ from .evaluator import (
     gdplus,
     igdplus,
     emd,
-    plot_matrix,
     MetricMatrix,
     front_size,
     nd_ratio

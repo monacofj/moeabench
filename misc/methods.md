@@ -3,7 +3,6 @@
 | Namespace | Método(s) | Retorno principal | Tem `.report()`? | Equivalente em `view` |
 |---|---|---|---|---|
 | `metrics` | `hv`, `gd`, `gdplus`, `igd`, `igdplus`, `emd`, `front_size` | `MetricMatrix` | Sim | `view.perf_history(metric=...)`, `view.perf_spread(metric=...)`, `view.perf_density(metric=...)` |
-| `metrics` | `plot_matrix` | figura (`matplotlib/plotly`) | Não | ele próprio é camada visual |
 | `stats` | `perf_evidence`, `perf_distribution` | `HypothesisTestResult` | Sim | `view.perf_spread`, `view.perf_density` |
 | `stats` | `topo_distribution` | `DistMatchResult` | Sim | `view.topo_density` |
 | `stats` | `strata` | `StratificationResult` | Sim | `view.strat_ranks`, `view.strat_caste`, `view.strat_tiers` |

@@ -6,7 +6,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ..defaults import defaults
-from ..metrics.evaluator import plot_matrix, hypervolume
+from ..metrics.evaluator import hypervolume
 from ..core.base import emit_output
 
 
@@ -35,6 +35,108 @@ def _perf_metric_error(method_name, metric, exc):
     ])
     emit_output(text, markdown=md)
     return None
+
+
+def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
+    """Internal plotting engine for performance metric matrices."""
+    if mode == 'auto':
+        try:
+            from IPython import get_ipython
+            mode = 'interactive' if get_ipython() is not None else 'static'
+        except (ImportError, NameError):
+            mode = 'static'
+
+    if not isinstance(metric_matrices, (list, tuple)):
+        metric_matrices = [metric_matrices]
+    if len(metric_matrices) == 1 and isinstance(metric_matrices[0], (list, tuple)):
+        metric_matrices = metric_matrices[0]
+
+    names = sorted(list(set(m.metric_name for m in metric_matrices)))
+    plot_name = names[0] if len(names) == 1 else ", ".join(names)
+    final_title = title if title else f"{plot_name} over Time"
+
+    if mode == 'static':
+        ax = kwargs.get('ax', None)
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 6)))
+        else:
+            fig = ax.get_figure()
+
+        lstyles = kwargs.get('linestyles', ['-', '--', ':', '-.'])
+        if not isinstance(lstyles, (list, tuple)):
+            lstyles = [lstyles]
+        labels = kwargs.get('labels', [])
+
+        for i, mat in enumerate(metric_matrices):
+            data = mat.values
+            if i < len(labels):
+                label = labels[i]
+            else:
+                name = mat.source_name if mat.source_name else mat.metric_name
+                G, R = data.shape
+                meta = []
+                if G == 1:
+                    meta.append("G: 1")
+                if R == 1:
+                    meta.append("R: 1")
+                suffix = f" ({', '.join(meta)})" if meta else ""
+                label = f"{name}{suffix}"
+
+            ls = lstyles[i % len(lstyles)]
+            if data.shape[1] > 1:
+                mean = np.nanmean(data, axis=1)
+                std = np.nanstd(data, axis=1)
+                gens = np.arange(1, len(mean) + 1)
+                v_min = np.nanmin(data, axis=1)
+                v_max = np.nanmax(data, axis=1)
+                ax.plot(gens, mean, label=label, linestyle=ls)
+                ax.fill_between(gens, np.maximum(0, mean - std), mean + std, alpha=0.2)
+                if show_bounds:
+                    ax.plot(gens, v_min, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
+                    ax.plot(gens, v_max, '--', color=ax.get_lines()[-1].get_color(), alpha=0.5, linewidth=1)
+            else:
+                ax.plot(np.arange(1, len(data) + 1), data[:, 0], label=label, linestyle=ls)
+
+        ax.set_title(final_title)
+        ax.set_xlabel("Generation")
+        ax.set_ylabel(plot_name)
+        ax.legend()
+        if kwargs.get('show', True) and kwargs.get('ax') is None:
+            plt.show()
+        return fig, ax
+
+    import plotly.graph_objects as go
+    fig = go.Figure()
+    for mat in metric_matrices:
+        data = mat.values
+        label = f"{mat.metric_name} ({mat.source_name})" if mat.source_name else mat.metric_name
+        if data.shape[1] > 1:
+            mean = np.nanmean(data, axis=1)
+            std = np.nanstd(data, axis=1)
+            gens = np.arange(1, len(mean) + 1)
+            v_min = np.nanmin(data, axis=1)
+            v_max = np.nanmax(data, axis=1)
+            fig.add_trace(go.Scatter(x=gens, y=mean, mode='lines', name=label, line=dict(width=3)))
+            lower_bound = np.maximum(0, mean - std)
+            fig.add_trace(go.Scatter(
+                x=np.concatenate([gens, gens[::-1]]),
+                y=np.concatenate([mean + std, lower_bound[::-1]]),
+                fill='toself',
+                fillcolor='rgba(100, 100, 100, 0.2)',
+                line=dict(color='rgba(255,255,255,0)'),
+                hoverinfo="skip",
+                showlegend=False
+            ))
+            if show_bounds:
+                fig.add_trace(go.Scatter(x=gens, y=v_min, mode='lines', line=dict(dash='dash', width=1), showlegend=False, opacity=0.5))
+                fig.add_trace(go.Scatter(x=gens, y=v_max, mode='lines', line=dict(dash='dash', width=1), showlegend=False, opacity=0.5))
+        else:
+            fig.add_trace(go.Scatter(x=np.arange(1, len(data) + 1), y=data[:, 0], mode='lines', name=label))
+
+    fig.update_layout(title=final_title, xaxis_title="Generation", yaxis_title=plot_name)
+    if kwargs.get('show', True):
+        fig.show()
+    return fig
 
 def perf_history(*args, metric=None, gens=None, **kwargs):
     """
@@ -72,7 +174,7 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
             else:
                 # Polymorphism: calculate metric if raw object passed, passing gens
                 processed_args.append(metric(arg, gens=gens, **metric_kwargs))
-        return plot_matrix(processed_args, **kwargs)
+        return _plot_metric_matrices(processed_args, **kwargs)
     except Exception as exc:
         return _perf_metric_error("mb.view.perf_history", metric, exc)
 
