@@ -31,8 +31,7 @@ def main():
     # 2. Local Calibration
     print("\n3. Generating Local Calibration Sidecar...")
     sidecar_path = "dtlz2_m4_demo.json"
-    mb.calibrate(
-        mop, 
+    mop.calibrate(
         size=40, 
         source_baseline=sidecar_path,
         force=True

@@ -56,41 +56,6 @@ class _MB:
         self.system = system
         self.defaults = defaults
         self.diagnostics = diagnostics
-        self.calibrate = diagnostics.calibrate
-        """
-        [mb.calibrate]
-        Entry point for MOP Calibration. 
-        Calculates or loads clinical baselines for a problem instance.
-        """
-        
-        self.register_baselines = diagnostics.register_baselines
-        """
-        [mb.register_baselines]
-        Registers an external JSON sidecar or baseline dictionary in the current session.
-        """
-        
-        # Taxonomy: Performance | Topography | Stratification (v0.7.0)
-        self.perf_evidence = stats.perf_evidence
-        self.perf_probability = stats.perf_probability
-        self.perf_distribution = stats.perf_distribution
-        self.topo_distribution = stats.topo_distribution
-        self.topo_attainment = stats.topo_attainment
-        self.topo_gap = stats.topo_gap
-        
-        
-        # Semantic View Shortcuts
-        self.topo_shape = view.topo_shape
-        self.topo_bands = view.topo_bands
-        self.perf_history = view.perf_history
-        self.perf_spread = view.perf_spread
-        self.perf_density = view.perf_density
-        self.perf_front_size = view.perf_front_size
-        self.perf_hv = view.perf_hv
-        self.strat_caste = view.strat_caste
-        
-        # Legacy Delegates (Supported Aliases)
-        self.spaceplot = view.spaceplot
-        self.timeplot = view.timeplot
 
 mb = _MB()
 
