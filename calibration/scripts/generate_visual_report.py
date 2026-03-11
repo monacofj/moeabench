@@ -12,14 +12,72 @@ Decoupled Renderer: Consumes pre-calculated audit data from JSON.
 import os
 import sys
 import json
+import re
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 # Paths
 PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-AUDIT_JSON = os.path.join(PROJ_ROOT, "calibration/reports/audit_v0.13.1.json")
-OUTPUT_HTML = os.path.join(PROJ_ROOT, "calibration/audit_report.html")
+
+
+def resolve_default_audit_json(project_root: str) -> str:
+    """
+    Resolve the canonical audit JSON for report rendering.
+
+    Resolution order:
+    1) If `calibration/audit_report.html` points to `audit_report_vX.Y.Z.html`,
+       use `calibration/reports/audit_vX.Y.Z.json` when present.
+    2) Otherwise, select the most recent `audit_v*.json` by mtime.
+    """
+    report_alias = os.path.join(project_root, "calibration", "audit_report.html")
+    reports_dir = os.path.join(project_root, "calibration", "reports")
+
+    try:
+        resolved = os.path.realpath(report_alias)
+        m = re.search(r"audit_report_v([0-9]+\.[0-9]+\.[0-9]+)\.html$", resolved)
+        if m:
+            candidate = os.path.join(reports_dir, f"audit_v{m.group(1)}.json")
+            if os.path.exists(candidate):
+                return candidate
+    except Exception:
+        pass
+
+    candidates = []
+    try:
+        for name in os.listdir(reports_dir):
+            if re.match(r"audit_v[0-9]+\.[0-9]+\.[0-9]+\.json$", name):
+                full = os.path.join(reports_dir, name)
+                candidates.append((os.path.getmtime(full), full))
+    except Exception:
+        pass
+
+    if not candidates:
+        # Stable fallback for explicit error reporting later.
+        return os.path.join(reports_dir, "audit_v0.13.1.json")
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1]
+
+
+def resolve_output_html(project_root: str, audit_json_path: str) -> str:
+    """Resolve versioned output HTML path from the selected audit JSON."""
+    reports_dir = os.path.join(project_root, "calibration", "reports")
+    m = re.search(r"audit_v([0-9]+\.[0-9]+\.[0-9]+)\.json$", os.path.basename(audit_json_path))
+    if m:
+        return os.path.join(reports_dir, f"audit_report_v{m.group(1)}.html")
+    return os.path.join(project_root, "calibration", "audit_report.html")
+
+
+def resolve_audit_version(audit_json_path: str) -> str:
+    """Extract semantic version from `audit_vX.Y.Z.json` filename."""
+    m = re.search(r"audit_v([0-9]+\.[0-9]+\.[0-9]+)\.json$", os.path.basename(audit_json_path))
+    if m:
+        return m.group(1)
+    return "unknown"
+
+
+AUDIT_JSON = os.environ.get("MOEABENCH_AUDIT_JSON", resolve_default_audit_json(PROJ_ROOT))
+OUTPUT_HTML = os.environ.get("MOEABENCH_AUDIT_HTML", resolve_output_html(PROJ_ROOT, AUDIT_JSON))
 # Ensure project root in path for imports
 if PROJ_ROOT not in sys.path:
     sys.path.insert(0, PROJ_ROOT)
@@ -85,8 +143,10 @@ def generate_visual_report():
             return "Cross: SBX(&eta;=30, p=1.0), Mut: Poly(&eta;=20, p=1/N), RefDirs: Das-Dennis"
         return "Default parameters"
 
+    report_ver = resolve_audit_version(AUDIT_JSON)
+
     html_content = [
-        "<html><head><title>moeabench v0.9.0 Calibration</title>",
+        f"<html><head><title>moeabench v{report_ver} Calibration</title>",
         "<style>",
         "body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 2rem; }",
         "h1 { color: #0f172a; border-left: 5px solid #6366f1; padding-left: 1rem; margin-bottom: 0; }",
@@ -101,8 +161,8 @@ def generate_visual_report():
         ".matrix-summary { font-style: italic; color: #64748b; font-size: 0.85rem; min-width: 200px; white-space: normal; }",
         "th, td:not(.matrix-summary) { white-space: normal; }",
         "</style></head><body>",
-        "<h1>moeabench v0.12.0 Clinical Quality Audit Report</h1>",
-        "<p>This report serves as the official scientific audit for <b>moeabench v0.9.0</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
+        f"<h1>moeabench v{report_ver} Clinical Quality Audit Report</h1>",
+        f"<p>This report serves as the official scientific audit for <b>moeabench v{report_ver}</b>. It implements the <i>Clinical Metrology</i> standard (ADR 0026) for objective framework certification.</p>",
         "<div class='didactic-box' style='background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px;'>",
         "<h2>1. Methodology & Experimental Context</h2>",
         "<p>The goal is to certify algorithmic performance against rigorous mathematical <b>Ground Truth (GT)</b> benchmarks.</p>",
@@ -540,7 +600,20 @@ def generate_visual_report():
         html_content.append("</div>")
 
     html_content.append("</body></html>")
-    with open(OUTPUT_HTML, "w") as f: f.write("\n".join(html_content))
+    with open(OUTPUT_HTML, "w") as f:
+        f.write("\n".join(html_content))
+
+    # Refresh canonical alias -> versioned report.
+    alias = os.path.join(PROJ_ROOT, "calibration", "audit_report.html")
+    try:
+        rel_target = os.path.relpath(OUTPUT_HTML, os.path.join(PROJ_ROOT, "calibration"))
+        if os.path.islink(alias) or os.path.exists(alias):
+            os.remove(alias)
+        os.symlink(rel_target, alias)
+    except Exception:
+        # Non-fatal on filesystems that do not support symlink.
+        pass
+
     print(f"Success! Report: {OUTPUT_HTML}")
 
 if __name__ == "__main__":

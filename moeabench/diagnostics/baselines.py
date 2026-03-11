@@ -12,6 +12,7 @@ This module handles:
 """
 
 import os
+import re
 import json
 import warnings
 import hashlib
@@ -23,10 +24,40 @@ from contextlib import contextmanager
 
 # Path to the Authorized Offline Baselines
 def _get_default_baseline_path() -> str:
+    """
+    Resolves the default baseline source.
+
+    Policy:
+    1) Prefer the frozen canonical alias: resources/baselines.json
+    2) Fallback to version-specific file when available
+    3) Fallback to the latest available baselines_vX.Y.Z.json
+    """
+    resources_dir = os.path.join(os.path.dirname(__file__), "resources")
+    canonical = os.path.join(resources_dir, "baselines.json")
+    if os.path.exists(canonical):
+        return canonical
+
     from ..system import version
     ver = version(show=False)
-    # Canonical version-specific path
-    return os.path.join(os.path.dirname(__file__), f"resources/baselines_v{ver}.json")
+    versioned = os.path.join(resources_dir, f"baselines_v{ver}.json")
+    if os.path.exists(versioned):
+        return versioned
+
+    latest_path = None
+    latest_ver = None
+    try:
+        for name in os.listdir(resources_dir):
+            m = re.match(r"baselines_v(\d+)\.(\d+)\.(\d+)\.json$", name)
+            if not m:
+                continue
+            ver_tuple = tuple(int(x) for x in m.groups())
+            if latest_ver is None or ver_tuple > latest_ver:
+                latest_ver = ver_tuple
+                latest_path = os.path.join(resources_dir, name)
+    except Exception:
+        pass
+
+    return latest_path if latest_path else canonical
 
 BASELINE_JSON_PATH = _get_default_baseline_path()
 _CACHE = None
