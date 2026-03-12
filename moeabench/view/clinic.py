@@ -79,7 +79,7 @@ def _resolve_metric_data(target: Any, ground_truth: Optional[np.ndarray], metric
     
     return f_val, q_res
 
-def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, **kwargs):
+def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_ecdf] Clinical CDF Plot.
     Focuses on goal-attainment and Headway (95th percentile).
@@ -96,7 +96,8 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
     h_val = np.percentile(data, 95)
     
     mop_name = q_res.problem if hasattr(q_res, 'problem') else "Unknown"
-    title = f"{metric.title()} Distribution: ECDF<br><sup>{q_res.description}</sup>"
+    auto_title = f"{metric.title()} Distribution: ECDF<br><sup>{q_res.description}</sup>"
+    resolved_title = title if title is not None else auto_title
     x_label = f"Physical Fact (Layer 1) - [{metric}]"
     
     # Resolve plotting label (name)
@@ -115,7 +116,7 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
         plt.axhline(0.95, color='red', linestyle='--', alpha=0.5, label='95th Percentile')
         plt.axvline(h_val, color='red', linestyle='--', alpha=0.5)
         
-        plt.title(title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
+        plt.title(resolved_title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
         plt.xlabel(x_label)
         plt.ylabel("Cumulative Probability")
         plt.grid(True, alpha=0.2)
@@ -136,14 +137,14 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
                                  line=dict(color='red', dash='dash', width=1), name='95th Percentile'))
         
         fig.update_layout(
-            title=dict(text=title, x=0.5),
+            title=dict(text=resolved_title, x=0.5),
             xaxis_title=x_label, yaxis_title="Cumulative Probability",
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
         if show: fig.show()
         return fig
 
-def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, **kwargs):
+def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_distribution] Morphological Error Plot.
     Focuses on the shape of the error (histogram/density).
@@ -158,13 +159,14 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
     m_val = np.median(data)
     h_val = np.percentile(data, 95)
 
-    title = f"{metric.title()} Distribution: Point-wise Analysis<br><sup>{q_res.description}</sup>"
+    auto_title = f"{metric.title()} Distribution: Point-wise Analysis<br><sup>{q_res.description}</sup>"
+    resolved_title = title if title is not None else auto_title
     x_label = f"Physical Fact (Layer 1) - [{metric}]"
 
     if mode == 'static':
         fig = plt.figure(figsize=defaults.figsize)
         plt.hist(data, bins=32, density=True, alpha=0.6, color='skyblue', edgecolor='navy')
-        plt.title(title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
+        plt.title(resolved_title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
         plt.xlabel(x_label)
         plt.ylabel("Density")
         plt.grid(True, alpha=0.2)
@@ -173,14 +175,14 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
     else:
         fig = go.Figure(data=[go.Histogram(x=data, histnorm='probability density', marker=dict(color='skyblue', line=dict(color='navy', width=1)), name=metric)])
         fig.update_layout(
-            title=dict(text=title, x=0.5),
+            title=dict(text=resolved_title, x=0.5),
             xaxis_title=x_label, yaxis_title="Density",
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
         if show: fig.show()
         return fig
 
-def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: str = 'auto', show: bool = True, **kwargs):
+def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_radar] Clinical Fingerprint (Spider Plot).
     Visualizes the 6 Quality Scores (Q-Scores) in a single polygon.
@@ -243,6 +245,8 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
             continue
         qv = scores[c]
         values.append(float(qv.value) if hasattr(qv, "value") else float(qv))
+
+    resolved_title = title if title is not None else "Clinical Quality Fingerprint (Q-Scores)"
     
     if mode == 'static':
         angles = np.linspace(0, 2 * np.pi, len(cat), endpoint=False).tolist()
@@ -260,7 +264,7 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
         ax.set_yticks([0.25, 0.50, 0.75, 1.0])
         ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color='gray')
         
-        plt.title("Clinical Quality Fingerprint (Q-Scores)")
+        plt.title(resolved_title)
         if show: show_matplotlib(fig)
         return fig
     else:
@@ -271,13 +275,13 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
                 radialaxis=dict(visible=True, range=[0, 1], tickvals=[0.25, 0.5, 0.75, 1.0], gridcolor='#E0E0E0'),
                 angularaxis=dict(gridcolor='#E0E0E0')
             ),
-            title=dict(text="Clinical Quality Fingerprint (Q-Scores)", x=0.5),
+            title=dict(text=resolved_title, x=0.5),
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
         if show: fig.show()
         return fig
 
-def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, gens: Optional[Union[int, slice]] = None, **kwargs):
+def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, gens: Optional[Union[int, slice]] = None, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_history] Temporal Health Chart.
     Visualizes the evolution of a metric over generations.
@@ -302,6 +306,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
     mop = target.mop
     GT = ground_truth if ground_truth is not None else mop.pf()
     f_func = {"closeness": closeness, "headway": headway, "coverage": coverage, "gap": gap, "regularity": regularity, "balance": balance}.get(metric.lower())
+    resolved_title = title if title is not None else f"Clinic History: {metric.upper()} Evolution"
     
     runs = target if hasattr(target, '__iter__') else [target]
     
@@ -316,7 +321,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
 
             timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in hist]
             plt.plot(range(len(timeseries)), timeseries, label=run.name)
-        plt.title(f"Clinic History: {metric.upper()} Evolution")
+        plt.title(resolved_title)
         plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{metric}]")
         plt.grid(True, alpha=0.3); plt.legend()
         if show: show_matplotlib(fig)
@@ -333,7 +338,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
             timeseries = [float(f_func(pop_f, ref=GT, **kwargs)) for pop_f in hist]
             fig.add_trace(go.Scatter(x=list(range(len(timeseries))), y=timeseries, mode='lines', name=run.name))
         fig.update_layout(
-            title=dict(text=f"Clinic History: {metric.upper()} Evolution", x=0.5),
+            title=dict(text=resolved_title, x=0.5),
             xaxis_title="Generation", yaxis_title=f"Physical Fact [{metric}]",
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )

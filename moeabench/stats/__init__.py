@@ -13,31 +13,31 @@ attainment_gap = _attainment_gap
 
 # Method aliases for compare APIs.
 def perf_shift(data1, data2, **kwargs):
-    """Alias for perf_compare(method='shift')."""
-    return perf_compare(data1, data2, method="shift", **kwargs)
+    """Alias for perf_compare(method='mannwhitney')."""
+    return perf_compare(data1, data2, method="mannwhitney", **kwargs)
 
 
 def perf_match(data1, data2, **kwargs):
-    """Alias for perf_compare(method='match')."""
-    return perf_compare(data1, data2, method="match", **kwargs)
+    """Alias for perf_compare(method='ks')."""
+    return perf_compare(data1, data2, method="ks", **kwargs)
 
 
 def perf_win(data1, data2, **kwargs):
-    """Alias for perf_compare(method='win')."""
-    return perf_compare(data1, data2, method="win", **kwargs)
+    """Alias for perf_compare(method='a12')."""
+    return perf_compare(data1, data2, method="a12", **kwargs)
 
 
 def topo_match(*args, **kwargs):
-    """Alias for topo_compare(method='match')."""
-    return topo_compare(*args, method="match", **kwargs)
+    """Alias for topo_compare(method='ks')."""
+    return topo_compare(*args, method="ks", **kwargs)
 
 
-def topo_emd(*args, **kwargs):
+def topo_shift(*args, **kwargs):
     """Alias for topo_compare(method='emd')."""
     return topo_compare(*args, method="emd", **kwargs)
 
 
-def topo_anderson(*args, **kwargs):
+def topo_tail(*args, **kwargs):
     """Alias for topo_compare(method='anderson')."""
     return topo_compare(*args, method="anderson", **kwargs)
 
@@ -52,8 +52,8 @@ __all__ = [
     "perf_match",
     "perf_win",
     "topo_match",
-    "topo_emd",
-    "topo_anderson",
+    "topo_shift",
+    "topo_tail",
     "PerfCompareResult",
     "strata",
     "emd",

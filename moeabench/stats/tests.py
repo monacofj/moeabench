@@ -269,38 +269,38 @@ def perf_distribution(data1, data2, alternative='two-sided', metric=None, gen=-1
                                 alternative=alternative, metric=metric, gen=gen, **kwargs)
 
 
-def perf_compare(data1, data2, method='match', metric=None, gen=-1, alternative='two-sided', **kwargs):
+def perf_compare(data1, data2, method='ks', metric=None, gen=-1, alternative='two-sided', **kwargs):
     """
     Unified performance comparator.
     Methods:
-    - 'shift': Mann-Whitney U (location shift)
-    - 'match': KS two-sample (distribution match)
-    - 'win': Vargha-Delaney A12 (win probability/effect)
+    - 'mannwhitney': Mann-Whitney U (location shift)
+    - 'ks': KS two-sample (distribution matching)
+    - 'a12': Vargha-Delaney A12 (win probability/effect)
     """
     method = str(method).lower()
-    if method == 'shift':
+    if method == 'mannwhitney':
         res = perf_evidence(data1, data2, alternative=alternative, metric=metric, gen=gen, **kwargs)
         decision = "different" if res.significant else "no-significant-difference"
         return PerfCompareResult(
-            method='shift',
+            method='mannwhitney',
             statistic=float(res.statistic),
             p_value=float(res.p_value),
             effect_size=float(res.perf_probability),
             decision=decision,
             details={"name": res.name},
         )
-    if method == 'match':
+    if method == 'ks':
         res = perf_distribution(data1, data2, alternative=alternative, metric=metric, gen=gen, **kwargs)
         decision = "match" if not res.significant else "divergent"
         return PerfCompareResult(
-            method='match',
+            method='ks',
             statistic=float(res.statistic),
             p_value=float(res.p_value),
             effect_size=float(res.perf_probability),
             decision=decision,
             details={"name": res.name},
         )
-    if method == 'win':
+    if method == 'a12':
         res = perf_probability(data1, data2, metric=metric, gen=gen, **kwargs)
         val = float(res.value)
         if val > 0.5:
@@ -310,14 +310,14 @@ def perf_compare(data1, data2, method='match', metric=None, gen=-1, alternative=
         else:
             decision = "tie"
         return PerfCompareResult(
-            method='win',
+            method='a12',
             statistic=val,
             p_value=None,
             effect_size=val,
             decision=decision,
             details={"name": res.name},
         )
-    raise ValueError(f"Unknown perf_compare method: {method}. Use 'shift', 'match', or 'win'.")
+    raise ValueError(f"Unknown perf_compare method: {method}. Use 'mannwhitney', 'ks', or 'a12'.")
 
 class DistMatchResult(StatsResult):
     """
@@ -330,6 +330,15 @@ class DistMatchResult(StatsResult):
         self.method = method
         self.alpha = alpha if alpha is not None else defaults.alpha
         self.threshold = threshold if threshold is not None else defaults.displacement_threshold
+
+    @property
+    def semantic_alias(self) -> str:
+        """Returns the semantic alias name for the active topo method."""
+        return {
+            'ks': 'topo_match',
+            'emd': 'topo_shift',
+            'anderson': 'topo_tail',
+        }.get(self.method, f"topo_{self.method}")
 
     @property
     def p_values(self) -> dict:
@@ -354,10 +363,11 @@ class DistMatchResult(StatsResult):
         use_md = kwargs.get('markdown', self._is_notebook())
         space_label = "Objective Space" if self.space == 'objs' else "Decision Space"
         status_label = 'CONSISTENT' if self.is_consistent else 'DIVERGENT'
+        method_label = f"{self.semantic_alias} | {self.method.upper()}"
         
         if use_md:
             status_color = "green" if self.is_consistent else "red"
-            header = f"### Distribution Match Report ({self.method.upper()})"
+            header = f"### Distribution Match Report ({method_label})"
             lines = [
                 header,
                 "",
@@ -392,7 +402,7 @@ class DistMatchResult(StatsResult):
             content = "\n".join(lines)
         else:
             lines = [
-                f"--- Distribution Match Report ({self.method.upper()}) ---",
+                f"--- Distribution Match Report ({method_label}) ---",
                 f"  Analysed Space: {space_label}",
                 f"  Global Status:  {status_label}",
                 f"  Criteria:       {'alpha=' + str(self.alpha) if self.method != 'emd' else 'threshold=' + str(self.threshold)}",
@@ -516,19 +526,17 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, t
     return DistMatchResult(results, names, space=space, method=method, alpha=alpha, threshold=threshold)
 
 
-def topo_compare(*args, space='objs', axes=None, method='match', alpha=None, threshold=None, **kwargs):
+def topo_compare(*args, space='objs', axes=None, method='ks', alpha=None, threshold=None, **kwargs):
     """
     Unified topology comparator.
     Methods:
-    - 'match': KS two-sample matching (mapped to internal 'ks')
+    - 'ks': KS two-sample matching
     - 'emd': Earth Mover's Distance
     - 'anderson': Anderson-Darling k-sample
     """
     method = str(method).lower()
-    internal = 'ks' if method == 'match' else method
-    if internal not in ('ks', 'emd', 'anderson'):
-        raise ValueError(f"Unknown topo_compare method: {method}. Use 'match', 'emd', or 'anderson'.")
-    res = topo_distribution(*args, space=space, axes=axes, method=internal, alpha=alpha, threshold=threshold, **kwargs)
-    # Preserve canonical method label for new API.
+    if method not in ('ks', 'emd', 'anderson'):
+        raise ValueError(f"Unknown topo_compare method: {method}. Use 'ks', 'emd', or 'anderson'.")
+    res = topo_distribution(*args, space=space, axes=axes, method=method, alpha=alpha, threshold=threshold, **kwargs)
     res.method = method
     return res

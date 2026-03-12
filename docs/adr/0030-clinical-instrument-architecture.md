@@ -1,7 +1,7 @@
 # ADR 0030: Clinical Instrument Architecture
 
 ## Status
-Proposed (2026-02-18)
+Partially Superseded by ADR 0039 (2026-03-11)
 
 ## Context
 Following the formalization of v0.9 "Scientific Certification" (ADR 0026 and 0028), there was a need for a visualization layer that matches this metrological rigor. Standard "Performance Plots" (like HV-over-time) are insufficient for diagnosing *why* an algorithm fails or which morphological pathologies are present.

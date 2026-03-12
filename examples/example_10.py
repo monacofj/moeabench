@@ -38,21 +38,21 @@ def main():
     exp2.run()
 
     # 3. Topological Analysis: Objective Space
-    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='match').
+    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='ks').
     res_objs = mb.stats.topo_match(exp1, exp2, alpha=0.01) # Stricter alpha
     res_objs.report()
 
     # 4. Topological Analysis: Decision Space
     # We can also check if they found the same solutions in the decision space
-    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='match').
+    # [mb.stats.topo_match] is equivalent to mb.stats.topo_compare(method='ks').
     res_vars = mb.stats.topo_match(exp1, exp2, space='vars')
     res_vars.report()
 
     # 5. Advanced: Earth Mover Distance (Geometric Distance)
     # Quantify "how far" the distributions are from each other
     # Custom threshold: declare match only if distance < 0.05
-    # [mb.stats.topo_emd] is equivalent to mb.stats.topo_compare(method='emd').
-    res_emd = mb.stats.topo_emd(exp1, exp2, threshold=0.05)
+    # [mb.stats.topo_shift] is equivalent to mb.stats.topo_compare(method='emd').
+    res_emd = mb.stats.topo_shift(exp1, exp2, threshold=0.05)
     res_emd.report()
 
     # NEW: Visualizing the Topological Gap

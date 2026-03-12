@@ -238,11 +238,77 @@ class StratificationResult(StatsResult):
         name = getattr(self.source, 'name', 'Population')
         return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
 
-def strata(data, gen=-1):
+def _joint_strata_result(data_a, data_b, gen=-1):
+    """Build a joint stratification (A U B) result used by tiers visualizations."""
+    from ..core.experiment import experiment
+    from ..core.run import Run, Population
+
+    def _extract_objs(data):
+        if isinstance(data, StratificationResult):
+            if data.objectives is None:
+                raise ValueError("StratificationResult without objectives cannot be used in joint strata.")
+            return np.asarray(data.objectives), getattr(data.source, "name", None) or getattr(data, "name", None)
+        if isinstance(data, experiment):
+            objs = [run.front(gen) for run in data]
+            return np.vstack(objs), getattr(data, "name", "Algorithm")
+        if isinstance(data, Run):
+            pop = data.pop(gen)
+            return np.asarray(pop.objectives), getattr(data, "name", "Run")
+        if isinstance(data, Population):
+            return np.asarray(data.objectives), getattr(data, "name", "Population")
+        if isinstance(data, np.ndarray):
+            return np.asarray(data), "Array"
+        if hasattr(data, "objectives"):
+            return np.asarray(data.objectives), getattr(data, "name", "Data")
+        raise TypeError(f"Unsupported data type for joint strata: {type(data)}")
+
+    objs_a, name_a = _extract_objs(data_a)
+    objs_b, name_b = _extract_objs(data_b)
+
+    combined_objs = np.vstack([objs_a, objs_b])
+    labels = np.concatenate([np.zeros(len(objs_a), dtype=int), np.ones(len(objs_b), dtype=int)])
+
+    from ..core.run import Population
+    pop = Population(combined_objs, combined_objs)
+    global_ranks = pop.stratify()
+
+    unique_ranks = np.unique(global_ranks)
+    joint_freqs = {}
+    agg_hist = {}
+    agg_counts = {}
+
+    for r in unique_ranks:
+        mask = (global_ranks == r)
+        total = np.sum(mask)
+        prop_a = np.sum(labels[mask] == 0) / total
+        prop_b = np.sum(labels[mask] == 1) / total
+        joint_freqs[int(r)] = np.array([prop_a, prop_b])
+        agg_hist[int(r)] = total / len(combined_objs)
+        agg_counts[int(r)] = int(total)
+
+    return TierResult(
+        agg_hist,
+        source=(data_a, data_b),
+        gen=gen,
+        objectives=combined_objs,
+        rank_array=global_ranks,
+        group_labels=[name_a or "Algorithm A", name_b or "Algorithm B"],
+        joint_frequencies=joint_freqs,
+        tier_counts=agg_counts,
+    )
+
+
+def strata(data, other=None, gen=-1):
     """
     Performs Population Stratification (Rank Distribution) analysis.
     """
     from ..core.run import Population, Run
+
+    if other is not None:
+        return _joint_strata_result(data, other, gen=gen)
+
+    if isinstance(data, StratificationResult):
+        return data
     
     # helper to aggregate run data
     def _collect_run_data(run_obj, g):
@@ -267,7 +333,7 @@ def strata(data, gen=-1):
         items = data.pops if is_joined else data
         
         for item in items:
-            all_res.append(strata(item, gen))
+            all_res.append(strata(item, gen=gen))
             
         agg_hist = {}
         max_r = max(r.max_rank for r in all_res) if all_res else 0
@@ -414,54 +480,3 @@ class TierResult(StratificationResult):
             content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
-
-def tier(exp1, exp2, gen=-1):
-    """
-    Performs Joint Stratification (Tier Analysis) between two experiments.
-    """
-    from ..core.run import SmartArray
-    # 1. Collect all final fronts (or specific gen)
-    def _get_objs_with_src(exp, label):
-        objs = []
-        if hasattr(exp, 'runs'):
-            for run in exp:
-                objs.append(run.front(gen))
-        else:
-            objs.append(exp.objectives)
-        return np.vstack(objs), np.full(sum(len(o) for o in objs), label)
-
-    objsA, labelsA = _get_objs_with_src(exp1, 0)
-    objsB, labelsB = _get_objs_with_src(exp2, 1)
-    
-    combined_objs = np.vstack([objsA, objsB])
-    combined_labels = np.concatenate([labelsA, labelsB])
-    
-    # 2. Perform Global NDS
-    from ..core.run import Population
-    pop = Population(combined_objs, combined_objs)
-    global_ranks = pop.stratify()
-    
-    # 3. Calculate Joint Frequencies
-    unique_ranks = np.unique(global_ranks)
-    joint_freqs = {}
-    agg_hist = {}
-    agg_counts = {}
-    
-    for r in unique_ranks:
-        mask = (global_ranks == r)
-        total_in_rank = np.sum(mask)
-        # Proportions of A and B in this rank
-        propA = np.sum((combined_labels[mask] == 0)) / total_in_rank
-        propB = np.sum((combined_labels[mask] == 1)) / total_in_rank
-        joint_freqs[int(r)] = np.array([propA, propB])
-        agg_hist[int(r)] = total_in_rank / len(combined_objs)
-        agg_counts[int(r)] = int(total_in_rank)
-        
-    nameA = getattr(exp1, 'name', 'Algorithm A')
-    nameB = getattr(exp2, 'name', 'Algorithm B')
-    
-    return TierResult(agg_hist, source=(exp1, exp2), gen=gen, 
-                       objectives=combined_objs, rank_array=global_ranks,
-                       group_labels=[nameA, nameB],
-                       joint_frequencies=joint_freqs,
-                       tier_counts=agg_counts)

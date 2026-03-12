@@ -177,11 +177,11 @@ exp_b = mb.experiment()                 # Assume another experiment
 # ... setup and run exp_b ...
 
 # Mann-Whitney U Test (Evidence of superiority)
-res_test = mb.stats.perf_compare(exp_a, exp_b, method='shift') 
+res_test = mb.stats.perf_compare(exp_a, exp_b, method='mannwhitney') 
 res_test.report_show()
 
 # Vargha-Delaney A12 (Effect Size / Win Probability)
-res_prob = mb.stats.perf_compare(exp_a, exp_b, method='win')
+res_prob = mb.stats.perf_compare(exp_a, exp_b, method='a12')
 res_prob.report_show()
 
 # -----------------------------------------------------------------------------

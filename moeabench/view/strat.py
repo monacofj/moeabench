@@ -5,7 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ..stats.stratification import strata, StratificationResult, TierResult, tier
+from ..stats.stratification import strata, StratificationResult, TierResult
 from ..metrics.evaluator import hypervolume
 from ..core.display import show_matplotlib
 
@@ -236,7 +236,9 @@ def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
     if isinstance(exp1, TierResult):
         res = exp1
     else:
-        res = tier(exp1, exp2)
+        if exp2 is None:
+            raise ValueError("mb.view.tiers requires two inputs or a precomputed joint strata result.")
+        res = strata(exp1, exp2, **kwargs)
         
     fig, ax = plt.subplots()
     nameA, nameB = res.group_labels

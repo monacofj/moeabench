@@ -18,8 +18,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Canonical Compare Aliases**:
-  - Performance: `mb.stats.perf_shift`, `mb.stats.perf_match`, `mb.stats.perf_win` (equivalent to `perf_compare(method='shift'|'match'|'win')`).
-  - Topography: `mb.stats.topo_match`, `mb.stats.topo_emd`, `mb.stats.topo_anderson` (equivalent to `topo_compare(method='match'|'emd'|'anderson')`).
+  - Performance: `mb.stats.perf_shift`, `mb.stats.perf_match`, `mb.stats.perf_win` (equivalent to `perf_compare(method='mannwhitney'|'ks'|'a12')`).
+  - Topography: `mb.stats.topo_match`, `mb.stats.topo_shift`, `mb.stats.topo_tail` (equivalent to `topo_compare(method='ks'|'emd'|'anderson')`).
 - **Headless-Safe Display Layer**:
   - Added `moeabench.core.display.show_matplotlib(...)` to preserve plotting behavior in both interactive and non-interactive backends.
   - Interactive backends keep window display (`plt.show()`), while headless backends perform deterministic canvas rendering (`canvas.draw()`) without interactive warnings.
@@ -90,10 +90,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Stats:
   - `mb.stats.topo_attain(...)`/`topo_attainment(...)` -> `mb.stats.attainment(...)`
   - `mb.stats.topo_gap(...)` -> `mb.stats.attainment_gap(...)`
-  - `mb.stats.perf_evidence(...)` -> `mb.stats.perf_shift(...)` or `mb.stats.perf_compare(..., method='shift')`
-  - `mb.stats.perf_distribution(...)` -> `mb.stats.perf_match(...)` or `mb.stats.perf_compare(..., method='match')`
-  - `mb.stats.perf_probability(...)`/`perf_prob(...)` -> `mb.stats.perf_win(...)` or `mb.stats.perf_compare(..., method='win')`
-  - `mb.stats.topo_dist(...)`/`topo_distribution(...)` -> `mb.stats.topo_match(...)` or `mb.stats.topo_compare(..., method='match')`
+  - `mb.stats.perf_evidence(...)` -> `mb.stats.perf_shift(...)` or `mb.stats.perf_compare(..., method='mannwhitney')`
+  - `mb.stats.perf_distribution(...)` -> `mb.stats.perf_match(...)` or `mb.stats.perf_compare(..., method='ks')`
+  - `mb.stats.perf_probability(...)`/`perf_prob(...)` -> `mb.stats.perf_win(...)` or `mb.stats.perf_compare(..., method='a12')`
+  - `mb.stats.topo_dist(...)`/`topo_distribution(...)` -> `mb.stats.topo_match(...)` or `mb.stats.topo_compare(..., method='ks')`
 
 ## [0.13.2] - 2026-03-09
 

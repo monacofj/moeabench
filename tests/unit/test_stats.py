@@ -17,17 +17,17 @@ def test_perf_taxonomy():
     data_a = np.random.normal(1.0, 0.1, 30)
     data_b = np.random.normal(0.5, 0.1, 30)
     
-    # 1. perf_compare(method='shift') (Mann-Whitney)
-    res = mb.stats.perf_compare(data_a, data_b, method='shift')
+    # 1. perf_compare(method='mannwhitney') (Mann-Whitney)
+    res = mb.stats.perf_compare(data_a, data_b, method='mannwhitney')
     assert res.p_value < 0.05
-    assert "perf_compare (shift)" in res.report()
+    assert "perf_compare (mannwhitney)" in res.report()
     
-    # 2. perf_compare(method='win') (A12 Win Probability)
-    val = mb.stats.perf_compare(data_a, data_b, method='win')
+    # 2. perf_compare(method='a12') (A12 Win Probability)
+    val = mb.stats.perf_compare(data_a, data_b, method='a12')
     assert val.effect_size > 0.9  # Nearly certain A > B
     
-    # 3. perf_compare(method='match') (KS Test)
-    res_ks = mb.stats.perf_compare(data_a, data_b, method='match')
+    # 3. perf_compare(method='ks') (KS Test)
+    res_ks = mb.stats.perf_compare(data_a, data_b, method='ks')
     assert res_ks.p_value < 0.05
 
 def test_topo_attain():
@@ -54,7 +54,7 @@ def test_topo_dist():
     """Verify multi-axial topological matching."""
     # Fronts that match perfectly (self-comparison)
     data = np.random.random((50, 2))
-    res = mb.stats.topo_compare(data, data, method='match')
+    res = mb.stats.topo_compare(data, data, method='ks')
     
     assert res.is_consistent is True
     assert len(res.results) == 2 # 2 axis tested
@@ -63,6 +63,6 @@ def test_topo_dist():
     # Fronts that differ significantly on one axis
     data2 = data.copy()
     data2[:, 0] += 5.0 # Shift X axis
-    res2 = mb.stats.topo_compare(data, data2, method='match')
+    res2 = mb.stats.topo_compare(data, data2, method='ks')
     assert res2.is_consistent is False
     assert 0 in res2.failed_axes

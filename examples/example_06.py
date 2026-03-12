@@ -39,19 +39,19 @@ def main():
     # 2. Statistical Inference
     
     # [mb.stats.perf_shift] uses Mann-Whitney U
-    # Equivalent to mb.stats.perf_compare(method='shift').
+    # Equivalent to mb.stats.perf_compare(method='mannwhitney').
     # to check for significant location differences.
     res1 = mb.stats.perf_shift(exp1, exp2, metric=mb.metrics.hv)
     res1.report()
     
     # [mb.stats.perf_match] uses Kolmogorov-Smirnov (KS)
-    # Equivalent to mb.stats.perf_compare(method='match').
+    # Equivalent to mb.stats.perf_compare(method='ks').
     # to compare distribution shapes.
     res2 = mb.stats.perf_match(exp1, exp2, metric=mb.metrics.hv)
     res2.report()
     
     # [mb.stats.perf_win] uses Vargha-Delaney A12
-    # Equivalent to mb.stats.perf_compare(method='win').
+    # Equivalent to mb.stats.perf_compare(method='a12').
     # to estimate win probability / effect size.
     res3 = mb.stats.perf_win(exp1, exp2, metric=mb.metrics.hv)
     res3.report()

@@ -106,6 +106,7 @@ MoeaBench offers several viz perspectives for performance:
 - `mb.view.history`: Evolution of Hypervolume (default), IGD, GD, etc.
 - `mb.view.spread`: Comparative performance distributions at specific generations.
 - `mb.view.density`: Statistical density of attainment.
+All `mb.view.*` functions support `title=None` with a semantic default title. Set `title="..."` only when you want to override that default.
 And the `view.history` function will produce a plot showing the hypervolume convergence along generations.
 
 ![Convergence](images/hello_time.png)
@@ -386,7 +387,7 @@ This domain analyzes the spatial properties of the solution set within the objec
 
 ```python
 # The "Research Standard" View
-mb.view.topology(exp.front(), exp.optimal_front())
+mb.view.topology(exp.front(), show_gt=True, gt=exp.optimal_front())
 
 # Analyzing Search Reliability (50% and 90% bands)
 mb.view.bands(exp, levels=[0.5, 0.9])
@@ -401,10 +402,11 @@ mb.view.density(exp1, exp2, space='objs', domain='topo', title="Pareto Front Top
 mb.view.density(exp1, exp2, space='vars', domain='topo', title="Search Strategy (Mismatch)")
 mb.view.gap(exp1, exp2)
 ```
+For topological density, defaults are `space='objs'` and `axes=None` (auto axis selection).
 
 > [!TIP]
 > For many-objective cases (`M > 3`), explicitly project the axes when plotting fronts and GT together:
-> `mb.view.topology(exp1, exp2, mop.pf(n_points=3000), objectives=[0,1,2], labels=["A", "B", "GT"])`.
+> `mb.view.topology(exp1, exp2, show_gt=True, gt=mop.pf(n_points=3000))`.
 
 
 ![Reliability Bands](images/topo_bands.png)
@@ -598,7 +600,7 @@ To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g.,
 ```python
 # 1. Test for Statistical Significance (Mann-Whitney U)
 # Answers: "Is the difference real?"
-res = mb.stats.perf_compare(exp1, exp2, method='shift', metric=mb.metrics.hv)
+res = mb.stats.perf_compare(exp1, exp2, method='mannwhitney', metric=mb.metrics.hv)
 
 # 2. Get a narrative diagnosis
 # Automatically prints or renders Markdown
@@ -626,19 +628,31 @@ Most result objects also allow programmatic access to the underlying metrics:
 if res.is_significant:
     # Measure Effect Size (Vargha-Delaney A12)
     # Answers: "How often does it win?"
-    prob = mb.stats.perf_compare(exp1, exp2, method='win', metric=mb.metrics.hv)
+prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
 ```
+
+The semantic aliases below are exact shortcuts:
+- `mb.stats.perf_shift(...)` == `perf_compare(..., method='mannwhitney')`
+- `mb.stats.perf_match(...)` == `perf_compare(..., method='ks')`
+- `mb.stats.perf_win(...)` == `perf_compare(..., method='a12')`
 
 #### **Testing Topological Consistency**
 To verify if two algorithms found the same regions of the objective space (e.g., comparing a baseline against an optimized version):
 
 ```python
 # Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
-topo_res = mb.stats.topo_compare(exp_baseline, exp_optimized, method='match')
+topo_res = mb.stats.topo_compare(exp_baseline, exp_optimized, method='ks')
 
 # Hybrid Output: renders Markdown in notebooks, prints in terminal
 topo_res.report()
 ```
+
+Topological semantic aliases:
+- `mb.stats.topo_match(...)` == `topo_compare(..., method='ks')`
+- `mb.stats.topo_tail(...)` == `topo_compare(..., method='anderson')`
+- `mb.stats.topo_shift(...)` == `topo_compare(..., method='emd')`
+
+`mb.stats.topo_shift(...)` uses `threshold=mb.defaults.displacement_threshold` when not provided (current default: `0.1`).
 
 > [!NOTE]
 > **Further Reading**: moeabench supports a wide array of statistical tests, including Anderson-Darling, Earth Mover's Distance (EMD), and Kolmogorov-Smirnov for distribution shapes. For a complete list of available tests and their mathematical definitions, consult the **[API Reference](reference.md#stats)**.
