@@ -45,7 +45,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
 | **SP** | Spacing | Measure of the spread/uniformity of the solution set. |
-| **ND-Ratio** | Front Size | Proportion of non-dominated individuals (0.0 to 1.0). See `front_size`. |
+| **ND-Ratio** | Front Ratio | Proportion of non-dominated individuals (0.0 to 1.0). See `front_ratio`. |
 | **EMD** | Earth Mover's Distance | Wasserstein metric measuring topological/distributional similarity. |
 | **ADR** | Architecture Decision Record | Document capturing a significant architectural decision. |
 | **EAF** | Empirical Attainment Function | Statistical description of the outcomes of stochastic solvers. |
@@ -223,16 +223,23 @@ The experiment object aggregates results across multiple runs automatically, pro
 ## **3. Visualization Perspectives (`mb.view`)**
 
 MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.view` is polymorphic: it accepts `Experiment`, `Run`, `Population` objects or pre-calculated `Result` objects.
+All canonical `mb.view.*` functions support `title=None` with a semantic auto-title fallback; pass `title="..."` only for custom labels.
 
 ### **2.1. Topographic Analysis (`mb.view`)**
 
-#### **`topology(*args, mode='auto', markers=False, ...)`**
+#### **`topology(*args, mode='auto', markers=False, show_gt=True, gt=None, ...)`**
 *   **Description**: Visualizes solutions in Objective Space (2D or 3D). 
-    *   **GT Density**: To increase the number of points plotted for the Ground Truth (GT), do not rely on implicit GT extraction. Instead, explicitly sample the analytical optimum and pass it to the plotter: `mb.view.topology(exp, exp.optimal_front(n=5000))`.
+    *   **GT Display Contract**:
+        *   `show_gt=True` and `gt=<array>`: uses explicit GT.
+        *   `show_gt=True` and no `gt`: tries GT inference from experiment-like inputs.
+        *   `show_gt=False`: does not show GT (and ignores `gt` if provided).
+    *   **GT Density**: For dense GT rendering, explicitly pass `gt`: `mb.view.topology(exp, show_gt=True, gt=exp.optimal_front(n=5000))`.
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
-    *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the function will automatically look for a provided Reference GT in `*args` to compute the clinical metrics.
+    *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the marker reference uses `gt` when `show_gt=True` (or explicit `ref=` if supplied).
+    *   `show_gt` (*bool*): Controls GT visualization/inference. Defaults to `True`.
+    *   `gt` (*np.ndarray*): Optional explicit GT array used when `show_gt=True`.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
 
 #### **`bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
@@ -274,6 +281,9 @@ MoeaBench organizes visualization into **Perspectives**. Every plotter in `mb.vi
     *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
     *   `gen` (*int*): Specific generation index. Defaults to `-1`.
 *   **Returns**: `Figure`.
+*   **Topological dispatch defaults** (when `domain='topo'` or inferred as topological):
+    *   `space='objs'`
+    *   `axes=None` (auto-selects available dimensions, up to 4 for grid display)
 
 ### **2.3. Stratification Analysis (`mb.view`)**
 
@@ -424,9 +434,8 @@ Standard multi-objective performance metrics. Functions accept `Experiment`, `Ru
 
 ### **6.1. Metric Calculation**
 
-#### **`mb.metrics.front_size(data, mode='run', gens=None)`**
+#### **`mb.metrics.front_ratio(data, mode='run', gens=None)`**
 *   **Description**: Calculates the proportion of non-dominated individuals (Front Size) relative to the total population size (0.0 to 1.0).
-*   **Permanent Alias**: `nd_ratio`.
 *   **Arguments**:
     *   `data`: `experiment`, `Run`, or `Population`.
     *   `mode` (*str*):
@@ -573,29 +582,39 @@ Diagnosis: High Selection Pressure (Phalanx-like convergence).
 
 ### **7.1. Statistical Contrast**
 
-#### **`mb.stats.perf_compare(data1, data2, method='match', metric=mb.metrics.hv, gen=-1, ...)`**
+#### **`mb.stats.perf_compare(data1, data2, method='ks', metric=mb.metrics.hv, gen=-1, ...)`**
 *   **Description**: Unified performance comparator.
 *   **Methods**:
-    *   `method='shift'`: Mann-Whitney U (location shift).
-    *   `method='match'`: Kolmogorov-Smirnov (distribution match).
-    *   `method='win'`: Vargha-Delaney $\hat{A}_{12}$ (win probability/effect).
+    *   `method='mannwhitney'`: Mann-Whitney U (location shift).
+    *   `method='ks'`: Kolmogorov-Smirnov (distribution match).
+    *   `method='a12'`: Vargha-Delaney $\hat{A}_{12}$ (win probability/effect).
 *   **Arguments**:
     *   `data1`, `data2`: Datasets to compare.
     *   `metric` (*callable*): Target performance metric.
     *   `gen` (*int*): Specific generation to snapshot.
 *   **Returns**: `PerfCompareResult`.
+*   **Semantic aliases**:
+    *   `mb.stats.perf_shift(...)` == `mb.stats.perf_compare(..., method='mannwhitney')`
+    *   `mb.stats.perf_match(...)` == `mb.stats.perf_compare(..., method='ks')`
+    *   `mb.stats.perf_win(...)` == `mb.stats.perf_compare(..., method='a12')`
 
-### **`mb.stats.topo_compare(*args, space='objs', axes=None, method='match', alpha=0.05, threshold=0.1, **kwargs)`**
+### **`mb.stats.topo_compare(*args, space='objs', axes=None, method='ks', alpha=0.05, threshold=0.1, **kwargs)`**
 Performs multi-axial distribution matching (Topologic Equivalence).
 *   **Args**:
     *   `*args`: Two or more datasets (`Experiment`, `Run`, `Population` or `SmartArray`).
     *   `space` (*str*): `'objs'` or `'vars'`. Defaults to `'objs'`.
     *   `axes` (*list*): Specific indices to test.
     *   `method` (*str*): 
-        *   `'match'`: **Kolmogorov-Smirnov** test (Default).
+        *   `'ks'`: **Kolmogorov-Smirnov** test (Default).
         *   `'anderson'`: **Anderson-Darling k-sample** test.
         *   `'emd'`: **Earth Mover's Distance** (Wasserstein Metric).
 *   **Returns**: `DistMatchResult`.
+*   **Semantic aliases**:
+    *   `mb.stats.topo_match(...)` == `mb.stats.topo_compare(..., method='ks')`
+    *   `mb.stats.topo_tail(...)` == `mb.stats.topo_compare(..., method='anderson')`
+    *   `mb.stats.topo_shift(...)` == `mb.stats.topo_compare(..., method='emd')`
+*   **`topo_shift` default threshold**:
+    *   If omitted, `threshold=mb.defaults.displacement_threshold` (current default: `0.1`).
 
 ### **`mb.stats.attainment(source, level=0.5)`**
 Calculates the attainment surface reached by $k\%$ of the runs.
@@ -772,7 +791,7 @@ The documentation above reflects the canonical API for the alpha/beta transition
 
 - `mb.clinic` is the diagnostics namespace.
 - `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `caste`, `tiers`, `ecdf`, `radar`).
-- `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_emd`, `topo_anderson`).
+- `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_shift`, `topo_tail`).
 - `summary()` is removed in favor of `report(show=True, full=False)`.
 
 

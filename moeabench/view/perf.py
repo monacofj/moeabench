@@ -5,6 +5,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from ..defaults import defaults
 from ..metrics.evaluator import hypervolume
 from ..core.base import emit_output
@@ -25,17 +26,25 @@ def _perf_metric_error(method_name, metric, exc):
         "- mb.metrics.igd",
         "- mb.metrics.igdplus",
         "- mb.metrics.emd",
-        "- mb.metrics.front_size",
+        "- mb.metrics.front_ratio",
     ]
     text = "\n".join(lines)
     md = "\n".join([
         f"**{method_name}**: incompatible metric or data for `{metric_name}`.",
         f"- **Reason**: `{type(exc).__name__}: {exc}`",
         "- **Accepted metric profile**: callable `metric(data, gens=..., **kwargs)` returning MetricMatrix-like output.",
-        "- **Typical metrics**: `mb.metrics.hv`, `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_size`.",
+        "- **Typical metrics**: `mb.metrics.hv`, `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_ratio`.",
     ])
     emit_output(text, markdown=md)
     return None
+
+def _infer_metric_axis_label(metric, args):
+    """Infer the best metric label for axis titles from MetricMatrix inputs."""
+    from ..metrics.evaluator import MetricMatrix
+    for arg in args:
+        if isinstance(arg, MetricMatrix):
+            return getattr(arg, "metric_name", None) or getattr(metric, "__name__", "Value")
+    return getattr(metric, "__name__", "Value")
 
 
 def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
@@ -63,7 +72,7 @@ def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title
         else:
             fig = ax.get_figure()
 
-        lstyles = kwargs.get('linestyles', ['-', '--', ':', '-.'])
+        lstyles = kwargs.get('linestyles', ['-'])
         if not isinstance(lstyles, (list, tuple)):
             lstyles = [lstyles]
         labels = kwargs.get('labels', [])
@@ -185,7 +194,7 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     Visualizes comparative performance stats using Boxplots and 
     annotates Win Probability (A12) and Significance (p-value).
     """
-    from ..stats.tests import perf_evidence
+    from ..stats import perf_shift, PerfCompareResult
     
     if len(args) < 1:
         emit_output(
@@ -198,21 +207,33 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
 
     if metric is None:
         metric = hypervolume
+    metric_label = _infer_metric_axis_label(metric, args)
     
     # Extract samples for plotting
     samples = []
     labels = []
+    from ..metrics.evaluator import MetricMatrix
+    metric_kwargs = kwargs.copy()
+    metric_kwargs.pop("stats", None)
+    metric_kwargs.pop("stats_result", None)
+    if 'ref' not in metric_kwargs and len(args) > 1:
+        # Keep cross-experiment comparability when raw experiments are provided.
+        metric_kwargs['ref'] = list(args)
     
     # 1. Collect all distributions
     try:
         for i, arg in enumerate(args):
-            # We reuse perf_evidence's _resolve_samples logic indirectly
-            # but here we need them for plotting
-            from ..stats.tests import _resolve_samples
-            # Pairwise resolution vs others to get fair reference points if needed
-            # For boxplots, we usually want to resolve all vs the global set
-            v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
-            samples.append(v)
+            if isinstance(arg, MetricMatrix):
+                v = np.asarray(arg.gens(gen))
+            elif isinstance(arg, (np.ndarray, list, tuple)):
+                v = np.asarray(arg)
+            else:
+                res = metric(arg, **metric_kwargs)
+                if isinstance(res, MetricMatrix):
+                    v = np.asarray(res.gens(gen))
+                else:
+                    v = np.asarray(res)
+            samples.append(v.ravel())
         
             # Legend Pattern: 'Name (run, gen)'
             exp_name = None
@@ -223,6 +244,8 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
                     exp_name = getattr(arg.source, 'name', None)
             elif type(arg).__name__ == 'experiment':
                 exp_name = getattr(arg, 'name', None)
+            elif isinstance(arg, MetricMatrix):
+                exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
                 
             if not exp_name:
                 exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
@@ -247,16 +270,24 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     for i, box in enumerate(bp['boxes']):
         box.set_facecolor(f"C{i % 10}")
         
-    ax.set_ylabel(f"Performance ({getattr(metric, '__name__', 'Value')})")
+    ax.set_ylabel(f"Performance ({metric_label})")
     ax.set_title(title if title else f"Performance Contrast (Gen {gen if gen >=0 else 'Final'})")
     ax.grid(True, axis='y', alpha=0.3)
     
     # 3. Annotate pairwise stats if exactly two
     if len(args) == 2:
-        res = perf_evidence(args[0], args[1], metric=metric, gen=gen, **kwargs)
-        prob = res.perf_probability
-        p_val = res.p_value
-        sig_str = "*" if p_val < alpha else "ns"
+        stats_result = kwargs.pop("stats", None)
+        if stats_result is None:
+            stats_result = kwargs.pop("stats_result", None)
+        if stats_result is not None and not isinstance(stats_result, PerfCompareResult):
+            raise TypeError("perf_spread(stats=...) expects a PerfCompareResult.")
+
+        if stats_result is None:
+            stats_result = perf_shift(args[0], args[1], metric=metric, gen=gen, **kwargs)
+
+        prob = getattr(stats_result, "effect_size", None)
+        p_val = getattr(stats_result, "p_value", None)
+        sig_str = "*" if (p_val is not None and p_val < alpha) else "ns"
         
         # Position annotation between the two boxes
         y_max = max([np.max(s) for s in samples])
@@ -265,8 +296,13 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
         
         ax.plot([1, 1, 2, 2], [ann_y, ann_y + 0.02 * y_range, ann_y + 0.02 * y_range, ann_y], 
                 color='black', lw=1)
-        ax.text(1.5, ann_y + 0.03 * y_range, f"A12={prob:.2f} ({sig_str})", 
-                ha='center', va='bottom', fontsize=9, weight='bold')
+        if prob is not None:
+            ann_text = f"A12={prob:.2f} ({sig_str})"
+        elif p_val is not None:
+            ann_text = f"p={p_val:.3f} ({sig_str})"
+        else:
+            ann_text = str(getattr(stats_result, "decision", "n/a"))
+        ax.text(1.5, ann_y + 0.03 * y_range, ann_text, ha='center', va='bottom', fontsize=9, weight='bold')
         ax.set_ylim(top=ann_y + 0.15 * y_range)
 
     show_matplotlib(fig)
@@ -278,7 +314,7 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     Visualizes metric probability density using KDE.
     """
     from scipy.stats import gaussian_kde
-    from ..stats.tests import perf_distribution
+    from ..stats import perf_match, PerfCompareResult
     
     if len(args) < 1:
         emit_output(
@@ -291,14 +327,30 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
 
     if metric is None:
         metric = hypervolume
+    metric_label = _infer_metric_axis_label(metric, args)
 
     samples = []
     names = []
-    from ..stats.tests import _resolve_samples
+    from ..metrics.evaluator import MetricMatrix
+    metric_kwargs = kwargs.copy()
+    metric_kwargs.pop("stats", None)
+    metric_kwargs.pop("stats_result", None)
+    if 'ref' not in metric_kwargs and len(args) > 1:
+        # Keep cross-experiment comparability when raw experiments are provided.
+        metric_kwargs['ref'] = list(args)
     try:
         for i, arg in enumerate(args):
-            v, _ = _resolve_samples(arg, args, metric=metric, gen=gen, **kwargs)
-            samples.append(v)
+            if isinstance(arg, MetricMatrix):
+                v = np.asarray(arg.gens(gen))
+            elif isinstance(arg, (np.ndarray, list, tuple)):
+                v = np.asarray(arg)
+            else:
+                res = metric(arg, **metric_kwargs)
+                if isinstance(res, MetricMatrix):
+                    v = np.asarray(res.gens(gen))
+                else:
+                    v = np.asarray(res)
+            samples.append(v.ravel())
         
             # Legend Pattern: 'Name (run, gen)'
             exp_name = None
@@ -309,6 +361,8 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
                     exp_name = getattr(arg.source, 'name', None)
             elif type(arg).__name__ == 'experiment':
                 exp_name = getattr(arg, 'name', None)
+            elif isinstance(arg, MetricMatrix):
+                exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
                 
             if not exp_name:
                 exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
@@ -325,12 +379,27 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     
     fig, ax = plt.subplots(figsize=(8, 5))
     
-    # If exactly two, get p-value for the legend
+    # If exactly two, get p-value/verdict for legend.
     p_val = None
+    verdict = None
     if len(args) == 2:
-        res = perf_distribution(args[0], args[1], metric=metric, gen=gen, **kwargs)
-        p_val = res.p_value
-        verdict = "Match" if p_val > alpha else "Mismatch"
+        stats_result = kwargs.pop("stats", None)
+        if stats_result is None:
+            stats_result = kwargs.pop("stats_result", None)
+        if stats_result is not None and not isinstance(stats_result, PerfCompareResult):
+            raise TypeError("perf_density(stats=...) expects a PerfCompareResult.")
+
+        if stats_result is None:
+            stats_result = perf_match(args[0], args[1], metric=metric, gen=gen, **kwargs)
+
+        p_val = getattr(stats_result, "p_value", None)
+        decision = str(getattr(stats_result, "decision", "")).lower()
+        if decision == "match":
+            verdict = "Match"
+        elif decision in {"divergent", "mismatch"}:
+            verdict = "Mismatch"
+        elif p_val is not None:
+            verdict = "Match" if p_val > alpha else "Mismatch"
     
     for i, sample in enumerate(samples):
         color = f"C{i %10}"
@@ -341,18 +410,24 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
             y_vals = kde(x_range)
             
             lbl = f"{names[i]}"
-            if i == 0 and p_val is not None:
-                lbl += f"\n(p={p_val:.3f})\n{verdict}"
-            
             ax.plot(x_range, y_vals, color=color, label=lbl, lw=2)
             ax.fill_between(x_range, y_vals, color=color, alpha=0.2)
         else:
             ax.axvline(sample[0], color=color, label=names[i], lw=2)
             
-    ax.set_xlabel(f"Performance ({getattr(metric, '__name__', 'Value')})")
+    ax.set_xlabel(f"Performance ({metric_label})")
     ax.set_ylabel("Density (KDE)")
     ax.set_title(title if title else "Performance Distribution")
-    ax.legend()
+    if p_val is not None:
+        handles, labels = ax.get_legend_handles_labels()
+        handles.append(Line2D([], [], linestyle='None', color='none'))
+        if verdict is not None:
+            labels.append(f"(p={p_val:.3f}, {verdict})")
+        else:
+            labels.append(f"(p={p_val:.3f})")
+        ax.legend(handles, labels, handlelength=0, handletextpad=0.0)
+    else:
+        ax.legend()
     ax.grid(True, alpha=0.2)
     
     show_matplotlib(fig)

@@ -5,13 +5,27 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+import warnings
 from ..defaults import defaults
 from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
 from ..stats.topo_attainment import AttainmentSurface
 from ..core.display import show_matplotlib
 
-def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None, labels=None, show=True, markers=False, gray_gt=True, **kwargs):
+def topo_shape(
+    *args,
+    objectives=None,
+    mode='auto',
+    title=None,
+    axis_labels=None,
+    labels=None,
+    show=True,
+    markers=False,
+    show_gt=True,
+    gt=None,
+    gray_gt=True,
+    **kwargs
+):
     """
     [mb.view.topo_shape] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
@@ -36,8 +50,67 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
     # Defaults
     if title is None: title = "Solution Set Geometry"
     if axis_labels is None: axis_labels = "Objective"
-    
+
+    def _infer_gt_from_inputs(items):
+        """Infer GT from experiment-like inputs when show_gt=True and gt is not provided."""
+        experiments = []
+        for item in items:
+            if hasattr(item, "mop") and hasattr(item, "runs"):
+                experiments.append(item)
+            elif hasattr(item, "source") and hasattr(item.source, "mop") and hasattr(item.source, "runs"):
+                experiments.append(item.source)
+
+        if not experiments:
+            warnings.warn(
+                "view.topology(show_gt=True): no experiment-like input found; GT could not be inferred.",
+                RuntimeWarning,
+            )
+            return None
+
+        gt_candidates = []
+        mop_ids = []
+        for exp in experiments:
+            mop = getattr(exp, "mop", None)
+            mop_id = getattr(mop, "name", mop.__class__.__name__ if mop is not None else "Unknown")
+            mop_ids.append(mop_id)
+            try:
+                if hasattr(exp, "optimal_front"):
+                    gt_candidates.append(np.asarray(exp.optimal_front()))
+                elif mop is not None and hasattr(mop, "pf"):
+                    gt_candidates.append(np.asarray(mop.pf()))
+            except Exception:
+                continue
+
+        if len(set(mop_ids)) > 1:
+            warnings.warn(
+                f"view.topology(show_gt=True): experiments with different GT sources detected {sorted(set(mop_ids))}; using the first inferred GT.",
+                RuntimeWarning,
+            )
+
+        if not gt_candidates:
+            warnings.warn(
+                "view.topology(show_gt=True): GT inference failed for provided experiments.",
+                RuntimeWarning,
+            )
+            return None
+
+        return gt_candidates[0]
+
+    resolved_gt = None
+    inferred_gt_idx = None
+    if show_gt:
+        if gt is not None:
+            resolved_gt = np.asarray(gt)
+        else:
+            resolved_gt = _infer_gt_from_inputs(args)
+
+    local_labels = list(labels) if labels is not None else None
     new_args = list(args)
+    if show_gt and resolved_gt is not None:
+        inferred_gt_idx = len(new_args)
+        new_args.append(resolved_gt)
+        if local_labels is not None:
+            local_labels.append("True Front (GT)")
 
     for i, arg in enumerate(new_args):
         val = arg
@@ -45,8 +118,10 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
         t_mode = 'markers'
         
         # 1. Use explicit labels if provided
-        if labels and i < len(labels):
-            name = labels[i]
+        if local_labels and i < len(local_labels):
+            name = local_labels[i]
+        elif inferred_gt_idx is not None and i == inferred_gt_idx:
+            name = "True Front (GT)"
 
         # 2. Unwrap standard moeabench objects
         if isinstance(arg, AttainmentSurface):
@@ -135,17 +210,8 @@ def topo_shape(*args, objectives=None, mode='auto', title=None, axis_labels=None
     marker_styles = kwargs.pop('marker_styles', [None] * len(processed_args))
     kwargs.pop('trace_modes', None) # We already parsed it into trace_modes
     
-    # Automatic Reference Detection for Clinical Markers
-    auto_ref = kwargs.get('ref', None)
-    if markers and auto_ref is None:
-        for i, arg in enumerate(args):
-            # If an argument is clearly a reference front (optimal_front or analytical)
-            if labels and i < len(labels) and "GT" in labels[i].upper():
-                auto_ref = processed_args[i]
-                break
-            # Or if it's the second argument in a standard call topo_shape(exp, pf)
-            if i == 1 and len(args) == 2:
-                auto_ref = processed_args[i]
+    # Reference for clinical markers: explicit gt (if shown) or explicit ref kwarg.
+    auto_ref = resolved_gt if show_gt else kwargs.get('ref', None)
 
     if markers:
         # Clinical Quality Markers logic (Q-Closeness)

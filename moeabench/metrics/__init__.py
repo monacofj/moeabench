@@ -11,8 +11,7 @@ from .evaluator import (
     igdplus,
     emd,
     MetricMatrix,
-    front_size,
-    nd_ratio
+    front_ratio
 )
 
 # Aliases for convenience

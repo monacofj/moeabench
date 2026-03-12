@@ -53,6 +53,10 @@ def _resolve_view_domain(args, kwargs):
         return "perf"
 
     target = args[0]
+    clinic_metrics = {"closeness", "headway", "coverage", "gap", "regularity", "balance"}
+    metric = kwargs.get("metric", None)
+    if isinstance(metric, str) and metric.lower() in clinic_metrics:
+        return "clinic"
     if hasattr(target, "q_audit_res") or hasattr(target, "fair_audit_res") or hasattr(target, "scores"):
         return "clinic"
     if hasattr(target, "objectives"):

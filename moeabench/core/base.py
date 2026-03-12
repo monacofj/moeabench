@@ -35,22 +35,45 @@ class Reportable:
         if not show:
             return content
 
+        rendered = self._decorate_report_content(content)
         is_notebook = self._is_notebook()
 
         if is_notebook:
             try:
                 from IPython.display import display, Markdown
-                display(Markdown(content))
+                display(Markdown(rendered))
             except ImportError:
-                print(content)
+                print(rendered)
         else:
-            print(self._to_plain_sober(content))
+            print(self._to_plain_sober(rendered))
             
         return content
 
     @staticmethod
+    def _extract_report_title(content: str) -> str:
+        """Extract a readable title from the first non-empty line."""
+        for line in content.splitlines():
+            title = line.strip()
+            if not title:
+                continue
+            if title.startswith("### "):
+                title = title[4:].strip()
+            if title.startswith("--- ") and title.endswith(" ---") and len(title) > 8:
+                title = title[4:-4].strip()
+            title = title.replace("**", "").replace("`", "")
+            return title or "Report"
+        return "Report"
+
+    def _decorate_report_content(self, content: str) -> str:
+        """Add visual separation for consecutive report calls."""
+        title = self._extract_report_title(content)
+        banner = f"=== {title} ===\n"
+        return f"{banner}{content}\n"
+
+    @staticmethod
     def _to_plain_sober(content: str) -> str:
         """Light cleanup for terminal output to keep reports sober and readable."""
+        has_trailing_newline = content.endswith("\n")
         lines = []
         for line in content.splitlines():
             stripped = line.strip()
@@ -60,7 +83,10 @@ class Reportable:
                 line = stripped[4:-4].strip()
             line = line.replace("**", "")
             lines.append(line)
-        return "\n".join(lines)
+        text = "\n".join(lines)
+        if has_trailing_newline:
+            text += "\n"
+        return text
 
     def report_show(self, **kwargs):
         """

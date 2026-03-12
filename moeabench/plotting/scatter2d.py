@@ -37,6 +37,8 @@ class Scatter2D:
         self.show_plot = kwargs.get('show', True)
         self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
         self.gray_gt = kwargs.get('gray_gt', True)
+        self.gt_color = kwargs.get('gt_color', '#b8b8b8')
+        self.gt_opacity = kwargs.get('gt_opacity', 0.55)
         self.band_fill = kwargs.get('band_fill', False)
         self.line_shape = kwargs.get('line_shape', None)
         self.figure = go.Figure()
@@ -77,9 +79,12 @@ class Scatter2D:
             
             base_color = cycle_colors[group_idx % len(cycle_colors)]
             label = str(self.experiments[i_med])
+            is_gt_trace = self.gray_gt and (
+                'gt' in label.lower() or 'reference' in label.lower() or 'true front' in label.lower()
+            )
             
-            if self.gray_gt and ('gt' in label.lower() or 'reference' in label.lower()):
-                base_color = '#d3d3d3'
+            if is_gt_trace:
+                base_color = self.gt_color
                 
             def extract_sorted(idx):
                 ax_data = self.vet_pts[idx][:, self.axis[0]]
@@ -102,7 +107,10 @@ class Scatter2D:
             if len(x_med) > 0:
                 custom_shape = getattr(self, 'line_shape', None)
                 d_style = 'default' if custom_shape in ['linear', 'spline'] else 'steps-post'
-                ax.plot(x_med, y_med, label=label, color=base_color, drawstyle=d_style, linewidth=2)
+                ax.plot(
+                    x_med, y_med, label=label, color=base_color, drawstyle=d_style, linewidth=2,
+                    alpha=self.gt_opacity if is_gt_trace else 1.0
+                )
 
     def configure_static(self):
         import matplotlib.pyplot as plt
@@ -134,9 +142,13 @@ class Scatter2D:
             if np.any(msk):
                 current_color = cycle_colors[i % len(cycle_colors)]
                 label = f'{self.experiments[i]}'
+                is_gt_trace = self.gray_gt and (
+                    'gt' in str(label).lower() or 'reference' in str(label).lower() or 'true front' in str(label).lower()
+                )
                 
-                if self.gray_gt and ('gt' in str(label).lower() or 'reference' in str(label).lower()):
-                    current_color = '#d3d3d3'
+                if is_gt_trace:
+                    current_color = self.gt_color
+                trace_alpha = self.gt_opacity if is_gt_trace else 1.0
                 
                 t_mode = self.trace_modes[i]
                 
@@ -149,7 +161,7 @@ class Scatter2D:
                     # For topo_attain/Pareto, draw_style='steps-post' is often better
                     custom_shape = getattr(self, 'line_shape', None)
                     d_style = 'default' if custom_shape in ['linear', 'spline'] else 'steps-post'
-                    ax.plot(x_sorted, y_sorted, label=label, color=current_color, drawstyle=d_style)
+                    ax.plot(x_sorted, y_sorted, label=label, color=current_color, drawstyle=d_style, alpha=trace_alpha)
                 
                 if 'markers' in t_mode:
                     style = self.marker_styles[i].copy() if self.marker_styles[i] is not None else {}
@@ -188,7 +200,8 @@ class Scatter2D:
                                            label=label if symbol_type == 'circle' and 'lines' not in t_mode else None, 
                                            facecolors=plt_fc, edgecolors=plt_ec,
                                            marker=plt_marker, s=plt_size,
-                                           linewidths=1.5 if symbol_type != 'circle' else 0)
+                                           linewidths=1.5 if symbol_type != 'circle' else 0,
+                                           alpha=trace_alpha)
                     else:
                         custom_marker = style.get('symbol', 'o')
                         # Sync with topo_shape solid markers (Plotly 6 -> Matplotlib 24)
@@ -196,7 +209,7 @@ class Scatter2D:
                         if custom_marker == 'circle': custom_marker = 'o'
                         
                         kwa = {'label': label if 'lines' not in t_mode else None, 
-                               'color': opt_color, 'marker': custom_marker}
+                               'color': opt_color, 'marker': custom_marker, 'alpha': trace_alpha}
                         if custom_size is not None:
                             kwa['s'] = custom_size
                             
@@ -226,9 +239,12 @@ class Scatter2D:
             
             base_color = MOEABENCH_PALETTE[group_idx % len(MOEABENCH_PALETTE)]
             label = str(self.experiments[i_med])
+            is_gt_trace = self.gray_gt and (
+                'gt' in label.lower() or 'reference' in label.lower() or 'true front' in label.lower()
+            )
             
-            if self.gray_gt and ('gt' in label.lower() or 'reference' in label.lower()):
-                base_color = '#d3d3d3'
+            if is_gt_trace:
+                base_color = self.gt_color
                 
             def extract_sorted(idx):
                 ax_data = self.vet_pts[idx][:, self.axis[0]]
@@ -265,19 +281,20 @@ class Scatter2D:
                 ))
             
             if len(x_med) > 0:
-                 custom_shape = getattr(self, 'line_shape', None)
-                 line_shape = custom_shape if custom_shape else 'hv'
-                 self.figure.add_trace(go.Scatter(
-                     x=x_med, y=y_med,
-                     mode='lines', 
-                     line=dict(color=base_color, width=2, shape=line_shape),
-                     name=label,
-                     legendgroup=label,
-                     showlegend=True,
-                     hovertemplate=(f"{label}<br>"
-                                    f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
-                                    f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br><extra></extra>")
-                 ))
+                custom_shape = getattr(self, 'line_shape', None)
+                line_shape = custom_shape if custom_shape else 'hv'
+                self.figure.add_trace(go.Scatter(
+                    x=x_med, y=y_med,
+                    mode='lines', 
+                    line=dict(color=base_color, width=2, shape=line_shape),
+                    opacity=self.gt_opacity if is_gt_trace else 1.0,
+                    name=label,
+                    legendgroup=label,
+                    showlegend=True,
+                    hovertemplate=(f"{label}<br>"
+                                   f"{self.axis_label} {self.axis[0]+1}: %{{x}}<br>"
+                                   f"{self.axis_label} {self.axis[1]+1}: %{{y}}<br><extra></extra>")
+                ))
 
     def configure_interactive(self):
         if not hasattr(self, 'figure'):
@@ -311,9 +328,13 @@ class Scatter2D:
                     # Plotly trace-splitting requires explicit color management
                     base_color = MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)]
                     label_str = str(self.experiments[i]).lower()
-                    if self.gray_gt and ('gt' in label_str or 'reference' in label_str):
-                        base_color = '#d3d3d3'
+                    is_gt_trace = self.gray_gt and (
+                        'gt' in label_str or 'reference' in label_str or 'true front' in label_str
+                    )
+                    if is_gt_trace:
+                        base_color = self.gt_color
                     opt_color = style.get('color', base_color)
+                    trace_opacity = self.gt_opacity if is_gt_trace else 1.0
                     
                     # Check for individualized quality markers (list of symbols)
                     if 'symbol' in style and isinstance(style['symbol'], (list, np.ndarray)):
@@ -324,6 +345,7 @@ class Scatter2D:
                             sub_msk = (symbols == symbol_type) & msk
                             if np.any(sub_msk):
                                 sub_marker = dict(size=sizes[sub_msk], color=opt_color)
+                                sub_marker.setdefault('opacity', trace_opacity)
                                 # Style based on audit report aesthetics
                                 if symbol_type == 'circle-open':
                                      sub_marker.update(dict(symbol='circle-open', line=dict(width=2.0, color=opt_color)))
@@ -337,6 +359,7 @@ class Scatter2D:
                                     x=ax[sub_msk], y=ay[sub_msk],
                                     mode=self.trace_modes[i],
                                     marker=sub_marker,
+                                    opacity=trace_opacity,
                                     name=f'{self.experiments[i]}',
                                     legendgroup=f'{self.experiments[i]}',
                                     showlegend=(symbol_type == 'circle'), # Only show one in legend
@@ -350,7 +373,8 @@ class Scatter2D:
                         marker_config = dict(size=np.full(msk.sum(), 6), line=dict(width=0))
                         marker_config.update(style)
                         if 'color' not in marker_config:
-                             marker_config['color'] = MOEABENCH_PALETTE[i % len(MOEABENCH_PALETTE)]
+                             marker_config['color'] = opt_color
+                        marker_config.setdefault('opacity', trace_opacity)
 
                         self.figure.add_trace(go.Scatter(
                             x=x_sorted if 'lines' in p_mode else ax[msk],
@@ -358,6 +382,7 @@ class Scatter2D:
                             mode=p_mode,
                             line=dict(shape=line_shape) if line_shape else None,
                             marker=marker_config,
+                            opacity=trace_opacity,
                             name=f'{self.experiments[i]}',
                             showlegend=True,
                             hovertemplate=(f"{self.experiments[i]}<br>"

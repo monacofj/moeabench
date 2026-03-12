@@ -864,9 +864,9 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         if kwargs.get('show', True):
             fig.show()
 
-def front_size(exp, mode='run', gens=None):
+def front_ratio(exp, mode='run', gens=None):
     """
-    Calculates the proportion of non-dominated individuals (Front Size)
+    Calculates the proportion of non-dominated individuals (Front Ratio)
     relative to the total population size at each generation.
     Returns a MetricMatrix (G x R) or (G x 1) if mode='consensus'.
 
@@ -926,7 +926,7 @@ def front_size(exp, mode='run', gens=None):
             except Exception:
                 mat[g_idx, 0] = 1.0 # Fallback
                 
-        label = f"Front Size (Consensus)"
+        label = "Front Ratio (Consensus)"
     else:
         # PER-RUN MODE: (G x R) matrix
         mat = np.full((max_gens, n_runs), np.nan)
@@ -945,9 +945,6 @@ def front_size(exp, mode='run', gens=None):
                 except Exception:
                     mat[g_idx, r_idx] = 1.0
         
-        label = f"Front Size (Ratio)"
+        label = "Front Ratio (Run)"
 
     return MetricMatrix(mat, metric_name=label, source_name=name)
-
-# Alias for convenience
-nd_ratio = front_size

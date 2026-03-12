@@ -40,7 +40,7 @@ def main():
 
     # NEW: Population Maturity (Front Size)
     # Tracks the density of the non-dominated set—a key indicator of selection pressure.
-    mb.view.history(mb.metrics.front_size(exp1), title="Selection Pressure Stability (ND-Density)")
+    mb.view.history(mb.metrics.front_ratio(exp1), title="Selection Pressure Stability (ND-Density)")
 
     # NEW: Performance Density (Luck Stability)
     # Visualizes the probability distribution of metric values.
@@ -67,7 +67,7 @@ if __name__ == "__main__":
 # The 'history' dispersion shadow (mean +/- std) shows the reliability. 
 # A thin shadow indicates high consistency.
 #
-# NEW: The 'perf_front_size' identifies if the algorithm is successfully 
+# NEW: The 'front_ratio' identifies if the algorithm is successfully 
 # pushing the population toward the front or if it's struggling to generate 
 # non-dominated solutions.
 #
