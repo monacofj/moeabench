@@ -20,7 +20,8 @@ def main():
     ##
     ## Setup: same MOP, two MOEAs
     ##
-    mop = mb.mops.DTLZ2(M=3)
+    mop = mb.mops.DTLZ2(M=4)
+    mop.calibrate()  # Ensure baseline/GT is available for this M (e.g., M=4).
     exp1 = mb.experiment()
     exp1.name = "NSGA-II"
     exp1.mop = mop
@@ -49,7 +50,7 @@ def main():
     ##
     ## 0) Topology: two fronts + inferred GT
     ##
-    mb.view.topology(exp1, exp2)
+    mb.view.topology(exp1, exp2, markers=True)
     # Observe overlap with GT (convergence) and cloud spread (diversity).
 
     ##
@@ -59,8 +60,8 @@ def main():
 
     # Hypervolume: compute, test, and plot with reused stats.
 
-    hv1 = mb.metrics.hv(exp1, scale="absolute")  # HV trajectory for exp1.
-    hv2 = mb.metrics.hv(exp2, scale="absolute")  # HV trajectory for exp2.
+    hv1 = mb.metrics.hv(exp1, scale="absolute")  # Falls back to raw if absolute is unavailable.
+    hv2 = mb.metrics.hv(exp2, scale="absolute")  # Falls back to raw if absolute is unavailable.
     hv1.report()                                 # exp1 HV summary.
     hv2.report()                                 # exp2 HV summary.
 

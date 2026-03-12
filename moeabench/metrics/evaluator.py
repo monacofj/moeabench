@@ -475,29 +475,51 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
              raise ValueError("Hypervolume 'absolute' scale requires an experiment with an associated MOP.")
              
         mop_id = getattr(mop_obj, 'name', mop_obj.__class__.__name__)
+        absolute_ok = False
         try:
             bases = load_offline_baselines()
             gt_registry = bases.get("_gt_registry", {})
-            if mop_id not in gt_registry:
-                raise ValueError(f"MOP '{mop_id}' is not calibrated. Run mop.calibrate() first to enable absolute scale.")
-            
-            gt = np.array(gt_registry[mop_id])
-            
-            # Calculate Reference HV (1.0 Ceiling) using the GT
-            if mode == 'fast' or (mode == 'auto' and M > 6):
-                m = GEN_mc_hypervolume([gt], M, min_val, max_val, n_samples=n_samples)
+            dim_key = f"{mop_id}__M{M}"
+            gt_raw = gt_registry.get(dim_key, gt_registry.get(mop_id))
+            if gt_raw is None:
+                warnings.warn(
+                    f"Hypervolume absolute unavailable: '{mop_id}' is not calibrated for M={M}. "
+                    "Falling back to raw scale.",
+                    UserWarning
+                )
             else:
-                m = GEN_hypervolume([gt], M, min_val, max_val)
-            
-            gt_hv = float(m.evaluate()[0])
-            if gt_hv > 0:
-                mat /= gt_hv
-            
+                gt = np.array(gt_raw)
+                if gt.ndim != 2 or gt.shape[1] != M:
+                    warnings.warn(
+                        f"Hypervolume absolute unavailable: incompatible GT for '{mop_id}' (shape={gt.shape}, M={M}). "
+                        "Falling back to raw scale.",
+                        UserWarning
+                    )
+                else:
+                    # Calculate reference HV (1.0 ceiling) using GT.
+                    if mode == 'fast' or (mode == 'auto' and M > 6):
+                        m = GEN_mc_hypervolume([gt], M, min_val, max_val, n_samples=n_samples)
+                    else:
+                        m = GEN_hypervolume([gt], M, min_val, max_val)
+
+                    gt_hv = float(m.evaluate()[0])
+                    if gt_hv > 0:
+                        mat /= gt_hv
+                        absolute_ok = True
+                    else:
+                        warnings.warn(
+                            f"Hypervolume absolute unavailable: non-positive GT HV for '{mop_id}'. "
+                            "Falling back to raw scale.",
+                            UserWarning
+                        )
         except Exception as e:
-            if isinstance(e, ValueError): raise e
-            raise RuntimeError(f"Failed to calculate absolute hypervolume: {e}")
-            
-        final_name = "Hypervolume (Absolute)"
+            warnings.warn(
+                f"Hypervolume absolute failed with '{type(e).__name__}: {e}'. "
+                "Falling back to raw scale.",
+                UserWarning
+            )
+
+        final_name = "Hypervolume (Absolute)" if absolute_ok else "Hypervolume (Raw)"
 
     elif scale == 'raw':
         final_name = "Hypervolume (Raw)"

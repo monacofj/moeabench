@@ -371,13 +371,22 @@ def audit(target: Any,
             
             # Smart GT resolution: allow registry to provide the canonical 10k-point reference
             # if the dimension matches. This is necessary for numerical consistency across versions.
-            if "_gt_registry" in bases and mop_name in bases["_gt_registry"]:
-                 GT_raw = np.array(bases["_gt_registry"][mop_name])
-                 if GT_raw.shape[1] == P.shape[1]:
-                     GT = GT_raw
-                 else:
-                     # Force baseline missing if dimensions don't match
-                     raise baselines.UndefinedBaselineError(f"Dimension mismatch: P={P.shape[1]}, GT_registry={GT_raw.shape[1]}")
+            if "_gt_registry" in bases:
+                 gt_registry = bases["_gt_registry"]
+                 gt_key = f"{mop_name}__M{P.shape[1]}"
+                 GT_raw = None
+                 if gt_key in gt_registry:
+                     GT_raw = np.array(gt_registry[gt_key])
+                 elif mop_name in gt_registry:
+                     GT_raw = np.array(gt_registry[mop_name])
+                 if GT_raw is not None:
+                     if GT_raw.shape[1] == P.shape[1]:
+                         GT = GT_raw
+                     else:
+                         # Force baseline missing if dimensions don't match
+                         raise baselines.UndefinedBaselineError(
+                             f"Dimension mismatch: P={P.shape[1]}, GT_registry={GT_raw.shape[1]}"
+                         )
 
             # A. Shared Reference Objects
             U_ref = baselines.get_ref_uk(GT, K_target, seed=0)

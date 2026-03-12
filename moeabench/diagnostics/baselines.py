@@ -14,6 +14,7 @@ This module handles:
 import os
 import re
 import json
+import sys
 import warnings
 import hashlib
 import numpy as np
@@ -176,6 +177,15 @@ def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
     try:
         with open(BASELINE_JSON_PATH, "r") as f:
             full_data = json.load(f)
+
+        # Backfill missing metadata from older baseline artifacts.
+        from ..system import version as lib_version
+        if not full_data.get("version"):
+            full_data["version"] = lib_version(show=False)
+        if not full_data.get("python_version"):
+            full_data["python_version"] = sys.version.split()[0]
+        if not full_data.get("numpy_version"):
+            full_data["numpy_version"] = np.__version__
             
         # 1.1 Environment DNA/Compatibility Verification
         _verify_baseline_dna(full_data, "Primary", target_m=target_m)
@@ -186,7 +196,14 @@ def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
                 full_data["_gt_registry"] = {}
             for prob_id, prob_data in full_data["problems"].items():
                 if "gt_reference" in prob_data:
-                    full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
+                    gt_ref = prob_data["gt_reference"]
+                    full_data["_gt_registry"][prob_id] = gt_ref
+                    # Dimension-qualified key avoids ambiguity across M variants.
+                    try:
+                        gt_m = int(np.asarray(gt_ref).shape[1])
+                        full_data["_gt_registry"][f"{prob_id}__M{gt_m}"] = gt_ref
+                    except Exception:
+                        pass
     except UndefinedBaselineError:
         raise
     except Exception as e:
@@ -220,12 +237,24 @@ def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
                     # We store it in a hidden index for utils.py to find
                     if "_gt_registry" not in full_data:
                         full_data["_gt_registry"] = {}
-                    full_data["_gt_registry"][prob_id] = src_data["gt_reference"]
+                    gt_ref = src_data["gt_reference"]
+                    full_data["_gt_registry"][prob_id] = gt_ref
+                    try:
+                        gt_m = int(np.asarray(gt_ref).shape[1])
+                        full_data["_gt_registry"][f"{prob_id}__M{gt_m}"] = gt_ref
+                    except Exception:
+                        pass
                 elif "gt_reference" in prob_data:
                      # Nested GT
                     if "_gt_registry" not in full_data:
                         full_data["_gt_registry"] = {}
-                    full_data["_gt_registry"][prob_id] = prob_data["gt_reference"]
+                    gt_ref = prob_data["gt_reference"]
+                    full_data["_gt_registry"][prob_id] = gt_ref
+                    try:
+                        gt_m = int(np.asarray(gt_ref).shape[1])
+                        full_data["_gt_registry"][f"{prob_id}__M{gt_m}"] = gt_ref
+                    except Exception:
+                        pass
 
     _CACHE = full_data
     _CACHE_DIRTY = False
