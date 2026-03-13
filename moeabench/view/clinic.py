@@ -79,6 +79,52 @@ def _resolve_metric_data(target: Any, ground_truth: Optional[np.ndarray], metric
     
     return f_val, q_res
 
+
+def _resolve_radar_scores(target: Any, ground_truth: Optional[np.ndarray] = None, **kwargs):
+    """Resolve radar-ready Q-scores plus a display label for one input."""
+    scores = kwargs.get("scores", None)
+    if scores is None:
+        if hasattr(target, "q_audit_res") and getattr(target, "q_audit_res") is not None:
+            scores = getattr(target.q_audit_res, "scores", None)
+        elif hasattr(target, "scores"):
+            scores = getattr(target, "scores", None)
+        else:
+            res = audit(target, ground_truth)
+            if res and getattr(res, "q_audit_res", None):
+                scores = getattr(res.q_audit_res, "scores", None)
+
+    if not scores and hasattr(target, "fair_audit_res") and getattr(target, "fair_audit_res") is not None:
+        fmetrics = getattr(target.fair_audit_res, "metrics", {}) or {}
+        problem = kwargs.get("problem", "Unknown")
+        k = int(kwargs.get("k", 100))
+        try:
+            if hasattr(target, "q_audit_res") and target.q_audit_res is not None:
+                problem = getattr(target.q_audit_res, "mop_name", problem)
+                k = int(getattr(target.q_audit_res, "k", k))
+        except Exception:
+            pass
+        if hasattr(target, "diagnostic_context") and isinstance(target.diagnostic_context, dict):
+            problem = target.diagnostic_context.get("problem", problem)
+            k = int(target.diagnostic_context.get("k", k))
+
+        if fmetrics:
+            scores = {
+                "Q_CLOSENESS": q_closeness(fmetrics.get("CLOSENESS"), problem=problem, k=k) if "CLOSENESS" in fmetrics else 0.0,
+                "Q_COVERAGE": q_coverage(fmetrics.get("COVERAGE"), problem=problem, k=k) if "COVERAGE" in fmetrics else 0.0,
+                "Q_GAP": q_gap(fmetrics.get("GAP"), problem=problem, k=k) if "GAP" in fmetrics else 0.0,
+                "Q_REGULARITY": q_regularity(fmetrics.get("REGULARITY"), problem=problem, k=k) if "REGULARITY" in fmetrics else 0.0,
+                "Q_BALANCE": q_balance(fmetrics.get("BALANCE"), problem=problem, k=k) if "BALANCE" in fmetrics else 0.0,
+                "Q_HEADWAY": q_headway(fmetrics.get("HEADWAY"), problem=problem, k=k) if "HEADWAY" in fmetrics else 0.0,
+            }
+
+    label = (
+        getattr(target, "experiment_name", None)
+        or getattr(target, "name", None)
+        or getattr(getattr(target, "source", None), "name", None)
+        or "Q-Scores"
+    )
+    return scores, label
+
 def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_ecdf] Clinical CDF Plot.
@@ -182,79 +228,57 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
         if show: fig.show()
         return fig
 
-def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
+def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
     """
     [mb.view.clinic_radar] Clinical Fingerprint (Spider Plot).
-    Visualizes the 6 Quality Scores (Q-Scores) in a single polygon.
+    Visualizes one or more sets of the 6 Quality Scores in a radar chart.
     """
     mode = _resolve_mode(mode)
-
-    # Polymorphic input:
-    # 1) Pre-computed results (DiagnosticResult / QualityAuditResult / scores=)
-    # 2) Raw targets (Experiment/Run/Population/ndarray), resolved via diagnostics.audit()
-    scores = kwargs.get("scores", None)
-    if scores is None:
-        if hasattr(target, "q_audit_res") and getattr(target, "q_audit_res") is not None:
-            scores = getattr(target.q_audit_res, "scores", None)
-        elif hasattr(target, "scores"):
-            scores = getattr(target, "scores", None)
-        else:
-            res = audit(target, ground_truth)
-            if res and getattr(res, "q_audit_res", None):
-                scores = getattr(res.q_audit_res, "scores", None)
-
-    # Fallback for DiagnosticResult objects that carry only FAIR evidence.
-    # We attempt to re-derive Q-scores from FAIR metrics when enough context is available.
-    if not scores and hasattr(target, "fair_audit_res") and getattr(target, "fair_audit_res") is not None:
-        fmetrics = getattr(target.fair_audit_res, "metrics", {}) or {}
-        problem = kwargs.get("problem", "Unknown")
-        k = int(kwargs.get("k", 100))
-        try:
-            if hasattr(target, "q_audit_res") and target.q_audit_res is not None:
-                problem = getattr(target.q_audit_res, "mop_name", problem)
-                k = int(getattr(target.q_audit_res, "k", k))
-        except Exception:
-            pass
-        if hasattr(target, "diagnostic_context") and isinstance(target.diagnostic_context, dict):
-            problem = target.diagnostic_context.get("problem", problem)
-            k = int(target.diagnostic_context.get("k", k))
-
-        if fmetrics:
-            scores = {
-                "Q_CLOSENESS": q_closeness(fmetrics.get("CLOSENESS"), problem=problem, k=k) if "CLOSENESS" in fmetrics else 0.0,
-                "Q_COVERAGE": q_coverage(fmetrics.get("COVERAGE"), problem=problem, k=k) if "COVERAGE" in fmetrics else 0.0,
-                "Q_GAP": q_gap(fmetrics.get("GAP"), problem=problem, k=k) if "GAP" in fmetrics else 0.0,
-                "Q_REGULARITY": q_regularity(fmetrics.get("REGULARITY"), problem=problem, k=k) if "REGULARITY" in fmetrics else 0.0,
-                "Q_BALANCE": q_balance(fmetrics.get("BALANCE"), problem=problem, k=k) if "BALANCE" in fmetrics else 0.0,
-                "Q_HEADWAY": q_headway(fmetrics.get("HEADWAY"), problem=problem, k=k) if "HEADWAY" in fmetrics else 0.0,
-            }
-
-    if not scores:
-        emit_output(
-            "Warning: [mb.view.clinic_radar] no quality scores available for this input.",
-            markdown="> Warning: `clinic_radar` could not resolve quality scores for this input."
-        )
+    if not targets:
         return None
 
     cat = ["Q_CLOSENESS", "Q_COVERAGE", "Q_GAP", "Q_REGULARITY", "Q_BALANCE", "Q_HEADWAY"]
     labels = [c.replace("Q_", "").title() for c in cat]
-    values = []
-    for c in cat:
-        if c not in scores:
-            values.append(0.0)
+    series = []
+    for target in targets:
+        scores, label = _resolve_radar_scores(target, ground_truth, **kwargs)
+        if not scores:
+            emit_output(
+                "Warning: [mb.view.clinic_radar] no quality scores available for one input.",
+                markdown="> Warning: `clinic_radar` could not resolve quality scores for one input."
+            )
             continue
-        qv = scores[c]
-        values.append(float(qv.value) if hasattr(qv, "value") else float(qv))
 
-    resolved_title = title if title is not None else "Clinical Quality Fingerprint (Q-Scores)"
+        values = []
+        for c in cat:
+            if c not in scores:
+                values.append(0.0)
+                continue
+            qv = scores[c]
+            values.append(float(qv.value) if hasattr(qv, "value") else float(qv))
+        series.append((label, values))
+
+    if not series:
+        return None
+
+    if title is not None:
+        resolved_title = title
+    elif len(series) == 1:
+        resolved_title = f"Clinical Quality Fingerprint ({series[0][0]})"
+    else:
+        names = " vs ".join(label for label, _ in series)
+        resolved_title = f"Clinical Quality Fingerprints ({names})"
     
     if mode == 'static':
         angles = np.linspace(0, 2 * np.pi, len(cat), endpoint=False).tolist()
-        v_closed = values + [values[0]]
         a_closed = angles + [angles[0]]
         fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-        ax.fill(a_closed, v_closed, color='teal', alpha=0.25)
-        ax.plot(a_closed, v_closed, color='teal', linewidth=2)
+        palette = plt.rcParams['axes.prop_cycle'].by_key().get('color', ['teal'])
+        for idx, (label, values) in enumerate(series):
+            color = palette[idx % len(palette)]
+            v_closed = values + [values[0]]
+            ax.fill(a_closed, v_closed, color=color, alpha=0.25 if len(series) == 1 else 0.15)
+            ax.plot(a_closed, v_closed, color=color, linewidth=2, label=label)
         ax.set_xticks(angles)
         ax.set_xticklabels(labels)
         ax.set_ylim(0, 1.0)
@@ -265,11 +289,24 @@ def clinic_radar(target: Any, ground_truth: Optional[np.ndarray] = None, mode: s
         ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color='gray')
         
         plt.title(resolved_title)
+        if len(series) > 1:
+            ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1.15))
         if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure()
-        fig.add_trace(go.Scatterpolar(r=values, theta=labels, fill='toself', line=dict(color='teal'), name='Q-Scores'))
+        palette = ['teal', 'crimson', 'royalblue', 'darkorange', 'mediumpurple']
+        for idx, (label, values) in enumerate(series):
+            color = palette[idx % len(palette)]
+            fig.add_trace(go.Scatterpolar(
+                r=values,
+                theta=labels,
+                fill='toself',
+                fillcolor=color,
+                opacity=0.18 if len(series) > 1 else 0.25,
+                line=dict(color=color),
+                name=label
+            ))
         fig.update_layout(
             polar=dict(
                 radialaxis=dict(visible=True, range=[0, 1], tickvals=[0.25, 0.5, 0.75, 1.0], gridcolor='#E0E0E0'),
