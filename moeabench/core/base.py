@@ -67,8 +67,8 @@ class Reportable:
     def _decorate_report_content(self, content: str) -> str:
         """Add visual separation for consecutive report calls."""
         title = self._extract_report_title(content)
-        banner = f"=== {title} ===\n"
-        return f"{banner}{content}\n"
+        banner = "=" * max(len(title) + 8, 34)
+        return f"{banner}\n{content}\n"
 
     @staticmethod
     def _to_plain_sober(content: str) -> str:

@@ -12,7 +12,7 @@ class DiagnosticStatus(Enum):
     BIASED_SPREAD = auto()        # Low nGD, Low nIGD, High nEMD
     GAPPED_COVERAGE = auto()      # Low nGD, High nIGD, Low nEMD
     COLLAPSED_FRONT = auto()      # Low nGD, High nIGD, High nEMD
-    NOISY_POPULATION = auto()     # High nGD, Low nIGD, Low nEMD
+    IRREGULAR_FRONT = auto()      # Strong convergence with irregular local spacing
     DISTORTED_COVERAGE = auto()   # High nGD, Low nIGD, High nEMD
     SHIFTED_FRONT = auto()        # High nGD, High nIGD, Low nEMD
     SEARCH_FAILURE = auto()       # High nGD, High nIGD, High nEMD

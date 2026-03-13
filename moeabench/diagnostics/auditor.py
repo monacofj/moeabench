@@ -16,6 +16,35 @@ THRESH_RESEARCH = 0.67
 THRESH_INDUSTRY = 0.34
 # Less strict profiles can be lower if needed, but 1/3 is the absolute floor.
 
+_DISPLAY_NAMES = {
+    "CLOSENESS": "Closeness",
+    "COVERAGE": "Coverage",
+    "GAP": "Gap",
+    "REGULARITY": "Regularity",
+    "BALANCE": "Balance",
+    "HEADWAY": "Headway",
+    "Q_CLOSENESS": "Closeness",
+    "Q_COVERAGE": "Coverage",
+    "Q_GAP": "Gap",
+    "Q_REGULARITY": "Regularity",
+    "Q_BALANCE": "Balance",
+    "Q_HEADWAY": "Headway",
+}
+
+def _display_name(name: str) -> str:
+    return _DISPLAY_NAMES.get(name, name.replace("_", " ").title())
+
+
+def _fair_description(name: str, description: str) -> str:
+    replacements = {
+        "HEADWAY": "Fraction of the initial search error left unreduced.",
+        "COVERAGE": "Average distance from target manifold to nearest solution.",
+        "GAP": "Largest hole detected on the manifold.",
+        "REGULARITY": "Deviation from ideal lattice spacing (Wasserstein distance).",
+        "BALANCE": "Distribution bias across regions (JS Divergence).",
+    }
+    return replacements.get(name, description)
+
 def _quality_executive_summary(scores: Dict[str, qscore.QResult]) -> str:
     """Hierarchical clinical interpretation (decision tree)."""
     def q(name: str) -> float:
@@ -24,16 +53,16 @@ def _quality_executive_summary(scores: Dict[str, qscore.QResult]) -> str:
     # Gate 1: Proximity (Closeness)
     q_close = q("Q_CLOSENESS")
     if q_close < THRESH_INDUSTRY:
-        msg = "Poor Convergence: The algorithm failed to approach the optimal front, resulting in a remote population profile."
+        msg = "Poor convergence: the final population remained far from the target manifold."
         if q("Q_HEADWAY") >= THRESH_RESEARCH:
-            msg = "Poor Convergence: Despite effective progress in headway, the algorithm failed to approach the optimal manifold."
+            msg = "Poor convergence: despite strong progress, the final population remained displaced from the target manifold."
         return msg
 
     # Gate 2: Spatial Extent (Coverage & Gap)
     q_cov = q("Q_COVERAGE")
     q_gap = q("Q_GAP")
     if q_cov < 0.25 and q_gap < 0.25:
-        return "Structural Failure: While some proximity was achieved, the front exhibits catastrophic collapse and fragmentation."
+        return "Structural failure: proximity was achieved, but the front is both collapsed and fragmented."
 
     # Gate 3: Distribution Quality (Order)
     pathologies = []
@@ -49,10 +78,10 @@ def _quality_executive_summary(scores: Dict[str, qscore.QResult]) -> str:
     if q("Q_BALANCE") < THRESH_INDUSTRY: pathologies.append("skewed parity")
     elif q("Q_BALANCE") < THRESH_RESEARCH: pathologies.append("distribution bias")
 
-    base = "Steady-state convergence confirmed." if q_close < THRESH_RESEARCH else "Asymptotic convergence confirmed."
+    base = "Convergence is adequate." if q_close < THRESH_RESEARCH else "Convergence is strong."
     if not pathologies:
-        return f"{base} Overall structural integrity meets validation standards."
-    return f"{base} However, secondary structural flaws were detected: {', '.join(pathologies)}."
+        return f"{base} Performance is strong across all evaluated dimensions."
+    return f"{base} Secondary weaknesses were detected in: {', '.join(pathologies)}."
 
 @dataclass
 class QualityAuditResult(Reportable):
@@ -60,6 +89,7 @@ class QualityAuditResult(Reportable):
     scores: Dict[str, qscore.QResult]
     mop_name: str
     k: int
+    experiment_name: Optional[str] = None
     
     @property
     def verdicts(self) -> Dict[str, str]:
@@ -71,12 +101,13 @@ class QualityAuditResult(Reportable):
             return self._render_report(_quality_executive_summary(self.scores), show, **kwargs)
 
         use_md = kwargs.get('markdown', self._is_notebook())
+        subject = self.experiment_name or self.mop_name
         if use_md:
-            header = f"# Clinical Quality Audit: {self.mop_name} (K={self.k})"
+            header = "# Clinical Quality Scores"
             sep = ""
         else:
-            header = f"\n=== CLINICAL QUALITY AUDIT: {self.mop_name} (K={self.k}) ==="
-            sep = "-" * len(header.strip())
+            header = "Clinical Quality Scores"
+            sep = ""
             
         lines = [header, sep] if not use_md else [header, ""]
         
@@ -90,15 +121,14 @@ class QualityAuditResult(Reportable):
                     if q >= thresh:
                         label = matrix[thresh]
                         break
-                table.append(f"| {name} | {q:.3f} | {label} |")
+                table.append(f"| {_display_name(name)} | {q:.3f} | {label} |")
             lines.extend(table)
         else:
             # Terminal: List format matching FairAuditResult
             # Calculate max width for alignment
-            width = max(len(name) for name in self.scores.keys()) if self.scores else 0
+            width = max(len(_display_name(name)) for name in self.scores.keys()) if self.scores else 0
             
             for name, qres in self.scores.items():
-                 # We call report with show=False to get the string
                  lines.append(f"  {qres.report(show=False, markdown=False, width=width)}")
                 
         content = "\n".join(lines)
@@ -106,19 +136,20 @@ class QualityAuditResult(Reportable):
 
 @dataclass
 class FairAuditResult(Reportable):
-    """ Results of a physical engineering audit. """
+    """ Results of FAIR performance metrics. """
     metrics: Dict[str, fair.FairResult]
     
     def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
         use_md = kwargs.get('markdown', self._is_notebook())
-        header = "# Physical Engineering Audit" if use_md else "\n=== PHYSICAL ENGINEERING AUDIT ==="
+        header = "# FAIR Performance Metrics" if use_md else "FAIR Performance Metrics"
         lines = [header, ""]
         for name, fres in self.metrics.items():
+            disp = _display_name(name)
+            desc = _fair_description(name, fres.description)
             if use_md:
-                lines.append(f"- **{name}**: {float(fres.value):.4f} ({fres.description})")
+                lines.append(f"- **{disp}**: {float(fres.value):.4f} ({desc})")
             else:
-                # Remove brackets and align colons (using 12 chars padding)
-                lines.append(f"  {name:<12} : {float(fres.value):.4f} - {fres.description}")
+                lines.append(f"  {disp:<12} : {float(fres.value):.4f} - {desc}")
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
@@ -135,6 +166,7 @@ class DiagnosticResult(Reportable):
     description: str = ""
     reproducibility: Optional[Dict[str, Any]] = None,
     diagnostic_context: Optional[Dict[str, Any]] = None
+    experiment_name: Optional[str] = None
 
     @property
     def quality(self) -> QualityAuditResult:
@@ -167,18 +199,23 @@ class DiagnosticResult(Reportable):
             return self._render_report(self.description, show, **kwargs)
 
         use_md = kwargs.get('markdown', self._is_notebook())
+        subject = self.experiment_name or (
+            self.q_audit_res.experiment_name if self.q_audit_res else None
+        ) or (
+            self.q_audit_res.mop_name if self.q_audit_res else None
+        ) or "Unknown"
         if use_md:
-            header = "# MoeaBench Clinical Report"
+            header = f"# MoeaBench Clinical Report: {subject}"
             status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"**Executive Summary**: {self.description}"
-            sub_q = "## 1. Clinical Quality (Validation)"
-            sub_f = "## 2. Physical Evidence (Facts)"
+            sub_f = "## FAIR Performance Metrics"
+            sub_q = "## Clinical Quality Scores"
         else:
-            header = "=== MOEABENCH CLINICAL REPORT ==="
+            header = f"Clinical Report: {subject}"
             status_line = f"Primary Status: {self.status.name.replace('_', ' ').title()}"
             exec_line = f"Executive Summary: {self.description}"
-            sub_q = ">> LAYER 1: CLINICAL QUALITY"
-            sub_f = ">> LAYER 2: PHYSICAL EVIDENCE"
+            sub_f = "FAIR Performance Metrics"
+            sub_q = "Clinical Quality Scores"
 
         # We call nested reports with show=False to gather their strings
         if self.status == DiagnosticStatus.MISSING_BASELINE:
@@ -188,19 +225,18 @@ class DiagnosticResult(Reportable):
         f_rep = self.fair_audit_res.report(show=False, full=True, **kwargs) if self.fair_audit_res else "N/A"
 
         lines = [
-            header,
             status_line,
             exec_line,
             "",
-            sub_q,
-            q_rep,
+            f_rep,
             "",
-            sub_f,
-            f_rep
+            q_rep
         ]
+        if header:
+            lines.insert(0, header)
 
         if self.reproducibility:
-            sub_r = "## 3. Reproducibility Metadata" if use_md else ">> LAYER 3: REPRODUCIBILITY"
+            sub_r = "## Reproducibility Metadata" if use_md else "Reproducibility Metadata"
             r_info = [f"- **{k.replace('_', ' ').title()}**: {v}" for k, v in self.reproducibility.items()] if use_md else \
                      [f"{k.replace('_', ' ').title()}: {v}" for k, v in self.reproducibility.items()]
             lines += ["", sub_r] + r_info
@@ -231,24 +267,31 @@ class PerformanceAuditor:
         
     @staticmethod
     def audit_quality(q_scores: Dict[str, qscore.QResult], 
-                     mop: str = "Unknown", k: int = 0) -> QualityAuditResult:
+                     mop: str = "Unknown", k: int = 0,
+                     experiment_name: Optional[str] = None) -> QualityAuditResult:
         """ Aggregates Clinical Quality results. """
-        return QualityAuditResult(scores=q_scores, mop_name=mop, k=k)
+        return QualityAuditResult(
+            scores=q_scores,
+            mop_name=mop,
+            k=k,
+            experiment_name=experiment_name,
+        )
 
     @staticmethod
     def audit_synthesis(q_res: Optional[QualityAuditResult], 
                          f_res: Optional[FairAuditResult],
                          status: DiagnosticStatus = DiagnosticStatus.UNDEFINED,
                          description: str = "Audit failed.",
-                         reproducibility: Optional[Dict[str, Any]] = None) -> DiagnosticResult:
+                         reproducibility: Optional[Dict[str, Any]] = None,
+                         experiment_name: Optional[str] = None) -> DiagnosticResult:
         """ 
         The 'Synthesis' Logic. 
         Identifies pathologies without subjective weighting.
         """
         if q_res is None or f_res is None:
              if status == DiagnosticStatus.MISSING_BASELINE:
-                 return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility)
-             return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=DiagnosticStatus.UNDEFINED, description="Audit failed or missing baselines.", reproducibility=reproducibility)
+                 return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility, experiment_name=experiment_name)
+             return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=DiagnosticStatus.UNDEFINED, description="Audit failed or missing baselines.", reproducibility=reproducibility, experiment_name=experiment_name)
 
         # 1. Detect Pathologies (Q < 0.34)
         anomalies = []
@@ -261,7 +304,7 @@ class PerformanceAuditor:
         
         if anomalies:
             status = DiagnosticStatus.SEARCH_FAILURE
-            desc = f"Critical failures detected in: {', '.join(anomalies)}."
+            desc = f"Multiple quality dimensions received very low scores: {', '.join(anomalies)}."
             
             # Simple heuristic mapping for single-mode failures
             if len(anomalies) == 1:
@@ -271,21 +314,22 @@ class PerformanceAuditor:
                     "HEADWAY": DiagnosticStatus.SHIFTED_FRONT,
                     "GAP": DiagnosticStatus.GAPPED_COVERAGE,
                     "BALANCE": DiagnosticStatus.BIASED_SPREAD,
-                    "REGULARITY": DiagnosticStatus.NOISY_POPULATION
+                    "REGULARITY": DiagnosticStatus.IRREGULAR_FRONT
                 }
                 status = mapping.get(anomalies[0].upper(), status)
 
         # 2. Check Substandard range (0.34 <= Q < 0.67)
         elif any(float(q.value) < THRESH_RESEARCH for q in q_res.scores.values()):
             sub = [n.replace("Q_", "").title() for n, q in q_res.scores.items() if float(q.value) < THRESH_RESEARCH]
-            desc = f"Performance is Substandard (Yellow Zone) in: {', '.join(sub)}."
+            desc = f"Some quality dimensions remain below the target range: {', '.join(sub)}."
 
         return DiagnosticResult(
             q_audit_res=q_res,
             fair_audit_res=f_res,
             status=status,
             description=desc,
-            reproducibility=reproducibility
+            reproducibility=reproducibility,
+            experiment_name=experiment_name or q_res.experiment_name
         )
 
 def fair_audit(target: Any, ground_truth: Optional[np.ndarray] = None) -> FairAuditResult:
@@ -322,9 +366,10 @@ def audit(target: Any,
     s_k_mop = ctx['s_k']
     mop_name = ctx['problem']
     K_raw = ctx['k']
+    experiment_name = getattr(target, 'name', None) or getattr(getattr(target, 'source', None), 'name', None)
     
     if P is None or GT is None:
-         return PerformanceAuditor.audit_synthesis(None, None)
+         return PerformanceAuditor.audit_synthesis(None, None, experiment_name=experiment_name)
 
     # 1. Capture Reproducibility Metadata (Dimension-Aware)
     r_info = reproducibility_info()
@@ -428,7 +473,8 @@ def audit(target: Any,
                     status=DiagnosticStatus.UNDEFINED,
                     description="Physical audit complete. Clinical Q-Scores disabled (quality=False).",
                     reproducibility=r_info,
-                    diagnostic_context=ctx
+                    diagnostic_context=ctx,
+                    experiment_name=experiment_name
                 )
             
             # D. Compute Q-Scores (Engineering)
@@ -447,15 +493,25 @@ def audit(target: Any,
                 "Q_BALANCE": q_b,
                 "Q_HEADWAY": q_h
             }
-            q_res = PerformanceAuditor.audit_quality(q_scores, mop=mop_name, k=K_target)
+            q_res = PerformanceAuditor.audit_quality(
+                q_scores,
+                mop=mop_name,
+                k=K_target,
+                experiment_name=experiment_name,
+            )
             
             # 5. Synthesis (The Clinical Report)
-            return PerformanceAuditor.audit_synthesis(q_res, fr_res, reproducibility=r_info)
+            return PerformanceAuditor.audit_synthesis(
+                q_res,
+                fr_res,
+                reproducibility=r_info,
+                experiment_name=experiment_name,
+            )
             
         except baselines.UndefinedBaselineError as e:
             desc = (f"Clinical baseline missing for {mop_name} (M={P.shape[1]}, K={K_target}). "
                     "Run 'mb.diagnostics.PerformanceAuditor.calibrate(mop, size=K)' to enable Q-Scores.")
             return PerformanceAuditor.audit_synthesis(None, None, status=DiagnosticStatus.MISSING_BASELINE, 
-                                                   description=desc, reproducibility=r_info)
+                                                   description=desc, reproducibility=r_info, experiment_name=experiment_name)
         except Exception as e:
             raise e
