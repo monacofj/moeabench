@@ -20,8 +20,8 @@ def main():
     ##
     ## Setup: same MOP, two MOEAs
     ##
-    mop = mb.mops.DTLZ2(M=4)
-    mop.calibrate()  # Ensure baseline/GT is available for this M (e.g., M=4).
+    mop = mb.mops.DTLZ2(M=3)
+    #mop.calibrate()  # Ensure baseline/GT is available for this M (e.g., M=4).
     exp1 = mb.experiment()
     exp1.name = "NSGA-II"
     exp1.mop = mop
@@ -50,7 +50,7 @@ def main():
     ##
     ## 0) Topology: two fronts + inferred GT
     ##
-    mb.view.topology(exp1, exp2, markers=True)
+    mb.view.topology(exp1, exp2)
     # Observe overlap with GT (convergence) and cloud spread (diversity).
 
     ##

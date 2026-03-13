@@ -21,18 +21,25 @@ class MoeaProgress:
     Manages progress bars for moeabench experiments.
     Supports both discrete steps (generations) and fractional progress (0-1).
     """
-    def __init__(self, total=None, desc="moeabench", leave=True, position=0):
+    def __init__(self, total=None, desc="moeabench", leave=True, position=0, style="default"):
         self.total = total
         self.current_val = 0
         self.desc = desc
+        self.style = style
         
         # tqdm.auto automatically detects if we are in Jupyter or Terminal
-        self.pbar = tqdm(total=100 if total is None else total, 
-                         desc=desc, 
-                         leave=leave, 
-                         position=position,
-                         unit="gen" if total is not None else "it",
-                         ascii=" -")
+        pbar_kwargs = {
+            "total": 100 if total is None else total,
+            "desc": desc,
+            "leave": leave,
+            "position": position,
+            "unit": "gen" if total is not None else "it",
+            "ascii": " -",
+        }
+        if style == "percent":
+            pbar_kwargs["bar_format"] = "{desc}: {percentage:3.0f}%"
+            pbar_kwargs["unit"] = ""
+        self.pbar = tqdm(**pbar_kwargs)
         
         self.is_fractional = total is None
 
@@ -64,6 +71,6 @@ class MoeaProgress:
         self.desc = desc
         self.pbar.set_description(desc)
 
-def get_progress_bar(total=None, desc="Optimizing", position=0, leave=True):
+def get_progress_bar(total=None, desc="Optimizing", position=0, leave=True, style="default"):
     """Factory to create a progress bar."""
-    return MoeaProgress(total=total, desc=desc, position=position, leave=leave)
+    return MoeaProgress(total=total, desc=desc, position=position, leave=leave, style=style)

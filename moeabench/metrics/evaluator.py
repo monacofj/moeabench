@@ -17,6 +17,7 @@ from ..core.run import Population
 from ..defaults import defaults
 from ..core.display import show_matplotlib
 import warnings
+from ..progress import get_progress_bar
 
 # We need the helper logic from analyse to calculate reference points
 # Since analyse is a mixin class, we might need to extract 'normalize' to a util or duplicate it.
@@ -351,7 +352,23 @@ def _extract_data(data, gens: Optional[Union[int, slice]] = None):
     except:
         raise TypeError(f"Unsupported data type for metric calculation: {type(data)}")
 
-def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True):
+def _metric_progress_steps(histories):
+    return sum(len(h) for h in histories if h is not None)
+
+
+def _metric_progress(metric_name, enabled, histories, source_name=None):
+    if not enabled:
+        return None
+    total = _metric_progress_steps(histories)
+    if total <= 0:
+        return None
+    desc = f"Computing {metric_name}"
+    if source_name:
+        desc = f"{desc} ({source_name})"
+    return get_progress_bar(total=total, desc=desc, leave=True, style="percent")
+
+
+def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True, progress=True):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
@@ -404,37 +421,44 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
     mat = np.full((max_gens, n_runs), np.nan)
     
-    for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-        M = f_last.shape[1] if len(f_last) > 0 else 0
-        if M == 0 and len(f_gen) > 0:
-             for f in f_gen:
-                  if len(f) > 0:
-                       M = f.shape[1]
-                       break
-        
-        if M > 0:
-            # Smart Selection of Algorithm
-            use_mc = False
-            if mode == 'fast':
-                use_mc = True
-            elif mode == 'auto' and M > 6:
-                use_mc = True
-                logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
-                             f"Switching to Monte Carlo approximation (n={n_samples}).")
-            elif mode == 'exact' and M > 8:
-                warnings.warn(f"Exact Hypervolume calculation for M={M} objectives has exponential complexity O(2^M) "
-                              f"and may be extremely slow. Consider using mode='auto' or mode='fast'.")
+    pbar = _metric_progress("Hypervolume", progress, F_GENs, source_name=name)
+    try:
+        for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
+            M = f_last.shape[1] if len(f_last) > 0 else 0
+            if M == 0 and len(f_gen) > 0:
+                 for f in f_gen:
+                      if len(f) > 0:
+                           M = f.shape[1]
+                           break
             
-            if use_mc:
-                metric = GEN_mc_hypervolume(f_gen, M, min_val, max_val, n_samples=n_samples)
-            else:
-                metric = GEN_hypervolume(f_gen, M, min_val, max_val)
+            if M > 0:
+                # Smart Selection of Algorithm
+                use_mc = False
+                if mode == 'fast':
+                    use_mc = True
+                elif mode == 'auto' and M > 6:
+                    use_mc = True
+                    logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
+                                 f"Switching to Monte Carlo approximation (n={n_samples}).")
+                elif mode == 'exact' and M > 8:
+                    warnings.warn(f"Exact Hypervolume calculation for M={M} objectives has exponential complexity O(2^M) "
+                                  f"and may be extremely slow. Consider using mode='auto' or mode='fast'.")
                 
-            values = metric.evaluate()
-            
-            # Fill matrix
-            length = min(len(values), max_gens)
-            mat[:length, r_idx] = values[:length]
+                if use_mc:
+                    metric = GEN_mc_hypervolume(f_gen, M, min_val, max_val, n_samples=n_samples)
+                else:
+                    metric = GEN_hypervolume(f_gen, M, min_val, max_val)
+                    
+                values = metric.evaluate()
+                
+                # Fill matrix
+                length = min(len(values), max_gens)
+                mat[:length, r_idx] = values[:length]
+            if pbar is not None:
+                pbar.update_to(pbar.current_val + len(f_gen))
+    finally:
+        if pbar is not None:
+            pbar.close()
         
     # --- 4. Dynamic Benchmarking ---
     # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling
@@ -562,7 +586,7 @@ def get_reference_front(ref_exps, current_fronts):
              
     return merged[~is_dominated]
 
-def _calc_metric(exp, ref, MetricClass, name, gens=None):
+def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     if ref is None: ref = []
     if not isinstance(ref, list): ref = [ref]
     
@@ -577,29 +601,36 @@ def _calc_metric(exp, ref, MetricClass, name, gens=None):
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
     mat = np.full((max_gens, n_runs), np.nan)
     
-    for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-        # Dispatch based on internal GEN_ class logic
-        if name == "Hypervolume":
-             M = f_last.shape[1] if len(f_last) > 0 else 0
-             if M > 0:
-                 metric = MetricClass(f_gen, M, min_val, max_val)
-                 values = metric.evaluate()
-             else:
-                 values = np.full(len(f_gen), np.nan)
-        else:
-             # GD, GD+, IGD, IGD+
-             if ref_front is None:
-                  values = np.full(len(f_gen), np.nan)
-             else:
-                  metric = MetricClass(f_gen, ref_front)
-                  values = metric.evaluate()
-        
-        length = min(len(values), max_gens)
-        mat[:length, r_idx] = values[:length]
+    pbar = _metric_progress(name, progress, F_GENs, source_name=source_name)
+    try:
+        for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
+            # Dispatch based on internal GEN_ class logic
+            if name == "Hypervolume":
+                 M = f_last.shape[1] if len(f_last) > 0 else 0
+                 if M > 0:
+                     metric = MetricClass(f_gen, M, min_val, max_val)
+                     values = metric.evaluate()
+                 else:
+                     values = np.full(len(f_gen), np.nan)
+            else:
+                 # GD, GD+, IGD, IGD+
+                 if ref_front is None:
+                      values = np.full(len(f_gen), np.nan)
+                 else:
+                      metric = MetricClass(f_gen, ref_front)
+                      values = metric.evaluate()
+            
+            length = min(len(values), max_gens)
+            mat[:length, r_idx] = values[:length]
+            if pbar is not None:
+                pbar.update_to(pbar.current_val + len(f_gen))
+    finally:
+        if pbar is not None:
+            pbar.close()
         
     return MetricMatrix(mat, name, source_name=source_name)
 
-def gd(exp, ref=None, gens=None):
+def gd(exp, ref=None, gens=None, progress=True):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -616,9 +647,9 @@ def gd(exp, ref=None, gens=None):
         return MetricMatrix(metric.evaluate(), "GD")
 
     from .GEN_gd import GEN_gd
-    return _calc_metric(exp, ref, GEN_gd, "GD", gens=gens)
+    return _calc_metric(exp, ref, GEN_gd, "GD", gens=gens, progress=progress)
 
-def gdplus(exp, ref=None, gens=None):
+def gdplus(exp, ref=None, gens=None, progress=True):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -633,9 +664,9 @@ def gdplus(exp, ref=None, gens=None):
         return MetricMatrix(metric.evaluate(), "GD+")
 
     from .GEN_gdplus import GEN_gdplus
-    return _calc_metric(exp, ref, GEN_gdplus, "GD+", gens=gens)
+    return _calc_metric(exp, ref, GEN_gdplus, "GD+", gens=gens, progress=progress)
 
-def igd(exp, ref=None, gens=None):
+def igd(exp, ref=None, gens=None, progress=True):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -650,9 +681,9 @@ def igd(exp, ref=None, gens=None):
         return MetricMatrix(metric.evaluate(), "IGD")
 
     from .GEN_igd import GEN_igd
-    return _calc_metric(exp, ref, GEN_igd, "IGD", gens=gens)
+    return _calc_metric(exp, ref, GEN_igd, "IGD", gens=gens, progress=progress)
 
-def emd(exp, ref=None, gens=None):
+def emd(exp, ref=None, gens=None, progress=True):
     """
     Computes the Earth Mover's Distance (Wasserstein) between population and reference.
     For multivariate data, this implementation uses the average 1D Wasserstein distance 
@@ -690,17 +721,24 @@ def emd(exp, ref=None, gens=None):
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
     mat = np.full((max_gens, n_runs), np.nan)
     
-    for r_idx, f_gen in enumerate(F_GENs):
-        values = []
-        for g_pop in f_gen:
-            values.append(_calc_emd_pair(g_pop, ref_front))
-        
-        length = min(len(values), max_gens)
-        mat[:length, r_idx] = values[:length]
+    pbar = _metric_progress("EMD", progress, F_GENs, source_name=source_name)
+    try:
+        for r_idx, f_gen in enumerate(F_GENs):
+            values = []
+            for g_pop in f_gen:
+                values.append(_calc_emd_pair(g_pop, ref_front))
+            
+            length = min(len(values), max_gens)
+            mat[:length, r_idx] = values[:length]
+            if pbar is not None:
+                pbar.update_to(pbar.current_val + len(f_gen))
+    finally:
+        if pbar is not None:
+            pbar.close()
         
     return MetricMatrix(mat, "EMD", source_name=source_name)
 
-def igdplus(exp, ref=None, gens=None):
+def igdplus(exp, ref=None, gens=None, progress=True):
     if ref is None and hasattr(exp, 'optimal_front'):
         try:
             ref = exp.optimal_front()
@@ -715,7 +753,7 @@ def igdplus(exp, ref=None, gens=None):
         return MetricMatrix(metric.evaluate(), "IGD+")
 
     from .GEN_igdplus import GEN_igdplus
-    return _calc_metric(exp, ref, GEN_igdplus, "IGD+", gens=gens)
+    return _calc_metric(exp, ref, GEN_igdplus, "IGD+", gens=gens, progress=progress)
 
 def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
     """
