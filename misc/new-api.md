@@ -17,7 +17,7 @@
 - `view.bands(...)`: bandas de atingimento / corredores.
 - `view.gap(...)`: diferença espacial entre duas superfícies/frentes.
 - `view.ranks(...)`: barras de ranks.
-- `view.caste(...)`: distribuição hierárquica por rank.
+- `view.strata(...)`: distribuição hierárquica por rank.
 - `view.tiers(...)`: contraste de tiers entre métodos.
 - `view.radar(...)`: radar de scores.
 
@@ -43,7 +43,7 @@
 | `stats` | `topo_attainment` | `attainment` | `Population` | `AttainmentSurface` | `view.bands`, `view.topology` |
 | `stats` | `topo_gap` | `attainment_gap` | `Population` | `AttainmentDiff` | `view.gap` |
 | `stats` | `rank_distribution` | `ranks` | `Population` | `RankCompareResult` | `view.ranks` |
-| `stats` | `caste_distribution` | `caste` | `Population` | `CasteCompareResult` | `view.caste` |
+| `stats` | `strata_distribution` | `strata` | `Population` | `StrataCompareResult` | `view.strata` |
 | `stats` | `tier_duel` | `tiers` | `Population` | `TierResult` | `view.tiers` |
 | `clinic` | `audit` | `audit` | `Population` | `DiagnosticResult` | `view.radar`, `view.ecdf`, `view.density`, `view.history` |
 
@@ -59,7 +59,7 @@
 | `view` | `perf_spread` | `spread` | `MetricMatrix` |
 | `view` | `perf_density` | `density` | `MetricMatrix` |
 | `view` | `strat_ranks` | `ranks` | `RankCompareResult` |
-| `view` | `strat_caste` | `caste` | `CasteCompareResult` |
+| `view` | `strat_strata` | `strata` | `StrataCompareResult` |
 | `view` | `strat_tiers` | `tiers` | `TierResult` |
 | `view` | `clinic_ecdf` | `ecdf` | `DiagnosticResult` |
 | `view` | `clinic_distribution` | `density` | `DiagnosticResult` |
@@ -83,33 +83,33 @@
 A proposta final segue o mesmo pipeline do restante da API:
 
 - `res = mb.stats.ranks(...)`
-- `res = mb.stats.caste(...)`
+- `res = mb.stats.strata(...)`
 - `res = mb.stats.tiers(...)`
 - `res.report()`
-- `mb.view.ranks(res)` / `mb.view.caste(res)` / `mb.view.tiers(res)`
+- `mb.view.ranks(res)` / `mb.view.strata(res)` / `mb.view.tiers(res)`
 
 ### Contract (Recommended)
 
 - Entrada: `Population` (ou compatível).
 - Métodos:
   - `mb.stats.ranks(...)`
-  - `mb.stats.caste(..., metric=mb.metrics.hv)`
+  - `mb.stats.strata(..., metric=mb.metrics.hv)`
   - `mb.stats.tiers(...)`
 - Saídas:
   - `RankCompareResult`
-  - `CasteCompareResult`
+  - `StrataCompareResult`
   - `TierResult`
 
 Prós:
 - Mantém o padrão `stats -> report -> view`.
-- Permite `caste(..., metric=...)` de forma explícita.
+- Permite `strata(..., metric=...)` de forma explícita.
 - Garante que o `view` receba um objeto já com o conteúdo visual necessário.
 
 ---
 
 ## Short Recommendation
 
-- Exponha `mb.stats.ranks`, `mb.stats.caste` e `mb.stats.tiers`.
+- Exponha `mb.stats.ranks`, `mb.stats.strata` e `mb.stats.tiers`.
 - Faça as três views consumirem esses resultados diretamente.
-- `mb.stats.strata` deixa de ser parte da API canônica pública.
+- Use `layer` apenas como conceito estrutural interno.
 - Em `mb.diagnostics`, exponha publicamente apenas `audit`.

@@ -6,15 +6,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from ..stats.stratification import (
-    strata,
+    _layer,
     ranks as stats_ranks,
-    caste as stats_caste,
+    strata as stats_strata,
     tiers as stats_tiers,
-    StratificationResult,
+    LayerResult,
     TierResult,
-    CasteSummary,
+    StrataSummary,
     RankCompareResult,
-    CasteCompareResult,
+    StrataCompareResult,
 )
 from ..metrics.evaluator import hypervolume
 from ..core.display import show_matplotlib
@@ -63,7 +63,7 @@ def strat_ranks(*args, title=None, show=True, **kwargs):
         results = list(args[0].results)
         labels = list(args[0].labels)
     else:
-        results, labels = _resolve_to_result(args, StratificationResult, strata)
+        results, labels = _resolve_to_result(args, LayerResult, _layer)
     
     fig, ax = plt.subplots()
     n_series = len(results)
@@ -88,10 +88,10 @@ def strat_ranks(*args, title=None, show=True, **kwargs):
         show_matplotlib(fig)
     return ax
 
-def strat_caste(*args, labels=None, title=None, metric=None, mode='collective', 
+def strat_strata(*args, labels=None, title=None, metric=None, mode='collective',
                  show_quartiles=True, show=True, **kwargs):
     """
-    [mb.view.strat_caste] Advanced Hierarchical Perspective.
+    [mb.view.strat_strata] Advanced Hierarchical Perspective.
     Visualizes Quality vs Density profile using Variable-Width Boxplots.
     
     Args:
@@ -102,21 +102,21 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
     if metric is None:
         metric = hypervolume
 
-    if len(args) == 1 and isinstance(args[0], CasteCompareResult):
+    if len(args) == 1 and isinstance(args[0], StrataCompareResult):
         summaries = list(args[0].summaries)
         resolved_labels = list(args[0].labels)
         metric_name = args[0].metric_name
         mode = args[0].mode
-    elif args and all(isinstance(arg, CasteSummary) for arg in args):
+    elif args and all(isinstance(arg, StrataSummary) for arg in args):
         summaries = list(args)
         resolved_labels = [s.name for s in summaries]
         metric_name = summaries[0].metric_name if summaries else getattr(metric, '__name__', 'Value')
     else:
-        castes = stats_caste(*args, metric=metric, mode=mode, **kwargs)
-        summaries = list(castes.summaries)
-        resolved_labels = list(castes.labels)
-        metric_name = castes.metric_name
-        mode = castes.mode
+        strata_res = stats_strata(*args, metric=metric, mode=mode, **kwargs)
+        summaries = list(strata_res.summaries)
+        resolved_labels = list(strata_res.labels)
+        metric_name = strata_res.metric_name
+        mode = strata_res.mode
 
     if labels is None:
         labels = resolved_labels
@@ -208,7 +208,7 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
     ax.set_xlim(0.5, max_r + 0.5)
     ax.set_xlabel("Dominance Rank (Global Class)")
     ax.set_ylabel(f"Relative Quality Distribution ({metric_name})")
-    ax.set_title(title if title else "Caste Distribution (Groups vs Tiers)")
+    ax.set_title(title if title else "Strata Distribution (Groups vs Tiers)")
     ax.legend([plt.Rectangle((0,0),1,1, color=f"C{i%10}", alpha=0.6) for i in range(n_series)], labels)
     ax.grid(True, axis='y', alpha=0.3)
     ax.set_ylim(0, 1.2)

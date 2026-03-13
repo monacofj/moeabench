@@ -230,14 +230,14 @@ def main():
     ##
 
     ranks = mb.stats.ranks(exp1, exp2)           # Rank depth and pressure.
-    caste = mb.stats.caste(exp1, exp2)           # Rank-wise quality distribution.
+    strata = mb.stats.strata(exp1, exp2)         # Rank-wise quality distribution.
     tiers = mb.stats.tiers(exp1, exp2)           # Shared-tier duel between both groups.
     ranks.report()                               # Rank structure summary.
-    caste.report()                               # Caste distribution summary.
+    strata.report()                              # Strata distribution summary.
     tiers.report()                               # Tier duel summary.
 
     mb.view.ranks(ranks)                         # Rank occupancy bars.
-    mb.view.caste(caste)                         # Rank quality box summaries.
+    mb.view.strata(strata)                       # Rank quality box summaries.
     mb.view.tiers(tiers)                         # Shared-tier stacked duel.
     # Observe selection pressure depth and class occupancy profile.
 

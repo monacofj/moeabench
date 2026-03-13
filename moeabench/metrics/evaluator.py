@@ -935,7 +935,7 @@ def front_ratio(exp, mode='run', gens=None):
     # 1. Data extraction logic
     from ..core.run import Run, Population
     from ..core.experiment import experiment
-    from ..stats.stratification import strata
+    from ..stats.stratification import _layer
     
     if isinstance(exp, experiment):
         histories = [r.history('f') for r in exp._runs]
@@ -977,7 +977,7 @@ def front_ratio(exp, mode='run', gens=None):
             combined_objs = np.vstack(pops_at_g)
             try:
                 # Calculate non-dominance ratio on the combined cloud
-                s_res = strata(Population(combined_objs))
+                s_res = _layer(Population(combined_objs))
                 n_nd = np.sum(s_res.rank_array == 1)
                 mat[g_idx, 0] = n_nd / len(combined_objs)
             except Exception:
@@ -995,7 +995,7 @@ def front_ratio(exp, mode='run', gens=None):
                 
                 try:
                     active_pop = Population(pop_data) if isinstance(pop_data, np.ndarray) else pop_data
-                    s_res = strata(active_pop)
+                    s_res = _layer(active_pop)
                     n_nd = np.sum(s_res.rank_array == 1)
                     n_tot = len(pop_data)
                     mat[g_idx, r_idx] = n_nd / n_tot

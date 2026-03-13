@@ -14,11 +14,11 @@ Date: 2026-02-02
 Accepted
 
 > [!NOTE]
-> Historical naming note: this ADR discusses the visualization that is now exposed canonically as `mb.view.caste(...)`. Earlier internal/public names such as `strat_caste` are legacy terminology.
+> Historical naming note: this ADR discusses the visualization now exposed canonically as `mb.view.strata(...)`. Earlier names such as `strat_caste` and `mb.view.caste(...)` are legacy terminology.
 
 ## Context
 
-The original caste visualization provided a basic view of rank quality vs. density but suffered from critical limitations:
+The original strata visualization provided a basic view of rank quality vs. density but suffered from critical limitations:
 1.  **Metric Ambiguity**: It was unclear whether the y-axis represented aggregated or individual quality.
 2.  **Visual Clutter**: Default annotations were often overlapping and hard to read.
 3.  **Lack of Robustness Insight**: It did not explicitly show stochastic variance across multiple runs.
@@ -26,10 +26,10 @@ The original caste visualization provided a basic view of rank quality vs. densi
 
 ## Decision
 
-We have decided to completely overhaul the caste visualization function (formerly prototyping as `strat_caste2`) and deprecate the old implementation.
+We have decided to completely overhaul the strata visualization function (formerly prototyping as `strat_caste2`) and deprecate the old implementation.
 
 ### 1. Parametric Modes
-The new caste visualization introduces a `mode` parameter:
+The new strata visualization introduces a `mode` parameter:
 *   **`mode='collective'` (Default)**: Visualizes the **Gross Domestic Product (GDP)** of each rank across multiple runs. This measures the algorithm's **stochastic robustness**—a short box means high reliability.
 *   **`mode='individual'`**: Visualizes the **Per Capita** merit distribution of individual solutions. This measures the algorithm's **internal diversity**.
 
@@ -37,15 +37,15 @@ The new caste visualization introduces a `mode` parameter:
 *   **Clean Annotations**: All alphanumeric prefixes (`n:`, `q:`) were removed. The plot now uses a high-density numeric-only style aligned with Tufte's principles of data-ink ratio.
 *   **Statistical Alignment**: Secondary labels now align with statistical whiskers ($1.5 \times IQR$) rather than absolute outliers, providing a more rigorous view of the distribution.
 
-### 3. Programmatic Access (`CasteSummary`)
-We introduced a method-based API on `StratificationResult` to allow uniform access to the visualized data:
+### 3. Programmatic Access (`StrataSummary`)
+We introduced a method-based API on `LayerResult` to allow uniform access to the visualized data:
 ```python
-res.caste_summary().n(1)  # Population count
-res.caste_summary().q(1)  # Median quality
+res.strata_summary().n(1)  # Population count
+res.strata_summary().q(1)  # Median quality
 ```
 
 ## Consequences
 
-*   **Breaking Change**: The caste-view signature changed, and legacy callers should update to the canonical `mb.stats.caste(...) -> mb.view.caste(...)` flow.
+*   **Breaking Change**: The strata-view signature changed, and callers should use the canonical `mb.stats.strata(...) -> mb.view.strata(...)` flow.
 *   **Improved Rigor**: The distinction between 'performance' (individual) and 'robustness' (collective) is now explicit in the library's visual vocabulary.
-*   **Data Portability**: Users can now easily export caste statistics to LaTeX/Pandas without image processing.
+*   **Data Portability**: Users can now easily export strata statistics to LaTeX/Pandas without image processing.

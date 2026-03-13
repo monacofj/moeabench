@@ -16,7 +16,7 @@ from .perf import (
 )
 from .strat import (
     strat_ranks as _ranks,
-    strat_caste as _caste,
+    strat_strata as _strata,
     strat_tiers as _tiers,
 )
 from .clinic import (
@@ -38,7 +38,7 @@ bands = _bands
 gap = _gap
 spread = _spread
 ranks = _ranks
-caste = _caste
+strata = _strata
 tiers = _tiers
 ecdf = _ecdf
 radar = _radar
@@ -97,5 +97,5 @@ def history(*args, **kwargs):
 
 __all__ = [
     "topology", "bands", "gap", "density", "history", "spread",
-    "ranks", "caste", "tiers", "ecdf", "radar"
+    "ranks", "strata", "tiers", "ecdf", "radar"
 ]

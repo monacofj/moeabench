@@ -116,7 +116,7 @@ This keeps reports scientifically explicit while preserving user-level intent.
 `mb.view` is chart-oriented and domain-dispatched:
 
 - `topology`, `bands`, `gap`, `density`, `history`, `spread`,
-- `ranks`, `caste`, `tiers`, `ecdf`, `radar`.
+- `ranks`, `strata`, `tiers`, `ecdf`, `radar`.
 
 Key rule: view endpoints visualize; if input is high-level polymorphic (`Experiment`, `DiagnosticResult`, etc.), they may resolve required internal data but do not define independent analysis semantics.
 

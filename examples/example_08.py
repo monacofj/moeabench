@@ -11,7 +11,7 @@ Example 08: Multi-run Population Stratification and Dominance Analysis
 This example demonstrates the complete stratification suite, visualizing
 the "Population Geology" (Dominance Structure) of different search algorithms.
 
-It focuses on the new `caste` visualizer (v0.8.0), exploring:
+It focuses on the new `strata` visualizer (v0.8.0), exploring:
 1. Stochastic Robustness (Collective Mode)
 2. Internal Diversity (Individual Mode)
 """
@@ -49,12 +49,12 @@ def main():
     SNAPSHOT_GEN = 10
     
     ranks = mb.stats.ranks(exp1, exp2, gen=SNAPSHOT_GEN)
-    caste_ind = mb.stats.caste(exp1, exp2, gen=SNAPSHOT_GEN, mode='individual')
-    caste_coll = mb.stats.caste(exp1, exp2, gen=SNAPSHOT_GEN, mode='collective')
+    strata_ind = mb.stats.strata(exp1, exp2, gen=SNAPSHOT_GEN, mode='individual')
+    strata_coll = mb.stats.strata(exp1, exp2, gen=SNAPSHOT_GEN, mode='collective')
     tiers = mb.stats.tiers(exp1, exp2, gen=SNAPSHOT_GEN)
     ranks.report()
-    caste_ind.report()
-    caste_coll.report()
+    strata_ind.report()
+    strata_coll.report()
     tiers.report()
 
     # 3. Stratification Visualization
@@ -78,7 +78,7 @@ def main():
     # 4. The Whiskers: Extend to 1.5 x IQR. 
     #    Mark the boundaries of "Normal" solutions. Points beyond are rare 
     #    Mutants or Outliers—solutions so unique they break the distribution.
-    ax_ind = mb.view.caste(caste_ind,
+    ax_ind = mb.view.strata(strata_ind,
                  title=f"Individual Perspective: Solution Merit - Gen {SNAPSHOT_GEN}")
 
     # B. Macro-Analysis: Stochastic Robustness (Collective Mode)
@@ -91,7 +91,7 @@ def main():
     #   Minimal dispersion suggests high reliability across trials.
     # - Outliers: Detect rare convergence failures or significant performance 
     #   deviations within the sample.
-    ax_coll = mb.view.caste(caste_coll,
+    ax_coll = mb.view.strata(strata_coll,
                  title=f"Macro View: Stochastic Robustness - Gen {SNAPSHOT_GEN}")
     
     # C. Competitive View (Tier Duel visualization)

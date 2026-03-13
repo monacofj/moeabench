@@ -6,11 +6,11 @@
 from .tests import perf_compare, topo_compare, PerfCompareResult
 from .stratification import (
     ranks,
-    caste,
+    strata,
     tiers,
     emd,
     RankCompareResult,
-    CasteCompareResult,
+    StrataCompareResult,
     TierResult,
 )
 from .topo_attainment import AttainmentSurface, topo_attainment as _attainment, topo_gap as _attainment_gap
@@ -64,11 +64,11 @@ __all__ = [
     "topo_tail",
     "PerfCompareResult",
     "ranks",
-    "caste",
+    "strata",
     "tiers",
     "emd",
     "RankCompareResult",
-    "CasteCompareResult",
+    "StrataCompareResult",
     "TierResult",
     "AttainmentSurface",
     "attainment",

@@ -10,9 +10,9 @@ from functools import cached_property
 from typing import Dict, Any
 from .base import StatsResult, SimpleStatsValue
 
-class CasteSummary:
+class StrataSummary:
     """
-    Helper object to access caste statistics using intuitive methods.
+    Helper object to access strata statistics using intuitive methods.
     """
     def __init__(self, data: Dict[int, Dict], name: str = "Population", mode: str = "individual", metric_name: str = "hypervolume"):
         self._data = data
@@ -43,7 +43,7 @@ class CasteSummary:
         return self._data.get(rank, {}).get('max_w', 0.0)
 
     def __repr__(self):
-        return f"<CasteSummary {self.name}: {list(self._data.keys())} ranks>"
+        return f"<StrataSummary {self.name}: {list(self._data.keys())} ranks>"
 
 
 class RankCompareResult(StatsResult):
@@ -68,8 +68,8 @@ class RankCompareResult(StatsResult):
         return self._render_report(content, show, **kwargs)
 
 
-class CasteCompareResult(StatsResult):
-    """Canonical result for caste-distribution analysis."""
+class StrataCompareResult(StatsResult):
+    """Canonical result for strata-distribution analysis."""
 
     def __init__(self, summaries, labels, mode="collective", metric_name="hypervolume"):
         self.summaries = summaries
@@ -83,7 +83,7 @@ class CasteCompareResult(StatsResult):
 
         if use_md:
             lines = [
-                f"### Caste Distribution Report ({self.metric_name})",
+                f"### Strata Distribution Report ({self.metric_name})",
                 "",
                 f"**Mode**: {self.mode}",
                 "",
@@ -102,7 +102,7 @@ class CasteCompareResult(StatsResult):
             content = "\n".join(lines)
         else:
             lines = [
-                f"Caste Distribution Report ({self.metric_name})",
+                f"Strata Distribution Report ({self.metric_name})",
                 f"Mode: {self.mode}",
                 "",
                 f"{'Data':<16} | {'Rank':>4} | {'n':>4} | {'Q1':>8} | {'Median':>8} | {'Q3':>8}",
@@ -120,9 +120,9 @@ class CasteCompareResult(StatsResult):
             content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
-class StratificationResult(StatsResult):
+class LayerResult(StatsResult):
     """
-    Results of a Population Stratification (Rank Distribution) analysis.
+    Results of a population layer analysis based on dominance depth.
     
     Provides insights into the dominance structure of a population and 
     selection pressure.
@@ -135,7 +135,7 @@ class StratificationResult(StatsResult):
         self.gen = gen
         self.objectives = objectives # (N x M) objective matrix
         self.rank_array = rank_array # (N,) rank assigned to each row
-        self.sub_results = sub_results # list of StratificationResult for sub-components
+        self.sub_results = sub_results # list of LayerResult for sub-components
         
     @property
     def max_rank(self) -> int:
@@ -198,9 +198,9 @@ class StratificationResult(StatsResult):
         res = linregress(x, y)
         return -res.slope
 
-    def caste_summary(self, mode='individual', metric_fn=None, anchor=1.0, **m_kwargs) -> 'CasteSummary':
+    def strata_summary(self, mode='individual', metric_fn=None, anchor=1.0, **m_kwargs) -> 'StrataSummary':
         """
-        Extracts the exact statistical summary for each rank (as seen in strat_caste2).
+        Extracts the exact statistical summary for each rank layer.
         
         Args:
             mode (str): 'individual' or 'collective'.
@@ -209,7 +209,7 @@ class StratificationResult(StatsResult):
             **m_kwargs: Passed to metric_fn.
             
         Returns:
-            CasteSummary: Object with methods like .n(rank), .q(rank), .min(rank), .max(rank).
+            StrataSummary: Object with methods like .n(rank), .q(rank), .min(rank), .max(rank).
         """
         import moeabench.metrics.evaluator as eval_mod
         m_func = metric_fn if metric_fn else eval_mod.hypervolume
@@ -255,11 +255,11 @@ class StratificationResult(StatsResult):
             }
         name = getattr(self.source, 'name', 'Population')
         metric_name = getattr(m_func, '__name__', 'hypervolume')
-        return CasteSummary(stats, name=name, mode=mode, metric_name=metric_name)
+        return StrataSummary(stats, name=name, mode=mode, metric_name=metric_name)
 
     def report(self, show: bool = True, **kwargs) -> str:
         """
-        Generates an analytical narrative report of the population strata.
+        Generates an analytical narrative report of the population layer structure.
         """
         use_md = kwargs.get('markdown', self._is_notebook())
         metric = kwargs.get('metric', None)
@@ -271,7 +271,7 @@ class StratificationResult(StatsResult):
         f = self.frequencies()
         
         if use_md:
-            header = f"### Population Strata Report: {name}"
+            header = f"### Population Layer Report: {name}"
             lines = [
                 header,
                 f"**Search Depth**: {self.max_rank} non-dominated layers",
@@ -293,7 +293,7 @@ class StratificationResult(StatsResult):
             content = "\n".join(lines)
         else:
             lines = [
-                f"--- Population Strata Report: {name} ---",
+                f"--- Population Layer Report: {name} ---",
                 f"  Search Depth: {self.max_rank} non-dominated layers",
                 f"  Selection Pressure: {self.selection_pressure:.4f}",
                 "",
@@ -316,17 +316,17 @@ class StratificationResult(StatsResult):
 
     def __repr__(self) -> str:
         name = getattr(self.source, 'name', 'Population')
-        return f"<StratificationResult source='{name}' ranks={self.max_rank}>"
+        return f"<LayerResult source='{name}' ranks={self.max_rank}>"
 
-def _joint_strata_result(data_a, data_b, gen=-1):
-    """Build a joint stratification (A U B) result used by tiers visualizations."""
+def _joint_layer_result(data_a, data_b, gen=-1):
+    """Build a joint layer result used by tier visualizations."""
     from ..core.experiment import experiment
     from ..core.run import Run, Population
 
     def _extract_objs(data):
-        if isinstance(data, StratificationResult):
+        if isinstance(data, LayerResult):
             if data.objectives is None:
-                raise ValueError("StratificationResult without objectives cannot be used in joint strata.")
+                raise ValueError("LayerResult without objectives cannot be used in joint layers.")
             return np.asarray(data.objectives), getattr(data.source, "name", None) or getattr(data, "name", None)
         if isinstance(data, experiment):
             objs = [run.front(gen) for run in data]
@@ -340,7 +340,7 @@ def _joint_strata_result(data_a, data_b, gen=-1):
             return np.asarray(data), "Array"
         if hasattr(data, "objectives"):
             return np.asarray(data.objectives), getattr(data, "name", "Data")
-        raise TypeError(f"Unsupported data type for joint strata: {type(data)}")
+        raise TypeError(f"Unsupported data type for joint layers: {type(data)}")
 
     objs_a, name_a = _extract_objs(data_a)
     objs_b, name_b = _extract_objs(data_b)
@@ -378,16 +378,16 @@ def _joint_strata_result(data_a, data_b, gen=-1):
     )
 
 
-def strata(data, other=None, gen=-1):
+def _layer(data, other=None, gen=-1):
     """
-    Performs Population Stratification (Rank Distribution) analysis.
+    Performs dominance-layer analysis.
     """
     from ..core.run import Population, Run
 
     if other is not None:
-        return _joint_strata_result(data, other, gen=gen)
+        return _joint_layer_result(data, other, gen=gen)
 
-    if isinstance(data, StratificationResult):
+    if isinstance(data, LayerResult):
         return data
     
     # helper to aggregate run data
@@ -413,7 +413,7 @@ def strata(data, other=None, gen=-1):
         items = data.pops if is_joined else data
         
         for item in items:
-            all_res.append(strata(item, gen=gen))
+            all_res.append(_layer(item, gen=gen))
             
         agg_hist = {}
         max_r = max(r.max_rank for r in all_res) if all_res else 0
@@ -423,15 +423,20 @@ def strata(data, other=None, gen=-1):
         concat_objs = np.vstack([res.objectives for res in all_res])
         concat_ranks = np.concatenate([res.rank_array for res in all_res])
             
-        return StratificationResult(agg_hist, raw_distributions=[res.ranks for res in all_res], 
-                                    source=data, gen=gen, 
-                                    objectives=concat_objs, rank_array=concat_ranks,
-                                    sub_results=all_res)
+        return LayerResult(
+            agg_hist,
+            raw_distributions=[res.ranks for res in all_res],
+            source=data,
+            gen=gen,
+            objectives=concat_objs,
+            rank_array=concat_ranks,
+            sub_results=all_res,
+        )
 
     # 2. Handle Run/Population
     if isinstance(data, (Run, Population)):
         h, o, r = _collect_run_data(data, gen)
-        return StratificationResult(h, source=data, gen=gen, objectives=o, rank_array=r)
+        return LayerResult(h, source=data, gen=gen, objectives=o, rank_array=r)
 
     # 3. Handle Raw Objective Matrices (np.ndarray, SmartArray, list)
     if isinstance(data, (np.ndarray, list, tuple)):
@@ -439,9 +444,9 @@ def strata(data, other=None, gen=-1):
         pop = Population(np.asarray(data))
         ranks = pop.stratify()
         hist = _calc_rank_hist(ranks)
-        return StratificationResult(hist, source=data, gen=gen, objectives=pop.objectives, rank_array=ranks)
+        return LayerResult(hist, source=data, gen=gen, objectives=pop.objectives, rank_array=ranks)
 
-    raise TypeError(f"Unsupported data type for stratification: {type(data)}")
+    raise TypeError(f"Unsupported data type for layer analysis: {type(data)}")
 
 def _calc_rank_hist(ranks):
     """Internal helper to calculate rank frequency distribution."""
@@ -450,10 +455,10 @@ def _calc_rank_hist(ranks):
     total = len(ranks)
     return {int(r): c/total for r, c in zip(u, counts)}
 
-def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
+def emd(strat1: LayerResult, strat2: LayerResult) -> float:
     """
     Computes the Earth Mover's Distance (Wasserstein Distance) between 
-    two stratification profiles.
+    two layer profiles.
     
     This is a symmetric measure of how different the "dominance profiles" 
     of two algorithms are.
@@ -471,11 +476,11 @@ def emd(strat1: StratificationResult, strat2: StratificationResult) -> float:
 
 
 
-class TierResult(StratificationResult):
+class TierResult(LayerResult):
     """
-    Results of a Joint Stratification (Tier) analysis between two groups.
+    Results of a joint layer (tier) analysis between two groups.
     
-    Inherits from StratificationResult, adding support for relative 
+    Inherits from LayerResult, adding support for relative
     dominance comparison (proportions) between groups.
     """
     def __init__(self, agg_hist, raw_distributions=None, source=None, gen=-1, 
@@ -570,22 +575,22 @@ def ranks(*args, gen=-1):
     results = []
     labels = []
     for arg in args:
-        res = strata(arg, gen=gen)
+        res = _layer(arg, gen=gen)
         results.append(res)
         label = getattr(res.source, "name", None) or getattr(arg, "name", None) or "Population"
         labels.append(label)
     return RankCompareResult(results, labels)
 
 
-def caste(*args, metric=None, mode='collective', gen=-1, **kwargs):
-    """Canonical caste-distribution analysis result."""
+def strata(*args, metric=None, mode='collective', gen=-1, **kwargs):
+    """Canonical strata-distribution analysis result."""
     import moeabench.metrics.evaluator as eval_mod
 
-    if len(args) == 1 and isinstance(args[0], CasteCompareResult):
+    if len(args) == 1 and isinstance(args[0], StrataCompareResult):
         return args[0]
 
     metric_fn = metric or eval_mod.hypervolume
-    results = [strata(arg, gen=gen) for arg in args]
+    results = [_layer(arg, gen=gen) for arg in args]
     labels = [getattr(res.source, "name", None) or getattr(arg, "name", None) or "Population"
               for res, arg in zip(results, args)]
 
@@ -599,11 +604,11 @@ def caste(*args, metric=None, mode='collective', gen=-1, **kwargs):
     anchor = max(total_qualities) if total_qualities else 1.0
 
     summaries = [
-        res.caste_summary(mode=mode, metric_fn=metric_fn, anchor=anchor, ref=global_ref, **kwargs)
+        res.strata_summary(mode=mode, metric_fn=metric_fn, anchor=anchor, ref=global_ref, **kwargs)
         for res in results
     ]
     metric_name = getattr(metric_fn, "__name__", "hypervolume")
-    return CasteCompareResult(summaries, labels, mode=mode, metric_name=metric_name)
+    return StrataCompareResult(summaries, labels, mode=mode, metric_name=metric_name)
 
 
 def tiers(data, other=None, gen=-1):
@@ -612,4 +617,4 @@ def tiers(data, other=None, gen=-1):
         return data
     if other is None:
         raise ValueError("mb.stats.tiers requires two inputs or a TierResult.")
-    return strata(data, other, gen=gen)
+    return _layer(data, other, gen=gen)

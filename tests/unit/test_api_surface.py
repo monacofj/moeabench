@@ -21,12 +21,12 @@ def test_stats_compare_surface():
     assert hasattr(mb.stats, "perf_compare"), "Expected stats.perf_compare"
     assert hasattr(mb.stats, "topo_compare"), "Expected stats.topo_compare"
     assert hasattr(mb.stats, "ranks"), "Expected stats.ranks"
-    assert hasattr(mb.stats, "caste"), "Expected stats.caste"
+    assert hasattr(mb.stats, "strata"), "Expected stats.strata"
     assert hasattr(mb.stats, "tiers"), "Expected stats.tiers"
-    assert not hasattr(mb.stats, "strata"), "stats.strata should not be part of canonical public API"
     assert not hasattr(mb.stats, "tier"), "tier should be removed in unified strata API"
 
 
 def test_view_surface():
-    for name in ("topology", "bands", "gap", "density", "history", "spread", "ranks", "caste", "tiers", "radar", "ecdf"):
+    for name in ("topology", "bands", "gap", "density", "history", "spread", "ranks", "strata", "tiers", "radar", "ecdf"):
         assert hasattr(mb.view, name), f"Expected mb.view.{name}"
+    assert not hasattr(mb.view, "caste"), "view.caste should not be part of canonical public API"

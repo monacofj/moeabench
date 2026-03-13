@@ -22,7 +22,7 @@ Statistical analysis in multi-objective optimization often yields complex data (
 We will implement a unified "Rich Result" system for all tools in the `mb.stats` module.
 
 ### 1. The `StatsResult` Interface
-All statistical functions (e.g., `mb.stats.ranks`, `mb.stats.caste`, `mb.stats.tiers`, `mb.stats.perf_compare`, `mb.stats.topo_compare`) will return objects inheriting from a base `StatsResult` class.
+All statistical functions (e.g., `mb.stats.ranks`, `mb.stats.strata`, `mb.stats.tiers`, `mb.stats.perf_compare`, `mb.stats.topo_compare`) will return objects inheriting from a base `StatsResult` class.
 
 ### 2. Narrative Reporting (`.report()`)
 Every result object provides a `.report()` method. This method generates a formatted, human-readable summary that includes:

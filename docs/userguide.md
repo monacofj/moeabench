@@ -501,8 +501,10 @@ dist = res.gen()       # Distribution of final generation
 ### **7.3. Stratification (Population Structure)**
 This domain examines the internal organization of the population, analyzing selection pressure and non-domination levels (Pareto ranks).
 
+The underlying ontology is **layer**: the population is decomposed into dominance layers, and the public analytical views over that structure are `ranks`, `strata`, and `tiers`.
+
 *   **`ranks`**: Shows the distribution of individuals across non-domination layers (Ranks).
-*   **`caste`**: Maps the relationship between quality and class membership, revealing how the elite differs from the rest of the population.
+*   **`strata`**: Maps the relationship between quality and layer membership, revealing how the elite differs from the rest of the population.
 *   **`tiers`**: A "Duel of Proportions" that merges two algorithms into global tiers to see who dominates whom in direct competition.
 
 ```python
@@ -516,26 +518,26 @@ mb.view.tiers(tiers)
 *Figure 9: Global Rank Distribution showing population density across non-domination layers.*
 *Interpretation: This plot reveals a scenario where the population is stratified into multiple layers (5 ranks). While the majority (~50%) are in Rank 0, a significant portion lags in deeper ranks, indicating that the algorithm (MOEA/D on DTLZ1) is struggling to push the entire population to the Pareto front at this stage (Gen 14).*
 
-#### **Visualizing the Hierarchy (`caste`)**
-The `caste` plot maps the "Caste System" of the population, visualizing the trade-off between **Quantity** (Density) and **Quality** (Performance).
+#### **Visualizing the Hierarchy (`strata`)**
+The `strata` plot visualizes the trade-off between **Quantity** (Density) and **Quality** (Performance) across dominance layers.
 
 ```python
 # 1. Individual Merit (Micro View): Diversity distribution within ranks
-caste_ind = mb.stats.caste(exp, mode='individual')
-caste_ind.report()
-mb.view.caste(caste_ind, title="Population Merit")
+strata_ind = mb.stats.strata(exp, mode='individual')
+strata_ind.report()
+mb.view.strata(strata_ind, title="Population Merit")
 
 # 2. Stochastic Stability (Macro View): Robustness across multiple runs
-caste_coll = mb.stats.caste(exp, mode='collective')
-caste_coll.report()
-mb.view.caste(caste_coll, title="Stochastic Robustness")
+strata_coll = mb.stats.strata(exp, mode='collective')
+strata_coll.report()
+mb.view.strata(strata_coll, title="Stochastic Robustness")
 ```
 
-![Caste Individual](images/caste_individual.png)
+![Strata Individual](images/caste_individual.png)
 *Figure 10: Micro-view "Per Capita" (Individual Merit). This plot uses **Boxplots** to visualize the internal diversity within each social class (Rank).*
 *Interpretation: The Y-axis measures the quality (Crowding Distance) of individual citizens. The numbers on the box represent the **Quartiles** (Q1, Median, Q3). Rank 1 (The Elite) is the most populous (`n=94`, or 94%) and features a tall box. This indicates a "Healthy Elite": a highly diverse population ranging from specialized outliers (top whisker) to crowded averages (median), ensuring genetic richness.*
 
-![Caste Collective](images/caste_collective.png)
+![Strata Collective](images/caste_collective.png)
 *Figure 11: Macro-view "GDP" (Gross Domain Product). Unlike the previous plot, this visualizes the **Aggregate Power** of the population across 10 independent runs.*
 *Interpretation: Here, the Y-axis represents the total quality sum per run. The extreme vertical stability of the Rank 1 box (very short whiskers) visually proves that the algorithm is deterministically reliable. It consistently delivers ~94% of its "GDP" into the elite rank across all repeats, with negligible variance due to random seeds.*
 
@@ -569,27 +571,27 @@ Data             | Depth | Pressure
 Population       |     5 |   0.9612
 ```
 
-#### **2. Caste Inspection**
+#### **2. Strata Inspection**
 
 To inspect the boxplot-equivalent summaries directly:
 
 ```python
-caste = mb.stats.caste(exp)
-caste.report()
-n_elite = caste.summaries[0].n(rank=1)   # Headcount for Rank 1
-q_median = caste.summaries[0].q(rank=1)  # Median quality for Rank 1
+strata = mb.stats.strata(exp)
+strata.report()
+n_elite = strata.summaries[0].n(rank=1)   # Headcount for Rank 1
+q_median = strata.summaries[0].q(rank=1)  # Median quality for Rank 1
 
 # 4. Competitive rank occupancy uses the dedicated tier-duel result.
 tier_duel = mb.stats.tiers(exp1, exp2)
 tier_duel.report()
 ```
 
-This is the canonical contract for the old "strata" family:
+This is the canonical contract for the layer-analysis family:
 - `mb.stats.ranks(...)` -> `mb.view.ranks(...)`
-- `mb.stats.caste(...)` -> `mb.view.caste(...)`
+- `mb.stats.strata(...)` -> `mb.view.strata(...)`
 - `mb.stats.tiers(...)` -> `mb.view.tiers(...)`
 
-`mb.stats.strata(...)` remains an internal/convenience building block, but it is not the primary public analytical surface in the current API.
+The underlying layer computation is internal; the public analytical surface is `ranks`, `strata`, and `tiers`.
 
 ---
 

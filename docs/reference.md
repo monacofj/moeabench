@@ -287,9 +287,11 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 
 ### **2.3. Stratification Analysis (`mb.view`)**
 
+The underlying structural ontology is **layer**. The public chart-oriented views over that internal layer decomposition are `ranks`, `strata`, and `tiers`.
+
 *   **`ranks(*args, ...)`**:
-    *   Permanent Alias: `rankplot`. Shows frequency distribution across dominance ranks.
-*   **`caste(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
+    *   Shows frequency distribution across dominance ranks.
+*   **`strata(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
     *   Maps Quality vs Density using parametric modes ('collective' vs 'individual').
 *   **`tiers(exp1, exp2=None, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
@@ -553,7 +555,7 @@ MoeaBench enforces a **Standardized Reporting Interface**. Every analytical obje
 ### **Participating Objects**
 1.  **`mb.experiment`**: Summarizes the experimental protocol (MOP, MOEA, Status).
 2.  **`mb.metrics.MetricMatrix`**: Summarizes mathematical performance, search dynamics, and stochastic stability.
-3.  **`mb.stats.StatsResult`**: Summarizes hypothesis tests, rank structure, caste distribution, tier duels, and topological matching.
+3.  **`mb.stats.StatsResult`**: Summarizes hypothesis tests, rank structure, strata distribution, tier duels, and topological matching.
 
 > [!NOTE]
 > **Transparency Policy (Explainable Verdicts)**
@@ -626,10 +628,11 @@ Performs **Rank Structure** analysis based on Pareto dominance.
 *   **Returns**: `RankCompareResult`.
 *   **Canonical view**: `mb.view.ranks(result)`
 
-### **`mb.stats.caste(*data, metric=mb.metrics.hv, mode='collective', gen=-1)`**
-Performs **Caste Distribution** analysis, summarizing rank-wise quality with the chosen metric.
-*   **Returns**: `CasteCompareResult`.
-*   **Canonical view**: `mb.view.caste(result)`
+### **`mb.stats.strata(*data, metric=mb.metrics.hv, mode='collective', gen=-1)`**
+Performs **Strata Distribution** analysis, summarizing rank-wise quality with the chosen metric.
+*   **Returns**: `StrataCompareResult`.
+*   **Canonical view**: `mb.view.strata(result)`
+*   **Ontology note**: uses the internal layer decomposition as its structural base.
 
 ### **`mb.stats.tiers(data1, data2, gen=-1)`**
 Performs **Tier Duel** analysis between two groups in a shared rank system.
@@ -795,7 +798,7 @@ For a detailed technical narrative on the implementation history and mathematica
 The documentation above reflects the canonical API for the alpha/beta transition:
 
 - `mb.clinic` is the diagnostics namespace.
-- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `caste`, `tiers`, `ecdf`, `radar`).
+- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `strata`, `tiers`, `ecdf`, `radar`).
 - `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_shift`, `topo_tail`).
 - `summary()` is removed in favor of `report(show=True, full=False)`.
 

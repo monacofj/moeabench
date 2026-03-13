@@ -61,14 +61,15 @@ def generate():
     exp_rank.mop = mb.mops.DTLZ1(M=3)
     exp_rank.moea = mb.moeas.MOEAD(population=100, generations=20, seed=1)
     exp_rank.run(repeat=1)
-    res_strata = mb.stats.strata(exp_rank.last_run.pop(14))
+    res_layer = mb.stats.ranks(exp_rank.last_run.pop(14))
+    strata_view = mb.stats.strata(exp_rank.last_run.pop(14))
     
-    print("Saving diagnostics (rank/caste)...")
-    mb.view.rankplot(res_strata)
+    print("Saving diagnostics (rank/strata)...")
+    mb.view.ranks(res_layer)
     plt.savefig(os.path.join(img_dir, "rankplot.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
-    mb.view.casteplot(res_strata)
+    mb.view.strata(strata_view)
     plt.savefig(os.path.join(img_dir, "casteplot.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     

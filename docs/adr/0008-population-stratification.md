@@ -12,7 +12,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 > [!NOTE]
 > Historical ADR. The analytical idea remains accepted, but the canonical public API was later refined by [ADR 0039](./0039-canonical-api-and-compare-semantics-v0.14.0.md) and [ADR 0040](./0040-canonical-view-inputs-and-no-compatibility-shims.md).
-> The modern public surface is `mb.stats.ranks`, `mb.stats.caste`, `mb.stats.tiers` with `mb.view.ranks`, `mb.view.caste`, and `mb.view.tiers`.
+> The modern public surface is `mb.stats.ranks`, `mb.stats.strata`, `mb.stats.tiers` with `mb.view.ranks`, `mb.view.strata`, and `mb.view.tiers`.
 
 ## Context
 
@@ -20,7 +20,7 @@ Typical Multi-Objective Evolutionary Algorithm (MOEA) analysis focuses almost ex
 
 ## Decision: The "Strata" Narrative
 
-We decided to implement **Population Strata** as a first-class structural diagnostic. The original implementation centered on `mb.stats.strata`; the current canonical public API preserves the same analytical idea through explicit result families: `mb.stats.ranks`, `mb.stats.caste`, and `mb.stats.tiers`.
+We decided to implement **Population Strata** as a first-class structural diagnostic. The original implementation centered on a public `mb.stats.strata`; the current architecture keeps the structural idea but separates it into a private layer engine plus explicit public result families: `mb.stats.ranks`, `mb.stats.strata`, and `mb.stats.tiers`.
 
 ### 1. The "Onion Peeling" Core
 To support this, we extended our Non-Dominated Sorting (NDS) logic. Beyond finding the first front, we implemented a recursive "layer-peeling" method (`Population.stratify()`). 
