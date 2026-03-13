@@ -8,7 +8,7 @@ from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
 from ..defaults import defaults
-from ..view.style import MOEABENCH_PALETTE
+from ..view.style import MOEABENCH_PALETTE, GT_COLOR
 
 # Remove legacy inheritance
 # from .analyse_pareto import analyse_pareto
@@ -41,7 +41,7 @@ class Scatter3D:
          self.show_plot = kwargs.get('show', True)
          self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
          self.gray_gt = kwargs.get('gray_gt', True)
-         self.gt_color = kwargs.get('gt_color', '#b8b8b8')
+         self.gt_color = kwargs.get('gt_color', GT_COLOR)
          self.gt_opacity = kwargs.get('gt_opacity', 0.55)
          self.figure = go.Figure()
          self._build()

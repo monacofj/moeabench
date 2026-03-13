@@ -9,22 +9,33 @@ import plotly.io as pio
 import plotly.graph_objects as go
 from ..defaults import defaults
 
-# --- moeabench Standard Palette ---
-# 1. Indigo:          #1A237E
-# 2. Bordeaux:        #A00028 (Lighter)
-# 3. Vibrant Jade:    #00BFA5
-# 4. Soft Plum:       #8E24AA
-# 5. Vivid Green:     #00E676
-# 6. Intense Cyan:    #00E5FF
-# 7. Orange:          #FF9100
-# 8. Vivid Blue:      #2979FF
-# 9. Yellow:          #FBC02D
+# --- MoeaBench Official Palette ---
+# 1. Navy Blue:       #1F3A5F
+# 2. Muted Green:     #4C956C
+# 3. Burnt Red:       #9E4F2F
+# 4. Muted Violet:    #6F42A6
+# 5. Amber:           #E09F3E
+# 6. Bordeaux:        #7F1734
+# 7. Sand:            #C7A66B
+# 8. Blue Turquoise:  #2C7FB8
 
 MOEABENCH_PALETTE = [
-    "#1A237E", "#A00028", "#00BFA5", 
-    "#8E24AA", "#00E676", "#00E5FF",
-    "#FF9100", "#2979FF", "#FBC02D"
+    "#1F3A5F",
+    "#4C956C",
+    "#9E4F2F",
+    "#6F42A6",
+    "#E09F3E",
+    "#7F1734",
+    "#C7A66B",
+    "#2C7FB8",
 ]
+
+# Semantic colors stay fixed across charts and do not rotate with the palette.
+GT_COLOR = "#D3D3D3"
+GRID_COLOR = "#D9DEE6"
+TEXT_MUTED = "#6B7280"
+MEDIAN_COLOR = "#8D99AE"
+ALERT_COLOR = "#9E4F2F"
 
 def apply_style(theme=None):
     """
@@ -41,14 +52,17 @@ def apply_style(theme=None):
 
     # 1. Matplotlib Global Configuration
     plt.rcParams['axes.prop_cycle'] = cycler(color=palette)
-    plt.rcParams['grid.color'] = '#E0E0E0'
+    plt.rcParams['grid.color'] = GRID_COLOR
     plt.rcParams['grid.linestyle'] = '--'
-    plt.rcParams['grid.alpha'] = 0.7
+    plt.rcParams['grid.alpha'] = 0.35
     
     # 2. Plotly Global Template Configuration
     # We create a custom 'moeabench' template based on 'plotly_white'
     mb_template = go.layout.Template(pio.templates["plotly_white"])
     mb_template.layout.colorway = palette
+    mb_template.layout.xaxis.gridcolor = GRID_COLOR
+    mb_template.layout.yaxis.gridcolor = GRID_COLOR
+    mb_template.layout.font = dict(color="#1F2937")
     
     # Add to Plotly registry and set as default
     pio.templates["moeabench"] = mb_template

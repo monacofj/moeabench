@@ -9,6 +9,7 @@ from typing import Optional, Any, Union
 from ..defaults import defaults
 from ..core.base import emit_output
 from ..core.display import show_matplotlib
+from .style import MOEABENCH_PALETTE, GRID_COLOR, MEDIAN_COLOR, ALERT_COLOR, TEXT_MUTED
 from ..diagnostics import audit, headway, closeness, coverage, gap, regularity, balance
 from ..diagnostics import q_headway, q_closeness, q_coverage, q_gap, q_regularity, q_balance
 from ..diagnostics import q_headway_points, q_closeness_points
@@ -151,36 +152,39 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
     
     if mode == 'static':
         fig = plt.figure(figsize=defaults.figsize)
-        plt.step(sorted_data, y, where='post', label=lbl, color='teal', linewidth=1.5)
+        plt.step(sorted_data, y, where='post', label=lbl, color=MOEABENCH_PALETTE[0], linewidth=1.5)
         
         # Drops for 50% (Median)
         m_val = np.median(data)
-        plt.axhline(0.50, color='gray', linestyle=':', alpha=0.6, label='Median (50%)')
-        plt.axvline(m_val, color='gray', linestyle=':', alpha=0.6)
+        plt.axhline(0.50, color=MEDIAN_COLOR, linestyle=':', alpha=0.7, label='Median (50%)')
+        plt.axvline(m_val, color=MEDIAN_COLOR, linestyle=':', alpha=0.7)
         
         # Drops for 95% (Robust Max)
-        plt.axhline(0.95, color='red', linestyle='--', alpha=0.5, label='95th Percentile')
-        plt.axvline(h_val, color='red', linestyle='--', alpha=0.5)
+        plt.axhline(0.95, color=ALERT_COLOR, linestyle='--', alpha=0.65, label='95th Percentile')
+        plt.axvline(h_val, color=ALERT_COLOR, linestyle='--', alpha=0.65)
         
         plt.title(resolved_title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
         plt.xlabel(x_label)
         plt.ylabel("Cumulative Probability")
-        plt.grid(True, alpha=0.2)
+        plt.grid(True, alpha=0.2, color=GRID_COLOR)
         plt.legend(fontsize=9)
         if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure()
-        fig.add_trace(go.Scatter(x=sorted_data, y=y, mode='lines', line=dict(shape='hv', color='teal', width=2), name=lbl))
+        fig.add_trace(go.Scatter(
+            x=sorted_data, y=y, mode='lines',
+            line=dict(shape='hv', color=MOEABENCH_PALETTE[0], width=2), name=lbl
+        ))
         
         # Median drops
         m_val = np.median(data)
         fig.add_trace(go.Scatter(x=[0, m_val, m_val], y=[0.5, 0.5, 0], mode='lines', 
-                                 line=dict(color='gray', dash='dot', width=1), name='Median (50%)'))
+                                 line=dict(color=MEDIAN_COLOR, dash='dot', width=1), name='Median (50%)'))
         
         # 95th Percentile drops
         fig.add_trace(go.Scatter(x=[0, h_val, h_val], y=[0.95, 0.95, 0], mode='lines', 
-                                 line=dict(color='red', dash='dash', width=1), name='95th Percentile'))
+                                 line=dict(color=ALERT_COLOR, dash='dash', width=1), name='95th Percentile'))
         
         fig.update_layout(
             title=dict(text=resolved_title, x=0.5),
@@ -211,19 +215,36 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
 
     if mode == 'static':
         fig = plt.figure(figsize=defaults.figsize)
-        plt.hist(data, bins=32, density=True, alpha=0.6, color='skyblue', edgecolor='navy')
+        plt.hist(
+            data,
+            bins=32,
+            density=True,
+            alpha=0.75,
+            color=MOEABENCH_PALETTE[7],
+            edgecolor='none'
+        )
         plt.title(resolved_title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
         plt.xlabel(x_label)
         plt.ylabel("Density")
-        plt.grid(True, alpha=0.2)
+        plt.grid(True, alpha=0.12, color=GRID_COLOR, linestyle='--')
         if show: show_matplotlib(fig)
         return fig
     else:
-        fig = go.Figure(data=[go.Histogram(x=data, histnorm='probability density', marker=dict(color='skyblue', line=dict(color='navy', width=1)), name=metric)])
+        fig = go.Figure(data=[go.Histogram(
+            x=data,
+            histnorm='probability density',
+            marker=dict(color=MOEABENCH_PALETTE[7], line=dict(color=MOEABENCH_PALETTE[7], width=0)),
+            opacity=0.78,
+            name=metric
+        )])
         fig.update_layout(
             title=dict(text=resolved_title, x=0.5),
             xaxis_title=x_label, yaxis_title="Density",
-            template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
+            template=defaults.theme,
+            width=defaults.plot_width,
+            height=defaults.plot_height,
+            xaxis=dict(showgrid=True, gridcolor='rgba(217,222,230,0.35)'),
+            yaxis=dict(showgrid=True, gridcolor='rgba(217,222,230,0.35)')
         )
         if show: fig.show()
         return fig
@@ -273,7 +294,7 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
         angles = np.linspace(0, 2 * np.pi, len(cat), endpoint=False).tolist()
         a_closed = angles + [angles[0]]
         fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-        palette = plt.rcParams['axes.prop_cycle'].by_key().get('color', ['teal'])
+        palette = plt.rcParams['axes.prop_cycle'].by_key().get('color', MOEABENCH_PALETTE)
         for idx, (label, values) in enumerate(series):
             color = palette[idx % len(palette)]
             v_closed = values + [values[0]]
@@ -284,9 +305,9 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
         ax.set_ylim(0, 1.0)
         
         # Improve grid visibility
-        ax.grid(True, alpha=0.5, color='gray', linestyle='--')
+        ax.grid(True, alpha=0.35, color=GRID_COLOR, linestyle='--')
         ax.set_yticks([0.25, 0.50, 0.75, 1.0])
-        ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color='gray')
+        ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color=TEXT_MUTED)
         
         plt.title(resolved_title)
         if len(series) > 1:
@@ -295,7 +316,7 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
         return fig
     else:
         fig = go.Figure()
-        palette = ['teal', 'crimson', 'royalblue', 'darkorange', 'mediumpurple']
+        palette = MOEABENCH_PALETTE
         for idx, (label, values) in enumerate(series):
             color = palette[idx % len(palette)]
             fig.add_trace(go.Scatterpolar(
@@ -309,8 +330,8 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
             ))
         fig.update_layout(
             polar=dict(
-                radialaxis=dict(visible=True, range=[0, 1], tickvals=[0.25, 0.5, 0.75, 1.0], gridcolor='#E0E0E0'),
-                angularaxis=dict(gridcolor='#E0E0E0')
+                radialaxis=dict(visible=True, range=[0, 1], tickvals=[0.25, 0.5, 0.75, 1.0], gridcolor=GRID_COLOR),
+                angularaxis=dict(gridcolor=GRID_COLOR)
             ),
             title=dict(text=resolved_title, x=0.5),
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
