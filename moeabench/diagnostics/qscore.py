@@ -45,6 +45,13 @@ class QResult(DiagnosticValue):
                 if q >= thresh:
                     return matrix[thresh]
         return "Undefined"
+
+    @property
+    def display_name(self) -> str:
+        """Human-readable name for reports without changing the API id."""
+        if self.name.startswith("Q_"):
+            return f"Q-{self.name[2:].title()}"
+        return self.name.replace("_", " ").title()
     
     def report(self, show: bool = True, **kwargs) -> str:
         q = float(self.value)
@@ -57,14 +64,26 @@ class QResult(DiagnosticValue):
                     break
         
         if kwargs.get('markdown', self._is_notebook()):
-            content = f"**{self.name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
+            content = f"**{self.display_name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
         else:
             # Clean terminal output: pad name to width if provided
-            width = kwargs.get('width', len(self.name))
-            name_str = f"{self.name}".ljust(width)
+            width = kwargs.get('width', len(self.display_name))
+            name_str = f"{self.display_name}".ljust(width)
             content = f"{name_str} : {q:.3f} [{label}] - {self.description}"
             
         return self._render_report(content, show, **kwargs)
+
+
+def _baseline_desc(metric: str, baseline: str) -> str:
+    mapping = {
+        "Q_HEADWAY": "Log-linear progress from the initial population.",
+        "Q_CLOSENESS": "Wasserstein score to a calibrated Half-Normal blur of GT.",
+        "Q_COVERAGE": "ECDF score between lattice coverage and random subsets.",
+        "Q_GAP": "ECDF score between continuous fronts and random fragmentation.",
+        "Q_REGULARITY": "ECDF score between lattice spacing and random spacing.",
+        "Q_BALANCE": "ECDF score between balanced occupancy and random imbalance.",
+    }
+    return mapping.get(metric, baseline)
 
 
 def _wasserstein_1d(u: np.ndarray, v: np.ndarray) -> float:
@@ -228,7 +247,7 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     return QResult(
         value=q_val,
         name="Q_HEADWAY",
-        description="Measures the algorithmic progress (headway) made beyond the initial population."
+        description=_baseline_desc("Q_HEADWAY", "")
     )
 
 def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> float:
@@ -282,7 +301,7 @@ def q_closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = Non
     return QResult(
         value=q_val,
         name="Q_CLOSENESS",
-        description="Measures the precision/sharpness of convergence to the manifold."
+        description=_baseline_desc("Q_CLOSENESS", "")
     )
 
 def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
@@ -307,7 +326,7 @@ def q_coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     target_m = kwargs.get('mop_dimension')
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "cov", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
-    return QResult(value=q_val, name="Q_COVERAGE", description="Measures how well the population spans the entire front.")
+    return QResult(value=q_val, name="Q_COVERAGE", description=_baseline_desc("Q_COVERAGE", ""))
 
 def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     """[Smart API] Computes Q_GAP using ECDF."""
@@ -331,7 +350,7 @@ def q_gap(data: Any, ref: Optional[Any] = None, **kwargs) -> float:
     target_m = kwargs.get('mop_dimension')
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "gap", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
-    return QResult(value=q_val, name="Q_GAP", description="Measures the continuity of the front (lack of large holes).")
+    return QResult(value=q_val, name="Q_GAP", description=_baseline_desc("Q_GAP", ""))
 
 def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_REGULARITY using ECDF."""
@@ -354,7 +373,7 @@ def q_regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwa
     target_m = kwargs.get('mop_dimension')
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "reg", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
-    return QResult(value=q_val, name="Q_REGULARITY", description="Measures the uniformity of point spacing (lattice order).")
+    return QResult(value=q_val, name="Q_REGULARITY", description=_baseline_desc("Q_REGULARITY", ""))
 
 def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> float:
     """[Smart API] Computes Q_BALANCE using ECDF."""
@@ -377,7 +396,7 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
     target_m = kwargs.get('mop_dimension')
     uni50, rand50, rand_ecdf = baselines.get_baseline_ecdf(problem, k_snap, "bal", target_m=target_m)
     q_val = _compute_q_ecdf(f_val, uni50, rand50, rand_ecdf)
-    return QResult(value=q_val, name="Q_BALANCE", description="Measures the equitable mass distribution across the manifold.")
+    return QResult(value=q_val, name="Q_BALANCE", description=_baseline_desc("Q_BALANCE", ""))
 
 def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """

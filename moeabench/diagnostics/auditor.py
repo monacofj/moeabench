@@ -246,6 +246,21 @@ class DiagnosticResult(Reportable):
 
 class PerformanceAuditor:
     """ Expert system for interpreting Clinical Quality Scores. """
+
+    _SINGLE_FAILURE_SUMMARIES = {
+        DiagnosticStatus.COLLAPSED_FRONT:
+            "The population approached the manifold but did not cover it with sufficient extent.",
+        DiagnosticStatus.SHIFTED_FRONT:
+            "The final population remained displaced from the target manifold.",
+        DiagnosticStatus.GAPPED_COVERAGE:
+            "The population spans the manifold broadly, but significant holes remain along the front.",
+        DiagnosticStatus.BIASED_SPREAD:
+            "The population reached the manifold, but its distribution remains uneven across regions.",
+        DiagnosticStatus.IRREGULAR_FRONT:
+            "The population is close to the target and broadly well distributed, but local spacing remains irregular.",
+        DiagnosticStatus.SEARCH_FAILURE:
+            "A single quality dimension received a very low score.",
+    }
     
     @staticmethod
     def audit_fr(metrics: Dict[str, fair.FairResult]) -> FairAuditResult:
@@ -291,7 +306,14 @@ class PerformanceAuditor:
         if q_res is None or f_res is None:
              if status == DiagnosticStatus.MISSING_BASELINE:
                  return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility, experiment_name=experiment_name)
-             return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=DiagnosticStatus.UNDEFINED, description="Audit failed or missing baselines.", reproducibility=reproducibility, experiment_name=experiment_name)
+             return DiagnosticResult(
+                 q_audit_res=None,
+                 fair_audit_res=None,
+                 status=DiagnosticStatus.UNDEFINED,
+                 description="The audit could not determine a reliable clinical classification for this result.",
+                 reproducibility=reproducibility,
+                 experiment_name=experiment_name,
+             )
 
         # 1. Detect Pathologies (Q < 0.34)
         anomalies = []
@@ -300,7 +322,7 @@ class PerformanceAuditor:
                 anomalies.append(name.replace("Q_", "").title())
         
         status = DiagnosticStatus.IDEAL_FRONT
-        desc = "Algorithm performance meets industry quality standards."
+        desc = "Performance is strong across all evaluated dimensions."
         
         if anomalies:
             status = DiagnosticStatus.SEARCH_FAILURE
@@ -317,6 +339,10 @@ class PerformanceAuditor:
                     "REGULARITY": DiagnosticStatus.IRREGULAR_FRONT
                 }
                 status = mapping.get(anomalies[0].upper(), status)
+                desc = PerformanceAuditor._SINGLE_FAILURE_SUMMARIES.get(
+                    status,
+                    f"{anomalies[0]} received a very low score."
+                )
 
         # 2. Check Substandard range (0.34 <= Q < 0.67)
         elif any(float(q.value) < THRESH_RESEARCH for q in q_res.scores.values()):
@@ -471,7 +497,7 @@ def audit(target: Any,
                     q_audit_res=None,
                     fair_audit_res=fr_res,
                     status=DiagnosticStatus.UNDEFINED,
-                    description="Physical audit complete. Clinical Q-Scores disabled (quality=False).",
+                    description="FAIR metrics were computed, but clinical scoring was not requested.",
                     reproducibility=r_info,
                     diagnostic_context=ctx,
                     experiment_name=experiment_name
@@ -509,8 +535,7 @@ def audit(target: Any,
             )
             
         except baselines.UndefinedBaselineError as e:
-            desc = (f"Clinical baseline missing for {mop_name} (M={P.shape[1]}, K={K_target}). "
-                    "Run 'mb.diagnostics.PerformanceAuditor.calibrate(mop, size=K)' to enable Q-Scores.")
+            desc = "Clinical scoring could not be completed because no compatible baseline was available."
             return PerformanceAuditor.audit_synthesis(None, None, status=DiagnosticStatus.MISSING_BASELINE, 
                                                    description=desc, reproducibility=r_info, experiment_name=experiment_name)
         except Exception as e:
