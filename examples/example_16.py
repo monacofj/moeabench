@@ -16,7 +16,7 @@ It features:
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 import matplotlib.pyplot as plt
 from moeabench.core.display import show_matplotlib
 

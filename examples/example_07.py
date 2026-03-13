@@ -14,7 +14,7 @@ It visualizes the reliability bands of a search process.
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 
 def main():
     mb.system.version()

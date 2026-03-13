@@ -20,7 +20,7 @@ is close to the front but highly clustered.
 import mb_path
 import numpy as np
 import matplotlib.pyplot as plt
-from moeabench import mb
+import moeabench as mb
 
 def main():
     mb.system.version()

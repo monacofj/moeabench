@@ -17,7 +17,7 @@ It focuses on the new `strata` visualizer (v0.8.0), exploring:
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 import matplotlib.pyplot as plt
 
 def main():

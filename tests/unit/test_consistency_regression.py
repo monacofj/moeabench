@@ -10,7 +10,7 @@ import numpy as np
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from moeabench import mb
+import moeabench as mb
 
 def test_dpf_unlimited_dimensions():
     """Verify 'DPF Unlimited' (v0.7.2+): M > N should now be permitted."""

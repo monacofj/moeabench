@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Legacy method names were removed from executable paths and replaced with canonical calls (including compare aliases where method is explicit).
   - Verbose procedural terminal prints in examples were removed in favor of code comments.
 - **Documentation Realignment**:
-  - `reference.md`, `userguide.md`, and `api_sheet.py` now document canonical API only.
+  - `reference.md`, `userguide.md`, and `api_sheet.md` now document canonical API only.
   - Legacy naming sections were removed/reworked; migration intent is now explicit.
 
 ### Fixed

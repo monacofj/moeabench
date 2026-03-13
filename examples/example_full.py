@@ -11,7 +11,7 @@ topology, performance, attainment, strata, and clinic diagnostics.
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 from pathlib import Path
 
 

@@ -13,7 +13,7 @@ between two algorithms using non-parametric tests and effect size measures.
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 
 def main():
     mb.system.version()

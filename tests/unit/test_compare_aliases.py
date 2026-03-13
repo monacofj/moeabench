@@ -8,7 +8,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from moeabench import mb
+import moeabench as mb
 
 
 def test_perf_aliases_map_to_technical_methods():

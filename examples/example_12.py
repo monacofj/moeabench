@@ -20,7 +20,7 @@ leaving large gaps and irregular clusters.
 
 import mb_path
 import numpy as np
-from moeabench import mb
+import moeabench as mb
 
 def main():
     mb.system.version()

@@ -10,7 +10,7 @@ This tutorial demonstrates how to handle Many-Objective Optimization Problems (M
 where clinical baselines are not pre-calculated in the library registry.
 """
 
-from moeabench import mb
+import moeabench as mb
 import numpy as np
 
 def main():

@@ -2,7 +2,7 @@
 import numpy as np
 import os
 import shutil
-from moeabench import mb
+import moeabench as mb
 from moeabench.moeas import NSGA3
 
 def test_protocol_a():

@@ -9,7 +9,7 @@ import numpy as np
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-from moeabench import mb
+import moeabench as mb
 
 def test_hv_normalization():
     """Verify Hypervolume normalization and reference points."""

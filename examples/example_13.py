@@ -22,7 +22,7 @@ The Q-Score system will automatically detect these failures and assign "Red" ver
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 import matplotlib.pyplot as plt
 
 def main():

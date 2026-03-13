@@ -58,7 +58,7 @@ mb.view.history(exp)                           # Plot Hypervolume convergence
 
 *   **[User Guide](docs/userguide.md)**: A comprehensive "How-to" guide covering installation, basic usage, advanced configuration, and custom extensions.
 *   **[API Reference](docs/reference.md)**: Exhaustive technical specification of the Data Model, Classes, and Functions.
-*   **[API Sheet](docs/api_sheet.py)**: A concise sheet demonstrating syntax and common workflows.
+*   **[API Sheet](docs/api_sheet.md)**: A concise thematic map of the canonical API and common workflows.
 *   **[Examples Directory](examples/)**: Access all `.py` and `.ipynb` files. `example_01.py` to `example_10.py` cover the essential analytical and diagnostic journey.
 
 ## Research & Citation

@@ -18,7 +18,7 @@ To ensure a smooth collaboration, we follow a structured workflow for all contri
 3.  **Branching**: Create a new branch with the following naming pattern:
     *   `feature|fix/<issue-number>/<short-description>`
     *   Example: `feature/42/add-new-metric`
-5.  **Implement**: Write your code adhering to our [Code Conventions](#2-code-conventions) and [Architectural Principles](design.md).
+5.  **Implement**: Before writing non-trivial code, read our [Architectural Constitution](design.md). Then write your code adhering to our [Code Conventions](#2-code-conventions) and architectural principles.
 6.  **Verify (Mandatory)**: Ensure your changes satisfy the automated test suite. See [Verification and Testing](#3-verification-and-testing) for details.
 7.  **Pull Request**: Submit a Pull Request targeting the `main` branch. Briefly describe your changes and link the relevant issue.
 
@@ -50,7 +50,8 @@ Ensure all new files include the SPDX header and respect the terms of the **GPL-
 
 ### Developer Documentation
 Before contributing, please read the following technical resources to understand our core principles and evolution:
-- **[Design Philosophy](design.md)**: Detailed explanation of our **Technical Storytelling** (Scientific Narrative) style, the Rich Result architecture, the `fooplot` convention, and mandatory vectorization.
+- **[Architectural Constitution](design.md)**: This is the normative design manifesto of MoeaBench. It defines our design principles, compliance rules, public API philosophy, polymorphism policy, rich-result architecture, and the separation between analysis and visualization. New contributors should read it before implementing any substantial change.
+- **[API Sheet](api_sheet.md)**: Thematic map of the canonical public API.
 - **[Architecture Decision Records (ADRs)](adr/)**: Registry of the fundamental design choices that shaped the framework.
 
 ---

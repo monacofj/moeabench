@@ -14,7 +14,7 @@ and compare early vs. late stages of a single execution.
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 
 def main():
     mb.system.version()

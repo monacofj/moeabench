@@ -14,7 +14,7 @@ moeabench's selective persistence system. We explore the 'all',
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 import os
 
 def main():

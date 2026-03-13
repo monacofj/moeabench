@@ -13,7 +13,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
-from moeabench import mb
+import moeabench as mb
 from moeabench.view.style import apply_style
 
 # Mock plt.show to prevent it from clearing the figure

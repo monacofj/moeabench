@@ -14,7 +14,7 @@ custom domains with the same analytical tools.
 """
 
 import mb_path
-from moeabench import mb
+import moeabench as mb
 import numpy as np
 
 # 1. Component: Custom Problem Logic
