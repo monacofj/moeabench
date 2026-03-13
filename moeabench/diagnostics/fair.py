@@ -24,6 +24,41 @@ from .base import DiagnosticValue
 # Internal cache for KDtrees to avoid reconstruction in Monte Carlo loops
 _TREE_CACHE = {}
 
+
+def _attach_history_payload(result, data, eval_fn):
+    """Attach a generation x run matrix when the source carries history."""
+    is_exp = hasattr(data, 'runs') and hasattr(data, 'pop')
+    is_run = hasattr(data, 'history') and hasattr(data, 'pop')
+    if not (is_exp or is_run):
+        return result
+
+    runs = list(data) if is_exp else [data]
+    series = []
+    labels = []
+    max_len = 0
+
+    for run in runs:
+        try:
+            hist = run.history('f')
+        except Exception:
+            continue
+        vals = [float(eval_fn(run, pop_f, gen_idx)) for gen_idx, pop_f in enumerate(hist)]
+        arr = np.asarray(vals, dtype=float)
+        series.append(arr)
+        labels.append(getattr(run, 'name', None) or getattr(getattr(run, 'source', None), 'name', None) or "Run")
+        max_len = max(max_len, len(arr))
+
+    if not series or max_len == 0:
+        return result
+
+    mat = np.full((max_len, len(series)), np.nan, dtype=float)
+    for j, arr in enumerate(series):
+        mat[:len(arr), j] = arr
+
+    result._history_values = mat
+    result._history_labels = labels
+    return result
+
 def _get_kdtree(data):
     from scipy.spatial import KDTree
     # Use (shape, id) as key to avoid dimension leaks and handle array reallocations.
@@ -112,11 +147,21 @@ def headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, *
     # If dist_i is 0 (unlikely in real search), headway is 1.0 unless dist_f is also 0.
     f_val = dist_f / dist_i if dist_i > 1e-12 else (1.0 if dist_f > 1e-12 else 0.0)
     
-    return FairResult(
+    result = FairResult(
         value=float(f_val),
         name="HEADWAY",
         description=f"Algorithm left {f_val*100:.1f}% of the initial search error unreduced.",
         raw_data=u_vals_f
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: headway(
+            pop_f,
+            ref=GT,
+            s_k=res,
+            initial_data=run.pop(0).objectives
+        ).value
     )
 
 def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> FairResult:
@@ -156,11 +201,22 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     u_vals = np.maximum(0.0, u_vals_raw - ideal_res)
     f_val = float(np.median(u_vals))
     
-    return FairResult(
+    result = FairResult(
         value=f_val,
         name="CLOSENESS",
         description=f"Median distance to ground truth manifold (corrected by ideal residue: {ideal_res:.4f}).",
         raw_data=u_vals
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: closeness(
+            pop_f,
+            ref=GT,
+            s_k=s_fit,
+            problem=problem_name,
+            k=k
+        ).value
     )
 
 def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
@@ -185,11 +241,16 @@ def coverage(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     
     # 2. Mean (IGD)
     f_val = float(np.mean(min_d))
-    return FairResult(
+    result = FairResult(
         value=f_val,
         name="COVERAGE",
         description=f"Average distance from target manifold to nearest solution is {f_val:.4f}.",
         raw_data=min_d
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: coverage(pop_f, ref=GT).value
     )
 
 def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
@@ -214,11 +275,16 @@ def gap(data: Any, ref: Optional[Any] = None, **kwargs) -> FairResult:
     
     # 2. Percentile 95 (Robust Max)
     f_val = float(np.percentile(min_d, 95))
-    return FairResult(
+    result = FairResult(
         value=f_val,
         name="GAP",
         description=f"Largest hole detected on the manifold is {f_val:.4f}.",
         raw_data=min_d
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: gap(pop_f, ref=GT).value
     )
 
 def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwargs) -> FairResult:
@@ -249,11 +315,16 @@ def regularity(data: Any, ref_distribution: Optional[np.ndarray] = None, **kwarg
     
     # 3. Wasserstein Distance
     f_val = float(wasserstein_distance(nn_p, nn_u))
-    return FairResult(
+    result = FairResult(
         value=f_val,
         name="REGULARITY",
         description=f"Deviation from ideal lattice spacing is {f_val:.4f} (Wasserstein distance).",
         raw_data=nn_p # Plot the distribution of NN distances
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: regularity(pop_f, ref_distribution=U_ref).value
     )
 
 def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optional[np.ndarray] = None, **kwargs) -> FairResult:
@@ -282,9 +353,14 @@ def balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optiona
     # 3. JS Divergence
     # Base 2 gives range [0, 1] for JS
     f_val = float(jensenshannon(hist_p, ref_hist, base=2.0))
-    return FairResult(
+    result = FairResult(
         value=f_val,
         name="BALANCE",
         description=f"Distribution bias across regions is {f_val:.4f} (JS Divergence).",
         raw_data=hist_p # For balance, the raw data is the occupancy histogram
+    )
+    return _attach_history_payload(
+        result,
+        data,
+        lambda run, pop_f, gen_idx: balance(pop_f, centroids=centroids, ref_hist=ref_hist).value
     )

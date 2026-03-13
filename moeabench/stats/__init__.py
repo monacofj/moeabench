@@ -4,7 +4,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .tests import perf_compare, topo_compare, PerfCompareResult
-from .stratification import strata, emd, StratificationResult
+from .stratification import (
+    ranks,
+    caste,
+    tiers,
+    emd,
+    RankCompareResult,
+    CasteCompareResult,
+    TierResult,
+)
 from .topo_attainment import AttainmentSurface, topo_attainment as _attainment, topo_gap as _attainment_gap
 
 # Canonical API names
@@ -55,9 +63,13 @@ __all__ = [
     "topo_shift",
     "topo_tail",
     "PerfCompareResult",
-    "strata",
+    "ranks",
+    "caste",
+    "tiers",
     "emd",
-    "StratificationResult",
+    "RankCompareResult",
+    "CasteCompareResult",
+    "TierResult",
     "AttainmentSurface",
     "attainment",
     "attainment_gap",

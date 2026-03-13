@@ -5,7 +5,17 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ..stats.stratification import strata, StratificationResult, TierResult
+from ..stats.stratification import (
+    strata,
+    ranks as stats_ranks,
+    caste as stats_caste,
+    tiers as stats_tiers,
+    StratificationResult,
+    TierResult,
+    CasteSummary,
+    RankCompareResult,
+    CasteCompareResult,
+)
 from ..metrics.evaluator import hypervolume
 from ..core.display import show_matplotlib
 
@@ -49,7 +59,11 @@ def strat_ranks(*args, title=None, show=True, **kwargs):
     [mb.view.strat_ranks] Structural Perspective.
     Visualizes frequency distribution across dominance ranks.
     """
-    results, labels = _resolve_to_result(args, StratificationResult, strata)
+    if len(args) == 1 and isinstance(args[0], RankCompareResult):
+        results = list(args[0].results)
+        labels = list(args[0].labels)
+    else:
+        results, labels = _resolve_to_result(args, StratificationResult, strata)
     
     fig, ax = plt.subplots()
     n_series = len(results)
@@ -85,31 +99,35 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
                    'individual' for a distribution of individual solution merits (Per Capita).
         show_quartiles (bool): Whether to show small numeric labels for Q1, Q3 and Whiskers.
     """
-    # Allow legacy alias 'rank_caste2' to point here too if needed, but the canonical name is now strat_caste
-    results, resolved_labels = _resolve_to_result(args, StratificationResult, strata)
-    if labels is None: labels = resolved_labels
-    
     if metric is None:
         metric = hypervolume
-        
-    fig, ax = plt.subplots(figsize=(8, 6))
-    
-    # Global Foundation
-    all_objs_list = [res.objectives for res in results if hasattr(res, 'objectives') and res.objectives is not None]
-    global_ref = np.vstack(all_objs_list) if all_objs_list else None
-    
-    total_qualities = []
-    for res in results:
-        if hasattr(res, 'objectives') and res.objectives is not None:
-            val = metric(res.objectives, ref=global_ref, **kwargs)
-            total_qualities.append(float(val))
-    anchor = max(total_qualities) if total_qualities else 1.0
 
-    n_series = len(results)
+    if len(args) == 1 and isinstance(args[0], CasteCompareResult):
+        summaries = list(args[0].summaries)
+        resolved_labels = list(args[0].labels)
+        metric_name = args[0].metric_name
+        mode = args[0].mode
+    elif args and all(isinstance(arg, CasteSummary) for arg in args):
+        summaries = list(args)
+        resolved_labels = [s.name for s in summaries]
+        metric_name = summaries[0].metric_name if summaries else getattr(metric, '__name__', 'Value')
+    else:
+        castes = stats_caste(*args, metric=metric, mode=mode, **kwargs)
+        summaries = list(castes.summaries)
+        resolved_labels = list(castes.labels)
+        metric_name = castes.metric_name
+        mode = castes.mode
+
+    if labels is None:
+        labels = resolved_labels
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    n_series = len(summaries)
     base_width = 0.7 / n_series
     
     # 2. Setup Plot Infrastructure (Rank Lanes)
-    max_r = max(res.max_rank for res in results)
+    max_r = max((max(summary._data.keys()) if summary._data else 0) for summary in summaries)
     for r in range(1, max_r + 1):
         # Vertical Lane boundary
         if r < max_r:
@@ -118,75 +136,39 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
         if r % 2 == 0:
             ax.axvspan(r - 0.5, r + 0.5, color='gray', alpha=0.05)
 
-    for i, res in enumerate(results):
+    for i, summary in enumerate(summaries):
         lbl = labels[i]
         color = f"C{i % 10}"
-        
-        def _scalar_metric(objs, **m_kwargs):
-            m_val = metric(objs, ref=global_ref, **m_kwargs)
-            return float(m_val)
-                
-        counts = res.frequencies()
-        ranks = np.arange(1, len(counts) + 1)
         # Group series tightly around the center of the rank (the integer)
         offset = (i - (n_series - 1) / 2) * (base_width * 1.1)
-        
-        plot_data = []
+
+        rank_data = summary._data
+        max_n = max((v['n'] for v in rank_data.values()), default=1.0)
+        bxp_stats = []
         plot_widths = []
         plot_positions = []
-        
-        max_freq = np.max(counts) if len(counts) > 0 else 1.0
-        
-        for r in range(1, len(counts) + 1):
-            mask = (res.rank_array == r)
-            if not np.any(mask): 
+
+        for r in range(1, max_r + 1):
+            info = rank_data.get(r)
+            if not info:
                 continue
-                
-            sub_objs = res.objectives[mask]
-            
-            if mode == 'collective':
-                # GDP Mode: Distribution of total rank quality across runs
-                if hasattr(res, 'sub_results') and res.sub_results is not None:
-                    # Multi-run data: use pre-calculated sub-results
-                    samples = []
-                    for sub_res in res.sub_results:
-                        sub_mask = (sub_res.rank_array == r)
-                        if np.any(sub_mask):
-                             samples.append(_scalar_metric(sub_res.objectives[sub_mask]) / anchor)
-                        else:
-                             samples.append(0.0)
-                else:
-                    # Single run: Collective is just a single point (the total rank quality)
-                    samples = [_scalar_metric(sub_objs) / anchor]
-            else:
-                # Individual Mode (Per Capita): Distribution of individual merit
-                samples = [_scalar_metric(sub_objs[j:j+1]) / anchor for j in range(len(sub_objs))]
-            
-            plot_data.append(samples)
-            # Width proportional to frequency, but constrained to its lane share
-            w = (counts[r-1] / max_freq) * base_width
+            w = (info['n'] / max_n) * base_width if max_n > 0 else base_width
             plot_widths.append(w)
             plot_positions.append(r + offset)
-            
-            # Numeric Annotation (Statistical Summary)
-            q_stats = np.percentile(samples, [25, 50, 75])
-            q_25, q_50, q_75 = q_stats
-            iqr = q_75 - q_25
-            
-            # Standard Whisker Logic (1.5 * IQR)
-            upper_whisker_limit = q_75 + 1.5 * iqr
-            lower_whisker_limit = q_25 - 1.5 * iqr
-            
-            # Actual whisker points are the most extreme values within the limits
-            q_max_whisker = np.max([s for s in samples if s <= upper_whisker_limit]) if any(samples <= upper_whisker_limit) else q_75
-            q_min_whisker = np.min([s for s in samples if s >= lower_whisker_limit]) if any(samples >= lower_whisker_limit) else q_25
-            
-            # Calculate average n per run for this rank
-            if hasattr(res, 'sub_results') and res.sub_results:
-                # Count actual solutions in this rank for each run
-                avg_n = int(round(np.mean([np.sum(s.rank_array == r) for s in res.sub_results])))
-            else:
-                avg_n = int(round(counts[r-1] * len(res.objectives)))
+            q_min_whisker = info['min_w']
+            q_25 = info['q1']
+            q_50 = info['q']
+            q_75 = info['q3']
+            q_max_whisker = info['max_w']
+            avg_n = info['n']
+            bxp_stats.append({
+                'med': q_50,
+                'q1': q_25,
+                'q3': q_75,
+                'whislo': q_min_whisker,
+                'whishi': q_max_whisker,
+                'fliers': [],
+            })
             
             # Helper for label positioning (Numbers only, no prefixes)
             def add_q_label(y_val, label_val, color, ha='left', va='center'):
@@ -209,16 +191,23 @@ def strat_caste(*args, labels=None, title=None, metric=None, mode='collective',
                 add_q_label(q_25, q_25, color, ha=side)
                 add_q_label(q_min_whisker, q_min_whisker, color, ha=side)
 
-        if plot_data:
-            bp = ax.boxplot(plot_data, positions=plot_positions, widths=plot_widths, 
-                            patch_artist=True, manage_ticks=False,
-                            medianprops={'color': 'black', 'linewidth': 1.5},
-                            boxprops={'facecolor': color, 'alpha': 0.6, 'edgecolor': color})
+        if bxp_stats:
+            bp = ax.bxp(
+                bxp_stats,
+                positions=plot_positions,
+                widths=plot_widths,
+                patch_artist=True,
+                manage_ticks=False,
+                medianprops={'color': 'black', 'linewidth': 1.5},
+                boxprops={'facecolor': color, 'alpha': 0.6, 'edgecolor': color},
+                whiskerprops={'color': color},
+                capprops={'color': color},
+            )
 
     ax.set_xticks(range(1, max_r + 1))
     ax.set_xlim(0.5, max_r + 0.5)
     ax.set_xlabel("Dominance Rank (Global Class)")
-    ax.set_ylabel(f"Relative Quality Distribution ({getattr(metric, '__name__', 'Value')})")
+    ax.set_ylabel(f"Relative Quality Distribution ({metric_name})")
     ax.set_title(title if title else "Caste Distribution (Groups vs Tiers)")
     ax.legend([plt.Rectangle((0,0),1,1, color=f"C{i%10}", alpha=0.6) for i in range(n_series)], labels)
     ax.grid(True, axis='y', alpha=0.3)
@@ -236,9 +225,7 @@ def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
     if isinstance(exp1, TierResult):
         res = exp1
     else:
-        if exp2 is None:
-            raise ValueError("mb.view.tiers requires two inputs or a precomputed joint strata result.")
-        res = strata(exp1, exp2, **kwargs)
+        res = stats_tiers(exp1, exp2, **kwargs)
         
     fig, ax = plt.subplots()
     nameA, nameB = res.group_labels

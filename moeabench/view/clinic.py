@@ -13,6 +13,7 @@ from .style import MOEABENCH_PALETTE, GRID_COLOR, MEDIAN_COLOR, ALERT_COLOR, TEX
 from ..diagnostics import audit, headway, closeness, coverage, gap, regularity, balance
 from ..diagnostics import q_headway, q_closeness, q_coverage, q_gap, q_regularity, q_balance
 from ..diagnostics import q_headway_points, q_closeness_points
+from ..diagnostics.base import DiagnosticValue
 
 def _resolve_mode(mode: str) -> str:
     """ Detects best mode if set to 'auto' based on environment and defaults. """
@@ -29,7 +30,7 @@ def _resolve_mode(mode: str) -> str:
     return mode
 
 def _resolve_metric_data(target: Any, ground_truth: Optional[np.ndarray], metric_name: str, **kwargs):
-    """ Internal helper to resolve physical facts and q-scores for a specific metric. """
+    """Internal helper to resolve the physical diagnostic result for one metric."""
     metric_name = metric_name.lower()
     
     # 1. Map metric name to functions
@@ -41,44 +42,13 @@ def _resolve_metric_data(target: Any, ground_truth: Optional[np.ndarray], metric
         "regularity": regularity,
         "balance": balance
     }
-    q_map = {
-        "closeness": q_closeness,
-        "headway": q_headway,
-        "coverage": q_coverage,
-        "gap": q_gap,
-        "regularity": q_regularity,
-        "balance": q_balance
-    }
-    
     if metric_name not in f_map:
         raise ValueError(f"Unknown metric: {metric_name}. Available: {list(f_map.keys())}")
         
     f_func = f_map[metric_name]
-    q_func = q_map[metric_name]
-    
-    # 2. Extract Problem Name (for Q-Score lookup)
-    mop_name = "Unknown"
-    mop_obj = None
-    if hasattr(target, 'mop'): mop_obj = target.mop
-    elif hasattr(target, 'problem'): mop_obj = target.problem
-    
-    if mop_obj:
-        if hasattr(mop_obj, 'name'): mop_name = mop_obj.name
-        else: mop_name = mop_obj.__class__.__name__
-    elif hasattr(target, 'mop_name'):
-        mop_name = target.mop_name
-    elif isinstance(target, np.ndarray) and hasattr(target, 'name'):
-        mop_name = target.name
-
-    # 3. Compute Physical Fact
-    f_val = f_func(target, ref=ground_truth, **kwargs)
-    
-    # 4. Compute Q-Score
-    # Most Q-funcs take (f_val, problem, k)
-    K = len(target.objectives) if hasattr(target, 'objectives') else 100 # Fallback
-    q_res = q_func(f_val, problem=mop_name, k=K)
-    
-    return f_val, q_res
+    if isinstance(target, DiagnosticValue):
+        return target
+    return f_func(target, ref=ground_truth, **kwargs)
 
 
 def _resolve_radar_scores(target: Any, ground_truth: Optional[np.ndarray] = None, **kwargs):
@@ -132,23 +102,19 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
     Focuses on goal-attainment and Headway (95th percentile).
     """
     mode = _resolve_mode(mode)
-    f_res, q_res = _resolve_metric_data(target, ground_truth, metric, **kwargs)
-    
-    # Use raw_data from the FairResult if available, otherwise fallback to scalar array
-    data = f_res.raw_data if hasattr(f_res, 'raw_data') and f_res.raw_data is not None else np.array([float(f_res)])
-    
-    sorted_data = np.sort(data)
-    y = np.linspace(0, 1, len(sorted_data))
-    m_val = np.median(data)
-    h_val = np.percentile(data, 95)
-    
-    mop_name = q_res.problem if hasattr(q_res, 'problem') else "Unknown"
-    auto_title = f"{metric.title()} Distribution: ECDF<br><sup>{q_res.description}</sup>"
+    f_res = _resolve_metric_data(target, ground_truth, metric, **kwargs)
+    data = f_res.samples
+    sorted_data = f_res.sorted_samples
+    y = f_res.ecdf_y
+    m_val = f_res.median
+    h_val = f_res.p95
+
+    auto_title = f"{metric.title()} Distribution: ECDF<br><sup>{f_res.description}</sup>"
     resolved_title = title if title is not None else auto_title
     x_label = f"Physical Fact (Layer 1) - [{metric}]"
     
     # Resolve plotting label (name)
-    lbl = getattr(target, 'name', 'Experiment')
+    lbl = getattr(target, 'name', None) or getattr(getattr(target, 'source', None), 'name', None) or 'Experiment'
     
     if mode == 'static':
         fig = plt.figure(figsize=defaults.figsize)
@@ -200,16 +166,9 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
     Focuses on the shape of the error (histogram/density).
     """
     mode = _resolve_mode(mode)
-    f_res, q_res = _resolve_metric_data(target, ground_truth, metric, **kwargs)
-    
-    # Use raw_data from the FairResult if available, otherwise fallback to scalar array
-    data = f_res.raw_data if hasattr(f_res, 'raw_data') and f_res.raw_data is not None else np.array([float(f_res)])
-
-    # Statistics
-    m_val = np.median(data)
-    h_val = np.percentile(data, 95)
-
-    auto_title = f"{metric.title()} Distribution: Point-wise Analysis<br><sup>{q_res.description}</sup>"
+    f_res = _resolve_metric_data(target, ground_truth, metric, **kwargs)
+    data = f_res.samples
+    auto_title = f"{metric.title()} Distribution: Point-wise Analysis<br><sup>{f_res.description}</sup>"
     resolved_title = title if title is not None else auto_title
     x_label = f"Physical Fact (Layer 1) - [{metric}]"
 
@@ -352,6 +311,36 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
             gens = slice(gens)
 
     mode = _resolve_mode(mode)
+    if isinstance(target, DiagnosticValue) and target.history_values is not None:
+        values = np.asarray(target.history_values, dtype=float)
+        labels = list(target.history_labels or ["Series"])
+        if gens is not None:
+            values = values[gens]
+            if values.ndim == 1:
+                values = values.reshape(-1, 1)
+        resolved_title = title if title is not None else f"Clinic History: {target.name} Evolution"
+
+        if mode == 'static':
+            fig = plt.figure(figsize=defaults.figsize)
+            for j in range(values.shape[1]):
+                plt.plot(range(values.shape[0]), values[:, j], label=labels[j])
+            plt.title(resolved_title)
+            plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{target.name.lower()}]")
+            plt.grid(True, alpha=0.3); plt.legend()
+            if show: show_matplotlib(fig)
+            return fig
+        else:
+            fig = go.Figure()
+            for j in range(values.shape[1]):
+                fig.add_trace(go.Scatter(x=list(range(values.shape[0])), y=values[:, j], mode='lines', name=labels[j]))
+            fig.update_layout(
+                title=dict(text=resolved_title, x=0.5),
+                xaxis_title="Generation", yaxis_title=f"Physical Fact [{target.name.lower()}]",
+                template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
+            )
+            if show: fig.show()
+            return fig
+
     is_exp = hasattr(target, 'runs')
     is_run = hasattr(target, 'history')
     if not (is_exp or is_run) or not hasattr(target, 'mop'):

@@ -42,7 +42,9 @@
 | `stats` | `topo_distribution` | `topo_compare(method='ks' \| 'emd' \| 'anderson')`<br>Aliases: `topo_match` (KS), `topo_shift` (EMD), `topo_tail` (Anderson) | `Population` | `DistMatchResult` | `view.density` |
 | `stats` | `topo_attainment` | `attainment` | `Population` | `AttainmentSurface` | `view.bands`, `view.topology` |
 | `stats` | `topo_gap` | `attainment_gap` | `Population` | `AttainmentDiff` | `view.gap` |
-| `stats` | `strata` | `strata` | `Population` | `StrataResult` | `view.ranks`, `view.caste`, `view.tiers` |
+| `stats` | `rank_distribution` | `ranks` | `Population` | `RankCompareResult` | `view.ranks` |
+| `stats` | `caste_distribution` | `caste` | `Population` | `CasteCompareResult` | `view.caste` |
+| `stats` | `tier_duel` | `tiers` | `Population` | `TierResult` | `view.tiers` |
 | `clinic` | `audit` | `audit` | `Population` | `DiagnosticResult` | `view.radar`, `view.ecdf`, `view.density`, `view.history` |
 
 ### View APIs (`view`)
@@ -56,9 +58,9 @@
 | `view` | `perf_history` | `history` | `MetricMatrix` |
 | `view` | `perf_spread` | `spread` | `MetricMatrix` |
 | `view` | `perf_density` | `density` | `MetricMatrix` |
-| `view` | `strat_ranks` | `ranks` | `StrataResult` |
-| `view` | `strat_caste` | `caste` | `StrataResult` |
-| `view` | `strat_tiers` | `tiers` | `StrataResult` |
+| `view` | `strat_ranks` | `ranks` | `RankCompareResult` |
+| `view` | `strat_caste` | `caste` | `CasteCompareResult` |
+| `view` | `strat_tiers` | `tiers` | `TierResult` |
 | `view` | `clinic_ecdf` | `ecdf` | `DiagnosticResult` |
 | `view` | `clinic_distribution` | `density` | `DiagnosticResult` |
 | `view` | `clinic_history` | `history` | `DiagnosticResult` |
@@ -76,38 +78,38 @@
 
 ---
 
-## Strata Design Decision
+## Stratification Design Decision
 
-A proposta aqui fica objetiva: **1 método** (`mb.stats.strata`) e **1 tipo de objeto de retorno** (ex.: `StrataResult`), com **3 visualizações** sobre o mesmo objeto.
+A proposta final segue o mesmo pipeline do restante da API:
+
+- `res = mb.stats.ranks(...)`
+- `res = mb.stats.caste(...)`
+- `res = mb.stats.tiers(...)`
+- `res.report()`
+- `mb.view.ranks(res)` / `mb.view.caste(res)` / `mb.view.tiers(res)`
 
 ### Contract (Recommended)
 
 - Entrada: `Population` (ou compatível).
-- Método: `mb.stats.strata(...)`.
-- Saída: objeto único (`StrataResult`).
-- Visualizações suportadas pelo mesmo resultado:
-  - `view.ranks(strata_result)`
-  - `view.caste(strata_result)`
-  - `view.tiers(strata_result)`
+- Métodos:
+  - `mb.stats.ranks(...)`
+  - `mb.stats.caste(..., metric=mb.metrics.hv)`
+  - `mb.stats.tiers(...)`
+- Saídas:
+  - `RankCompareResult`
+  - `CasteCompareResult`
+  - `TierResult`
 
 Prós:
-- Contrato único e consistente para estratificação.
-- Evita duplicar cálculos entre visualizações.
-- Tabela/API ficam coerentes: uma medida, três lentes visuais.
-
-### Option B (descartada)
-
-- Unificar em `view.caste(..., mode='ranks|strata|tiers')`.
-
-Contras:
-- `mode` vira switch grande e mais frágil.
-- Perde semântica direta por visualização.
+- Mantém o padrão `stats -> report -> view`.
+- Permite `caste(..., metric=...)` de forma explícita.
+- Garante que o `view` receba um objeto já com o conteúdo visual necessário.
 
 ---
 
 ## Short Recommendation
 
-- Faça a quebra para `mb.stats.strata(...)` com retorno único (`StrataResult`).
-- Faça as três views consumirem esse mesmo objeto.
-- Não introduza alias curto `mb.strata()`.
+- Exponha `mb.stats.ranks`, `mb.stats.caste` e `mb.stats.tiers`.
+- Faça as três views consumirem esses resultados diretamente.
+- `mb.stats.strata` deixa de ser parte da API canônica pública.
 - Em `mb.diagnostics`, exponha publicamente apenas `audit`.

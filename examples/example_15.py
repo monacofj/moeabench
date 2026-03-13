@@ -12,9 +12,9 @@ This example demonstrates the three scaling modes in moeabench, controlled by
 the `scale` parameter:
 
 1. 'raw': Absolute volume dominated in the objective space ($H_{raw}$). 
-2. 'relative': Aggregated Efficiency ($H_{rel}$). Scaled [0, 1] based on 
+2. 'rel': Aggregated Efficiency ($H_{rel}$). Scaled [0, 1] based on 
    the range of all solutions present in the session (or specified in `ref`).
-3. 'absolute': Theoretical Optimality ($H_{abs}$). Scaled [0, 1] relative 
+3. 'abs': Theoretical Optimality ($H_{abs}$). Scaled [0, 1] relative 
    to the theoretical maximum defined by the Ground Truth.
 
 We also explore the `joint` parameter, which controls auto-normalization 
@@ -82,13 +82,13 @@ def main():
     # --- PHASE 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
     h1_ind = [
         mb.metrics.hv(exp1, scale='raw', joint=False),
-        mb.metrics.hv(exp1, scale='relative', joint=False),
-        mb.metrics.hv(exp1, scale='absolute', joint=False)
+        mb.metrics.hv(exp1, scale='rel', joint=False),
+        mb.metrics.hv(exp1, scale='abs', joint=False)
     ]
     h2_ind = [
         mb.metrics.hv(exp2, scale='raw', joint=False),
-        mb.metrics.hv(exp2, scale='relative', joint=False),
-        mb.metrics.hv(exp2, scale='absolute', joint=False)
+        mb.metrics.hv(exp2, scale='rel', joint=False),
+        mb.metrics.hv(exp2, scale='abs', joint=False)
     ]
     plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
@@ -96,13 +96,13 @@ def main():
     ref = [exp1, exp2]
     h1_jnt = [
         mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),
-        mb.metrics.hv(exp1, ref=ref, scale='relative', joint=True),
-        mb.metrics.hv(exp1, ref=ref, scale='absolute', joint=True)
+        mb.metrics.hv(exp1, ref=ref, scale='rel', joint=True),
+        mb.metrics.hv(exp1, ref=ref, scale='abs', joint=True)
     ]
     h2_jnt = [
         mb.metrics.hv(exp2, ref=ref, scale='raw', joint=True),
-        mb.metrics.hv(exp2, ref=ref, scale='relative', joint=True),
-        mb.metrics.hv(exp2, ref=ref, scale='absolute', joint=True)
+        mb.metrics.hv(exp2, ref=ref, scale='rel', joint=True),
+        mb.metrics.hv(exp2, ref=ref, scale='abs', joint=True)
     ]
     # Reuse y_max from the Premium's raw individual volume to see the shift
     y_max_jnt = h2_ind[0].values[-1,:].mean() * 1.1

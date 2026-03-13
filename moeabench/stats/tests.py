@@ -13,13 +13,30 @@ from ..defaults import defaults
 class PerfCompareResult(StatsResult):
     """Unified result object for performance comparison methods."""
 
-    def __init__(self, method, statistic=None, p_value=None, effect_size=None, decision=None, details=None):
+    def __init__(self, method, statistic=None, p_value=None, effect_size=None, decision=None, details=None, plot_data=None):
         self.method = method
         self.statistic = statistic
         self.p_value = p_value
         self.effect_size = effect_size
         self.decision = decision
         self.details = details or {}
+        self.plot_data = plot_data or {}
+
+    @property
+    def samples(self):
+        return self.plot_data.get("samples", [])
+
+    @property
+    def labels(self):
+        return self.plot_data.get("labels", [])
+
+    @property
+    def metric_label(self):
+        return self.plot_data.get("metric_label")
+
+    @property
+    def gen(self):
+        return self.plot_data.get("gen", -1)
 
     def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
         use_md = kwargs.get('markdown', self._is_notebook())
@@ -213,6 +230,57 @@ def _resolve_samples(data1, data2, metric=None, gen=-1, **kwargs):
     
     return v1, v2
 
+
+def _infer_perf_label(obj, index=0, gen=-1):
+    """Best-effort label inference shared by stats and views."""
+    from ..metrics.evaluator import MetricMatrix
+    exp_name = None
+    run_idx = None
+
+    if type(obj).__name__ == 'Run':
+        run_idx = getattr(obj, 'index', None)
+        if hasattr(obj, 'source'):
+            exp_name = getattr(obj.source, 'name', None)
+    elif type(obj).__name__ == 'experiment':
+        exp_name = getattr(obj, 'name', None)
+    elif isinstance(obj, MetricMatrix):
+        exp_name = getattr(obj, 'source_name', None) or getattr(obj, 'metric_name', None)
+
+    if not exp_name:
+        exp_name = getattr(obj, 'name', None) or f"Data {index+1}"
+        import re
+        exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+
+    pieces = []
+    if run_idx is not None:
+        pieces.append(f"run {run_idx}")
+    if gen is not None and gen >= 0:
+        pieces.append(f"gen {gen}")
+    return f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name
+
+
+def _infer_metric_label(metric, data1, data2):
+    """Infer the plotted metric label from inputs or metric callable."""
+    from ..metrics.evaluator import MetricMatrix
+    for obj in (data1, data2):
+        if isinstance(obj, MetricMatrix):
+            return getattr(obj, "metric_name", None) or getattr(metric, "__name__", "Value")
+    return getattr(metric, "__name__", "Value")
+
+
+def _build_perf_plot_data(data1, data2, metric=None, gen=-1, **kwargs):
+    """Canonical plot payload shared by perf stats and perf views."""
+    x, y = _resolve_samples(data1, data2, metric=metric, gen=gen, **kwargs)
+    return {
+        "samples": [np.asarray(x).ravel(), np.asarray(y).ravel()],
+        "labels": [
+            _infer_perf_label(data1, 0, gen=gen),
+            _infer_perf_label(data2, 1, gen=gen),
+        ],
+        "metric_label": _infer_metric_label(metric, data1, data2),
+        "gen": gen,
+    }
+
 def perf_probability(data1, data2, metric=None, gen=-1, **kwargs):
     """
     [mb.stats.perf_probability] Computes the Vargha-Delaney A12 effect size statistic.
@@ -288,6 +356,7 @@ def perf_compare(data1, data2, method='ks', metric=None, gen=-1, alternative='tw
             effect_size=float(res.perf_probability),
             decision=decision,
             details={"name": res.name},
+            plot_data=_build_perf_plot_data(data1, data2, metric=metric, gen=gen, **kwargs),
         )
     if method == 'ks':
         res = perf_distribution(data1, data2, alternative=alternative, metric=metric, gen=gen, **kwargs)
@@ -299,6 +368,7 @@ def perf_compare(data1, data2, method='ks', metric=None, gen=-1, alternative='tw
             effect_size=float(res.perf_probability),
             decision=decision,
             details={"name": res.name},
+            plot_data=_build_perf_plot_data(data1, data2, metric=metric, gen=gen, **kwargs),
         )
     if method == 'a12':
         res = perf_probability(data1, data2, metric=metric, gen=gen, **kwargs)
@@ -316,6 +386,7 @@ def perf_compare(data1, data2, method='ks', metric=None, gen=-1, alternative='tw
             effect_size=val,
             decision=decision,
             details={"name": res.name},
+            plot_data=_build_perf_plot_data(data1, data2, metric=metric, gen=gen, **kwargs),
         )
     raise ValueError(f"Unknown perf_compare method: {method}. Use 'mannwhitney', 'ks', or 'a12'.")
 
@@ -323,13 +394,22 @@ class DistMatchResult(StatsResult):
     """
     Rich result for multi-axial distribution matching (topology/equivalence).
     """
-    def __init__(self, results, names, space='objs', method='ks', alpha=None, threshold=None):
+    def __init__(self, results, names, space='objs', method='ks', alpha=None, threshold=None, plot_data=None):
         self.results = results # {axis_idx: score/p_val}
         self.names = names
         self.space = space
         self.method = method
         self.alpha = alpha if alpha is not None else defaults.alpha
         self.threshold = threshold if threshold is not None else defaults.displacement_threshold
+        self.plot_data = plot_data or {}
+
+    @property
+    def buffers(self):
+        return self.plot_data.get("buffers", [])
+
+    @property
+    def axes(self):
+        return self.plot_data.get("axes", [])
 
     @property
     def semantic_alias(self) -> str:
@@ -523,7 +603,10 @@ def topo_distribution(*args, space='objs', axes=None, method='ks', alpha=None, t
                         vals.append(wasserstein_distance(samples[i], samples[j]))
                 results[ax] = np.mean(vals)
                 
-    return DistMatchResult(results, names, space=space, method=method, alpha=alpha, threshold=threshold)
+    return DistMatchResult(
+        results, names, space=space, method=method, alpha=alpha, threshold=threshold,
+        plot_data={"buffers": buffers, "axes": list(axes), "space": space}
+    )
 
 
 def topo_compare(*args, space='objs', axes=None, method='ks', alpha=None, threshold=None, **kwargs):

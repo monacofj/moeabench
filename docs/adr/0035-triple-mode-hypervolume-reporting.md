@@ -17,9 +17,9 @@ This forced the best algorithm to naturally hit a `1.0` ceiling. However, this c
 This mathematical behavior violates the principle of "Immutable Evaluation" for physical metrics while satisfying the desire for "Competitive Efficiency Rankings".
 
 1. **`scale='raw'` (Volume Mode - Default Since v0.11.x)**: Returns the **Absolute Physical Volume** dominated by the solutions within the current Global Bounding Box. It does *not* divide the result by any external ceiling. It ensures volumetric invariance across sessions where the Bounding Box is held constant. It answers: *"How much objective space has been physically conquered?"*
-2. **`scale='relative'` (Competitive Efficiency Mode)**: Computes the absolute volume and *divides* it by the maximum volume found in the provided experiments in the current session. This forces a `1.0` ceiling based on the session winner. It answers: *"What is the competitive efficiency relative to session best?"*
+2. **`scale='rel'` (Competitive Efficiency Mode)**: Computes the absolute volume and *divides* it by the maximum volume found in the provided experiments in the current session. This forces a `1.0` ceiling based on the session winner. It answers: *"What is the competitive efficiency relative to session best?"*
     - *Note: `scale='ratio'` is preserved as a deprecated alias.*
-3. **`scale='absolute'` (Theoretical Optimality Mode)**: Normalizes the absolute volume by the **Ground Truth (GT)** of the underlying MOP. This requires the MOP to be pre-calibrated (via `mop.calibrate()`). It provides an absolute, cross-session score where `1.0` represents mathematical perfection. It answers: *"What is the absolute proximity to the theoretical optimum?"*
+3. **`scale='abs'` (Theoretical Optimality Mode)**: Normalizes the absolute volume by the **Ground Truth (GT)** of the underlying MOP. This requires the MOP to be pre-calibrated (via `mop.calibrate()`). It provides an absolute, cross-session score where `1.0` represents mathematical perfection. It answers: *"What is the absolute proximity to the theoretical optimum?"*
 
 ## MOP Homogeneity Validation
 To prevent invalid geometric comparisons (e.g., comparing Hypervolumes across different problem topologies like DTLZ2 and ZDT1), the library now enforces MOP homogeneity:

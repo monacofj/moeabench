@@ -48,8 +48,14 @@ def main():
     # 2. Analysis: Snapshot at Early Search (Gen 10)
     SNAPSHOT_GEN = 10
     
-    strat1 = mb.stats.strata(exp1, gen=SNAPSHOT_GEN)
-    strat2 = mb.stats.strata(exp2, gen=SNAPSHOT_GEN)
+    ranks = mb.stats.ranks(exp1, exp2, gen=SNAPSHOT_GEN)
+    caste_ind = mb.stats.caste(exp1, exp2, gen=SNAPSHOT_GEN, mode='individual')
+    caste_coll = mb.stats.caste(exp1, exp2, gen=SNAPSHOT_GEN, mode='collective')
+    tiers = mb.stats.tiers(exp1, exp2, gen=SNAPSHOT_GEN)
+    ranks.report()
+    caste_ind.report()
+    caste_coll.report()
+    tiers.report()
 
     # 3. Stratification Visualization
 
@@ -72,7 +78,7 @@ def main():
     # 4. The Whiskers: Extend to 1.5 x IQR. 
     #    Mark the boundaries of "Normal" solutions. Points beyond are rare 
     #    Mutants or Outliers—solutions so unique they break the distribution.
-    ax_ind = mb.view.caste(strat1, strat2, mode='individual', 
+    ax_ind = mb.view.caste(caste_ind,
                  title=f"Individual Perspective: Solution Merit - Gen {SNAPSHOT_GEN}")
 
     # B. Macro-Analysis: Stochastic Robustness (Collective Mode)
@@ -85,15 +91,15 @@ def main():
     #   Minimal dispersion suggests high reliability across trials.
     # - Outliers: Detect rare convergence failures or significant performance 
     #   deviations within the sample.
-    ax_coll = mb.view.caste(strat1, strat2, mode='collective', 
+    ax_coll = mb.view.caste(caste_coll,
                  title=f"Macro View: Stochastic Robustness - Gen {SNAPSHOT_GEN}")
     
     # C. Competitive View (Tier Duel visualization)
-    ax_tier = mb.view.tiers(exp1, exp2, title="Competitive Perspective: Tier Duel")
+    ax_tier = mb.view.tiers(tiers, title="Competitive Perspective: Tier Duel")
 
     # NEW: Global Rank Distribution (The classic view)
     # Question: "How 'deep' is the population across dominance layers?"
-    mb.view.ranks(exp1, title="Global Rank Stratification (NSGA-III)")
+    mb.view.ranks(ranks, title="Global Rank Stratification")
 
     plt.show(block=True)
 

@@ -208,57 +208,69 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     if metric is None:
         metric = hypervolume
     metric_label = _infer_metric_axis_label(metric, args)
+
+    stats_result = None
+    if len(args) == 1 and isinstance(args[0], PerfCompareResult):
+        stats_result = args[0]
+        args = ()
+
+    if stats_result is not None and getattr(stats_result, "samples", None):
+        samples = [np.asarray(s).ravel() for s in stats_result.samples]
+        labels = list(stats_result.labels or [f"Data {i+1}" for i in range(len(samples))])
+        metric_label = stats_result.metric_label or metric_label
+        if gen == -1 and getattr(stats_result, "gen", None) is not None:
+            gen = stats_result.gen
+    else:
+        samples = []
+        labels = []
     
     # Extract samples for plotting
-    samples = []
-    labels = []
     from ..metrics.evaluator import MetricMatrix
     metric_kwargs = kwargs.copy()
-    metric_kwargs.pop("stats", None)
-    metric_kwargs.pop("stats_result", None)
     if 'ref' not in metric_kwargs and len(args) > 1:
         # Keep cross-experiment comparability when raw experiments are provided.
         metric_kwargs['ref'] = list(args)
     
     # 1. Collect all distributions
-    try:
-        for i, arg in enumerate(args):
-            if isinstance(arg, MetricMatrix):
-                v = np.asarray(arg.gens(gen))
-            elif isinstance(arg, (np.ndarray, list, tuple)):
-                v = np.asarray(arg)
-            else:
-                res = metric(arg, **metric_kwargs)
-                if isinstance(res, MetricMatrix):
-                    v = np.asarray(res.gens(gen))
+    if not samples:
+        try:
+            for i, arg in enumerate(args):
+                if isinstance(arg, MetricMatrix):
+                    v = np.asarray(arg.gens(gen))
+                elif isinstance(arg, (np.ndarray, list, tuple)):
+                    v = np.asarray(arg)
                 else:
-                    v = np.asarray(res)
-            samples.append(v.ravel())
-        
-            # Legend Pattern: 'Name (run, gen)'
-            exp_name = None
-            run_idx = None
-            if type(arg).__name__ == 'Run':
-                run_idx = getattr(arg, 'index', None)
-                if hasattr(arg, 'source'):
-                    exp_name = getattr(arg.source, 'name', None)
-            elif type(arg).__name__ == 'experiment':
-                exp_name = getattr(arg, 'name', None)
-            elif isinstance(arg, MetricMatrix):
-                exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
-                
-            if not exp_name:
-                exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
-                import re
-                exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
-                
-            pieces = []
-            if run_idx is not None: pieces.append(f"run {run_idx}")
-            if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+                    res = metric(arg, **metric_kwargs)
+                    if isinstance(res, MetricMatrix):
+                        v = np.asarray(res.gens(gen))
+                    else:
+                        v = np.asarray(res)
+                samples.append(v.ravel())
             
-            labels.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
-    except Exception as exc:
-        return _perf_metric_error("mb.view.perf_spread", metric, exc)
+                # Legend Pattern: 'Name (run, gen)'
+                exp_name = None
+                run_idx = None
+                if type(arg).__name__ == 'Run':
+                    run_idx = getattr(arg, 'index', None)
+                    if hasattr(arg, 'source'):
+                        exp_name = getattr(arg.source, 'name', None)
+                elif type(arg).__name__ == 'experiment':
+                    exp_name = getattr(arg, 'name', None)
+                elif isinstance(arg, MetricMatrix):
+                    exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
+                    
+                if not exp_name:
+                    exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+                    import re
+                    exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+                    
+                pieces = []
+                if run_idx is not None: pieces.append(f"run {run_idx}")
+                if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+                
+                labels.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+        except Exception as exc:
+            return _perf_metric_error("mb.view.perf_spread", metric, exc)
     
     # 2. Setup Plot
     fig, ax = plt.subplots(figsize=(8, 5))
@@ -275,18 +287,13 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     ax.grid(True, axis='y', alpha=0.3)
     
     # 3. Annotate pairwise stats if exactly two
-    if len(args) == 2:
-        stats_result = kwargs.pop("stats", None)
+    if len(samples) == 2:
         if stats_result is None:
-            stats_result = kwargs.pop("stats_result", None)
-        if stats_result is not None and not isinstance(stats_result, PerfCompareResult):
-            raise TypeError("perf_spread(stats=...) expects a PerfCompareResult.")
+            if len(args) == 2:
+                stats_result = perf_shift(args[0], args[1], metric=metric, gen=gen, **kwargs)
 
-        if stats_result is None:
-            stats_result = perf_shift(args[0], args[1], metric=metric, gen=gen, **kwargs)
-
-        prob = getattr(stats_result, "effect_size", None)
-        p_val = getattr(stats_result, "p_value", None)
+        prob = getattr(stats_result, "effect_size", None) if stats_result is not None else None
+        p_val = getattr(stats_result, "p_value", None) if stats_result is not None else None
         sig_str = "*" if (p_val is not None and p_val < alpha) else "ns"
         
         # Position annotation between the two boxes
@@ -329,71 +336,78 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
         metric = hypervolume
     metric_label = _infer_metric_axis_label(metric, args)
 
-    samples = []
-    names = []
+    stats_result = None
+    if len(args) == 1 and isinstance(args[0], PerfCompareResult):
+        stats_result = args[0]
+        args = ()
+
+    if stats_result is not None and getattr(stats_result, "samples", None):
+        samples = [np.asarray(s).ravel() for s in stats_result.samples]
+        names = list(stats_result.labels or [f"Data {i+1}" for i in range(len(samples))])
+        metric_label = stats_result.metric_label or metric_label
+        if gen == -1 and getattr(stats_result, "gen", None) is not None:
+            gen = stats_result.gen
+    else:
+        samples = []
+        names = []
+
     from ..metrics.evaluator import MetricMatrix
     metric_kwargs = kwargs.copy()
-    metric_kwargs.pop("stats", None)
-    metric_kwargs.pop("stats_result", None)
     if 'ref' not in metric_kwargs and len(args) > 1:
         # Keep cross-experiment comparability when raw experiments are provided.
         metric_kwargs['ref'] = list(args)
-    try:
-        for i, arg in enumerate(args):
-            if isinstance(arg, MetricMatrix):
-                v = np.asarray(arg.gens(gen))
-            elif isinstance(arg, (np.ndarray, list, tuple)):
-                v = np.asarray(arg)
-            else:
-                res = metric(arg, **metric_kwargs)
-                if isinstance(res, MetricMatrix):
-                    v = np.asarray(res.gens(gen))
+    if not samples:
+        try:
+            for i, arg in enumerate(args):
+                if isinstance(arg, MetricMatrix):
+                    v = np.asarray(arg.gens(gen))
+                elif isinstance(arg, (np.ndarray, list, tuple)):
+                    v = np.asarray(arg)
                 else:
-                    v = np.asarray(res)
-            samples.append(v.ravel())
-        
-            # Legend Pattern: 'Name (run, gen)'
-            exp_name = None
-            run_idx = None
-            if type(arg).__name__ == 'Run':
-                run_idx = getattr(arg, 'index', None)
-                if hasattr(arg, 'source'):
-                    exp_name = getattr(arg.source, 'name', None)
-            elif type(arg).__name__ == 'experiment':
-                exp_name = getattr(arg, 'name', None)
-            elif isinstance(arg, MetricMatrix):
-                exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
-                
-            if not exp_name:
-                exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
-                import re
-                exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
-                
-            pieces = []
-            if run_idx is not None: pieces.append(f"run {run_idx}")
-            if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+                    res = metric(arg, **metric_kwargs)
+                    if isinstance(res, MetricMatrix):
+                        v = np.asarray(res.gens(gen))
+                    else:
+                        v = np.asarray(res)
+                samples.append(v.ravel())
             
-            names.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
-    except Exception as exc:
-        return _perf_metric_error("mb.view.perf_density", metric, exc)
+                # Legend Pattern: 'Name (run, gen)'
+                exp_name = None
+                run_idx = None
+                if type(arg).__name__ == 'Run':
+                    run_idx = getattr(arg, 'index', None)
+                    if hasattr(arg, 'source'):
+                        exp_name = getattr(arg.source, 'name', None)
+                elif type(arg).__name__ == 'experiment':
+                    exp_name = getattr(arg, 'name', None)
+                elif isinstance(arg, MetricMatrix):
+                    exp_name = getattr(arg, 'source_name', None) or getattr(arg, 'metric_name', None)
+                    
+                if not exp_name:
+                    exp_name = getattr(arg, 'name', None) or f"Data {i+1}"
+                    import re
+                    exp_name = re.sub(r'\s*\(run\s*\d+\)', '', exp_name, flags=re.IGNORECASE)
+                    
+                pieces = []
+                if run_idx is not None: pieces.append(f"run {run_idx}")
+                if gen is not None and gen >= 0: pieces.append(f"gen {gen}")
+                
+                names.append(f"{exp_name} ({', '.join(pieces)})" if pieces else exp_name)
+        except Exception as exc:
+            return _perf_metric_error("mb.view.perf_density", metric, exc)
     
     fig, ax = plt.subplots(figsize=(8, 5))
     
     # If exactly two, get p-value/verdict for legend.
     p_val = None
     verdict = None
-    if len(args) == 2:
-        stats_result = kwargs.pop("stats", None)
+    if len(samples) == 2:
         if stats_result is None:
-            stats_result = kwargs.pop("stats_result", None)
-        if stats_result is not None and not isinstance(stats_result, PerfCompareResult):
-            raise TypeError("perf_density(stats=...) expects a PerfCompareResult.")
+            if len(args) == 2:
+                stats_result = perf_match(args[0], args[1], metric=metric, gen=gen, **kwargs)
 
-        if stats_result is None:
-            stats_result = perf_match(args[0], args[1], metric=metric, gen=gen, **kwargs)
-
-        p_val = getattr(stats_result, "p_value", None)
-        decision = str(getattr(stats_result, "decision", "")).lower()
+        p_val = getattr(stats_result, "p_value", None) if stats_result is not None else None
+        decision = str(getattr(stats_result, "decision", "")).lower() if stats_result is not None else ""
         if decision == "match":
             verdict = "Match"
         elif decision in {"divergent", "mismatch"}:

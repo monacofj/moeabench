@@ -377,7 +377,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         exp: Experiment, Run, or Population object.
         ref: Reference set/experiment for normalization bounding box.
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
-        scale (str): Scaling perspective: 'raw' (default), 'relative', or 'absolute'.
+        scale (str): Scaling perspective: 'raw' (default), 'rel', or 'abs'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         gens (int or slice): Limit calculation to specific generation(s).
         joint (bool): If True (default), uses the union of 'exp' and 'ref' to establish 
@@ -406,7 +406,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     if len(set(mop_names)) > 1:
         msg = f"Hypervolume: Mixed MOPs detected in session: {list(set(mop_names))}. " \
               f"Comparing different problems yields invalid geometric results."
-        if scale == 'absolute':
+        if scale == 'abs':
             raise ValueError(msg)
         else:
             warnings.warn(msg)
@@ -461,13 +461,10 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
             pbar.close()
         
     # --- 4. Dynamic Benchmarking ---
-    # We normalize all absolute HVs by a reference HV to establish a 1.0 ceiling
+    # We normalize HVs post-hoc according to the requested scale.
     # --- 4. Scale Post-Processing ---
     scale = str(scale).lower()
-    if scale in ['relative', 'ratio']:
-        if scale == 'ratio':
-            warnings.warn("scale='ratio' is deprecated, use scale='relative' instead.", DeprecationWarning)
-            
+    if scale == 'rel':
         if effective_ref:
             # A) Explicit Reference (e.g., Competition Mode)
             ref_list = effective_ref
@@ -492,11 +489,11 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
             
         final_name = "Hypervolume (Relative)"
     
-    elif scale == 'absolute':
+    elif scale == 'abs':
         # Retrieve Ground Truth from Calibration Registry
         mop_obj = getattr(exp, 'mop', None)
         if mop_obj is None:
-             raise ValueError("Hypervolume 'absolute' scale requires an experiment with an associated MOP.")
+             raise ValueError("Hypervolume 'abs' scale requires an experiment with an associated MOP.")
              
         mop_id = getattr(mop_obj, 'name', mop_obj.__class__.__name__)
         absolute_ok = False
@@ -507,7 +504,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
             gt_raw = gt_registry.get(dim_key, gt_registry.get(mop_id))
             if gt_raw is None:
                 warnings.warn(
-                    f"Hypervolume absolute unavailable: '{mop_id}' is not calibrated for M={M}. "
+                    f"Hypervolume abs unavailable: '{mop_id}' is not calibrated for M={M}. "
                     "Falling back to raw scale.",
                     UserWarning
                 )
@@ -515,7 +512,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                 gt = np.array(gt_raw)
                 if gt.ndim != 2 or gt.shape[1] != M:
                     warnings.warn(
-                        f"Hypervolume absolute unavailable: incompatible GT for '{mop_id}' (shape={gt.shape}, M={M}). "
+                        f"Hypervolume abs unavailable: incompatible GT for '{mop_id}' (shape={gt.shape}, M={M}). "
                         "Falling back to raw scale.",
                         UserWarning
                     )
@@ -532,13 +529,13 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                         absolute_ok = True
                     else:
                         warnings.warn(
-                            f"Hypervolume absolute unavailable: non-positive GT HV for '{mop_id}'. "
+                            f"Hypervolume abs unavailable: non-positive GT HV for '{mop_id}'. "
                             "Falling back to raw scale.",
                             UserWarning
                         )
         except Exception as e:
             warnings.warn(
-                f"Hypervolume absolute failed with '{type(e).__name__}: {e}'. "
+                f"Hypervolume abs failed with '{type(e).__name__}: {e}'. "
                 "Falling back to raw scale.",
                 UserWarning
             )
@@ -548,7 +545,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     elif scale == 'raw':
         final_name = "Hypervolume (Raw)"
     else:
-        raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw', 'relative', or 'absolute'.")
+        raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw', 'rel', or 'abs'.")
 
     return MetricMatrix(mat, final_name, source_name=name)
 

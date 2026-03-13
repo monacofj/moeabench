@@ -134,8 +134,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Geometric Integrity Protocol (Half-Normal Projection)**:
   - Transitioned the default baseline error model for `q_closeness` from Spherical Normal Blur to strict **Half-Normal Projection**. This fundamentally acknowledges the mathematical fact that errors can only extend *outward* from the true Pareto boundary, eliminating anomalous pseudo-super-optimal scores caused by symmetric density penetration into the infeasible space.
 - **Multi-Perspective Hypervolume (Triple-Mode)**:
-  - New `scale='absolute'` normalization using problem **Ground Truth** ($H_{abs}$).
-  - Renamed `scale='ratio'` to `scale='relative'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).
+  - New `scale='abs'` normalization using problem **Ground Truth** ($H_{abs}$).
+  - Renamed `scale='ratio'` to `scale='rel'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).
   - New `joint` parameter (default `True`) for Hypervolume. `joint=False` enables independent Bounding Box perspectives (Self-Referenced).
   - Mandatory problem calibration requirement for absolute metrics.
   - MOP Homogeneity validation protecting against invalid physical comparisons.

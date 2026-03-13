@@ -14,8 +14,11 @@ class CasteSummary:
     """
     Helper object to access caste statistics using intuitive methods.
     """
-    def __init__(self, data: Dict[int, Dict]):
+    def __init__(self, data: Dict[int, Dict], name: str = "Population", mode: str = "individual", metric_name: str = "hypervolume"):
         self._data = data
+        self.name = name
+        self.mode = mode
+        self.metric_name = metric_name
         
     def n(self, rank: int) -> int:
         """Returns the population count for the given rank."""
@@ -40,7 +43,82 @@ class CasteSummary:
         return self._data.get(rank, {}).get('max_w', 0.0)
 
     def __repr__(self):
-        return f"<CasteSummary: {list(self._data.keys())} ranks>"
+        return f"<CasteSummary {self.name}: {list(self._data.keys())} ranks>"
+
+
+class RankCompareResult(StatsResult):
+    """Canonical result for rank-structure analysis."""
+
+    def __init__(self, results, labels):
+        self.results = results
+        self.labels = labels
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        use_md = kwargs.get("markdown", self._is_notebook())
+        if use_md:
+            lines = ["### Rank Structure Report", "", "| Data | Depth | Pressure |", "| :--- | ---: | ---: |"]
+            for label, res in zip(self.labels, self.results):
+                lines.append(f"| {label} | {res.max_rank} | {res.selection_pressure:.4f} |")
+            content = "\n".join(lines)
+        else:
+            lines = ["Rank Structure Report", "", f"{'Data':<16} | {'Depth':>5} | {'Pressure':>8}", "-" * 38]
+            for label, res in zip(self.labels, self.results):
+                lines.append(f"{label:<16} | {res.max_rank:>5} | {res.selection_pressure:>8.4f}")
+            content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
+
+
+class CasteCompareResult(StatsResult):
+    """Canonical result for caste-distribution analysis."""
+
+    def __init__(self, summaries, labels, mode="collective", metric_name="hypervolume"):
+        self.summaries = summaries
+        self.labels = labels
+        self.mode = mode
+        self.metric_name = metric_name
+
+    def report(self, show: bool = True, **kwargs) -> str:
+        use_md = kwargs.get("markdown", self._is_notebook())
+        rank_ids = sorted({rank for summary in self.summaries for rank in summary._data.keys()})
+
+        if use_md:
+            lines = [
+                f"### Caste Distribution Report ({self.metric_name})",
+                "",
+                f"**Mode**: {self.mode}",
+                "",
+                "| Data | Rank | n | Q1 | Median | Q3 |",
+                "| :--- | ---: | ---: | ---: | ---: | ---: |",
+            ]
+            for label, summary in zip(self.labels, self.summaries):
+                for rank in rank_ids:
+                    info = summary._data.get(rank)
+                    if not info:
+                        continue
+                    lines.append(
+                        f"| {label} | {rank} | {info['n']} | {info['q1']:.4f} | "
+                        f"{info['q']:.4f} | {info['q3']:.4f} |"
+                    )
+            content = "\n".join(lines)
+        else:
+            lines = [
+                f"Caste Distribution Report ({self.metric_name})",
+                f"Mode: {self.mode}",
+                "",
+                f"{'Data':<16} | {'Rank':>4} | {'n':>4} | {'Q1':>8} | {'Median':>8} | {'Q3':>8}",
+                "-" * 66,
+            ]
+            for label, summary in zip(self.labels, self.summaries):
+                for rank in rank_ids:
+                    info = summary._data.get(rank)
+                    if not info:
+                        continue
+                    lines.append(
+                        f"{label:<16} | {rank:>4} | {info['n']:>4} | {info['q1']:>8.4f} | "
+                        f"{info['q']:>8.4f} | {info['q3']:>8.4f}"
+                    )
+            content = "\n".join(lines)
+        return self._render_report(content, show, **kwargs)
 
 class StratificationResult(StatsResult):
     """
@@ -175,7 +253,9 @@ class StratificationResult(StatsResult):
                 'min_w': float(min_w),
                 'max_w': float(max_w)
             }
-        return CasteSummary(stats)
+        name = getattr(self.source, 'name', 'Population')
+        metric_name = getattr(m_func, '__name__', 'hypervolume')
+        return CasteSummary(stats, name=name, mode=mode, metric_name=metric_name)
 
     def report(self, show: bool = True, **kwargs) -> str:
         """
@@ -480,3 +560,56 @@ class TierResult(StratificationResult):
             content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
+
+
+def ranks(*args, gen=-1):
+    """Canonical rank-structure analysis result."""
+    if len(args) == 1 and isinstance(args[0], RankCompareResult):
+        return args[0]
+
+    results = []
+    labels = []
+    for arg in args:
+        res = strata(arg, gen=gen)
+        results.append(res)
+        label = getattr(res.source, "name", None) or getattr(arg, "name", None) or "Population"
+        labels.append(label)
+    return RankCompareResult(results, labels)
+
+
+def caste(*args, metric=None, mode='collective', gen=-1, **kwargs):
+    """Canonical caste-distribution analysis result."""
+    import moeabench.metrics.evaluator as eval_mod
+
+    if len(args) == 1 and isinstance(args[0], CasteCompareResult):
+        return args[0]
+
+    metric_fn = metric or eval_mod.hypervolume
+    results = [strata(arg, gen=gen) for arg in args]
+    labels = [getattr(res.source, "name", None) or getattr(arg, "name", None) or "Population"
+              for res, arg in zip(results, args)]
+
+    all_objs_list = [res.objectives for res in results if res.objectives is not None]
+    global_ref = np.vstack(all_objs_list) if all_objs_list else None
+    total_qualities = []
+    for res in results:
+        if res.objectives is not None:
+            val = metric_fn(res.objectives, ref=global_ref, **kwargs)
+            total_qualities.append(float(val))
+    anchor = max(total_qualities) if total_qualities else 1.0
+
+    summaries = [
+        res.caste_summary(mode=mode, metric_fn=metric_fn, anchor=anchor, ref=global_ref, **kwargs)
+        for res in results
+    ]
+    metric_name = getattr(metric_fn, "__name__", "hypervolume")
+    return CasteCompareResult(summaries, labels, mode=mode, metric_name=metric_name)
+
+
+def tiers(data, other=None, gen=-1):
+    """Canonical tier-duel analysis result."""
+    if isinstance(data, TierResult) and other is None:
+        return data
+    if other is None:
+        raise ValueError("mb.stats.tiers requires two inputs or a TierResult.")
+    return strata(data, other, gen=gen)

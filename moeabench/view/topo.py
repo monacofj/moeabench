@@ -323,14 +323,24 @@ def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, sp
     # 1. Resolve Data and Labels
     buffers = []
     names = []
+    match_res = None
+
+    if len(args) == 1 and isinstance(args[0], DistMatchResult):
+        match_res = args[0]
+        buffers = [np.asarray(b) for b in match_res.buffers]
+        names = list(match_res.names)
+        space = match_res.space
+        if axes is None:
+            axes = list(match_res.axes)
     
-    for arg in args:
-        if hasattr(arg, 'runs') and hasattr(arg, 'pop'):
-            data = arg.front(**kwargs) if space == 'objs' else arg.set(**kwargs)
-        else:
-            data = arg
-        buffers.append(np.asarray(data))
-        names.append(getattr(arg, 'name', 'unnamed'))
+    if not buffers:
+        for arg in args:
+            if hasattr(arg, 'runs') and hasattr(arg, 'pop'):
+                data = arg.front(**kwargs) if space == 'objs' else arg.set(**kwargs)
+            else:
+                data = arg
+            buffers.append(np.asarray(data))
+            names.append(getattr(arg, 'name', 'unnamed'))
 
     n_dims = buffers[0].shape[1]
     if axes is None:
@@ -340,8 +350,9 @@ def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, sp
     threshold = threshold if threshold is not None else defaults.displacement_threshold
 
     # 2. Statistical Analysis
-    match_res = stats_topo_distribution(*args, space=space, axes=axes, method=kwargs.get('method', 'ks'), 
-                                        alpha=alpha, threshold=threshold, **kwargs)
+    if match_res is None:
+        match_res = stats_topo_distribution(*args, space=space, axes=axes, method=kwargs.get('method', 'ks'), 
+                                            alpha=alpha, threshold=threshold, **kwargs)
     
     # 3. Plotting Logic
     # 3. Plotting Logic
@@ -422,6 +433,7 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
     from ..stats.topo_attainment import topo_attainment
     
     surfaces = []
+    canonical_surfaces = len(args) > 0 and all(isinstance(arg, AttainmentSurface) for arg in args)
     
     if style == 'fill':
         if len(levels) >= 3:
@@ -457,7 +469,14 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
                     surf.name = f"{getattr(arg, 'name', 'Exp')} ({lv*100:.0f}%)"
                     surfaces.append(surf)
     
-    if title is None: title = "Search Corridor (Attainment Bands)"
+    if title is None:
+        title = "Search Corridor (Attainment Bands)"
+
+    if canonical_surfaces and style == 'fill':
+        kwargs['band_fill'] = True
+        kwargs['line_shape'] = 'spline'
+    elif canonical_surfaces and style in ['spline', 'linear']:
+        kwargs['line_shape'] = style
     
     if style in ['spline', 'linear']:
         kwargs['line_shape'] = style
@@ -467,20 +486,26 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
     
     return topo_shape(*surfaces, objectives=objectives, mode=mode, title=title, **kwargs)
 
-def topo_gap(exp1, exp2, level=0.5, objectives=None, mode='auto', title=None, style='step', **kwargs):
+def topo_gap(exp1, exp2=None, level=0.5, objectives=None, mode='auto', title=None, style='step', **kwargs):
     """
     [mb.view.topo_gap] Topologic Gap Perspective.
     Visualizes the spatial difference region between two algorithms.
     """
     from ..stats.topo_attainment import topo_gap as stats_topo_gap
-    
-    diff = stats_topo_gap(exp1, exp2, level=level)
+
+    if hasattr(exp1, 'surf1') and hasattr(exp1, 'surf2'):
+        diff = exp1
+        exp1 = diff.surf1
+        exp2 = diff.surf2
+        level = getattr(diff, 'level', level)
+    else:
+        diff = stats_topo_gap(exp1, exp2, level=level)
     
     # To visualize the gap, we plot the two attainment surfaces that form it
     surf1 = diff.surf1
     surf2 = diff.surf2
-    surf1.name = f"{getattr(exp1, 'name', 'Exp1')} ({level*100:.0f}%)"
-    surf2.name = f"{getattr(exp2, 'name', 'Exp2')} ({level*100:.0f}%)"
+    surf1.name = f"{getattr(surf1, 'name', getattr(exp1, 'name', 'Exp1'))} ({level*100:.0f}%)"
+    surf2.name = f"{getattr(surf2, 'name', getattr(exp2, 'name', 'Exp2'))} ({level*100:.0f}%)"
     
     if title is None: 
         title = f"Topologic Gap ({level*100:.0f}% Attainment)"
