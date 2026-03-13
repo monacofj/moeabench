@@ -11,7 +11,7 @@ MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutiona
 
 To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
-For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guide](mops.md)**. To explore practical code usage, visit the **[examples/](file:///home/monaco/Work/moeabench/examples)** directory.
+For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guide](mops.md)**. To explore practical code usage, visit the **[examples/](../examples/)** directory.
 
 *   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
 *   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
@@ -28,26 +28,28 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
     - [Selection Patterns](#example)
     - [Ergonomic Aliases](#ergonomic-aliases-layer-4)
 5.  **[Data Filtering and Extraction](#5-data-filtering-and-extraction)**
-6.  **[Analytical Domains](#7-analytical-domains)**
+6.  **[Data Access Convenience Methods](#6-data-access-convenience-methods)**
+7.  **[Analytical Domains](#7-analytical-domains)**
     - [7.1. Topography (Metric Space)](#71-topography-metric-space-analysis)
     - [7.2. Performance (Metric Trajectories)](#72-performance-metric-trajectories)
     - [7.3. Stratification (Population Structure)](#73-stratification-population-structure)
-7.  **[Statistical Analysis (`mb.stats`)](#8-statistical-analysis-mbstats)**
+8.  **[Statistical Analysis (`mb.stats`)](#8-statistical-analysis-mbstats)**
     - [8.1. Hypothesis Testing & Significance](#81-hypothesis-testing--significance)
-8.  **[Algorithmic Diagnostics and Pathology Detection](#9-algorithmic-diagnostics-and-pathology-detection)**
+9.  **[Algorithmic Diagnostics and Pathology Detection](#9-algorithmic-diagnostics-and-pathology-detection)**
     - [9.1. Diagnostic Ontology](#91-diagnostic-ontology)
     - [9.2. Physical Metrics (FAIR Metrics)](#92-physical-metrics-fair-metrics)
     - [9.3. Clinical Normalization (Q-Scores)](#93-clinical-normalization-q-scores)
     - [9.4. Diagnostic Instruments](#94-diagnostic-instruments) (Radar, ECDF, Distribution, History)
     - [9.5. Reporting Interface & Auditing](#95-reporting-interface-and-auditing-workflow)
     - [9.6. Validation Hierarchy & Baselines](#96-the-validation-hierarchy)
-9.  **[Extensibility: Custom Plugins](#10-extensibility-plugging-your-algorithm)**
+10. **[Extensibility: Custom Plugins](#10-extensibility-plugging-your-algorithm)**
     - [Custom MOP & MOEA Plugins](#custom-mop-plugin)
     - [Calibration & Sidecar Workflow](#101-mop-plugin-support-and-calibration)
-10. **[Persistence and Export](#11-persistence-save-and-load)**
+11. **[Persistence and Export](#11-persistence-save-and-load)**
     - [Saving and Loading](#11-persistence-save-and-load)
     - [Data Export (CSV)](#12-data-export-csv)
-11. **[Architectural Decisions](#16-architectural-decisions-and-engineering-values)**
+12. **[References](#13-references)**
+13. **[Architectural Decisions](#16-architectural-decisions-and-engineering-values)**
 
 ---
 
@@ -93,10 +95,10 @@ exp.moea = mb.moeas.NSGA3()             # Choose an optimization algorithm
 exp.run()
 
 # 3. Visualization of Results
-mb.view.topology(exp)                 # View the resulting Pareto front  
-mb.view.history(exp)               # View the hypervomume convergence
+mb.view.topology(exp)              # View the resulting Pareto front
+mb.view.history(exp)               # View the hypervolume convergence
 ```
-The `view.perf_shape` function will produce a plot showing the topography of the resulting Pareto front.
+The `mb.view.topology` function produces a plot showing the topography of the resulting Pareto front.
 
 ![Pareto Front](images/hello_space.png)
 *Figure 1: Spatial Perspective: Final Population snapshot projected in 3D.*
@@ -119,7 +121,7 @@ And the `view.history` function will produce a plot showing the hypervolume conv
 *   `exp.run()` $\to$ Orchestrates the actual optimization process and prints `Running {exp.name}` by default.
 *   `exp.run(silent=True)` $\to$ Executes silently (no banner/progress/diagnostic output emitted by `run()`).
 *   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.
-*Note: In this example, `mb.view.topology(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**. Likewise, `mb.view.history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.*
+*Note: In this example, `mb.view.topology(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**. Likewise, `mb.view.history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**.*
 
 ---
 
@@ -171,7 +173,7 @@ To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggr
 mb.view.history(exp[4])   # Run number is 0-indexed
 ```
 
-For finer control over specific runs or access to individual trajectories, see **[Section 4: The Data Hierarchy: accessing results](#4-the-data-hierarchy-accessing-results)**.
+For finer control over specific runs or access to individual trajectories, see **[Section 4: Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**.
 
 ### **Normalization and Fairness**
 
@@ -283,6 +285,50 @@ Using standard indexing and methods, you can navigate these layers:
 *   **Layer 2: Run (`exp[i]`)**: A specific stochastic trajectory (a run) identified by its seed.
 *   **Layer 3: Population (`exp.pop(n)`)**: A snapshot of the search at a generation `n`.
 *   **Layer 4: Data Space (`exp.pop(n).objs` or `.vars`)**: The raw numerical performance matrix (NumPy arrays).
+
+#### **Canonical Polymorphism: What "Smart" Really Means**
+The "Smart Argument" contract is not accidental convenience; it is part of the architecture. In practical terms, most analytical functions accept the highest-level object that still preserves the scientific context needed for the calculation.
+
+The most common canonical inputs are:
+
+*   **`Experiment`**: Cloud perspective over multiple stochastic runs. This is the default choice when the question is statistical or comparative.
+*   **`Run`**: A single trajectory with full temporal context. This is ideal when you want per-seed inspection or history-aware diagnostics.
+*   **`Population`**: A single snapshot of solutions. This is the right level for static, generation-specific structure or geometry.
+*   **Raw arrays**: Accepted in selected low-level contexts, especially in diagnostics and export workflows, when the user already manages external numerical pipelines.
+*   **Rich result objects**: Accepted by canonical views when the analytical state has already been computed and you want to report, store, or re-plot the result deterministically. Typical examples include `MetricMatrix`, `AttainmentSurface`, `AttainmentDiff`, `StrataCompareResult`, `FairResult`, and `DiagnosticResult`.
+
+This leads to a stable usage pattern across the library:
+
+```python
+# 1. Pass a canonical scientific object
+res = mb.stats.strata(exp)
+
+# 2. Inspect the rich result
+res.report()
+
+# 3. Plot that exact result
+mb.view.strata(res)
+```
+
+The same logic appears in other domains:
+
+```python
+# Metrics -> result object
+mm = mb.metrics.hv(exp)
+mm.report()
+mb.view.history(mm)
+
+# Topology -> result object
+att = mb.stats.attainment(exp)
+mb.view.bands(att)
+
+# Diagnostics -> result object
+diag = mb.clinic.audit(exp)
+diag.report()
+mb.view.radar(diag)
+```
+
+In short: pass `Experiment`, `Run`, or `Population` when you want MoeaBench to infer context for you; pass a precomputed result object when you want to preserve and reuse an already-defined analytical state.
 
 #### **Example:**
 
@@ -404,6 +450,20 @@ mb.view.gap(exp1, exp2)
 ```
 For topological density, defaults are `space='objs'` and `axes=None` (auto axis selection).
 
+When the topological object itself is needed programmatically, the canonical statistical surface is:
+
+```python
+# Reliability surface (EAF-style object)
+att = mb.stats.attainment(exp)
+mb.view.bands(att, levels=[0.5, 0.9])
+
+# Pairwise spatial difference
+gap = mb.stats.attainment_gap(exp1, exp2)
+mb.view.gap(gap)
+```
+
+This keeps the same architectural pattern used throughout the library: compute a result object first when you want to inspect, store, or reuse the analytical state; call the view directly when you only need the figure.
+
 > [!TIP]
 > For many-objective cases (`M > 3`), explicitly project the axes when plotting fronts and GT together:
 > `mb.view.topology(exp1, exp2, show_gt=True, gt=mop.pf(n_points=3000))`.
@@ -453,7 +513,7 @@ mb.view.density(exp1, exp2)
 ```
 
 > [!NOTE]
-> **Convenience API**: While `mb.view.*` remains the canonical internal location, all performance plotters are exposed directly via the `mb` object (e.g., `mb.view.history`) for faster research iteration.
+> **Canonical Surface**: Performance plotters are exposed through the `mb.view` namespace (e.g., `mb.view.history`, `mb.view.spread`, `mb.view.density`). The plotting functions remain polymorphic, but the public canonical location is `mb.view.*`.
 
 ![Performance Contrast](images/perf_spread.png)
 *Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
@@ -476,6 +536,26 @@ res.report()
 
 > [!NOTE]
 > **Metric Aliases**: For convenience, `mb.metrics.hv` is provided as a permanent alias for `mb.metrics.hypervolume`.
+
+The public metric family is broader than Hypervolume alone. The canonical performance metrics exposed by MoeaBench are:
+
+*   **`mb.metrics.hypervolume` / `mb.metrics.hv`**: Dominated-volume performance.
+*   **`mb.metrics.gd`**: Generational Distance.
+*   **`mb.metrics.gdplus`**: GD+ (dominance-aware GD variant).
+*   **`mb.metrics.igd`**: Inverted Generational Distance.
+*   **`mb.metrics.igdplus`**: IGD+.
+*   **`mb.metrics.emd`**: Earth Mover's Distance over front distributions.
+*   **`mb.metrics.front_ratio`**: Proportion of non-dominated individuals in the active population.
+
+You do not need a separate tutorial example for each one because the usage contract is the same:
+
+```python
+mm = mb.metrics.igd(exp)
+mm.report()
+mb.view.history(mm)
+```
+
+Likewise, anywhere you see `metric=mb.metrics.hv`, the same slot may often be filled by other compatible metric callables such as `mb.metrics.igd`, `mb.metrics.gd`, or `mb.metrics.emd`, depending on the scientific question being asked. For the full list of accepted metrics and their arguments, consult the **[API Reference](reference.md#metrics)**.
 
 ```python
 # 2. Raw Access
@@ -516,7 +596,7 @@ mb.view.tiers(tiers)
 
 ![Rank Distribution](images/rankplot.png)
 *Figure 9: Global Rank Distribution showing population density across non-domination layers.*
-*Interpretation: This plot reveals a scenario where the population is stratified into multiple layers (5 ranks). While the majority (~50%) are in Rank 0, a significant portion lags in deeper ranks, indicating that the algorithm (MOEA/D on DTLZ1) is struggling to push the entire population to the Pareto front at this stage (Gen 14).*
+*Interpretation: This plot reveals a scenario where the population is stratified into multiple layers (5 ranks). While the majority (~50%) are in Rank 1, a significant portion lags in deeper ranks, indicating that the algorithm (MOEA/D on DTLZ1) is struggling to push the entire population to the Pareto front at this stage (Gen 14).*
 
 #### **Visualizing the Hierarchy (`strata`)**
 The `strata` plot visualizes the trade-off between **Quantity** (Density) and **Quality** (Performance) across dominance layers.
@@ -534,7 +614,7 @@ mb.view.strata(strata_coll, title="Stochastic Robustness")
 ```
 
 ![Strata Individual](images/caste_individual.png)
-*Figure 10: Micro-view "Per Capita" (Individual Merit). This plot uses **Boxplots** to visualize the internal diversity within each social class (Rank).*
+*Figure 10: Micro-view "Per Capita" (Individual Merit). This plot uses **Boxplots** to visualize the internal diversity within each dominance layer (Rank).*
 *Interpretation: The Y-axis measures the quality (Crowding Distance) of individual citizens. The numbers on the box represent the **Quartiles** (Q1, Median, Q3). Rank 1 (The Elite) is the most populous (`n=94`, or 94%) and features a tall box. This indicates a "Healthy Elite": a highly diverse population ranging from specialized outliers (top whisker) to crowded averages (median), ensuring genetic richness.*
 
 ![Strata Collective](images/caste_collective.png)
@@ -637,7 +717,7 @@ Most result objects also allow programmatic access to the underlying metrics:
 if res.is_significant:
     # Measure Effect Size (Vargha-Delaney A12)
     # Answers: "How often does it win?"
-prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
+    prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
 ```
 
 The semantic aliases below are exact shortcuts:
@@ -707,11 +787,18 @@ We define the **Resolution Scale** ($s_K$) as the expected average distance betw
 These metrics provide raw, resolution-invariant physical facts about the population:
 
 #### **`closeness`**
-- **Rationale**: Measures the **approximation to the optimum**. It returns the raw distribution of distances for every point in the population to the nearest point in the Ground Truth ($P \to GT$), normalized by $s_K$. It quantifies the median precision/sharpness of the convergence.
+- **Rationale**: Measures the **approximation to the optimum**. It returns a rich physical result whose scalar value is the median distance to the Ground Truth ($P \to GT$), normalized by $s_K$, while also retaining the point-wise distance distribution. It quantifies the median precision/sharpness of the convergence.
 - **Physical Optimization**: In v0.12.0, this calculation was upgraded from brute-force dense matrices to logarithmic **KDTree** spatial indexing. This means querying distances against massive analytical manifolds (e.g., 10,000 GT points) executes almost instantly.
 - **Example**:
 ```python
-u_vals = mb.clinic.closeness(exp)
+fact = mb.clinic.closeness(exp)
+fact.report()
+
+# Scalar access when needed
+median_u = float(fact)
+
+# Point-wise samples for ECDF / density reasoning
+u_vals = fact.samples
 ```
 
 #### **`coverage`**
@@ -829,7 +916,7 @@ mb.view.radar(exp)
 ```
 
 ![Clinical Radar](images/clinic_radar.png)
-*Figure 3: Holistic Audit: The Radar instrument identifies functional imbalances.*
+*Figure 12: Holistic Audit: The Radar instrument identifies functional imbalances.*
 
 **Didactic Guide**:
 When looking at the Radar, observe the "shape" of the search. A symmetric $Q \approx 0.8$ polygon represents a versatile solver. If you see a "spike" pointing inward at **GAP**, your algorithm has converged to the front but has failed to find representative "bridges" between clusters. If **HEADWAY** is high but **CLOSENESS** is low, your algorithm is moving but has not yet reached the "asymptotic" zone of precision.
@@ -846,7 +933,7 @@ mb.view.ecdf(exp, metric="coverage")
 ```
 
 ![Clinical ECDF](images/clinic_ecdf.png)
-*Figure 4: Statistical Consensus: The ECDF instrument monitors goal attainment.*
+*Figure 13: Statistical Consensus: The ECDF instrument monitors goal attainment.*
 
 **Didactic Guide**:
 The X-axis represents the physical error (Layer 1), and the Y-axis represents the probability. A vertical "cliff" means all solutions reached the same level. A "long tail" on the right signifies that some solutions are still lost in the decision space. The **95% marker** is your "Worst Case" guarantee; if it is beyond the **Rand50** baseline, your algorithm's results are statistically indistinguishable from a random guess.
@@ -862,7 +949,7 @@ mb.view.density(exp, domain='clinic', metric="coverage")
 ```
 
 ![Clinical Distribution](images/clinic_distribution.png)
-*Figure 5: Population Morphology: Identifying multimodality in search errors.*
+*Figure 14: Population Morphology: Identifying multimodality in search errors.*
 
 **Didactic Guide**:
 Search errors are rarely normal (Gaussian). Look for **Multi-modality**. If you see two distinct peaks, your algorithm has "split" its focus: it found a local optimum for some objectives while being trapped for others. A wide, flat distribution suggests that the populations' proximity to the front is chaotic and unorganized.
@@ -878,7 +965,7 @@ mb.view.history(exp, domain='clinic', metric="balance")
 ```
 
 ![Clinical History](images/clinic_history.png)
-*Figure 6: Temporal Trajectory: Tracking the "velocity" of optimization.*
+*Figure 15: Temporal Trajectory: Tracking the "velocity" of optimization.*
 
 **Didactic Guide**:
 Watch the slope of the curve. A horizontal line that appears early in the experiment indicates a **Stall**. If the variance between runs (the shaded area) increases over time, your algorithm is sensitive to initial conditions (low robustness). Ideally, the variance should decrease as the population "funnels" toward the Pareto front.
@@ -889,6 +976,8 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 
 The `mb.clinic` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
 
+If you need this provenance independently of an audit, `mb.system.info()` returns the same environment metadata as a dictionary and, by default, displays it immediately.
+
 #### **Scenario A: Full Audit**
 The `audit()` function performs a comprehensive check and returns a `DiagnosticResult` with a rich reporting interface:
 
@@ -897,6 +986,9 @@ import moeabench as mb
 
 exp = mb.experiment(moea="NSGA3", mop="DTLZ2")
 exp.run()
+
+# Optional: inspect the current execution environment DNA
+mb.system.info()
 
 # 1. Perform a scientific audit
 res = mb.clinic.audit(exp)
@@ -941,6 +1033,14 @@ fact = mb.clinic.closeness(my_front, ref=true_pf, s_k=s_k)
 fact.report()
 ```
 
+#### **Point-wise Clinical Helpers**
+Some diagnostic tasks require local, per-solution scoring rather than one aggregate verdict per population. For these cases, MoeaBench also exposes point-wise helpers:
+
+*   **`mb.clinic.q_closeness_points(...)`**: Returns one Q-score per point, useful for colored topology overlays and local convergence inspection.
+*   **`mb.clinic.q_headway_points(...)`**: Returns one point-wise progression score per point, useful for highlighting which regions have genuinely escaped the random initialization regime.
+
+These helpers are more specialized than the aggregate diagnostic workflow, so they are not central to the first-pass tutorial narrative. Still, they belong to the public clinical surface and are especially useful when building semantic marker overlays or custom per-point visual encodings. For argument details, see the **[API Reference](reference.md#diagnostics)**.
+
 
 
 ### **9.6. The Validation Hierarchy**
@@ -967,6 +1067,13 @@ with mb.clinic.use_baselines("references/baselines.json"):
     res.report()
 ```
 # System automatically reverts to the current library baselines here
+
+For persistent baseline management, MoeaBench also exposes:
+
+*   **`mb.clinic.register_baselines(source)`**: Registers an additional JSON or dictionary baseline source into the active registry.
+*   **`mb.clinic.reset_baselines()`**: Clears custom registrations and restores the built-in defaults.
+
+These functions are less common in day-to-day usage than `use_baselines(...)`, but they are part of the public calibration surface when you need session-level control over baseline provenance.
 
 #### **Mechanism B: Polymorphic Path Loading**
 You can audit against a specific Ground Truth file (saved from a previous publication) simply by passing the path:
@@ -1027,6 +1134,18 @@ exp.run()
 mb.view.radar(exp) # Works perfectly with custom baselines!
 ```
 
+The method form above is the most natural when you already have a problem instance in hand. The same calibration engine is also exposed procedurally via `mb.clinic.calibrate(...)`, which is useful in scripting pipelines, registries, or external automation:
+
+```python
+mb.clinic.calibrate(mop, source_search=mb.moeas.NSGA3(pop=200, gen=1000))
+```
+
+Conceptually, both calls use the same three Ground Truth acquisition protocols:
+
+*   **Analytical**: Build the GT from `ps(n)` and `pf(n)`.
+*   **Static**: Load GT data from a stored file or array.
+*   **Empirical**: Run a high-fidelity search to generate the GT on demand.
+
 #### **How it Works: The Sidecar Pattern**
 - **Persistence**: `mop.calibrate()` creates a dimension-aware sidecar JSON file (e.g., `MyProblem_M3.json`) next to your Python class.
 - **Portability**: You can share this JSON file along with your code. MoeaBench will automatically find and load it if it's in the same directory as the problem definition.
@@ -1063,6 +1182,17 @@ exp.save("protocol", mode="config")
 exp.load("results", mode="data")
 ```
 
+The persistence contract follows the same object model used elsewhere in the library:
+
+*   **`mode="all"`**: Archive and restore both the experimental recipe and the execution payload.
+*   **`mode="config"`**: Preserve the protocol without carrying the heavy run histories.
+*   **`mode="data"`**: Restore or merge execution traces into an existing configured object.
+
+In practice, this means `save/load` can support two distinct scientific workflows:
+
+*   **Protocol Preservation**: Store the exact benchmark recipe for later reproduction.
+*   **Result Preservation**: Store the costly stochastic outcomes for later analysis without rerunning the solver.
+
 #### **Persistence Modes**
 
 *   **`all` (Default)**: Persists the entire state (Problem + Algorithm + Runs).
@@ -1073,6 +1203,8 @@ exp.load("results", mode="data")
 Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
 - **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
 - **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
+
+This is complementary to `mb.system.info(show=False)`: the archive records the environment inside the saved artifact, while `info()` lets you inspect that environment explicitly during interactive work.
 
 ---
 
@@ -1088,7 +1220,21 @@ mb.system.export_objectives(exp) # Saves to "my_study_objectives.csv"
 # 2. Export data from a specific population snapshot
 pop = exp.last_pop
 mb.system.export_objectives(pop, "final_pop_objs.csv")
+
+# 3. Export decision variables (Pareto set / search coordinates)
+mb.system.export_variables(pop, "final_pop_vars.csv")
 ```
+
+If you need to capture reproducibility metadata together with these exports, use:
+
+```python
+env = mb.system.info(show=False)
+```
+
+Two additional utilities in `mb.system` are worth knowing:
+
+*   **`mb.system.check_dependencies()`**: Prints an environment report of optional dependencies and available MOEA backends.
+*   **`mb.system.output(text, markdown=None)`**: Low-level helper for environment-aware text emission. Most users will rarely call it directly, but it is part of the public system namespace and is useful in custom reporting utilities or notebook-aware scripts.
 
 ---
 
