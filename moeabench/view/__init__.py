@@ -57,9 +57,20 @@ def _resolve_view_domain(args, kwargs):
     metric = kwargs.get("metric", None)
     if isinstance(metric, str) and metric.lower() in clinic_metrics:
         return "clinic"
-    if hasattr(target, "q_audit_res") or hasattr(target, "fair_audit_res") or hasattr(target, "scores"):
+    if (
+        hasattr(target, "q_audit_res")
+        or hasattr(target, "fair_audit_res")
+        or hasattr(target, "scores")
+        or hasattr(target, "raw_data")
+        or hasattr(target, "history_values")
+    ):
         return "clinic"
-    if hasattr(target, "objectives"):
+    if (
+        hasattr(target, "objectives")
+        or hasattr(target, "results")
+        or hasattr(target, "axes")
+        or hasattr(target, "space")
+    ):
         return "topo"
     if isinstance(target, np.ndarray) and getattr(target, "ndim", 0) == 2:
         return "topo"
@@ -91,7 +102,12 @@ def history(*args, **kwargs):
     metric = kwargs.get("metric", None)
     if isinstance(metric, str) and metric.lower() in clinic_metrics:
         return _clinic_history(*args, **kwargs)
-    if args and (hasattr(args[0], "q_audit_res") or hasattr(args[0], "fair_audit_res")):
+    if args and (
+        hasattr(args[0], "q_audit_res")
+        or hasattr(args[0], "fair_audit_res")
+        or hasattr(args[0], "history_values")
+        or hasattr(args[0], "raw_data")
+    ):
         return _clinic_history(*args, **kwargs)
     return _perf_history(*args, **kwargs)
 
@@ -100,5 +116,5 @@ __all__ = [
     "ranks", "strata", "tiers", "ecdf", "radar"
 ]
 
-for _name in ("np", "topo", "perf", "strat", "clinic", "style"):
+for _name in ("topo", "perf", "strat", "clinic", "style"):
     globals().pop(_name, None)

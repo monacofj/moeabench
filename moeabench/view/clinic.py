@@ -15,6 +15,11 @@ from ..diagnostics import q_headway, q_closeness, q_coverage, q_gap, q_regularit
 from ..diagnostics import q_headway_points, q_closeness_points
 from ..diagnostics.base import DiagnosticValue
 
+RADAR_GRID_COLOR = "#B8C2CF"
+RADAR_RING_LABEL = "#5B6574"
+DIST_GRID_COLOR = "#C7D0DB"
+DIST_BAR_EDGE = "#EEF2F7"
+
 def _resolve_mode(mode: str) -> str:
     """ Detects best mode if set to 'auto' based on environment and defaults. """
     if mode == 'auto':
@@ -178,22 +183,29 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
             data,
             bins=32,
             density=True,
-            alpha=0.75,
-            color=MOEABENCH_PALETTE[7],
-            edgecolor='none'
+            alpha=0.88,
+            color=MOEABENCH_PALETTE[0],
+            edgecolor=DIST_BAR_EDGE,
+            linewidth=0.9,
+            zorder=3
         )
         plt.title(resolved_title.replace('<br>', '\n').replace('<sup>', '').replace('</sup>', ''))
         plt.xlabel(x_label)
         plt.ylabel("Density")
-        plt.grid(True, alpha=0.12, color=GRID_COLOR, linestyle='--')
+        ax = plt.gca()
+        ax.set_axisbelow(True)
+        plt.grid(True, axis='y', alpha=0.45, color=DIST_GRID_COLOR, linestyle='--', linewidth=0.8)
+        plt.grid(True, axis='x', alpha=0.18, color=DIST_GRID_COLOR, linestyle=':', linewidth=0.7)
+        for spine in ("top", "right"):
+            ax.spines[spine].set_visible(False)
         if show: show_matplotlib(fig)
         return fig
     else:
         fig = go.Figure(data=[go.Histogram(
             x=data,
             histnorm='probability density',
-            marker=dict(color=MOEABENCH_PALETTE[7], line=dict(color=MOEABENCH_PALETTE[7], width=0)),
-            opacity=0.78,
+            marker=dict(color=MOEABENCH_PALETTE[0], line=dict(color="rgba(238,242,247,0.95)", width=1)),
+            opacity=0.86,
             name=metric
         )])
         fig.update_layout(
@@ -202,8 +214,8 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
             template=defaults.theme,
             width=defaults.plot_width,
             height=defaults.plot_height,
-            xaxis=dict(showgrid=True, gridcolor='rgba(217,222,230,0.35)'),
-            yaxis=dict(showgrid=True, gridcolor='rgba(217,222,230,0.35)')
+            xaxis=dict(showgrid=True, gridcolor='rgba(199,208,219,0.22)'),
+            yaxis=dict(showgrid=True, gridcolor='rgba(199,208,219,0.55)')
         )
         if show: fig.show()
         return fig
@@ -260,13 +272,16 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
             ax.fill(a_closed, v_closed, color=color, alpha=0.25 if len(series) == 1 else 0.15)
             ax.plot(a_closed, v_closed, color=color, linewidth=2, label=label)
         ax.set_xticks(angles)
-        ax.set_xticklabels(labels)
+        ax.set_xticklabels(labels, color=RADAR_RING_LABEL)
         ax.set_ylim(0, 1.0)
         
         # Improve grid visibility
-        ax.grid(True, alpha=0.35, color=GRID_COLOR, linestyle='--')
+        ax.set_axisbelow(True)
+        ax.grid(True, alpha=0.75, color=RADAR_GRID_COLOR, linestyle='--', linewidth=0.9)
+        ax.spines['polar'].set_color(RADAR_GRID_COLOR)
+        ax.spines['polar'].set_linewidth(1.0)
         ax.set_yticks([0.25, 0.50, 0.75, 1.0])
-        ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color=TEXT_MUTED)
+        ax.set_yticklabels(["0.25", "0.50", "0.75", "1.0"], fontsize=8, color=RADAR_RING_LABEL)
         
         plt.title(resolved_title)
         if len(series) > 1:
@@ -289,8 +304,19 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
             ))
         fig.update_layout(
             polar=dict(
-                radialaxis=dict(visible=True, range=[0, 1], tickvals=[0.25, 0.5, 0.75, 1.0], gridcolor=GRID_COLOR),
-                angularaxis=dict(gridcolor=GRID_COLOR)
+                radialaxis=dict(
+                    visible=True,
+                    range=[0, 1],
+                    tickvals=[0.25, 0.5, 0.75, 1.0],
+                    gridcolor='rgba(184,194,207,0.9)',
+                    linecolor='rgba(184,194,207,0.95)',
+                    tickfont=dict(color=RADAR_RING_LABEL)
+                ),
+                angularaxis=dict(
+                    gridcolor='rgba(184,194,207,0.8)',
+                    linecolor='rgba(184,194,207,0.95)',
+                    tickfont=dict(color=RADAR_RING_LABEL)
+                )
             ),
             title=dict(text=resolved_title, x=0.5),
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
