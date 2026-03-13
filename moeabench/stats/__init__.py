@@ -13,11 +13,7 @@ from .stratification import (
     StrataCompareResult,
     TierResult,
 )
-from .topo_attainment import AttainmentSurface, topo_attainment as _attainment, topo_gap as _attainment_gap
-
-# Canonical API names
-attainment = _attainment
-attainment_gap = _attainment_gap
+from .attainment import AttainmentSurface, attainment, attainment_gap
 
 # Method aliases for compare APIs.
 def perf_shift(data1, data2, **kwargs):
@@ -49,9 +45,6 @@ def topo_tail(*args, **kwargs):
     """Alias for topo_compare(method='anderson')."""
     return topo_compare(*args, method="anderson", **kwargs)
 
-
-# Prevent implicit submodule leakage (legacy public name).
-globals().pop("topo_attainment", None)
 
 __all__ = [
     "perf_compare",

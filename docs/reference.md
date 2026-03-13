@@ -782,7 +782,7 @@ The contract for problems requires implementing a **vectorized** evaluation func
 **Example: A Simple Convex Problem**
 ```python
 import numpy as np
-from moeabench import mb
+import moeabench as mb
 
 class MyConvexProblem(mb.mops.BaseMop):
     def __init__(self):
@@ -809,7 +809,7 @@ To wrap your own search algorithm, inherit from `BaseMoea`. This ensures that yo
 
 **Example: A Random Search Skeleton**
 ```python
-from moeabench import mb
+import moeabench as mb
 import numpy as np
 
 class RandomSearch(mb.moeas.BaseMoea):

@@ -11,6 +11,7 @@ def test_public_namespaces():
     assert hasattr(mb, "view"), "Expected mb.view namespace"
     assert not hasattr(mb, "diagnostics"), "diagnostics should not leak at top level"
     assert not hasattr(mb, "core"), "core should not leak at top level"
+    assert not hasattr(mb, "Experiment"), "mb.Experiment should not be part of canonical public API"
 
 
 def test_clinic_surface():

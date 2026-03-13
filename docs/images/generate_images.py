@@ -15,7 +15,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 if ROOT_DIR not in sys.path:
     sys.path.append(ROOT_DIR)
 
-from moeabench import mb
+import moeabench as mb
 from moeabench.view.style import apply_style
 
 # Mock plt.show to prevent it from clearing the figure
@@ -34,12 +34,12 @@ def generate():
     hello.run(repeat=1)
     
     print("Saving hello_space.png...")
-    mb.view.spaceplot(hello, mode='static')
+    mb.view.topology(hello, mode='static')
     plt.savefig(os.path.join(img_dir, "hello_space.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
     print("Saving hello_time.png...")
-    mb.view.timeplot(hello, mode='static')
+    mb.view.history(hello, mode='static')
     plt.savefig(os.path.join(img_dir, "hello_time.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     
@@ -53,7 +53,7 @@ def generate():
     
     # Convergence cloud for more advanced sections if needed
     print("Saving timeplot.png (Cloud)...")
-    mb.view.timeplot(exp, mode='static')
+    mb.view.history(exp, mode='static')
     # Diagnostics: Use MOEA/D on DTLZ1 to show interesting rank structures
     # (NSGA-III converges too fast on DTLZ2, collapsing ranks)
     print("Generating rankplot scenario (MOEA/D on DTLZ1)...")
@@ -80,39 +80,39 @@ def generate():
     exp2.mop = mb.mops.DTLZ2(M=3)
     exp2.moea = mb.moeas.SPEA2(population=100, generations=30)
     exp2.run(repeat=5)
-    mb.view.tierplot(exp, exp2, gen=10)
+    mb.view.tiers(exp, exp2, gen=10)
     plt.savefig(os.path.join(img_dir, "tierplot.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
 
     # --- 3. MISSING ILLUSTRATIONS (Added v0.7.6+) ---
     
-    # topo_bands
+    # bands
     print("Saving topo_bands.png...")
-    mb.view.topo_bands(exp, levels=[0.5, 0.9])
+    mb.view.bands(exp, levels=[0.5, 0.9])
     plt.savefig(os.path.join(img_dir, "topo_bands.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
 
-    # topo_gap
+    # gap
     print("Saving topo_gap.png...")
-    mb.view.topo_gap(exp, exp2, level=0.5)
+    mb.view.gap(exp, exp2, level=0.5)
     plt.savefig(os.path.join(img_dir, "topo_gap.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
 
-    # topo_density (Axes 0 and 1)
+    # density (topology domain, axes 0 and 1)
     print("Saving topo_density.png...")
-    mb.view.topo_density(exp, exp2, axes=[0, 1])
+    mb.view.density(exp, exp2, domain='topo', axes=[0, 1])
     plt.savefig(os.path.join(img_dir, "topo_density.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
 
-    # perf_spread (Hypervolume)
+    # spread (Hypervolume)
     print("Saving perf_spread.png...")
-    mb.view.perf_spread(exp, exp2, metric=mb.metrics.hv)
+    mb.view.spread(exp, exp2, metric=mb.metrics.hv)
     plt.savefig(os.path.join(img_dir, "perf_spread.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
 
-    # perf_density (Hypervolume)
+    # density (performance domain, Hypervolume)
     print("Saving perf_density.png...")
-    mb.view.perf_density(exp, exp2, metric=mb.metrics.hv)
+    mb.view.density(exp, exp2, domain='perf', metric=mb.metrics.hv)
     plt.savefig(os.path.join(img_dir, "perf_density.png"), bbox_inches='tight', dpi=150)
     plt.close('all')
     

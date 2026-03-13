@@ -47,6 +47,7 @@ def test_removed_clinic_old_entrypoints():
     assert hasattr(mb.clinic, "audit")
     assert not hasattr(mb.clinic, "fair_audit")
     assert not hasattr(mb.clinic, "q_audit")
+    assert not hasattr(mb, "Experiment")
 
 
 def test_removed_tier_public_stats_api():

@@ -9,10 +9,10 @@ import warnings
 from ..defaults import defaults
 from ..plotting.scatter3d import Scatter3D
 from ..plotting.scatter2d import Scatter2D
-from ..stats.topo_attainment import AttainmentSurface
+from ..stats.attainment import AttainmentSurface
 from ..core.display import show_matplotlib
 
-def topo_shape(
+def topology(
     *args,
     objectives=None,
     mode='auto',
@@ -27,7 +27,7 @@ def topo_shape(
     **kwargs
 ):
     """
-    [mb.view.topo_shape] Topographic Shape Perspective.
+    [mb.view.topology] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
     """
     from ..diagnostics.qscore import q_closeness_points
@@ -312,9 +312,9 @@ def topo_shape(
         s.show()
     return s
 
-def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='objs', title=None, show=True, ax=None, **kwargs):
+def density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='objs', title=None, show=True, ax=None, **kwargs):
     """
-    [mb.view.topo_density] Spatial Distribution Perspective.
+    [mb.view.density] Spatial Distribution Perspective.
     Plots smooth Probability Density Estimates via Kernel Density Estimation (KDE)
     """
     from scipy.stats import gaussian_kde
@@ -425,12 +425,12 @@ def topo_density(*args, axes=None, layout='grid', alpha=None, threshold=None, sp
         show_matplotlib(fig)
     return figures if layout == 'independent' else (ax if layout == 'external' else fig)
 
-def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, style='step', **kwargs):
+def bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, style='step', **kwargs):
     """
-    [mb.view.topo_bands] Search Corridor Perspective.
+    [mb.view.bands] Search Corridor Perspective.
     Visualizes reliability bands using Empirical Attainment Functions (EAF).
     """
-    from ..stats.topo_attainment import topo_attainment
+    from ..stats.attainment import attainment
     
     surfaces = []
     canonical_surfaces = len(args) > 0 and all(isinstance(arg, AttainmentSurface) for arg in args)
@@ -452,20 +452,20 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
                 # Order matters for band fill logic in Scatter2D: median, low, high
                 lv_low, lv_med, lv_high = levels[0], levels[1], levels[2]
                 
-                surf_med = topo_attainment(arg, level=lv_med)
+                surf_med = attainment(arg, level=lv_med)
                 # Keep names simple to avoid legend explosion
                 surf_med.name = f"{getattr(arg, 'name', 'Exp')} Mediana"
                 
-                surf_low = topo_attainment(arg, level=lv_low)
+                surf_low = attainment(arg, level=lv_low)
                 surf_low.name = f"{getattr(arg, 'name', 'Exp')} ({lv_low*100:.0f}%)"
                 
-                surf_high = topo_attainment(arg, level=lv_high)
+                surf_high = attainment(arg, level=lv_high)
                 surf_high.name = f"{getattr(arg, 'name', 'Exp')} ({lv_high*100:.0f}%)"
                 
                 surfaces.extend([surf_med, surf_low, surf_high])
             else:
                 for lv in levels:
-                    surf = topo_attainment(arg, level=lv)
+                    surf = attainment(arg, level=lv)
                     surf.name = f"{getattr(arg, 'name', 'Exp')} ({lv*100:.0f}%)"
                     surfaces.append(surf)
     
@@ -484,14 +484,14 @@ def topo_bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', titl
         kwargs['band_fill'] = True
         kwargs['line_shape'] = 'spline'
     
-    return topo_shape(*surfaces, objectives=objectives, mode=mode, title=title, **kwargs)
+    return topology(*surfaces, objectives=objectives, mode=mode, title=title, **kwargs)
 
-def topo_gap(exp1, exp2=None, level=0.5, objectives=None, mode='auto', title=None, style='step', **kwargs):
+def gap(exp1, exp2=None, level=0.5, objectives=None, mode='auto', title=None, style='step', **kwargs):
     """
-    [mb.view.topo_gap] Topologic Gap Perspective.
+    [mb.view.gap] Topologic Gap Perspective.
     Visualizes the spatial difference region between two algorithms.
     """
-    from ..stats.topo_attainment import topo_gap as stats_topo_gap
+    from ..stats.attainment import attainment_gap as stats_attainment_gap
 
     if hasattr(exp1, 'surf1') and hasattr(exp1, 'surf2'):
         diff = exp1
@@ -499,7 +499,7 @@ def topo_gap(exp1, exp2=None, level=0.5, objectives=None, mode='auto', title=Non
         exp2 = diff.surf2
         level = getattr(diff, 'level', level)
     else:
-        diff = stats_topo_gap(exp1, exp2, level=level)
+        diff = stats_attainment_gap(exp1, exp2, level=level)
     
     # To visualize the gap, we plot the two attainment surfaces that form it
     surf1 = diff.surf1
@@ -515,4 +515,4 @@ def topo_gap(exp1, exp2=None, level=0.5, objectives=None, mode='auto', title=Non
         
     # TODO: In the future, specialized plotting for the AttainmentDiff object 
     # to highlight the area/volume between them.
-    return topo_shape(surf1, surf2, objectives=objectives, mode=mode, title=title, **kwargs)
+    return topology(surf1, surf2, objectives=objectives, mode=mode, title=title, **kwargs)

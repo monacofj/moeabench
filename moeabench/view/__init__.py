@@ -4,10 +4,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .topo import (
-    topo_shape as _topology,
-    topo_bands as _bands,
-    topo_gap as _gap,
-    topo_density as _topo_density,
+    topology as _topology,
+    bands as _bands,
+    gap as _gap,
+    density as _topo_density,
 )
 from .perf import (
     perf_history as _perf_history,

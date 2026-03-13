@@ -47,7 +47,6 @@ class _MB:
     """
     def __init__(self):
         self.experiment = experiment
-        self.Experiment = experiment
         self.Run = Run
         self.mops = mops
         self.moeas = moeas

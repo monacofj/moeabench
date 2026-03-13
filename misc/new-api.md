@@ -1,115 +1,126 @@
-# API Renaming Proposal (Alpha Breakage Allowed)
+# Canonical API Grammar
 
 ## Direction
 
-- `metrics` / `stats` / `diagnostics`: nomes semânticos da **medida**.
-- `view`: nomes pelo **tipo de gráfico** (não pela semântica do fenômeno).
-- Remover prefixos de domínio (`perf_`, `topo_`, `strat_`, `clinic_`) quando possível.
+- `metrics`, `stats`, and `clinic` are named by **analytical meaning**.
+- `view` is named by **chart type**.
+- Canonical workflows should prefer:
+  - `import moeabench as mb`
+  - canonical namespaces under `mb.*`
+  - rich result objects followed by `.report()` and correlated `mb.view.*`
 
 ---
 
-## Proposed View Grammar
+## Canonical View Grammar
 
-- `view.history(...)`: gráfico temporal (linhas por geração).
-- `view.spread(...)`: contraste de distribuições (boxplot / violino).
-- `view.density(...)`: densidade (KDE / hist).
-- `view.topology(...)`: geometria espacial (scatter/surface).
-- `view.bands(...)`: bandas de atingimento / corredores.
-- `view.gap(...)`: diferença espacial entre duas superfícies/frentes.
-- `view.ranks(...)`: barras de ranks.
-- `view.strata(...)`: distribuição hierárquica por rank.
-- `view.tiers(...)`: contraste de tiers entre métodos.
-- `view.radar(...)`: radar de scores.
+- `mb.view.history(...)`: temporal trajectories
+- `mb.view.spread(...)`: comparative distributions
+- `mb.view.density(...)`: density / morphology
+- `mb.view.topology(...)`: spatial geometry
+- `mb.view.bands(...)`: attainment corridors
+- `mb.view.gap(...)`: spatial difference between attainment surfaces
+- `mb.view.ranks(...)`: rank occupancy
+- `mb.view.strata(...)`: rank-wise quality distribution
+- `mb.view.tiers(...)`: comparative tier duel
+- `mb.view.radar(...)`: diagnostic radar
+- `mb.view.ecdf(...)`: diagnostic empirical CDF
 
 ---
 
-## Mapping (Current -> Suggested)
+## Canonical Analysis Surface
 
-### Analysis APIs (`metrics`, `stats`, `diagnostics`)
-
-| Namespace | Nome Atual | Nova Sugestao | Objeto de Entrada | Objeto de Retorno | Views Aplicaveis |
-|---|---|---|---|---|---|
-| `metrics` | `hv` | `hv` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `gd` | `gd` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `gdplus` | `gdplus` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `igd` | `igd` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `igdplus` | `igdplus` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `emd` | `emd` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `metrics` | `front_size` | `front_ratio` | `Population` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
-| `stats` | `perf_evidence` | `perf_compare(method='mannwhitney')`<br>Alias: `perf_shift` | `MetricMatrix` | `PerfCompareResult` | `view.spread`, `view.density` |
-| `stats` | `perf_distribution` | `perf_compare(method='ks')`<br>Alias: `perf_match` | `MetricMatrix` | `PerfCompareResult` | `view.spread`, `view.density` |
-| `stats` | `perf_probability` | `perf_compare(method='a12')`<br>Alias: `perf_win` | `MetricMatrix` | `PerfCompareResult` | `view.spread` |
-| `stats` | `topo_distribution` | `topo_compare(method='ks' \| 'emd' \| 'anderson')`<br>Aliases: `topo_match` (KS), `topo_shift` (EMD), `topo_tail` (Anderson) | `Population` | `DistMatchResult` | `view.density` |
-| `stats` | `topo_attainment` | `attainment` | `Population` | `AttainmentSurface` | `view.bands`, `view.topology` |
-| `stats` | `topo_gap` | `attainment_gap` | `Population` | `AttainmentDiff` | `view.gap` |
-| `stats` | `rank_distribution` | `ranks` | `Population` | `RankCompareResult` | `view.ranks` |
-| `stats` | `strata_distribution` | `strata` | `Population` | `StrataCompareResult` | `view.strata` |
-| `stats` | `tier_duel` | `tiers` | `Population` | `TierResult` | `view.tiers` |
-| `clinic` | `audit` | `audit` | `Population` | `DiagnosticResult` | `view.radar`, `view.ecdf`, `view.density`, `view.history` |
-
-### View APIs (`view`)
-
-| Namespace | Nome Atual | Nova Sugestao | Objeto de Entrada |
+| Domain | Analysis API | Canonical Result | Correlated Views |
 |---|---|---|---|
-| `view` | `topo_shape` | `topology` | `Population` |
-| `view` | `topo_bands` | `bands` | `Population` |
-| `view` | `topo_gap` | `gap` | `Population` |
-| `view` | `topo_density` | `density` | `Population` |
-| `view` | `perf_history` | `history` | `MetricMatrix` |
-| `view` | `perf_spread` | `spread` | `MetricMatrix` |
-| `view` | `perf_density` | `density` | `MetricMatrix` |
-| `view` | `strat_ranks` | `ranks` | `RankCompareResult` |
-| `view` | `strat_strata` | `strata` | `StrataCompareResult` |
-| `view` | `strat_tiers` | `tiers` | `TierResult` |
-| `view` | `clinic_ecdf` | `ecdf` | `DiagnosticResult` |
-| `view` | `clinic_distribution` | `density` | `DiagnosticResult` |
-| `view` | `clinic_history` | `history` | `DiagnosticResult` |
-| `view` | `clinic_radar` | `radar` | `DiagnosticResult` |
+| Performance | `mb.metrics.hypervolume` / `mb.metrics.hv` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
+| Performance | `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_ratio` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
+| Performance Compare | `mb.stats.perf_compare(...)` | `PerfCompareResult` | `view.spread`, `view.density` |
+| Performance Compare | `mb.stats.perf_shift`, `mb.stats.perf_match`, `mb.stats.perf_win` | `PerfCompareResult` | `view.spread`, `view.density` |
+| Topography Compare | `mb.stats.topo_compare(...)` | `DistMatchResult` | `view.density` |
+| Topography Compare | `mb.stats.topo_match`, `mb.stats.topo_shift`, `mb.stats.topo_tail` | `DistMatchResult` | `view.density` |
+| Attainment | `mb.stats.attainment(...)` | `AttainmentSurface` | `view.bands`, `view.topology` |
+| Attainment Gap | `mb.stats.attainment_gap(...)` | `AttainmentDiff` | `view.gap` |
+| Stratification | `mb.stats.ranks(...)` | `RankCompareResult` | `view.ranks` |
+| Stratification | `mb.stats.strata(...)` | `StrataCompareResult` | `view.strata` |
+| Stratification | `mb.stats.tiers(...)` | `TierResult` | `view.tiers` |
+| Diagnostics | `mb.clinic.audit(...)` | `DiagnosticResult` | `view.radar`, `view.ecdf`, `view.density`, `view.history` |
 
-## Naming Notes (This Revision)
+---
 
-- Metrics clássicas do domínio foram mantidas: `hv`, `gd`, `gdplus`, `igd`, `igdplus`, `emd`.
-- `front_size` -> `front_ratio`: mantem consistencia do termo "front" para populacao nao-dominada e explicita proporcao (0..1).
-- `perf_compare` vira o guarda-chuva para comparacoes de performance por metodo tecnico (`mannwhitney`, `ks`, `a12`).
-- `win_probability` foi simplificado para `win`.
-- `topo_compare` vira o guarda-chuva para comparacoes topologicas por metodo tecnico (`ks`, `emd`, `anderson`).
-- `diagnostics` publico enxuto: manter apenas `audit`; metricas unitarias ficam fora da API principal.
-- `audit` suporta modo completo e parcial: `audit(target, quality=True|False)`.
+## Semantic Aliases Kept Intentionally
+
+These aliases are part of the intended public language, not compatibility leftovers.
+
+### Metrics
+
+- `mb.metrics.hv` == `mb.metrics.hypervolume`
+
+### Performance Compare
+
+- `mb.stats.perf_shift(...)` == `mb.stats.perf_compare(..., method='mannwhitney')`
+- `mb.stats.perf_match(...)` == `mb.stats.perf_compare(..., method='ks')`
+- `mb.stats.perf_win(...)` == `mb.stats.perf_compare(..., method='a12')`
+
+### Topography Compare
+
+- `mb.stats.topo_match(...)` == `mb.stats.topo_compare(..., method='ks')`
+- `mb.stats.topo_shift(...)` == `mb.stats.topo_compare(..., method='emd')`
+- `mb.stats.topo_tail(...)` == `mb.stats.topo_compare(..., method='anderson')`
 
 ---
 
 ## Stratification Design Decision
 
-A proposta final segue o mesmo pipeline do restante da API:
+The structural ontology is **layer** internally.
 
-- `res = mb.stats.ranks(...)`
-- `res = mb.stats.strata(...)`
-- `res = mb.stats.tiers(...)`
-- `res.report()`
-- `mb.view.ranks(res)` / `mb.view.strata(res)` / `mb.view.tiers(res)`
+The canonical public analytical views over that ontology are:
 
-### Contract (Recommended)
+- `mb.stats.ranks(...)`
+- `mb.stats.strata(...)`
+- `mb.stats.tiers(...)`
 
-- Entrada: `Population` (ou compatível).
-- Métodos:
-  - `mb.stats.ranks(...)`
-  - `mb.stats.strata(..., metric=mb.metrics.hv)`
-  - `mb.stats.tiers(...)`
-- Saídas:
-  - `RankCompareResult`
-  - `StrataCompareResult`
-  - `TierResult`
+With the corresponding visual endpoints:
 
-Prós:
-- Mantém o padrão `stats -> report -> view`.
-- Permite `strata(..., metric=...)` de forma explícita.
-- Garante que o `view` receba um objeto já com o conteúdo visual necessário.
+- `mb.view.ranks(...)`
+- `mb.view.strata(...)`
+- `mb.view.tiers(...)`
+
+Recommended workflow:
+
+```python
+res = mb.stats.strata(exp, metric=mb.metrics.hv)
+res.report()
+mb.view.strata(res)
+```
+
+This preserves the library-wide pattern:
+
+- compute in `metrics`, `stats`, or `clinic`
+- inspect the rich result
+- visualize through `mb.view`
 
 ---
 
-## Short Recommendation
+## Public Diagnostics Policy
 
-- Exponha `mb.stats.ranks`, `mb.stats.strata` e `mb.stats.tiers`.
-- Faça as três views consumirem esses resultados diretamente.
-- Use `layer` apenas como conceito estrutural interno.
-- Em `mb.diagnostics`, exponha publicamente apenas `audit`.
+The canonical diagnostic entry point is:
+
+- `mb.clinic.audit(target, quality=True)`
+
+Advanced FAIR and Q-score functions may remain public, but they are not the primary entry path for first-time users. They should be treated as advanced public methods rather than the central narrative of the API.
+
+---
+
+## Namespace Policy
+
+- Use `import moeabench as mb`
+- Canonical surface lives under:
+  - `mb.metrics`
+  - `mb.stats`
+  - `mb.view`
+  - `mb.clinic`
+  - `mb.system`
+- The canonical experiment constructor is:
+  - `mb.experiment(...)`
+- `mb.Run` remains public as a model type
+- `mb.Experiment` is not part of the public canonical API
+
