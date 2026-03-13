@@ -463,8 +463,8 @@ Calculates the Hypervolume for an experiment, run, or population. Always constru
 *   `mode` (str): Algorithmic choice (`'auto'`, `'fast'`, `'exact'`).
 *   `scale` (str): Narrative perspective for normalization:
     *   `'raw'` (Default): Returns the absolute physical volume dominated within the Global Bounding Box. Ensures volumetric invariance across comparisons by avoiding ratio-induced shifts. Answers: *"How much objective space has been physically conquered?"*
-    *   `'relative'`: Divides the physical volume by the maximum volume found in the current session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. (Deprecated alias: `'ratio'`).
-    *   `'absolute'`: Normalizes by the **Ground Truth** of the underlying MOP. Requires pre-calibration (via `mop.calibrate()`). Provides a Cross-Session Absolute Score where `1.0` represents mathematical perfection. Answers: *"What is the absolute proximity to the theoretical optimum?"*
+    *   `'rel'`: Divides the physical volume by the maximum volume found in the current session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. (Deprecated alias: `'ratio'`).
+    *   `'abs'`: Normalizes by the **Ground Truth** of the underlying MOP. Requires pre-calibration (via `mop.calibrate()`). Provides a Cross-Session Absolute Score where `1.0` represents mathematical perfection. Answers: *"What is the absolute proximity to the theoretical optimum?"*
 *   `gens` (optional): Slice or integer to limit the generation scope.
 *   `joint` (*bool*): If `True` (default), uses the union of `exp` and `ref` to establish the bounding box. If `False`, ignores `ref` for normalization, providing an independent (self-referenced) perspective.
 
@@ -553,7 +553,7 @@ MoeaBench enforces a **Standardized Reporting Interface**. Every analytical obje
 ### **Participating Objects**
 1.  **`mb.experiment`**: Summarizes the experimental protocol (MOP, MOEA, Status).
 2.  **`mb.metrics.MetricMatrix`**: Summarizes mathematical performance, search dynamics, and stochastic stability.
-3.  **`mb.stats.StatsResult`**: Summarizes hypothesis tests, rank stratification, and topological matching.
+3.  **`mb.stats.StatsResult`**: Summarizes hypothesis tests, rank structure, caste distribution, tier duels, and topological matching.
 
 > [!NOTE]
 > **Transparency Policy (Explainable Verdicts)**
@@ -565,17 +565,11 @@ MoeaBench enforces a **Standardized Reporting Interface**. Every analytical obje
 The output is something like:
 
 ```text
---- Population Strata Report: NSGA-II on DTLZ2 ---
-  Search Depth: 3 non-dominated layers
-  Selection Pressure: 0.9412
+Rank Structure Report
 
-Rank   | Pop %    | Quality (hypervolume)
-----------------------------------------
-1      |    85.0% |       0.8200
-2      |    12.0% |       0.4500
-3      |     3.0% |       0.1200
-
-Diagnosis: High Selection Pressure (Phalanx-like convergence).
+Data             | Depth | Pressure
+--------------------------------------
+NSGA-II on DTLZ2 |     3 |   0.9412
 ```
 
 ---
@@ -627,9 +621,20 @@ Calculates the spatial Gap in attainment between two groups.
 *   **Methodology**: Based on **EAF Difference** analysis.
 *   **Returns**: `AttainmentDiff` object.
 
-### **`mb.stats.strata(data, gen=-1)`**
-Performs **Population Strata** (Dominance Layer analysis) based on Pareto dominance.
-*   **Returns**: `StratificationResult`.
+### **`mb.stats.ranks(*data, gen=-1)`**
+Performs **Rank Structure** analysis based on Pareto dominance.
+*   **Returns**: `RankCompareResult`.
+*   **Canonical view**: `mb.view.ranks(result)`
+
+### **`mb.stats.caste(*data, metric=mb.metrics.hv, mode='collective', gen=-1)`**
+Performs **Caste Distribution** analysis, summarizing rank-wise quality with the chosen metric.
+*   **Returns**: `CasteCompareResult`.
+*   **Canonical view**: `mb.view.caste(result)`
+
+### **`mb.stats.tiers(data1, data2, gen=-1)`**
+Performs **Tier Duel** analysis between two groups in a shared rank system.
+*   **Returns**: `TierResult`.
+*   **Canonical view**: `mb.view.tiers(result)`
 
 ### **`mb.stats.emd(strat1, strat2)`**
 Computes the **Earth Mover's Distance** between two strata profiles.

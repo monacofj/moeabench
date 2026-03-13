@@ -10,6 +10,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Status**: Accepted  
 **Date**: 2026-01-15
 
+> [!NOTE]
+> Historical ADR. The result-object decision remains accepted, but API examples here should now be read through the canonical surfaces defined later in [ADR 0039](./0039-canonical-api-and-compare-semantics-v0.14.0.md) and [ADR 0040](./0040-canonical-view-inputs-and-no-compatibility-shims.md).
+
 ## Context
 
 Statistical analysis in multi-objective optimization often yields complex data (p-values, effect sizes, distributions, quality profiles). Traditionally, these are returned as raw floats or dictionaries, forcing the user to manually print and interpret them. This creates boilerplate in scripts and hides the analytical story of the data.
@@ -19,7 +22,7 @@ Statistical analysis in multi-objective optimization often yields complex data (
 We will implement a unified "Rich Result" system for all tools in the `mb.stats` module.
 
 ### 1. The `StatsResult` Interface
-All statistical functions (e.g., `mb.stats.strata`, `mb.stats.perf_evidence`, `mb.stats.topo_gap`) will return objects inheriting from a base `StatsResult` class.
+All statistical functions (e.g., `mb.stats.ranks`, `mb.stats.caste`, `mb.stats.tiers`, `mb.stats.perf_compare`, `mb.stats.topo_compare`) will return objects inheriting from a base `StatsResult` class.
 
 ### 2. Narrative Reporting (`.report()`)
 Every result object provides a `.report()` method. This method generates a formatted, human-readable summary that includes:

@@ -202,13 +202,13 @@ hv = mb.metrics.hv(exp1)
 
 # Scenario B: Direct Comparison (Fairness between A and B)
 # Note: high-level plots do this automatically!
-hv_a = mb.metrics.hv(expA, ref=expB, scale='relative')
-hv_b = mb.metrics.hv(expB, ref=expA, scale='relative')
+hv_a = mb.metrics.hv(expA, ref=expB, scale='rel')
+hv_b = mb.metrics.hv(expB, ref=expA, scale='rel')
 
 # Scenario C: Absolute Validation (Proximity to GT)
 # Requires mop.calibrate() to have been executed.
 # Scale is normalized against theoretical Ground Truth (H_abs).
-hv_abs = mb.metrics.hv(expA, scale='absolute')
+hv_abs = mb.metrics.hv(expA, scale='abs')
 
 # Scenario D: Absolute consistency (Global Standard)
 # Compare A and B, but keep the scale fixed to the "True Front" (exp_truth)
@@ -506,8 +506,9 @@ This domain examines the internal organization of the population, analyzing sele
 *   **`tiers`**: A "Duel of Proportions" that merges two algorithms into global tiers to see who dominates whom in direct competition.
 
 ```python
-# Competitive Tier Analysis
-mb.view.tiers(exp1, exp2)
+tiers = mb.stats.tiers(exp1, exp2)
+tiers.report()
+mb.view.tiers(tiers)
 ```
 
 
@@ -520,10 +521,14 @@ The `caste` plot maps the "Caste System" of the population, visualizing the trad
 
 ```python
 # 1. Individual Merit (Micro View): Diversity distribution within ranks
-mb.view.caste(exp, mode='individual', title="Population Merit")
+caste_ind = mb.stats.caste(exp, mode='individual')
+caste_ind.report()
+mb.view.caste(caste_ind, title="Population Merit")
 
 # 2. Stochastic Stability (Macro View): Robustness across multiple runs
-mb.view.caste(exp, mode='collective', title="Stochastic Robustness")
+caste_coll = mb.stats.caste(exp, mode='collective')
+caste_coll.report()
+mb.view.caste(caste_coll, title="Stochastic Robustness")
 ```
 
 ![Caste Individual](images/caste_individual.png)
@@ -538,51 +543,53 @@ mb.view.caste(exp, mode='collective', title="Stochastic Robustness")
 ---
 
 #### **Programmatic Access**
-To inspect the population structure without plotting, use the `mb.stats.strata` object.
+To inspect the population structure without plotting, use the canonical stratification results.
 
 ```python
-# Analyze the experiment (or a specific population)
-res = mb.stats.strata(exp)
+# Analyze the rank structure
+res = mb.stats.ranks(exp)
 
 # 0. Quick Diagnosis
 # Generates a narrative summary (Markdown in notebooks, print in console)
 res.report()
 
 # 1. Basic Properties
-dist = res.frequencies()        # [0.5, 0.3, ...]: Proportion per rank
-depth = res.max_rank            # Total number of layers found (e.g. 5)
-press = res.selection_pressure  # Estimated selection pressure (slope)
+dist = res.results[0].frequencies()        # [0.5, 0.3, ...]: Proportion per rank
+depth = res.results[0].max_rank            # Total number of layers found (e.g. 5)
+press = res.results[0].selection_pressure  # Estimated selection pressure (slope)
 ```
 
 The output is something like:
 
 ```text
---- Population Strata Report: Population ---
-  Search Depth: 5 non-dominated layers
-  Selection Pressure: 0.9612
+Rank Structure Report
 
-Rank   | Pop %    | Quality (hypervolume)
-----------------------------------------
-1      |    50.0% |       0.7812
-...
+Data             | Depth | Pressure
+--------------------------------------
+Population       |     5 |   0.9612
 ```
 
-#### **2. Caste Inspection (Raw Data)**
+#### **2. Caste Inspection**
 
-To dive deeper into the metrics of a specific rank:
+To inspect the boxplot-equivalent summaries directly:
 
 ```python
-mask = (res.rank_array == 1)      # Boolean mask for the Elite Caste (Rank 1)
-elite_pop = res.objectives[mask]  # (N_elite x M) Objective values of Rank 1
+caste = mb.stats.caste(exp)
+caste.report()
+n_elite = caste.summaries[0].n(rank=1)   # Headcount for Rank 1
+q_median = caste.summaries[0].q(rank=1)  # Median quality for Rank 1
 
-# 3. Statistical Summary (Boxplot equivalents)
-stats = res.caste_summary()      # Helper object for stats
-n_elite = stats.n(rank=1)        # Headcount for Rank 1
-q_median = stats.q(rank=1)       # Median quality for Rank 1
-
-# 4. Comparative analysis should use perf/topo compare families.
-# (Tier duel API was removed from the public beta surface.)
+# 4. Competitive rank occupancy uses the dedicated tier-duel result.
+tier_duel = mb.stats.tiers(exp1, exp2)
+tier_duel.report()
 ```
+
+This is the canonical contract for the old "strata" family:
+- `mb.stats.ranks(...)` -> `mb.view.ranks(...)`
+- `mb.stats.caste(...)` -> `mb.view.caste(...)`
+- `mb.stats.tiers(...)` -> `mb.view.tiers(...)`
+
+`mb.stats.strata(...)` remains an internal/convenience building block, but it is not the primary public analytical surface in the current API.
 
 ---
 

@@ -10,14 +10,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Status**: Accepted  
 **Date**: 2026-01-14
 
+> [!NOTE]
+> Historical ADR. The analytical idea remains accepted, but the canonical public API was later refined by [ADR 0039](./0039-canonical-api-and-compare-semantics-v0.14.0.md) and [ADR 0040](./0040-canonical-view-inputs-and-no-compatibility-shims.md).
+> The modern public surface is `mb.stats.ranks`, `mb.stats.caste`, `mb.stats.tiers` with `mb.view.ranks`, `mb.view.caste`, and `mb.view.tiers`.
+
 ## Context
 
-Typical Multi-Objective Evolutionary Algorithm (MOEA) analysis focuses almost exclusively on the final Pareto Front (Rank 1). While Hypervolume and IGD provide a snapshot of success, they often fail to explain *why* an algorithm converged or stalled. In many-objective scenarios, or when selection pressure is unbalanced, the internal "health"We will implement a `strata` diagnostic that analyzes the distribution of individuals across all non-domination layers.
-—remains a black box.
+Typical Multi-Objective Evolutionary Algorithm (MOEA) analysis focuses almost exclusively on the final Pareto Front (Rank 1). While Hypervolume and IGD provide a snapshot of success, they often fail to explain why an algorithm converged or stalled. In many-objective scenarios, or when selection pressure is unbalanced, the internal health of the remaining non-domination layers remains a black box.
 
 ## Decision: The "Strata" Narrative
 
-We decided to implement **Population Strata** as a first-class diagnostic tool in concentrated in a dedicated module (`mb.stats.strata`). This moves our analysis paradigm from "Surface Performance" to "Structural Depth."
+We decided to implement **Population Strata** as a first-class structural diagnostic. The original implementation centered on `mb.stats.strata`; the current canonical public API preserves the same analytical idea through explicit result families: `mb.stats.ranks`, `mb.stats.caste`, and `mb.stats.tiers`.
 
 ### 1. The "Onion Peeling" Core
 To support this, we extended our Non-Dominated Sorting (NDS) logic. Beyond finding the first front, we implemented a recursive "layer-peeling" method (`Population.stratify()`). 
@@ -30,7 +33,7 @@ To support this, we extended our Non-Dominated Sorting (NDS) logic. Beyond findi
 ...
 
 ### 3. Symmetric Quantitative Comparison: Earth Mover's Distance (EMD)
-Comparing two histograms is often reduced to visual inspection. To provide scientific rigor and maintain API symmetry, we chose to use a functional, symmetric **`mb.stats.emd(strat1, strat2)`** (Earth Mover's Distance / Wasserstein distance). 
+Comparing two histograms is often reduced to visual inspection. To provide scientific rigor and maintain API symmetry, we chose to use a functional, symmetric **`mb.stats.emd(strat1, strat2)`** (Earth Mover's Distance / Wasserstein distance).
 
 Unlike an asymmetric class method, this symmetric function treats both algorithms as equal samples, calculating the "work" required to transform one dominance profile into the other.
 

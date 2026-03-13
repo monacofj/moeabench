@@ -13,9 +13,12 @@ Date: 2026-02-02
 
 Accepted
 
+> [!NOTE]
+> Historical naming note: this ADR discusses the visualization that is now exposed canonically as `mb.view.caste(...)`. Earlier internal/public names such as `strat_caste` are legacy terminology.
+
 ## Context
 
-The original `strat_caste` visualization provided a basic view of rank quality vs. density but suffered from critical limitations:
+The original caste visualization provided a basic view of rank quality vs. density but suffered from critical limitations:
 1.  **Metric Ambiguity**: It was unclear whether the y-axis represented aggregated or individual quality.
 2.  **Visual Clutter**: Default annotations were often overlapping and hard to read.
 3.  **Lack of Robustness Insight**: It did not explicitly show stochastic variance across multiple runs.
@@ -23,10 +26,10 @@ The original `strat_caste` visualization provided a basic view of rank quality v
 
 ## Decision
 
-We have decided to completely overhaul the `strat_caste` function (formerly prototyping as `strat_caste2`) and deprecate the old implementation.
+We have decided to completely overhaul the caste visualization function (formerly prototyping as `strat_caste2`) and deprecate the old implementation.
 
 ### 1. Parametric Modes
-The new `strat_caste` introduces a `mode` parameter:
+The new caste visualization introduces a `mode` parameter:
 *   **`mode='collective'` (Default)**: Visualizes the **Gross Domestic Product (GDP)** of each rank across multiple runs. This measures the algorithm's **stochastic robustness**—a short box means high reliability.
 *   **`mode='individual'`**: Visualizes the **Per Capita** merit distribution of individual solutions. This measures the algorithm's **internal diversity**.
 
@@ -43,6 +46,6 @@ res.caste_summary().q(1)  # Median quality
 
 ## Consequences
 
-*   **Breaking Change**: The signature of `strat_caste` has changed. Legacy code should use `strat_caste_deprecated` or update to the new API.
+*   **Breaking Change**: The caste-view signature changed, and legacy callers should update to the canonical `mb.stats.caste(...) -> mb.view.caste(...)` flow.
 *   **Improved Rigor**: The distinction between 'performance' (individual) and 'robustness' (collective) is now explicit in the library's visual vocabulary.
 *   **Data Portability**: Users can now easily export caste statistics to LaTeX/Pandas without image processing.

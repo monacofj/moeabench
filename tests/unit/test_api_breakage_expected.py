@@ -50,5 +50,8 @@ def test_removed_clinic_old_entrypoints():
 
 
 def test_removed_tier_public_stats_api():
-    assert hasattr(mb.stats, "strata")
+    assert hasattr(mb.stats, "ranks")
+    assert hasattr(mb.stats, "caste")
+    assert hasattr(mb.stats, "tiers")
+    assert not hasattr(mb.stats, "strata")
     assert not hasattr(mb.stats, "tier")
