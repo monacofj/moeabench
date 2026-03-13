@@ -383,7 +383,7 @@ def audit(target: Any,
     import os
     import inspect
     from .utils import _resolve_diagnostic_context
-    from ..system import reproducibility_info
+    from ..system import info
     
     # 0. Resolve Context (P, GT, s_k, Name, K)
     ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
@@ -398,7 +398,7 @@ def audit(target: Any,
          return PerformanceAuditor.audit_synthesis(None, None, experiment_name=experiment_name)
 
     # 1. Capture Reproducibility Metadata (Dimension-Aware)
-    r_info = reproducibility_info()
+    r_info = info(show=False)
     target_m = P.shape[1] if P is not None else None
     
     # 1.1 Smart Sidecar Discovery (Dimension-Aware)

@@ -16,3 +16,26 @@ from .evaluator import (
 
 # Aliases for convenience
 hv = hypervolume
+
+__all__ = [
+    "hypervolume",
+    "hv",
+    "igd",
+    "gd",
+    "gdplus",
+    "igdplus",
+    "emd",
+    "MetricMatrix",
+    "front_ratio",
+]
+
+for _name in (
+    "evaluator",
+    "GEN_hypervolume",
+    "GEN_mc_hypervolume",
+    "GEN_igd",
+    "GEN_gd",
+    "GEN_igdplus",
+    "GEN_gdplus",
+):
+    globals().pop(_name, None)

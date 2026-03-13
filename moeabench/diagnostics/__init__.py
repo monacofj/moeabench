@@ -49,3 +49,6 @@ __all__ = [
     "q_headway", "q_closeness", "q_coverage", "q_gap", "q_regularity", "q_balance",
     "q_headway_points", "q_closeness_points"
 ]
+
+for _name in ("auditor", "base", "baselines", "calibration", "enums", "fair", "qscore", "utils"):
+    globals().pop(_name, None)

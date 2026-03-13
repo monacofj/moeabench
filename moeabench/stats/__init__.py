@@ -74,3 +74,6 @@ __all__ = [
     "attainment",
     "attainment_gap",
 ]
+
+for _name in ("tests", "base", "stratification"):
+    globals().pop(_name, None)

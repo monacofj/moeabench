@@ -227,7 +227,7 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 
 ### **2.1. Topographic Analysis (`mb.view`)**
 
-#### **`topology(*args, mode='auto', markers=False, show_gt=True, gt=None, ...)`**
+#### **`mb.view.topology(*args, mode='auto', markers=False, show_gt=True, gt=None, ...)`**
 *   **Description**: Visualizes solutions in Objective Space (2D or 3D). 
     *   **GT Display Contract**:
         *   `show_gt=True` and `gt=<array>`: uses explicit GT.
@@ -242,14 +242,14 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
     *   `gt` (*np.ndarray*): Optional explicit GT array used when `show_gt=True`.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
 
-#### **`bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
+#### **`mb.view.bands(*args, levels=[0.1, 0.5, 0.9], ...)`**
 *   **Description**: Visualizes reliability bands using Empirical Attainment Functions (EAF).
 *   **Arguments**:
     *   `*args`: `experiment` objects to compare.
     *   `levels` (*List[float]*): Attainment levels (probability thresholds) to plot.
 *   **Returns**: `Figure`.
 
-#### **`gap(exp1, exp2, level=0.5, ...)`**
+#### **`mb.view.gap(exp1, exp2=None, level=0.5, ...)`**
 *   **Description**: Highlights the Topologic Gap (coverage difference) between two experiments.
 *   **Arguments**:
     *   `exp1`, `exp2`: The two `experiment` objects to compare.
@@ -258,28 +258,34 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 
 ### **2.2. Performance Analysis (`mb.view`)**
 
-#### **`mb.view.history(*args, metric=hv, gens=None, ...)`**
-*   **Description**: Primary convergence perspective (Metric Trajectory).
+#### **`mb.view.history(*args, domain='auto', metric=hv, gens=None, title=None, ...)`**
+*   **Description**: Domain-dispatched history view for performance or clinical trajectories.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
-    *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
+    *   `domain` (*str*): `'auto'`, `'perf'`, or `'clinic'`. Auto dispatches from metric/result type.
+    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
     *   `gens` (*int* or *slice*): Specific generations to plot.
+    *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
 
-#### **`mb.view.spread(*args, metric=None, gen=-1, ...)`**
-*   **Description**: Comparative Boxplot stats with A12 Win Probability.
+#### **`mb.view.spread(*args, metric=None, gen=-1, title=None, alpha=None, ...)`**
+*   **Description**: Comparative boxplot perspective for performance metrics or a precomputed `PerfCompareResult`.
 *   **Arguments**:
-    *   `*args`: Datasets to compare.
+    *   `*args`: Datasets to compare, or a single `PerfCompareResult`.
     *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
     *   `gen` (*int*): Specific generation index. Defaults to `-1` (final).
+    *   `alpha` (*float*): Significance level used for annotations.
+    *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
 
-#### **`mb.view.density(*args, metric=None, gen=-1, ...)`**
-*   **Description**: Performance Distribution Perspective. Visualizes metric probability density using KDE.
+#### **`mb.view.density(*args, domain='auto', metric=None, gen=-1, title=None, ...)`**
+*   **Description**: Domain-dispatched density view for performance, topology, or clinic; also accepts canonical result objects directly.
 *   **Arguments**:
-    *   `*args`: Datasets to compare.
-    *   `metric` (*callable*): Metric to analyze. Defaults to `hv`.
+    *   `*args`: Datasets to compare or precomputed result objects (`PerfCompareResult`, `DistMatchResult`, or clinical result).
+    *   `domain` (*str*): `'auto'`, `'perf'`, `'topo'`, or `'clinic'`.
+    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
     *   `gen` (*int*): Specific generation index. Defaults to `-1`.
+    *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
 *   **Topological dispatch defaults** (when `domain='topo'` or inferred as topological):
     *   `space='objs'`
@@ -289,36 +295,39 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 
 The underlying structural ontology is **layer**. The public chart-oriented views over that internal layer decomposition are `ranks`, `strata`, and `tiers`.
 
-*   **`ranks(*args, ...)`**:
+*   **`mb.view.ranks(*args, title=None, show=True, ...)`**:
     *   Shows frequency distribution across dominance ranks.
-*   **`strata(*args, metric=None, mode='collective', show_quartiles=True, ...)`**:
+*   **`mb.view.strata(*args, metric=None, mode='collective', show_quartiles=True, title=None, show=True, ...)`**:
     *   Maps Quality vs Density using parametric modes ('collective' vs 'individual').
-*   **`tiers(exp1, exp2=None, ...)`**:
+*   **`mb.view.tiers(exp1, exp2=None, title=None, show=True, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
 
 ### **2.4. Clinical Diagnostics (`mb.view` canonical)**
 
-#### **`radar(target, ground_truth=None, ...)`**
-*   **Description**: Holistic Validation mapping 6 Q-Scores to a radial chart.
+#### **`mb.view.radar(*targets, ground_truth=None, mode='auto', show=True, title=None, ...)`**
+*   **Description**: Holistic validation view mapping one or more sets of 6 Q-Scores to a radar chart.
 *   **Arguments**:
-    *   `target`: `experiment` or `Run` object.
+    *   `*targets`: `experiment`, `Run`, `DiagnosticResult`, or Q-score containers.
     *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
+    *   `mode` (*str*): `'auto'`, `'interactive'`, or `'static'`.
+    *   `show` (*bool*): If `True`, renders immediately.
+    *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
 
-#### **`ecdf(target, metric="closeness", ...)`**
+#### **`mb.view.ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, title=None, ...)`**
 *   **Description**: Plots the Empirical Cumulative Distribution Function of a clinical metric.
 *   **Arguments**:
     *   `target`: Input data.
+    *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
     *   `metric` (*str*): One of `'closeness'`, `'headway'`, `'coverage'`, `'gap'`, `'regularity'`, or `'balance'`.
+    *   `mode` (*str*): `'auto'`, `'interactive'`, or `'static'`.
+    *   `show` (*bool*): If `True`, renders immediately.
+    *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
 
-#### **`history(target, domain='clinic', metric="closeness", gens=None, ...)`**
-*   **Description**: Evolution of a clinical metric over generations.
-*   **Arguments**:
-    *   `target`: `experiment` or `Run`.
-    *   `metric` (*str*): The clinical metric name.
-    *   `gens` (*int* or *slice*): Range of generations to plot.
-*   **Returns**: `Figure`.
+#### **Clinical Density Via `mb.view.density(..., domain='clinic')`**
+*   **Description**: Histogram/density morphology for one physical clinical metric.
+*   **Canonical input**: `DiagnosticValue`, `FairResult`, `QResult`, `Run`, `Population`, or `experiment`.
 
 ### **3.5. Aesthetic & Styling System**
 
@@ -459,6 +468,8 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 
 Calculates the Hypervolume for an experiment, run, or population. Always constructs a dynamic Bounding Box (BBox) that encompasses the worst solutions found by all provided experiments (including the reference, if any).
 
+*   **Public alias**: `mb.metrics.hypervolume(...)`
+
 **Parameters:**
 *   `exp`: The `Experiment`, `Run`, or `Population` object to evaluate.
 *   `ref` (optional): Set of reference experiments used exclusively to expand the Bounding Box.
@@ -470,8 +481,32 @@ Calculates the Hypervolume for an experiment, run, or population. Always constru
 *   `gens` (optional): Slice or integer to limit the generation scope.
 *   `joint` (*bool*): If `True` (default), uses the union of `exp` and `ref` to establish the bounding box. If `False`, ignores `ref` for normalization, providing an independent (self-referenced) perspective.
 
-#### **`mb.metrics.igd(data, ref=None, gens=None)`** / **`gd(...)`**
-*   **Description**: Calculates Inverted Generational Distance or Generational Distance.
+#### **`mb.metrics.igd(data, ref=None, gens=None)`**
+*   **Description**: Calculates Inverted Generational Distance.
+*   **Arguments**:
+    *   `data`: Input data.
+    *   `ref` (*np.ndarray*): True Pareto Front (automatic if problem-linked).
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+*   **Returns**: `MetricMatrix`.
+
+#### **`mb.metrics.gd(data, ref=None, gens=None)`**
+*   **Description**: Calculates Generational Distance.
+*   **Arguments**:
+    *   `data`: Input data.
+    *   `ref` (*np.ndarray*): True Pareto Front (automatic if problem-linked).
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+*   **Returns**: `MetricMatrix`.
+
+#### **`mb.metrics.igdplus(data, ref=None, gens=None)`**
+*   **Description**: Calculates Inverted Generational Distance Plus.
+*   **Arguments**:
+    *   `data`: Input data.
+    *   `ref` (*np.ndarray*): True Pareto Front (automatic if problem-linked).
+    *   `gens` (*int* or *slice*): Limit calculation to specific generation(s).
+*   **Returns**: `MetricMatrix`.
+
+#### **`mb.metrics.gdplus(data, ref=None, gens=None)`**
+*   **Description**: Calculates Generational Distance Plus.
 *   **Arguments**:
     *   `data`: Input data.
     *   `ref` (*np.ndarray*): True Pareto Front (automatic if problem-linked).
@@ -652,6 +687,11 @@ The `system` module provides utilities for environmental inspection.
 ### **`mb.system.check_dependencies()`**
 Prints a detailed report of installed optional dependencies (`pymoo`, `deap`, etc.).
 
+### **`mb.system.info(show=True)`**
+Returns a dictionary with environment metadata used for scientific reproducibility and optionally displays it immediately.
+*   **show** (*bool*): If `True` (default), prints/renders the environment summary. If `False`, returns the dictionary silently.
+*   **Returns**: `dict` with fields such as MoeaBench version, Python version, NumPy version, platform, and timestamp.
+
 ### **`mb.system.export_objectives(data, filename=None)`**
 Exports objectives to a CSV file.
 *   **data**: `Experiment`, `Population`, or raw array.
@@ -665,6 +705,12 @@ Exports decision variables to a CSV file.
 ### **`mb.system.version(show=True)`**
 Returns the current library version string.
 *   **show** (*bool*): If `True` (default), prints the version banner to terminal/notebook and returns the version string. If `False`, returns the version silently.
+
+### **`mb.system.output(text, markdown=None)`**
+Environment-aware output helper used by non-report utilities.
+*   **text**: Plain-text fallback for terminal output.
+*   **markdown**: Optional notebook-specific Markdown rendering.
+*   **Returns**: The plain-text string that was emitted.
 
 ---
 
@@ -850,7 +896,7 @@ All functions in `mb.clinic` use a **Context-Aware Dispatch** system (`_resolve_
 
 For detailed definitions, see the [FAIR Metrics documentation](fair.md).
 
-#### **`headway(data, ref=None, s_k=None)`**
+#### **`mb.clinic.headway(data, ref=None, s_k=None)`**
 *   **Description**: Measures Convergence Depth ($GD_{95} / s_K$).
 *   **Arguments**:
     *   `data`: `experiment`, `Run` or `Population`.
@@ -858,20 +904,34 @@ For detailed definitions, see the [FAIR Metrics documentation](fair.md).
     *   `s_k` (*float*): Expected resolution noise floor.
 *   **Returns**: `FairResult`.
 
-#### **`closeness(data, ref=None, s_k=None)`**
+#### **`mb.clinic.closeness(data, ref=None, s_k=None)`**
 *   **Description**: Distribution of point-wise distances to the manifold. Computed optimally using a `scipy.spatial.KDTree` spatial index for $O(N \log M)$ performance on large manifolds.
-*   **Returns**: `np.ndarray` (vector of distances).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
+    *   `ref` (*np.ndarray*): Analytical Ground Truth.
+    *   `s_k` (*float*): Expected resolution noise floor.
+*   **Returns**: `FairResult`.
 
-#### **`coverage(data, ref=None)`** / **`gap(data, ref=None)`**
+#### **`mb.clinic.coverage(data, ref=None)`** / **`mb.clinic.gap(data, ref=None)`**
 *   **Description**: Global coverage ($IGD_{mean}$) and Worst-case holes ($IGD_{95}$).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
+    *   `ref` (*np.ndarray*): Analytical Ground Truth.
 *   **Returns**: `FairResult`.
 
-#### **`regularity(data, ref_distribution=None)`**
+#### **`mb.clinic.regularity(data, ref_distribution=None)`**
 *   **Description**: Structural Uniformity (Wasserstein distance to uniform lattice).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
+    *   `ref_distribution` (*np.ndarray*): Optional ideal nearest-neighbor spacing distribution.
 *   **Returns**: `FairResult`.
 
-#### **`balance(data, centroids=None)`**
+#### **`mb.clinic.balance(data, centroids=None, ref_hist=None)`**
 *   **Description**: Manifold Bias (Jensen-Shannon Divergence of occupancy).
+*   **Arguments**:
+    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
+    *   `centroids` (*np.ndarray*): Optional region centers for occupancy partitioning.
+    *   `ref_hist` (*np.ndarray*): Optional reference occupancy histogram.
 *   **Returns**: `FairResult`.
 
 ---
@@ -884,26 +944,34 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Range**: $1.0$ (Ideal) to $0.0$ (Baseline/Random). Negative values indicate pathological failure.
 *   **Logic**: $Q = 1 - \text{Correction}(\frac{\text{Fair} - \text{Ideal}}{\text{Random} - \text{Ideal}})$
 
-#### **`q_headway(data, ...) -> QResult`**
+#### **`mb.clinic.q_headway(data, ...) -> QResult`**
 *   **Baselines**: Ideal=$0.0$, Random=$Rand_{50}$ (from repository).
 *   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ to distinguish "Super-converged" solutions from merely "Good" ones.
 
-#### **`q_closeness(data, ...) -> QResult`**
+#### **`mb.clinic.q_closeness(data, ...) -> QResult`**
 *   **Baselines**: Ideal=$0.0$, Random=$ECDF(R_d)$ (Half-Normal Projected Error Distribution).
 *   **Mapping**: **Wasserstein-1**. Computes the topological similarity between the finding distribution and the noise model.
 *   **Note (v0.12.0)**: Random noise assumes a positive-only metric space penalty enforced through Half-Normal absolute validation, prohibiting points from bleeding inside the non-dominated Pareto wall.
 
-#### **`q_coverage`, `q_gap`, `q_regularity`, `q_balance` -> `QResult`**
+#### **`mb.clinic.q_coverage`, `mb.clinic.q_gap`, `mb.clinic.q_regularity`, `mb.clinic.q_balance` -> `QResult`**
 *   **Baselines**: Ideal=$Uni_{50}$ (Median of FPS subsets), Random=$Rand_{50}$ (Median of Random subsets).
 *   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to rank the solution.
+
+#### **`mb.clinic.q_headway_points(data, ...)`** / **`mb.clinic.q_closeness_points(data, ...)`**
+*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics.
+*   **Returns**: `np.ndarray`.
 
 ---
 
 ### **12.4. Automated Algorithmic Audit**
 
-#### **`audit(data, ground_truth=None) -> DiagnosticResult`**
+#### **`mb.clinic.audit(target, ground_truth=None, source_baseline=None, quality=True, **kwargs) -> DiagnosticResult`**
 *   **Rationale**: The primary entry point for automated performance analysis. It runs the full 6-dimensional clinical suite and synthesizes a high-level verdict.
-*   **GT Resolution**: If `ground_truth` is a string, it is treated as a file path and loaded automatically (`.npy`, `.npz`, `.csv`).
+*   **Arguments**:
+    *   `target`: `experiment`, `Run`, `Population`, or compatible raw/object wrapper.
+    *   `ground_truth`: Optional GT array or path (`.npy`, `.npz`, `.csv`).
+    *   `source_baseline`: Optional JSON/dict baseline source override.
+    *   `quality` (*bool*): If `True` (default), computes Q-score layer in addition to FAIR metrics.
 *   **Process**:
     1.  Calculates all 6 Q-Scores.
     2.  Applies the **Performance Auditor** expert system.
@@ -917,6 +985,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 | **`mb.clinic.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
 | **`mb.clinic.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
 | **`mb.clinic.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
+| **`mb.clinic.calibrate`** | `mop, source_baseline=None, source_gt=None, source_search=None, force=False, ...` | Calibrates or refreshes offline clinical baselines for one problem. |
 
 #### **`ReproducibilityWarning`**
 *   **Description**: A custom warning issued during `load_offline_baselines()` when a mismatch is detected between the current environment (Python/NumPy) and the environment that generated the baseline. It supports the library's "Fail-Safe" compatibility protocol.

@@ -99,3 +99,6 @@ __all__ = [
     "topology", "bands", "gap", "density", "history", "spread",
     "ranks", "strata", "tiers", "ecdf", "radar"
 ]
+
+for _name in ("np", "topo", "perf", "strat", "clinic", "style"):
+    globals().pop(_name, None)

@@ -23,6 +23,32 @@ def test_version(capsys):
     assert v2 == v
     assert f"moeabench v{v}\n" == captured.out
 
+def test_info(capsys):
+    """Verify return value and show behavior of info()."""
+    payload = mb.system.info(show=False)
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert isinstance(payload, dict)
+    assert "moeabench_version" in payload
+    assert "python_version" in payload
+    assert "numpy_version" in payload
+
+    payload2 = mb.system.info(show=True)
+    captured = capsys.readouterr()
+    assert payload2["moeabench_version"] == payload["moeabench_version"]
+    assert payload2["python_version"] == payload["python_version"]
+    assert payload2["numpy_version"] == payload["numpy_version"]
+    assert payload2["platform"] == payload["platform"]
+    assert "timestamp" in payload2
+    assert "moeabench environment info" in captured.out.lower()
+
+def test_output(capsys):
+    """Verify environment-aware plain output helper."""
+    text = mb.system.output("hello")
+    captured = capsys.readouterr()
+    assert text == "hello"
+    assert captured.out == "hello\n"
+
 def test_mb_object():
     """Verify the existence and structure of the 'mb' object."""
     assert hasattr(mb, 'system')

@@ -63,3 +63,19 @@ mb = _MB()
 __version__ = system.version(show=False)
 
 __all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb", "clinic"]
+
+for _name in (
+    "sys",
+    "os",
+    "site",
+    "mpl_toolkits",
+    "mplot3d",
+    "user_site",
+    "local_mpl",
+    "_clinic_module",
+    "core",
+    "diagnostics",
+    "plotting",
+    "progress",
+):
+    globals().pop(_name, None)
