@@ -6,8 +6,8 @@
 """
 Example Full: New API Walkthrough
 ---------------------------------
-Two experiments, full analysis tour.
-Order follows `misc/new-api.md` mapping.
+Two experiments, canonical stats API, and a full tour through
+topology, performance, attainment, strata, and clinic diagnostics.
 """
 
 import mb_path
