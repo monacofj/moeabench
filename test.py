@@ -95,6 +95,10 @@ def run_unit_tests():
 
     return _run_pytest("UNIT", ["tests/unit"])
 
+def run_integration_tests():
+    """Runs canonical integration tests."""
+    return _run_pytest("INTEGRATION", ["tests/integration"])
+
 def run_tier_tests(tier_name):
     """Runs a specific calibration tier (light, smoke, heavy)."""
     tier_file = f"tests/test_{tier_name}_tier.py"
@@ -153,6 +157,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="moeabench Test Orchestrator")
     parser.add_argument("--unit", action="store_true", help="Run functional unit tests")
+    parser.add_argument("--integration", action="store_true", help="Run canonical integration tests")
     parser.add_argument("--light", action="store_true", help="Run Light Tier (Math Invariants)")
     parser.add_argument("--smoke", action="store_true", help="Run Smoke Tier (Convergence Regression)")
     parser.add_argument("--regression", action="store_true", help="Run Regression Tier (Numerical Integrity)")
@@ -161,9 +166,9 @@ def main():
 
     args = parser.parse_args()
 
-    # Default logic (Daily Validation): Unit + Light + Regression
-    if not (args.unit or args.light or args.smoke or args.regression or args.heavy or args.all):
-        args.light = True
+    # Default logic (Daily Validation): Unit + Integration + Regression
+    if not (args.unit or args.integration or args.light or args.smoke or args.regression or args.heavy or args.all):
+        args.integration = True
         args.regression = True
     
     success = True
@@ -177,6 +182,12 @@ def main():
 
     # Proceed with higher-level tiers only if foundation is solid
     if success:
+        if args.integration or args.all:
+            ok, s = run_integration_tests()
+            summary_rows.append({"name": "INTEGRATION", "status": "PASS" if ok else "FAIL", "summary": s})
+            if not ok:
+                success = False
+
         if args.light or args.all:
             ok, s = run_tier_tests("light")
             summary_rows.append({"name": "LIGHT", "status": "PASS" if ok else "FAIL", "summary": s})
@@ -201,6 +212,8 @@ def main():
             if not ok:
                 success = False
     else:
+        if args.integration or args.all:
+            summary_rows.append({"name": "INTEGRATION", "status": "SKIPPED", "summary": {"collected": 0, "passed": 0, "failed": 0, "errors": 0, "skipped": 0, "warnings": 0}})
         if args.light or args.all:
             summary_rows.append({"name": "LIGHT", "status": "SKIPPED", "summary": {"collected": 0, "passed": 0, "failed": 0, "errors": 0, "skipped": 0, "warnings": 0}})
         if args.regression or args.all:

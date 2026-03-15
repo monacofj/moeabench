@@ -65,11 +65,12 @@ Use the `test.py` script in the root directory to run the test suite.
 
 **Always run the base tests before committing:**
 ```bash
-./test.py  # Runs Unit Tests + Light Tier
+./test.py  # Runs Unit Tests + Integration + Regression
 ```
 
 ### Testing Tiers
 - **Unit Tests (`--unit`)**: Functional validation of core classes (`Population`, `Experiment`), metrics, and persistence.
+- **Integration Tests (`--integration`)**: Canonical API pipeline validation across `metrics`, `stats`, `clinic`, `view`, persistence, and headless walkthrough flows.
 - **Light Tier (`--light`)**: Mathematical invariants of benchmarks (e.g., DTLZ/DPF geometry) without stochastic execution.
 - **Regression Tier (`--regression`)**: Validated numerical reproducibility. Verifies if Q-Scores and FAIR metrics match the Calibration Reference targets down to 6 decimal places.
 - **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the release baselines (IGD thresholds).

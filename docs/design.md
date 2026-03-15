@@ -435,6 +435,28 @@ The architecture requires explicit support for:
 
 If a feature weakens reproducibility, it must justify that cost explicitly.
 
+### **9.5. Scientific Baselines Are Normative Artifacts**
+
+Calibration references, baseline datasets, and other frozen scientific artifacts are part of the architectural contract of the library.
+
+They are not optional examples, disposable fixtures, or informal regression hints.
+
+Architecturally, this means:
+
+- canonical baselines define expected scientific behavior for calibrated workflows
+- contributors must treat baseline updates as explicit scientific changes, not routine maintenance noise
+- any change that alters certified outputs must explain why the baseline itself should move
+
+### **9.6. Deterministic Reproduction Is the Default Testing Expectation**
+
+For calibrated workflows, MoeaBench assumes deterministic seed discipline and reproducible numerical replay as the default expectation.
+
+This means:
+
+- the same certified configuration should reproduce the same analytical outcome across code iterations
+- tests may treat small numerical drift as a meaningful regression rather than harmless noise
+- stochastic methodology does not excuse architectural sloppiness in seeded validation pipelines
+
 ---
 
 ## **10. Performance and Numerical Integrity**
@@ -458,7 +480,27 @@ The library prefers implementations that are:
 
 even when that makes the implementation less superficially simple.
 
-### **10.3. High-Dimensional Honesty**
+### **10.3. High-Precision Reproducibility Is a Design Requirement**
+
+MoeaBench is designed for scientific contexts where differences at fine decimal scales are analytically meaningful.
+
+Therefore:
+
+- internal analytical pipelines must preserve precision deliberately
+- certified regression targets may require exact or high-precision agreement rather than broad tolerance bands
+- a contributor must not assume that small floating-point variation is acceptable unless that tolerance is explicitly justified by the scientific contract of that pathway
+
+For certified regression pathways, MoeaBench adopts a normative default expectation of agreement down to **6 decimal places** (`abs=1e-6`) unless a stricter contract is explicitly defined for that pathway.
+
+This limit is not arbitrary. It is grounded in the project's scientific reproducibility stack:
+
+- `float64` is the mandatory internal numerical policy
+- deterministic or frozen PRNG behavior is part of the reproducibility architecture
+- analytical verification paths may impose stricter tolerances such as `atol=1e-12` and `rtol=1e-8` when validating mathematical invariants or certified reference geometry
+
+Contributors must therefore interpret `6 decimal places` not as a display preference, but as the default certification floor for regression-grade reproducibility in calibrated analytical workflows.
+
+### **10.4. High-Dimensional Honesty**
 
 Any metric or diagnostic feature that behaves misleadingly in high-dimensional regimes must be treated with scientific caution.
 
@@ -573,6 +615,8 @@ A contribution is more likely to be design-compliant when the answer to the foll
 - Does the change preserve calibration and baseline integrity?
 - Does it preserve or improve reproducibility metadata?
 - Does it keep diagnostic synthesis centered on the canonical architecture?
+- Does it preserve deterministic or high-precision reproducibility where the scientific workflow expects it?
+- If numerical outputs changed, is there an explicit justification for changing certified baselines or regression targets?
 
 ### **Implementation Quality**
 
@@ -594,4 +638,3 @@ Recommended reading order:
 2.  **[api_sheet.md](api_sheet.md)** — thematic map of the public API
 3.  **[reference.md](reference.md)** — exact technical contracts
 4.  Relevant **[ADRs](adr/README.md)** — decision rationale for the area being touched
-

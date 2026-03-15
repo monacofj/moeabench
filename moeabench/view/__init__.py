@@ -25,7 +25,7 @@ from .clinic import (
     clinic_history as _clinic_history,
     clinic_radar as _radar,
 )
-import numpy as np
+import numpy as _np
 
 from .style import apply_style
 
@@ -72,7 +72,7 @@ def _resolve_view_domain(args, kwargs):
         or hasattr(target, "space")
     ):
         return "topo"
-    if isinstance(target, np.ndarray) and getattr(target, "ndim", 0) == 2:
+    if isinstance(target, _np.ndarray) and getattr(target, "ndim", 0) == 2:
         return "topo"
     if "space" in kwargs or "axes" in kwargs or "layout" in kwargs:
         return "topo"
@@ -116,5 +116,5 @@ __all__ = [
     "ranks", "strata", "tiers", "ecdf", "radar"
 ]
 
-for _name in ("topo", "perf", "strat", "clinic", "style"):
+for _name in ("topo", "perf", "strat", "clinic", "style", "np"):
     globals().pop(_name, None)
