@@ -100,4 +100,4 @@ While we don't rule out the use of auxiliary AI assistance tools in this project
 
 ## 5. Communication
 
-Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS](../AUTHORS) file for contact details.
+Feel free to contact the authors for questions, collaboration ideas, or architectural discussions. See the [AUTHORS.md](../AUTHORS.md) file for contact details.

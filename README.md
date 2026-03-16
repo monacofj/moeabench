@@ -75,7 +75,7 @@ MoeaBench authors warmly welcome community contributions to the project. If you 
 
 ## Contact
 
-For contacting the authors, see file **[AUTHORS](AUTHORS)**.
+For contacting the authors, see file **[AUTHORS.md](AUTHORS.md)**.
 
 ## References
 

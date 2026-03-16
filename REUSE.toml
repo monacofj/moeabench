@@ -1,7 +1,7 @@
 version = 1
 
 [[annotations]]
-path = "AUTHORS"
+path = "AUTHORS.md"
 SPDX-FileCopyrightText = [
     "2025 Monaco F. J. <monaco@usp.br>",
     "2025 Silva F. F. <fernandoferreira.silva42@usp.br>"
