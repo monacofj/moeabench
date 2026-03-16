@@ -39,7 +39,7 @@ class Scatter2D:
         self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
         self.gray_gt = kwargs.get('gray_gt', True)
         self.gt_color = kwargs.get('gt_color', GT_COLOR)
-        self.gt_opacity = kwargs.get('gt_opacity', 0.55)
+        self.gt_opacity = kwargs.get('gt_opacity', 0.8)
         self.band_fill = kwargs.get('band_fill', False)
         self.line_shape = kwargs.get('line_shape', None)
         self.figure = go.Figure()

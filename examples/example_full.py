@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 """
-Example Full: New API Walkthrough
+API Walkthrough
 ---------------------------------
 Two experiments, canonical stats API, and a full tour through
 topology, performance, attainment, strata, and clinic diagnostics.

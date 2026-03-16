@@ -31,7 +31,7 @@ MOEABENCH_PALETTE = [
 ]
 
 # Semantic colors stay fixed across charts and do not rotate with the palette.
-GT_COLOR = "#D3D3D3"
+GT_COLOR = "#9CA3AF"
 GRID_COLOR = "#D9DEE6"
 TEXT_MUTED = "#6B7280"
 MEDIAN_COLOR = "#8D99AE"
