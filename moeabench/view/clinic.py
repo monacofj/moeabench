@@ -139,7 +139,7 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
         plt.ylabel("Cumulative Probability")
         plt.grid(True, alpha=0.2, color=GRID_COLOR)
         plt.legend(fontsize=9)
-        if show: show_matplotlib(fig)
+        if show: show_matplotlib(fig, auto_close=True)
         return fig
     else:
         fig = go.Figure()
@@ -198,7 +198,7 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
         plt.grid(True, axis='x', alpha=0.18, color=DIST_GRID_COLOR, linestyle=':', linewidth=0.7)
         for spine in ("top", "right"):
             ax.spines[spine].set_visible(False)
-        if show: show_matplotlib(fig)
+        if show: show_matplotlib(fig, auto_close=True)
         return fig
     else:
         fig = go.Figure(data=[go.Histogram(
@@ -286,7 +286,7 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
         plt.title(resolved_title)
         if len(series) > 1:
             ax.legend(loc='upper right', bbox_to_anchor=(1.15, 1.15))
-        if show: show_matplotlib(fig)
+        if show: show_matplotlib(fig, auto_close=True)
         return fig
     else:
         fig = go.Figure()
@@ -353,7 +353,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
             plt.title(resolved_title)
             plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{target.name.lower()}]")
             plt.grid(True, alpha=0.3); plt.legend()
-            if show: show_matplotlib(fig)
+            if show: show_matplotlib(fig, auto_close=True)
             return fig
         else:
             fig = go.Figure()
@@ -397,7 +397,7 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
         plt.title(resolved_title)
         plt.xlabel("Generation"); plt.ylabel(f"Physical Fact [{metric}]")
         plt.grid(True, alpha=0.3); plt.legend()
-        if show: show_matplotlib(fig)
+        if show: show_matplotlib(fig, auto_close=True)
         return fig
     else:
         fig = go.Figure()

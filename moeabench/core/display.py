@@ -37,20 +37,24 @@ def is_interactive_backend() -> bool:
     return True
 
 
-def show_matplotlib(fig=None) -> bool:
+def show_matplotlib(fig=None, auto_close: bool = False) -> bool:
     """
     Show a matplotlib figure safely.
 
     Returns True when an interactive window show was attempted.
     Returns False on headless backends after forcing a canvas render.
     """
+    target = fig if fig is not None else plt.gcf()
     if is_interactive_backend():
         plt.show()
+        if auto_close and target is not None:
+            plt.close(target)
         return True
 
-    target = fig if fig is not None else plt.gcf()
     try:
         target.canvas.draw()
     except Exception:
         pass
+    if auto_close and target is not None:
+        plt.close(target)
     return False

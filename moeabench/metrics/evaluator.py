@@ -843,7 +843,7 @@ def plot_matrix(metric_matrices, mode='auto', show_bounds=False, title=None, **k
         ax.set_ylabel(plot_name)
         ax.legend()
         if kwargs.get('show', True) and kwargs.get('ax') is None:
-            show_matplotlib(fig)
+            show_matplotlib(fig, auto_close=True)
         
         return fig, ax
         

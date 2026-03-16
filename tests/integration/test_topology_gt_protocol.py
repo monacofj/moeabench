@@ -24,13 +24,25 @@ def test_topology_infers_gt_for_experiment_like_inputs(paired_experiments):
     assert not any("GT could not be inferred" in msg for msg in _runtime_warnings(caught))
 
 
-def test_topology_warns_when_gt_cannot_be_inferred_from_attainment_surface(paired_experiments):
+def test_topology_infers_gt_for_sourced_attainment_surface(paired_experiments):
     exp1, _ = paired_experiments
     att = mb.stats.attainment(exp1)
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         plot = mb.view.topology(att, mode="static", show=False)
+
+    assert plot is not None
+    assert not any("GT could not be inferred" in msg for msg in _runtime_warnings(caught))
+
+
+def test_topology_warns_when_gt_cannot_be_inferred_from_detached_attainment_surface(paired_experiments):
+    exp1, _ = paired_experiments
+    detached = mb.stats.attainment([run.front() for run in exp1.runs])
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        plot = mb.view.topology(detached, mode="static", show=False)
 
     assert plot is not None
     assert any("GT could not be inferred" in msg for msg in _runtime_warnings(caught))

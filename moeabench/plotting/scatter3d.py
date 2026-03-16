@@ -8,6 +8,7 @@ from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
 from ..defaults import defaults
+from ..core.display import show_matplotlib
 from ..view.style import MOEABENCH_PALETTE, GT_COLOR
 
 # Remove legacy inheritance
@@ -66,8 +67,8 @@ class Scatter3D:
          elif defaults.backend == 'plotly': mode = 'interactive'
          
          if mode == 'static':
-             import matplotlib.pyplot as plt
-             plt.show()
+             fig = getattr(self, "_static_figure", None)
+             show_matplotlib(fig, auto_close=(self.ax is None))
          else:
              self.figure.show()
 
@@ -97,6 +98,7 @@ class Scatter3D:
          else:
              ax = self.ax
              fig = ax.get_figure()
+         self._static_figure = fig
          
          # Use standard property cycle for distinct categorical colors
          prop_cycle = plt.rcParams['axes.prop_cycle']
@@ -184,7 +186,7 @@ class Scatter3D:
              plt.savefig(filename, dpi=defaults.dpi, bbox_inches='tight')
 
          if self.show_plot and self.ax is None:
-             plt.show()
+             show_matplotlib(fig, auto_close=True)
 
      def configure_interactive(self):
          if not hasattr(self, 'figure'):

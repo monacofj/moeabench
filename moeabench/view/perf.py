@@ -112,7 +112,7 @@ def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title
         ax.set_ylabel(plot_name)
         ax.legend()
         if kwargs.get('show', True) and kwargs.get('ax') is None:
-            show_matplotlib(fig)
+            show_matplotlib(fig, auto_close=True)
         return fig, ax
 
     import plotly.graph_objects as go
@@ -312,7 +312,7 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
         ax.text(1.5, ann_y + 0.03 * y_range, ann_text, ha='center', va='bottom', fontsize=9, weight='bold')
         ax.set_ylim(top=ann_y + 0.15 * y_range)
 
-    show_matplotlib(fig)
+    show_matplotlib(fig, auto_close=True)
     return ax
 
 def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
@@ -444,5 +444,5 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
         ax.legend()
     ax.grid(True, alpha=0.2)
     
-    show_matplotlib(fig)
+    show_matplotlib(fig, auto_close=True)
     return fig

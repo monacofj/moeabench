@@ -52,17 +52,24 @@ def topology(
     if axis_labels is None: axis_labels = "Objective"
 
     def _infer_gt_from_inputs(items):
-        """Infer GT from experiment-like inputs when show_gt=True and gt is not provided."""
+        """Infer GT from experiment-like or sourced result inputs."""
         experiments = []
         for item in items:
+            candidate = None
             if hasattr(item, "mop") and hasattr(item, "runs"):
-                experiments.append(item)
-            elif hasattr(item, "source") and hasattr(item.source, "mop") and hasattr(item.source, "runs"):
-                experiments.append(item.source)
+                candidate = item
+            elif hasattr(item, "source"):
+                source = item.source
+                if hasattr(source, "mop") and hasattr(source, "runs"):
+                    candidate = source
+                elif hasattr(source, "source") and hasattr(source.source, "mop") and hasattr(source.source, "runs"):
+                    candidate = source.source
+            if candidate is not None:
+                experiments.append(candidate)
 
         if not experiments:
             warnings.warn(
-                "view.topology(show_gt=True): no experiment-like input found; GT could not be inferred.",
+                "view.topology(show_gt=True): no GT-bearing input found; GT could not be inferred.",
                 RuntimeWarning,
             )
             return None
@@ -422,7 +429,7 @@ def density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='
             fig.suptitle(title, fontsize=14)
             
     if show and layout != 'external':
-        show_matplotlib(fig)
+        show_matplotlib(fig, auto_close=(layout != 'independent'))
     return figures if layout == 'independent' else (ax if layout == 'external' else fig)
 
 def bands(*args, levels=[0.1, 0.5, 0.9], objectives=None, mode='auto', title=None, style='step', **kwargs):

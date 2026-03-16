@@ -85,7 +85,7 @@ def strat_ranks(*args, title=None, show=True, **kwargs):
     ax.legend()
     ax.grid(True, axis='y', alpha=0.3)
     if show:
-        show_matplotlib(fig)
+        show_matplotlib(fig, auto_close=True)
     return ax
 
 def strat_strata(*args, labels=None, title=None, metric=None, mode='collective',
@@ -214,7 +214,7 @@ def strat_strata(*args, labels=None, title=None, metric=None, mode='collective',
     ax.set_ylim(0, 1.2)
     
     if show:
-        show_matplotlib(fig)
+        show_matplotlib(fig, auto_close=True)
     return ax
 
 def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
@@ -256,5 +256,5 @@ def strat_tiers(exp1, exp2=None, title=None, show=True, **kwargs):
             ax.text(i+1, vA + vB/2, f"{pB*100:.0f}%", ha='center', va='center', fontsize=8, color='white', weight='bold')
 
     if show:
-        show_matplotlib(fig)
+        show_matplotlib(fig, auto_close=True)
     return ax

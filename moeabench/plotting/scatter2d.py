@@ -8,6 +8,7 @@ from IPython.display import display
 import plotly.graph_objects as go
 import numpy as np
 from ..defaults import defaults
+from ..core.display import show_matplotlib
 from ..view.style import MOEABENCH_PALETTE, GT_COLOR
 
 try:
@@ -64,8 +65,8 @@ class Scatter2D:
         elif defaults.backend == 'plotly': mode = 'interactive'
         
         if mode == 'static':
-            import matplotlib.pyplot as plt
-            plt.show()
+            fig = getattr(self, "_static_figure", None)
+            show_matplotlib(fig, auto_close=(self.ax is None))
         else:
             self.figure.show()
 
@@ -120,6 +121,7 @@ class Scatter2D:
         else:
             ax = self.ax
             fig = ax.get_figure()
+        self._static_figure = fig
         
         prop_cycle = plt.rcParams['axes.prop_cycle']
         cycle_colors = prop_cycle.by_key()['color']
@@ -227,7 +229,7 @@ class Scatter2D:
             # print(f"[moeabench] Plot saved as {filename}")
         
         if self.show_plot and self.ax is None:
-            plt.show()
+            show_matplotlib(fig, auto_close=True)
 
     def _configure_interactive_bands(self):
         import plotly.graph_objects as go

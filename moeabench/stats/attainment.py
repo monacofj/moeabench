@@ -12,16 +12,18 @@ class AttainmentSurface(SmartArray):
     """
     Experimental data representing an Empirical Attainment Surface.
     """
-    def __new__(cls, input_array, level=0.5, name=None):
+    def __new__(cls, input_array, level=0.5, name=None, source=None):
         obj = np.asarray(input_array).view(cls)
         obj.level = level
         obj.name = name if name else f"Attainment {level*100:.0f}%"
+        obj.source = source
         return obj
 
     def __array_finalize__(self, obj):
         if obj is None: return
         self.level = getattr(obj, 'level', 0.5)
         self.name = getattr(obj, 'name', None)
+        self.source = getattr(obj, 'source', None)
 
     def volume(self, ref_point=None):
         """
@@ -44,9 +46,11 @@ def attainment(source, level: float = 0.5):
     """
     if isinstance(source, list):
         fronts = source
+        surface_source = None
     else:
         # Assume it's an Experiment object
         fronts = [run.front() for run in source.runs]
+        surface_source = source
 
     if not fronts:
         raise ValueError("No fronts available for attainment calculation.")
@@ -60,11 +64,11 @@ def attainment(source, level: float = 0.5):
     m = all_points.shape[1]
     
     if m == 2:
-        return _attainment_2d(fronts, k, level)
+        return _attainment_2d(fronts, k, level, source=surface_source)
     else:
-        return _attainment_nd(fronts, k, level)
+        return _attainment_nd(fronts, k, level, source=surface_source)
 
-def _attainment_2d(fronts, k, level):
+def _attainment_2d(fronts, k, level, source=None):
     """Exact 2D attainment surface calculation (staircase)."""
     # For 2D, the attainment surface is defined by the coordinates
     # of the points in the fronts.
@@ -101,9 +105,9 @@ def _attainment_2d(fronts, k, level):
             
     # Remove redundant points (non-dominated)
     res_array = np.array(res_points)
-    return AttainmentSurface(res_array, level=level)
+    return AttainmentSurface(res_array, level=level, source=source)
 
-def _attainment_nd(fronts, k, level):
+def _attainment_nd(fronts, k, level, source=None):
     """
     N-D attainment surface calculation.
     Uses chunked vectorized counting to find points attained by at least k runs.
@@ -132,7 +136,7 @@ def _attainment_nd(fronts, k, level):
     candidates = union[mask]
     
     if len(candidates) == 0:
-        return AttainmentSurface(np.zeros((0, union.shape[1])), level=level)
+        return AttainmentSurface(np.zeros((0, union.shape[1])), level=level, source=source)
     
     # Extract non-dominated subset of these candidates
     from ..core.run import Population
@@ -140,7 +144,7 @@ def _attainment_nd(fronts, k, level):
     # _calc_domination is now memory-efficient (chunked)
     indices = pop._calc_domination()
     
-    return AttainmentSurface(candidates[~indices], level=level)
+    return AttainmentSurface(candidates[~indices], level=level, source=source)
 
 class AttainmentDiff(StatsResult):
     """
@@ -195,5 +199,7 @@ def attainment_gap(exp1, exp2, level=0.5, workers=0):
 
     surf1.name = exp1.name
     surf2.name = exp2.name
+    surf1.source = exp1
+    surf2.source = exp2
     
     return AttainmentDiff(surf1, surf2, level)

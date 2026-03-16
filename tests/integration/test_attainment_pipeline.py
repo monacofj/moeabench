@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import warnings
+
 import moeabench as mb
 
 
@@ -26,5 +28,15 @@ def test_attainment_pipeline(paired_experiments, canonical_gt):
         att1, band1_lo, band1_hi, att2, band2_lo, band2_hi,
         mode="static", show=False, show_gt=False
     ) is not None
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert mb.view.topology(att1, att2, mode="static", show=False) is not None
+        assert not any("GT could not be inferred" in str(w.message) for w in caught)
+
     assert mb.view.topology(att1, att2, gt=canonical_gt, mode="static", show=False) is not None
-    assert mb.view.gap(gap, mode="static", show=False, show_gt=False) is not None
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        assert mb.view.gap(gap, mode="static", show=False) is not None
+        assert not any("GT could not be inferred" in str(w.message) for w in caught)
