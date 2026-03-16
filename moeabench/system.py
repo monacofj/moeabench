@@ -8,7 +8,7 @@ from .core.base import emit_output as _emit_output
 
 def version(show: bool = True) -> str:
     """Returns the current moeabench version and optionally prints it."""
-    v = "0.14.0"
+    v = "0.15.0"
     if show:
         _emit_output(f"moeabench v{v}", markdown=f"**moeabench** `v{v}`")
     return v

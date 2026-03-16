@@ -231,9 +231,10 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 *   **Description**: Visualizes solutions in Objective Space (2D or 3D). 
     *   **GT Display Contract**:
         *   `show_gt=True` and `gt=<array>`: uses explicit GT.
-        *   `show_gt=True` and no `gt`: tries GT inference from experiment-like inputs.
+        *   `show_gt=True` and no `gt`: tries GT inference from experiment-like inputs or from sourced result objects such as `AttainmentSurface`.
         *   `show_gt=False`: does not show GT (and ignores `gt` if provided).
     *   **GT Density**: For dense GT rendering, explicitly pass `gt`: `mb.view.topology(exp, show_gt=True, gt=exp.optimal_front(n=5000))`.
+    *   **Headless Matplotlib**: On non-interactive backends (for example `Agg`), MoeaBench renders figures off-screen and closes internally-created Matplotlib figures automatically after display to avoid figure accumulation during long walkthroughs.
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
@@ -894,7 +895,7 @@ All functions in `mb.clinic` use a **Context-Aware Dispatch** system (`_resolve_
 
 ### **12.2. Physical Metrics (Fairview Protocol)**
 
-For detailed definitions, see the [FAIR Metrics documentation](fair.md).
+For detailed definitions, see the [FAIR Metrics documentation](fair_metrics.md).
 
 #### **`mb.clinic.headway(data, ref=None, s_k=None)`**
 *   **Description**: Measures Convergence Depth ($GD_{95} / s_K$).

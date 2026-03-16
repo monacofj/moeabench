@@ -772,7 +772,7 @@ MoeaBench transforms raw performance data into a "detailed diagnostic assessment
 
 ### **9.2. Physical Metrics (FAIR Metrics)**
 
-For detailed mathematical definitions, see the [FAIR Metrics documentation](fair.md).
+For detailed mathematical definitions, see the [FAIR Metrics documentation](fair_metrics.md).
 
 In ideal multi-objective optimization, the Pareto front is often a continuous manifold. In practice, however, we deal with two physical constraints:
 1. **Discrete Ground Truth**: Our analytical reference is usually a finite set of points sampled from the true front.
@@ -1115,7 +1115,7 @@ To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing th
 
 ### **10.1. MOP Plugin Support and Calibration**
 
-MoeaBench v0.9+ introduces a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
+MoeaBench uses a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
 
 #### **The "One-Click" Calibration Workflow**
 For a custom MOP to be clinically validated, it needs a **Sidecar JSON** file containing its Ground Truth (GT) and statistical baselines (ECDF). You can generate this automatically:

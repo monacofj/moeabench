@@ -72,7 +72,12 @@ class UndefinedBaselineError(Exception):
     """Raised when no technical baseline is found for the requested context."""
     pass
 
-def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary", target_m: Optional[int] = None):
+def _verify_baseline_dna(
+    data: Dict[str, Any],
+    source_name: str = "Primary",
+    target_m: Optional[int] = None,
+    warn_on_version_mismatch: bool = True,
+):
     """Internal helper to verify Environment DNA in baseline JSON."""
     from ..system import version as lib_version
     b_ver = data.get("version")
@@ -90,7 +95,7 @@ def _verify_baseline_dna(data: Dict[str, Any], source_name: str = "Primary", tar
          raise UndefinedBaselineError(f"Dimension mismatch in {source_name}: baseline is M={b_m}, expected M={target_m}")
 
     # Version Check (Warning only)
-    if b_ver and b_ver != lib_version(show=False):
+    if warn_on_version_mismatch and b_ver and b_ver != lib_version(show=False):
         warnings.warn(
             f"MoeaBench Version Mismatch ({source_name}): Baseline is {b_ver}, library is {lib_version(show=False)}. "
             "Numerical scores may differ across major/minor versions.",
@@ -188,7 +193,17 @@ def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
             full_data["numpy_version"] = np.__version__
             
         # 1.1 Environment DNA/Compatibility Verification
-        _verify_baseline_dna(full_data, "Primary", target_m=target_m)
+        # The primary baseline alias is intentionally frozen at the last
+        # certified calibration release. It is a normative scientific
+        # reference, not a per-release artifact that must track the current
+        # codebase version number.
+        primary_is_frozen_canonical = os.path.basename(BASELINE_JSON_PATH) == "baselines.json"
+        _verify_baseline_dna(
+            full_data,
+            "Primary",
+            target_m=target_m,
+            warn_on_version_mismatch=not primary_is_frozen_canonical,
+        )
 
         # 1.5 Populate GT registry from primary data if present
         if "problems" in full_data:

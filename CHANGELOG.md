@@ -14,6 +14,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-03-16
+
+### Added
+- **Integration and Stability Test Architecture**:
+  - Formalized the test suite around `unit`, `integration`, and `stability` scopes.
+  - Added scope/level-aware orchestration in `test.py`, with canonical documentation in `docs/test.md`.
+  - Added dedicated integration coverage for topology GT inference, attainment pipelines, and Matplotlib display cleanup.
+
+### Changed
+- **Deterministic Validation Hardening**:
+  - Standardized deterministic seeding across the official test suite and stabilized analytical sampling paths used by GT-sensitive checks.
+  - Promoted numerical reproducibility expectations into the normative architecture and testing documentation.
+- **Documentation Consolidation**:
+  - Canonical API, FAIR metrics, and test architecture documentation were realigned across `README.md`, `docs/userguide.md`, `docs/reference.md`, `docs/api_sheet.md`, and `docs/CONTRIBUTING.md`.
+  - Redundant transition documents in `misc/` were retired once their content had been absorbed by canonical docs.
+
+### Fixed
+- **Topology GT Inference**:
+  - `mb.view.topology(show_gt=True)` now infers GT correctly from sourced `AttainmentSurface` inputs, preserving the documented contract for `show_gt` and explicit `gt=...`.
+- **Matplotlib Figure Lifecycle**:
+  - Internal plotting flows now release figures after display, eliminating the spurious "more than 20 figures have been opened" warning in long interactive walkthroughs.
+- **Headless Rendering Stability**:
+  - Non-interactive plotting paths remain deterministic and warning-free while preserving canonical view behavior.
+
 ## [0.14.0] - 2026-03-11
 
 ### Added
@@ -30,7 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Major API Consolidation (Breaking)**:
   - Canonical diagnostics namespace is now `mb.clinic`.
   - Canonical view API is now chart-oriented:
-    - `mb.view.topology`, `mb.view.bands`, `mb.view.gap`, `mb.view.density`, `mb.view.history`, `mb.view.spread`, `mb.view.ranks`, `mb.view.caste`, `mb.view.tiers`, `mb.view.ecdf`, `mb.view.radar`.
+    - `mb.view.topology`, `mb.view.bands`, `mb.view.gap`, `mb.view.density`, `mb.view.history`, `mb.view.spread`, `mb.view.ranks`, `mb.view.strata`, `mb.view.tiers`, `mb.view.ecdf`, `mb.view.radar`.
   - Canonical stats names:
     - `mb.stats.attainment` and `mb.stats.attainment_gap`.
     - Unified comparison APIs: `mb.stats.perf_compare(...)`, `mb.stats.topo_compare(...)`, with standardized result object for performance comparison (`PerfCompareResult`).
@@ -84,7 +108,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `mb.view.perf_spread(...)` -> `mb.view.spread(...)`
   - `mb.view.perf_density(...)` -> `mb.view.density(...)`
   - `mb.view.strat_ranks(...)` -> `mb.view.ranks(...)`
-  - `mb.view.strat_caste(...)` -> `mb.view.caste(...)`
+  - `mb.view.strat_caste(...)` -> `mb.view.strata(...)`
   - `mb.view.strat_tiers(...)` -> `mb.view.tiers(...)`
   - `mb.view.clinic_radar(...)` -> `mb.view.radar(...)`
 - Stats:
@@ -100,7 +124,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **FAIR Metrics Framework (Finite Approximation-Induced Resolution)**: 
     - Completed the project-wide rebranding from "Finite-Resolution Evaluation Framework" (FREF) to the **FAIR Metrics Framework**.
-    - New didactic documentation in `docs/fair.md` providing technical depth and numerical examples for all diagnostic dimensions.
+    - New didactic documentation in `docs/fair_metrics.md` providing technical depth and numerical examples for all diagnostic dimensions.
 - **Longitudinal Search-Drive Assessment (Headway)**:
     - Redefined the `HEADWAY` metric as a longitudinal measure of search efficiency. It now explicitly computes progress relative to the initial population ($P_0$), providing a direct measure of an algorithm's "Search Drive" over time.
     - Updated `q_headway` to use a log-linear physical scale anchored to the noise floor of the initial generation.

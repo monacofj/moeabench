@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Scientific Reproducibility & RNG Stability in MoeaBench
 
 Reproducibility is a pillar of computational research. MoeaBench is designed with a "Fail-Strict" philosophy to ensure that results published in peer-reviewed literature remain exactly reproducible across time, platforms, and library updates.
@@ -52,11 +58,13 @@ Every baseline JSON file (e.g., `baselines_v0.13.2.json`) contains "Environment 
 
 ### B. Compatibility Checks
 When performing an audit, MoeaBench compares your current session environment against the baseline's DNA:
-- **Major/Minor Match**: If the current Python or NumPy version differs from the calibration environment, a `ReproducibilityWarning` is issued. 
+- **Primary Frozen Baseline**: The canonical alias `baselines.json` is allowed to remain frozen at the last certified calibration release. Its MoeaBench version tag is treated as part of the reference artifact and does not need to match the current codebase version.
+- **Historical / External Baselines**: If you explicitly load an older or alternative baseline source, version mismatch remains part of the audit trail and may trigger a `ReproducibilityWarning`.
+- **Environment Match**: If the current Python or NumPy version differs from the calibration environment, a `ReproducibilityWarning` is issued.
 - **Schema Integrity**: If the JSON structure is incompatible with the current library version, an `UndefinedBaselineError` is raised (Fail-Strict).
 
 ### C. Longitudinal Auditing
 This protocol allows a researcher in 2028 to run **MoeaBench v5.0** against a **v0.13.2 baseline** to maintain historical parity. The system will allow execution but will explicitly log the version mismatch in the audit trail, ensuring full transparency in the peer-review process.
 
 ---
-*For more technical details on the FAIR Metrics Framework, see [fair.md](fair.md).*
+*For more technical details on the FAIR Metrics Framework, see [fair_metrics.md](fair_metrics.md).*

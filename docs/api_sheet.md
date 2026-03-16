@@ -227,5 +227,4 @@ In architectural terms:
 - **[userguide.md](userguide.md)**: tutorial and didactic walkthrough
 - **[reference.md](reference.md)**: exhaustive contracts, arguments, and returns
 - **[mops.md](mops.md)**: benchmark families and mathematical background
-- **[fair.md](fair.md)**: FAIR metrics and clinical diagnostics internals
-
+- **[fair_metrics.md](fair_metrics.md)**: FAIR metrics and clinical diagnostics internals
