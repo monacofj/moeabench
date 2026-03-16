@@ -64,17 +64,19 @@ def main():
     hv2 = mb.metrics.hv(exp2, scale="abs")  # Falls back to raw if absolute is unavailable.
     hv1.report()                                 # exp1 HV summary.
     hv2.report()                                 # exp2 HV summary.
+    mb.view.history(hv1, hv2)                    # Convergence.
 
     hv_shift = mb.stats.perf_shift(hv1, hv2)     # MW shift test.
-    hv_match = mb.stats.perf_match(hv1, hv2)     # KS match test.
-    hv_win = mb.stats.perf_win(hv1, hv2)         # A12 win prob.
     hv_shift.report()                            # Shift evidence.
+    mb.view.spread(hv_shift)                     # Final spread + shift. 
+
+    hv_match = mb.stats.perf_match(hv1, hv2)     # KS match test.
     hv_match.report()                            # Match verdict.
+    mb.view.density(hv_match)                    # Density shape + KS verdict.
+
+    hv_win = mb.stats.perf_win(hv1, hv2)         # A12 win prob.
     hv_win.report()                              # Effect size.
 
-    mb.view.history(hv1, hv2)                    # Convergence.
-    mb.view.spread(hv_shift)                    # Final spread + shift.
-    mb.view.density(hv_match)                  # Density shape + KS verdict.
 
     # GD: compute, test, and plot with reused stats.
 
@@ -82,17 +84,18 @@ def main():
     gd2 = mb.metrics.gd(exp2, ref=gt)            # GD trajectory for exp2.
     gd1.report()                                 # exp1 GD summary.
     gd2.report()                                 # exp2 GD summary.
+    mb.view.history(gd1, gd2)                    # Convergence.
 
     gd_shift = mb.stats.perf_shift(gd1, gd2)     # MW shift test.
-    gd_match = mb.stats.perf_match(gd1, gd2)     # KS match test.
-    gd_win = mb.stats.perf_win(gd1, gd2)         # A12 win prob.
     gd_shift.report()                            # Shift evidence.
-    gd_match.report()                            # Match verdict.
-    gd_win.report()                              # Effect size.
+    mb.view.spread(gd_shift)                    # Final spread + shift.
 
-    mb.view.history(gd1, gd2)                                  # Convergence.
-    mb.view.spread(gd_shift)                   # Final spread + shift.
-    mb.view.density(gd_match)                  # Density shape + KS verdict.
+    gd_match = mb.stats.perf_match(gd1, gd2)     # KS match test.
+    gd_match.report()                            # Match verdict.
+    mb.view.density(gd_match)                    # Density shape + KS verdict.
+
+    gd_win = mb.stats.perf_win(gd1, gd2)         # A12 win prob.
+    gd_win.report()                              # Effect size.
 
     # GD+: compute, test, and plot with reused stats.
 
@@ -100,17 +103,18 @@ def main():
     gdplus2 = mb.metrics.gdplus(exp2, ref=gt)    # GD+ trajectory for exp2.
     gdplus1.report()                             # exp1 GD+ summary.
     gdplus2.report()                             # exp2 GD+ summary.
+    mb.view.history(gdplus1, gdplus2)            # Convergence.
 
     gdplus_shift = mb.stats.perf_shift(gdplus1, gdplus2)    # MW shift test.
-    gdplus_match = mb.stats.perf_match(gdplus1, gdplus2)    # KS match test.
-    gdplus_win = mb.stats.perf_win(gdplus1, gdplus2)        # A12 win prob.
     gdplus_shift.report()                        # Shift evidence.
-    gdplus_match.report()                        # Match verdict.
-    gdplus_win.report()                          # Effect size.
-
-    mb.view.history(gdplus1, gdplus2)            # Convergence.
     mb.view.spread(gdplus_shift)                 # Final spread + shift.
+
+    gdplus_match = mb.stats.perf_match(gdplus1, gdplus2)    # KS match test.
+    gdplus_match.report()                        # Match verdict.
     mb.view.density(gdplus_match)                # Density shape + KS verdict.
+
+    gdplus_win = mb.stats.perf_win(gdplus1, gdplus2)        # A12 win prob.
+    gdplus_win.report()                          # Effect size.
 
     # IGD: compute, test, and plot with reused stats.
 
@@ -118,17 +122,18 @@ def main():
     igd2 = mb.metrics.igd(exp2, ref=gt)          # IGD trajectory for exp2.
     igd1.report()                                # exp1 IGD summary.
     igd2.report()                                # exp2 IGD summary.
+    mb.view.history(igd1, igd2)                  # Convergence.
 
     igd_shift = mb.stats.perf_shift(igd1, igd2)  # MW shift test.
-    igd_match = mb.stats.perf_match(igd1, igd2)  # KS match test.
-    igd_win = mb.stats.perf_win(igd1, igd2)      # A12 win prob.
     igd_shift.report()                           # Shift evidence.
-    igd_match.report()                           # Match verdict.
-    igd_win.report()                             # Effect size.
-
-    mb.view.history(igd1, igd2)                  # Convergence.
     mb.view.spread(igd_shift)                    # Final spread + shift.
+
+    igd_match = mb.stats.perf_match(igd1, igd2)  # KS match test.
+    igd_match.report()                           # Match verdict.
     mb.view.density(igd_match)                   # Density shape + KS verdict.
+
+    igd_win = mb.stats.perf_win(igd1, igd2)      # A12 win prob.
+    igd_win.report()                             # Effect size.
 
     # IGD+: compute, test, and plot with reused stats.
 
@@ -136,17 +141,18 @@ def main():
     igdplus2 = mb.metrics.igdplus(exp2, ref=gt)  # IGD+ trajectory for exp2.
     igdplus1.report()                            # exp1 IGD+ summary.
     igdplus2.report()                            # exp2 IGD+ summary.
+    mb.view.history(igdplus1, igdplus2)          # Convergence.
 
     igdplus_shift = mb.stats.perf_shift(igdplus1, igdplus2)    # MW shift test.
-    igdplus_match = mb.stats.perf_match(igdplus1, igdplus2)    # KS match test.
-    igdplus_win = mb.stats.perf_win(igdplus1, igdplus2)        # A12 win prob.
     igdplus_shift.report()                       # Shift evidence.
-    igdplus_match.report()                       # Match verdict.
-    igdplus_win.report()                         # Effect size.
-
-    mb.view.history(igdplus1, igdplus2)                        # Convergence.
     mb.view.spread(igdplus_shift)                # Final spread + shift.
+
+    igdplus_match = mb.stats.perf_match(igdplus1, igdplus2)    # KS match test.
+    igdplus_match.report()                       # Match verdict.
     mb.view.density(igdplus_match)               # Density shape + KS verdict.
+
+    igdplus_win = mb.stats.perf_win(igdplus1, igdplus2)        # A12 win prob.
+    igdplus_win.report()                         # Effect size.
 
     # EMD: compute, test, and plot with reused stats.
 
@@ -154,17 +160,18 @@ def main():
     emd2 = mb.metrics.emd(exp2, ref=gt)          # EMD trajectory for exp2.
     emd1.report()                                # exp1 EMD summary.
     emd2.report()                                # exp2 EMD summary.
+    mb.view.history(emd1, emd2)                  # Convergence.
 
     emd_shift = mb.stats.perf_shift(emd1, emd2)  # MW shift test.
-    emd_match = mb.stats.perf_match(emd1, emd2)  # KS match test.
-    emd_win = mb.stats.perf_win(emd1, emd2)      # A12 win prob.
     emd_shift.report()                           # Shift evidence.
-    emd_match.report()                           # Match verdict.
-    emd_win.report()                             # Effect size.
-
-    mb.view.history(emd1, emd2)                  # Convergence.
     mb.view.spread(emd_shift)                    # Final spread + shift.
+
+    emd_match = mb.stats.perf_match(emd1, emd2)  # KS match test.
+    emd_match.report()                           # Match verdict.
     mb.view.density(emd_match)                   # Density shape + KS verdict.
+
+    emd_win = mb.stats.perf_win(emd1, emd2)      # A12 win prob.
+    emd_win.report()                             # Effect size.
 
     # Front size: compute, test, and plot with reused stats.
 
@@ -172,17 +179,18 @@ def main():
     fsize2 = mb.metrics.front_ratio(exp2)        # Front-size trajectory for exp2.
     fsize1.report()                              # exp1 front-size summary.
     fsize2.report()                              # exp2 front-size summary.
+    mb.view.history(fsize1, fsize2)              # Convergence.
 
     fsize_shift = mb.stats.perf_shift(fsize1, fsize2)  # MW shift test.
-    fsize_match = mb.stats.perf_match(fsize1, fsize2)  # KS match test.
-    fsize_win = mb.stats.perf_win(fsize1, fsize2)      # A12 win prob.
     fsize_shift.report()                               # Shift evidence.
-    fsize_match.report()                               # Match verdict.
-    fsize_win.report()                                 # Effect size.
-
-    mb.view.history(fsize1, fsize2)              # Convergence.
     mb.view.spread(fsize_shift)                  # Final spread + shift.
+
+    fsize_match = mb.stats.perf_match(fsize1, fsize2)  # KS match test.
+    fsize_match.report()                               # Match verdict.
     mb.view.density(fsize_match)                 # Density shape + KS verdict.
+
+    fsize_win = mb.stats.perf_win(fsize1, fsize2)      # A12 win prob.
+    fsize_win.report()                                 # Effect size.
     # Observe trajectory speed (history), final contrast (spread), and tails (density).
 
     ##
@@ -230,14 +238,15 @@ def main():
     ##
 
     ranks = mb.stats.ranks(exp1, exp2)           # Rank depth and pressure.
-    strata = mb.stats.strata(exp1, exp2)         # Rank-wise quality distribution.
-    tiers = mb.stats.tiers(exp1, exp2)           # Shared-tier duel between both groups.
     ranks.report()                               # Rank structure summary.
-    strata.report()                              # Strata distribution summary.
-    tiers.report()                               # Tier duel summary.
-
     mb.view.ranks(ranks)                         # Rank occupancy bars.
+ 
+    strata = mb.stats.strata(exp1, exp2)         # Rank-wise quality distribution.
+    strata.report()                              # Strata distribution summary.
     mb.view.strata(strata)                       # Rank quality box summaries.
+ 
+    tiers = mb.stats.tiers(exp1, exp2)           # Shared-tier duel between both groups.
+    tiers.report()                               # Tier duel summary.
     mb.view.tiers(tiers)                         # Shared-tier stacked duel.
     # Observe selection pressure depth and class occupancy profile.
 
@@ -251,6 +260,7 @@ def main():
     diag2.report(full=True)                      # Full audit narrative.
 
     mb.view.radar(diag1, diag2)                  # Global health radar.
+
     close1 = mb.clinic.closeness(exp1, ref=gt)   # Closeness pathology for exp1.
     close2 = mb.clinic.closeness(exp2, ref=gt)   # Closeness pathology for exp2.
     close1.report()                              # Closeness summary.
