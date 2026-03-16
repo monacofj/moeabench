@@ -1,4 +1,10 @@
 
+<!--
+SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # Finite Approximation-Induced Resolution (FAIR) Metrics 
 
 In most MOEA benchmarks, the “true Pareto front” is not an analytic surface in the evaluation pipeline. Instead, it is a **finite reference set** $R\subset\mathbb{R}^M$ sampled from that surface (or estimated empirically). Likewise, the algorithm output is another **finite set** $P\subset\mathbb{R}^M$, typically of size $K\le 200$.
@@ -462,6 +468,62 @@ The failure threshold ($Q=0$) maps the expected histogram imbalances of an ungui
 - **Q = 0.90**: Equitable distribution. The algorithm explored all problem regions with appropriate parity.
 - **Q = 0.10**: Severe regional bias. The algorithm is "obsessed" with one objective region and ignores others.
 - **Contrast (Q-Balance vs. Q-Coverage)**: $Q_{cov}$ evaluates if the algorithm *reached* the regions, but $Q_{balance}$ evaluates if it allocated *proportional processing effort/points* to them. You could have points in all regions ($Q_{cov}=0.80$), but if 95% of the population is crowded in one corner, $Q_{balance}$ will be extremely low ($0.15$).
+
+---
+
+## 5.4 Clinical quality language: thresholds, labels, and marker grammar
+
+Beyond the numerical definition of each Q-score, MoeaBench also standardizes how those values are translated into technical clinical language in reports, summaries, and semantic overlays. This section defines that normative mapping.
+
+### 5.4.1 Global quality tiers
+
+The following thresholds define the default quality bands used by the clinical layer:
+
+| Q-Score Range | Grade | Color Coding | Clinical Assessment |
+| :--- | :--- | :--- | :--- |
+| **$Q \ge 0.95$** | **EXCEPTIONAL** | Green (Solid) | Near-Ideal / Asymptotic |
+| **$0.85 \le Q < 0.95$** | **HIGH** | Green (Soft) | Strong / Extensive |
+| **$0.67 \le Q < 0.85$** | **STANDARD** | Yellow (Gold) | Effective / Managed |
+| **$0.34 \le Q < 0.67$** | **SUBSTANDARD** | Yellow (Soft) | Partial / Limited |
+| **$Q < 0.34$** | **FAILURE** | Red | Noise-dominant / Remote |
+
+These thresholds are not merely presentational. They define the standard vocabulary used in validation narratives and report synthesis.
+
+### 5.4.2 Per-dimension semantic vocabulary
+
+Each quality dimension has its own preferred terminology across the same threshold ladder:
+
+| Dimension | 0.95 (Exceptional) | 0.85 (High) | 0.67 (Standard) | 0.34 (Substandard) | 0.0 (Failure) |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **HEADWAY** | Near-Ideal Suppression | Strong Suppression | Effective | Partial | Noise-dominant |
+| **CLOSENESS** | Asymptotic | High Precision | Sufficient | Coarse | Remote |
+| **COVERAGE** | Exhaustive | Extensive | Standard | Limited | Collapsed |
+| **GAP** | High Continuity | Stable | Managed Gaps | Interrupted | Fragmented |
+| **REGULARITY** | Asymptotic Regularity | Ordered | Consistent | Irregular | Unstructured |
+| **BALANCE** | Near-Ideal Balance | Equitable | Fair | Biased | Skewed |
+
+This vocabulary is what gives the Q-layer its “clinical” voice. Two dimensions may share the same numerical band while using different semantic labels because the pathology being described is different.
+
+### 5.4.3 Structural marker grammar
+
+The point-wise visual language used by MoeaBench follows the same clinical interpretation:
+
+- **● Solid Circle ($Q \ge 0.5$):** effective convergence
+- **○ Hollow Circle ($0 \le Q < 0.5$):** coarse convergence / near noise floor
+- **◇ Open Diamond ($Q < 0$):** statistical failure / indistinguishable from noise
+
+These markers are used especially in semantic overlays such as topological views with pathology markers enabled.
+
+### 5.4.4 Analytical summary logic
+
+The “Analytical Summary” in clinical reporting is a synthesis rule over the six Q-dimensions:
+
+- **Structural Perfection**: reserved for cases where all dimensions are $\ge 0.95$
+- **High Fidelity**: highlights dimensions with $Q \ge 0.85$
+- **Anomalies**: highlights dimensions with $Q < 0.67$
+- **Standard Operational Performance**: default narrative when no stronger pattern dominates
+
+This logic is what bridges the numeric vector of Q-scores and the short human-readable diagnosis used in audit reports.
 
 ---
 

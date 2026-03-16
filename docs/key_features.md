@@ -1,4 +1,10 @@
 
+<!--
+SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+
+SPDX-License-Identifier: GPL-3.0-or-later
+-->
+
 # MoeaBench
 
 MoeaBench is an extensible analytical toolkit for Multi-objective Evolutionary Optimization research that adds an intuitive abstraction layer over standard benchmark engines. By managing the complex and critical steps of configuring and executing sophisticated quantitative experiments, it elevates analysis to the realm of high-level data interpretation and visualization. This transforms raw performance metrics into descriptive, narrative-driven results, enabling rigorous algorithmic auditing and promoting systematic, reproducible experimental comparisons. MoeaBench transparently coordinates normalization, numerical reproducibility, and statistical validation, providing the means for programmatically establishing benchmark protocols and extracting standardized metrics.
@@ -24,7 +30,6 @@ MoeaBench is an extensible analytical toolkit for Multi-objective Evolutionary O
 - **Finite Approximation-Inherent Resolution (FAIR) Metrics Framework (FAIR Framework)**: MoeaBench introduces FAIR Framework to address the issue of measuring algorithmic error against a continuous analytical manifold when both the problem's Ground Truth (GT) and the algorithm's population are discrete, finite point sets. It calculates a resolution-scale parameter ($s_K$) based on theoretical spatial expectations to produce **FR physical metrics** that map raw distances into standardized resolution units (e.g., Closeness to GT, Coverage, Gaps, Balance, and Regularity). These physical dimensions are subsequently evaluated via "Clinical" Q-Scores (e.g., `q_closeness`, `q_gap`) which translate numerical discrepancies against problem- and algorithm-specific noise baselines, resulting in a scale-invariant diagnostic assessment of an algorithm's structural integrity.
 
 - **Comparability and Normalization**: When calculating performance indicators such as Hypervolume, MoeaBench can report the numerical output as a raw physical scalar or normalize the outcome against contextual reference thresholds. This unified relative scaling allows for straightforward comparative assertions (e.g., algorithm A performs 20% better than algorithm B) alongside evaluations normalized relative to the analytical ideal front (e.g., reaching 90% of the theoretical maximum performance).
-
 
 
 
