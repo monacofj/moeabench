@@ -114,13 +114,13 @@ The top-level container for multi-objective optimization research.
 *   **Runtime Behavior**: By default, the method prints `Running {exp.name}` at the beginning of execution.
 
 #### **`.pop(n=-1)`**
-*   **Description**: Accesses the aggregate cloud (JoinedPopulation) at generation `n`.
+*   **Description**: Accesses the multi-run aggregate (`JoinedPopulation`) at generation `n`.
 *   **Arguments**:
     *   `n` (*int*): Generation index. Defaults to `-1` (final).
 *   **Returns**: `JoinedPopulation`.
 
 #### **`.front(n=-1)`**
-*   **Description**: Retrieves non-dominated objectives from the aggregate cloud (Superfront).
+*   **Description**: Retrieves non-dominated objectives from the multi-run aggregate (`Superfront`).
 *   **Arguments**:
     *   `n` (*int*): Generation index. Defaults to `-1`.
 *   **Returns**: `SmartArray` (objectives).

@@ -173,6 +173,8 @@ def topology(
             if raw_label:
                  # run.py formats as "BaseLabel, Run X, Gen Y"
                  filter_name = raw_label.split(',')[0].strip()
+                 if filter_name == "Superfront":
+                     filter_name = None
                  
             # 3. Extract Generation
             gen_idx = getattr(val, 'gen', None)
@@ -197,7 +199,7 @@ def topology(
                 name = exp_name
              
         if i == 0:
-            if hasattr(val, 'label') and val.label and title == "Solution Set Geometry":
+            if hasattr(val, 'label') and val.label and title == "Solution Set Geometry" and val.label != "Superfront":
                  title = val.label
             if hasattr(val, 'axis_label') and val.axis_label and axis_labels == "Objective":
                  axis_labels = val.axis_label

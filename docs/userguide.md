@@ -21,7 +21,7 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
 2.  **[Getting Started: Minimal Working Example](#2-getting-started-minimal-working-example)**
 3.  **[Statistical Rigor: Stochastic Experimentation](#3-statistical-rigor-stochastic-experimentation)**
     - [Repeated Executions](#repeated-executions)
-    - [Cloud Aggregation](#cloud-aggregation)
+    - [Multi-Run Aggregation](#multi-run-aggregation)
     - [Joint Universe (`ref`)](#the-ref-argument-defining-the-universe)
     - [Custom Stop Criteria](#custom-stop-criteria)
 4.  **[Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**
@@ -84,12 +84,12 @@ Let's solve the DTLZ2 benchmark (3 objectives) using the NSGA-III algorithm:
 import moeabench as mb
 
 # Optional: print current library version
-mb.system.version()           # same as mb.system.version(show=True)
+mb.system.version()                # same as mb.system.version(show=True)
 
 # 1. Configure an experiment
-exp = mb.experiment()                   # Instantiate an experiment
-exp.mop = mb.mops.DTLZ2()               # Choose a benchmark problem
-exp.moea = mb.moeas.NSGA3()             # Choose an optimization algorithm
+exp = mb.experiment()              # Instantiate an experiment
+exp.mop = mb.mops.DTLZ2()          # Choose a benchmark problem
+exp.moea = mb.moeas.NSGA3()        # Choose an optimization algorithm
 
 # 2. Run the experiment
 exp.run()
@@ -98,29 +98,69 @@ exp.run()
 mb.view.topology(exp)              # View the resulting Pareto front
 mb.view.history(exp)               # View the hypervolume convergence
 ```
-The `mb.view.topology` function produces a plot showing the topography of the resulting Pareto front.
+In the code snipped  above
+
+- the `mb.view.topology` function produces a plot showing the topography of the resulting Pareto front;
+- the `view.history` function will produce a plot showing the hypervolume convergence along generations.
+
+#### Topology: Objective and Decision Space Visualization
+
+For example, the topology plot will show:
 
 ![Pareto Front](images/hello_space.png)
 *Figure 1: Spatial Perspective: Final Population snapshot projected in 3D.*
 
+**Legend Naming**: By default, the visualization layer tries to identify each experiment in the legend using the variable name or the experiment name inferred from context. This helps distinguish multiple experiments when they are shown together in the same figure. If you want full control, set the experiment metadata explicitly:
+
+*   `exp.name = "My Experiment"` $\to$ names the experiment; 
+*   `exp.authors = "Dr. Doe J."` $\to$ Assigns authorship.
+*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (defaults to **CC0-1.0**).
+*   `exp.year = 2026` $\to$ Sets the publication year for copyright claim.
+
+**Open-Science Metadata**: MoeaBench persists authorship and licensing metadata together with the experimental payload when you export results. This keeps the archive scientifically traceable and ready for redistribution. See **[Persistence (`save` and `load`)](#11-persistence-save-and-load)** for the full persistence contract.
+
+**Rich Objects**: MoeaBench is organized around rich analytical objects rather than raw arrays alone. Their metadata can be inspected and assigned programmatically, as with `exp.name` above, and the main canonical objects also expose a human-readable `.report()` narrative. This includes `Experiment` as well as the rich result objects returned by metrics, statistics, and diagnostics.
+
+```python
+exp.report()
+```
+
+Typical output:
+
+```text
+--- Experiment Report: exp ---
+  Status:    Executed
+  Problem:   DTLZ2 (M=3, N=12)
+  Algorithm: NSGA3 (Pop=100, Gens=300)
+  Stop:      Default
+  Metadata:
+    - Authors: Anonymous
+    - License: CC0-1.0
+    - Year:    2026
+    - Runs:    1 of 1
+```
+
+**Objective and Decision Space**: The same visualization grammar can be used for either objective space or decision space, depending on what you pass to the view and which space you choose to inspect. In other words, MoeaBench is not limited to plotting only the final Pareto front in objective coordinates; the same analytical workflow can also expose the corresponding decision-space geometry when that is the scientifically relevant perspective, as in `mb.view.topology(exp.set())` (more about `topology()` arguments below).
+
+![Pareto Set](images/hello_decision.png)
+*Figure 2: Decision-space perspective: the same experiment projected in variable coordinates through `mb.view.topology(exp.set())`.*
+
+**Ground Truth**: In the figure above, MoeaBench automatically overlays the Ground Truth (GT) of the benchmark problem. This GT is a high-density reference sampling of the optimal Pareto front, obtained analytically when the problem admits a reliable closed-form construction and otherwise calibrated from certified reference procedures. The resulting reference is treated as a scientific artifact: it is generated with high numerical precision, checked against the problem definition and literature expectations, and then reused consistently across visualization, diagnostics, and performance metrics that compare the solver output against the true Pareto front.
+
 #### **Performance: Convergence trajectories**
+
+The second plot in the code snippet above shows the experiment's convergence.
+
+![Convergence](images/hello_time.png)
+*Figure 3: Temporal Perspective: Hypervolume evolution showcasing convergence.*
+
 MoeaBench offers several viz perspectives for performance:
 - `mb.view.history`: Evolution of Hypervolume (default), IGD, GD, etc.
 - `mb.view.spread`: Comparative performance distributions at specific generations.
 - `mb.view.density`: Statistical density of attainment.
-All `mb.view.*` functions support `title=None` with a semantic default title. Set `title="..."` only when you want to override that default.
-And the `view.history` function will produce a plot showing the hypervolume convergence along generations.
 
-![Convergence](images/hello_time.png)
-*Figure 2: Temporal Perspective: Hypervolume evolution showcasing convergence.*
 
-*   `exp.name = "NSGA3_on_DTLZ2"` $\to$ Names the experiment. MoeaBench automatically discovers the name of the variable assigned to the experiment object, so `exp.name` is often optional.
-*   `exp.authors = "Monaco F. J."` $\to$ Assigns authorship for reproducibility.
-*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (standardized IDs). If not specified, defaults to **CC0-1.0**.
-*   `exp.year = 2026` $\to$ Sets the publication year.
-*   `exp.run()` $\to$ Orchestrates the actual optimization process and prints `Running {exp.name}` by default.
-*   `exp.run(silent=True)` $\to$ Executes silently (no banner/progress/diagnostic output emitted by `run()`).
-*   `exp.save()` $\to$ Persists results to a ZIP with scientific metadata.
+
 *Note: In this example, `mb.view.topology(exp)` automatically identifies and projects the resulting Pareto front, i.e. the final population snapshot in the objective space. To project the Pareto set (decision space), or to inspect the intermediate solution at some point of the optimization process, please refer to **[Section 4: Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**. Likewise, `mb.view.history(exp)` will plot the hypervolume convergence along all generations. To plot another performance metric (e.g. IGD) or to limit the number of generations to plot, please refer to **[Section 4: Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**.*
 
 ---
@@ -157,8 +197,8 @@ Rigorous benchmarking necessitates distinct control over stochastic processes. M
 
 ---
 
-### **Cloud Aggregation**
-When handling multiple runs, MoeaBench performs **Cloud Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
+### **Multi-Run Aggregation**
+When handling multiple runs, MoeaBench performs **Multi-Run Aggregation**. This means that high-level analysis tools automatically process the statistical distribution of all runs collectively.
 
 For instance, visualizing a multi-run experiment showing the mean performance and variance:
 ```python
@@ -168,7 +208,7 @@ mb.view.history(exp)
 ![Convergence History](images/timeplot.png)
 *Figure 3: Temporal Perspective: Mean Hypervolume trajectory with shaded Variance Cloud across multiple runs.*
 
-To plot a specific stochastic trajectory (e.g., the 5th run) instead of the aggregate cloud, simply index the experiment:
+To plot a specific stochastic trajectory (e.g., the 5th run) instead of the multi-run aggregate, simply index the experiment:
 ```python
 mb.view.history(exp[4])   # Run number is 0-indexed
 ```
@@ -421,10 +461,25 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 ## **7. Analytical Domains**
 
-moeabench organizes all analytical tools into three fundamental scientific domains. This taxonomy helps you choose the right "lens" to observe your search process.
+MoeaBench still benefits from a three-part analytical ontology, but this ontology should be read as a **conceptual lens**, not as a strict one-to-one map of public namespaces.
+
+In earlier phases of the project, domain boundaries appeared more directly in function naming. In the current canonical API, those same ideas are distributed across:
+
+- `mb.metrics`, for scalar metric trajectories and reductions;
+- `mb.stats`, for comparison, attainment, and structural analysis;
+- `mb.clinic`, for diagnostic synthesis and FAIR/Q-score reasoning;
+- `mb.view`, for chart-oriented visualization that dispatches according to the analytical object it receives.
+
+So the three domains below remain useful because they describe **what kind of scientific question is being asked**, even though the public API now emphasizes result objects and plotting grammar over domain-prefixed function names.
 
 ### **7.1. Topography (Metric Space Analysis)**
-This domain analyzes the spatial properties of the solution set within the objective space, focusing on coverage, convergence, and diversity.
+Topography is the spatial lens of MoeaBench. It asks how solutions occupy the search manifold in objective or decision space: where they lie, how reliably they cover the front, whether two methods reach the same regions, and where structural gaps remain.
+
+In the canonical API, topography is no longer a standalone namespace. Instead, it is expressed through a combination of:
+
+- `mb.view.topology`, `mb.view.bands`, `mb.view.gap`, and topological uses of `mb.view.density`;
+- `mb.stats.attainment(...)` and `mb.stats.attainment_gap(...)`;
+- `mb.stats.topo_match`, `mb.stats.topo_shift`, `mb.stats.topo_tail`, and `mb.stats.topo_compare(...)`.
 
 *   **`topology`**: Visualizes the geometry of the Pareto front or the entire population cloud in 2D or 3D. Supports algorithmic auditing via the `markers=True` argument, which renders Q-Score based semantic shapes (Solid Circles for healthy, Open Diamonds for pathological solutions).
 *   **`bands`**: Visualizes **Search Corridors**. It uses Empirical Attainment Functions (EAF) to show the reliability bands (e.g., the region reached by 50% or 90% of the runs).
@@ -485,7 +540,13 @@ This keeps the same architectural pattern used throughout the library: compute a
 
 
 ### **7.2. Performance (Scalar Metrics)**
-This domain reduces high-dimensional outcomes into scalar values (Hypervolume, IGD) to facilitate statistical comparison and ranking.
+Performance is the reduction lens of MoeaBench. It compresses high-dimensional search outcomes into scalar trajectories or distributions such as Hypervolume, IGD, GD, EMD, or front ratio, making statistical comparison and longitudinal convergence analysis possible.
+
+In the canonical API, this domain is mainly expressed through:
+
+- `mb.metrics.*`, which produces `MetricMatrix` result objects;
+- `mb.stats.perf_compare(...)` and its semantic aliases (`perf_shift`, `perf_match`, `perf_win`);
+- `mb.view.history`, `mb.view.spread`, and performance uses of `mb.view.density`.
 
 *   **`mb.view.history`**: Plots the evolution of a metric over generations, showing the mean trajectory and standard deviation cloud.
 *   **`mb.view.spread`**: Visualizes **Performance Contrast**. It uses Boxplots to compare distributions and automatically annotates them with the **A12 Win Probability** and P-values (respecting `defaults.alpha`).
@@ -579,7 +640,19 @@ dist = res.gen()       # Distribution of final generation
 ```
 
 ### **7.3. Stratification (Population Structure)**
-This domain examines the internal organization of the population, analyzing selection pressure and non-domination levels (Pareto ranks).
+Stratification is the structural lens of MoeaBench. It examines how the population is internally organized across non-domination layers, how quality is distributed across those layers, and how two methods compete when their populations are merged into a shared rank structure.
+
+This domain became more precise over time and is now canonically framed through the ontology:
+
+- `mb.stats.ranks(...)`
+- `mb.stats.strata(...)`
+- `mb.stats.tiers(...)`
+
+with the corresponding visual grammar:
+
+- `mb.view.ranks(...)`
+- `mb.view.strata(...)`
+- `mb.view.tiers(...)`
 
 The underlying ontology is **layer**: the population is decomposed into dominance layers, and the public analytical views over that structure are `ranks`, `strata`, and `tiers`.
 
