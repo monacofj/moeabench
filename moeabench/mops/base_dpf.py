@@ -83,6 +83,7 @@ class BaseDPF(BaseMop):
         D = self.D
         N = self.N
         res = np.zeros((n_points, N))
+        rng = np.random.RandomState(42)
         
         # 1. Structure the position variables (the first D-1 ones)
         if D == 2:
@@ -91,7 +92,7 @@ class BaseDPF(BaseMop):
         else:
             # For D > 2, we use a uniform distribution for now 
             # (In the future, a grid approach could be used)
-            res[:, :D-1] = np.random.random((n_points, D - 1))
+            res[:, :D-1] = rng.random((n_points, D - 1))
         
         # 2. Assign the optimal trailing variables (that minimize g)
         # Default is 0.5 (DTLZ1/3/Rastrigin/Sphere styles)

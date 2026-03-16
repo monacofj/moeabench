@@ -78,7 +78,7 @@ def test_deap_population_guard():
     exp = mb.experiment()
     exp.mop = mb.mops.DTLZ2(M=2)
     # 10 is not divisible by 4
-    exp.moea = mb.moeas.NSGA2deap(population=10, generations=2)
+    exp.moea = mb.moeas.NSGA2deap(population=10, generations=2, seed=7)
     
     with pytest.raises(ValueError) as excinfo:
         exp.run()

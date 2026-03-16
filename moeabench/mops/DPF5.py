@@ -119,6 +119,7 @@ class DPF5(BaseDPF):
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
+        rng = np.random.RandomState(42)
         
         # 1. Structure the position variables (M-1 degrees of freedom)
         if M == 3:
@@ -132,7 +133,7 @@ class DPF5(BaseDPF):
             if actual_n != n_points:
                 res = np.zeros((actual_n, N))
         else:
-            X_pos = np.random.random((n_points, M - 1))
+            X_pos = rng.random((n_points, M - 1))
             
         res[:, :M-1] = X_pos
         res[:, M-1] = res[:, 0] # constraint x_M = x_1

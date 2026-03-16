@@ -50,7 +50,7 @@ def test_convergence_metrics():
     
     # If we don't pass ref, it should use exp.optimal_front()
     # Note: internal _calc_metric will call exp.optimal_front()
-    exp.moea = mb.moeas.NSGA2deap(population=20, generations=5)
+    exp.moea = mb.moeas.NSGA2deap(population=20, generations=5, seed=7)
     exp.run(repeat=1) # Minimal run to init histories
     res_igd = mb.metrics.igd(exp) 
     # res_igd is a MetricMatrix. To check values, we can look at the last generation

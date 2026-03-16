@@ -48,6 +48,7 @@ class TestMOPCalibration(unittest.TestCase):
             shutil.rmtree(self.test_dir)
 
     def test_full_calibration_workflow(self):
+        rng = np.random.default_rng(7)
         mop = DummySphere()
         
         # 1. Calibrate (Fresh)
@@ -74,10 +75,10 @@ class TestMOPCalibration(unittest.TestCase):
         
         # 4. Diagnostic Integration
         # Create a population to test Q-Score
-        pop = np.random.rand(50, 2) # 50 solutions, 2 objectives
+        pop = rng.random((50, 2)) # 50 solutions, 2 objectives
         
         # This should work now because "DummySphere_v1" is registered
-        res = mb.diagnostics.q_closeness(pop, problem="DummySphere_v1", k=50)
+        res = mb.clinic.q_closeness(pop, problem="DummySphere_v1", k=50)
         q = res.value
         print(f"Calculated Q-Closeness: {q}")
         self.assertGreaterEqual(q, 0.0)

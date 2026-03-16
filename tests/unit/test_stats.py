@@ -13,9 +13,10 @@ import moeabench as mb
 
 def test_perf_taxonomy():
     """Verify performance comparison functions."""
+    rng = np.random.default_rng(7)
     # Synthetic data: Algorithm A significantly better than B
-    data_a = np.random.normal(1.0, 0.1, 30)
-    data_b = np.random.normal(0.5, 0.1, 30)
+    data_a = rng.normal(1.0, 0.1, 30)
+    data_b = rng.normal(0.5, 0.1, 30)
     
     # 1. perf_compare(method='mannwhitney') (Mann-Whitney)
     res = mb.stats.perf_compare(data_a, data_b, method='mannwhitney')
@@ -36,7 +37,7 @@ def test_topo_attain():
     exp1 = mb.experiment()
     exp1.mop = mb.mops.DTLZ2(M=2)
     # NSGA-II tends to be better than a random search (SPEA2 with 1 gen)
-    exp1.moea = mb.moeas.NSGA2deap(population=20, generations=20)
+    exp1.moea = mb.moeas.NSGA2deap(population=20, generations=20, seed=7)
     exp1.run(repeat=5)
     
     # Median attainment
@@ -53,7 +54,8 @@ def test_topo_attain():
 def test_topo_dist():
     """Verify multi-axial topological matching."""
     # Fronts that match perfectly (self-comparison)
-    data = np.random.random((50, 2))
+    rng = np.random.default_rng(7)
+    data = rng.random((50, 2))
     res = mb.stats.topo_compare(data, data, method='ks')
     
     assert res.is_consistent is True

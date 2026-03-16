@@ -8,6 +8,10 @@ import os
 import json
 from moeabench.diagnostics import baselines
 
+
+GOLDEN_PATH = os.path.join(os.path.dirname(__file__), "golden_dtlz6.json")
+
+
 class TestGoldenDTLZ6(unittest.TestCase):
     """
     Deterministically verifies the s_K integrity for DTLZ6 (The 'Milky Way' Fix).
@@ -15,7 +19,7 @@ class TestGoldenDTLZ6(unittest.TestCase):
     """
 
     def test_sk_calculation_integrity(self):
-        """Verifies that get_resolution_factor_k produces the exact approved float."""
+        """Verifies that get_resolution_factor_k matches the frozen DTLZ6 baseline."""
         # Mock GT for DTLZ6/200? No, we need to load the real one or rely on the function loading it.
         # baselines.get_resolution_factor_k loads U_K internally from the package.
         # We just need to call it.
@@ -26,29 +30,31 @@ class TestGoldenDTLZ6(unittest.TestCase):
         
         # Where is DTLZ6 GT?
         # It's in diagnostics/resources/references/DTLZ6/calibration_package.npz['gt_norm']
-        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "moeabench"))
-        pkg_path = os.path.join(repo_root, "diagnostics/resources/references/DTLZ6/calibration_package.npz")
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        pkg_path = os.path.join(repo_root, "moeabench", "diagnostics", "resources", "references", "DTLZ6", "calibration_package.npz")
         
         if not os.path.exists(pkg_path):
              self.skipTest(f"DTLZ6 package not found at {pkg_path}")
              
         pkg = np.load(pkg_path)
         gt = pkg['gt_norm']
+        with open(GOLDEN_PATH, 'r') as f:
+            golden = json.load(f)
         
         # Execute Runtime Logic
         s_k = baselines.get_resolution_factor_k(gt, 200, seed=0)
-        
-        # Golden Value from Plan/Review
-        EXPECTED_S_K = 0.00681372890931866
+        expected_s_k = golden["DTLZ6"]["200"]["s_k_seed0"]
         
         print(f"\n[Golden Check] Runtime s_K (DTLZ6, K=200): {s_k}")
-        self.assertAlmostEqual(s_k, EXPECTED_S_K, places=15, 
+        self.assertAlmostEqual(s_k, expected_s_k, places=15,
                                msg="Critical: s_K runtime calculation diverged from Golden Value.")
 
     def test_baseline_v0132_integrity(self):
-        """Verifies that baselines_v0.13.2.json contains the valid structure and metrics."""
+        """Verifies that baselines_v0.13.2.json still matches the frozen DTLZ6 check."""
         # Load JSON directly
         v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines_v0.13.2.json")
+        with open(GOLDEN_PATH, 'r') as f:
+            golden = json.load(f)
         
         with open(v_path, 'r') as f:
             data = json.load(f)
@@ -58,13 +64,12 @@ class TestGoldenDTLZ6(unittest.TestCase):
             rand50 = data["problems"]["DTLZ6"]["200"]["closeness"]["rand50"]
         except KeyError:
             self.fail("DTLZ6/200/closeness/rand50 missing from baselines_v0.13.2.json")
-            
-        # Updated Golden Value for closeness rand50
-        EXPECTED_RAND = 1.995441442341559
+        
+        expected_rand = golden["DTLZ6"]["200"]["closeness_rand50_v0_13_2"]
         
         print(f"[Golden Check] V0.13.2 closeness.rand50 (DTLZ6, K=200): {rand50}")
         # Allow small float wiggle room due to arch differences, but should be tiny
-        self.assertAlmostEqual(rand50, EXPECTED_RAND, places=8,
+        self.assertAlmostEqual(rand50, expected_rand, places=8,
                                msg="Critical: Baseline integrity check failed to match Expected Value.")
 
 if __name__ == '__main__':

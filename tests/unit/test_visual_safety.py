@@ -16,9 +16,10 @@ def detect_out_of_scale(pts):
 
 def test_visual_safety_scale_audit():
     """ Verify the logic that flags non-converged populations. """
+    rng = np.random.default_rng(7)
     
     # 1. Safe Population (Inside Unit Cube)
-    pop_safe = np.random.rand(100, 3) 
+    pop_safe = rng.random((100, 3))
     assert not detect_out_of_scale(pop_safe), "Safe population flagged as Out-of-Scale"
     
     # 2. Borderline (1.1 is allowed as ref point boundary)
@@ -31,11 +32,12 @@ def test_visual_safety_scale_audit():
 
 def test_visual_jitter_mechanism():
     """ Verify that Jitter adds variance but preserves mean approximately. """
+    rng = np.random.default_rng(7)
     original = np.ones((100, 3)) * 0.5
     
     # Apply Jitter (epsilon = 0.003)
     epsilon = 0.003
-    jittered = original + np.random.normal(0, epsilon, original.shape)
+    jittered = original + rng.normal(0, epsilon, original.shape)
     
     # Check 1: Shapes match
     assert jittered.shape == original.shape

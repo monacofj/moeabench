@@ -21,7 +21,8 @@ def test_protocol_b():
     print("\n>>> Testing Protocol B: Static (source_gt)")
     mop = mb.mops.DTLZ1(M=3)
     csv_file = "test_gt.csv"
-    gt_data = np.random.rand(100, 3) # Dummy GT
+    rng = np.random.default_rng(7)
+    gt_data = rng.random((100, 3)) # Dummy GT
     np.savetxt(csv_file, gt_data, delimiter=',')
     
     sidecar = "DTLZ1_B.json"
@@ -44,7 +45,7 @@ def test_protocol_b():
 def test_protocol_c():
     print("\n>>> Testing Protocol C: Empirical (source_search)")
     mop = mb.mops.DTLZ1(M=3)
-    moea = NSGA3(population=50, generations=5) # Fast search for testing
+    moea = NSGA3(population=50, generations=5, seed=7) # Fast search for testing
     
     sidecar = "DTLZ1_C.json"
     if os.path.exists(sidecar): os.remove(sidecar)

@@ -27,7 +27,8 @@ def debug_dpf3():
     print(f"\nTest 1: EMD(GT, GT) -> {val_self.values[0][0]}")
     
     # 4. Simulate small noise
-    noisy = gt + np.random.normal(0, 0.00001, gt.shape)
+    rng = np.random.default_rng(7)
+    noisy = gt + rng.normal(0, 0.00001, gt.shape)
     val_noise = emd(noisy, ref=gt)
     print(f"Test 2: EMD(GT+epsilon, GT) -> {val_noise.values[0][0]}")
 

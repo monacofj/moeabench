@@ -56,7 +56,8 @@ class DTLZ7(BaseMop):
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
-        res[:, :M-1] = np.random.random((n_points, M - 1))
+        rng = np.random.RandomState(42)
+        res[:, :M-1] = rng.random((n_points, M - 1))
         # Optimal g=1 when xi=0 for i >= M
         res[:, M-1:] = 0.0
         return res

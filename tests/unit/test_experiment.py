@@ -52,7 +52,7 @@ def test_experiment_run(capsys):
     """Verify that an experiment execution stores runs correctly."""
     exp = mb.experiment()
     exp.mop = mb.mops.DTLZ2(M=2)
-    exp.moea = mb.moeas.NSGA2deap(population=20, generations=10)
+    exp.moea = mb.moeas.NSGA2deap(population=20, generations=10, seed=7)
     
     repeats = 2
     exp.run(repeat=repeats)
@@ -72,7 +72,7 @@ def test_experiment_run_silent(capsys):
     """Verify that run(..., silent=True) suppresses run output."""
     exp = mb.experiment()
     exp.mop = mb.mops.DTLZ2(M=2)
-    exp.moea = mb.moeas.NSGA2deap(population=12, generations=3)
+    exp.moea = mb.moeas.NSGA2deap(population=12, generations=3, seed=7)
 
     exp.run(repeat=1, silent=True)
     captured = capsys.readouterr()
@@ -88,7 +88,7 @@ def test_persistence():
         exp = mb.experiment()
         exp.name = "PersistenceTest"
         exp.mop = mb.mops.DTLZ2(M=2)
-        exp.moea = mb.moeas.NSGA2deap(population=20, generations=5)
+        exp.moea = mb.moeas.NSGA2deap(population=20, generations=5, seed=7)
         exp.run(repeat=1)
         
         # Save

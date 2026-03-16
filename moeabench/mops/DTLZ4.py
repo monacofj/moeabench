@@ -30,10 +30,11 @@ class DTLZ4(DTLZ2):
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
+        rng = np.random.RandomState(42)
         
         # 1. Sample theta uniformly in [0, pi/2]
         # X**100 * (pi/2) = theta  => X = (2*theta/pi)**(1/100)
-        theta = np.random.random((n_points, M - 1)) * (np.pi / 2)
+        theta = rng.random((n_points, M - 1)) * (np.pi / 2)
         res[:, :M-1] = (theta / (np.pi / 2))**(1/100)
         
         # 2. Distance function variables

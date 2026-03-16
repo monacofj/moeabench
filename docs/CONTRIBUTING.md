@@ -58,27 +58,29 @@ Before contributing, please read the following technical resources to understand
 
 ## 3. Verification and Testing
 
-We maintain a rigorous testing pyramid using `pytest` and a central orchestrator. No contribution will be accepted if it breaks the core logic or mathematical invariants. For a detailed description of the testing pyramid and tier-specific instructions, please refer to [tests/readme.txt](../tests/readme.txt).
+We maintain a rigorous scope/level testing architecture using `pytest` and a central orchestrator. No contribution will be accepted if it breaks the core logic, canonical workflows, or numerical stability. For the normative test architecture and command guide, please refer to [test.md](test.md).
 
 ### Test Orchestrator
 Use the `test.py` script in the root directory to run the test suite. 
 
 **Always run the base tests before committing:**
 ```bash
-./test.py  # Runs Unit Tests + Integration + Regression
+./test.py  # Runs all scopes at smoke level
 ```
 
-### Testing Tiers
-- **Unit Tests (`--unit`)**: Functional validation of core classes (`Population`, `Experiment`), metrics, and persistence.
-- **Integration Tests (`--integration`)**: Canonical API pipeline validation across `metrics`, `stats`, `clinic`, `view`, persistence, and headless walkthrough flows.
-- **Light Tier (`--light`)**: Mathematical invariants of benchmarks (e.g., DTLZ/DPF geometry) without stochastic execution.
-- **Regression Tier (`--regression`)**: Validated numerical reproducibility. Verifies if Q-Scores and FAIR metrics match the Calibration Reference targets down to 6 decimal places.
-- **Smoke Tier (`--smoke`)**: Regression check of algorithm convergence against the release baselines (IGD thresholds).
-- **Heavy Tier (`--heavy`)**: Full statistical calibration (N=30) and hypothesis testing for large-scale performance verification.
+### Test Invocation
+- `python3 test.py --unit`: full unit coverage. The unit scope ignores level flags and always runs the complete unit suite.
+- `python3 test.py --integration --basic`: integration validation only.
+- `python3 test.py --integration --smoke`: central integration pipelines only.
+- `python3 test.py --stability --deep`: stability validation only, including expensive stability checks.
+- `python3 test.py --deep`: all scopes at deep level where applicable; `integration` still runs at its full `basic` reach because that scope has no separate deep tier.
+- `python3 test.py --smoke`: all scopes at smoke level.
+- `python3 test.py --list`: list collected tests by scope and level.
 
 ### Contribution Rules for Tests
-- If you add a new benchmark, you MUST add corresponding tests in `tests/test_light_tier.py`.
-- If you modify core logic, ensure `tests/unit/` remains at 100% pass rate.
+- If you add a new benchmark, you MUST classify its tests coherently in the `unit`, `integration`, or `stability` scopes and assign the appropriate level markers.
+- If you modify core logic, ensure the relevant `unit`, `integration`, and `stability` scopes retain coherent coverage.
+- Remember that `stability` protects both numerical stability of analytical measurements and numerical stability of produced algorithm fronts.
 - Avoid adding tests that depend on heavy CPU usage or GUI backends.
 
 ### Calibration and Baselines

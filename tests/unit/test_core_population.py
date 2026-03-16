@@ -14,7 +14,8 @@ from moeabench.core.run import Population
 
 def test_population_creation():
     """Verify basic instantiation and shape validation."""
-    objs = np.random.rand(10, 3)
+    rng = np.random.default_rng(7)
+    objs = rng.random((10, 3))
     vars = np.zeros((10, 5))
     
     pop = Population(objs, vars)
@@ -24,7 +25,8 @@ def test_population_creation():
 
 def test_population_algebra_slicing():
     """Verify slicing returns a new valid Population object."""
-    objs = np.random.rand(20, 2)
+    rng = np.random.default_rng(7)
+    objs = rng.random((20, 2))
     vars = np.zeros((20, 2))
     pop = Population(objs, vars)
     
