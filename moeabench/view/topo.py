@@ -46,6 +46,7 @@ def topology(
     processed_args = []
     names = []
     trace_modes = [] # Store if we want markers or lines
+    gt_flags = []
     
     # Defaults
     if title is None: title = "Solution Set Geometry"
@@ -226,6 +227,7 @@ def topology(
         val = _coerce_plot_array(val)
         processed_args.append(val)
         names.append(name)
+        gt_flags.append(bool(inferred_gt_idx is not None and i == inferred_gt_idx))
         
         # Override with explicit keyword traces if passed
         passed_traces = kwargs.get('trace_modes', None)
@@ -241,10 +243,7 @@ def topology(
     # Draw GT/reference first so analytical surfaces stay in the background
     # instead of visually masking the empirical cloud in interactive 3D plots.
     if show_gt and processed_args:
-        gt_positions = [
-            idx for idx, name in enumerate(names)
-            if 'gt' in str(name).lower() or 'reference' in str(name).lower() or 'true front' in str(name).lower()
-        ]
+        gt_positions = [idx for idx, is_gt in enumerate(gt_flags) if is_gt]
         if gt_positions:
             gt_idx = gt_positions[0]
             if gt_idx != 0:
@@ -252,6 +251,7 @@ def topology(
                 names.insert(0, names.pop(gt_idx))
                 trace_modes.insert(0, trace_modes.pop(gt_idx))
                 marker_styles.insert(0, marker_styles.pop(gt_idx))
+                gt_flags.insert(0, gt_flags.pop(gt_idx))
     
     # Reference for clinical markers: explicit gt (if shown) or explicit ref kwarg.
     auto_ref = resolved_gt if show_gt else kwargs.get('ref', None)
@@ -339,7 +339,7 @@ def topology(
         else: objectives = [0, 1, 2]
     
     if len(objectives) == 2:
-        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, **kwargs)
+        s = Scatter2D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, gt_flags=gt_flags, **kwargs)
     else:
         for k in range(len(processed_args)):
              d = processed_args[k]
@@ -349,7 +349,7 @@ def topology(
                   new_d[:, :d.shape[1]] = d
                   processed_args[k] = new_d
         while len(objectives) < 3: objectives.append(0)
-        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, **kwargs)
+        s = Scatter3D(names, processed_args, objectives, type=title, mode=mode, axis_label=axis_labels, trace_modes=trace_modes, marker_styles=marker_styles, gray_gt=gray_gt, gt_flags=gt_flags, **kwargs)
     
     if show:
         s.show()

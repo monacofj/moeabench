@@ -38,6 +38,7 @@ class Scatter2D:
         self.show_plot = kwargs.get('show', True)
         self.marker_styles = kwargs.get('marker_styles', [None] * len(names))
         self.gray_gt = kwargs.get('gray_gt', True)
+        self.gt_flags = kwargs.get('gt_flags', [False] * len(names))
         self.gt_color = kwargs.get('gt_color', GT_COLOR)
         self.gt_opacity = kwargs.get('gt_opacity', 0.8)
         self.band_fill = kwargs.get('band_fill', False)
@@ -66,17 +67,29 @@ class Scatter2D:
             self.configure_interactive()
 
     def _is_gt_trace(self, label):
+        idx = None
+        try:
+            idx = self.experiments.index(label)
+        except Exception:
+            idx = None
+        if idx is not None and idx < len(self.gt_flags):
+            return bool(self.gt_flags[idx])
         label_str = str(label).lower()
         return self.gray_gt and (
             'gt' in label_str or 'reference' in label_str or 'true front' in label_str
         )
 
+    def _is_gt_index(self, index):
+        if index < len(self.gt_flags):
+            return bool(self.gt_flags[index])
+        return self._is_gt_trace(self.experiments[index])
+
     def _series_color(self, index, palette):
-        if self._is_gt_trace(self.experiments[index]):
+        if self._is_gt_index(index):
             return self.gt_color
         non_gt_index = sum(
             1 for j in range(index)
-            if not self._is_gt_trace(self.experiments[j])
+            if not self._is_gt_index(j)
         )
         return palette[non_gt_index % len(palette)]
 
@@ -102,7 +115,7 @@ class Scatter2D:
             
             base_color = self._series_color(i_med, cycle_colors)
             label = str(self.experiments[i_med])
-            is_gt_trace = self._is_gt_trace(label)
+            is_gt_trace = self._is_gt_index(i_med)
             
             if is_gt_trace:
                 base_color = self.gt_color
@@ -164,7 +177,7 @@ class Scatter2D:
             if np.any(msk):
                 current_color = self._series_color(i, cycle_colors)
                 label = f'{self.experiments[i]}'
-                is_gt_trace = self._is_gt_trace(label)
+                is_gt_trace = self._is_gt_index(i)
                 
                 if is_gt_trace:
                     current_color = self.gt_color
@@ -259,7 +272,7 @@ class Scatter2D:
             
             base_color = self._series_color(i_med, MOEABENCH_PALETTE)
             label = str(self.experiments[i_med])
-            is_gt_trace = self._is_gt_trace(label)
+            is_gt_trace = self._is_gt_index(i_med)
             
             if is_gt_trace:
                 base_color = self.gt_color
@@ -346,7 +359,7 @@ class Scatter2D:
                     # Plotly trace-splitting requires explicit color management
                     base_color = self._series_color(i, MOEABENCH_PALETTE)
                     label_str = str(self.experiments[i]).lower()
-                    is_gt_trace = self._is_gt_trace(label_str)
+                    is_gt_trace = self._is_gt_index(i)
                     if is_gt_trace:
                         base_color = self.gt_color
                     opt_color = style.get('color', base_color)

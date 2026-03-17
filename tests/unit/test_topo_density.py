@@ -29,10 +29,28 @@ def test_gt_trace_does_not_consume_first_palette_color():
         [np.array([[0.0, 0.0, 1.0]]), np.array([[0.1, 0.2, 0.9]])],
         [0, 1, 2],
         mode="interactive",
+        gt_flags=[True, False],
     )
 
     assert plot.figure.data[0].marker.color == GT_COLOR
     assert plot.figure.data[1].marker.color == MOEABENCH_PALETTE[0]
+
+
+def test_experiment_name_containing_true_front_does_not_hide_empirical_trace():
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=3)
+    exp.moea = mb.moeas.NSGA2deap(population=20, generations=3, seed=7)
+    exp.run(repeat=1, silent=True)
+    exp.name = "True Front Candidate"
+
+    plot = mb.view.topology(exp, show=False, mode="interactive")
+    names = [trace.name for trace in plot.figure.data]
+    colors = [trace.marker.color for trace in plot.figure.data]
+
+    assert names[0] == "True Front (GT)"
+    assert names[1] == "True Front Candidate"
+    assert colors[0] == GT_COLOR
+    assert colors[1] == MOEABENCH_PALETTE[0]
 
 
 def test_topo_density_uses_shared_axis_domain_for_kde_curves():
