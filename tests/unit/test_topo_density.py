@@ -5,6 +5,8 @@
 import numpy as np
 
 import moeabench as mb
+from moeabench.plotting.scatter3d import Scatter3D
+from moeabench.view.style import GT_COLOR, MOEABENCH_PALETTE
 
 
 def test_topology_places_gt_trace_before_experiment_trace():
@@ -19,6 +21,18 @@ def test_topology_places_gt_trace_before_experiment_trace():
 
     assert names[0] == "True Front (GT)"
     assert "NSGA-II" in names[1]
+
+
+def test_gt_trace_does_not_consume_first_palette_color():
+    plot = Scatter3D(
+        ["True Front (GT)", "NSGA-II"],
+        [np.array([[0.0, 0.0, 1.0]]), np.array([[0.1, 0.2, 0.9]])],
+        [0, 1, 2],
+        mode="interactive",
+    )
+
+    assert plot.figure.data[0].marker.color == GT_COLOR
+    assert plot.figure.data[1].marker.color == MOEABENCH_PALETTE[0]
 
 
 def test_topo_density_uses_shared_axis_domain_for_kde_curves():
