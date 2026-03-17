@@ -52,6 +52,7 @@ class JoinedPopulation:
 
 class experiment(Reportable):
     def __init__(self, mop: Optional[Any] = None, moea: Optional[Any] = None) -> None:
+        self._strict_attrs_ready: bool = False
         self._runs: List[Run] = []
         self._mop: Any = None
         self._moea: Any = None
@@ -60,9 +61,10 @@ class experiment(Reportable):
         self._repeat: int = 1
         
         # Scientific Metadata
-        self._authors: Optional[str] = authors if 'authors' in locals() else None
+        self._author: Optional[str] = None
         self._license: str = "GPL-3.0-or-later" 
-        self._year: int = datetime.date.today().year
+        self._created_at: str = self._now_iso_utc()
+        self._year_override: Optional[int] = None
 
         
         # Use properties for auto-instantiation and validation
@@ -73,6 +75,23 @@ class experiment(Reportable):
         
         # Internal state for execution
         self.result: Any = None 
+        self._strict_attrs_ready = True
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if (
+            name.startswith("_")
+            or not getattr(self, "_strict_attrs_ready", False)
+            or hasattr(type(self), name)
+            or name in self.__dict__
+        ):
+            object.__setattr__(self, name, value)
+            return
+
+        raise AttributeError(
+            f"Unknown experiment attribute '{name}'. "
+            f"Use one of the declared fields/properties such as "
+            f"'name', 'author', 'license', 'created_at', 'year', 'mop', 'moea', or 'repeat'."
+        )
 
     def __iter__(self) -> Iterator[Run]:
         return iter(self._runs)
@@ -107,15 +126,6 @@ class experiment(Reportable):
         return self._infer_default_name()
     @name.setter
     def name(self, value: str) -> None: self._name = value
-    
-    @property
-    def year(self) -> int:
-        """Returns the publication/experiment year."""
-        return self._year
-    @year.setter
-    def year(self, value: int) -> None:
-        """Sets the publication/experiment year."""
-        self._year = value
 
     def _repr_markdown_(self):
         """Rich representation for Jupyter/IPython."""
@@ -130,7 +140,7 @@ class experiment(Reportable):
 
         # 2. License/Author logic: If no author, force CC0
         license_str = self.license
-        if not self.authors or self.authors.strip() == "":
+        if not self.author or self.author.strip() == "":
             license_str = "CC0-1.0"
 
         # 3. Resolve Component Metadata
@@ -178,8 +188,9 @@ class experiment(Reportable):
                 "  - **Metadata**:"
             ]
             lines.extend([
-                f"    - Authors: {self.authors or 'Anonymous'}",
+                f"    - Author:  {self.author or 'Anonymous'}",
                 f"    - License: {license_str}",
+                f"    - Created: {self.created_at}",
                 f"    - Year:    {self.year}",
                 f"    - Runs:    {n_runs} of {self.repeat}"
             ])
@@ -196,8 +207,9 @@ class experiment(Reportable):
                 f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
                 f"  Stop:      {self.stop or 'Default'}",
                 "  Metadata:",
-                f"    - Authors: {self.authors or 'Anonymous'}",
+                f"    - Author:   {self.author or 'Anonymous'}",
                 f"    - License: {license_str}",
+                f"    - Created: {self.created_at}",
                 f"    - Year:    {self.year}",
                 f"    - Runs:    {n_runs} of {self.repeat}"
             ]
@@ -241,15 +253,61 @@ class experiment(Reportable):
         self._moea = value
 
     # Scientific Metadata Properties
-    @property
-    def authors(self) -> Optional[str]: return self._authors
-    @authors.setter
-    def authors(self, value: str) -> None: self._authors = value
+    @staticmethod
+    def _now_iso_utc() -> str:
+        return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _coerce_iso_utc(value: str) -> str:
+        if not isinstance(value, str):
+            raise TypeError("created_at must be an ISO-8601 string.")
+        raw = value.strip()
+        if not raw:
+            raise ValueError("created_at cannot be empty.")
+        try:
+            dt = datetime.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError as exc:
+            raise ValueError("created_at must be a valid ISO-8601 timestamp.") from exc
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        else:
+            dt = dt.astimezone(datetime.timezone.utc)
+        return dt.replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+    @staticmethod
+    def _year_from_iso(value: str) -> int:
+        dt = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return dt.year
 
     @property
-    def year(self) -> int: return self._year
+    def author(self) -> Optional[str]:
+        return self._author
+
+    @author.setter
+    def author(self, value: str) -> None:
+        self._author = value
+
+    @property
+    def created_at(self) -> str:
+        created_at = getattr(self, "_created_at", None)
+        if not created_at:
+            created_at = self._now_iso_utc()
+            self._created_at = created_at
+        return created_at
+
+    @created_at.setter
+    def created_at(self, value: str) -> None:
+        self._created_at = self._coerce_iso_utc(value)
+
+    @property
+    def year(self) -> int:
+        override = getattr(self, "_year_override", None)
+        if override is not None:
+            return int(override)
+        return self._year_from_iso(self.created_at)
     @year.setter
-    def year(self, value: int) -> None: self._year = int(value)
+    def year(self, value: int) -> None:
+        self._year_override = int(value)
 
     @property
     def license(self) -> str: return self._license

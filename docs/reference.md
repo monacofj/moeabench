@@ -862,7 +862,7 @@ Instead of returning raw `float` or `ndarray` values, functions return specializ
 *   **`DiagnosticValue`**: The base class for single-metric results.
     *   **Numerical Fallback**: Objects can be cast directly to `float()`.
     *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights. By default, it also displays the report.
-    *   **`exp.authors`**: `str` Optional author metadata for persistence.
+    *   **`exp.author`**: `str` Optional author metadata for persistence.
     *   **`exp.license`**: `str` SPDX License ID (e.g., 'MIT').
     *   **`exp.year`**: `int` Publication year.
     *   **`reproducibility`**: `dict` Environment DNA block (Python/NumPy versions, Baseline version, Platform, Timestamp).

@@ -56,8 +56,6 @@ def main():
     ##
     ## 1) Metrics -> report + history/spread/density
     ##
-    gt = mop.pf(n_points=3000)
-
     # Hypervolume: compute, test, and plot with reused stats.
 
     hv1 = mb.metrics.hv(exp1, scale="abs")  # Falls back to raw if absolute is unavailable.
@@ -80,8 +78,8 @@ def main():
 
     # GD: compute, test, and plot with reused stats.
 
-    gd1 = mb.metrics.gd(exp1, ref=gt)            # GD trajectory for exp1.
-    gd2 = mb.metrics.gd(exp2, ref=gt)            # GD trajectory for exp2.
+    gd1 = mb.metrics.gd(exp1)                    # GD trajectory for exp1.
+    gd2 = mb.metrics.gd(exp2)                    # GD trajectory for exp2.
     gd1.report()                                 # exp1 GD summary.
     gd2.report()                                 # exp2 GD summary.
     mb.view.history(gd1, gd2)                    # Convergence.
@@ -99,8 +97,8 @@ def main():
 
     # GD+: compute, test, and plot with reused stats.
 
-    gdplus1 = mb.metrics.gdplus(exp1, ref=gt)    # GD+ trajectory for exp1.
-    gdplus2 = mb.metrics.gdplus(exp2, ref=gt)    # GD+ trajectory for exp2.
+    gdplus1 = mb.metrics.gdplus(exp1)            # GD+ trajectory for exp1.
+    gdplus2 = mb.metrics.gdplus(exp2)            # GD+ trajectory for exp2.
     gdplus1.report()                             # exp1 GD+ summary.
     gdplus2.report()                             # exp2 GD+ summary.
     mb.view.history(gdplus1, gdplus2)            # Convergence.
@@ -118,8 +116,8 @@ def main():
 
     # IGD: compute, test, and plot with reused stats.
 
-    igd1 = mb.metrics.igd(exp1, ref=gt)          # IGD trajectory for exp1.
-    igd2 = mb.metrics.igd(exp2, ref=gt)          # IGD trajectory for exp2.
+    igd1 = mb.metrics.igd(exp1)                  # IGD trajectory for exp1.
+    igd2 = mb.metrics.igd(exp2)                  # IGD trajectory for exp2.
     igd1.report()                                # exp1 IGD summary.
     igd2.report()                                # exp2 IGD summary.
     mb.view.history(igd1, igd2)                  # Convergence.
@@ -137,8 +135,8 @@ def main():
 
     # IGD+: compute, test, and plot with reused stats.
 
-    igdplus1 = mb.metrics.igdplus(exp1, ref=gt)  # IGD+ trajectory for exp1.
-    igdplus2 = mb.metrics.igdplus(exp2, ref=gt)  # IGD+ trajectory for exp2.
+    igdplus1 = mb.metrics.igdplus(exp1)          # IGD+ trajectory for exp1.
+    igdplus2 = mb.metrics.igdplus(exp2)          # IGD+ trajectory for exp2.
     igdplus1.report()                            # exp1 IGD+ summary.
     igdplus2.report()                            # exp2 IGD+ summary.
     mb.view.history(igdplus1, igdplus2)          # Convergence.
@@ -156,8 +154,8 @@ def main():
 
     # EMD: compute, test, and plot with reused stats.
 
-    emd1 = mb.metrics.emd(exp1, ref=gt)          # EMD trajectory for exp1.
-    emd2 = mb.metrics.emd(exp2, ref=gt)          # EMD trajectory for exp2.
+    emd1 = mb.metrics.emd(exp1)                  # EMD trajectory for exp1.
+    emd2 = mb.metrics.emd(exp2)                  # EMD trajectory for exp2.
     emd1.report()                                # exp1 EMD summary.
     emd2.report()                                # exp2 EMD summary.
     mb.view.history(emd1, emd2)                  # Convergence.
@@ -261,8 +259,8 @@ def main():
 
     mb.view.radar(diag1, diag2)                  # Global health radar.
 
-    close1 = mb.clinic.closeness(exp1, ref=gt)   # Closeness pathology for exp1.
-    close2 = mb.clinic.closeness(exp2, ref=gt)   # Closeness pathology for exp2.
+    close1 = mb.clinic.closeness(exp1)           # Closeness pathology for exp1.
+    close2 = mb.clinic.closeness(exp2)           # Closeness pathology for exp2.
     close1.report()                              # Closeness summary.
     close2.report()                              # Closeness summary.
     mb.view.ecdf(close1)                         # Quantile profile.

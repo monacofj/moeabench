@@ -24,6 +24,26 @@ MoeaBench is an **extensible analytical toolkit** for Multi-objective Evolutiona
 
 To support this workflow, the package offers high-level facilities for programmatically establishing benchmark protocols and extracting standardized metrics. These features are augmented by advanced graphical capabilities that produce convergence time-series and interactive 3D Pareto front visualizations, bridging the gap between raw numerical data and actionable scientific insight.
 
+## Key Features
+
+*   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
+*   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
+*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
+*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
+*   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
+*   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
+*   **One-Click Calibration**: Programmatically validate custom MOPs via `mop.calibrate()`, generating portable sidecar JSON files for full clinical diagnostic support.
+*   **Replication & Statistical Confidence**: Natively aggregates repeated runs and supports formal comparison through hypothesis tests, effect sizes, and distribution-aware analysis.
+*   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
+*   **Smart Arguments**: Core functions accept experiments, runs, populations, and compatible result objects directly, handling data extraction and generation slicing for you.
+*   **Cloud-Centric Aggregation**: Multi-run experiments are treated as unified analytical clouds, enabling collective structural and temporal analysis without manual merging.
+*   **Open-Science Metadata**: Experiments carry authorship, licensing, and reproducibility metadata, with **CC0-1.0** fallback when author metadata is unspecified.
+*   **Zero-Config Reporting**: Reporting interfaces use metadata introspection to surface context automatically with minimal user setup.
+*   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
+*   **Persistence & Portability**: Native `save()` and `load()` support preserves full experiment state and scientific metadata in portable archives.
+*   **FAIR Metrics Framework**: Provides resolution-aware physical diagnostics and clinical Q-scores for scale-invariant structural assessment.
+*   **Comparability & Normalization**: Performance indicators can be evaluated in raw or normalized form against contextual references and analytical ideals.
+
 ## Quick Start
 
 ```python
@@ -39,20 +59,6 @@ exp.run()                                       # Run the optimization process
 mb.view.topology(exp)                          # Plot the 3D pareto front
 mb.view.history(exp)                           # Plot Hypervolume convergence
 ```
-
-
-
-## Key Features
-
-*   **Built-in Benchmark Suite**: Includes state-of-the-art implementations of foundational benchmarks (**DTLZ** and **DPF**), rigorously validated against the original literature and audited as the project's analytical "ground truth".
-*   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
-*   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
-*   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
-*   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
-*   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
-*   **One-Click Calibration**: Programmatically validate custom MOPs via `mop.calibrate()`, generating portable sidecar JSON files for full clinical diagnostic support.
-*   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
-*   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 
 ## Documentation
 

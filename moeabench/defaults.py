@@ -36,7 +36,7 @@ class Defaults:
         
         # --- Reporting & Visuals ---
         self.precision = 4                # Decimal places in narrative reports
-        self.theme = 'moeabench'          # Default visualization color palette
+        self.theme = 'moeabench'          # Default visualization color palette (mb_palette2 order)
         self.backend = 'auto'              # 'auto', 'plotly', or 'matplotlib'
         self.save_format = None            # Automatically save plots as 'pdf', 'png', etc. if set
         self.dpi = 300                     # Resolution for static image export

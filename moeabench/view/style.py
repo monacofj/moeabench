@@ -9,7 +9,7 @@ import plotly.io as pio
 import plotly.graph_objects as go
 from ..defaults import defaults
 
-# --- MoeaBench Official Palette ---
+# --- MoeaBench Official Palette (Original Order) ---
 # 1. Navy Blue:       #1F3A5F
 # 2. Muted Green:     #4C956C
 # 3. Burnt Red:       #9E4F2F
@@ -19,7 +19,7 @@ from ..defaults import defaults
 # 7. Sand:            #C7A66B
 # 8. Blue Turquoise:  #2C7FB8
 
-MOEABENCH_PALETTE = [
+MB_PALETTE = [
     "#1F3A5F",
     "#4C956C",
     "#9E4F2F",
@@ -29,6 +29,30 @@ MOEABENCH_PALETTE = [
     "#C7A66B",
     "#2C7FB8",
 ]
+
+# --- MoeaBench Palette 2 (Default Order) ---
+# 1. Navy Blue:       #1F3A5F
+# 2. Burnt Red:       #9E4F2F
+# 3. Muted Violet:    #6F42A6
+# 4. Muted Green:     #4C956C
+# 5. Amber:           #E09F3E
+# 6. Bordeaux:        #7F1734
+# 7. Sand:            #C7A66B
+# 8. Blue Turquoise:  #2C7FB8
+
+MB_PALETTE2 = [
+    "#1F3A5F",
+    "#9E4F2F",
+    "#6F42A6",
+    "#4C956C",
+    "#E09F3E",
+    "#7F1734",
+    "#C7A66B",
+    "#2C7FB8",
+]
+
+# Backwards-compatible public name: current default rotating palette.
+MOEABENCH_PALETTE = MB_PALETTE2
 
 # Semantic colors stay fixed across charts and do not rotate with the palette.
 GT_COLOR = "#9CA3AF"
@@ -44,8 +68,10 @@ def apply_style(theme=None):
     theme = theme if theme is not None else defaults.theme
     
     # Map themes
-    if theme == 'moeabench':
-        palette = MOEABENCH_PALETTE
+    if theme in {'moeabench', 'mb_palette2', 'moeabench2'}:
+        palette = MB_PALETTE2
+    elif theme in {'mb_palette', 'moeabench-original', 'moeabench1'}:
+        palette = MB_PALETTE
     else:
         # Fallback to matplotlib default or other predefined if added
         palette = MOEABENCH_PALETTE 

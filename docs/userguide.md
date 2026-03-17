@@ -68,7 +68,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 *   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
 *   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
-*   **Scientific Common Goods (CC0)**: By default, experiments with unspecified authors are licensed under **CC0-1.0** to ensure maximum scientific openness and reproducibility.
+*   **Scientific Common Goods (CC0)**: By default, experiments with unspecified author metadata are licensed under **CC0-1.0** to ensure maximum scientific openness and reproducibility.
 *   **Zero-Config Reporting**: Reporting functions (`.report()`) employ introspection to discover variable names and display comprehensive metadata automatically.
 
 ---
@@ -113,7 +113,7 @@ For example, the topology plot will show:
 **Legend Naming**: By default, the visualization layer tries to identify each experiment in the legend using the variable name or the experiment name inferred from context. This helps distinguish multiple experiments when they are shown together in the same figure. If you want full control, set the experiment metadata explicitly:
 
 *   `exp.name = "My Experiment"` $\to$ names the experiment; 
-*   `exp.authors = "Dr. Doe J."` $\to$ Assigns authorship.
+*   `exp.author = "Dr. Doe J."` $\to$ Assigns authorship.
 *   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (defaults to **CC0-1.0**).
 *   `exp.year = 2026` $\to$ Sets the publication year for copyright claim.
 

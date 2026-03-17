@@ -7,6 +7,9 @@ import sys
 import numpy as np
 import tempfile
 import shutil
+import json
+import zipfile
+import pytest
 
 # Ensure the library is in the path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
@@ -23,6 +26,42 @@ def test_explicit_name_has_precedence():
     exp1 = mb.experiment()
     exp1.name = "CustomExperiment"
     assert exp1.name == "CustomExperiment"
+
+
+def test_experiment_created_at_defaults_to_iso_and_drives_year():
+    exp = mb.experiment()
+
+    assert exp.created_at.endswith("Z")
+    assert exp.year == int(exp.created_at[:4])
+
+
+def test_experiment_year_override_takes_precedence_over_created_at():
+    exp = mb.experiment()
+    exp.created_at = "2024-05-10T15:30:00Z"
+    assert exp.year == 2024
+
+    exp.year = 2031
+    exp.created_at = "2020-01-01T00:00:00Z"
+
+    assert exp.year == 2031
+
+
+def test_experiment_author_is_canonical_and_authors_is_rejected():
+    exp = mb.experiment()
+    exp.author = "Monaco"
+    assert exp.author == "Monaco"
+
+    with pytest.raises(AttributeError):
+        _ = exp.authors
+
+    with pytest.raises(AttributeError):
+        exp.authors = "Monaco F. J."
+
+
+def test_experiment_rejects_unknown_public_attributes():
+    exp = mb.experiment()
+    with pytest.raises(AttributeError):
+        exp.autor = "Monaco"
 
 
 def test_experiment_repr_markdown_does_not_trigger_show(monkeypatch):
@@ -105,6 +144,9 @@ def test_persistence():
     try:
         exp = mb.experiment()
         exp.name = "PersistenceTest"
+        exp.author = "Monaco"
+        exp.created_at = "2024-07-01T12:00:00Z"
+        exp.year = 2030
         exp.mop = mb.mops.DTLZ2(M=2)
         exp.moea = mb.moeas.NSGA2deap(population=20, generations=5, seed=7)
         exp.run(repeat=1)
@@ -118,9 +160,20 @@ def test_persistence():
         exp2.load(save_path)
         
         assert exp2.name == "PersistenceTest"
+        assert exp2.author == "Monaco"
+        assert exp2.created_at == "2024-07-01T12:00:00Z"
+        assert exp2.year == 2030
         assert len(exp2.runs) == 1
         assert exp2.mop.M == 2
         assert np.allclose(exp[0].front(), exp2[0].front())
+
+        with zipfile.ZipFile(save_path, "r") as zf:
+            metadata = json.loads(zf.read("metadata.json").decode("utf-8"))
+        assert metadata["context"]["created_at"] == "2024-07-01T12:00:00Z"
+        assert metadata["context"]["author"] == "Monaco"
+        assert metadata["context"]["authors"] == "Monaco"
+        assert metadata["context"]["year"] == 2030
+        assert metadata["context"]["year_override"] == 2030
         
     finally:
         shutil.rmtree(tmp_dir)

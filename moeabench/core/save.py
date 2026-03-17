@@ -83,9 +83,12 @@ class save:
 
         m_context = {
             "name": obj.name,
-            "authors": obj.authors,
+            "author": obj.author,
+            "authors": obj.author,
             "license": obj.license,
+            "created_at": obj.created_at,
             "year": obj.year,
+            "year_override": getattr(obj, "_year_override", None),
             "mode": mode,
             "mop": obj.mop.__class__.__name__ if obj.mop else None,
             "moea": obj.moea.__class__.__name__ if obj.moea else None,
@@ -96,8 +99,8 @@ class save:
         # 0.1 Create README.md with SPDX headers
         readme_lines = []
         # REUSE-IgnoreStart
-        if obj.authors:
-            readme_lines.append(f"SPDX-FileCopyrightText: {obj.year} {obj.authors}")
+        if obj.author:
+            readme_lines.append(f"SPDX-FileCopyrightText: {obj.year} {obj.author}")
         if obj.license:
             readme_lines.append(f"SPDX-License-Identifier: {obj.license}")
         # REUSE-IgnoreEnd
@@ -107,8 +110,9 @@ class save:
             f"# moeabench Experiment: {obj.name}",
             "",
             "## Scientific Metadata",
-            f"- **Authors**: {obj.authors if obj.authors else 'Anonymous'}",
+            f"- **Author**: {obj.author if obj.author else 'Anonymous'}",
             f"- **License**: {obj.license} (c) {obj.year}",
+            f"- **Created At**: {obj.created_at}",
             f"- **moeabench Version**: {m_provenance['moeabench']}",
             f"- **Execution Date**: {m_provenance['timestamp_utc']}",
             "",
