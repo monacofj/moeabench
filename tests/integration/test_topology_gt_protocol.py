@@ -58,3 +58,20 @@ def test_topology_accepts_explicit_gt_for_attainment_surface(paired_experiments,
 
     assert plot is not None
     assert not any("GT could not be inferred" in msg for msg in _runtime_warnings(caught))
+
+
+def test_topology_allows_replot_after_renaming_experiment(paired_experiments):
+    exp1, _ = paired_experiments
+
+    first = mb.view.topology(exp1, mode="static", show=False)
+    exp1.name = "My name"
+    second = mb.view.topology(exp1, mode="static", show=False)
+
+    assert first is not None
+    assert second is not None
+
+
+def test_topology_normalizes_single_point_vectors_for_3d_plotting():
+    plot = mb.view.topology([0.2, 0.8], objectives=[0, 1, 2], show_gt=False, mode="static", show=False)
+
+    assert plot is not None

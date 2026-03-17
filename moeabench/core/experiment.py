@@ -119,7 +119,7 @@ class experiment(Reportable):
 
     def _repr_markdown_(self):
         """Rich representation for Jupyter/IPython."""
-        return self.report(markdown=True)
+        return self.report(show=False, markdown=True)
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the experiment configuration and metadata."""

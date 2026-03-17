@@ -45,6 +45,13 @@ class Scatter2D:
         self.figure = go.Figure()
         self._build()
 
+    def __repr__(self):
+        return f"<Scatter2D traces={len(self.vet_pts)} mode={self.mode!r}>"
+
+    def _repr_pretty_(self, p, cycle):
+        # Suppress the default object repr in notebooks when the plot itself is shown.
+        p.text("")
+
     def _build(self):
         # Honor global backend override
         mode = self.mode

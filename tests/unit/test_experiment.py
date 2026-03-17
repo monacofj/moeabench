@@ -24,6 +24,24 @@ def test_explicit_name_has_precedence():
     exp1.name = "CustomExperiment"
     assert exp1.name == "CustomExperiment"
 
+
+def test_experiment_repr_markdown_does_not_trigger_show(monkeypatch):
+    """Notebook rich repr should return markdown without double-displaying it."""
+    exp = mb.experiment()
+
+    calls = []
+
+    def fake_report(*args, **kwargs):
+        calls.append(kwargs)
+        return "### Experiment: Example"
+
+    monkeypatch.setattr(exp, "report", fake_report)
+
+    rendered = exp._repr_markdown_()
+
+    assert rendered == "### Experiment: Example"
+    assert calls == [{"show": False, "markdown": True}]
+
 def test_optimal_sampling():
     """Verify Pareto optimal sampling (ps) for analytical problems."""
     exp = mb.experiment()

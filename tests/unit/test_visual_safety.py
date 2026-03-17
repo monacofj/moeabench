@@ -5,6 +5,9 @@
 import pytest
 import numpy as np
 
+from moeabench.plotting.scatter2d import Scatter2D
+from moeabench.plotting.scatter3d import Scatter3D
+
 def detect_out_of_scale(pts):
     """
     Simulation of the logic used in generate_visual_report.py
@@ -51,3 +54,29 @@ def test_visual_jitter_mechanism():
     
     # Check 4: Mean is preserved
     assert np.allclose(np.mean(jittered), 0.5, atol=1e-3)
+
+
+class _PrettyRecorder:
+    def __init__(self):
+        self.parts = []
+
+    def text(self, value):
+        self.parts.append(value)
+
+
+def test_scatter2d_pretty_repr_is_silent():
+    plot = Scatter2D(["A"], [np.array([[0.1, 0.2]])], [0, 1], mode="static")
+    recorder = _PrettyRecorder()
+
+    plot._repr_pretty_(recorder, cycle=False)
+
+    assert recorder.parts == [""]
+
+
+def test_scatter3d_pretty_repr_is_silent():
+    plot = Scatter3D(["A"], [np.array([[0.1, 0.2, 0.3]])], [0, 1, 2], mode="static")
+    recorder = _PrettyRecorder()
+
+    plot._repr_pretty_(recorder, cycle=False)
+
+    assert recorder.parts == [""]

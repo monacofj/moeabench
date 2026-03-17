@@ -46,6 +46,13 @@ class Scatter3D:
          self.gt_opacity = kwargs.get('gt_opacity', 0.8)
          self.figure = go.Figure()
          self._build()
+
+     def __repr__(self):
+         return f"<Scatter3D traces={len(self.vet_pts)} mode={self.mode!r}>"
+
+     def _repr_pretty_(self, p, cycle):
+         # Suppress the default object repr in notebooks when the plot itself is shown.
+         p.text("")
            
      def _build(self):
          # Honor global backend override

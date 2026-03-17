@@ -51,6 +51,25 @@ def topology(
     if title is None: title = "Solution Set Geometry"
     if axis_labels is None: axis_labels = "Objective"
 
+    def _coerce_plot_array(value):
+        """Normalize plot inputs to a numeric array with at least 2 dimensions."""
+        arr = np.asarray(value)
+
+        # Some metadata-carrying objects can collapse into a scalar object array.
+        # If that happens, unwrap the payload once before normalizing shape.
+        if arr.ndim == 0 and arr.dtype == object:
+            inner = arr.item()
+            if inner is not value:
+                arr = np.asarray(inner)
+
+        if arr.ndim == 0:
+            return arr.reshape(1, 1)
+        if arr.ndim == 1:
+            if arr.size == 0:
+                return arr.reshape(0, 0)
+            return arr.reshape(1, -1)
+        return arr
+
     def _infer_gt_from_inputs(items):
         """Infer GT from experiment-like or sourced result inputs."""
         experiments = []
@@ -204,7 +223,7 @@ def topology(
             if hasattr(val, 'axis_label') and val.axis_label and axis_labels == "Objective":
                  axis_labels = val.axis_label
         
-        val = np.array(val)
+        val = _coerce_plot_array(val)
         processed_args.append(val)
         names.append(name)
         
