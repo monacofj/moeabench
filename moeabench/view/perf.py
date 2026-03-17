@@ -146,6 +146,12 @@ def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title
     fig.update_layout(title=final_title, xaxis_title="Generation", yaxis_title=plot_name)
     if kwargs.get('show', True):
         fig.show()
+        try:
+            from IPython import get_ipython
+            if get_ipython() is not None:
+                return None
+        except (ImportError, NameError):
+            pass
     return fig
 
 def perf_history(*args, metric=None, gens=None, **kwargs):
