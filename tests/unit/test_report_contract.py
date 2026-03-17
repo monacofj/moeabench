@@ -6,6 +6,7 @@ from moeabench.diagnostics.auditor import DiagnosticResult, FairAuditResult, Qua
 from moeabench.diagnostics.enums import DiagnosticStatus
 from moeabench.diagnostics.fair import FairResult
 from moeabench.diagnostics.qscore import QResult
+from moeabench.core.base import Reportable
 
 
 def _make_quality_result() -> QualityAuditResult:
@@ -51,3 +52,25 @@ def test_diagnostic_report_contract():
     full = res.report(show=False, full=True)
     assert isinstance(brief, str) and brief.strip()
     assert isinstance(full, str) and full.strip()
+
+
+def test_render_report_returns_silent_string_in_notebook(monkeypatch):
+    class DummyReport(Reportable):
+        def report(self, show: bool = True, **kwargs):
+            return self._render_report("### Example", show=show, **kwargs)
+
+    shown = []
+
+    monkeypatch.setattr(Reportable, "_is_notebook", staticmethod(lambda: True))
+
+    import IPython.display as ipd
+
+    monkeypatch.setattr(ipd, "display", lambda obj: shown.append(obj))
+    monkeypatch.setattr(ipd, "Markdown", lambda text: text)
+
+    res = DummyReport().report()
+
+    assert isinstance(res, str)
+    assert str(res) == "### Example"
+    assert repr(res) == ""
+    assert shown

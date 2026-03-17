@@ -3,6 +3,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+class _SilentDisplayedText(str):
+    """String payload that stays quiet when it is the last notebook expression."""
+
+    def __repr__(self):
+        return ""
+
+    def _repr_pretty_(self, p, cycle):
+        p.text("")
+
+    def _repr_markdown_(self):
+        return ""
+
+
 class Reportable:
     """
     Mixin for objects that support narrative reporting in MoeaBench.
@@ -44,6 +57,8 @@ class Reportable:
                 display(Markdown(rendered))
             except ImportError:
                 print(rendered)
+                return content
+            return _SilentDisplayedText(content)
         else:
             print(self._to_plain_sober(rendered))
             
