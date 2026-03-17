@@ -420,13 +420,30 @@ def perf_density(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
             verdict = "Mismatch"
         elif p_val is not None:
             verdict = "Match" if p_val > alpha else "Mismatch"
+
+    valid_samples = []
+    for sample in samples:
+        sample = np.asarray(sample, dtype=float)
+        sample = sample[np.isfinite(sample)]
+        if sample.size:
+            valid_samples.append(sample)
+
+    shared_x = None
+    if valid_samples:
+        global_min = min(float(np.min(sample)) for sample in valid_samples)
+        global_max = max(float(np.max(sample)) for sample in valid_samples)
+        if np.isclose(global_min, global_max):
+            pad = max(abs(global_min) * 0.05, 1e-6)
+            global_min -= pad
+            global_max += pad
+        shared_x = np.linspace(global_min, global_max, 256)
     
     for i, sample in enumerate(samples):
         color = f"C{i %10}"
         sample = sample[np.isfinite(sample)]
         if len(np.unique(sample)) > 1:
             kde = gaussian_kde(sample)
-            x_range = np.linspace(np.min(sample), np.max(sample), 100)
+            x_range = shared_x if shared_x is not None else np.linspace(np.min(sample), np.max(sample), 256)
             y_vals = kde(x_range)
             
             lbl = f"{names[i]}"

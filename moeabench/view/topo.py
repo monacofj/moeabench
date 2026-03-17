@@ -421,6 +421,23 @@ def density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='
         p_val = getattr(ax_stats, 'p_value', 1.0) if ax_stats else 1.0
         d_stat = getattr(ax_stats, 'statistic', 0.0) if hasattr(ax_stats, 'statistic') else 0.0
         verdict = "Match" if p_val > alpha else "Mismatch"
+
+        valid_samples = []
+        for buffer in buffers:
+            sample = np.asarray(buffer[:, ax_idx], dtype=float)
+            sample = sample[np.isfinite(sample)]
+            if sample.size:
+                valid_samples.append(sample)
+
+        shared_x = None
+        if valid_samples:
+            global_min = min(float(np.min(sample)) for sample in valid_samples)
+            global_max = max(float(np.max(sample)) for sample in valid_samples)
+            if np.isclose(global_min, global_max):
+                pad = max(abs(global_min) * 0.05, 1e-6)
+                global_min -= pad
+                global_max += pad
+            shared_x = np.linspace(global_min, global_max, 256)
         
         for b_idx, buffer in enumerate(buffers):
             sample = buffer[:, ax_idx]
@@ -428,7 +445,7 @@ def density(*args, axes=None, layout='grid', alpha=None, threshold=None, space='
             sample = sample[np.isfinite(sample)]
             if len(np.unique(sample)) > 1:
                 kde = gaussian_kde(sample)
-                x_range = np.linspace(np.min(sample), np.max(sample), 100)
+                x_range = shared_x if shared_x is not None else np.linspace(np.min(sample), np.max(sample), 256)
                 y_vals = kde(x_range)
                 lbl = f"{names[b_idx]}"
                 if b_idx == 0: 
