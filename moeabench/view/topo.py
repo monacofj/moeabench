@@ -237,6 +237,21 @@ def topology(
     # Intercept custom marker_styles to avoid overwriting them
     marker_styles = kwargs.pop('marker_styles', [None] * len(processed_args))
     kwargs.pop('trace_modes', None) # We already parsed it into trace_modes
+
+    # Draw GT/reference first so analytical surfaces stay in the background
+    # instead of visually masking the empirical cloud in interactive 3D plots.
+    if show_gt and processed_args:
+        gt_positions = [
+            idx for idx, name in enumerate(names)
+            if 'gt' in str(name).lower() or 'reference' in str(name).lower() or 'true front' in str(name).lower()
+        ]
+        if gt_positions:
+            gt_idx = gt_positions[0]
+            if gt_idx != 0:
+                processed_args.insert(0, processed_args.pop(gt_idx))
+                names.insert(0, names.pop(gt_idx))
+                trace_modes.insert(0, trace_modes.pop(gt_idx))
+                marker_styles.insert(0, marker_styles.pop(gt_idx))
     
     # Reference for clinical markers: explicit gt (if shown) or explicit ref kwarg.
     auto_ref = resolved_gt if show_gt else kwargs.get('ref', None)

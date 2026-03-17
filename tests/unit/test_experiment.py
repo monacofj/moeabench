@@ -136,6 +136,29 @@ def test_experiment_run_silent(capsys):
     assert captured.out == ""
     assert captured.err == ""
 
+
+def test_run_repeat_argument_does_not_persist_between_calls():
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=2)
+    exp.moea = mb.moeas.NSGA2deap(population=12, generations=3, seed=7)
+
+    exp.run(repeat=3, silent=True)
+    assert len(exp.runs) == 3
+    assert exp.repeat == 1
+
+    exp.run(silent=True)
+    assert len(exp.runs) == 1
+
+
+def test_repeat_property_remains_the_persistent_default():
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=2)
+    exp.moea = mb.moeas.NSGA2deap(population=12, generations=3, seed=7)
+    exp.repeat = 3
+
+    exp.run(silent=True)
+    assert len(exp.runs) == 3
+
 def test_persistence():
     """Verify save and load integrity."""
     tmp_dir = tempfile.mkdtemp()

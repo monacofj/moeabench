@@ -7,6 +7,20 @@ import numpy as np
 import moeabench as mb
 
 
+def test_topology_places_gt_trace_before_experiment_trace():
+    exp = mb.experiment()
+    exp.mop = mb.mops.DTLZ2(M=3)
+    exp.moea = mb.moeas.NSGA2deap(population=20, generations=3, seed=7)
+    exp.name = "NSGA-II"
+    exp.run(repeat=1, silent=True)
+
+    plot = mb.view.topology(exp, show=False, mode="interactive")
+    names = [trace.name for trace in plot.figure.data]
+
+    assert names[0] == "True Front (GT)"
+    assert "NSGA-II" in names[1]
+
+
 def test_topo_density_uses_shared_axis_domain_for_kde_curves():
     a = np.array([[0.0, 0.0], [0.1, 0.2], [0.2, 0.4], [0.3, 0.6]])
     b = np.array([[10.0, 0.0], [10.1, 0.2], [10.2, 0.4], [10.3, 0.6]])

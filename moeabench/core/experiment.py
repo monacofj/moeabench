@@ -561,11 +561,9 @@ class experiment(Reportable):
         """
         if not append:
             self.clear()
-        if repeat is not None:
-            self.repeat = repeat
-        else:
-            repeat = self.repeat
-        if repeat < 1: repeat = 1
+        repeat = self.repeat if repeat is None else int(repeat)
+        if repeat < 1:
+            repeat = 1
         
         # Propagate overrides to the MOEA
         for key, val in kwargs.items():
