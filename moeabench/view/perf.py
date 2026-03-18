@@ -47,6 +47,19 @@ def _infer_metric_axis_label(metric, args):
     return getattr(metric, "__name__", "Value")
 
 
+def _slice_metric_matrix_generations(mat, gens):
+    """Slice MetricMatrix rows (generations) without changing run-selection semantics."""
+    from ..metrics.evaluator import MetricMatrix
+
+    if gens is None:
+        return mat
+
+    values = np.asarray(mat.values)[gens]
+    if values.ndim == 1:
+        values = values.reshape(-1, 1)
+    return MetricMatrix(values, metric_name=mat.metric_name, source_name=mat.source_name)
+
+
 def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):
     """Internal plotting engine for performance metric matrices."""
     if mode == 'auto':
@@ -185,8 +198,8 @@ def perf_history(*args, metric=None, gens=None, **kwargs):
     try:
         for arg in args:
             if isinstance(arg, MetricMatrix):
-                # If a matrix is already provided, slice it if gens is specified
-                processed_args.append(arg[gens] if gens is not None else arg)
+                # MetricMatrix indexing selects runs, so generation slicing must be explicit.
+                processed_args.append(_slice_metric_matrix_generations(arg, gens))
             else:
                 # Polymorphism: calculate metric if raw object passed, passing gens
                 processed_args.append(metric(arg, gens=gens, **metric_kwargs))

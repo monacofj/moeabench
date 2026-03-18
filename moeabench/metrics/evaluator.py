@@ -146,22 +146,19 @@ class MetricMatrix(Reportable):
             if "Hypervolume" in self.metric_name:
                 if self.is_ratio:
                     lines.extend([
-                        "> [!IMPORTANT]",
                         "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
-                        "> *Note: Values are scaled by the maximum session volume ($1.0$ ceiling).* ",
+                        "> Values are scaled by the maximum session volume ($1.0$ ceiling).",
                         ""
                     ])
                 elif self.is_raw:
                     lines.extend([
-                        "> [!NOTE]",
                         "> **Physical Objective Space**: How much objective space has been physically conquered within the global search boundaries established in this session?",
                         ""
                     ])
                 elif self.is_abs:
                     lines.extend([
-                        "> [!TIP]",
                         "> **Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
-                        "> *Note: Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).* ",
+                        "> Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).",
                         ""
                     ])
 
