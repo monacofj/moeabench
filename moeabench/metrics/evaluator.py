@@ -394,8 +394,12 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     
     mop_names = []
     for item in [exp] + ref:
-        if hasattr(item, 'mop'):
-            mop_names.append(getattr(item.mop, 'name', item.mop.__class__.__name__))
+        mop_obj = getattr(item, 'mop', None)
+        if mop_obj is None and hasattr(item, 'source'):
+            mop_obj = getattr(item.source, 'mop', None)
+            
+        if mop_obj is not None:
+            mop_names.append(getattr(mop_obj, 'name', mop_obj.__class__.__name__))
         elif hasattr(item, 'evaluation') and hasattr(item, 'pf'):
             # It's likely a MOP object
             mop_names.append(getattr(item, 'name', item.__class__.__name__))
@@ -489,6 +493,9 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     elif scale == 'abs':
         # Retrieve Ground Truth from Calibration Registry
         mop_obj = getattr(exp, 'mop', None)
+        if mop_obj is None and hasattr(exp, 'source'):
+             mop_obj = getattr(exp.source, 'mop', None)
+             
         if mop_obj is None:
              raise ValueError("Hypervolume 'abs' scale requires an experiment with an associated MOP.")
              
@@ -625,9 +632,12 @@ def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     return MetricMatrix(mat, name, source_name=source_name)
 
 def gd(exp, ref=None, gens=None, progress=True):
-    if ref is None and hasattr(exp, 'optimal_front'):
+    if ref is None:
         try:
-            ref = exp.optimal_front()
+            if hasattr(exp, 'optimal_front'):
+                ref = exp.optimal_front()
+            elif hasattr(exp, 'source') and hasattr(exp.source, 'optimal_front'):
+                ref = exp.source.optimal_front()
         except (AttributeError, NotImplementedError):
             logging.warning(f"GD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
@@ -644,9 +654,12 @@ def gd(exp, ref=None, gens=None, progress=True):
     return _calc_metric(exp, ref, GEN_gd, "GD", gens=gens, progress=progress)
 
 def gdplus(exp, ref=None, gens=None, progress=True):
-    if ref is None and hasattr(exp, 'optimal_front'):
+    if ref is None:
         try:
-            ref = exp.optimal_front()
+            if hasattr(exp, 'optimal_front'):
+                ref = exp.optimal_front()
+            elif hasattr(exp, 'source') and hasattr(exp.source, 'optimal_front'):
+                ref = exp.source.optimal_front()
         except (AttributeError, NotImplementedError):
             logging.warning(f"GD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
@@ -661,9 +674,12 @@ def gdplus(exp, ref=None, gens=None, progress=True):
     return _calc_metric(exp, ref, GEN_gdplus, "GD+", gens=gens, progress=progress)
 
 def igd(exp, ref=None, gens=None, progress=True):
-    if ref is None and hasattr(exp, 'optimal_front'):
+    if ref is None:
         try:
-            ref = exp.optimal_front()
+            if hasattr(exp, 'optimal_front'):
+                ref = exp.optimal_front()
+            elif hasattr(exp, 'source') and hasattr(exp.source, 'optimal_front'):
+                ref = exp.source.optimal_front()
         except (AttributeError, NotImplementedError):
             logging.warning(f"IGD: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
@@ -683,9 +699,12 @@ def emd(exp, ref=None, gens=None, progress=True):
     For multivariate data, this implementation uses the average 1D Wasserstein distance 
     per objective as a fast and robust distributional shift proxy.
     """
-    if ref is None and hasattr(exp, 'optimal_front'):
+    if ref is None:
         try:
-            ref = exp.optimal_front()
+            if hasattr(exp, 'optimal_front'):
+                ref = exp.optimal_front()
+            elif hasattr(exp, 'source') and hasattr(exp.source, 'optimal_front'):
+                ref = exp.source.optimal_front()
         except:
             pass
     
@@ -733,9 +752,12 @@ def emd(exp, ref=None, gens=None, progress=True):
     return MetricMatrix(mat, "EMD", source_name=source_name)
 
 def igdplus(exp, ref=None, gens=None, progress=True):
-    if ref is None and hasattr(exp, 'optimal_front'):
+    if ref is None:
         try:
-            ref = exp.optimal_front()
+            if hasattr(exp, 'optimal_front'):
+                ref = exp.optimal_front()
+            elif hasattr(exp, 'source') and hasattr(exp.source, 'optimal_front'):
+                ref = exp.source.optimal_front()
         except (AttributeError, NotImplementedError):
             logging.warning(f"IGD+: Reference front not provided and MOP does not implement 'ps()'. Falling back to found front.")
             pass
