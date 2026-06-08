@@ -162,7 +162,14 @@ def clinic_ecdf(target: Any, ground_truth: Optional[np.ndarray] = None, metric: 
             xaxis_title=x_label, yaxis_title="Cumulative Probability",
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
-        if show: fig.show()
+        if show:
+            fig.show()
+            try:
+                from IPython import get_ipython
+                if get_ipython() is not None:
+                    return None
+            except (ImportError, NameError):
+                pass
         return fig
 
 def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
@@ -217,7 +224,14 @@ def clinic_distribution(target: Any, ground_truth: Optional[np.ndarray] = None, 
             xaxis=dict(showgrid=True, gridcolor='rgba(199,208,219,0.22)'),
             yaxis=dict(showgrid=True, gridcolor='rgba(199,208,219,0.55)')
         )
-        if show: fig.show()
+        if show:
+            fig.show()
+            try:
+                from IPython import get_ipython
+                if get_ipython() is not None:
+                    return None
+            except (ImportError, NameError):
+                pass
         return fig
 
 def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode: str = 'auto', show: bool = True, title: Optional[str] = None, **kwargs):
@@ -321,7 +335,14 @@ def clinic_radar(*targets: Any, ground_truth: Optional[np.ndarray] = None, mode:
             title=dict(text=resolved_title, x=0.5),
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
-        if show: fig.show()
+        if show:
+            fig.show()
+            try:
+                from IPython import get_ipython
+                if get_ipython() is not None:
+                    return None
+            except (ImportError, NameError):
+                pass
         return fig
 
 def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metric: str = "closeness", mode: str = 'auto', show: bool = True, gens: Optional[Union[int, slice]] = None, title: Optional[str] = None, **kwargs):
@@ -364,7 +385,14 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
                 xaxis_title="Generation", yaxis_title=f"Physical Fact [{target.name.lower()}]",
                 template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
             )
-            if show: fig.show()
+            if show:
+                fig.show()
+                try:
+                    from IPython import get_ipython
+                    if get_ipython() is not None:
+                        return None
+                except (ImportError, NameError):
+                    pass
             return fig
 
     is_exp = hasattr(target, 'runs')
@@ -415,5 +443,12 @@ def clinic_history(target: Any, ground_truth: Optional[np.ndarray] = None, metri
             xaxis_title="Generation", yaxis_title=f"Physical Fact [{metric}]",
             template=defaults.theme, width=defaults.plot_width, height=defaults.plot_height
         )
-        if show: fig.show()
+        if show:
+            fig.show()
+            try:
+                from IPython import get_ipython
+                if get_ipython() is not None:
+                    return None
+            except (ImportError, NameError):
+                pass
         return fig
