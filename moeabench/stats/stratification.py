@@ -221,17 +221,19 @@ class LayerResult(StatsResult):
             
             sub_objs = self.objectives[mask]
             
+            # Create a copy of metric kwargs with progress bar disabled to prevent Jupyter hangs/spam
+            m_kwargs_clean = {**m_kwargs, 'progress': False}
             if mode == 'collective':
                 if self.sub_results:
                     samples = []
                     for sub in self.sub_results:
                         s_mask = (sub.rank_array == r)
-                        val = m_func(sub.objectives[s_mask], **m_kwargs) if np.any(s_mask) else 0.0
+                        val = m_func(sub.objectives[s_mask], **m_kwargs_clean) if np.any(s_mask) else 0.0
                         samples.append(float(val) / anchor)
                 else:
-                    samples = [float(m_func(sub_objs, **m_kwargs)) / anchor]
+                    samples = [float(m_func(sub_objs, **m_kwargs_clean)) / anchor]
             else:
-                samples = [float(m_func(sub_objs[j:j+1], **m_kwargs)) / anchor for j in range(len(sub_objs))]
+                samples = [float(m_func(sub_objs[j:j+1], **m_kwargs_clean)) / anchor for j in range(len(sub_objs))]
                 
             q_stats = np.percentile(samples, [25, 50, 75])
             q25, q50, q75 = q_stats
