@@ -99,6 +99,11 @@ The top-level container for multi-objective optimization research.
 *   `stop` (*callable*, optional): Global custom stop criteria function.
 *   `repeat` (*int*): Default number of repetitions (default: 1).
 *   `runs` (*List[Run]*): Access to all execution results.
+*   `seed` (*List[int]*): Seeds actually used by the stored runs, in execution order. It is empty before execution.
+
+The algorithm's `exp.moea.seed` is the immutable base seed configured by the user. For run index `i`, `exp[i].seed` records the exact seed used by that run, and `exp.seed` provides the complete sequence. Thus, after a fresh execution, `exp[0].seed == exp.moea.seed`.
+
+The experiment report displays these concepts separately as `Base seed` and `Run seeds`.
 
 **Methods:**
 
@@ -112,6 +117,7 @@ The top-level container for multi-objective optimization research.
     *   `**kwargs`: Parameters passed directly to the MOEA engine (e.g., `population`, `generations`, `seed`).
 *   **Returns**: `None`.
 *   **Runtime Behavior**: By default, the method prints `Running {exp.name}` at the beginning of execution.
+*   **Seed Behavior**: A fresh execution uses `exp.moea.seed + i` for run index `i` without changing `exp.moea.seed`. With `append=True`, the sequence continues after the runs already stored, avoiding duplicate seeds.
 
 #### **`.pop(n=-1)`**
 *   **Description**: Accesses the multi-run aggregate (`JoinedPopulation`) at generation `n`.

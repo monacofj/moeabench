@@ -157,6 +157,9 @@ class experiment(Reportable):
             if hasattr(self.moea, 'population'): moea_info.append(f"Pop={self.moea.population}")
             if hasattr(self.moea, 'generations'): moea_info.append(f"Gens={self.moea.generations}")
 
+        base_seed = getattr(self.moea, 'seed', None) if self.moea else None
+        run_seeds = self.seed
+
         # Meta info
         n_runs = len(self._runs)
         status = "Executed" if n_runs > 0 else "Configured (Not run)"
@@ -184,6 +187,8 @@ class experiment(Reportable):
                 f"  - **Status**:    {status}",
                 f"  - **Problem**:   {mop_name} ({', '.join(mop_info)})",
                 f"  - **Algorithm**: {moea_name} ({', '.join(moea_info)})",
+                f"  - **Base seed**: {base_seed if base_seed is not None else 'None'}",
+                f"  - **Run seeds**: {run_seeds if run_seeds else 'Not run'}",
                 f"  - **Stop**:      {self.stop or 'Default'}",
                 "  - **Metadata**:"
             ]
@@ -205,6 +210,8 @@ class experiment(Reportable):
                 f"  Status:    {status}",
                 f"  Problem:   {mop_name} ({', '.join(mop_info)})",
                 f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
+                f"  Base seed: {base_seed if base_seed is not None else 'None'}",
+                f"  Run seeds: {run_seeds if run_seeds else 'Not run'}",
                 f"  Stop:      {self.stop or 'Default'}",
                 "  Metadata:",
                 f"    - Author:   {self.author or 'Anonymous'}",
@@ -344,6 +351,11 @@ class experiment(Reportable):
         return self._runs
         # Original code did magic here to instantiate result.
         # We will handle instantiation in run()
+
+    @property
+    def seed(self) -> List[int]:
+        """Seeds actually used by the stored runs, in execution order."""
+        return [run.seed for run in self._runs]
 
     @property
     def stop(self) -> Any: return self._stop
@@ -589,7 +601,7 @@ class experiment(Reportable):
             emit_output(f"Running {self.name}", markdown=f"### Running **{self.name}**")
 
             # Execute serially
-            self._run_serial(repeat, base_seed, silent=silent)
+            self._run_serial(repeat, base_seed, start_index=len(self._runs), silent=silent)
 
             if diagnose and self._runs:
                 # Import metrics and diagnostics here to avoid circular dependencies
@@ -639,14 +651,15 @@ class experiment(Reportable):
                     # Silently fail or minimal log to not disrupt main execution
                     pass
 
-    def _run_serial(self, repeat: int, base_seed: int, silent: bool = False) -> None:
+    def _run_serial(self, repeat: int, base_seed: int, start_index: int = 0,
+                    silent: bool = False) -> None:
         total_gens = getattr(self.moea, 'generations', None)
         outer_pbar = None
         if repeat > 1 and not silent:
             outer_pbar = get_progress_bar(total=repeat, desc=f"Experiment: {self.name}", position=0)
 
         for i in range(repeat):
-            seed = base_seed + i
+            seed = base_seed + start_index + i
             
             inner_pbar = None
             if not silent:
@@ -674,15 +687,16 @@ class experiment(Reportable):
         """Internal helper for executing a single MOEA run."""
         # Inject context
         moea.problem = mop 
-        if hasattr(moea, 'seed'):
-            moea.seed = seed
 
-        
         try:
             # Execute
             if hasattr(moea, 'evaluation'):
                 # New-style API
-                data_payload = moea.evaluation()
+                evaluation_params = inspect.signature(moea.evaluation).parameters
+                if 'seed' in evaluation_params:
+                    data_payload = moea.evaluation(seed=seed)
+                else:
+                    data_payload = moea.evaluation()
             else:
                 # Legacy Flow
                 current_result = moea(mop, None, None, seed)

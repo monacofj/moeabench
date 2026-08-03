@@ -125,6 +125,46 @@ def test_experiment_run(capsys):
     # history includes gen 0 (initial pop) + 10 generations = 11 entries
     assert len(last_run.history('nd')) == 11
 
+
+def test_experiment_seed_contract():
+    exp = mb.experiment(
+        mop=mb.mops.DTLZ2(M=2),
+        moea=mb.moeas.NSGA2deap(population=12, generations=1, seed=10),
+    )
+
+    exp.run(repeat=3, silent=True)
+
+    assert exp.moea.seed == 10
+    assert exp.seed == [10, 11, 12]
+    assert [run.seed for run in exp] == exp.seed
+    assert exp[0].seed == exp.moea.seed
+
+
+def test_experiment_append_continues_seed_schedule():
+    exp = mb.experiment(
+        mop=mb.mops.DTLZ2(M=2),
+        moea=mb.moeas.NSGA2deap(population=12, generations=1, seed=10),
+    )
+
+    exp.run(repeat=2, silent=True)
+    exp.run(repeat=2, append=True, silent=True)
+
+    assert exp.moea.seed == 10
+    assert exp.seed == [10, 11, 12, 13]
+
+
+def test_experiment_report_distinguishes_base_and_run_seeds():
+    exp = mb.experiment(
+        mop=mb.mops.DTLZ2(M=2),
+        moea=mb.moeas.NSGA2deap(population=12, generations=1, seed=10),
+    )
+    exp.run(repeat=2, silent=True)
+
+    report = exp.report(show=False, markdown=False)
+
+    assert "Base seed: 10" in report
+    assert "Run seeds: [10, 11]" in report
+
 def test_experiment_run_silent(capsys):
     """Verify that run(..., silent=True) suppresses run output."""
     exp = mb.experiment()

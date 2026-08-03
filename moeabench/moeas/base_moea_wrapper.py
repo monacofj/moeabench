@@ -39,19 +39,18 @@ class BaseMoeaWrapper:
         )
         return self._instance
 
-    def evaluation(self):
-        """Standard moeabench evaluation entry point."""
-        if self._instance is None:
+    def evaluation(self, seed=None):
+        """Run the engine with a per-run seed without changing the base seed."""
+        if seed is not None:
+            current_stop = getattr(self, 'stop', None)
+            self.__call__(self.problem, seed=seed, stop=current_stop)
+        elif self._instance is None:
             if self.problem is None:
                 raise RuntimeError("MOEA wrapper has no experiment assigned.")
-            # Use current seed property if set
             current_seed = getattr(self, 'seed', self._initial_seed)
             current_stop = getattr(self, 'stop', None)
             self.__call__(self.problem, seed=current_seed, stop=current_stop)
-        else:
-            # Re-initialize if seed changed? Ideally yes, but for now assuming one-shot or manual re-call
-            pass
-            
+
         return self._instance.evaluation()
 
     @property

@@ -189,6 +189,18 @@ Rigorous benchmarking necessitates distinct control over stochastic processes. M
 
 *   **Determinism**: You can set a base seed in the algorithm: `mb.moeas.NSGA3(seed=42)`.
 *   **Multi-Run Sequence**: When running `repeat=N`, MoeaBench uses a deterministic increment sequence: `Run i` uses `base_seed + i`.
+*   **Stable Base Seed**: `exp.moea.seed` always remains the base seed configured by the user; execution never replaces it with the current or final run seed.
+*   **Seed Inspection**: `exp[i].seed` is the exact seed of one run, while `exp.seed` lists the seeds of every stored run. After a fresh execution, `exp[0].seed == exp.moea.seed`.
+*   **Appending Runs**: With `append=True`, seed allocation continues after the stored runs, so appended runs do not repeat earlier seeds.
+
+```python
+exp.moea = mb.moeas.NSGA3(seed=42)
+exp.run(repeat=3)
+
+exp.moea.seed  # 42
+exp.seed       # [42, 43, 44]
+exp[0].seed    # 42
+```
 
 > [!TIP]
 > **Global Defaults**: You can define default values for population, generations, seeds, and statistical thresholds globally using `mb.defaults`. This allows you to set a baseline for your entire project in a single place. See the **[API Reference](reference.md#defaults)** for the complete list of parameters.

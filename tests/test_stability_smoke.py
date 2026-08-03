@@ -172,6 +172,8 @@ def test_experiment_seed_schedule_signature(monkeypatch):
         "Experiment seed schedule drift detected. "
         "Repeated runs must follow base_seed + i for deterministic replay and stability certification."
     )
+    assert exp.moea.seed == 123
+    assert exp.seed == [123, 124, 125]
 
 
 @pytest.mark.parametrize(
