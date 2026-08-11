@@ -6,19 +6,18 @@
 
 
 """
-Example 15: Individual vs Grid-Aggregated Hypervolume Perspectives
+Example 15: Self-Referenced vs Fixed-Reference Hypervolume
 -------------------------------------------------------------
 This example demonstrates the three scaling modes in moeabench, controlled by 
 the `scale` parameter:
 
-1. 'raw': Absolute volume dominated in the objective space ($H_{raw}$). 
-2. 'rel': Aggregated Efficiency ($H_{rel}$). Scaled [0, 1] based on 
-   the range of all solutions present in the session (or specified in `ref`).
+1. 'raw': Dominated volume in the selected normalization context ($H_{raw}$).
+2. 'rel': Efficiency relative to the selected reference ($H_{rel}$).
 3. 'abs': Theoretical Optimality ($H_{abs}$). Scaled [0, 1] relative 
    to the theoretical maximum defined by the Ground Truth.
 
-We also explore the `joint` parameter, which controls auto-normalization 
-(sharing the same Bounding Box) between different experiments.
+Without `ref`, each call is self-referenced. With `ref`, normalization bounds
+come only from that external reference and can be shared across experiments.
 """
 
 
@@ -79,34 +78,34 @@ def main():
         plt.tight_layout()
         show_matplotlib()
 
-    # --- PHASE 1: INDIVIDUAL PERSPECTIVE (joint=False) ---
+    # --- PHASE 1: SELF-REFERENCED PERSPECTIVE ---
     h1_ind = [
-        mb.metrics.hv(exp1, scale='raw', joint=False),
-        mb.metrics.hv(exp1, scale='rel', joint=False),
-        mb.metrics.hv(exp1, scale='abs', joint=False)
+        mb.metrics.hv(exp1, scale='raw'),
+        mb.metrics.hv(exp1, scale='rel'),
+        mb.metrics.hv(exp1, scale='abs')
     ]
     h2_ind = [
-        mb.metrics.hv(exp2, scale='raw', joint=False),
-        mb.metrics.hv(exp2, scale='rel', joint=False),
-        mb.metrics.hv(exp2, scale='abs', joint=False)
+        mb.metrics.hv(exp2, scale='raw'),
+        mb.metrics.hv(exp2, scale='rel'),
+        mb.metrics.hv(exp2, scale='abs')
     ]
     plot_triple(h1_ind, h2_ind, "[Individual Perspective]")
 
-    # --- PHASE 2: JOINT PERSPECTIVE (joint=True) ---
+    # --- PHASE 2: FIXED EXTERNAL REFERENCE ---
     ref = [exp1, exp2]
-    h1_jnt = [
-        mb.metrics.hv(exp1, ref=ref, scale='raw', joint=True),
-        mb.metrics.hv(exp1, ref=ref, scale='rel', joint=True),
-        mb.metrics.hv(exp1, ref=ref, scale='abs', joint=True)
+    h1_fixed = [
+        mb.metrics.hv(exp1, ref=ref, scale='raw'),
+        mb.metrics.hv(exp1, ref=ref, scale='rel'),
+        mb.metrics.hv(exp1, ref=ref, scale='abs')
     ]
-    h2_jnt = [
-        mb.metrics.hv(exp2, ref=ref, scale='raw', joint=True),
-        mb.metrics.hv(exp2, ref=ref, scale='rel', joint=True),
-        mb.metrics.hv(exp2, ref=ref, scale='abs', joint=True)
+    h2_fixed = [
+        mb.metrics.hv(exp2, ref=ref, scale='raw'),
+        mb.metrics.hv(exp2, ref=ref, scale='rel'),
+        mb.metrics.hv(exp2, ref=ref, scale='abs')
     ]
     # Reuse y_max from the Premium's raw individual volume to see the shift
-    y_max_jnt = h2_ind[0].values[-1,:].mean() * 1.1
-    plot_triple(h1_jnt, h2_jnt, "[Joint Perspective]", y_max_raw=y_max_jnt)
+    y_max_fixed = h2_ind[0].values[-1,:].mean() * 1.1
+    plot_triple(h1_fixed, h2_fixed, "[Fixed Reference]", y_max_raw=y_max_fixed)
 
 
 if __name__ == "__main__":

@@ -18,8 +18,8 @@ Previous versions of moeabench reported a single "Hypervolume" value. During the
 
 We decided to decompose the Hypervolume metric into three distinct physical interpretations:
 
-1.  **H_raw (Physical Volume)**: The absolute volume dominated by the solution set within the Global Bounding Box.
-    *   *Unit*: $Obj_1 \cdot Obj_2 \cdot \dots \cdot Obj_M$.
+1.  **H_raw (Contextual Volume)**: The volume dominated by the solution set within the selected normalization context. The context is self-derived when `ref` is omitted and externally fixed when `ref` is supplied.
+    *   *Unit*: normalized objective-space volume in that context.
 2.  **H_rel (Competitive Efficiency)**: Scaled by the session's maximum found volume. Forces a 1.0 ceiling for the current winner. (Formerly `H_ratio`).
     *   *Interpretation*: 0.0 to 1.0 (relative to competition).
 3.  **H_abs (Theoretical Optimality)**: Scaled by the volume of the mathematical Ground Truth.

@@ -30,11 +30,18 @@ class AttainmentSurface(SmartArray):
         Calculates the area (2D) or hypervolume (3D+) attained by this surface.
         """
         from ..metrics.evaluator import hypervolume
-        from ..core.run import Run
-        
-        # Pass self directly; hypervolume() handles np.ndarray
-        hv_matrix = hypervolume(self, ref=ref_point)
-        return float(hv_matrix)
+
+        if ref_point is None:
+            return float(hypervolume(self))
+
+        # `ref_point` is a geometric HV endpoint in raw coordinates, not the
+        # external normalization reference denoted by metrics.hypervolume(ref=...).
+        from pymoo.indicators.hv import Hypervolume
+
+        point = np.asarray(ref_point, dtype=float)
+        if point.ndim != 1 or point.shape[0] != self.shape[1]:
+            raise ValueError("ref_point must contain one value per objective.")
+        return float(Hypervolume(ref_point=point).do(np.asarray(self)))
 
 def attainment(source, level: float = 0.5):
     """

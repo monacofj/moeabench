@@ -58,4 +58,4 @@ def test_metric_report_markdown_avoids_github_admonition_tokens():
     report = mat.report(show=False, markdown=True)
 
     assert "[!NOTE]" not in report
-    assert "Physical Objective Space" in report
+    assert "Raw Hypervolume" in report

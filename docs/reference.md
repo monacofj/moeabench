@@ -39,7 +39,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **PF** | Pareto Front | The image of non-dominated solutions in **Objective Space**. |
 | **PS** | Pareto Set | The values of decision variables in **Decision Space**. |
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
-| **H_raw** | Raw Hypervolume | The absolute numerical value in physical units (e.g., $H_{raw} = 1.15$). |
+| **H_raw** | Raw Hypervolume | Dominated volume in the selected self-derived or external-reference normalization context. |
 | **H_rel** | Relative Hypervolume | Normalized by the **Session Best**. Measures competitive efficiency. (Pre-v0.11.2: `H_ratio`). |
 | **H_abs** | Absolute Hypervolume | Normalized by the **Ground Truth**. Measures proximity to theoretical optimum. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
@@ -471,22 +471,23 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 | **Low ($\to 1/R$)** | **Redundancy** | Runs converge to the same front. Results are highly reliable and saturated. |
 | **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
-### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True)`
+### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None)`
 
-Calculates the Hypervolume for an experiment, run, or population. Always constructs a dynamic Bounding Box (BBox) that encompasses the worst solutions found by all provided experiments (including the reference, if any).
+Calculates Hypervolume for an experiment, run, or population. Across the metric API, `ref` denotes the external reference used by the metric; its exact mathematical role depends on the metric. GD, GD+, IGD, IGD+, and EMD use it as their reference front or distribution. Hypervolume uses it exclusively to establish normalization bounds.
 
 *   **Public alias**: `mb.metrics.hypervolume(...)`
 
 **Parameters:**
 *   `exp`: The `Experiment`, `Run`, or `Population` object to evaluate.
-*   `ref` (optional): Set of reference experiments used exclusively to expand the Bounding Box.
+*   `ref` (optional): External reference used exclusively to define ideal/nadir normalization bounds. Without `ref`, bounds come collectively from all runs in `exp`. With `ref`, evaluated data never alters the bounds. A pooled empirical context can be supplied explicitly, for example `ref=[exp_a, exp_b]`.
 *   `mode` (str): Algorithmic choice (`'auto'`, `'fast'`, `'exact'`).
 *   `scale` (str): Narrative perspective for normalization:
-    *   `'raw'` (Default): Returns the absolute physical volume dominated within the Global Bounding Box. Ensures volumetric invariance across comparisons by avoiding ratio-induced shifts. Answers: *"How much objective space has been physically conquered?"*
-    *   `'rel'`: Divides the physical volume by the maximum volume found in the current session. Forces the best experiment to present a `1.0` ceiling. Analyzes competitive efficiency relative to the session's state-of-the-art. (Deprecated alias: `'ratio'`).
-    *   `'abs'`: Normalizes by the **Ground Truth** of the underlying MOP. Requires pre-calibration (via `mop.calibrate()`). Provides a Cross-Session Absolute Score where `1.0` represents mathematical perfection. Answers: *"What is the absolute proximity to the theoretical optimum?"*
+    *   `'raw'` (Default): Returns dominated volume in the selected normalization context. Without `ref`, it is self-referenced and not directly comparable with separately normalized experiments. With `ref`, it is comparable to results using that same fixed reference.
+    *   `'rel'`: Divides by the selected reference HV, or by the best run for self-reference. With `ref`, both evaluated and reference HV use bounds derived only from `ref`.
+    *   `'abs'`: Divides by the calibrated **Ground Truth** HV. Both evaluated and ground-truth HV use the same selected bounds; with `ref`, those bounds come only from `ref`.
 *   `gens` (optional): Slice or integer to limit the generation scope.
-*   `joint` (*bool*): If `True` (default), uses the union of `exp` and `ref` to establish the bounding box. If `False`, ignores `ref` for normalization, providing an independent (self-referenced) perspective.
+
+`scale` is post-processing and never selects or changes normalization bounds. Evaluated points outside external ideal/nadir bounds do not expand them. Points beyond the normalized Hypervolume reference point contribute no volume; points better than the external ideal may contribute beyond the nominal unit cube. A reference with zero range in any objective is rejected.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`**
 *   **Description**: Calculates Inverted Generational Distance.

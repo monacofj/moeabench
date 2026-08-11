@@ -12,15 +12,15 @@ Accepted (Implemented in v0.7.6)
 
 ## Context
 
-moeabench normalizes all search data to a unit hypercube $[0, 1]^M$ based on the joint range of the Ground Truth and all algorithm populations. However, calculating Hypervolume at the exact boundary ($1.1$ or $1.0$) can lead to numerical artifacts where points on the boundary are ignored or contribute zero volume. Peer review suggested a consistent offset to ensure stability.
+moeabench normalizes Hypervolume data to a unit hypercube $[0, 1]^M$ using one selected context. Without `ref`, that context is derived collectively from the evaluated experiment's runs. With `ref`, ideal and nadir come exclusively from the external reference. Calculating Hypervolume at the exact nadir boundary can otherwise cause points on the boundary to contribute zero volume.
 
 ## Technical Decision
 
 We decided to standardize the **Reference Point** for Hypervolume calculation at **1.1** (Nadir + 10% offset) in all normalized calibration pipelines. 
 
-1.  **Normalization Protocol**: Data is linearly scaled such that the joint global Ideal maps to $0.0$ and the joint global Nadir maps to $1.0$.
+1.  **Normalization Protocol**: Data is linearly scaled so the selected context's ideal maps to $0.0$ and its nadir maps to $1.0$.
 2.  **Reference Point**: Metrics are computed relative to $\vec{r} = [1.1, 1.1, \dots, 1.1]$.
-3.  **Rationale**: This ensures that even "worst-case" solutions at the Nadir contribute to the hypervolume and that the reference box is large enough to encapsulate the entire search front without boundary effects.
+3.  **Rationale**: This ensures that solutions at the selected nadir contribute to Hypervolume. Evaluated points never expand externally supplied bounds; points beyond the normalized reference point contribute no volume, while better-than-ideal points may contribute outside the nominal unit cube.
 
 ## Consequences
 
