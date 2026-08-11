@@ -122,21 +122,27 @@ class MetricMatrix(Reportable):
             return self._render_report(content, show, **kwargs)
 
         mean = np.mean(valid_final)
-        std = np.std(valid_final)
+        has_run_variability = len(valid_final) >= 2
+        std = np.std(valid_final) if has_run_variability else None
         best = np.max(valid_final) # Assuming higher is better (Hypervolume)
         if any(m in self.metric_name.lower() for m in ['igd', 'gd', 'spacing']):
             best = np.min(valid_final)
 
-        cv = std / (abs(mean) + 1e-9)
         prec = defaults.precision
         source_info = f" ({self.source_name})" if self.source_name else ""
 
-        if cv < defaults.cv_tolerance:
-            stability = f"High (CV={cv:.{prec}f} < {defaults.cv_tolerance})"
-        elif cv > defaults.cv_moderate:
-            stability = f"Low (CV={cv:.{prec}f} > {defaults.cv_moderate})"
+        if not has_run_variability:
+            std_display = "N/A"
+            stability = "Undetermined (requires at least 2 valid runs)"
         else:
-            stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
+            cv = std / (abs(mean) + 1e-9)
+            std_display = f"{std:.{prec}f}"
+            if cv < defaults.cv_tolerance:
+                stability = f"High (CV={cv:.{prec}f} < {defaults.cv_tolerance})"
+            elif cv > defaults.cv_moderate:
+                stability = f"Low (CV={cv:.{prec}f} > {defaults.cv_moderate})"
+            else:
+                stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
 
         if use_md:
             lines = [
@@ -165,7 +171,7 @@ class MetricMatrix(Reportable):
             lines.extend([
                 "#### Final Performance (Last Gen)",
                 f"- **Mean**: {mean:.{prec}f}",
-                f"- **StdDev**: {std:.{prec}f}",
+                f"- **StdDev**: {std_display}",
                 f"- **Best**: {best:.{prec}f}",
                 "",
                 "#### Search Dynamics",
@@ -192,7 +198,7 @@ class MetricMatrix(Reportable):
             lines.extend([
                 f"  Final Performance (Last Gen):",
                 f"    - Mean: {mean:.{prec}f}",
-                f"    - StdDev: {std:.{prec}f}",
+                f"    - StdDev: {std_display}",
                 f"    - Best: {best:.{prec}f}",
                 f"  Search Dynamics:",
                 f"    - Runs: {data.shape[1]}",
