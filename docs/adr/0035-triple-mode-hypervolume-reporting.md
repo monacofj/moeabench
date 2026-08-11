@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-When calculating the Hypervolume of multiple algorithms/experiments in a dynamic environment (without a pre-defined maximum bounding box or Ground Truth), the Bounding Box (BBox) must dynamically expand to accommodate the worst solutions found by any algorithm in the set.
+Hypervolume needs an explicit normalization interpretation. Without an external reference, the evaluated experiment supplies a self-referenced bounding box. Comparisons across separate calls require the same external `ref`, which exclusively defines the bounding box.
 
 Previously, `moeabench` implemented a dynamic normalization step where the calculated absolute volume of each algorithm was subsequently divided by the **maximum volume found in the session**. 
 
@@ -16,7 +16,7 @@ This forced the best algorithm to naturally hit a `1.0` ceiling. However, this c
 
 This mathematical behavior violates the principle of "Immutable Evaluation" for physical metrics while satisfying the desire for "Competitive Efficiency Rankings".
 
-1. **`scale='raw'` (Volume Mode - Default Since v0.11.x)**: Returns the **Absolute Physical Volume** dominated by the solutions within the current Global Bounding Box. It does *not* divide the result by any external ceiling. It ensures volumetric invariance across sessions where the Bounding Box is held constant. It answers: *"How much objective space has been physically conquered?"*
+1. **`scale='raw'` (Volume Mode - Default Since v0.11.x)**: Returns dominated volume in the selected normalization context. A self-referenced result is not directly comparable across separate normalizations; a fixed-reference result is comparable with results using the same `ref`.
 2. **`scale='rel'` (Competitive Efficiency Mode)**: Computes the absolute volume and *divides* it by the maximum volume found in the provided experiments in the current session. This forces a `1.0` ceiling based on the session winner. It answers: *"What is the competitive efficiency relative to session best?"*
     - *Note: `scale='ratio'` is preserved as a deprecated alias.*
 3. **`scale='abs'` (Theoretical Optimality Mode)**: Normalizes the absolute volume by the **Ground Truth (GT)** of the underlying MOP. This requires the MOP to be pre-calibrated (via `mop.calibrate()`). It provides an absolute, cross-session score where `1.0` represents mathematical perfection. It answers: *"What is the absolute proximity to the theoretical optimum?"*
@@ -28,7 +28,7 @@ To prevent invalid geometric comparisons (e.g., comparing Hypervolumes across di
 
 By making `raw` the default, `moeabench` prioritizes scientific measurement and numerical stability over competitive ranking. If a competitive ranking is desired, the user must explicitly opt-in via `scale='ratio'`.
 
-If true immutability is required across different plotting/analysis sessions, the user **must explicitly provide a fixed referencing point** (`nadir=[x, y, z]`).
+For immutable comparisons across plotting or analysis sessions, the user must explicitly provide the same external reference front or pooled reference experiments through `ref`.
 
 ## Consequences
 - **Enhanced Integrity**: The library no longer conflates physical volume with relative competitive ranking by default. 

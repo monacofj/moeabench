@@ -15,23 +15,17 @@ def test_hv_normalization():
     """Verify Hypervolume normalization and reference points."""
     # Front at [0.5, 0.5]
     f1 = np.array([[0.5, 0.5]])
-    # Reference at [1.0, 1.0]
-    ref = np.array([[1.0, 1.0]])
+    # External reference exclusively defines bounds [0, 0] to [1, 1].
+    ref = np.array([[0.0, 1.0], [1.0, 0.0]])
     
     # Mode exact for 2D
     hv_res = mb.metrics.hypervolume(f1, ref=ref, mode='exact')
     
-    # Normalize logic: global_max is [1.0, 1.0], global_min is [0.5, 0.5]
-    # Actually, evaluator.normalize takes ref_exps and all_current_objs_list.
-    # ref point is max_val * 1.1 usually in some systems, 
-    # but moeabench uses internal normalization.
-    
     assert hv_res.values.size == 1
     val = float(hv_res)
     assert val > 0
-    # In moeabench, HV normalization adds a 10% margin to the bounding box.
-    # [0.5, 0.5] in normalized box [0, 0] to [1.1, 1.1] gives 1.1 * 1.1 = 1.21
-    assert np.allclose(val, 1.21, atol=1e-5)
+    # [0.5, 0.5] in fixed normalized bounds dominates [0.5, 1.1]^2.
+    assert np.allclose(val, 0.36, atol=1e-5)
 
 def test_convergence_metrics():
     """Verify GD and IGD fallback to analytical optimal front."""

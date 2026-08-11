@@ -57,7 +57,12 @@ def _slice_metric_matrix_generations(mat, gens):
     values = np.asarray(mat.values)[gens]
     if values.ndim == 1:
         values = values.reshape(-1, 1)
-    return MetricMatrix(values, metric_name=mat.metric_name, source_name=mat.source_name)
+    return MetricMatrix(
+        values,
+        metric_name=mat.metric_name,
+        source_name=mat.source_name,
+        reference_context=getattr(mat, "reference_context", None),
+    )
 
 
 def _plot_metric_matrices(metric_matrices, mode='auto', show_bounds=False, title=None, **kwargs):

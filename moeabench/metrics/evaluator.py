@@ -19,70 +19,41 @@ from ..core.display import show_matplotlib
 import warnings
 from ..progress import get_progress_bar
 
-# We need the helper logic from analyse to calculate reference points
-# Since analyse is a mixin class, we might need to extract 'normalize' to a util or duplicate it.
-# To avoid complex inheritance, let's keep it simple here.
+def _compute_bounds(fronts):
+    """Compute ideal/nadir bounds from exactly the supplied fronts."""
+    valid = [np.asarray(front) for front in fronts if front is not None and len(front) > 0]
+    if not valid:
+        raise ValueError("Hypervolume requires at least one non-empty front to define normalization bounds.")
+    if any(front.ndim != 2 for front in valid):
+        raise ValueError("Hypervolume bounds require two-dimensional fronts.")
+    if len({front.shape[1] for front in valid}) != 1:
+        raise ValueError("Hypervolume bounds require matching objective counts.")
 
-def normalize(ref_exps, all_current_objs_list):
-    """
-    Calculates the global min/max objective values across reference experiments 
-    and the current experiment to establish the bounding box for Hypervolume.
-    """
-    # Collect all fronts from references
-    all_fronts = []
-    
-    # Add external references
-    for exp in ref_exps:
-        if hasattr(exp, 'runs'):
-            # It's an experiment
-            for run in exp:
-                all_fronts.append(run.history('nd')[-1]) # Use last gen
-        elif isinstance(exp, np.ndarray):
-            # It's a raw array
-            all_fronts.append(exp)
-        elif hasattr(exp, 'front') and callable(exp.front):
-             all_fronts.append(exp.front())
-             
-    # Add current experiment fronts (from all_current_objs_list)
-    # F is a list of arrays (one per run)
-    for f in all_current_objs_list:
-        all_fronts.append(f)
-        
-    if not all_fronts:
-        return None, None
+    merged = np.vstack(valid)
+    ideal = np.min(merged, axis=0)
+    nadir = np.max(merged, axis=0)
+    if np.any(nadir <= ideal):
+        raise ValueError(
+            "Hypervolume normalization bounds require non-zero range in every objective."
+        )
+    return ideal, nadir
 
-    # Stack and find min/max
-    # Note: fronts might have different sizes
-    mins = []
-    maxs = []
-    for f in all_fronts:
-        if len(f) > 0:
-            mins.append(np.min(f, axis=0))
-            maxs.append(np.max(f, axis=0))
-            
-    if not mins:
-        # Fallback to zeros/ones but with correct dimensionality M
-        # We try to infer M from current fronts if possible
-        M = 0
-        for f in all_current_objs_list:
-            if len(f) > 0:
-                M = f.shape[1]
-                break
-        if M == 0:
-            M = 3 # Absolute default if nothing is found
-        return np.zeros(M), np.ones(M)
-        
-    global_min = np.min(np.vstack(mins), axis=0)
-    global_max = np.max(np.vstack(maxs), axis=0)
-    
-    return global_min, global_max
+
+def _extract_reference_fronts(ref):
+    """Extract external-reference fronts without consulting evaluated data."""
+    refs = ref if isinstance(ref, list) else [ref]
+    fronts = []
+    for item in refs:
+        _, item_fronts, _, _ = _extract_data(item)
+        fronts.extend(item_fronts)
+    return fronts
 
 
 class MetricMatrix(Reportable):
     """
     A matrix (Generations x Runs) of metric values.
     """
-    def __init__(self, data, metric_name="Metric", source_name=None):
+    def __init__(self, data, metric_name="Metric", source_name=None, reference_context=None):
         self._data = np.array(data) 
         
         # Internal Storage Policy: (Generations, Runs)
@@ -93,9 +64,10 @@ class MetricMatrix(Reportable):
              
         self.metric_name = metric_name
         self.source_name = source_name
+        self.reference_context = reference_context
         
         # Determine if this metric is scaled 
-        self.is_ratio = "(Ratio)" in metric_name or "(Rel)" in metric_name
+        self.is_ratio = any(label in metric_name for label in ("(Ratio)", "(Rel)", "(Relative)"))
         self.is_raw = "(Raw)" in metric_name
         self.is_abs = "(Abs)" in metric_name
 
@@ -150,6 +122,18 @@ class MetricMatrix(Reportable):
             ]
             
             if "Hypervolume" in self.metric_name:
+                if self.reference_context == "external":
+                    lines.extend([
+                        "> **Fixed Reference Context**: Normalization bounds come only from the external `ref`.",
+                        "> Values are comparable with other Hypervolume results evaluated against the same reference.",
+                        ""
+                    ])
+                elif self.reference_context == "self":
+                    lines.extend([
+                        "> **Self-Referenced Hypervolume**: Normalization bounds come from the evaluated experiment.",
+                        "> Results from separately normalized experiments are not directly comparable.",
+                        ""
+                    ])
                 if self.is_ratio:
                     lines.extend([
                         "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
@@ -158,7 +142,7 @@ class MetricMatrix(Reportable):
                     ])
                 elif self.is_raw:
                     lines.extend([
-                        "> **Physical Objective Space**: How much objective space has been physically conquered within the global search boundaries established in this session?",
+                        "> **Raw Hypervolume**: Dominated volume within the selected normalization context.",
                         ""
                     ])
                 elif self.is_abs:
@@ -186,13 +170,17 @@ class MetricMatrix(Reportable):
             ]
             
             if "Hypervolume" in self.metric_name:
+                if self.reference_context == "external":
+                    lines.append("  Reference Context: Fixed external reference; comparable only within this context.")
+                elif self.reference_context == "self":
+                    lines.append("  Reference Context: Self-referenced; separately normalized experiments are not directly comparable.")
                 if self.is_ratio:
                     lines.extend([
                         "  Question: What is the competitive efficiency relative to best session performance?"
                     ])
                 elif self.is_raw:
                     lines.extend([
-                        "  Question: How much objective space has been physically conquered?"
+                        "  Question: What volume is dominated within this normalization context?"
                     ])
             
             lines.extend([
@@ -221,7 +209,12 @@ class MetricMatrix(Reportable):
         else:
             new_data = self._data[:, key]
             
-        return MetricMatrix(new_data, self.metric_name, self.source_name)
+        return MetricMatrix(
+            new_data,
+            self.metric_name,
+            self.source_name,
+            reference_context=self.reference_context,
+        )
 
     def __len__(self):
         """Returns the number of runs (consistent with Experiment)."""
@@ -371,27 +364,28 @@ def _metric_progress(metric_name, enabled, histories, source_name=None):
     return get_progress_bar(total=total, desc=desc, leave=True, style="percent")
 
 
-def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, joint=True, progress=True):
+def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, progress=True):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
 
     Args:
         exp: Experiment, Run, or Population object.
-        ref: Reference set/experiment for normalization bounding box.
+        ref: External reference whose fronts exclusively define normalization bounds.
+             When omitted, bounds are derived collectively from all runs in `exp`.
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
         scale (str): Scaling perspective: 'raw' (default), 'rel', or 'abs'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         gens (int or slice): Limit calculation to specific generation(s).
-        joint (bool): If True (default), uses the union of 'exp' and 'ref' to establish 
-                     the bounding box. If False, ignores 'ref' for normalization, 
-                     providing an independent (self-referenced) perspective.
+        progress (bool): Whether to display metric-computation progress.
+
+    Points outside externally supplied ideal/nadir bounds do not expand those bounds.
+    They are passed through in the fixed normalized coordinate system: points beyond
+    the normalized reference point contribute no dominated volume, while points better
+    than the ideal may contribute volume outside the nominal unit cube.
     """
-    if ref is None: ref = []
-    if not isinstance(ref, list): ref = [ref]
-    
-    # Contextual reference: If joint=False, we ignore external references for normalization
-    effective_ref = ref if joint else []
+    has_external_ref = ref is not None
+    ref_items = [] if ref is None else (ref if isinstance(ref, list) else [ref])
     
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
@@ -399,7 +393,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     from ..diagnostics.baselines import load_offline_baselines
     
     mop_names = []
-    for item in [exp] + ref:
+    for item in [exp] + ref_items:
         mop_obj = getattr(item, 'mop', None)
         if mop_obj is None and hasattr(item, 'source'):
             mop_obj = getattr(item.source, 'mop', None)
@@ -421,8 +415,11 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     # 1. Collect all data
     F_GENs, Fs, name, n_runs = _extract_data(exp, gens=gens)
 
-    # 2. Normalize (Find Reference Point)
-    min_val, max_val = normalize(effective_ref, Fs)
+    # 2. Select one unambiguous normalization context. Evaluated data never
+    # participates in externally referenced bounds.
+    bounds_fronts = _extract_reference_fronts(ref) if has_external_ref else Fs
+    min_val, max_val = _compute_bounds(bounds_fronts)
+    M = len(min_val)
     
     # 3. Calculate
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
@@ -431,14 +428,19 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     pbar = _metric_progress("Hypervolume", progress, F_GENs, source_name=name)
     try:
         for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-            M = f_last.shape[1] if len(f_last) > 0 else 0
-            if M == 0 and len(f_gen) > 0:
+            run_M = f_last.shape[1] if len(f_last) > 0 else 0
+            if run_M == 0 and len(f_gen) > 0:
                  for f in f_gen:
                       if len(f) > 0:
-                           M = f.shape[1]
+                           run_M = f.shape[1]
                            break
-            
-            if M > 0:
+
+            if run_M and run_M != M:
+                raise ValueError(
+                    f"Hypervolume evaluated data has {run_M} objectives but the normalization context has {M}."
+                )
+
+            if run_M > 0:
                 # Smart Selection of Algorithm
                 use_mc = False
                 if mode == 'fast':
@@ -472,11 +474,10 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     # --- 4. Scale Post-Processing ---
     scale = str(scale).lower()
     if scale == 'rel':
-        if effective_ref:
+        if has_external_ref:
             # A) Explicit Reference (e.g., Competition Mode)
-            ref_list = effective_ref
             ref_hvs = []
-            for r in ref_list:
+            for r in ref_items:
                 _, r_fs, _, _ = _extract_data(r)
                 for f in r_fs:
                     if len(f) > 0:
@@ -557,12 +558,18 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     else:
         raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw', 'rel', or 'abs'.")
 
-    return MetricMatrix(mat, final_name, source_name=name)
+    reference_context = "external" if has_external_ref else "self"
+    return MetricMatrix(mat, final_name, source_name=name, reference_context=reference_context)
 
 def get_reference_front(ref_exps, current_fronts):
     """
-    Constructs the reference Pareto Front.
+    Construct a reference Pareto front from external references only when supplied.
     """
+    if ref_exps is None:
+        ref_exps = []
+    elif not isinstance(ref_exps, list):
+        ref_exps = [ref_exps]
+
     all_fronts = []
     
     # Add external references
@@ -599,9 +606,6 @@ def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     
     F_GENs, Fs, source_name, n_runs = _extract_data(exp, gens=gens)
 
-    # Helper for Hypervolume normalization
-    min_val, max_val = normalize(ref, Fs)
-    
     # Helper for GD/IGD reference front
     ref_front = get_reference_front(ref, Fs)
     
@@ -611,21 +615,11 @@ def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     pbar = _metric_progress(name, progress, F_GENs, source_name=source_name)
     try:
         for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
-            # Dispatch based on internal GEN_ class logic
-            if name == "Hypervolume":
-                 M = f_last.shape[1] if len(f_last) > 0 else 0
-                 if M > 0:
-                     metric = MetricClass(f_gen, M, min_val, max_val)
-                     values = metric.evaluate()
-                 else:
-                     values = np.full(len(f_gen), np.nan)
+            if ref_front is None:
+                values = np.full(len(f_gen), np.nan)
             else:
-                 # GD, GD+, IGD, IGD+
-                 if ref_front is None:
-                      values = np.full(len(f_gen), np.nan)
-                 else:
-                      metric = MetricClass(f_gen, ref_front)
-                      values = metric.evaluate()
+                metric = MetricClass(f_gen, ref_front)
+                values = metric.evaluate()
             
             length = min(len(values), max_gens)
             mat[:length, r_idx] = values[:length]
@@ -638,6 +632,7 @@ def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     return MetricMatrix(mat, name, source_name=source_name)
 
 def gd(exp, ref=None, gens=None, progress=True):
+    """Generational Distance; `ref` is the external reference front."""
     if ref is None:
         try:
             if hasattr(exp, 'optimal_front'):
@@ -660,6 +655,7 @@ def gd(exp, ref=None, gens=None, progress=True):
     return _calc_metric(exp, ref, GEN_gd, "GD", gens=gens, progress=progress)
 
 def gdplus(exp, ref=None, gens=None, progress=True):
+    """GD+; `ref` is the external reference front."""
     if ref is None:
         try:
             if hasattr(exp, 'optimal_front'):
@@ -680,6 +676,7 @@ def gdplus(exp, ref=None, gens=None, progress=True):
     return _calc_metric(exp, ref, GEN_gdplus, "GD+", gens=gens, progress=progress)
 
 def igd(exp, ref=None, gens=None, progress=True):
+    """Inverted Generational Distance; `ref` is the external reference front."""
     if ref is None:
         try:
             if hasattr(exp, 'optimal_front'):
@@ -701,7 +698,7 @@ def igd(exp, ref=None, gens=None, progress=True):
 
 def emd(exp, ref=None, gens=None, progress=True):
     """
-    Computes the Earth Mover's Distance (Wasserstein) between population and reference.
+    Computes Earth Mover's Distance between a population and external `ref`.
     For multivariate data, this implementation uses the average 1D Wasserstein distance 
     per objective as a fast and robust distributional shift proxy.
     """
@@ -758,6 +755,7 @@ def emd(exp, ref=None, gens=None, progress=True):
     return MetricMatrix(mat, "EMD", source_name=source_name)
 
 def igdplus(exp, ref=None, gens=None, progress=True):
+    """IGD+; `ref` is the external reference front."""
     if ref is None:
         try:
             if hasattr(exp, 'optimal_front'):

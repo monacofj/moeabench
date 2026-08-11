@@ -14,6 +14,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Consistent Metric References**:
+  - `ref` now consistently denotes an external metric reference; Hypervolume derives fixed normalization bounds exclusively from it.
+  - Hypervolume without `ref` remains self-referenced across one shared bounding box for all runs.
+  - Removed the Hypervolume bounding-box toggle; pooled empirical contexts are now supplied explicitly through `ref`.
+
+### Fixed
+- **Comparable Hypervolume Evaluation**:
+  - `raw`, `rel`, and `abs` reuse the same selected normalization bounds, preventing separately evaluated fronts from silently redefining their comparison context.
+  - Reports distinguish self-referenced values from values evaluated against a fixed external reference.
+
 ## [0.15.0] - 2026-03-16
 
 ### Added
@@ -160,7 +171,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Multi-Perspective Hypervolume (Triple-Mode)**:
   - New `scale='abs'` normalization using problem **Ground Truth** ($H_{abs}$).
   - Renamed `scale='ratio'` to `scale='rel'` ($H_{rel}$) for semantic clarity. (Legacy `ratio` remains as deprecated alias).
-  - New `joint` parameter (default `True`) for Hypervolume. `joint=False` enables independent Bounding Box perspectives (Self-Referenced).
+  - Added explicit support for shared and self-referenced Hypervolume bounding-box perspectives.
   - Mandatory problem calibration requirement for absolute metrics.
   - MOP Homogeneity validation protecting against invalid physical comparisons.
 - **Narrative Reporting Suite**:
@@ -177,7 +188,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Diagnostic Tooling**: `mop.calibrate()` now correctly registers Ground Truth for absolute HV evaluation.
 
 ### Fixed
-- **Plotting Pipeline**: Fixed a bug in `mb.view.perf_history` where metric keyword arguments (e.g., `scale`, `joint`) were not being propagated to the calculation engine.
+- **Plotting Pipeline**: Fixed a bug in `mb.view.perf_history` where metric keyword arguments such as `scale` were not being propagated to the calculation engine.
 
 ## [0.11.0] - 2026-02-20
 

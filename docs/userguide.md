@@ -231,33 +231,33 @@ For finer control over specific runs or access to individual trajectories, see *
 
 When comparing algorithms, a critical (and often overlooked) detail is **Normalization**. Objectives usually vary wildly in scale (e.g., $f_1 \in [0, 1]$ vs $f_2 \in [0, 1000]$). Without normalization, metrics like Hypervolume would be completely dominated by the objective with the largest magnitude.
 
-moeabench handles this automatically through its **"Joint Universe"** logic.
+MoeaBench makes the normalization source explicit through the metric's `ref` argument.
 
 #### **The `ref` Argument: Defining the Universe**
 
-The `ref` argument tells MoeaBench **"What is the world?"** for the purpose of normalization. It defines the Ideal and Nadir points (the bounding box) used to scale objective values. Your choice of `ref` depends entirely on your analytical goal:
+For Hypervolume, `ref` defines the external Ideal and Nadir points (the bounding box) used to scale objective values. The evaluated experiment never expands or redefines an explicit reference. Your choice depends on the analytical goal:
 
 **1. Self-Reference (Default)**
 If you are analyzing a single experiment in isolation, you might not strictly need `ref`.
 *   `mb.metrics.hv(exp1)`: Calculates HV based on `exp1`'s own min/max values. Valid for checking convergence *of that specific run*, but the value is dimensionless and isolated.
 
-**2. Comparative Reference (The "Joint Universe")**
+**2. Comparative Reference (Explicit Pool)**
 When comparing two algorithms ($A$ and $B$), they must be judged against the same ruler.
-*   **Automatic**: High-level tools like `spread(expA, expB)` automatically calculate the union ($A \cup B$) as the reference.
-*   **Manual**: If calculating manually, you **must** enforce this union: `hv(expA, ref=expB)`.
+*   Construct the pooled reference once: `R = [expA, expB]`.
+*   Pass that same `R` to both calls. Each call then derives bounds from the identical external source.
 
 **3. External Reference (Fixed Benchmark)**
 Sometimes, you want to compare $A$ and $B$, but scale them against a third, absolute baseline $C$ (e.g., a "State of the Art" result that isn't being plotted, or the True Pareto Front).
-*   Even in automatic tools, you can inject this external context: `spread(expA, expB, ref=expC)`. This forces $A$ and $B$ to be normalized against the ranges of $C$, ensuring consistency across different studies.
+*   Pass that same external context to each metric call. This forces $A$ and $B$ to be normalized against the ranges of $C$, ensuring consistency across different studies.
 
 ```python
 # Scenario A: Isolation (Internal consistency only)
 hv = mb.metrics.hv(exp1)
 
 # Scenario B: Direct Comparison (Fairness between A and B)
-# Note: high-level plots do this automatically!
-hv_a = mb.metrics.hv(expA, ref=expB, scale='rel')
-hv_b = mb.metrics.hv(expB, ref=expA, scale='rel')
+R = [expA, expB]
+hv_a = mb.metrics.hv(expA, ref=R, scale='rel')
+hv_b = mb.metrics.hv(expB, ref=R, scale='rel')
 
 # Scenario C: Absolute Validation (Proximity to GT)
 # Requires mop.calibrate() to have been executed.
@@ -272,7 +272,7 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 ```
 
 > [!TIP]
-> **Best Practice**: For academic studies, it is often best to use the **External Reference** approach (Scenario C) by passing `exp.optimal_front()` or a large collection of all algorithms as `ref`. This ensures that your metric values are absolute and don't fluctuate depending on which subset of algorithms you are currently plotting.
+> **Best Practice**: For academic studies, use one fixed external reference such as `exp.optimal_front()` or an explicitly frozen pool of all algorithms. Reuse that same object for every comparison so values do not fluctuate with the evaluated experiment.
 
 ### 3.1 Reproducibility & Seeds
 
@@ -619,6 +619,8 @@ The public metric family is broader than Hypervolume alone. The canonical perfor
 *   **`mb.metrics.igdplus`**: IGD+.
 *   **`mb.metrics.emd`**: Earth Mover's Distance over front distributions.
 *   **`mb.metrics.front_ratio`**: Proportion of non-dominated individuals in the active population.
+
+For every metric that accepts it, `ref` denotes the external reference used by that metric. GD-family and IGD-family metrics use it as a reference front, EMD uses it as a reference distribution/front, and Hypervolume uses it exclusively for normalization bounds. Specifically, `hypervolume(exp)` derives one shared bounding box from all runs in `exp`, while `hypervolume(exp, ref=R)` derives bounds only from `R`. Use the same explicit `R` whenever results must be comparable across separate calls. The `raw`, `rel`, and `abs` scales are post-processing perspectives over that already selected context.
 
 You do not need a separate tutorial example for each one because the usage contract is the same:
 

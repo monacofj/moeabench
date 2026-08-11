@@ -18,13 +18,8 @@ class GEN_mc_hypervolume:
         self.n_samples = n_samples
 
     def evaluate(self):
-        # 1. Define the bounding box (hypercube)
-        # We use a slight offset (1.1) consistent with standard HV normalization
+        # Fixed normalized reference point, consistent with GEN_hypervolume.
         ref_point = np.full(self.M, 1.1)
-        
-        # In normalized space (0 to 1), our box is [0, 1.1]^M
-        # Volume of the box
-        box_volume = np.prod(ref_point) 
 
         results = []
         for F in self.hist_F:
@@ -37,9 +32,13 @@ class GEN_mc_hypervolume:
             # but we ensure it here if passed as raw floats)
             # Actually, the pipeline passes normalized F if it's following the GEN_ pattern.
             F_norm = (F - self.ideal) / (self.nadir - self.ideal + 1e-10)
-            
-            # 3. Generate random samples within [0, 1.1]^M
-            samples = np.random.uniform(0, 1.1, (self.n_samples, self.M))
+
+            # Preserve fixed-reference semantics for out-of-bounds data. Better-than-
+            # ideal points may extend dominated volume below zero; worse-than-reference
+            # points contribute nothing. Bounds are never expanded or recomputed.
+            lower = np.minimum(0.0, np.min(F_norm, axis=0))
+            box_volume = np.prod(ref_point - lower)
+            samples = np.random.uniform(lower, ref_point, (self.n_samples, self.M))
             
             # 4. Check dominance: a sample is "dominated" if there exists a point p in F_norm 
             # such that p_i <= sample_i for all i.
