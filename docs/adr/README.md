@@ -52,6 +52,7 @@ This directory contains records of the key architectural decisions made during t
 | [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) | Canonical API and Compare Semantics (v0.14.0) | Accepted | 2026-03-11 |
 | [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) | Canonical View Inputs and No Compatibility Shims | Accepted | 2026-03-13 |
 | [0041](0041-layer-ontology-for-structural-analysis.md) | Layer Ontology for Structural Analysis | Accepted | 2026-03-13 |
+| [0042](0042-hypervolume-bbox-diagnostics.md) | Diagnostic-Only Hypervolume Bounding Boxes | Accepted | 2026-08-12 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*

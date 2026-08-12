@@ -274,6 +274,14 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 > [!TIP]
 > **Best Practice**: For academic studies, use one fixed external reference such as `exp.optimal_front()` or an explicitly frozen pool of all algorithms. Reuse that same object for every comparison so values do not fluctuate with the evaluated experiment.
 
+#### Diagnosing the fixed Hypervolume geometry
+
+The **nbox** is the normalization box between `ideal` and `nadir`. The Hypervolume **bbox** extends from `ideal` to the normalized reference point 1.1; in original coordinates its endpoint is `ideal + 1.1 * (nadir - ideal)`.
+
+For an external reference, `hv_result.diagnostics` exposes the nbox and bbox geometry, reference domination, range inflation, final-front fractions outside each box, and raw `HV / V_bbox`. A global non-dominated reference front is computed only as a counterfactual diagnostic for detecting whether dominated reference points stretch the supplied bounds. It never replaces the supplied reference or changes the metric.
+
+MoeaBench deliberately does not remove outliers, clip fronts, adjust the bbox automatically, or apply a threshold for deciding that two HV values are “too close.” Warnings are limited to structurally identifiable cases: dominated reference points that actually expand a bound, and complete floor saturation where all final-front points of a run lie beyond the bbox. Partial fractions remain objective diagnostic quantities for the researcher to interpret. If HV is compressed or saturated, inspect complementary convergence metrics such as GD+ and IGD+ instead of modifying the bbox to manufacture discrimination.
+
 ### 3.1 Reproducibility & Seeds
 
 In scientific research, bit-for-bit reproducibility is non-negotiable. MoeaBench enforces **RNG Localization** and **Environment DNA Tracking**:

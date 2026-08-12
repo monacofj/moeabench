@@ -62,6 +62,7 @@ def _slice_metric_matrix_generations(mat, gens):
         metric_name=mat.metric_name,
         source_name=mat.source_name,
         reference_context=getattr(mat, "reference_context", None),
+        diagnostics=getattr(mat, "diagnostics", None),
     )
 
 

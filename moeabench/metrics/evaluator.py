@@ -49,11 +49,89 @@ def _extract_reference_fronts(ref):
     return fronts
 
 
+def _non_dominated_union(fronts):
+    """Return the globally non-dominated union of non-empty fronts."""
+    valid = [np.asarray(front) for front in fronts if front is not None and len(front) > 0]
+    if not valid:
+        return None
+
+    merged = np.vstack(valid)
+    is_dominated = np.zeros(merged.shape[0], dtype=bool)
+    for i, current in enumerate(merged):
+        if np.any(np.all(merged <= current, axis=1) & np.any(merged < current, axis=1)):
+            is_dominated[i] = True
+    return merged[~is_dominated]
+
+
+def _hypervolume_diagnostics(reference_fronts, evaluated_fronts, ideal, nadir, raw_mat):
+    """Describe external-reference geometry without modifying Hypervolume inputs."""
+    ref_all = np.vstack([np.asarray(front) for front in reference_fronts if len(front) > 0])
+    ref_nd = _non_dominated_union(reference_fronts)
+    nd_ideal = np.min(ref_nd, axis=0)
+    nd_nadir = np.max(ref_nd, axis=0)
+
+    range_all = nadir - ideal
+    range_nd = nd_nadir - nd_ideal
+    range_inflation = np.divide(
+        range_all,
+        range_nd,
+        out=np.full(range_all.shape, np.inf, dtype=float),
+        where=range_nd > 0,
+    )
+    bounds_match = (
+        np.all(np.isclose(ideal, nd_ideal, rtol=1e-12, atol=1e-15))
+        and np.all(np.isclose(nadir, nd_nadir, rtol=1e-12, atol=1e-15))
+    )
+
+    outside_nbox = []
+    outside_bbox = []
+    better_than_ideal = []
+    for front in evaluated_fronts:
+        front = np.asarray(front)
+        if len(front) == 0:
+            outside_nbox.append(np.nan)
+            outside_bbox.append(np.nan)
+            better_than_ideal.append(np.nan)
+            continue
+        normalized = (front - ideal) / range_all
+        outside_nbox.append(np.mean(np.any(normalized > 1.0, axis=1)))
+        outside_bbox.append(np.mean(np.any(normalized > 1.1, axis=1)))
+        better_than_ideal.append(np.mean(np.any(normalized < 0.0, axis=1)))
+
+    outside_nbox = np.asarray(outside_nbox, dtype=float)
+    outside_bbox = np.asarray(outside_bbox, dtype=float)
+    better_than_ideal = np.asarray(better_than_ideal, dtype=float)
+    all_outside = outside_bbox == 1.0
+    nominal_bbox_volume = float(1.1 ** len(ideal))
+    final_raw = raw_mat[-1, :] if raw_mat.size else np.full(len(evaluated_fronts), np.nan)
+
+    return {
+        "nbox_ideal": ideal.copy(),
+        "nbox_nadir": nadir.copy(),
+        "bbox_reference_point": ideal + 1.1 * range_all,
+        "nominal_bbox_volume": nominal_bbox_volume,
+        "reference_points": len(ref_all),
+        "reference_nd_points": len(ref_nd),
+        "reference_dominated_fraction": 1.0 - len(ref_nd) / len(ref_all),
+        "nd_ideal": nd_ideal,
+        "nd_nadir": nd_nadir,
+        "range_inflation": range_inflation,
+        "max_range_inflation": float(np.max(range_inflation)),
+        "bbox_expanded_by_dominated_points": not bounds_match,
+        "outside_nbox_fraction": outside_nbox,
+        "outside_bbox_fraction": outside_bbox,
+        "better_than_ideal_fraction": better_than_ideal,
+        "all_points_outside_bbox": all_outside,
+        "raw_hv_fraction_of_nominal_bbox": final_raw / nominal_bbox_volume,
+    }
+
+
 class MetricMatrix(Reportable):
     """
     A matrix (Generations x Runs) of metric values.
     """
-    def __init__(self, data, metric_name="Metric", source_name=None, reference_context=None):
+    def __init__(self, data, metric_name="Metric", source_name=None,
+                 reference_context=None, diagnostics=None):
         self._data = np.array(data) 
         
         # Internal Storage Policy: (Generations, Runs)
@@ -65,6 +143,7 @@ class MetricMatrix(Reportable):
         self.metric_name = metric_name
         self.source_name = source_name
         self.reference_context = reference_context
+        self.diagnostics = {} if diagnostics is None else diagnostics
         
         # Determine if this metric is scaled 
         self.is_ratio = any(label in metric_name for label in ("(Ratio)", "(Rel)", "(Relative)"))
@@ -102,6 +181,11 @@ class MetricMatrix(Reportable):
 
         prec = defaults.precision
         source_info = f" ({self.source_name})" if self.source_name else ""
+
+        def _diag_array(key):
+            return np.array2string(
+                np.asarray(self.diagnostics[key]), precision=prec, separator=", "
+            )
 
         if not has_run_variability:
             std_display = "N/A"
@@ -163,6 +247,25 @@ class MetricMatrix(Reportable):
                 f"- **Generations**: {data.shape[0]}",
                 f"- **Stability**: {stability}"
             ])
+            if "Hypervolume" in self.metric_name and self.reference_context == "external" and self.diagnostics:
+                lines.extend([
+                    "",
+                    "#### Reference Geometry",
+                    f"- **N-box ideal**: {_diag_array('nbox_ideal')}",
+                    f"- **N-box nadir**: {_diag_array('nbox_nadir')}",
+                    f"- **B-box reference point**: {_diag_array('bbox_reference_point')}",
+                    f"- **Reference points**: {self.diagnostics['reference_points']}",
+                    f"- **Global ND reference points**: {self.diagnostics['reference_nd_points']}",
+                    f"- **Dominated reference fraction**: {self.diagnostics['reference_dominated_fraction']:.{prec}f}",
+                    f"- **Range inflation**: {_diag_array('range_inflation')}",
+                    f"- **HV/BBox (final)**: {_diag_array('raw_hv_fraction_of_nominal_bbox')}",
+                    f"- **Outside nbox (final)**: {_diag_array('outside_nbox_fraction')}",
+                    f"- **Outside bbox (final)**: {_diag_array('outside_bbox_fraction')}",
+                ])
+                if self.diagnostics["bbox_expanded_by_dominated_points"]:
+                    lines.append("- **Warning**: globally dominated reference points expand the bbox.")
+                if np.any(self.diagnostics["all_points_outside_bbox"]):
+                    lines.append("- **Warning**: at least one run is floor-saturated (all final-front points lie beyond the bbox).")
             content = "\n".join(lines)
         else:
             lines = [
@@ -193,6 +296,24 @@ class MetricMatrix(Reportable):
                 f"    - Generations: {data.shape[0]}",
                 f"    - Stability: {stability}"
             ])
+            if "Hypervolume" in self.metric_name and self.reference_context == "external" and self.diagnostics:
+                lines.extend([
+                    "  Reference Geometry:",
+                    f"    - N-box ideal: {_diag_array('nbox_ideal')}",
+                    f"    - N-box nadir: {_diag_array('nbox_nadir')}",
+                    f"    - B-box reference point: {_diag_array('bbox_reference_point')}",
+                    f"    - Reference points: {self.diagnostics['reference_points']}",
+                    f"    - Global ND reference points: {self.diagnostics['reference_nd_points']}",
+                    f"    - Dominated reference fraction: {self.diagnostics['reference_dominated_fraction']:.{prec}f}",
+                    f"    - Range inflation: {_diag_array('range_inflation')}",
+                    f"    - HV/BBox (final): {_diag_array('raw_hv_fraction_of_nominal_bbox')}",
+                    f"    - Outside nbox (final): {_diag_array('outside_nbox_fraction')}",
+                    f"    - Outside bbox (final): {_diag_array('outside_bbox_fraction')}",
+                ])
+                if self.diagnostics["bbox_expanded_by_dominated_points"]:
+                    lines.append("    - Warning: globally dominated reference points expand the bbox.")
+                if np.any(self.diagnostics["all_points_outside_bbox"]):
+                    lines.append("    - Warning: at least one run is floor-saturated (all final-front points lie beyond the bbox).")
             content = "\n".join(lines)
         
         return self._render_report(content, show, **kwargs)
@@ -214,6 +335,7 @@ class MetricMatrix(Reportable):
             self.metric_name,
             self.source_name,
             reference_context=self.reference_context,
+            diagnostics=self.diagnostics,
         )
 
     def __len__(self):
@@ -468,7 +590,30 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     finally:
         if pbar is not None:
             pbar.close()
-        
+
+    # Preserve the unscaled result for diagnostics. Geometry diagnostics are
+    # observational and never feed back into bounds or Hypervolume values.
+    raw_mat = mat.copy()
+    diagnostics = {}
+    if has_external_ref:
+        diagnostics = _hypervolume_diagnostics(
+            bounds_fronts, Fs, min_val, max_val, raw_mat
+        )
+        if diagnostics["bbox_expanded_by_dominated_points"]:
+            warnings.warn(
+                "Hypervolume reference bbox is expanded by globally dominated reference points. "
+                "This may compress differences between competing fronts; the bbox is not modified. "
+                "Inspect result.diagnostics for details.",
+                UserWarning,
+            )
+        if np.any(diagnostics["all_points_outside_bbox"]):
+            warnings.warn(
+                "Hypervolume floor saturation: all final-front points of at least one run lie "
+                "beyond the reference bbox and therefore cannot contribute to Hypervolume. "
+                "The bbox is not modified.",
+                UserWarning,
+            )
+
     # --- 4. Dynamic Benchmarking ---
     # We normalize HVs post-hoc according to the requested scale.
     # --- 4. Scale Post-Processing ---
@@ -559,7 +704,13 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw', 'rel', or 'abs'.")
 
     reference_context = "external" if has_external_ref else "self"
-    return MetricMatrix(mat, final_name, source_name=name, reference_context=reference_context)
+    return MetricMatrix(
+        mat,
+        final_name,
+        source_name=name,
+        reference_context=reference_context,
+        diagnostics=diagnostics,
+    )
 
 def get_reference_front(ref_exps, current_fronts):
     """
@@ -584,21 +735,7 @@ def get_reference_front(ref_exps, current_fronts):
     if not all_fronts:
         return None
 
-    # Filter for empty
-    valid = [f for f in all_fronts if len(f) > 0]
-    if not valid: return None
-    
-    merged = np.vstack(valid)
-    
-    # Simple NDS filter
-    is_dominated = np.zeros(merged.shape[0], dtype=bool)
-    for i in range(len(merged)):
-         curr = merged[i]
-         # check if any other point dominates curr
-         if np.any(np.all(merged <= curr, axis=1) & np.any(merged < curr, axis=1)):
-             is_dominated[i] = True
-             
-    return merged[~is_dominated]
+    return _non_dominated_union(all_fronts)
 
 def _calc_metric(exp, ref, MetricClass, name, gens=None, progress=True):
     if ref is None: ref = []

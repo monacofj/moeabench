@@ -489,6 +489,14 @@ Calculates Hypervolume for an experiment, run, or population. Across the metric 
 
 `scale` is post-processing and never selects or changes normalization bounds. Evaluated points outside external ideal/nadir bounds do not expand them. Points beyond the normalized Hypervolume reference point contribute no volume; points better than the external ideal may contribute beyond the nominal unit cube. A reference with zero range in any objective is rejected.
 
+#### Hypervolume reference geometry diagnostics
+
+MoeaBench distinguishes the **nbox**, spanning `ideal` to `nadir`, from the Hypervolume **bbox**, spanning `ideal` to the HV reference point. In normalized coordinates, the nbox spans 0 to 1 and the bbox reference point is 1.1. In original coordinates, objective `j` uses `ideal[j] + 1.1 * (nadir[j] - ideal[j])`.
+
+When an external `ref` is supplied, the returned `MetricMatrix.diagnostics` records the fixed nbox/bbox geometry, the fraction of globally dominated reference points, per-objective range inflation caused by those points, final-front fractions outside the nbox and bbox, and final raw `HV / V_bbox`. The global non-dominated reference union is strictly counterfactual diagnostic data: it never changes the actual bounds or Hypervolume result.
+
+MoeaBench does not remove outliers, clip evaluated points, repair a problematic bbox, or infer that two HV values are “too close” using an arbitrary threshold. It warns only when globally dominated reference points actually alter a bound, or when every final-front point of a run lies beyond the bbox and therefore cannot contribute. When HV is saturated or geometrically uninformative, complement it with convergence metrics such as GD+/IGD+ rather than deforming its reference geometry.
+
 #### **`mb.metrics.igd(data, ref=None, gens=None)`**
 *   **Description**: Calculates Inverted Generational Distance.
 *   **Arguments**:
