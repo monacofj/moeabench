@@ -33,4 +33,4 @@ For immutable comparisons across plotting or analysis sessions, the user must ex
 ## Consequences
 - **Enhanced Integrity**: The library no longer conflates physical volume with relative competitive ranking by default. 
 - **Numerical Stability**: Algorithm performance metrics no longer "shift" simply because a poorly performing neighbor was added to the Bounding Box.
-- **Reporting Clarity**: The `MetricMatrix.report()` output dynamically frames the result as an answer to a core research question, improving interpretability.
+- **Reporting Clarity**: The compact `MetricMatrix.report()` output preserves the scale-specific framing for relative and absolute modes, while one `Reference` section identifies the concrete sources and scale-independent geometry diagnostics.

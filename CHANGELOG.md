@@ -15,9 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Hypervolume Bounding-Box Diagnostics**:
-  - External-reference results now expose diagnostic-only nbox/bbox geometry, dominated-reference range inflation, outside-box fractions, and raw `HV / V_bbox` occupancy.
-  - Structural warnings identify bounds expanded by globally dominated reference points and runs fully saturated beyond the bbox without changing the metric.
+- **Hypervolume Reference Diagnostics**:
+  - Self- and external-reference results expose diagnostic-only nbox/bbox geometry, global/local ND coverage, reference expansion, boundary fractions, and raw `HV / V_bbox` occupancy.
+  - The compact report names concrete reference sources and summarizes affected objectives without dumping bound vectors in many-objective cases.
+  - Only complete floor saturation emits a structural warning; dominated-reference coverage and expansion remain descriptive and never change the metric.
 
 ### Changed
 - **Consistent Metric References**:

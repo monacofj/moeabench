@@ -39,6 +39,19 @@ def _compute_bounds(fronts):
     return ideal, nadir
 
 
+def _compute_extents(fronts):
+    """Compute ideal/nadir extents while allowing zero-span objectives."""
+    valid = [np.asarray(front) for front in fronts if front is not None and len(front) > 0]
+    if not valid:
+        return None, None
+    if any(front.ndim != 2 for front in valid):
+        raise ValueError("Hypervolume extents require two-dimensional fronts.")
+    if len({front.shape[1] for front in valid}) != 1:
+        raise ValueError("Hypervolume extents require matching objective counts.")
+    merged = np.vstack(valid)
+    return np.min(merged, axis=0), np.max(merged, axis=0)
+
+
 def _extract_reference_fronts(ref):
     """Extract external-reference fronts without consulting evaluated data."""
     refs = ref if isinstance(ref, list) else [ref]
@@ -47,6 +60,25 @@ def _extract_reference_fronts(ref):
         _, item_fronts, _, _ = _extract_data(item)
         fronts.extend(item_fronts)
     return fronts
+
+
+def _reference_names(items):
+    """Return stable, concrete, and fully disambiguated reference names."""
+    names = []
+    for index, item in enumerate(items):
+        _, _, name, _ = _extract_data(item)
+        names.append(str(name) if name is not None and str(name) else f"reference_{index + 1}")
+
+    counts = {name: names.count(name) for name in set(names)}
+    seen = {}
+    result = []
+    for name in names:
+        if counts[name] == 1:
+            result.append(name)
+            continue
+        seen[name] = seen.get(name, 0) + 1
+        result.append(f"{name}#{seen[name]}")
+    return result
 
 
 def _non_dominated_union(fronts):
@@ -63,8 +95,9 @@ def _non_dominated_union(fronts):
     return merged[~is_dominated]
 
 
-def _hypervolume_diagnostics(reference_fronts, evaluated_fronts, ideal, nadir, raw_mat):
-    """Describe external-reference geometry without modifying Hypervolume inputs."""
+def _hypervolume_diagnostics(reference_sources, reference_names, reference_fronts,
+                             reported_fronts, ideal, nadir, raw_mat, n_runs):
+    """Describe reference geometry without modifying Hypervolume inputs."""
     ref_all = np.vstack([np.asarray(front) for front in reference_fronts if len(front) > 0])
     ref_nd = _non_dominated_union(reference_fronts)
     nd_ideal = np.min(ref_nd, axis=0)
@@ -83,27 +116,50 @@ def _hypervolume_diagnostics(reference_fronts, evaluated_fronts, ideal, nadir, r
         and np.all(np.isclose(nadir, nd_nadir, rtol=1e-12, atol=1e-15))
     )
 
-    outside_nbox = []
-    outside_bbox = []
-    better_than_ideal = []
-    for front in evaluated_fronts:
-        front = np.asarray(front)
-        if len(front) == 0:
-            outside_nbox.append(np.nan)
-            outside_bbox.append(np.nan)
-            better_than_ideal.append(np.nan)
-            continue
-        normalized = (front - ideal) / range_all
-        outside_nbox.append(np.mean(np.any(normalized > 1.0, axis=1)))
-        outside_bbox.append(np.mean(np.any(normalized > 1.1, axis=1)))
-        better_than_ideal.append(np.mean(np.any(normalized < 0.0, axis=1)))
+    local_nd_fronts = []
+    for source_fronts in reference_sources:
+        local_nd = _non_dominated_union(source_fronts)
+        if local_nd is not None and len(local_nd) > 0:
+            local_nd_fronts.append(local_nd)
+    local_nd_merged = np.vstack(local_nd_fronts)
+    local_nd_ideal = np.min(local_nd_merged, axis=0)
+    local_nd_nadir = np.max(local_nd_merged, axis=0)
+    global_from_local = _non_dominated_union(local_nd_fronts)
+    global_range = np.max(global_from_local, axis=0) - np.min(global_from_local, axis=0)
+    local_nd_range = local_nd_nadir - local_nd_ideal
+    coverage = np.divide(
+        global_range,
+        local_nd_range,
+        out=np.ones(local_nd_range.shape, dtype=float),
+        where=local_nd_range > 0,
+    )
+    coverage = np.clip(coverage, 0.0, 1.0)
 
-    outside_nbox = np.asarray(outside_nbox, dtype=float)
-    outside_bbox = np.asarray(outside_bbox, dtype=float)
-    better_than_ideal = np.asarray(better_than_ideal, dtype=float)
-    all_outside = outside_bbox == 1.0
+    local_ideal, local_nadir = _compute_extents(reported_fronts.values())
+    if local_ideal is None:
+        reference_expansion = np.full(len(ideal), np.nan)
+    else:
+        local_range = local_nadir - local_ideal
+        reference_expansion = np.divide(
+            range_all,
+            local_range,
+            out=np.full(range_all.shape, np.inf, dtype=float),
+            where=local_range > 0,
+        )
+
+    outside_nbox = np.full(n_runs, np.nan)
+    outside_bbox = np.full(n_runs, np.nan)
+    better_than_ideal = np.full(n_runs, np.nan)
+    all_outside = np.zeros(n_runs, dtype=bool)
+    for run_index, front in reported_fronts.items():
+        front = np.asarray(front)
+        normalized = (front - ideal) / range_all
+        outside_nbox[run_index] = np.mean(np.any(normalized > 1.0, axis=1))
+        outside_bbox[run_index] = np.mean(np.any(normalized > 1.1, axis=1))
+        better_than_ideal[run_index] = np.mean(np.any(normalized < 0.0, axis=1))
+        all_outside[run_index] = outside_bbox[run_index] == 1.0
     nominal_bbox_volume = float(1.1 ** len(ideal))
-    final_raw = raw_mat[-1, :] if raw_mat.size else np.full(len(evaluated_fronts), np.nan)
+    final_raw = raw_mat[-1, :] if raw_mat.shape[0] else np.full(n_runs, np.nan)
 
     return {
         "nbox_ideal": ideal.copy(),
@@ -123,6 +179,14 @@ def _hypervolume_diagnostics(reference_fronts, evaluated_fronts, ideal, nadir, r
         "better_than_ideal_fraction": better_than_ideal,
         "all_points_outside_bbox": all_outside,
         "raw_hv_fraction_of_nominal_bbox": final_raw / nominal_bbox_volume,
+        "reference_names": list(reference_names),
+        "local_nd_reference_points": len(local_nd_merged),
+        "local_nd_ideal": local_nd_ideal,
+        "local_nd_nadir": local_nd_nadir,
+        "global_local_nd_coverage": coverage,
+        "local_ideal": local_ideal,
+        "local_nadir": local_nadir,
+        "reference_expansion": reference_expansion,
     }
 
 
@@ -148,7 +212,7 @@ class MetricMatrix(Reportable):
         # Determine if this metric is scaled 
         self.is_ratio = any(label in metric_name for label in ("(Ratio)", "(Rel)", "(Relative)"))
         self.is_raw = "(Raw)" in metric_name
-        self.is_abs = "(Abs)" in metric_name
+        self.is_abs = any(label in metric_name for label in ("(Abs)", "(Absolute)"))
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
@@ -182,11 +246,6 @@ class MetricMatrix(Reportable):
         prec = defaults.precision
         source_info = f" ({self.source_name})" if self.source_name else ""
 
-        def _diag_array(key):
-            return np.array2string(
-                np.asarray(self.diagnostics[key]), precision=prec, separator=", "
-            )
-
         if not has_run_variability:
             std_display = "N/A"
             stability = "Undetermined (requires at least 2 valid runs)"
@@ -200,120 +259,168 @@ class MetricMatrix(Reportable):
             else:
                 stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
 
-        if use_md:
-            lines = [
-                f"### Metric Report: {self.metric_name}{source_info}",
-            ]
-            
-            if "Hypervolume" in self.metric_name:
-                if self.reference_context == "external":
-                    lines.extend([
-                        "> **Fixed Reference Context**: Normalization bounds come only from the external `ref`.",
-                        "> Values are comparable with other Hypervolume results evaluated against the same reference.",
-                        ""
-                    ])
-                elif self.reference_context == "self":
-                    lines.extend([
-                        "> **Self-Referenced Hypervolume**: Normalization bounds come from the evaluated experiment.",
-                        "> Results from separately normalized experiments are not directly comparable.",
-                        ""
-                    ])
-                if self.is_ratio:
-                    lines.extend([
-                        "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
-                        "> Values are scaled by the maximum session volume ($1.0$ ceiling).",
-                        ""
-                    ])
-                elif self.is_raw:
-                    lines.extend([
-                        "> **Raw Hypervolume**: Dominated volume within the selected normalization context.",
-                        ""
-                    ])
-                elif self.is_abs:
-                    lines.extend([
-                        "> **Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
-                        "> Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).",
-                        ""
-                    ])
+        is_hypervolume = "Hypervolume" in self.metric_name
 
-            lines.extend([
-                "#### Final Performance (Last Gen)",
-                f"- **Mean**: {mean:.{prec}f}",
-                f"- **StdDev**: {std_display}",
-                f"- **Best**: {best:.{prec}f}",
-                "",
-                "#### Search Dynamics",
-                f"- **Runs**: {data.shape[1]}",
-                f"- **Generations**: {data.shape[0]}",
-                f"- **Stability**: {stability}"
-            ])
-            if "Hypervolume" in self.metric_name and self.reference_context == "external" and self.diagnostics:
+        def _finite_mean(key):
+            values = np.asarray(self.diagnostics[key], dtype=float)
+            values = values[np.isfinite(values)]
+            return float(np.mean(values)) if len(values) else None
+
+        def _objective_list(indices, include_objectives=False):
+            indices = np.asarray(indices, dtype=int)
+            total = len(self.diagnostics["global_local_nd_coverage"])
+            if len(indices) <= 12:
+                return ", ".join(f"f{index + 1}" for index in indices)
+            suffix = " objectives" if include_objectives else ""
+            return f"{len(indices)} / {total}{suffix}"
+
+        def _reference_fields():
+            coverage = np.asarray(self.diagnostics["global_local_nd_coverage"], dtype=float)
+            affected = np.flatnonzero(
+                ~np.isclose(coverage, 1.0, rtol=1e-12, atol=1e-15)
+            )
+            fields = [
+                ("References", ", ".join(self.diagnostics["reference_names"])),
+                ("Reference points", str(self.diagnostics["reference_points"])),
+                ("Global-ND reference points", str(self.diagnostics["reference_nd_points"])),
+                ("Dominated reference fraction", f"{self.diagnostics['reference_dominated_fraction']:.{prec}f}"),
+            ]
+            if len(affected):
+                fields.append(("Global/local ND coverage < 1", _objective_list(affected, True)))
+                minimum = affected[np.argmin(coverage[affected])]
+                fields.append(("Minimum ND coverage", f"{coverage[minimum]:.{prec}f} (f{minimum + 1})"))
+            else:
+                fields.append(("Global/local ND coverage", f"{1.0:.{prec}f} in all objectives"))
+
+            expansion = np.asarray(self.diagnostics["reference_expansion"], dtype=float)
+            expanded = np.flatnonzero(
+                (expansion > 1.0)
+                & ~np.isclose(expansion, 1.0, rtol=1e-12, atol=1e-15)
+            )
+            if not len(expanded):
+                fields.append(("Reference expansion", "None"))
+                return fields
+
+            fields.append(("Reference-expanded objectives", _objective_list(expanded)))
+            zero_span = expanded[np.isinf(expansion[expanded])]
+            finite = expanded[np.isfinite(expansion[expanded])]
+            if len(zero_span):
+                fields.append(("Zero-span local objectives", _objective_list(zero_span)))
+                if len(finite):
+                    maximum = finite[np.argmax(expansion[finite])]
+                    fields.append(("Maximum finite expansion", f"{expansion[maximum]:.{prec}f} (f{maximum + 1})"))
+            else:
+                maximum = finite[np.argmax(expansion[finite])]
+                fields.append(("Maximum reference expansion", f"{expansion[maximum]:.{prec}f} (f{maximum + 1})"))
+            return fields
+
+        if use_md:
+            lines = [f"### Metric Report: {self.metric_name}{source_info}"]
+            if is_hypervolume and self.is_ratio:
+                lines.extend([
+                    "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
+                    "> Values are scaled by the maximum session volume ($1.0$ ceiling).",
+                    "",
+                ])
+            elif is_hypervolume and self.is_abs:
+                lines.extend([
+                    "> **Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
+                    "> Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).",
+                    "",
+                ])
+            lines.append("#### Final Performance (Last Gen)")
+            if is_hypervolume:
                 lines.extend([
                     "",
-                    "#### Reference Geometry",
-                    f"- **N-box ideal**: {_diag_array('nbox_ideal')}",
-                    f"- **N-box nadir**: {_diag_array('nbox_nadir')}",
-                    f"- **B-box reference point**: {_diag_array('bbox_reference_point')}",
-                    f"- **Reference points**: {self.diagnostics['reference_points']}",
-                    f"- **Global ND reference points**: {self.diagnostics['reference_nd_points']}",
-                    f"- **Dominated reference fraction**: {self.diagnostics['reference_dominated_fraction']:.{prec}f}",
-                    f"- **Range inflation**: {_diag_array('range_inflation')}",
-                    f"- **HV/BBox (final)**: {_diag_array('raw_hv_fraction_of_nominal_bbox')}",
-                    f"- **Outside nbox (final)**: {_diag_array('outside_nbox_fraction')}",
-                    f"- **Outside bbox (final)**: {_diag_array('outside_bbox_fraction')}",
+                    f"- Mean    : {mean:.{prec}f}",
+                    f"- StdDev  : {std_display}",
+                    f"- Best    : {best:.{prec}f}",
                 ])
-                if self.diagnostics["bbox_expanded_by_dominated_points"]:
-                    lines.append("- **Warning**: globally dominated reference points expand the bbox.")
-                if np.any(self.diagnostics["all_points_outside_bbox"]):
-                    lines.append("- **Warning**: at least one run is floor-saturated (all final-front points lie beyond the bbox).")
+            else:
+                lines.extend([
+                    f"- **Mean**: {mean:.{prec}f}",
+                    f"- **StdDev**: {std_display}",
+                    f"- **Best**: {best:.{prec}f}",
+                ])
+            if is_hypervolume and self.diagnostics:
+                hv_bbox = _finite_mean("raw_hv_fraction_of_nominal_bbox")
+                hv_bbox_display = "N/A" if hv_bbox is None else f"{hv_bbox:.{prec}f}"
+                lines.append(f"- HV/BBox : {hv_bbox_display}")
+            lines.extend(["", "#### Search Dynamics"])
+            if is_hypervolume:
+                lines.extend([
+                    "",
+                    f"- Runs        : {data.shape[1]}",
+                    f"- Generations : {data.shape[0]}",
+                    f"- Stability   : {stability}",
+                ])
+            else:
+                lines.extend([
+                    f"- **Runs**: {data.shape[1]}",
+                    f"- **Generations**: {data.shape[0]}",
+                    f"- **Stability**: {stability}",
+                ])
+            if is_hypervolume and self.diagnostics:
+                lines.extend(["", "#### Reference", ""])
+                lines.extend(f"- {label:<30}: {value}" for label, value in _reference_fields())
+                lines.extend(["", "#### Reference Boundary", ""])
+                outside_nbox = _finite_mean("outside_nbox_fraction")
+                outside_bbox = _finite_mean("outside_bbox_fraction")
+                if outside_nbox == 0.0 and outside_bbox == 0.0:
+                    lines.append("All evaluated final-front points lie within both the nbox and bbox.")
+                else:
+                    nbox_display = "N/A" if outside_nbox is None else f"{outside_nbox:.{prec}f}"
+                    bbox_display = "N/A" if outside_bbox is None else f"{outside_bbox:.{prec}f}"
+                    lines.extend([
+                        f"- Outside nbox fraction : {nbox_display}",
+                        f"- Outside bbox fraction : {bbox_display}",
+                    ])
+                    valid_runs = int(np.isfinite(self.diagnostics["outside_bbox_fraction"]).sum())
+                    saturated = int(np.sum(self.diagnostics["all_points_outside_bbox"]))
+                    if saturated:
+                        lines.append(f"- Floor-saturated runs  : {saturated} / {valid_runs}")
             content = "\n".join(lines)
         else:
-            lines = [
-                f"--- Metric Report: {self.metric_name}{source_info} ---"
-            ]
-            
-            if "Hypervolume" in self.metric_name:
-                if self.reference_context == "external":
-                    lines.append("  Reference Context: Fixed external reference; comparable only within this context.")
-                elif self.reference_context == "self":
-                    lines.append("  Reference Context: Self-referenced; separately normalized experiments are not directly comparable.")
-                if self.is_ratio:
-                    lines.extend([
-                        "  Question: What is the competitive efficiency relative to best session performance?"
-                    ])
-                elif self.is_raw:
-                    lines.extend([
-                        "  Question: What volume is dominated within this normalization context?"
-                    ])
-            
+            lines = [f"--- Metric Report: {self.metric_name}{source_info} ---"]
+            if is_hypervolume and self.is_ratio:
+                lines.append("  Question: What is the competitive efficiency relative to best session performance?")
+            elif is_hypervolume and self.is_abs:
+                lines.append("  Question: How close is this algorithm to mathematical perfection?")
             lines.extend([
-                f"  Final Performance (Last Gen):",
+                "  Final Performance (Last Gen):",
                 f"    - Mean: {mean:.{prec}f}",
                 f"    - StdDev: {std_display}",
                 f"    - Best: {best:.{prec}f}",
-                f"  Search Dynamics:",
+            ])
+            if is_hypervolume and self.diagnostics:
+                hv_bbox = _finite_mean("raw_hv_fraction_of_nominal_bbox")
+                hv_bbox_display = "N/A" if hv_bbox is None else f"{hv_bbox:.{prec}f}"
+                lines.append(f"    - HV/BBox: {hv_bbox_display}")
+            lines.extend([
+                "  Search Dynamics:",
                 f"    - Runs: {data.shape[1]}",
                 f"    - Generations: {data.shape[0]}",
-                f"    - Stability: {stability}"
+                f"    - Stability: {stability}",
             ])
-            if "Hypervolume" in self.metric_name and self.reference_context == "external" and self.diagnostics:
-                lines.extend([
-                    "  Reference Geometry:",
-                    f"    - N-box ideal: {_diag_array('nbox_ideal')}",
-                    f"    - N-box nadir: {_diag_array('nbox_nadir')}",
-                    f"    - B-box reference point: {_diag_array('bbox_reference_point')}",
-                    f"    - Reference points: {self.diagnostics['reference_points']}",
-                    f"    - Global ND reference points: {self.diagnostics['reference_nd_points']}",
-                    f"    - Dominated reference fraction: {self.diagnostics['reference_dominated_fraction']:.{prec}f}",
-                    f"    - Range inflation: {_diag_array('range_inflation')}",
-                    f"    - HV/BBox (final): {_diag_array('raw_hv_fraction_of_nominal_bbox')}",
-                    f"    - Outside nbox (final): {_diag_array('outside_nbox_fraction')}",
-                    f"    - Outside bbox (final): {_diag_array('outside_bbox_fraction')}",
-                ])
-                if self.diagnostics["bbox_expanded_by_dominated_points"]:
-                    lines.append("    - Warning: globally dominated reference points expand the bbox.")
-                if np.any(self.diagnostics["all_points_outside_bbox"]):
-                    lines.append("    - Warning: at least one run is floor-saturated (all final-front points lie beyond the bbox).")
+            if is_hypervolume and self.diagnostics:
+                lines.append("  Reference:")
+                lines.extend(f"    - {label}: {value}" for label, value in _reference_fields())
+                lines.append("  Reference Boundary:")
+                outside_nbox = _finite_mean("outside_nbox_fraction")
+                outside_bbox = _finite_mean("outside_bbox_fraction")
+                if outside_nbox == 0.0 and outside_bbox == 0.0:
+                    lines.append("    All evaluated final-front points lie within both the nbox and bbox.")
+                else:
+                    nbox_display = "N/A" if outside_nbox is None else f"{outside_nbox:.{prec}f}"
+                    bbox_display = "N/A" if outside_bbox is None else f"{outside_bbox:.{prec}f}"
+                    lines.extend([
+                        f"    - Outside nbox fraction: {nbox_display}",
+                        f"    - Outside bbox fraction: {bbox_display}",
+                    ])
+                    valid_runs = int(np.isfinite(self.diagnostics["outside_bbox_fraction"]).sum())
+                    saturated = int(np.sum(self.diagnostics["all_points_outside_bbox"]))
+                    if saturated:
+                        lines.append(f"    - Floor-saturated runs: {saturated} / {valid_runs}")
             content = "\n".join(lines)
         
         return self._render_report(content, show, **kwargs)
@@ -539,7 +646,17 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
 
     # 2. Select one unambiguous normalization context. Evaluated data never
     # participates in externally referenced bounds.
-    bounds_fronts = _extract_reference_fronts(ref) if has_external_ref else Fs
+    if has_external_ref:
+        reference_sources = []
+        for item in ref_items:
+            _, item_fronts, _, _ = _extract_data(item)
+            reference_sources.append(item_fronts)
+        reference_names = _reference_names(ref_items)
+        bounds_fronts = [front for source in reference_sources for front in source]
+    else:
+        reference_sources = [Fs]
+        reference_names = _reference_names([exp])
+        bounds_fronts = Fs
     min_val, max_val = _compute_bounds(bounds_fronts)
     M = len(min_val)
     
@@ -594,25 +711,33 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     # Preserve the unscaled result for diagnostics. Geometry diagnostics are
     # observational and never feed back into bounds or Hypervolume values.
     raw_mat = mat.copy()
-    diagnostics = {}
-    if has_external_ref:
-        diagnostics = _hypervolume_diagnostics(
-            bounds_fronts, Fs, min_val, max_val, raw_mat
+    reported_fronts = {}
+    if raw_mat.shape[0]:
+        report_row = raw_mat.shape[0] - 1
+        for run_index, history in enumerate(F_GENs):
+            if (report_row < len(history)
+                    and np.isfinite(raw_mat[report_row, run_index])):
+                front = np.asarray(history[report_row])
+                if len(front) > 0:
+                    reported_fronts[run_index] = front
+
+    diagnostics = _hypervolume_diagnostics(
+        reference_sources,
+        reference_names,
+        bounds_fronts,
+        reported_fronts,
+        min_val,
+        max_val,
+        raw_mat,
+        n_runs,
+    )
+    if np.any(diagnostics["all_points_outside_bbox"]):
+        warnings.warn(
+            "Hypervolume floor saturation: all final-front points of at least one run lie "
+            "beyond the reference bbox and therefore cannot contribute to Hypervolume. "
+            "The bbox is not modified.",
+            UserWarning,
         )
-        if diagnostics["bbox_expanded_by_dominated_points"]:
-            warnings.warn(
-                "Hypervolume reference bbox is expanded by globally dominated reference points. "
-                "This may compress differences between competing fronts; the bbox is not modified. "
-                "Inspect result.diagnostics for details.",
-                UserWarning,
-            )
-        if np.any(diagnostics["all_points_outside_bbox"]):
-            warnings.warn(
-                "Hypervolume floor saturation: all final-front points of at least one run lie "
-                "beyond the reference bbox and therefore cannot contribute to Hypervolume. "
-                "The bbox is not modified.",
-                UserWarning,
-            )
 
     # --- 4. Dynamic Benchmarking ---
     # We normalize HVs post-hoc according to the requested scale.

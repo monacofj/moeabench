@@ -12,6 +12,7 @@ from scipy.stats import wasserstein_distance
 from moeabench.metrics import evaluator
 from moeabench.metrics.GEN_gd import GEN_gd
 from moeabench.metrics.GEN_igd import GEN_igd
+from moeabench.core.run import Run
 from moeabench.stats.attainment import AttainmentSurface
 
 
@@ -21,6 +22,13 @@ GOOD = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]])
 
 def _hv(front, **kwargs):
     return evaluator.hypervolume(front, mode="exact", progress=False, **kwargs)
+
+
+def _run(history):
+    history = [np.asarray(front) for front in history]
+    empty = [np.empty((len(front), 0)) for front in history]
+    payload = (history, empty, history[-1], history, empty, empty, empty)
+    return Run(payload)
 
 
 def test_hypervolume_signature_only_exposes_reference_context_api():
@@ -57,7 +65,7 @@ def test_multiple_runs_share_one_self_reference_box():
     run_b = GOOD * 1.5
 
     self_values = _hv([run_a, run_b]).values
-    with pytest.warns(UserWarning, match="reference bbox is expanded"):
+    with warnings_not_matching("reference bbox is expanded"):
         pooled_values = _hv([run_a, run_b], ref=[run_a, run_b]).values
 
     assert np.allclose(self_values, pooled_values)
@@ -135,10 +143,11 @@ def test_hypervolume_report_identifies_reference_context():
     self_report = _hv(GOOD).report(show=False, markdown=True)
     fixed_report = _hv(GOOD, ref=REFERENCE).report(show=False, markdown=True)
 
-    assert "Self-Referenced Hypervolume" in self_report
-    assert "not directly comparable" in self_report
-    assert "Fixed Reference Context" in fixed_report
-    assert "same reference" in fixed_report
+    assert "Self-Referenced Hypervolume" not in self_report
+    assert "Fixed Reference Context" not in fixed_report
+    assert "#### Reference" in self_report
+    assert f"{'References':<30}: Array" in self_report
+    assert f"{'References':<30}: Array" in fixed_report
 
 
 def test_attainment_ref_point_remains_a_geometric_endpoint():
@@ -180,7 +189,7 @@ def test_dominated_reference_point_expansion_is_diagnosed_not_corrected():
         [10.0, 10.0],
     ])
 
-    with pytest.warns(UserWarning, match="reference bbox is expanded"):
+    with warnings_not_matching("reference bbox is expanded"):
         result = _hv(GOOD, ref=ref)
 
     diagnostics = result.diagnostics
@@ -262,6 +271,10 @@ def test_diagnostics_are_scale_independent(monkeypatch):
         "range_inflation",
         "outside_bbox_fraction",
         "raw_hv_fraction_of_nominal_bbox",
+        "global_local_nd_coverage",
+        "reference_expansion",
+        "local_ideal",
+        "local_nadir",
     )
     for key in keys:
         assert all(np.array_equal(results[0].diagnostics[key], result.diagnostics[key]) for result in results[1:])
@@ -272,9 +285,9 @@ def test_motivating_pooled_reference_is_diagnosed_without_hv_correction():
     exp2 = np.vstack([GOOD * 1.5, [10.0, 10.0]])
     reference = [exp1, exp2]
 
-    with pytest.warns(UserWarning, match="reference bbox is expanded"):
+    with warnings_not_matching("reference bbox is expanded"):
         hv1 = _hv(exp1, ref=reference)
-    with pytest.warns(UserWarning, match="reference bbox is expanded"):
+    with warnings_not_matching("reference bbox is expanded"):
         hv2 = _hv(exp2, ref=reference)
 
     reference_all = np.vstack(reference)
@@ -289,10 +302,12 @@ def test_motivating_pooled_reference_is_diagnosed_without_hv_correction():
     assert np.array_equal(hv1.diagnostics["nd_nadir"], np.array([0.8, 0.8]))
 
 
-def test_self_referenced_hypervolume_has_no_external_diagnostics():
+def test_self_referenced_hypervolume_has_reference_diagnostics():
     result = _hv(GOOD)
 
-    assert result.diagnostics == {}
+    assert result.diagnostics["reference_names"] == ["Array"]
+    assert np.array_equal(result.diagnostics["global_local_nd_coverage"], [1.0, 1.0])
+    assert np.array_equal(result.diagnostics["reference_expansion"], [1.0, 1.0])
 
 
 def test_metric_matrix_slicing_preserves_diagnostics_object():
@@ -311,19 +326,114 @@ def test_near_ceiling_hv_is_reported_without_subjective_warning():
     assert result.diagnostics["raw_hv_fraction_of_nominal_bbox"][0] > 0.99
 
 
-def test_external_report_includes_reference_geometry_diagnostics():
+def test_external_report_uses_compact_reference_diagnostics():
     result = _hv(GOOD, ref=REFERENCE)
 
     report = result.report(show=False, markdown=False)
 
-    assert "Reference Geometry" in report
-    assert "N-box ideal" in report
-    assert "N-box nadir" in report
-    assert "B-box reference point" in report
-    assert "Range inflation" in report
-    assert "HV/BBox (final)" in report
-    assert "Outside nbox (final)" in report
-    assert "Outside bbox (final)" in report
+    assert "Reference:" in report
+    assert "Global-ND reference points" in report
+    assert "Dominated reference fraction" in report
+    assert "Reference Boundary:" in report
+    assert "HV/BBox" in report
+    for removed in (
+        "Reference Geometry", "N-box ideal", "N-box nadir",
+        "B-box reference point", "Range inflation",
+        "Outside nbox (final)", "Outside bbox (final)",
+    ):
+        assert removed not in report
+
+
+def test_reference_names_are_disambiguated_without_deduplication():
+    result = _hv(GOOD, ref=[REFERENCE, REFERENCE.copy()])
+
+    assert result.diagnostics["reference_names"] == ["Array#1", "Array#2"]
+    assert result.diagnostics["reference_points"] == 2 * len(REFERENCE)
+    assert result.diagnostics["local_nd_reference_points"] == 2 * len(REFERENCE)
+
+
+def test_global_local_nd_coverage_uses_local_source_envelopes():
+    source_a = np.array([[0.0, 1.0], [1.0, 0.0]])
+    source_b = np.array([[0.2, 2.0], [2.0, 0.2]])
+
+    result = _hv(GOOD, ref=[source_a, source_b])
+
+    assert np.array_equal(result.diagnostics["global_local_nd_coverage"], [0.5, 0.5])
+    report = result.report(show=False, markdown=True)
+    assert f"{'Global/local ND coverage < 1':<30}: f1, f2" in report
+    assert f"{'Minimum ND coverage':<30}: 0.5000 (f1)" in report
+
+
+def test_single_source_coverage_ignores_locally_dominated_points():
+    source = np.vstack([REFERENCE, [4.0, 4.0]])
+
+    result = _hv(GOOD, ref=source)
+
+    assert np.array_equal(result.diagnostics["global_local_nd_coverage"], [1.0, 1.0])
+
+
+def test_reference_expansion_reports_zero_span_without_infinite_maximum():
+    exp = np.array([[0.5, 0.2], [0.5, 0.8]])
+    result = _hv(exp, ref=np.array([[0.0, 0.0], [1.0, 1.0]]))
+
+    assert np.isinf(result.diagnostics["reference_expansion"][0])
+    report = result.report(show=False, markdown=True)
+    assert f"{'Reference-expanded objectives':<30}: f1, f2" in report
+    assert f"{'Zero-span local objectives':<30}: f1" in report
+    assert f"{'Maximum finite expansion':<30}: 1.6667 (f2)" in report
+    assert "inf" not in report
+
+
+def test_many_objectives_are_summarized_in_reference_expansion():
+    objectives = 20
+    exp = np.vstack([np.full(objectives, 0.25), np.full(objectives, 0.75)])
+    ref = np.vstack([np.zeros(objectives), np.ones(objectives)])
+
+    result = evaluator.hypervolume(
+        exp, ref=ref, mode="fast", n_samples=20, progress=False
+    )
+    report = result.report(show=False, markdown=True)
+
+    assert f"{'Reference-expanded objectives':<30}: 20 / 20" in report
+
+
+def test_reference_boundary_report_uses_run_means_and_valid_denominator():
+    front_a = np.array([[1.2, 0.5]])
+    front_b = np.array([[0.5, 0.5]])
+    ref = np.array([[0.0, 1.0], [1.0, 0.0]])
+
+    with pytest.warns(UserWarning, match="floor saturation"):
+        result = _hv([front_a, front_b], ref=ref)
+    report = result.report(show=False, markdown=True)
+
+    assert "Outside nbox fraction : 0.5000" in report
+    assert "Outside bbox fraction : 0.5000" in report
+    assert "Floor-saturated runs  : 1 / 2" in report
+
+
+def test_reference_expansion_uses_last_generation_selected_by_gens():
+    first = np.array([[0.1, 0.1], [0.9, 0.9]])
+    last = np.array([[0.4, 0.4], [0.6, 0.6]])
+    ref = np.array([[0.0, 0.0], [1.0, 1.0]])
+
+    result = _hv([_run([first, last])], ref=ref, gens=slice(0, 1))
+
+    assert np.array_equal(result.diagnostics["local_ideal"], [0.1, 0.1])
+    assert np.array_equal(result.diagnostics["local_nadir"], [0.9, 0.9])
+    assert np.array_equal(result.diagnostics["reference_expansion"], [1.25, 1.25])
+
+
+def test_uneven_histories_keep_run_aligned_boundary_diagnostics():
+    first = _run([GOOD, GOOD])
+    shorter = _run([GOOD])
+
+    result = _hv([first, shorter], ref=REFERENCE)
+
+    assert result.diagnostics["outside_bbox_fraction"].shape == (2,)
+    assert result.diagnostics["outside_bbox_fraction"][0] == pytest.approx(0.0)
+    assert np.isnan(result.diagnostics["outside_bbox_fraction"][1])
+    assert result.diagnostics["all_points_outside_bbox"].tolist() == [False, False]
+    assert np.isnan(result.diagnostics["raw_hv_fraction_of_nominal_bbox"][1])
 
 
 class warnings_not_matching:

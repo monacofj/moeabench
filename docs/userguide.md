@@ -650,16 +650,36 @@ dist = res.gen()       # Distribution of final generation
 **The output is something like:**
 
 ```text
---- Metric Report: Hypervolume (My Experiment) ---
-  Final Performance (Last Gen):
-    - Mean: 0.820412
-    - StdDev: 0.012450
-    - Best: 0.841033
-  Search Dynamics:
-    - Runs: 30
-    - Generations: 500
-    - Stability: High
+### Metric Report: Hypervolume (Raw) (My Experiment)
+
+#### Final Performance (Last Gen)
+
+- Mean    : 0.8204
+- StdDev  : 0.0125
+- Best    : 0.8410
+- HV/BBox : 0.6780
+
+#### Search Dynamics
+
+- Runs        : 30
+- Generations : 500
+- Stability   : High
+
+#### Reference
+
+- References                   : My Experiment
+- Reference points             : 3000
+- Global-ND reference points   : 2840
+- Dominated reference fraction : 0.0533
+- Global/local ND coverage     : 1.0000 in all objectives
+- Reference expansion          : None
+
+#### Reference Boundary
+
+All evaluated final-front points lie within both the nbox and bbox.
 ```
+
+The `Reference` section is present for both implicit self-reference and explicit `ref`. Global/local ND coverage compares the objective-wise extent retained after the locally non-dominated reference sources are merged and filtered globally. Reference expansion compares the selected reference extent with the fronts represented by the final reported row. Both are descriptive diagnostics: they neither repair the reference nor change Hypervolume. Full vectors remain available through `res.diagnostics`.
 
 ### **7.3. Stratification (Population Structure)**
 Stratification is the structural lens of MoeaBench. It examines how the population is internally organized across non-domination layers, how quality is distributed across those layers, and how two methods compete when their populations are merged into a shared rank structure.

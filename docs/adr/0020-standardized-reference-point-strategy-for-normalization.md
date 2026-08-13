@@ -27,7 +27,7 @@ We decided to standardize the **Reference Point** for Hypervolume calculation at
 ### Positive
 *   **Consistency**: All algorithms in the calibration report are compared against the same physical volume ($1.1^M$).
 *   **Stability**: Eliminates edge cases in the WFG (exact) hypervolume algorithm.
-*   **Clarity**: The reference box volume is explicitly defined as $1.1^M$, making `HV_ratio` calculations deterministic.
+*   **Clarity**: The bbox volume is explicitly defined as $1.1^M$, making the reported `HV/BBox` occupancy deterministic.
 
 ### Negative
 *   **Value Shift**: Raw HV values will increase relative to a 1.0 reference, but `HV_rel` (convergence to GT) remains invariant.
