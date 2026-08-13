@@ -25,7 +25,8 @@ classifiers = [
     "Topic :: Scientific/Engineering",
 ]
 dependencies = [
-    "pymoo",
+    "pymoo>=0.6.2",
+    "moocore>=0.1.7",
     "ipywidgets",
     "plotly",
     "ipython",

@@ -13,6 +13,7 @@ from moeabench.metrics import evaluator
 from moeabench.metrics.GEN_gd import GEN_gd
 from moeabench.metrics.GEN_igd import GEN_igd
 from moeabench.core.run import Run
+from moeabench.core.experiment import experiment
 from moeabench.stats.attainment import AttainmentSurface
 
 
@@ -34,6 +35,101 @@ def _run(history):
 def test_hypervolume_signature_only_exposes_reference_context_api():
     removed_parameter = "".join(("jo", "int"))
     assert removed_parameter not in inspect.signature(evaluator.hypervolume).parameters
+
+
+def test_external_reference_rejects_an_unexecuted_experiment():
+    empty = experiment()
+    empty.name = "exp4"
+
+    with pytest.raises(ValueError, match="reference 'exp4'.*no evaluated front"):
+        _hv(GOOD, ref=[REFERENCE, empty])
+
+
+@pytest.mark.parametrize(
+    ("objectives", "expected_backend"),
+    [(8, "exact"), (9, "monte_carlo")],
+)
+def test_auto_backend_selection_matches_supported_exact_range(
+    monkeypatch, objectives, expected_backend
+):
+    calls = []
+
+    class RecordingExact:
+        def __init__(self, fronts, *args, **kwargs):
+            calls.append("exact")
+            self.fronts = fronts
+
+        def evaluate(self):
+            return np.ones(len(self.fronts))
+
+    class RecordingMonteCarlo:
+        def __init__(self, fronts, *args, **kwargs):
+            calls.append("monte_carlo")
+            self.fronts = fronts
+
+        def evaluate(self):
+            return np.ones(len(self.fronts))
+
+    front = np.full((1, objectives), 0.5)
+    ref = np.vstack([np.zeros(objectives), np.ones(objectives)])
+    monkeypatch.setattr(evaluator, "GEN_hypervolume", RecordingExact)
+    monkeypatch.setattr(evaluator, "GEN_mc_hypervolume", RecordingMonteCarlo)
+
+    result = evaluator.hypervolume(
+        front, ref=ref, mode="auto", n_samples=20, progress=False
+    )
+
+    assert calls == [expected_backend]
+    assert result.diagnostics["hv_backend"] == expected_backend
+    assert result.diagnostics["hv_mode_requested"] == "auto"
+
+
+def test_unknown_hypervolume_mode_is_rejected():
+    with pytest.raises(ValueError, match="Unknown Hypervolume mode"):
+        evaluator.hypervolume(GOOD, mode="mystery", progress=False)
+
+
+def test_fast_hypervolume_is_reproducible_and_records_sampling_metadata():
+    first = evaluator.hypervolume(
+        GOOD, ref=REFERENCE, mode="fast", n_samples=2_000,
+        mc_seed=23, progress=False,
+    )
+    second = evaluator.hypervolume(
+        GOOD, ref=REFERENCE, mode="fast", n_samples=2_000,
+        mc_seed=23, progress=False,
+    )
+
+    assert np.array_equal(first._data, second._data)
+    assert first.diagnostics["hv_backend"] == "monte_carlo"
+    assert first.diagnostics["hv_n_samples"] == 2_000
+    assert first.diagnostics["hv_mc_seed"] == 23
+
+
+@pytest.mark.parametrize("mode", ["exact", "fast"])
+def test_hypervolume_progress_advances_after_each_generation(monkeypatch, mode):
+    class RecordingProgress:
+        def __init__(self):
+            self.current_val = 0
+            self.updates = []
+            self.closed = False
+
+        def update_to(self, value):
+            self.current_val = value
+            self.updates.append(value)
+
+        def close(self):
+            self.closed = True
+
+    progress = RecordingProgress()
+    monkeypatch.setattr(evaluator, "_metric_progress", lambda *args, **kwargs: progress)
+
+    evaluator.hypervolume(
+        _run([GOOD, GOOD * 0.9]), ref=REFERENCE,
+        mode=mode, n_samples=100, mc_seed=3,
+    )
+
+    assert progress.updates == [1, 2]
+    assert progress.closed
 
 
 def test_hypervolume_without_ref_is_self_referenced():
@@ -336,6 +432,7 @@ def test_external_report_uses_compact_reference_diagnostics():
     assert "Dominated reference fraction" in report
     assert "Reference Boundary:" in report
     assert "HV/BBox" in report
+    assert "HV backend: exact" in report
     for removed in (
         "Reference Geometry", "N-box ideal", "N-box nadir",
         "B-box reference point", "Range inflation",

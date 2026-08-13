@@ -353,8 +353,16 @@ class MetricMatrix(Reportable):
                     "",
                     f"- Runs        : {data.shape[1]}",
                     f"- Generations : {data.shape[0]}",
-                    f"- Stability   : {stability}",
                 ])
+                if self.diagnostics:
+                    lines.append(f"- HV backend  : {self.diagnostics['hv_backend']}")
+                lines.append(f"- Stability   : {stability}")
+                if (self.diagnostics
+                        and self.diagnostics["hv_backend"] == "monte_carlo"):
+                    lines.extend([
+                        f"- MC samples  : {self.diagnostics['hv_n_samples']}",
+                        f"- MC seed     : {self.diagnostics['hv_mc_seed']}",
+                    ])
             else:
                 lines.extend([
                     f"- **Runs**: {data.shape[1]}",
@@ -403,6 +411,13 @@ class MetricMatrix(Reportable):
                 f"    - Generations: {data.shape[0]}",
                 f"    - Stability: {stability}",
             ])
+            if is_hypervolume and self.diagnostics:
+                lines.append(f"    - HV backend: {self.diagnostics['hv_backend']}")
+                if self.diagnostics["hv_backend"] == "monte_carlo":
+                    lines.extend([
+                        f"    - MC samples: {self.diagnostics['hv_n_samples']}",
+                        f"    - MC seed: {self.diagnostics['hv_mc_seed']}",
+                    ])
             if is_hypervolume and self.diagnostics:
                 lines.append("  Reference:")
                 lines.extend(f"    - {label}: {value}" for label, value in _reference_fields())
@@ -594,7 +609,23 @@ def _metric_progress(metric_name, enabled, histories, source_name=None):
     return get_progress_bar(total=total, desc=desc, leave=True, style="percent")
 
 
-def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None, progress=True):
+def _select_hypervolume_backend(mode, objectives):
+    """Resolve the requested Hypervolume mode to one implementation."""
+    requested = str(mode).lower()
+    if requested not in {'auto', 'exact', 'fast'}:
+        raise ValueError(
+            f"Unknown Hypervolume mode: {mode}. Use 'auto', 'exact', or 'fast'."
+        )
+
+    if requested == 'fast':
+        return requested, 'monte_carlo'
+    if requested == 'auto' and objectives > 8:
+        return requested, 'monte_carlo'
+    return requested, 'exact'
+
+
+def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
+                mc_seed=None, gens=None, progress=True):
     """
     Calculates Hypervolume for an experiment, run, or population.
     Returns a MetricMatrix (G x R).
@@ -606,6 +637,8 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
         scale (str): Scaling perspective: 'raw' (default), 'rel', or 'abs'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
+        mc_seed (int): Seed for reproducible Monte Carlo sampling. Defaults to
+                       ``mb.defaults.seed``.
         gens (int or slice): Limit calculation to specific generation(s).
         progress (bool): Whether to display metric-computation progress.
 
@@ -616,6 +649,11 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     """
     has_external_ref = ref is not None
     ref_items = [] if ref is None else (ref if isinstance(ref, list) else [ref])
+    mode = str(mode).lower()
+    if mode not in {'auto', 'exact', 'fast'}:
+        raise ValueError(
+            f"Unknown Hypervolume mode: {mode}. Use 'auto', 'exact', or 'fast'."
+        )
     
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
@@ -649,10 +687,15 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
     # participates in externally referenced bounds.
     if has_external_ref:
         reference_sources = []
-        for item in ref_items:
-            _, item_fronts, _, _ = _extract_data(item)
-            reference_sources.append(item_fronts)
         reference_names = _reference_names(ref_items)
+        for item, reference_name in zip(ref_items, reference_names):
+            _, item_fronts, _, _ = _extract_data(item)
+            if not any(front is not None and len(front) > 0 for front in item_fronts):
+                raise ValueError(
+                    f"Hypervolume reference '{reference_name}' has no evaluated front. "
+                    "Run the experiment first or remove it from ref."
+                )
+            reference_sources.append(item_fronts)
         bounds_fronts = [front for source in reference_sources for front in source]
     else:
         reference_sources = [Fs]
@@ -660,12 +703,28 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         bounds_fronts = Fs
     min_val, max_val = _compute_bounds(bounds_fronts)
     M = len(min_val)
+    mode, hv_backend = _select_hypervolume_backend(mode, M)
+    resolved_mc_seed = defaults.seed if mc_seed is None else mc_seed
+    if hv_backend == 'monte_carlo' and mode == 'auto':
+        logging.info(
+            f"Hypervolume: High-dimensional space (M={M}) detected. "
+            f"Switching to Monte Carlo approximation (n={n_samples})."
+        )
+    elif mode == 'exact' and M > 8:
+        warnings.warn(
+            f"Exact Hypervolume calculation for M={M} objectives may be extremely slow. "
+            "Consider using mode='auto' or mode='fast'."
+        )
     
     # 3. Calculate
     max_gens = max(len(h) for h in F_GENs) if F_GENs else 0
     mat = np.full((max_gens, n_runs), np.nan)
     
     pbar = _metric_progress("Hypervolume", progress, F_GENs, source_name=name)
+    def advance_progress():
+        if pbar is not None:
+            pbar.update_to(pbar.current_val + 1)
+
     try:
         for r_idx, (f_gen, f_last) in enumerate(zip(F_GENs, Fs)):
             run_M = f_last.shape[1] if len(f_last) > 0 else 0
@@ -681,29 +740,26 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                 )
 
             if run_M > 0:
-                # Smart Selection of Algorithm
-                use_mc = False
-                if mode == 'fast':
-                    use_mc = True
-                elif mode == 'auto' and M > 6:
-                    use_mc = True
-                    logging.info(f"Hypervolume: High-dimensional space (M={M}) detected. "
-                                 f"Switching to Monte Carlo approximation (n={n_samples}).")
-                elif mode == 'exact' and M > 8:
-                    warnings.warn(f"Exact Hypervolume calculation for M={M} objectives has exponential complexity O(2^M) "
-                                  f"and may be extremely slow. Consider using mode='auto' or mode='fast'.")
-                
-                if use_mc:
-                    metric = GEN_mc_hypervolume(f_gen, M, min_val, max_val, n_samples=n_samples)
+                callback = advance_progress if pbar is not None else None
+                if hv_backend == 'monte_carlo':
+                    metric = GEN_mc_hypervolume(
+                        f_gen, M, min_val, max_val,
+                        n_samples=n_samples,
+                        seed=resolved_mc_seed,
+                        progress_callback=callback,
+                    )
                 else:
-                    metric = GEN_hypervolume(f_gen, M, min_val, max_val)
+                    metric = GEN_hypervolume(
+                        f_gen, M, min_val, max_val,
+                        progress_callback=callback,
+                    )
                     
                 values = metric.evaluate()
                 
                 # Fill matrix
                 length = min(len(values), max_gens)
                 mat[:length, r_idx] = values[:length]
-            if pbar is not None:
+            elif pbar is not None:
                 pbar.update_to(pbar.current_val + len(f_gen))
     finally:
         if pbar is not None:
@@ -732,6 +788,12 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
         raw_mat,
         n_runs,
     )
+    diagnostics.update({
+        "hv_backend": hv_backend,
+        "hv_mode_requested": mode,
+        "hv_n_samples": n_samples if hv_backend == 'monte_carlo' else None,
+        "hv_mc_seed": resolved_mc_seed if hv_backend == 'monte_carlo' else None,
+    })
     if np.any(diagnostics["all_points_outside_bbox"]):
         warnings.warn(
             "Hypervolume floor saturation: all final-front points of at least one run lie "
@@ -752,8 +814,12 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                 _, r_fs, _, _ = _extract_data(r)
                 for f in r_fs:
                     if len(f) > 0:
-                        if mode == 'fast' or (mode == 'auto' and M > 6):
-                            m = GEN_mc_hypervolume([f], M, min_val, max_val, n_samples=n_samples)
+                        if hv_backend == 'monte_carlo':
+                            m = GEN_mc_hypervolume(
+                                [f], M, min_val, max_val,
+                                n_samples=n_samples,
+                                seed=resolved_mc_seed,
+                            )
                         else:
                             m = GEN_hypervolume([f], M, min_val, max_val)
                         ref_hvs.append(float(m.evaluate()[0]))
@@ -800,8 +866,12 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=
                     )
                 else:
                     # Calculate reference HV (1.0 ceiling) using GT.
-                    if mode == 'fast' or (mode == 'auto' and M > 6):
-                        m = GEN_mc_hypervolume([gt], M, min_val, max_val, n_samples=n_samples)
+                    if hv_backend == 'monte_carlo':
+                        m = GEN_mc_hypervolume(
+                            [gt], M, min_val, max_val,
+                            n_samples=n_samples,
+                            seed=resolved_mc_seed,
+                        )
                     else:
                         m = GEN_hypervolume([gt], M, min_val, max_val)
 
