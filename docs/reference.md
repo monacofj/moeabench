@@ -471,7 +471,7 @@ The Consensus Ratio ($C_g$) measures algorithmic consistency across $R$ independ
 | **Low ($\to 1/R$)** | **Redundancy** | Runs converge to the same front. Results are highly reliable and saturated. |
 | **Decreasing** | **Competitive Refinement** | Runs are beginning to overlap and dominate each other (Evidence of convergence). |
 
-### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, gens=None)`
+### `mb.metrics.hv(exp, ref=None, mode='auto', scale='raw', n_samples=100000, mc_seed=None, gens=None, progress=True)`
 
 Calculates Hypervolume for an experiment, run, or population. Across the metric API, `ref` denotes the external reference used by the metric; its exact mathematical role depends on the metric. GD, GD+, IGD, IGD+, and EMD use it as their reference front or distribution. Hypervolume uses it exclusively to establish normalization bounds.
 
@@ -479,13 +479,16 @@ Calculates Hypervolume for an experiment, run, or population. Across the metric 
 
 **Parameters:**
 *   `exp`: The `Experiment`, `Run`, or `Population` object to evaluate.
-*   `ref` (optional): External reference used exclusively to define ideal/nadir normalization bounds. Without `ref`, bounds come collectively from all runs in `exp`. With `ref`, evaluated data never alters the bounds. A pooled empirical context can be supplied explicitly, for example `ref=[exp_a, exp_b]`.
-*   `mode` (str): Algorithmic choice (`'auto'`, `'fast'`, `'exact'`).
+*   `ref` (optional): External reference used exclusively to define ideal/nadir normalization bounds. Without `ref`, bounds come collectively from all runs in `exp`. With `ref`, evaluated data never alters the bounds. A pooled empirical context can be supplied explicitly, for example `ref=[exp_a, exp_b]`. Every supplied item must contain an evaluated front; an unexecuted experiment raises `ValueError`.
+*   `mode` (str): Algorithmic choice. `'auto'` uses the exact backend for up to 8 objectives and Monte Carlo above 8. `'exact'` always requests the exact backend and warns above 8. `'fast'` always uses Monte Carlo.
+*   `n_samples` (int): Positive Monte Carlo sample count used by `'fast'`, or by `'auto'` above 8 objectives.
+*   `mc_seed` (optional int): Monte Carlo seed. It defaults to `mb.defaults.seed`; equal inputs and seeds produce equal estimates.
 *   `scale` (str): Narrative perspective for normalization:
     *   `'raw'` (Default): Returns dominated volume in the selected normalization context. Without `ref`, it is self-referenced and not directly comparable with separately normalized experiments. With `ref`, it is comparable to results using that same fixed reference.
     *   `'rel'`: Divides by the selected reference HV, or by the best run for self-reference. With `ref`, both evaluated and reference HV use bounds derived only from `ref`.
     *   `'abs'`: Divides by the calibrated **Ground Truth** HV. Both evaluated and ground-truth HV use the same selected bounds; with `ref`, those bounds come only from `ref`.
 *   `gens` (optional): Slice or integer to limit the generation scope.
+*   `progress` (bool): Displays calculation progress, updated after each generation.
 
 `scale` is post-processing and never selects or changes normalization bounds. Evaluated points outside external ideal/nadir bounds do not expand them. Points beyond the normalized Hypervolume reference point contribute no volume; points better than the external ideal may contribute beyond the nominal unit cube. A reference with zero range in any objective is rejected.
 
@@ -495,7 +498,7 @@ MoeaBench distinguishes the **nbox**, spanning `ideal` to `nadir`, from the Hype
 
 For both self- and external-reference calls, the report identifies the concrete reference sources and includes two scale-independent diagnostics. Global/local ND coverage is $C_j=range(G_j)/range(L_j)$, where $L$ is the union of the non-dominated envelope calculated within each reference source and $G=ND(L)$. Reference expansion is $E_j=range(F_{reference,j})/range(F_{reported,j})$, using the fronts represented by the final reported row; a zero reported span with a positive reference span produces infinity. Neither diagnostic classifies the result as valid or invalid.
 
-The returned `MetricMatrix.diagnostics` adds `reference_names`, `local_nd_reference_points`, `local_nd_ideal`, `local_nd_nadir`, `global_local_nd_coverage`, `local_ideal`, `local_nadir`, and `reference_expansion`. The existing keys `nbox_ideal`, `nbox_nadir`, `bbox_reference_point`, `nominal_bbox_volume`, `reference_points`, `reference_nd_points`, `reference_dominated_fraction`, `nd_ideal`, `nd_nadir`, `range_inflation`, `max_range_inflation`, `bbox_expanded_by_dominated_points`, `outside_nbox_fraction`, `outside_bbox_fraction`, `better_than_ideal_fraction`, `all_points_outside_bbox`, and `raw_hv_fraction_of_nominal_bbox` remain available for compatibility. Full bound and per-objective vectors are intentionally omitted from the standard report for many-objective scalability.
+The returned `MetricMatrix.diagnostics` adds `reference_names`, `local_nd_reference_points`, `local_nd_ideal`, `local_nd_nadir`, `global_local_nd_coverage`, `local_ideal`, `local_nadir`, and `reference_expansion`. Backend provenance is available as `hv_backend`, `hv_mode_requested`, `hv_n_samples`, and `hv_mc_seed`; the standard report also shows the selected backend and, for Monte Carlo, its sample count and seed. The existing keys `nbox_ideal`, `nbox_nadir`, `bbox_reference_point`, `nominal_bbox_volume`, `reference_points`, `reference_nd_points`, `reference_dominated_fraction`, `nd_ideal`, `nd_nadir`, `range_inflation`, `max_range_inflation`, `bbox_expanded_by_dominated_points`, `outside_nbox_fraction`, `outside_bbox_fraction`, `better_than_ideal_fraction`, `all_points_outside_bbox`, and `raw_hv_fraction_of_nominal_bbox` remain available for compatibility. Full bound and per-objective vectors are intentionally omitted from the standard report for many-objective scalability.
 
 MoeaBench does not remove outliers, clip evaluated points, repair a problematic bbox, or infer that two HV values are “too close” using an arbitrary threshold. Coverage, expansion, and dominated-reference fractions do not emit warnings. A warning is emitted only when every final-front point of a valid run lies beyond the bbox and therefore cannot contribute. When HV is saturated or geometrically uninformative, complement it with convergence metrics such as GD+/IGD+ rather than deforming its reference geometry.
 

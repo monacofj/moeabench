@@ -630,6 +630,10 @@ The public metric family is broader than Hypervolume alone. The canonical perfor
 
 For every metric that accepts it, `ref` denotes the external reference used by that metric. GD-family and IGD-family metrics use it as a reference front, EMD uses it as a reference distribution/front, and Hypervolume uses it exclusively for normalization bounds. Specifically, `hypervolume(exp)` derives one shared bounding box from all runs in `exp`, while `hypervolume(exp, ref=R)` derives bounds only from `R`. Use the same explicit `R` whenever results must be comparable across separate calls. The `raw`, `rel`, and `abs` scales are post-processing perspectives over that already selected context.
 
+Every item in an explicit Hypervolume reference must already contain an evaluated front. For example, `ref=[exp3, exp4]` requires both experiments to have completed `run()`; otherwise MoeaBench raises a clear `ValueError` instead of silently calculating with only the non-empty item.
+
+The default `mode='auto'` uses the exact pymoo backend for up to 8 objectives. Above 8 objectives it switches to the Monte Carlo backend; `mode='fast'` forces that approximation at any dimensionality. Monte Carlo accepts `n_samples` and `mc_seed`, defaults the seed to `mb.defaults.seed`, reuses common random samples across generations, and reports progress after each generation. The selected backend and sampling parameters are recorded in `res.diagnostics` and shown by `res.report()`.
+
 You do not need a separate tutorial example for each one because the usage contract is the same:
 
 ```python
@@ -663,6 +667,7 @@ dist = res.gen()       # Distribution of final generation
 
 - Runs        : 30
 - Generations : 500
+- HV backend  : exact
 - Stability   : High
 
 #### Reference

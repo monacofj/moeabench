@@ -15,18 +15,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Hypervolume Backend Diagnostics**:
+  - Results record the selected backend, requested mode, and Monte Carlo sample/seed metadata.
+  - Hypervolume progress now advances after every evaluated generation.
 - **Hypervolume Reference Diagnostics**:
   - Self- and external-reference results expose diagnostic-only nbox/bbox geometry, global/local ND coverage, reference expansion, boundary fractions, and raw `HV / V_bbox` occupancy.
   - The compact report names concrete reference sources and summarizes affected objectives without dumping bound vectors in many-objective cases.
   - Only complete floor saturation emits a structural warning; dominated-reference coverage and expansion remain descriptive and never change the metric.
 
 ### Changed
+- **Hypervolume Engine Selection**:
+  - `mode='auto'` uses pymoo's exact backend through 8 objectives and switches to Monte Carlo only above that range.
+  - Monte Carlo evaluation is reproducible, uses common random samples across generations, and delegates approximation to moocore's native backend.
+  - The minimum supported pymoo version is now 0.6.2.
 - **Consistent Metric References**:
   - `ref` now consistently denotes an external metric reference; Hypervolume derives fixed normalization bounds exclusively from it.
   - Hypervolume without `ref` remains self-referenced across one shared bounding box for all runs.
   - Removed the Hypervolume bounding-box toggle; pooled empirical contexts are now supplied explicitly through `ref`.
 
 ### Fixed
+- **Hypervolume Runtime and Reference Validation**:
+  - Seven- and eight-objective histories no longer enter the unnecessarily expensive 100,000-sample Monte Carlo path in automatic mode.
+  - Every explicitly supplied reference must contain an evaluated front; unexecuted experiments are rejected instead of being silently ignored.
 - **Comparable Hypervolume Evaluation**:
   - `raw`, `rel`, and `abs` reuse the same selected normalization bounds, preventing separately evaluated fronts from silently redefining their comparison context.
   - Reports distinguish self-referenced values from values evaluated against a fixed external reference.
