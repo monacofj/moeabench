@@ -6,6 +6,27 @@
 import numpy as np
 from typing import Optional, List, Union, Tuple, Any
 
+
+def _calc_domination_mask(objectives, chunk_size=500):
+    """Return a boolean mask where True means Pareto-dominated."""
+    objs = np.asarray(objectives)
+    n_points = objs.shape[0]
+
+    if n_points == 0:
+        return np.zeros(0, dtype=bool)
+
+    is_dominated = np.zeros(n_points, dtype=bool)
+    for start in range(0, n_points, chunk_size):
+        end = min(start + chunk_size, n_points)
+        victims = objs[start:end, np.newaxis, :]
+        candidates = objs[np.newaxis, :, :]
+        dominates_all = np.all(candidates <= victims, axis=2)
+        dominates_any = np.any(candidates < victims, axis=2)
+        is_dominated[start:end] = np.any(dominates_all & dominates_any, axis=1)
+
+    return is_dominated
+
+
 class SmartArray(np.ndarray):
     """
     Numpy array wrapper that carries metadata about the data it holds (label, axis_label, name).
@@ -328,39 +349,7 @@ class Population:
         Returns:
             np.ndarray: Boolean mask where True means 'dominated'.
         """
-        objs = self.objectives
-        N = objs.shape[0]
-        
-        if N == 0:
-            return np.zeros(0, dtype=bool)
-            
-        # Determine chunk size to avoid memory explosion (O(N^2))
-        # A chunk size of 500-1000 is usually a good balance.
-        # N * chunk_size * 8 bytes (float64) should fit comfortably in RAM.
-        chunk_size = 500
-        is_dominated = np.zeros(N, dtype=bool)
-        
-        # We compare everyone against everyone, but in chunks.
-        # A (potential dominators): (1, N, M)
-        # B (potential victims):    (chunk, 1, M)
-        
-        for start in range(0, N, chunk_size):
-            end = min(start + chunk_size, N)
-            B = objs[start:end, np.newaxis, :] # (chunk, 1, M)
-            A = objs[np.newaxis, :, :]         # (1, N, M)
-            
-            # j (from A) dominates i (from B) if (j <= i for all M) AND (j < i for at least one M)
-            dominates_all = np.all(A <= B, axis=2) 
-            dominates_any = np.any(A < B, axis=2)  
-            
-            # Matrix of who dominates who in this chunk
-            # entry [i, j] is True if 'j' dominates 'i'
-            dominance_matrix = dominates_all & dominates_any
-            
-            # Solution 'i' in the chunk is dominated if ANY 'j' in the whole population dominates it
-            is_dominated[start:end] = np.any(dominance_matrix, axis=1)
-            
-        return is_dominated
+        return _calc_domination_mask(self.objectives)
 
     def stratify(self) -> np.ndarray:
         """

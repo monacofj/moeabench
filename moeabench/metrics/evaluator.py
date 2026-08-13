@@ -13,7 +13,7 @@ from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
 from .GEN_igdplus import GEN_igdplus
 from ..core.base import Reportable
-from ..core.run import Population
+from ..core.run import Population, _calc_domination_mask
 from ..defaults import defaults
 from ..core.display import show_matplotlib
 import warnings
@@ -88,21 +88,41 @@ def _non_dominated_union(fronts):
         return None
 
     merged = np.vstack(valid)
-    is_dominated = np.zeros(merged.shape[0], dtype=bool)
-    for i, current in enumerate(merged):
-        if np.any(np.all(merged <= current, axis=1) & np.any(merged < current, axis=1)):
-            is_dominated[i] = True
-    return merged[~is_dominated]
+    dominated = _calc_domination_mask(merged)
+    return merged[~dominated]
 
 
 def _hypervolume_diagnostics(reference_sources, reference_names, reference_fronts,
                              reported_fronts, ideal, nadir, raw_mat, n_runs):
     """Describe reference geometry without modifying Hypervolume inputs."""
     ref_all = np.vstack([np.asarray(front) for front in reference_fronts if len(front) > 0])
-    ref_nd = _non_dominated_union(reference_fronts)
+    local_nd_fronts = []
+    for source_fronts in reference_sources:
+        local_nd = _non_dominated_union(source_fronts)
+        if local_nd is not None and len(local_nd) > 0:
+            local_nd_fronts.append(local_nd)
+    local_nd_merged = np.vstack(local_nd_fronts)
+    local_nd_ideal = np.min(local_nd_merged, axis=0)
+    local_nd_nadir = np.max(local_nd_merged, axis=0)
+    if len(local_nd_fronts) == 1:
+        ref_nd = local_nd_fronts[0]
+        global_from_local = ref_nd
+        coverage = np.ones(len(ideal), dtype=float)
+    else:
+        ref_nd = _non_dominated_union(local_nd_fronts)
+        global_from_local = ref_nd
+        global_range = np.max(global_from_local, axis=0) - np.min(global_from_local, axis=0)
+        local_nd_range = local_nd_nadir - local_nd_ideal
+        coverage = np.divide(
+            global_range,
+            local_nd_range,
+            out=np.ones(local_nd_range.shape, dtype=float),
+            where=local_nd_range > 0,
+        )
+        coverage = np.clip(coverage, 0.0, 1.0)
+
     nd_ideal = np.min(ref_nd, axis=0)
     nd_nadir = np.max(ref_nd, axis=0)
-
     range_all = nadir - ideal
     range_nd = nd_nadir - nd_ideal
     range_inflation = np.divide(
@@ -115,25 +135,6 @@ def _hypervolume_diagnostics(reference_sources, reference_names, reference_front
         np.all(np.isclose(ideal, nd_ideal, rtol=1e-12, atol=1e-15))
         and np.all(np.isclose(nadir, nd_nadir, rtol=1e-12, atol=1e-15))
     )
-
-    local_nd_fronts = []
-    for source_fronts in reference_sources:
-        local_nd = _non_dominated_union(source_fronts)
-        if local_nd is not None and len(local_nd) > 0:
-            local_nd_fronts.append(local_nd)
-    local_nd_merged = np.vstack(local_nd_fronts)
-    local_nd_ideal = np.min(local_nd_merged, axis=0)
-    local_nd_nadir = np.max(local_nd_merged, axis=0)
-    global_from_local = _non_dominated_union(local_nd_fronts)
-    global_range = np.max(global_from_local, axis=0) - np.min(global_from_local, axis=0)
-    local_nd_range = local_nd_nadir - local_nd_ideal
-    coverage = np.divide(
-        global_range,
-        local_nd_range,
-        out=np.ones(local_nd_range.shape, dtype=float),
-        where=local_nd_range > 0,
-    )
-    coverage = np.clip(coverage, 0.0, 1.0)
 
     local_ideal, local_nadir = _compute_extents(reported_fronts.values())
     if local_ideal is None:

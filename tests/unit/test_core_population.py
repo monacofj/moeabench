@@ -10,7 +10,40 @@ import os
 # Ensure project root is in path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../")))
 
-from moeabench.core.run import Population
+from moeabench.core.run import Population, _calc_domination_mask
+
+
+def _brute_force_domination_mask(objectives):
+    objectives = np.asarray(objectives)
+    return np.array([
+        np.any(
+            np.all(objectives <= point, axis=1)
+            & np.any(objectives < point, axis=1)
+        )
+        for point in objectives
+    ], dtype=bool)
+
+
+@pytest.mark.parametrize(
+    ("objectives", "expected"),
+    [
+        (np.array([[0.0, 1.0], [0.5, 0.5], [1.0, 0.0]]), [False, False, False]),
+        (np.array([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]]), [False, True, True]),
+        (np.array([[0.0, 0.0], [0.0, 0.0], [1.0, 1.0]]), [False, False, True]),
+        (np.empty((0, 2)), []),
+    ],
+)
+def test_shared_domination_mask_known_cases(objectives, expected):
+    assert _calc_domination_mask(objectives).tolist() == expected
+
+
+def test_shared_domination_mask_matches_brute_force():
+    objectives = np.random.default_rng(19).random((37, 5))
+
+    assert np.array_equal(
+        _calc_domination_mask(objectives, chunk_size=7),
+        _brute_force_domination_mask(objectives),
+    )
 
 def test_population_creation():
     """Verify basic instantiation and shape validation."""

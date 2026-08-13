@@ -436,6 +436,30 @@ def test_uneven_histories_keep_run_aligned_boundary_diagnostics():
     assert np.isnan(result.diagnostics["raw_hv_fraction_of_nominal_bbox"][1])
 
 
+@pytest.mark.parametrize(
+    ("ref", "expected_calls"),
+    [
+        (None, 1),
+        (REFERENCE, 1),
+        ([REFERENCE, REFERENCE + 0.1], 3),
+        ([REFERENCE, REFERENCE + 0.1, REFERENCE + 0.2, REFERENCE + 0.3], 5),
+    ],
+)
+def test_public_hypervolume_avoids_redundant_diagnostic_nds(monkeypatch, ref, expected_calls):
+    original = evaluator._non_dominated_union
+    calls = []
+
+    def recording_non_dominated_union(fronts):
+        calls.append(fronts)
+        return original(fronts)
+
+    monkeypatch.setattr(evaluator, "_non_dominated_union", recording_non_dominated_union)
+
+    _hv(GOOD, ref=ref)
+
+    assert len(calls) == expected_calls
+
+
 class warnings_not_matching:
     """Assert that warnings may occur, but none matches a forbidden phrase."""
 
