@@ -275,23 +275,63 @@ class MetricMatrix(Reportable):
             suffix = " objectives" if include_objectives else ""
             return f"{len(indices)} / {total}{suffix}"
 
+        def _explained_fields(fields, indent="", label_width=None):
+            """Format ``label : value — meaning`` rows with aligned columns."""
+            if not fields:
+                return []
+            if label_width is None:
+                label_width = max(len(label) for label, _, _ in fields)
+            value_width = max(len(str(value)) for _, value, _ in fields)
+            return [
+                f"{indent}- {label:<{label_width}}: {value!s:<{value_width}} — {meaning}"
+                for label, value, meaning in fields
+            ]
+
         def _reference_fields():
             coverage = np.asarray(self.diagnostics["global_local_nd_coverage"], dtype=float)
             affected = np.flatnonzero(
                 ~np.isclose(coverage, 1.0, rtol=1e-12, atol=1e-15)
             )
             fields = [
-                ("References", ", ".join(self.diagnostics["reference_names"])),
-                ("Reference points", str(self.diagnostics["reference_points"])),
-                ("Global-ND reference points", str(self.diagnostics["reference_nd_points"])),
-                ("Dominated reference fraction", f"{self.diagnostics['reference_dominated_fraction']:.{prec}f}"),
+                (
+                    "References",
+                    ", ".join(self.diagnostics["reference_names"]),
+                    "sources whose fronts define the reference",
+                ),
+                (
+                    "Reference points",
+                    str(self.diagnostics["reference_points"]),
+                    "all reference points combined",
+                ),
+                (
+                    "Global-ND reference points",
+                    str(self.diagnostics["reference_nd_points"]),
+                    "points remaining after global non-dominated filtering",
+                ),
+                (
+                    "Dominated reference fraction",
+                    f"{self.diagnostics['reference_dominated_fraction']:.{prec}f}",
+                    "fraction dominated in the combined reference",
+                ),
             ]
             if len(affected):
-                fields.append(("Global/local ND coverage < 1", _objective_list(affected, True)))
+                fields.append((
+                    "Global/local ND coverage < 1",
+                    _objective_list(affected, True),
+                    "objectives whose global-ND span is smaller than the pooled local-ND span",
+                ))
                 minimum = affected[np.argmin(coverage[affected])]
-                fields.append(("Minimum ND coverage", f"{coverage[minimum]:.{prec}f} (f{minimum + 1})"))
+                fields.append((
+                    "Minimum ND coverage",
+                    f"{coverage[minimum]:.{prec}f} (f{minimum + 1})",
+                    "smallest global/local ND span ratio",
+                ))
             else:
-                fields.append(("Global/local ND coverage", f"{1.0:.{prec}f} in all objectives"))
+                fields.append((
+                    "Global/local ND coverage",
+                    f"{1.0:.{prec}f} in all objectives",
+                    "global and pooled local ND spans match",
+                ))
 
             expansion = np.asarray(self.diagnostics["reference_expansion"], dtype=float)
             expanded = np.flatnonzero(
@@ -299,20 +339,122 @@ class MetricMatrix(Reportable):
                 & ~np.isclose(expansion, 1.0, rtol=1e-12, atol=1e-15)
             )
             if not len(expanded):
-                fields.append(("Reference expansion", "None"))
+                fields.append((
+                    "Reference expansion",
+                    "None",
+                    "the reference does not widen the evaluated front",
+                ))
                 return fields
 
-            fields.append(("Reference-expanded objectives", _objective_list(expanded)))
+            fields.append((
+                "Reference-expanded objectives",
+                _objective_list(expanded),
+                "objectives where the reference span exceeds the evaluated span",
+            ))
             zero_span = expanded[np.isinf(expansion[expanded])]
             finite = expanded[np.isfinite(expansion[expanded])]
             if len(zero_span):
-                fields.append(("Zero-span local objectives", _objective_list(zero_span)))
+                fields.append((
+                    "Zero-span local objectives",
+                    _objective_list(zero_span),
+                    "evaluated objectives with no observed span",
+                ))
                 if len(finite):
                     maximum = finite[np.argmax(expansion[finite])]
-                    fields.append(("Maximum finite expansion", f"{expansion[maximum]:.{prec}f} (f{maximum + 1})"))
+                    fields.append((
+                        "Maximum finite expansion",
+                        f"{expansion[maximum]:.{prec}f} (f{maximum + 1})",
+                        "largest finite reference/evaluated span ratio",
+                    ))
             else:
                 maximum = finite[np.argmax(expansion[finite])]
-                fields.append(("Maximum reference expansion", f"{expansion[maximum]:.{prec}f} (f{maximum + 1})"))
+                fields.append((
+                    "Maximum reference expansion",
+                    f"{expansion[maximum]:.{prec}f} (f{maximum + 1})",
+                    "largest reference/evaluated span ratio",
+                ))
+            return fields
+
+        def _hypervolume_final_fields():
+            fields = [
+                ("Mean", f"{mean:.{prec}f}", "average final HV across valid runs"),
+                ("StdDev", std_display, "between-run variability in final HV"),
+                ("Best", f"{best:.{prec}f}", "highest final HV among valid runs"),
+            ]
+            if self.diagnostics:
+                hv_bbox = _finite_mean("raw_hv_fraction_of_nominal_bbox")
+                hv_bbox_display = "N/A" if hv_bbox is None else f"{hv_bbox:.{prec}f}"
+                fields.append((
+                    "HV/BBox",
+                    hv_bbox_display,
+                    "average final raw HV as a fraction of the nominal bounding-box volume",
+                ))
+            return fields
+
+        def _hypervolume_search_fields():
+            fields = [
+                ("Runs", str(data.shape[1]), "run histories included in the metric"),
+                ("Generations", str(data.shape[0]), "generation positions included in the metric history"),
+            ]
+            if self.diagnostics:
+                fields.append((
+                    "HV backend",
+                    self.diagnostics["hv_backend"],
+                    "engine used to compute HV",
+                ))
+            fields.append((
+                "Stability",
+                stability,
+                "between-run consistency of final HV",
+            ))
+            if (self.diagnostics
+                    and self.diagnostics["hv_backend"] == "monte_carlo"):
+                fields.extend([
+                    (
+                        "MC samples",
+                        str(self.diagnostics["hv_n_samples"]),
+                        "samples used per Monte Carlo estimate",
+                    ),
+                    (
+                        "MC seed",
+                        str(self.diagnostics["hv_mc_seed"]),
+                        "seed used to generate Monte Carlo samples",
+                    ),
+                ])
+            return fields
+
+        def _reference_boundary_fields():
+            outside_nbox = _finite_mean("outside_nbox_fraction")
+            outside_bbox = _finite_mean("outside_bbox_fraction")
+            if outside_nbox == 0.0 and outside_bbox == 0.0:
+                return [(
+                    "Boundary status",
+                    "Within bounds",
+                    "all evaluated final-front points lie within both nbox and bbox",
+                )]
+
+            nbox_display = "N/A" if outside_nbox is None else f"{outside_nbox:.{prec}f}"
+            bbox_display = "N/A" if outside_bbox is None else f"{outside_bbox:.{prec}f}"
+            fields = [
+                (
+                    "Outside nbox fraction",
+                    nbox_display,
+                    "mean fraction of final-front points beyond the normalization bounds",
+                ),
+                (
+                    "Outside bbox fraction",
+                    bbox_display,
+                    "mean fraction of final-front points beyond the HV reference boundary",
+                ),
+            ]
+            valid_runs = int(np.isfinite(self.diagnostics["outside_bbox_fraction"]).sum())
+            saturated = int(np.sum(self.diagnostics["all_points_outside_bbox"]))
+            if saturated:
+                fields.append((
+                    "Floor-saturated runs",
+                    f"{saturated} / {valid_runs}",
+                    "runs whose entire final front lies beyond the HV boundary",
+                ))
             return fields
 
         if use_md:
@@ -331,38 +473,18 @@ class MetricMatrix(Reportable):
                 ])
             lines.append("#### Final Performance (Last Gen)")
             if is_hypervolume:
-                lines.extend([
-                    "",
-                    f"- Mean    : {mean:.{prec}f}",
-                    f"- StdDev  : {std_display}",
-                    f"- Best    : {best:.{prec}f}",
-                ])
+                lines.append("")
+                lines.extend(_explained_fields(_hypervolume_final_fields()))
             else:
                 lines.extend([
                     f"- **Mean**: {mean:.{prec}f}",
                     f"- **StdDev**: {std_display}",
                     f"- **Best**: {best:.{prec}f}",
                 ])
-            if is_hypervolume and self.diagnostics:
-                hv_bbox = _finite_mean("raw_hv_fraction_of_nominal_bbox")
-                hv_bbox_display = "N/A" if hv_bbox is None else f"{hv_bbox:.{prec}f}"
-                lines.append(f"- HV/BBox : {hv_bbox_display}")
             lines.extend(["", "#### Search Dynamics"])
             if is_hypervolume:
-                lines.extend([
-                    "",
-                    f"- Runs        : {data.shape[1]}",
-                    f"- Generations : {data.shape[0]}",
-                ])
-                if self.diagnostics:
-                    lines.append(f"- HV backend  : {self.diagnostics['hv_backend']}")
-                lines.append(f"- Stability   : {stability}")
-                if (self.diagnostics
-                        and self.diagnostics["hv_backend"] == "monte_carlo"):
-                    lines.extend([
-                        f"- MC samples  : {self.diagnostics['hv_n_samples']}",
-                        f"- MC seed     : {self.diagnostics['hv_mc_seed']}",
-                    ])
+                lines.append("")
+                lines.extend(_explained_fields(_hypervolume_search_fields()))
             else:
                 lines.extend([
                     f"- **Runs**: {data.shape[1]}",
@@ -371,23 +493,9 @@ class MetricMatrix(Reportable):
                 ])
             if is_hypervolume and self.diagnostics:
                 lines.extend(["", "#### Reference", ""])
-                lines.extend(f"- {label:<30}: {value}" for label, value in _reference_fields())
+                lines.extend(_explained_fields(_reference_fields(), label_width=30))
                 lines.extend(["", "#### Reference Boundary", ""])
-                outside_nbox = _finite_mean("outside_nbox_fraction")
-                outside_bbox = _finite_mean("outside_bbox_fraction")
-                if outside_nbox == 0.0 and outside_bbox == 0.0:
-                    lines.append("All evaluated final-front points lie within both the nbox and bbox.")
-                else:
-                    nbox_display = "N/A" if outside_nbox is None else f"{outside_nbox:.{prec}f}"
-                    bbox_display = "N/A" if outside_bbox is None else f"{outside_bbox:.{prec}f}"
-                    lines.extend([
-                        f"- Outside nbox fraction : {nbox_display}",
-                        f"- Outside bbox fraction : {bbox_display}",
-                    ])
-                    valid_runs = int(np.isfinite(self.diagnostics["outside_bbox_fraction"]).sum())
-                    saturated = int(np.sum(self.diagnostics["all_points_outside_bbox"]))
-                    if saturated:
-                        lines.append(f"- Floor-saturated runs  : {saturated} / {valid_runs}")
+                lines.extend(_explained_fields(_reference_boundary_fields()))
             content = "\n".join(lines)
         else:
             lines = [f"--- Metric Report: {self.metric_name}{source_info} ---"]
@@ -397,46 +505,37 @@ class MetricMatrix(Reportable):
                 lines.append("  Question: How close is this algorithm to mathematical perfection?")
             lines.extend([
                 "  Final Performance (Last Gen):",
-                f"    - Mean: {mean:.{prec}f}",
-                f"    - StdDev: {std_display}",
-                f"    - Best: {best:.{prec}f}",
             ])
-            if is_hypervolume and self.diagnostics:
-                hv_bbox = _finite_mean("raw_hv_fraction_of_nominal_bbox")
-                hv_bbox_display = "N/A" if hv_bbox is None else f"{hv_bbox:.{prec}f}"
-                lines.append(f"    - HV/BBox: {hv_bbox_display}")
-            lines.extend([
-                "  Search Dynamics:",
-                f"    - Runs: {data.shape[1]}",
-                f"    - Generations: {data.shape[0]}",
-                f"    - Stability: {stability}",
-            ])
-            if is_hypervolume and self.diagnostics:
-                lines.append(f"    - HV backend: {self.diagnostics['hv_backend']}")
-                if self.diagnostics["hv_backend"] == "monte_carlo":
-                    lines.extend([
-                        f"    - MC samples: {self.diagnostics['hv_n_samples']}",
-                        f"    - MC seed: {self.diagnostics['hv_mc_seed']}",
-                    ])
+            if is_hypervolume:
+                lines.extend(_explained_fields(
+                    _hypervolume_final_fields(), indent="    "
+                ))
+            else:
+                lines.extend([
+                    f"    - Mean: {mean:.{prec}f}",
+                    f"    - StdDev: {std_display}",
+                    f"    - Best: {best:.{prec}f}",
+                ])
+            lines.append("  Search Dynamics:")
+            if is_hypervolume:
+                lines.extend(_explained_fields(
+                    _hypervolume_search_fields(), indent="    "
+                ))
+            else:
+                lines.extend([
+                    f"    - Runs: {data.shape[1]}",
+                    f"    - Generations: {data.shape[0]}",
+                    f"    - Stability: {stability}",
+                ])
             if is_hypervolume and self.diagnostics:
                 lines.append("  Reference:")
-                lines.extend(f"    - {label}: {value}" for label, value in _reference_fields())
+                lines.extend(_explained_fields(
+                    _reference_fields(), indent="    ", label_width=30
+                ))
                 lines.append("  Reference Boundary:")
-                outside_nbox = _finite_mean("outside_nbox_fraction")
-                outside_bbox = _finite_mean("outside_bbox_fraction")
-                if outside_nbox == 0.0 and outside_bbox == 0.0:
-                    lines.append("    All evaluated final-front points lie within both the nbox and bbox.")
-                else:
-                    nbox_display = "N/A" if outside_nbox is None else f"{outside_nbox:.{prec}f}"
-                    bbox_display = "N/A" if outside_bbox is None else f"{outside_bbox:.{prec}f}"
-                    lines.extend([
-                        f"    - Outside nbox fraction: {nbox_display}",
-                        f"    - Outside bbox fraction: {bbox_display}",
-                    ])
-                    valid_runs = int(np.isfinite(self.diagnostics["outside_bbox_fraction"]).sum())
-                    saturated = int(np.sum(self.diagnostics["all_points_outside_bbox"]))
-                    if saturated:
-                        lines.append(f"    - Floor-saturated runs: {saturated} / {valid_runs}")
+                lines.extend(_explained_fields(
+                    _reference_boundary_fields(), indent="    "
+                ))
             content = "\n".join(lines)
         
         return self._render_report(content, show, **kwargs)

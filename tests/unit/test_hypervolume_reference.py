@@ -432,13 +432,64 @@ def test_external_report_uses_compact_reference_diagnostics():
     assert "Dominated reference fraction" in report
     assert "Reference Boundary:" in report
     assert "HV/BBox" in report
-    assert "HV backend: exact" in report
+    assert "HV backend" in report
+    assert "exact" in report
+    assert "engine used to compute HV" in report
     for removed in (
         "Reference Geometry", "N-box ideal", "N-box nadir",
         "B-box reference point", "Range inflation",
         "Outside nbox (final)", "Outside bbox (final)",
     ):
         assert removed not in report
+
+
+def test_hypervolume_report_explains_and_aligns_all_displayed_values():
+    result = _hv(GOOD, ref=REFERENCE)
+
+    report = result.report(show=False, markdown=True)
+
+    expected_meanings = (
+        "average final HV across valid runs",
+        "between-run variability in final HV",
+        "highest final HV among valid runs",
+        "average final raw HV as a fraction of the nominal bounding-box volume",
+        "run histories included in the metric",
+        "generation positions included in the metric history",
+        "engine used to compute HV",
+        "between-run consistency of final HV",
+        "sources whose fronts define the reference",
+        "all reference points combined",
+        "points remaining after global non-dominated filtering",
+        "fraction dominated in the combined reference",
+        "global and pooled local ND spans match",
+        "objectives where the reference span exceeds the evaluated span",
+        "largest reference/evaluated span ratio",
+        "all evaluated final-front points lie within both nbox and bbox",
+    )
+    for meaning in expected_meanings:
+        assert f"— {meaning}" in report
+
+    for section in report.split("#### ")[1:]:
+        rows = [line for line in section.splitlines() if line.startswith("- ")]
+        assert rows
+        assert all(" — " in row for row in rows)
+        assert len({row.index("—") for row in rows}) == 1
+
+
+def test_monte_carlo_report_explains_sampling_values():
+    result = evaluator.hypervolume(
+        GOOD,
+        ref=REFERENCE,
+        mode="fast",
+        n_samples=20,
+        mc_seed=17,
+        progress=False,
+    )
+
+    report = result.report(show=False, markdown=True)
+
+    assert "— samples used per Monte Carlo estimate" in report
+    assert "— seed used to generate Monte Carlo samples" in report
 
 
 def test_reference_names_are_disambiguated_without_deduplication():
@@ -503,9 +554,9 @@ def test_reference_boundary_report_uses_run_means_and_valid_denominator():
         result = _hv([front_a, front_b], ref=ref)
     report = result.report(show=False, markdown=True)
 
-    assert "Outside nbox fraction : 0.5000" in report
-    assert "Outside bbox fraction : 0.5000" in report
-    assert "Floor-saturated runs  : 1 / 2" in report
+    assert "Outside nbox fraction: 0.5000" in report
+    assert "Outside bbox fraction: 0.5000" in report
+    assert "Floor-saturated runs : 1 / 2" in report
 
 
 def test_reference_expansion_uses_last_generation_selected_by_gens():
