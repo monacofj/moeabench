@@ -298,6 +298,7 @@ class PerformanceAuditor:
                          status: DiagnosticStatus = DiagnosticStatus.UNDEFINED,
                          description: str = "Audit failed.",
                          reproducibility: Optional[Dict[str, Any]] = None,
+                         diagnostic_context: Optional[Dict[str, Any]] = None,
                          experiment_name: Optional[str] = None) -> DiagnosticResult:
         """ 
         The 'Synthesis' Logic. 
@@ -305,13 +306,14 @@ class PerformanceAuditor:
         """
         if q_res is None or f_res is None:
              if status == DiagnosticStatus.MISSING_BASELINE:
-                 return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility, experiment_name=experiment_name)
+                 return DiagnosticResult(q_audit_res=None, fair_audit_res=None, status=status, description=description, reproducibility=reproducibility, diagnostic_context=diagnostic_context, experiment_name=experiment_name)
              return DiagnosticResult(
                  q_audit_res=None,
                  fair_audit_res=None,
                  status=DiagnosticStatus.UNDEFINED,
                  description="The audit could not determine a reliable clinical classification for this result.",
                  reproducibility=reproducibility,
+                 diagnostic_context=diagnostic_context,
                  experiment_name=experiment_name,
              )
 
@@ -355,6 +357,7 @@ class PerformanceAuditor:
             status=status,
             description=desc,
             reproducibility=reproducibility,
+            diagnostic_context=diagnostic_context,
             experiment_name=experiment_name or q_res.experiment_name
         )
 
@@ -472,6 +475,17 @@ def audit(target: Any,
             # B. Normalization Resolution
             # Use s_k from mop if available, otherwise calculate from GT
             s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+
+            # Expose the exact canonical context used by the audit so that the
+            # public single-metric API can reuse it (including history data).
+            ctx.update({
+                "GT": GT,
+                "k": K_target,
+                "s_k": s_k,
+                "U_ref": U_ref,
+                "centroids": centroids,
+                "ref_hist": hist_ref,
+            })
             
             # C. Compute FR Metrics (Physics)
             f_headway = fair.headway(P, GT, s_k, problem=mop_name, k=K_target, initial_data=ctx.get('P_initial'))
@@ -531,12 +545,14 @@ def audit(target: Any,
                 q_res,
                 fr_res,
                 reproducibility=r_info,
+                diagnostic_context=ctx,
                 experiment_name=experiment_name,
             )
             
         except baselines.UndefinedBaselineError as e:
             desc = "Clinical scoring could not be completed because no compatible baseline was available."
             return PerformanceAuditor.audit_synthesis(None, None, status=DiagnosticStatus.MISSING_BASELINE, 
-                                                   description=desc, reproducibility=r_info, experiment_name=experiment_name)
+                                                   description=desc, reproducibility=r_info,
+                                                   diagnostic_context=ctx, experiment_name=experiment_name)
         except Exception as e:
             raise e
