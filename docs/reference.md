@@ -106,6 +106,10 @@ The algorithm's `exp.moea.seed` is the immutable base seed configured by the use
 
 The experiment report displays these concepts separately as `Base seed` and `Run seeds`.
 
+Each `Run` also exposes a read-only copy of `run.component_seeds`. It records
+seeds allocated to internal stochastic components, when an algorithm has any;
+`run.seed` remains the evolutionary run seed.
+
 **Methods:**
 
 #### **`.run(repeat=None, diagnose=False, silent=False, stop=None, **kwargs)`**
@@ -115,10 +119,41 @@ The experiment report displays these concepts separately as `Base seed` and `Run
     *   `diagnose` (*bool*): If `True`, performs automated pathology analysis after execution. Defaults to `False`.
     *   `silent` (*bool*): If `True`, suppresses runtime output (`Running {exp.name}` banner, progress bars, and run-triggered diagnostic prints). Defaults to `False`.
     *   `stop` (*callable*): Custom stop criteria function. Returns `True` to halt.
-    *   `**kwargs`: Parameters passed directly to the MOEA engine (e.g., `population`, `generations`, `seed`).
+    *   `**kwargs`: Runtime overrides for supported MOEA properties (e.g., `population`, `generations`, `seed`). Algorithm-specific constructor keywords may instead be consumed by a MoeaBench wrapper before pymoo is called.
 *   **Returns**: `None`.
 *   **Runtime Behavior**: By default, the method prints `Running {exp.name}` at the beginning of execution.
 *   **Seed Behavior**: A fresh execution uses `exp.moea.seed + i` for run index `i` without changing `exp.moea.seed`. With `append=True`, the sequence continues after the runs already stored, avoiding duplicate seeds.
+
+#### NSGA-III reference-direction seed
+
+NSGA-III has a separate stochastic component that generates energy reference
+directions. By default, MoeaBench deterministically derives its seed from each
+run seed, without consuming the evolutionary random stream:
+
+```python
+algorithm = mb.moeas.NSGA3(seed=42)
+```
+
+Controlled experiments can keep the reference directions fixed while run seeds
+vary by supplying the wrapper-specific constructor keyword:
+
+```python
+algorithm = mb.moeas.NSGA3(seed=42, ref_dirs_seed=7)
+```
+
+Omitting `ref_dirs_seed` or setting it to `None` selects automatic derivation.
+An integer from `0` through `2**32 - 1` uses that value literally for every run;
+booleans, strings, floats, negative values, and larger integers are rejected.
+Invalid types raise `TypeError`, while out-of-range integers raise `ValueError`.
+The override does not alter
+`run.seed` or the seed passed to pymoo's evolutionary process, although changing
+the reference directions can naturally change optimization results. The effective
+value is available as `run.component_seeds["nsga3.reference_directions"]`.
+
+When present, component seeds appear per run in both experiment report formats
+and in `metadata.json` under `context.runs[].component_seeds`. The serialized
+experiment preserves the same mappings. Archives created before component-seed
+metadata was introduced remain compatible and expose an empty mapping.
 
 #### **`.pop(n=-1)`**
 *   **Description**: Accesses the multi-run aggregate (`JoinedPopulation`) at generation `n`.

@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **NSGA-III Component Seed Metadata**:
+  - Runs expose and persist the effective reference-direction seed through `run.component_seeds`.
 - **Hypervolume Backend Diagnostics**:
   - Results record the selected backend, requested mode, and Monte Carlo sample/seed metadata.
   - Hypervolume progress now advances after every evaluated generation.
@@ -34,6 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed the Hypervolume bounding-box toggle; pooled empirical contexts are now supplied explicitly through `ref`.
 
 ### Fixed
+- **NSGA-III Random-Stream Coupling (#30)**:
+  - Energy reference directions now use a deterministic seed distinct from the evolutionary run seed.
+  - `ref_dirs_seed=<int>` fixes reference directions across runs without being forwarded to pymoo's NSGA-III constructor.
 - **Hypervolume Runtime and Reference Validation**:
   - Seven- and eight-objective histories no longer enter the unnecessarily expensive 100,000-sample Monte Carlo path in automatic mode.
   - Every explicitly supplied reference must contain an evaluated front; unexecuted experiments are rejected instead of being silently ignored.

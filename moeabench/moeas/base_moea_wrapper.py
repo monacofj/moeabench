@@ -84,6 +84,11 @@ class BaseMoeaWrapper:
              self._instance.seed = value
 
     @property
+    def component_seeds(self):
+        """Seeds used by stochastic components in the active run."""
+        return dict(getattr(self._instance, 'component_seeds', {}) or {})
+
+    @property
     def stop(self):
         return self._stop
     

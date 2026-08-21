@@ -55,6 +55,7 @@ This directory contains records of the key architectural decisions made during t
 | [0042](0042-hypervolume-bbox-diagnostics.md) | Diagnostic-Only Hypervolume Bounding Boxes | Accepted | 2026-08-12 |
 | [0043](0043-hypervolume-engine-selection.md) | Hypervolume Engine Selection and Reproducible Monte Carlo | Accepted | 2026-08-13 |
 | [0044](0044-ordinal-hypervolume.md) | Ordinal Hypervolume | Accepted | 2026-08-19 |
+| [0045](0045-component-seed-allocation.md) | Deterministic Component Seed Allocation | Accepted | 2026-08-21 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*
