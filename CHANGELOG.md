@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Relative Ordinal Hypervolume**:
+  - `mb.metrics.ohv(..., scale="rel")` reports raw OHV relative to the best individual final reference front in one fixed ordinal context.
+  - OHV reports and diagnostics distinguish relative performance from raw ordinal-box coverage.
 - **NSGA-III Component Seed Metadata**:
   - Runs expose and persist the effective reference-direction seed through `run.component_seeds`.
 - **Hypervolume Backend Diagnostics**:

@@ -103,6 +103,10 @@ This is the central analytical table of the API. It correlates **analysis namesp
 | Topography Compare | `mb.stats.topo_match`, `mb.stats.topo_shift`, `mb.stats.topo_tail` | `DistMatchResult` | `view.density` |
 | Attainment | `mb.stats.attainment(...)` | `AttainmentSurface` | `view.bands`, `view.topology` |
 | Attainment Gap | `mb.stats.attainment_gap(...)` | `AttainmentDiff` | `view.gap` |
+
+Ordinal Hypervolume uses `scale="raw"` by default and accepts the keyword-only
+`scale="rel"` for division by the best individual final raw OHV in the shared
+reference context. `scale="abs"` is unsupported.
 | Stratification | `mb.stats.ranks(...)` | `RankCompareResult` | `view.ranks` |
 | Stratification | `mb.stats.strata(...)` | `StrataCompareResult` | `view.strata` |
 | Stratification | `mb.stats.tiers(...)` | `TierResult` | `view.tiers` |

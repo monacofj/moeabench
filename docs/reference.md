@@ -538,7 +538,7 @@ The returned `MetricMatrix.diagnostics` adds `reference_names`, `local_nd_refere
 
 MoeaBench does not remove outliers, clip evaluated points, repair a problematic bbox, or infer that two HV values are “too close” using an arbitrary threshold. Coverage, expansion, and dominated-reference fractions do not emit warnings. A warning is emitted only when every final-front point of a valid run lies beyond the bbox and therefore cannot contribute. When HV is saturated or geometrically uninformative, complement it with convergence metrics such as GD+/IGD+ rather than deforming its reference geometry.
 
-### `mb.metrics.ordinal_hypervolume(exp, ref=None, mode='auto', n_samples=100000, mc_seed=None, gens=None, progress=True)`
+### `mb.metrics.ordinal_hypervolume(exp, ref=None, mode='auto', n_samples=100000, mc_seed=None, gens=None, progress=True, *, scale='raw')`
 
 Calculates **Ordinal Hypervolume (OHV)**. Its exact public alias is
 `mb.metrics.ohv`; both names refer to the same callable. OHV is a distinct
@@ -559,9 +559,9 @@ OHV reference point is $(K_1,\ldots,K_M)$. A value better than the best
 reference level maps to 0; a value worse than the worst level maps to $K_j$
 and lies on the volume boundary. Equal values share a rank. Values between
 two reference levels map to the upper insertion position without interpolation.
-The resulting ordinary dominated volume is returned directly: no ideal/nadir
-normalization, zero-to-one transform, 1.1 endpoint, or `scale` post-processing
-is applied.
+The resulting ordinary dominated volume is the raw OHV. No ideal/nadir
+normalization, zero-to-one transform, or 1.1 endpoint is applied. Optional
+relative scaling is performed only after this raw matrix has been calculated.
 
 **Parameters:**
 
@@ -584,9 +584,13 @@ is applied.
   the prefix of `ohv(exp)` in exact mode.
 * `progress`: Whether to display progress, advanced once per evaluated
   generation.
+* `scale`: Keyword-only, case-insensitive `"raw"` (default) or `"rel"`.
+  `raw` returns dominated ordinal-cell volume. `rel` divides the entire raw
+  trajectory by one fixed best-final-reference denominator. `"abs"` and
+  unknown values raise `ValueError`.
 
 OHV v1 assumes minimization in every objective. Mixed or maximization-specific
-direction semantics, `scale='rel'`, `scale='abs'`, calibration baselines,
+direction semantics, `scale='abs'`, calibration baselines,
 adaptive generation-wise ranks, weighted ordinal distances, and alternative
 ranking schemes are intentionally outside this API.
 
@@ -595,12 +599,23 @@ with matching objective counts. `NaN` and infinite values raise `ValueError`
 with reference/evaluated context. At least one reference front must be non-empty.
 Unlike normalized HV, an objective with one distinct reference value is valid
 and has $K_j=1$. An empty evaluated generation has OHV 0.0. Selecting no
-generations returns a `(0, R)` `MetricMatrix`.
+generations returns a `(0, R)` `MetricMatrix`. Relative scaling still resolves
+and records its reference denominator in that case.
+
+For `scale="rel"`, every final front of every reference run is transformed in
+the same lattice and evaluated separately. The denominator is their greatest
+raw OHV—not the OHV of their pooled union. Without external `ref`, the evaluated
+runs supply these candidates. The same scalar is used for every generation, and
+values are not clipped: an earlier generation may exceed `1.0`. A non-positive
+denominator raises `ValueError`. Monte Carlo denominator evaluation uses the
+same backend, `n_samples`, and `mc_seed` as the trajectory, without advancing
+the progress bar.
 
 #### OHV results and diagnostics
 
 The return value has shape `Generations × Runs`, metric name
-`"Ordinal Hypervolume"`, and higher-is-better semantics. Its diagnostics are:
+`"Ordinal Hypervolume (Raw)"` or `"Ordinal Hypervolume (Relative)"`, and
+higher-is-better semantics. Its diagnostics are:
 
 | Key | Meaning |
 |---|---|
@@ -608,6 +623,8 @@ The return value has shape `Generations × Runs`, metric name
 | `ohv_backend` | `exact` or `monte_carlo`. |
 | `ohv_mode_requested` | Public mode requested by the caller. |
 | `ohv_n_samples`, `ohv_mc_seed` | Effective sampling settings, or `None` in exact mode. |
+| `ohv_scale` | Effective scale: `raw` or `rel`. |
+| `ohv_scale_denominator` | `None` for raw OHV; best individual final raw reference OHV for relative scaling. |
 | `reference_names` | Disambiguated names of the sources defining the lattice. |
 | `reference_points` | Number of pooled reference points, including duplicates. |
 | `ordinal_level_counts` | Integer vector $[K_1,\ldots,K_M]$. |
@@ -621,12 +638,24 @@ For directly comparable algorithms, use one common context explicitly:
 ```python
 left = mb.metrics.ohv(exp1, ref=[exp1, exp2])
 right = mb.metrics.ohv(exp2, ref=[exp1, exp2])
+
+left_rel = mb.metrics.ohv(exp1, ref=[exp1, exp2], scale="rel")
+right_rel = mb.metrics.ohv(exp2, ref=[exp1, exp2], scale="rel")
 ```
 
 The public performance view establishes that shared reference automatically:
 
 ```python
-mb.view.history(exp1, exp2, metric=mb.metrics.ohv)
+mb.view.history(exp1, exp2, metric=mb.metrics.ohv, scale="rel")
+```
+
+The view supplies the same reference list to both calls, so they share the
+ordinal lattice and relative denominator. Relative scaling and ordinal-box
+coverage are distinct:
+
+```text
+OHV_rel      = OHV_raw / best individual final reference OHV
+Raw OHV/OBox = OHV_raw / total ordinal box volume
 ```
 
 Conventional HV remains the default of `mb.view.history()`.

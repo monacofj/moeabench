@@ -121,6 +121,26 @@ def _ordinal_transform(front, levels):
     ]).astype(float, copy=False)
 
 
+def _evaluate_ordinal_history(history, reference_point, backend, *, n_samples,
+                              mc_seed, progress_callback=None):
+    """Evaluate one transformed history with the selected OHV backend."""
+    if backend == "monte_carlo":
+        metric = GEN_mc_ordinal_hypervolume(
+            history,
+            reference_point,
+            n_samples=n_samples,
+            seed=mc_seed,
+            progress_callback=progress_callback,
+        )
+    else:
+        metric = GEN_ordinal_hypervolume(
+            history,
+            reference_point,
+            progress_callback=progress_callback,
+        )
+    return metric.evaluate()
+
+
 def _reference_names(items):
     """Return stable, concrete, and fully disambiguated reference names."""
     names = []
@@ -279,10 +299,22 @@ class MetricMatrix(Reportable):
         use_md = kwargs.get('markdown', self._is_notebook())
         data = self._data
         if data.size == 0:
+            is_ohv = self.diagnostics.get("metric_kind") == "ordinal_hypervolume"
+            ohv_scale = self.diagnostics.get("ohv_scale", "raw")
             if use_md:
                 content = f"### Metric Report: {self.metric_name}\n**Status**: No data available"
+                if is_ohv:
+                    content += f"\n- **Scale**: {'Relative' if ohv_scale == 'rel' else 'Raw'}"
+                    if ohv_scale == "rel":
+                        denominator = self.diagnostics["ohv_scale_denominator"]
+                        content += f"\n- **Scale denominator**: {denominator:.{defaults.precision}f}"
             else:
                 content = f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
+                if is_ohv:
+                    content += f"\n  Scale: {'Relative' if ohv_scale == 'rel' else 'Raw'}"
+                    if ohv_scale == "rel":
+                        denominator = self.diagnostics["ohv_scale_denominator"]
+                        content += f"\n  Scale denominator: {denominator:.{defaults.precision}f}"
             return self._render_report(content, show, **kwargs)
 
         # Distribution at the last generation
@@ -523,25 +555,45 @@ class MetricMatrix(Reportable):
             return fields
 
         def _ordinal_final_fields():
+            ohv_scale = self.diagnostics.get("ohv_scale", "raw")
+            scale_label = "relative" if ohv_scale == "rel" else "raw"
             fraction = _finite_mean("raw_ohv_fraction_of_ordinal_box")
             fraction_display = "N/A" if fraction is None else f"{fraction:.{prec}f}"
             return [
-                ("Mean", f"{mean:.{prec}f}", "average final OHV across valid runs"),
-                ("StdDev", std_display, "between-run variability in final OHV"),
-                ("Best", f"{best:.{prec}f}", "highest final OHV among valid runs"),
-                ("OHV/OBox", fraction_display,
+                ("Mean", f"{mean:.{prec}f}",
+                 f"average final {scale_label} OHV across valid runs"),
+                ("StdDev", std_display,
+                 f"between-run variability in final {scale_label} OHV"),
+                ("Best", f"{best:.{prec}f}",
+                 f"highest final {scale_label} OHV among valid runs"),
+                ("Raw OHV/OBox", fraction_display,
                  "average final raw OHV as a fraction of the ordinal box"),
             ]
 
         def _ordinal_search_fields():
+            ohv_scale = self.diagnostics.get("ohv_scale", "raw")
             fields = [
                 ("Runs", str(data.shape[1]), "run histories included in the metric"),
                 ("Generations", str(data.shape[0]),
                  "generation positions included in the metric history"),
+                ("Scale", "Relative" if ohv_scale == "rel" else "Raw",
+                 "post-processing applied to raw ordinal volume"),
                 ("OHV backend", self.diagnostics["ohv_backend"],
                  "engine used to compute raw ordinal volume"),
                 ("Stability", stability, "between-run consistency of final OHV"),
             ]
+            if ohv_scale == "rel":
+                denominator = self.diagnostics["ohv_scale_denominator"]
+                qualifier = (
+                    "estimated raw OHV"
+                    if self.diagnostics["ohv_backend"] == "monte_carlo"
+                    else "raw OHV"
+                )
+                fields.insert(3, (
+                    "Scale denominator",
+                    f"{denominator:.{prec}f}",
+                    f"best individual final reference {qualifier}",
+                ))
             if self.diagnostics["ohv_backend"] == "monte_carlo":
                 fields.extend([
                     ("MC samples", str(self.diagnostics["ohv_n_samples"]),
@@ -570,10 +622,16 @@ class MetricMatrix(Reportable):
         if use_md:
             lines = [f"### Metric Report: {self.metric_name}{source_info}"]
             if is_ordinal_hypervolume:
-                lines.extend([
-                    "> Ordinal Hypervolume measures dominated volume after replacing metric objective distances by unit distances between consecutive reference levels.",
-                    "",
-                ])
+                if self.diagnostics.get("ohv_scale", "raw") == "rel":
+                    lines.extend([
+                        "> Relative Ordinal Hypervolume expresses raw OHV as a fraction of the best individual final OHV in the common reference context. A value of 1.0 matches that reference performance; historical values may exceed 1.0.",
+                        "",
+                    ])
+                else:
+                    lines.extend([
+                        "> Ordinal Hypervolume measures dominated volume after replacing metric objective distances by unit distances between consecutive reference levels.",
+                        "",
+                    ])
             if is_hypervolume and self.is_ratio:
                 lines.extend([
                     "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
@@ -624,10 +682,16 @@ class MetricMatrix(Reportable):
         else:
             lines = [f"--- Metric Report: {self.metric_name}{source_info} ---"]
             if is_ordinal_hypervolume:
-                lines.append(
-                    "  Meaning: dominated volume after metric objective distances are replaced "
-                    "by unit distances between consecutive reference levels."
-                )
+                if self.diagnostics.get("ohv_scale", "raw") == "rel":
+                    lines.append(
+                        "  Meaning: raw OHV divided by the best individual final OHV in the "
+                        "common reference context; historical values may exceed 1.0."
+                    )
+                else:
+                    lines.append(
+                        "  Meaning: dominated volume after metric objective distances are replaced "
+                        "by unit distances between consecutive reference levels."
+                    )
             if is_hypervolume and self.is_ratio:
                 lines.append("  Question: What is the competitive efficiency relative to best session performance?")
             elif is_hypervolume and self.is_abs:
@@ -1152,16 +1216,21 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
 
 
 def ordinal_hypervolume(exp, ref=None, mode="auto", n_samples=100000,
-                        mc_seed=None, gens=None, progress=True):
-    """Calculate raw Hypervolume in a fixed ordinal reference lattice.
+                        mc_seed=None, gens=None, progress=True, *, scale="raw"):
+    """Calculate Hypervolume in a fixed ordinal reference lattice.
 
     OHV v1 assumes minimization in every objective. The final fronts of ``ref``
     (or of ``exp`` when ``ref`` is omitted) establish sorted, distinct levels for
     every objective. All requested generations are mapped by left-insertion rank
     into that one lattice and evaluated against ``(K_1, ..., K_M)``. No metric
     distance, ideal/nadir normalization, or conventional 1.1 reference point is
-    used.
+    used. ``scale='rel'`` divides every raw value by the best individual final
+    reference-front OHV calculated in the same lattice.
     """
+    scale = str(scale).lower()
+    if scale not in ("raw", "rel"):
+        raise ValueError(f"Unknown scale parameter: {scale}. Use 'raw' or 'rel'.")
+
     has_external_ref = ref is not None
     ref_items = [] if ref is None else (ref if isinstance(ref, list) else [ref])
 
@@ -1219,26 +1288,56 @@ def ordinal_hypervolume(exp, ref=None, mode="auto", n_samples=100000,
     try:
         for run_index, history in enumerate(ordinal_histories):
             callback = advance_progress if pbar is not None else None
-            if backend == "monte_carlo":
-                metric = GEN_mc_ordinal_hypervolume(
-                    history, ordinal_ref_point, n_samples=n_samples,
-                    seed=resolved_mc_seed, progress_callback=callback,
-                )
-            else:
-                metric = GEN_ordinal_hypervolume(
-                    history, ordinal_ref_point, progress_callback=callback,
-                )
-            values = metric.evaluate()
+            values = _evaluate_ordinal_history(
+                history,
+                ordinal_ref_point,
+                backend,
+                n_samples=n_samples,
+                mc_seed=resolved_mc_seed,
+                progress_callback=callback,
+            )
             mat[:len(values), run_index] = values
     finally:
         if pbar is not None:
             pbar.close()
 
+    raw_mat = mat.copy()
     box_volume = float(np.prod(level_counts, dtype=float))
     final_fractions = np.full(n_runs, np.nan)
     for run_index, history in enumerate(ordinal_histories):
         if history:
-            final_fractions[run_index] = mat[len(history) - 1, run_index] / box_volume
+            final_fractions[run_index] = (
+                raw_mat[len(history) - 1, run_index] / box_volume
+            )
+
+    scale_denominator = None
+    if scale == "rel":
+        transformed_references = [
+            _ordinal_transform(front, levels) for front in reference_fronts
+        ]
+        reference_values = [
+            _evaluate_ordinal_history(
+                [front],
+                ordinal_ref_point,
+                backend,
+                n_samples=n_samples,
+                mc_seed=resolved_mc_seed,
+            )[0]
+            for front in transformed_references
+        ]
+        scale_denominator = float(np.max(reference_values))
+        if scale_denominator <= 0:
+            raise ValueError(
+                "Relative Ordinal Hypervolume requires a positive "
+                "best-final-reference OHV."
+            )
+        mat = raw_mat / scale_denominator
+
+    final_name = (
+        "Ordinal Hypervolume (Relative)"
+        if scale == "rel"
+        else "Ordinal Hypervolume (Raw)"
+    )
 
     diagnostics = {
         "metric_kind": "ordinal_hypervolume",
@@ -1246,6 +1345,8 @@ def ordinal_hypervolume(exp, ref=None, mode="auto", n_samples=100000,
         "ohv_mode_requested": requested_mode,
         "ohv_n_samples": int(n_samples) if backend == "monte_carlo" else None,
         "ohv_mc_seed": resolved_mc_seed if backend == "monte_carlo" else None,
+        "ohv_scale": scale,
+        "ohv_scale_denominator": scale_denominator,
         "reference_names": list(reference_names),
         "reference_points": int(sum(len(front) for front in reference_fronts)),
         "ordinal_level_counts": level_counts.copy(),
@@ -1256,7 +1357,7 @@ def ordinal_hypervolume(exp, ref=None, mode="auto", n_samples=100000,
     }
     return MetricMatrix(
         mat,
-        metric_name="Ordinal Hypervolume",
+        metric_name=final_name,
         source_name=name,
         reference_context="external" if has_external_ref else "self",
         diagnostics=diagnostics,

@@ -34,8 +34,12 @@ def _ohv(front, **kwargs):
 
 
 def test_public_signature_and_exact_alias():
-    expected = ["exp", "ref", "mode", "n_samples", "mc_seed", "gens", "progress"]
+    expected = [
+        "exp", "ref", "mode", "n_samples", "mc_seed", "gens", "progress", "scale"
+    ]
     assert list(inspect.signature(evaluator.ordinal_hypervolume).parameters) == expected
+    assert inspect.signature(evaluator.ordinal_hypervolume).parameters["scale"].kind \
+        is inspect.Parameter.KEYWORD_ONLY
     assert mb.metrics.ohv is mb.metrics.ordinal_hypervolume
 
 
@@ -50,7 +54,7 @@ def test_known_two_dimensional_lattice(front, expected):
     result = _ohv(front)
     assert result.values.shape == (1, 1)
     assert result.values[0, 0] == expected
-    assert result.metric_name == "Ordinal Hypervolume"
+    assert result.metric_name == "Ordinal Hypervolume (Raw)"
     assert np.array_equal(result.diagnostics["ordinal_level_counts"], [3, 3])
     assert np.array_equal(result.diagnostics["ordinal_reference_point"], [3, 3])
     assert result.diagnostics["ordinal_box_volume"] == 9.0
@@ -113,6 +117,114 @@ def test_gens_zero_returns_empty_matrix_and_nan_fraction():
     assert np.isnan(result.diagnostics["raw_ohv_fraction_of_ordinal_box"]).all()
 
 
+def test_default_scale_is_explicit_raw_without_numerical_change():
+    default = _ohv(REFERENCE)
+    explicit = _ohv(REFERENCE, scale="raw")
+    assert np.array_equal(default.values, explicit.values)
+    assert default.metric_name == "Ordinal Hypervolume (Raw)"
+    assert default.diagnostics["ohv_scale"] == "raw"
+    assert default.diagnostics["ohv_scale_denominator"] is None
+
+
+@pytest.mark.parametrize("scale", ["RAW", "Rel"])
+def test_scale_is_case_insensitive(scale):
+    result = _ohv(REFERENCE, scale=scale)
+    assert result.diagnostics["ohv_scale"] == scale.lower()
+
+
+@pytest.mark.parametrize("scale", ["abs", "foo", None])
+def test_invalid_scale_is_rejected(scale):
+    with pytest.raises(ValueError, match="Unknown scale parameter"):
+        _ohv(REFERENCE, scale=scale)
+
+
+def test_relative_single_run_uses_one_fixed_final_denominator():
+    run = _run([REFERENCE[[0, 2]], REFERENCE])
+    raw = evaluator.ordinal_hypervolume(
+        run, mode="exact", progress=False, scale="raw"
+    )
+    relative = evaluator.ordinal_hypervolume(
+        run, mode="exact", progress=False, scale="rel"
+    )
+    denominator = raw.values[-1, 0]
+    np.testing.assert_allclose(relative.values[:, 0], raw.values[:, 0] / denominator)
+    assert relative.values[-1, 0] == pytest.approx(1.0)
+    assert relative.diagnostics["ohv_scale_denominator"] == pytest.approx(denominator)
+
+
+def test_relative_multi_run_self_reference_uses_best_final_run():
+    first = _run([REFERENCE[[0, 2]]])
+    second = _run([REFERENCE])
+    raw = evaluator.ordinal_hypervolume(
+        [first, second], mode="exact", progress=False, scale="raw"
+    )
+    relative = evaluator.ordinal_hypervolume(
+        [first, second], mode="exact", progress=False, scale="rel"
+    )
+    denominator = np.max(raw.values[-1])
+    np.testing.assert_allclose(relative.values, raw.values / denominator)
+    assert np.max(relative.values[-1]) == pytest.approx(1.0)
+
+
+def test_external_denominator_is_best_individual_front_not_pooled_union():
+    left = _run([[[0.0, 1.0]]])
+    right = _run([[[1.0, 0.0]]])
+    pooled = _run([[[0.0, 1.0], [1.0, 0.0]]])
+    references = [left, right]
+
+    left_raw = evaluator.ordinal_hypervolume(
+        left, ref=references, mode="exact", progress=False
+    ).values[-1, 0]
+    right_raw = evaluator.ordinal_hypervolume(
+        right, ref=references, mode="exact", progress=False
+    ).values[-1, 0]
+    union_raw = evaluator.ordinal_hypervolume(
+        pooled, ref=references, mode="exact", progress=False
+    ).values[-1, 0]
+    result = evaluator.ordinal_hypervolume(
+        pooled, ref=references, mode="exact", progress=False, scale="rel"
+    )
+
+    assert union_raw > max(left_raw, right_raw)
+    assert result.diagnostics["ohv_scale_denominator"] == max(left_raw, right_raw)
+    assert result.diagnostics["ohv_scale_denominator"] != union_raw
+    assert result.values[-1, 0] > 1.0
+
+
+def test_external_experiment_runs_are_individual_denominator_candidates():
+    weak = _run([REFERENCE[[0, 2]]])
+    strong = _run([REFERENCE])
+    reference_exp = mb.experiment()
+    reference_exp._runs = [weak, strong]
+    result = evaluator.ordinal_hypervolume(
+        weak, ref=reference_exp, mode="exact", progress=False, scale="rel"
+    )
+    strong_raw = evaluator.ordinal_hypervolume(
+        strong, ref=reference_exp, mode="exact", progress=False
+    ).values[-1, 0]
+    assert result.diagnostics["ohv_scale_denominator"] == pytest.approx(strong_raw)
+
+
+def test_relative_gens_zero_keeps_reference_denominator():
+    run = _run([REFERENCE])
+    result = evaluator.ordinal_hypervolume(
+        run, mode="exact", gens=0, progress=False, scale="rel"
+    )
+    assert result.values.shape == (0, 1)
+    assert result.diagnostics["ohv_scale_denominator"] == pytest.approx(6.0)
+    report = result.report(show=False, markdown=False)
+    assert "Scale: Relative" in report
+    assert "Scale denominator: 6.0000" in report
+
+
+def test_nonpositive_relative_denominator_is_rejected(monkeypatch):
+    monkeypatch.setattr(
+        evaluator, "_evaluate_ordinal_history", lambda *args, **kwargs: np.array([0.0])
+    )
+    with pytest.raises(ValueError, match="positive best-final-reference OHV"):
+        _ohv(REFERENCE, scale="rel")
+
+
 def test_shared_multi_run_and_external_reference_contexts_are_identical():
     first = _run([REFERENCE[[0, 2]]])
     second = _run([REFERENCE])
@@ -134,6 +246,16 @@ def test_shared_multi_run_and_external_reference_contexts_are_identical():
     assert all(np.array_equal(a, b) for a, b in zip(
         left.diagnostics["ordinal_levels"], right.diagnostics["ordinal_levels"]
     ))
+
+    left_relative = evaluator.ordinal_hypervolume(
+        first, ref=[first, second], mode="exact", progress=False, scale="rel"
+    )
+    right_relative = evaluator.ordinal_hypervolume(
+        second, ref=[first, second], mode="exact", progress=False, scale="rel"
+    )
+    assert left_relative.diagnostics["ohv_scale_denominator"] == pytest.approx(
+        right_relative.diagnostics["ohv_scale_denominator"]
+    )
 
 
 def test_external_reference_isolation_and_outside_reference_behavior():
@@ -208,6 +330,21 @@ def test_monte_carlo_is_reproducible():
     assert np.array_equal(first.values, second.values)
 
 
+def test_relative_monte_carlo_denominator_is_reproducible():
+    first = evaluator.ordinal_hypervolume(
+        REFERENCE, mode="fast", scale="rel", n_samples=2000,
+        mc_seed=23, progress=False
+    )
+    second = evaluator.ordinal_hypervolume(
+        REFERENCE, mode="fast", scale="rel", n_samples=2000,
+        mc_seed=23, progress=False
+    )
+    assert first.diagnostics["ohv_scale_denominator"] == pytest.approx(
+        second.diagnostics["ohv_scale_denominator"]
+    )
+    np.testing.assert_array_equal(first.values, second.values)
+
+
 def test_empty_generation_is_zero_for_both_evaluators():
     empty = np.empty((0, 2))
     assert GEN_ordinal_hypervolume([empty], [3, 3]).evaluate()[0] == 0.0
@@ -241,14 +378,68 @@ def test_progress_advances_once_per_generation_and_closes(monkeypatch, mode):
     assert progress.closed
 
 
+def test_relative_denominator_does_not_advance_progress(monkeypatch):
+    class RecordingProgress:
+        current_val = 0
+        updates = []
+
+        def update_to(self, value):
+            self.current_val = value
+            self.updates.append(value)
+
+        def close(self):
+            pass
+
+    progress = RecordingProgress()
+    monkeypatch.setattr(evaluator, "get_progress_bar", lambda **kwargs: progress)
+    run = _run([REFERENCE[[0, 2]], REFERENCE])
+    evaluator.ordinal_hypervolume(
+        run, mode="exact", scale="rel", progress=True
+    )
+    assert progress.updates == [1, 2]
+
+
+def test_raw_geometry_diagnostics_are_scale_independent():
+    run = _run([REFERENCE[[0, 2]], REFERENCE])
+    raw = evaluator.ordinal_hypervolume(
+        run, mode="exact", scale="raw", progress=False
+    )
+    relative = evaluator.ordinal_hypervolume(
+        run, mode="exact", scale="rel", progress=False
+    )
+    for key in (
+        "ordinal_level_counts",
+        "ordinal_reference_point",
+        "raw_ohv_fraction_of_ordinal_box",
+    ):
+        np.testing.assert_array_equal(raw.diagnostics[key], relative.diagnostics[key])
+    for left, right in zip(
+        raw.diagnostics["ordinal_levels"], relative.diagnostics["ordinal_levels"]
+    ):
+        np.testing.assert_array_equal(left, right)
+    for key in ("ordinal_box_volume", "reference_points", "reference_names"):
+        assert raw.diagnostics[key] == relative.diagnostics[key]
+
+
 def test_report_is_ordinal_and_excludes_conventional_hv_geometry():
     report = _ohv(REFERENCE).report(show=False, markdown=False)
-    assert "Ordinal Hypervolume" in report
+    assert "Ordinal Hypervolume (Raw)" in report
     assert "Ordinal Reference" in report
     assert "Ordinal levels" in report
-    assert "OHV/OBox" in report
+    assert "Scale" in report
+    assert "Raw OHV/OBox" in report
     for forbidden in ("nbox", "bbox", "HV/BBox", "Reference expansion"):
         assert forbidden not in report
+
+
+def test_relative_report_explains_scale_without_claiming_a_ceiling():
+    report = _ohv(REFERENCE, scale="rel").report(show=False, markdown=False)
+    assert "Ordinal Hypervolume (Relative)" in report
+    assert "Scale" in report and "Relative" in report
+    assert "Scale denominator" in report
+    assert "Raw OHV/OBox" in report
+    assert "historical values may exceed 1.0" in report
+    assert "1.0 ceiling" not in report
 
 
 def test_public_history_view_accepts_ohv():
@@ -258,4 +449,18 @@ def test_public_history_view_accepts_ohv():
         mode="static",
         progress=False,
     )
-    assert ax.get_ylabel() == "Ordinal Hypervolume"
+    assert ax.get_ylabel() == "Ordinal Hypervolume (Raw)"
+
+
+def test_public_history_view_accepts_relative_ohv_with_shared_context():
+    first = _run([REFERENCE[[0, 2]], REFERENCE])
+    second = _run([REFERENCE])
+    _, ax = mb.view.history(
+        first,
+        second,
+        metric=mb.metrics.ohv,
+        scale="rel",
+        mode="static",
+        progress=False,
+    )
+    assert ax.get_ylabel() == "Ordinal Hypervolume (Relative)"

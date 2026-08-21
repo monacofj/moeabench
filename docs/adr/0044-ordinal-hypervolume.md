@@ -90,3 +90,6 @@ scientifically auditable.
 - Raw OHV has the concrete interpretation of dominated ordinal unit-cell volume.
 - OHV complements rather than replaces HV: distance-sensitive and
   ordering-sensitive convergence can be inspected side by side.
+- Relative post-processing was subsequently specified by
+  [ADR 0046](0046-relative-ordinal-hypervolume.md) without changing this raw
+  ordinal geometry.

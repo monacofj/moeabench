@@ -678,6 +678,9 @@ with one ordinal level. OHV v1 assumes minimization in every objective.
 ohv = mb.metrics.ohv(exp)
 ohv.report()
 
+raw = mb.metrics.ohv(exp, scale="raw")  # default
+relative = mb.metrics.ohv(exp, scale="rel")
+
 # Conventional HV remains the default; OHV is selected explicitly.
 mb.view.history(exp, metric=mb.metrics.ohv)
 ```
@@ -698,6 +701,7 @@ common `ref`, pooling their final fronts before the ordinal levels are built:
 
 ```python
 mb.view.history(exp1, exp2, metric=mb.metrics.ohv)
+mb.view.history(exp1, exp2, metric=mb.metrics.ohv, scale="rel")
 ```
 
 For separate programmatic calls, provide the same context yourself:
@@ -706,15 +710,31 @@ For separate programmatic calls, provide the same context yourself:
 context = [exp1, exp2]
 ohv1 = mb.metrics.ohv(exp1, ref=context)
 ohv2 = mb.metrics.ohv(exp2, ref=context)
+
+rel1 = mb.metrics.ohv(exp1, ref=context, scale="rel")
+rel2 = mb.metrics.ohv(exp2, ref=context, scale="rel")
 ```
 
-The raw OHV is measured in ordinal unit cells. The report also shows
-`OHV/OBox`, the final raw value divided by the complete ordinal box volume.
-That fraction is an interpretation aid only; `ohv.values` always contains raw
-OHV. The diagnostics retain both the level counts and the actual sorted levels,
-so the exact ruler can be audited. OHV has no `raw`/`rel`/`abs` scale modes and
-does not use the conventional HV nbox, bbox, 1.1 reference point, or calibration
-baseline.
+Raw OHV is measured in ordinal unit cells. Relative OHV divides that raw value
+by the greatest raw OHV among the individual final reference fronts. It uses one
+denominator for the complete trajectory; `1.0` matches the best final reference
+performance but is not a ceiling, so historical values may exceed it. The
+compared experiments above share both their ordinal ruler and denominator.
+
+The report separately shows `Raw OHV/OBox`, the final raw value divided by the
+complete ordinal box volume. This is an ordinal-box coverage diagnostic, not
+relative performance:
+
+```text
+OHV_rel      = OHV_raw / best individual final reference OHV
+Raw OHV/OBox = OHV_raw / total ordinal box volume
+```
+
+The diagnostics retain both the level counts and actual sorted levels, so the
+exact ruler can be audited. `scale="abs"` is unsupported because defining an
+absolute Ground Truth OHV requires a separate decision about how sampling
+constructs the ordinal lattice. OHV does not use the conventional HV nbox,
+bbox, 1.1 reference point, or calibration baseline.
 
 You do not need a separate tutorial example for each one because the usage contract is the same:
 
