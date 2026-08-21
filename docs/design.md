@@ -173,6 +173,7 @@ When a public concept has a canonical name, redundant synonyms should be removed
 Accepted examples:
 
 - `mb.metrics.hv` as a domain-standard short alias for `hypervolume`
+- `mb.metrics.ohv` as the domain-standard short alias for the distinct `ordinal_hypervolume` metric
 - semantic compare aliases such as `perf_shift`, `topo_match`, `topo_shift`
 
 Rejected examples:

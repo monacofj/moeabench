@@ -616,11 +616,12 @@ res.report()
 ```
 
 > [!NOTE]
-> **Metric Aliases**: For convenience, `mb.metrics.hv` is provided as a permanent alias for `mb.metrics.hypervolume`.
+> **Metric Aliases**: `mb.metrics.hv` is the permanent alias of `mb.metrics.hypervolume`; `mb.metrics.ohv` is the permanent alias of the separate `mb.metrics.ordinal_hypervolume` metric.
 
 The public metric family is broader than Hypervolume alone. The canonical performance metrics exposed by MoeaBench are:
 
 *   **`mb.metrics.hypervolume` / `mb.metrics.hv`**: Dominated-volume performance.
+*   **`mb.metrics.ordinal_hypervolume` / `mb.metrics.ohv`**: Dominated volume after replacing objective distances with ordinal unit steps.
 *   **`mb.metrics.gd`**: Generational Distance.
 *   **`mb.metrics.gdplus`**: GD+ (dominance-aware GD variant).
 *   **`mb.metrics.igd`**: Inverted Generational Distance.
@@ -633,6 +634,67 @@ For every metric that accepts it, `ref` denotes the external reference used by t
 Every item in an explicit Hypervolume reference must already contain an evaluated front. For example, `ref=[exp3, exp4]` requires both experiments to have completed `run()`; otherwise MoeaBench raises a clear `ValueError` instead of silently calculating with only the non-empty item.
 
 The default `mode='auto'` uses the exact pymoo backend for up to 8 objectives. Above 8 objectives it switches to the Monte Carlo backend; `mode='fast'` forces that approximation at any dimensionality. Monte Carlo accepts `n_samples` and `mc_seed`, defaults the seed to `mb.defaults.seed`, reuses common random samples across generations, and reports progress after each generation. The selected backend and sampling parameters are recorded in `res.diagnostics` and shown by `res.report()`.
+
+#### Ordinal Hypervolume: convergence without metric distances
+
+Conventional Hypervolume answers a geometric question and is sensitive to the
+size of gaps in objective space. Ordinal Hypervolume (OHV) answers a different
+question: how much dominated volume is obtained when only the ordering of the
+reference levels matters? For every objective, it replaces the sorted distinct
+reference values by `0, 1, 2, ...`, giving every consecutive pair exactly one
+unit of separation. Thus:
+
+```text
+HV  -> sensitive to objective-space distances
+OHV -> sensitive to objective ordering, not the magnitude of those distances
+```
+
+For example, the levels `10, 10.1, 37, 1000` become `0, 1, 2, 3`.
+Historical values between levels are placed by insertion rank. Duplicate
+reference values do not add distance, and a constant objective remains valid
+with one ordinal level. OHV v1 assumes minimization in every objective.
+
+```python
+ohv = mb.metrics.ohv(exp)
+ohv.report()
+
+# Conventional HV remains the default; OHV is selected explicitly.
+mb.view.history(exp, metric=mb.metrics.ohv)
+```
+
+The ordinal ruler is built **once**, from final fronts, and reused for every
+generation and run. It is never recomputed generation by generation. This is
+why limiting the displayed history does not rescale earlier results:
+
+```python
+full = mb.metrics.ohv(exp)
+prefix = mb.metrics.ohv(exp, gens=100)
+# prefix.values equals full.values[:100] in exact mode
+```
+
+Comparison requires the same ruler for all algorithms. Passing multiple raw
+experiments to the performance view automatically supplies all of them as the
+common `ref`, pooling their final fronts before the ordinal levels are built:
+
+```python
+mb.view.history(exp1, exp2, metric=mb.metrics.ohv)
+```
+
+For separate programmatic calls, provide the same context yourself:
+
+```python
+context = [exp1, exp2]
+ohv1 = mb.metrics.ohv(exp1, ref=context)
+ohv2 = mb.metrics.ohv(exp2, ref=context)
+```
+
+The raw OHV is measured in ordinal unit cells. The report also shows
+`OHV/OBox`, the final raw value divided by the complete ordinal box volume.
+That fraction is an interpretation aid only; `ohv.values` always contains raw
+OHV. The diagnostics retain both the level counts and the actual sorted levels,
+so the exact ruler can be audited. OHV has no `raw`/`rel`/`abs` scale modes and
+does not use the conventional HV nbox, bbox, 1.1 reference point, or calibration
+baseline.
 
 You do not need a separate tutorial example for each one because the usage contract is the same:
 

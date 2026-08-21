@@ -8,6 +8,8 @@ import logging
 from typing import Optional, Union, Any, List
 from .GEN_hypervolume import GEN_hypervolume
 from .GEN_mc_hypervolume import GEN_mc_hypervolume
+from .GEN_ordinal_hypervolume import GEN_ordinal_hypervolume
+from .GEN_mc_ordinal_hypervolume import GEN_mc_ordinal_hypervolume
 from .GEN_igd import GEN_igd
 from .GEN_gd import GEN_gd
 from .GEN_gdplus import GEN_gdplus
@@ -60,6 +62,63 @@ def _extract_reference_fronts(ref):
         _, item_fronts, _, _ = _extract_data(item)
         fronts.extend(item_fronts)
     return fronts
+
+
+def _validate_ordinal_fronts(fronts, context, objectives=None, require_nonempty=False):
+    """Validate finite, two-dimensional fronts used by OHV."""
+    valid = []
+    for index, front in enumerate(fronts):
+        array = np.asarray(front)
+        if array.ndim != 2:
+            raise ValueError(
+                f"Ordinal Hypervolume {context} front {index + 1} must be a two-dimensional array."
+            )
+        if objectives is not None and array.shape[1] != objectives:
+            raise ValueError(
+                f"Ordinal Hypervolume {context} front {index + 1} has {array.shape[1]} "
+                f"objectives but the ordinal reference context has {objectives}."
+            )
+        if not np.all(np.isfinite(array)):
+            raise ValueError(
+                f"Ordinal Hypervolume {context} front {index + 1} contains NaN or infinite values."
+            )
+        if len(array) > 0:
+            valid.append(array)
+    if require_nonempty and not valid:
+        raise ValueError(
+            "Ordinal Hypervolume requires at least one non-empty reference front."
+        )
+    return valid
+
+
+def _build_ordinal_space(reference_fronts):
+    """Build one immutable insertion-rank lattice from pooled reference fronts."""
+    valid = _validate_ordinal_fronts(
+        reference_fronts, "reference", require_nonempty=True
+    )
+    objective_counts = {front.shape[1] for front in valid}
+    if len(objective_counts) != 1:
+        raise ValueError(
+            "Ordinal Hypervolume reference fronts must have matching objective counts."
+        )
+    pooled = np.vstack(valid)
+    _validate_ordinal_fronts(
+        reference_fronts, "reference", objectives=pooled.shape[1]
+    )
+    levels = [np.unique(pooled[:, objective]) for objective in range(pooled.shape[1])]
+    counts = np.asarray([len(axis) for axis in levels], dtype=int)
+    return levels, counts
+
+
+def _ordinal_transform(front, levels):
+    """Map a finite front to left-insertion ranks in a fixed ordinal space."""
+    front = np.asarray(front)
+    if len(front) == 0:
+        return np.empty((0, len(levels)), dtype=float)
+    return np.column_stack([
+        np.searchsorted(axis, front[:, objective], side="left")
+        for objective, axis in enumerate(levels)
+    ]).astype(float, copy=False)
 
 
 def _reference_names(items):
@@ -260,7 +319,13 @@ class MetricMatrix(Reportable):
             else:
                 stability = f"Moderate ({defaults.cv_tolerance} <= CV={cv:.{prec}f} <= {defaults.cv_moderate})"
 
-        is_hypervolume = "Hypervolume" in self.metric_name
+        metric_kind = self.diagnostics.get("metric_kind") if self.diagnostics else None
+        if metric_kind is None:
+            # Backward compatibility for MetricMatrix objects created before
+            # explicit metric identification was introduced.
+            metric_kind = "hypervolume" if "Hypervolume" in self.metric_name else "generic"
+        is_ordinal_hypervolume = metric_kind == "ordinal_hypervolume"
+        is_hypervolume = metric_kind == "hypervolume"
 
         def _finite_mean(key):
             values = np.asarray(self.diagnostics[key], dtype=float)
@@ -457,8 +522,58 @@ class MetricMatrix(Reportable):
                 ))
             return fields
 
+        def _ordinal_final_fields():
+            fraction = _finite_mean("raw_ohv_fraction_of_ordinal_box")
+            fraction_display = "N/A" if fraction is None else f"{fraction:.{prec}f}"
+            return [
+                ("Mean", f"{mean:.{prec}f}", "average final OHV across valid runs"),
+                ("StdDev", std_display, "between-run variability in final OHV"),
+                ("Best", f"{best:.{prec}f}", "highest final OHV among valid runs"),
+                ("OHV/OBox", fraction_display,
+                 "average final raw OHV as a fraction of the ordinal box"),
+            ]
+
+        def _ordinal_search_fields():
+            fields = [
+                ("Runs", str(data.shape[1]), "run histories included in the metric"),
+                ("Generations", str(data.shape[0]),
+                 "generation positions included in the metric history"),
+                ("OHV backend", self.diagnostics["ohv_backend"],
+                 "engine used to compute raw ordinal volume"),
+                ("Stability", stability, "between-run consistency of final OHV"),
+            ]
+            if self.diagnostics["ohv_backend"] == "monte_carlo":
+                fields.extend([
+                    ("MC samples", str(self.diagnostics["ohv_n_samples"]),
+                     "samples used per Monte Carlo estimate"),
+                    ("MC seed", str(self.diagnostics["ohv_mc_seed"]),
+                     "seed reused across generations"),
+                ])
+            return fields
+
+        def _ordinal_reference_fields():
+            counts = np.asarray(self.diagnostics["ordinal_level_counts"], dtype=int)
+            ref_point = np.asarray(self.diagnostics["ordinal_reference_point"], dtype=int)
+            return [
+                ("References", ", ".join(self.diagnostics["reference_names"]),
+                 "sources whose final fronts define the fixed ordinal lattice"),
+                ("Reference points", str(self.diagnostics["reference_points"]),
+                 "all pooled reference points, including duplicates"),
+                ("Ordinal levels", np.array2string(counts, separator=", "),
+                 "number of distinct reference levels in each objective"),
+                ("Ordinal reference point", np.array2string(ref_point, separator=", "),
+                 "one ordinal unit beyond each worst reference level"),
+                ("Ordinal box volume", f"{self.diagnostics['ordinal_box_volume']:.{prec}f}",
+                 "product of the per-objective ordinal level counts"),
+            ]
+
         if use_md:
             lines = [f"### Metric Report: {self.metric_name}{source_info}"]
+            if is_ordinal_hypervolume:
+                lines.extend([
+                    "> Ordinal Hypervolume measures dominated volume after replacing metric objective distances by unit distances between consecutive reference levels.",
+                    "",
+                ])
             if is_hypervolume and self.is_ratio:
                 lines.extend([
                     "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
@@ -472,7 +587,10 @@ class MetricMatrix(Reportable):
                     "",
                 ])
             lines.append("#### Final Performance (Last Gen)")
-            if is_hypervolume:
+            if is_ordinal_hypervolume:
+                lines.append("")
+                lines.extend(_explained_fields(_ordinal_final_fields()))
+            elif is_hypervolume:
                 lines.append("")
                 lines.extend(_explained_fields(_hypervolume_final_fields()))
             else:
@@ -482,7 +600,10 @@ class MetricMatrix(Reportable):
                     f"- **Best**: {best:.{prec}f}",
                 ])
             lines.extend(["", "#### Search Dynamics"])
-            if is_hypervolume:
+            if is_ordinal_hypervolume:
+                lines.append("")
+                lines.extend(_explained_fields(_ordinal_search_fields()))
+            elif is_hypervolume:
                 lines.append("")
                 lines.extend(_explained_fields(_hypervolume_search_fields()))
             else:
@@ -496,9 +617,17 @@ class MetricMatrix(Reportable):
                 lines.extend(_explained_fields(_reference_fields(), label_width=30))
                 lines.extend(["", "#### Reference Boundary", ""])
                 lines.extend(_explained_fields(_reference_boundary_fields()))
+            elif is_ordinal_hypervolume:
+                lines.extend(["", "#### Ordinal Reference", ""])
+                lines.extend(_explained_fields(_ordinal_reference_fields()))
             content = "\n".join(lines)
         else:
             lines = [f"--- Metric Report: {self.metric_name}{source_info} ---"]
+            if is_ordinal_hypervolume:
+                lines.append(
+                    "  Meaning: dominated volume after metric objective distances are replaced "
+                    "by unit distances between consecutive reference levels."
+                )
             if is_hypervolume and self.is_ratio:
                 lines.append("  Question: What is the competitive efficiency relative to best session performance?")
             elif is_hypervolume and self.is_abs:
@@ -506,7 +635,11 @@ class MetricMatrix(Reportable):
             lines.extend([
                 "  Final Performance (Last Gen):",
             ])
-            if is_hypervolume:
+            if is_ordinal_hypervolume:
+                lines.extend(_explained_fields(
+                    _ordinal_final_fields(), indent="    "
+                ))
+            elif is_hypervolume:
                 lines.extend(_explained_fields(
                     _hypervolume_final_fields(), indent="    "
                 ))
@@ -517,7 +650,11 @@ class MetricMatrix(Reportable):
                     f"    - Best: {best:.{prec}f}",
                 ])
             lines.append("  Search Dynamics:")
-            if is_hypervolume:
+            if is_ordinal_hypervolume:
+                lines.extend(_explained_fields(
+                    _ordinal_search_fields(), indent="    "
+                ))
+            elif is_hypervolume:
                 lines.extend(_explained_fields(
                     _hypervolume_search_fields(), indent="    "
                 ))
@@ -535,6 +672,11 @@ class MetricMatrix(Reportable):
                 lines.append("  Reference Boundary:")
                 lines.extend(_explained_fields(
                     _reference_boundary_fields(), indent="    "
+                ))
+            elif is_ordinal_hypervolume:
+                lines.append("  Ordinal Reference:")
+                lines.extend(_explained_fields(
+                    _ordinal_reference_fields(), indent="    "
                 ))
             content = "\n".join(lines)
         
@@ -888,6 +1030,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         n_runs,
     )
     diagnostics.update({
+        "metric_kind": "hypervolume",
         "hv_backend": hv_backend,
         "hv_mode_requested": mode,
         "hv_n_samples": n_samples if hv_backend == 'monte_carlo' else None,
@@ -1004,6 +1147,118 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         final_name,
         source_name=name,
         reference_context=reference_context,
+        diagnostics=diagnostics,
+    )
+
+
+def ordinal_hypervolume(exp, ref=None, mode="auto", n_samples=100000,
+                        mc_seed=None, gens=None, progress=True):
+    """Calculate raw Hypervolume in a fixed ordinal reference lattice.
+
+    OHV v1 assumes minimization in every objective. The final fronts of ``ref``
+    (or of ``exp`` when ``ref`` is omitted) establish sorted, distinct levels for
+    every objective. All requested generations are mapped by left-insertion rank
+    into that one lattice and evaluated against ``(K_1, ..., K_M)``. No metric
+    distance, ideal/nadir normalization, or conventional 1.1 reference point is
+    used.
+    """
+    has_external_ref = ref is not None
+    ref_items = [] if ref is None else (ref if isinstance(ref, list) else [ref])
+
+    F_GENs, Fs, name, n_runs = _extract_data(exp, gens=gens)
+    if has_external_ref:
+        reference_names = _reference_names(ref_items)
+        reference_fronts = []
+        for item in ref_items:
+            _, item_fronts, _, _ = _extract_data(item)
+            reference_fronts.extend(item_fronts)
+    else:
+        reference_names = _reference_names([exp])
+        reference_fronts = Fs
+
+    levels, level_counts = _build_ordinal_space(reference_fronts)
+    objectives = len(levels)
+    requested_mode, backend = _select_hypervolume_backend(mode, objectives)
+
+    if backend == "monte_carlo":
+        if (not isinstance(n_samples, (int, np.integer))
+                or isinstance(n_samples, bool) or n_samples <= 0):
+            raise ValueError("n_samples must be a positive integer.")
+        if (mc_seed is not None
+                and (not isinstance(mc_seed, (int, np.integer)) or isinstance(mc_seed, bool))):
+            raise ValueError("mc_seed must be None or an integer.")
+        resolved_mc_seed = defaults.seed if mc_seed is None else int(mc_seed)
+    else:
+        resolved_mc_seed = None
+
+    if backend == "monte_carlo" and requested_mode == "auto":
+        logging.info(
+            f"Ordinal Hypervolume: High-dimensional space (M={objectives}) detected. "
+            f"Switching to Monte Carlo approximation (n={n_samples})."
+        )
+    elif requested_mode == "exact" and objectives > 8:
+        warnings.warn(
+            f"Exact Ordinal Hypervolume calculation for M={objectives} objectives "
+            "may be extremely slow. Consider mode='auto' or mode='fast'."
+        )
+
+    ordinal_histories = []
+    for history in F_GENs:
+        _validate_ordinal_fronts(history, "evaluated", objectives=objectives)
+        ordinal_histories.append([_ordinal_transform(front, levels) for front in history])
+
+    max_gens = max((len(history) for history in ordinal_histories), default=0)
+    mat = np.full((max_gens, n_runs), np.nan)
+    ordinal_ref_point = level_counts.astype(float)
+    pbar = _metric_progress("Ordinal Hypervolume", progress, F_GENs, source_name=name)
+
+    def advance_progress():
+        if pbar is not None:
+            pbar.update_to(pbar.current_val + 1)
+
+    try:
+        for run_index, history in enumerate(ordinal_histories):
+            callback = advance_progress if pbar is not None else None
+            if backend == "monte_carlo":
+                metric = GEN_mc_ordinal_hypervolume(
+                    history, ordinal_ref_point, n_samples=n_samples,
+                    seed=resolved_mc_seed, progress_callback=callback,
+                )
+            else:
+                metric = GEN_ordinal_hypervolume(
+                    history, ordinal_ref_point, progress_callback=callback,
+                )
+            values = metric.evaluate()
+            mat[:len(values), run_index] = values
+    finally:
+        if pbar is not None:
+            pbar.close()
+
+    box_volume = float(np.prod(level_counts, dtype=float))
+    final_fractions = np.full(n_runs, np.nan)
+    for run_index, history in enumerate(ordinal_histories):
+        if history:
+            final_fractions[run_index] = mat[len(history) - 1, run_index] / box_volume
+
+    diagnostics = {
+        "metric_kind": "ordinal_hypervolume",
+        "ohv_backend": backend,
+        "ohv_mode_requested": requested_mode,
+        "ohv_n_samples": int(n_samples) if backend == "monte_carlo" else None,
+        "ohv_mc_seed": resolved_mc_seed if backend == "monte_carlo" else None,
+        "reference_names": list(reference_names),
+        "reference_points": int(sum(len(front) for front in reference_fronts)),
+        "ordinal_level_counts": level_counts.copy(),
+        "ordinal_levels": [axis.copy() for axis in levels],
+        "ordinal_reference_point": level_counts.copy(),
+        "ordinal_box_volume": box_volume,
+        "raw_ohv_fraction_of_ordinal_box": final_fractions,
+    }
+    return MetricMatrix(
+        mat,
+        metric_name="Ordinal Hypervolume",
+        source_name=name,
+        reference_context="external" if has_external_ref else "self",
         diagnostics=diagnostics,
     )
 
