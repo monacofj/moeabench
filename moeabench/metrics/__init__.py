@@ -4,7 +4,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from .evaluator import (
-    hypervolume, 
+    hypervolume,
+    ordinal_hypervolume,
     igd, 
     gd,
     gdplus,
@@ -16,10 +17,13 @@ from .evaluator import (
 
 # Aliases for convenience
 hv = hypervolume
+ohv = ordinal_hypervolume
 
 __all__ = [
     "hypervolume",
     "hv",
+    "ordinal_hypervolume",
+    "ohv",
     "igd",
     "gd",
     "gdplus",
@@ -33,6 +37,8 @@ for _name in (
     "evaluator",
     "GEN_hypervolume",
     "GEN_mc_hypervolume",
+    "GEN_ordinal_hypervolume",
+    "GEN_mc_ordinal_hypervolume",
     "GEN_igd",
     "GEN_gd",
     "GEN_igdplus",

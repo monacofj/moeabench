@@ -54,6 +54,7 @@ This directory contains records of the key architectural decisions made during t
 | [0041](0041-layer-ontology-for-structural-analysis.md) | Layer Ontology for Structural Analysis | Accepted | 2026-03-13 |
 | [0042](0042-hypervolume-bbox-diagnostics.md) | Diagnostic-Only Hypervolume Bounding Boxes | Accepted | 2026-08-12 |
 | [0043](0043-hypervolume-engine-selection.md) | Hypervolume Engine Selection and Reproducible Monte Carlo | Accepted | 2026-08-13 |
+| [0044](0044-ordinal-hypervolume.md) | Ordinal Hypervolume | Accepted | 2026-08-19 |
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*

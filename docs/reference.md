@@ -42,6 +42,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **H_raw** | Raw Hypervolume | Dominated volume in the selected self-derived or external-reference normalization context. |
 | **H_rel** | Relative Hypervolume | Normalized by the **Session Best**. Measures competitive efficiency. (Pre-v0.11.2: `H_ratio`). |
 | **H_abs** | Absolute Hypervolume | Normalized by the **Ground Truth**. Measures proximity to theoretical optimum. |
+| **OHV** | Ordinal Hypervolume | Hypervolume computed in an ordinal objective space whose consecutive distinct reference levels are separated by one unit. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
 | **SP** | Spacing | Measure of the spread/uniformity of the solution set. |
@@ -501,6 +502,99 @@ For both self- and external-reference calls, the report identifies the concrete 
 The returned `MetricMatrix.diagnostics` adds `reference_names`, `local_nd_reference_points`, `local_nd_ideal`, `local_nd_nadir`, `global_local_nd_coverage`, `local_ideal`, `local_nadir`, and `reference_expansion`. Backend provenance is available as `hv_backend`, `hv_mode_requested`, `hv_n_samples`, and `hv_mc_seed`; the standard report also shows the selected backend and, for Monte Carlo, its sample count and seed. The existing keys `nbox_ideal`, `nbox_nadir`, `bbox_reference_point`, `nominal_bbox_volume`, `reference_points`, `reference_nd_points`, `reference_dominated_fraction`, `nd_ideal`, `nd_nadir`, `range_inflation`, `max_range_inflation`, `bbox_expanded_by_dominated_points`, `outside_nbox_fraction`, `outside_bbox_fraction`, `better_than_ideal_fraction`, `all_points_outside_bbox`, and `raw_hv_fraction_of_nominal_bbox` remain available for compatibility. Full bound and per-objective vectors are intentionally omitted from the standard report for many-objective scalability.
 
 MoeaBench does not remove outliers, clip evaluated points, repair a problematic bbox, or infer that two HV values are “too close” using an arbitrary threshold. Coverage, expansion, and dominated-reference fractions do not emit warnings. A warning is emitted only when every final-front point of a valid run lies beyond the bbox and therefore cannot contribute. When HV is saturated or geometrically uninformative, complement it with convergence metrics such as GD+/IGD+ rather than deforming its reference geometry.
+
+### `mb.metrics.ordinal_hypervolume(exp, ref=None, mode='auto', n_samples=100000, mc_seed=None, gens=None, progress=True)`
+
+Calculates **Ordinal Hypervolume (OHV)**. Its exact public alias is
+`mb.metrics.ohv`; both names refer to the same callable. OHV is a distinct
+metric, not a `hypervolume()` scale or mode.
+
+OHV first constructs one fixed ordinal coordinate system for the complete
+trajectory. For objective $j$, the pooled final reference fronts supply the
+sorted distinct levels
+
+$$L_j=\operatorname{sort}(\operatorname{unique}(f_j)),\qquad K_j=|L_j|.$$
+
+A value $x$ is mapped to its left-insertion rank
+
+$$\rho_j(x)=|\{v\in L_j:v<x\}|.$$
+
+Consequently, reference levels occupy coordinates $0,\ldots,K_j-1$ and the
+OHV reference point is $(K_1,\ldots,K_M)$. A value better than the best
+reference level maps to 0; a value worse than the worst level maps to $K_j$
+and lies on the volume boundary. Equal values share a rank. Values between
+two reference levels map to the upper insertion position without interpolation.
+The resulting ordinary dominated volume is returned directly: no ideal/nadir
+normalization, zero-to-one transform, 1.1 endpoint, or `scale` post-processing
+is applied.
+
+**Parameters:**
+
+* `exp`: An `Experiment`, `Run`, `Population`, NumPy front, or compatible
+  iterable accepted by the existing metric extraction layer. OHV does not
+  introduce a special interpretation for generic iterables.
+* `ref` (optional): Source or list of sources whose **final fronts** exclusively
+  establish the ordinal levels. Without it, the final fronts of `exp` form a
+  self-reference. With multiple sources, all final fronts are pooled. Recording
+  extra intermediate generations therefore never changes the lattice.
+* `mode`: `'exact'`, `'fast'`, or `'auto'`. The shared Hypervolume policy is
+  used: `auto` selects exact evaluation through 8 objectives and Monte Carlo
+  above 8; `fast` forces Monte Carlo.
+* `n_samples`: Positive integer used only when Monte Carlo is selected. It is
+  ignored in exact mode.
+* `mc_seed`: Integer Monte Carlo seed, or `None` to use `mb.defaults.seed`.
+  The resolved seed is reused across generations. It is ignored in exact mode.
+* `gens`: Integer prefix or slice selecting returned generations. It never
+  restricts or reconstructs the ordinal reference space; `ohv(exp, gens=n)` is
+  the prefix of `ohv(exp)` in exact mode.
+* `progress`: Whether to display progress, advanced once per evaluated
+  generation.
+
+OHV v1 assumes minimization in every objective. Mixed or maximization-specific
+direction semantics, `scale='rel'`, `scale='abs'`, calibration baselines,
+adaptive generation-wise ranks, weighted ordinal distances, and alternative
+ranking schemes are intentionally outside this API.
+
+Reference and selected evaluated fronts must be finite two-dimensional arrays
+with matching objective counts. `NaN` and infinite values raise `ValueError`
+with reference/evaluated context. At least one reference front must be non-empty.
+Unlike normalized HV, an objective with one distinct reference value is valid
+and has $K_j=1$. An empty evaluated generation has OHV 0.0. Selecting no
+generations returns a `(0, R)` `MetricMatrix`.
+
+#### OHV results and diagnostics
+
+The return value has shape `Generations × Runs`, metric name
+`"Ordinal Hypervolume"`, and higher-is-better semantics. Its diagnostics are:
+
+| Key | Meaning |
+|---|---|
+| `metric_kind` | Stable identifier `ordinal_hypervolume`, used to select the OHV-specific report. |
+| `ohv_backend` | `exact` or `monte_carlo`. |
+| `ohv_mode_requested` | Public mode requested by the caller. |
+| `ohv_n_samples`, `ohv_mc_seed` | Effective sampling settings, or `None` in exact mode. |
+| `reference_names` | Disambiguated names of the sources defining the lattice. |
+| `reference_points` | Number of pooled reference points, including duplicates. |
+| `ordinal_level_counts` | Integer vector $[K_1,\ldots,K_M]$. |
+| `ordinal_levels` | Copies of the actual sorted distinct values in every objective, making the ruler auditable. |
+| `ordinal_reference_point` | Integer vector $[K_1,\ldots,K_M]$. |
+| `ordinal_box_volume` | Product $\prod_j K_j$. |
+| `raw_ohv_fraction_of_ordinal_box` | Per-run final valid OHV divided by the ordinal box volume; `NaN` where no generation was evaluated. This is diagnostic only and does not replace raw OHV. |
+
+For directly comparable algorithms, use one common context explicitly:
+
+```python
+left = mb.metrics.ohv(exp1, ref=[exp1, exp2])
+right = mb.metrics.ohv(exp2, ref=[exp1, exp2])
+```
+
+The public performance view establishes that shared reference automatically:
+
+```python
+mb.view.history(exp1, exp2, metric=mb.metrics.ohv)
+```
+
+Conventional HV remains the default of `mb.view.history()`.
 
 #### **`mb.metrics.igd(data, ref=None, gens=None)`**
 *   **Description**: Calculates Inverted Generational Distance.

@@ -21,6 +21,7 @@ def _perf_metric_error(method_name, metric, exc):
         "- callable metric(data, gens=..., **kwargs) returning MetricMatrix-like output",
         "Typical metrics:",
         "- mb.metrics.hv",
+        "- mb.metrics.ohv",
         "- mb.metrics.gd",
         "- mb.metrics.gdplus",
         "- mb.metrics.igd",
@@ -33,7 +34,7 @@ def _perf_metric_error(method_name, metric, exc):
         f"**{method_name}**: incompatible metric or data for `{metric_name}`.",
         f"- **Reason**: `{type(exc).__name__}: {exc}`",
         "- **Accepted metric profile**: callable `metric(data, gens=..., **kwargs)` returning MetricMatrix-like output.",
-        "- **Typical metrics**: `mb.metrics.hv`, `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_ratio`.",
+        "- **Typical metrics**: `mb.metrics.hv`, `mb.metrics.ohv`, `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_ratio`.",
     ])
     emit_output(text, markdown=md)
     return None

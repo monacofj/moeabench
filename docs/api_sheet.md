@@ -95,6 +95,7 @@ This is the central analytical table of the API. It correlates **analysis namesp
 | Domain | Analysis API | Canonical Result | Correlated Views |
 | :--- | :--- | :--- | :--- |
 | Performance | `mb.metrics.hypervolume` / `mb.metrics.hv` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
+| Performance | `mb.metrics.ordinal_hypervolume` / `mb.metrics.ohv` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
 | Performance | `mb.metrics.gd`, `mb.metrics.gdplus`, `mb.metrics.igd`, `mb.metrics.igdplus`, `mb.metrics.emd`, `mb.metrics.front_ratio` | `MetricMatrix` | `view.history`, `view.spread`, `view.density` |
 | Performance Compare | `mb.stats.perf_compare(...)` | `PerfCompareResult` | `view.spread`, `view.density` |
 | Performance Compare | `mb.stats.perf_shift`, `mb.stats.perf_match`, `mb.stats.perf_win` | `PerfCompareResult` | `view.spread`, `view.density` |
