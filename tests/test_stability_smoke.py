@@ -162,7 +162,7 @@ def test_experiment_seed_schedule_signature(monkeypatch):
 
     def fake_execute_run(moea, mop, seed, index):
         used_seeds.append(seed)
-        return ([], [], np.zeros((0, 2)), [], [], [], []), seed
+        return ([], [], np.zeros((0, 2)), [], [], [], []), seed, {}
 
     monkeypatch.setattr(exp, "_execute_run", fake_execute_run)
 

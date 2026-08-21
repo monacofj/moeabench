@@ -93,7 +93,15 @@ class save:
             "mop": obj.mop.__class__.__name__ if obj.mop else None,
             "moea": obj.moea.__class__.__name__ if obj.moea else None,
             "stop": str(obj.stop) if obj.stop else None,
-            "repeat": obj.repeat
+            "repeat": obj.repeat,
+            "runs": [
+                {
+                    "index": run.index,
+                    "seed": run.seed,
+                    "component_seeds": run.component_seeds,
+                }
+                for run in obj.runs
+            ] if mode != "config" else []
         }
         
         # 0.1 Create README.md with SPDX headers

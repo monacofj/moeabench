@@ -192,6 +192,7 @@ Rigorous benchmarking necessitates distinct control over stochastic processes. M
 *   **Stable Base Seed**: `exp.moea.seed` always remains the base seed configured by the user; execution never replaces it with the current or final run seed.
 *   **Seed Inspection**: `exp[i].seed` is the exact seed of one run, while `exp.seed` lists the seeds of every stored run. After a fresh execution, `exp[0].seed == exp.moea.seed`.
 *   **Appending Runs**: With `append=True`, seed allocation continues after the stored runs, so appended runs do not repeat earlier seeds.
+*   **Component Seeds**: `run.component_seeds` records independently allocated seeds used by internal stochastic components.
 
 ```python
 exp.moea = mb.moeas.NSGA3(seed=42)
@@ -200,7 +201,26 @@ exp.run(repeat=3)
 exp.moea.seed  # 42
 exp.seed       # [42, 43, 44]
 exp[0].seed    # 42
+exp[0].component_seeds  # {'nsga3.reference_directions': 286848756}
 ```
+
+NSGA-III automatically derives a distinct, reproducible reference-direction seed
+for every run. To vary only the evolutionary run seed while reusing the same
+reference directions, configure the algorithm with a fixed wrapper-specific seed:
+
+```python
+exp.moea = mb.moeas.NSGA3(seed=42, ref_dirs_seed=7)
+exp.run(repeat=3)
+
+exp.seed  # [42, 43, 44]
+[run.component_seeds for run in exp]
+# [{'nsga3.reference_directions': 7}, ...]
+```
+
+`ref_dirs_seed=None` is equivalent to omitting it. This option belongs only to
+the NSGA-III constructor; it is not a universal `Experiment.run()` parameter.
+Changing it does not change the seed passed to the evolutionary process, but the
+different reference directions can change the resulting trajectory.
 
 > [!TIP]
 > **Global Defaults**: You can define default values for population, generations, seeds, and statistical thresholds globally using `mb.defaults`. This allows you to set a baseline for your entire project in a single place. See the **[API Reference](reference.md#defaults)** for the complete list of parameters.

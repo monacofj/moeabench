@@ -429,12 +429,20 @@ are valid expressions of this design principle.
 The architecture requires explicit support for:
 
 - deterministic seed chains
+- order-independent, namespaced seed allocation for internal stochastic components
 - environment metadata
 - persistence metadata
 - baseline provenance
 - audit provenance
 
 If a feature weakens reproducibility, it must justify that cost explicitly.
+
+The universal run seed belongs to the common experiment/MOEA contract. Internal
+component seeds belong to algorithm implementations and must not expand the
+universal API. Effective values are run metadata: wrappers may expose them as a
+read-only mapping, and each completed `Run` must receive an independent copy so
+later executions cannot mutate historical provenance. See
+[ADR 0045](adr/0045-component-seed-allocation.md).
 
 ### **9.5. Scientific Baselines Are Normative Artifacts**
 

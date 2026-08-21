@@ -12,6 +12,12 @@ class NSGA3(BaseMoeaWrapper):
     
     A many-objective evolutionary algorithm that uses reference directions
     to maintain diversity in high-dimensional objective spaces.
+
+    Keyword Args:
+        ref_dirs_seed (int, optional): Fixed seed for the energy reference
+            directions. If omitted or ``None``, a distinct deterministic seed
+            is derived from each run seed. This wrapper-specific argument is
+            consumed by MoeaBench and is not forwarded to pymoo.
     
     References:
         Deb & Jain (2014). An Evolutionary Many-Objective Optimization Algorithm 

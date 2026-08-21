@@ -27,7 +27,46 @@ The clinical diagnostic engine (FAIR Metrics and Q-Scores) uses the **Legacy Num
 To prevent interference between parallel experiments or global state side effects, MoeaBench MOEAs (like `NSGA2deap`) utilize **localized generator instances** (e.g., `random.Random(seed)`).
 - **Rationale**: Relying on the global `random.seed()` is vulnerable to other libraries or user scripts altering the global state mid-execution. Localized state ensures that each algorithm instance is an isolated, deterministic unit.
 
-### C. Environment Metadata Capture
+### C. Deterministic Component Seeds
+
+Some algorithms contain multiple independent stochastic components. MoeaBench
+retains one universal run seed and derives internal component seeds from the run
+seed plus a stable, namespaced component identifier. The SHA-256 derivation is
+stateless: it does not consume the evolutionary RNG, and adding or reordering
+other components does not change an existing component's seed.
+
+NSGA-III uses this policy for energy reference directions:
+
+```python
+algorithm = mb.moeas.NSGA3(seed=42)
+```
+
+The evolutionary process receives `42`; the reference-direction component
+receives a distinct deterministic value recorded on the completed run:
+
+```python
+run.seed
+# 42
+
+run.component_seeds
+# {'nsga3.reference_directions': 286848756}
+```
+
+Ordinary repetitions derive new component seeds from each scheduled run seed.
+To isolate the evolutionary effect while reusing exactly the same directions,
+set the NSGA-III-specific constructor keyword:
+
+```python
+algorithm = mb.moeas.NSGA3(seed=42, ref_dirs_seed=7)
+```
+
+`ref_dirs_seed=None` restores automatic derivation. A fixed override changes
+the reference directions without changing the seed passed to the evolutionary
+process; the resulting trajectory may nevertheless change because NSGA-III uses
+those directions during selection. Component seeds are included in experiment
+reports, persisted archives, and `metadata.json`.
+
+### D. Environment Metadata Capture
 Every diagnostic biopsy performed via `mb.clinic.audit()` automatically captures **Reproducibility Metadata**:
 - Python version
 - NumPy version
@@ -42,6 +81,8 @@ This information is persisted in exported JSON reports, allowing future auditors
 To achieve 100% "Blindagem" in your articles, follow these guidelines:
 
 1.  **Always Record Seeds**: Use the `seed` parameter in all MOEA and Experiment initializations.
+    For controlled NSGA-III studies, also report the effective value from
+    `run.component_seeds` or preserve the experiment archive.
 2.  **Save the Environment**: Include a `requirements.txt` or `environment.yml` that specifies the exact version of Python and NumPy used.
 3.  **Persist Ground Truths**: While MoeaBench provides analytical PF functions, using fixed "Sidecar" JSON files ensures that any future changes to analytical MOP definitions don't invalidate your historical baselines.
 4.  **Export Diagnostic JSONs**: Use the built-in export features to save the full audit trail including the reproducibility metadata block.

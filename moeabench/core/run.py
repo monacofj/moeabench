@@ -68,8 +68,9 @@ class Run:
     Stores the generational history of populations, including objectives, 
     decision variables, and non-dominated subsets.
     """
-    def __init__(self, data_payload: Optional[Tuple] = None, seed: Optional[int] = None, 
-                 experiment: Any = None, index: Optional[int] = None) -> None:
+    def __init__(self, data_payload: Optional[Tuple] = None, seed: Optional[int] = None,
+                 experiment: Any = None, index: Optional[int] = None,
+                 component_seeds: Optional[dict] = None) -> None:
         """
         Initializes a Run object.
 
@@ -83,6 +84,7 @@ class Run:
         self.seed = seed
         self.source = experiment
         self.index = index
+        self._component_seeds = dict(component_seeds or {})
         
         # New direct storage
         if data_payload:
@@ -112,6 +114,11 @@ class Run:
         if base_name and self.index is not None and self.source and len(self.source) > 1:
             return f"{base_name} (run {self.index})"
         return base_name
+
+    @property
+    def component_seeds(self):
+        """A copy of the component seeds recorded for this run."""
+        return dict(getattr(self, "_component_seeds", {}) or {})
 
     def __repr__(self) -> str:
         return f"<Run generations={len(self)}>"

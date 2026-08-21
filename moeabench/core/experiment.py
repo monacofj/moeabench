@@ -159,6 +159,11 @@ class experiment(Reportable):
 
         base_seed = getattr(self.moea, 'seed', None) if self.moea else None
         run_seeds = self.seed
+        component_seed_runs = [
+            (run.index, run.component_seeds)
+            for run in self._runs
+            if run.component_seeds
+        ]
 
         # Meta info
         n_runs = len(self._runs)
@@ -190,8 +195,13 @@ class experiment(Reportable):
                 f"  - **Base seed**: {base_seed if base_seed is not None else 'None'}",
                 f"  - **Run seeds**: {run_seeds if run_seeds else 'Not run'}",
                 f"  - **Stop**:      {self.stop or 'Default'}",
-                "  - **Metadata**:"
             ]
+            if component_seed_runs:
+                lines.append("  - **Component seeds**:")
+                for run_index, seeds in component_seed_runs:
+                    values = ", ".join(f"{key}={value}" for key, value in seeds.items())
+                    lines.append(f"    - Run {run_index}: {values}")
+            lines.append("  - **Metadata**:")
             lines.extend([
                 f"    - Author:  {self.author or 'Anonymous'}",
                 f"    - License: {license_str}",
@@ -213,13 +223,20 @@ class experiment(Reportable):
                 f"  Base seed: {base_seed if base_seed is not None else 'None'}",
                 f"  Run seeds: {run_seeds if run_seeds else 'Not run'}",
                 f"  Stop:      {self.stop or 'Default'}",
+            ]
+            if component_seed_runs:
+                lines.append("  Component seeds:")
+                for run_index, seeds in component_seed_runs:
+                    values = ", ".join(f"{key}={value}" for key, value in seeds.items())
+                    lines.append(f"    Run {run_index}: {values}")
+            lines.extend([
                 "  Metadata:",
                 f"    - Author:   {self.author or 'Anonymous'}",
                 f"    - License: {license_str}",
                 f"    - Created: {self.created_at}",
                 f"    - Year:    {self.year}",
                 f"    - Runs:    {n_runs} of {self.repeat}"
-            ]
+            ])
             if consensus_line:
                 lines.append(f"    - Consensus: {consensus_line}")
                 
@@ -660,6 +677,7 @@ class experiment(Reportable):
 
         for i in range(repeat):
             seed = base_seed + start_index + i
+            run_index = start_index + i + 1
             
             inner_pbar = None
             if not silent:
@@ -670,8 +688,13 @@ class experiment(Reportable):
             set_active_pbar(inner_pbar)
 
             try:
-                run_data, _ = self._execute_run(self.moea, self.mop, seed, i+1)
-                new_run = Run(run_data, seed, experiment=self, index=i+1)
+                run_data, _, component_seeds = self._execute_run(
+                    self.moea, self.mop, seed, run_index
+                )
+                new_run = Run(
+                    run_data, seed, experiment=self, index=run_index,
+                    component_seeds=component_seeds
+                )
                 self._runs.append(new_run)
             finally:
                 if inner_pbar:
@@ -711,7 +734,8 @@ class experiment(Reportable):
             # Propagate error if needed
             raise e
 
-        return data_payload, seed
+        component_seeds = dict(getattr(moea, 'component_seeds', {}) or {})
+        return data_payload, seed, component_seeds
 
     # Persistence
     def save(self, path: str, mode: str = 'all') -> str:
