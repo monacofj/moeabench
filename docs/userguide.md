@@ -204,12 +204,14 @@ exp[0].seed    # 42
 exp[0].component_seeds  # {'nsga3.reference_directions': 286848756}
 ```
 
-NSGA-III automatically derives a distinct, reproducible reference-direction seed
-for every run. To vary only the evolutionary run seed while reusing the same
-reference directions, configure the algorithm with a fixed wrapper-specific seed:
+NSGA-III and U-NSGA-III automatically derive a distinct, reproducible
+reference-direction seed for every run. To vary only the evolutionary run seed
+while reusing the same reference directions, configure the algorithm with a
+fixed wrapper-specific seed:
 
 ```python
 exp.moea = mb.moeas.NSGA3(seed=42, ref_dirs_seed=7)
+# The same contract is available through mb.moeas.U_NSGA3(...).
 exp.run(repeat=3)
 
 exp.seed  # [42, 43, 44]
@@ -218,7 +220,7 @@ exp.seed  # [42, 43, 44]
 ```
 
 `ref_dirs_seed=None` is equivalent to omitting it. This option belongs only to
-the NSGA-III constructor; it is not a universal `Experiment.run()` parameter.
+the NSGA-III-family constructors; it is not a universal `Experiment.run()` parameter.
 Changing it does not change the seed passed to the evolutionary process, but the
 different reference directions can change the resulting trajectory.
 

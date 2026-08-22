@@ -12,11 +12,17 @@ class U_NSGA3(BaseMoeaWrapper):
     
     An extension of NSGA-III that aims to handle both single- and 
     multi-objective optimization problems in a unified manner.
+
+    Keyword Args:
+        ref_dirs_seed (int, optional): Fixed seed for the energy reference
+            directions. If omitted or ``None``, a distinct deterministic seed
+            is derived from each run seed. This wrapper-specific argument is
+            consumed by MoeaBench and is not forwarded to pymoo.
     
     References:
         Seada & Deb (2015). U-NSGA-III: A Unified Evolutionary Optimization 
         Procedure for Both Single and Multi-objective Optimization. 
         Kalyanpur, India.
     """
-    def __init__(self, population=None, generations=None, seed=None):
-        super().__init__(UNSGA_pymoo, population, generations, seed)
+    def __init__(self, population=None, generations=None, seed=None, **kwargs):
+        super().__init__(UNSGA_pymoo, population, generations, seed, **kwargs)

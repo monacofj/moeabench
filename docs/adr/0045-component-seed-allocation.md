@@ -37,6 +37,8 @@ shared RNG would also make results depend on component initialization order.
   `2**32`, ensuring a distinct numeric seed in the applicable range.
 - The canonical NSGA-III component identifier is
   `nsga3.reference_directions`.
+- U-NSGA-III follows the same allocation policy under the distinct canonical
+  identifier `unsga3.reference_directions`.
 - `NSGA3(ref_dirs_seed=None)` and omission derive the reference-direction seed
   automatically for each run. `NSGA3(ref_dirs_seed=<int>)` uses that fixed
   32-bit seed for all runs.
