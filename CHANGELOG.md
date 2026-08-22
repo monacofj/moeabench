@@ -39,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Removed the Hypervolume bounding-box toggle; pooled empirical contexts are now supplied explicitly through `ref`.
 
 ### Fixed
+- **U-NSGA-III Reference Directions (#26)**:
+  - The wrapper now supplies the required energy reference directions to pymoo and records their independently derived seed.
 - **NSGA-III Random-Stream Coupling (#30)**:
   - Energy reference directions now use a deterministic seed distinct from the evolutionary run seed.
   - `ref_dirs_seed=<int>` fixes reference directions across runs without being forwarded to pymoo's NSGA-III constructor.
