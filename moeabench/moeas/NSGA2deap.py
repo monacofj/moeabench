@@ -76,11 +76,13 @@ class NSGA2deap(BaseMoea):
         return res['F'][0]
 
     def _feasible_ind(self, ind):
-        """Checks feasibility of an individual if constraints exist."""
+        """Return whether an individual satisfies all problem constraints."""
         res = self.evaluation_benchmark(np.array(ind))
-        if 'G' in res:
-            return not res.get("feasible", False) 
-        return True
+
+        if "G" not in res:
+            return True
+
+        return bool(res.get("feasible", False))
 
     def evaluation(self):
         """
