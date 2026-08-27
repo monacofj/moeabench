@@ -1,7 +1,7 @@
 # ADR 0035: Triple-Mode Hypervolume Reporting (Raw, Relative, Absolute)
 
 ## Status
-Accepted
+Partially Superseded by [ADR 0047](0047-conventional-hypervolume-relative-scaling.md) for the operational semantics of `scale='rel'`.
 
 ## Context
 Hypervolume needs an explicit normalization interpretation. Without an external reference, the evaluated experiment supplies a self-referenced bounding box. Comparisons across separate calls require the same external `ref`, which exclusively defines the bounding box.
@@ -34,3 +34,7 @@ For immutable comparisons across plotting or analysis sessions, the user must ex
 - **Enhanced Integrity**: The library no longer conflates physical volume with relative competitive ranking by default. 
 - **Numerical Stability**: Algorithm performance metrics no longer "shift" simply because a poorly performing neighbor was added to the Bounding Box.
 - **Reporting Clarity**: The compact `MetricMatrix.report()` output preserves the scale-specific framing for relative and absolute modes, while one `Reference` section identifies the concrete sources and scale-independent geometry diagnostics.
+
+## Historical Note
+
+The three-mode architecture (`raw`, `rel`, `abs`) established here remains the basis of conventional Hypervolume reporting. The historical `rel` text above, including the session-maximum `1.0` ceiling and the `ratio` alias, is preserved as a record of the v0.11 decision but is not the current contract. [ADR 0047](0047-conventional-hypervolume-relative-scaling.md) now defines `H_rel`: one fixed best-final denominator in the selected reference context, individual reference fronts rather than a pooled union, and no clipping. The canonical public scale name is `rel`.

@@ -3,7 +3,7 @@
 **Status:** Accepted
 **Date:** 2026-03-08
 **Author:** Monaco F. J.
-**Supercedes:** Physical layer definitions in ADR 0029 and ADR 0036.
+**Supersedes:** Physical layer definitions in ADR 0029 and ADR 0036.
 **Drivers:** Clinical Fairness, Semantic Consistency, Finite Approximation-Inherent Resolution Integrity.
 
 ---

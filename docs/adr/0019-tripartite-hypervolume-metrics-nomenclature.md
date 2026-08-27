@@ -8,7 +8,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Status
 
-Accepted (Implemented in v0.7.6; evolved in v0.11.2, see [ADR 0035](0035-dual-mode-hypervolume-reporting.md))
+Partially Superseded by [ADR 0047](0047-conventional-hypervolume-relative-scaling.md). Implemented in v0.7.6 and evolved in v0.11.2 through [ADR 0035](0035-triple-mode-hypervolume-reporting.md).
 
 ## Context
 
@@ -38,3 +38,7 @@ We decided to decompose the Hypervolume metric into three distinct physical inte
 
 ### Negative
 *   **Report Complexity**: Baseline reports now contain three columns for Hypervolume instead of one.
+
+## Current Status Note
+
+This ADR is retained as the historical origin of the tripartite nomenclature. Its session-maximum definition and `1.0` ceiling for `H_rel` are no longer the current operational contract. [ADR 0047](0047-conventional-hypervolume-relative-scaling.md) defines the current relative-scaling semantics, including explicit-reference denominators and unclipped values above `1.0`. The GT-normalized perspective described historically as convergence to truth is now canonically named `H_abs`.

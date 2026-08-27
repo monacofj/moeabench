@@ -31,3 +31,7 @@ We decided to standardize the **Reference Point** for Hypervolume calculation at
 
 ### Negative
 *   **Value Shift**: Raw HV values will increase relative to a 1.0 reference, but `HV_rel` (convergence to GT) remains invariant.
+
+## Terminology Evolution
+
+The geometry decision in this ADR remains current for conventional normalized Hypervolume, but the last historical sentence uses pre-v0.11 nomenclature. The GT-normalized quantity formerly called `HV_rel` is now `H_abs`; current `H_rel` is the contextual relative scale defined by [ADR 0047](0047-conventional-hypervolume-relative-scaling.md). This terminology change does not alter the 1.1 normalized reference-point strategy itself. Diagnostic interpretation of the resulting nbox/bbox is further specified by [ADR 0042](0042-hypervolume-bbox-diagnostics.md).

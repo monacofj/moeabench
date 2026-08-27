@@ -1,6 +1,6 @@
 # ADR 0039: Canonical API and Compare Semantics (v0.14.0)
 
-**Status:** Accepted  
+**Status:** Partially Superseded by [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) for the audit-only diagnostics entrypoint restriction.  
 **Date:** 2026-03-11  
 **Author:** Monaco F. J.  
 **Supersedes (partially):** ADR 0014 (semantic taxonomy), ADR 0030 (clinical instrument naming surface), ADR 0032 (diagnostic entrypoint simplification details).  
@@ -212,3 +212,7 @@ This ADR is enforced by:
 - `topo_anderson` -> `topo_tail`
 - `result.summary()` -> `result.report(show=True, full=False)`
 - use `mb.clinic.audit(target, quality=True)` as canonical diagnostic entrypoint.
+
+## Current Status Note
+
+The namespace grammar, comparison semantics, semantic aliases, canonical view names, and removal of `summary()` remain historical decisions of this ADR. Section 2.2 and the corresponding audit-only migration note are no longer the complete public diagnostics contract: [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) makes the individual `mb.clinic` physical metrics and `q_*` scores public while retaining `audit()` as the high-level orchestrator. Equivalent direct and audited calls must share the same canonical diagnostic context.

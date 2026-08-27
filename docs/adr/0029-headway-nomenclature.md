@@ -1,9 +1,9 @@
 # ADR 0029: Headway Nomenclature and Layer 1 API Streamlining
 
-**Status:** Accepted
+**Status:** Partially Superseded by [ADR 0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) for the physical-layer definitions.
 **Date:** 2026-02-18
 **Author:** Monaco F. J.
-**Supercedes:** Sections 3.1 and 4.2 of ADR 0028.
+**Supersedes:** Sections 3.1 and 4.2 of ADR 0028.
 **Drivers:** Nomenclature Clarity, API Redundancy, Scientific Precision.
 
 ---

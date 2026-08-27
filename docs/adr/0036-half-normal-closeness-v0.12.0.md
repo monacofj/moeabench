@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # ADR 0036: Half-Normal Projection and KDTree Physics Optimization (v0.12.0)
 
-**Status:** Accepted
+**Status:** Partially Superseded by [ADR 0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) for later physical-layer definitions.
 **Date:** 2026-02-25
 **Author:** Monaco F. J., Silva F. F.
 **Drivers:** Scientific Rigor, Geometric Integrity, Performance Scalability.

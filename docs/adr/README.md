@@ -25,11 +25,11 @@ This directory contains records of the key architectural decisions made during t
 | [0012](0012-manager-mode.md) | Manager Mode: Experiment Delegation Semantics | Accepted | 2026-01-18 |
 | [0013](0013-visual-identity.md) | Centralized Visual Identity (Ocean Palette) | Accepted | 2026-01-18 |
 | [0014](0014-semantic-taxonomy.md) | Semantic Taxonomy (Performance vs. Topology) | Accepted | 2026-01-19 |
-| [0015](0015-scientific-ground-truth-and-numerical-integrity.md) | Ground Truth Integrity | Superceded | 2026-01-20 |
+| [0015](0015-scientific-ground-truth-and-numerical-integrity.md) | Ground Truth Integrity | Superseded by 0016 | 2026-01-20 |
 | [0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Guided Geometric Solvers | Accepted | 2026-01-25 |
 | [0017](0017-comprehensive-calibration-and-testing-framework.md) | Calibration & Testing Framework | Accepted | 2026-02-01 |
 | [0018](0018-consolidated-scientific-report-and-gt-density-refinement.md) | Consolidated Report & GT Density | Accepted | 2026-02-02 |
-| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Accepted | 2026-02-03 |
+| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Partially Superseded by 0047 | 2026-02-03 |
 | [0020](0020-standardized-reference-point-strategy-for-normalization.md) | Standardized Reference Point Strategy | Accepted | 2026-02-04 |
 | [0021](0021-numerical-integrity-and-validation-pipeline-float64-policy.md) | Numerical Integrity (Float64 Policy) | Accepted | 2026-02-05 |
 | [0022](0022-emd-as-primary-diagnostic-for-degenerate-manifolds.md) | EMD as Primary Diagnostic | Accepted | 2026-02-06 |
@@ -39,17 +39,17 @@ This directory contains records of the key architectural decisions made during t
 | [0026](0026-clinical-metrology.md) | Clinical Metrology and Calibration | Accepted | 2026-02-10 |
 | [0027](0027-calibration-report-consistency.md) | Calibration Report ↔ Clinical Payload | Accepted | 2026-02-11 |
 | [0028](0028-refined-clinical-diagnostics-v0.9.1.md) | Refined Clinical Diagnostics (v0.9.1) | Accepted | 2026-02-17 |
-| [0029](0029-headway-nomenclature.md) | Headway Nomenclature | Superceded | 2026-02-18 |
-| [0030](0030-clinical-instrument-architecture.md) | Clinical Instrument Architecture | Accepted | 2026-02-20 |
+| [0029](0029-headway-nomenclature.md) | Headway Nomenclature | Partially Superseded by 0037 | 2026-02-18 |
+| [0030](0030-clinical-instrument-architecture.md) | Clinical Instrument Architecture | Partially Superseded by 0039 | 2026-02-20 |
 | [0031](0031-numerical-integrity-verification-tier.md) | Numerical Integrity Hub (v0.9+) | Accepted | 2026-02-21 |
 | [0032](0032-enhanced-persistence-metadata-and-diagnostic-simplification.md) | Diagnostic Simplification | Accepted | 2026-02-22 |
 | [0033](0033-flexible-reference-management-for-longitudinal-auditing.md) | Flexible Reference Management | Accepted | 2026-02-23 |
 | [0034](0034-unified-metric-analysis-api.md) | Unified Metric Analysis API | Accepted | 2026-02-24 |
-| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Accepted | 2026-02-25 |
-| [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Superceded | 2026-02-25 |
+| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 | 2026-02-25 |
+| [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Partially Superseded by 0037 | 2026-02-25 |
 | [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Accepted | 2026-03-08 |
 | [0038](0038-runtime-output-and-sidecar-hygiene-v0.13.3.md) | Runtime Output Control and Sidecar Hygiene (v0.13.3) | Accepted | 2026-03-11 |
-| [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) | Canonical API and Compare Semantics (v0.14.0) | Accepted | 2026-03-11 |
+| [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) | Canonical API and Compare Semantics (v0.14.0) | Partially Superseded by 0048 | 2026-03-11 |
 | [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) | Canonical View Inputs and No Compatibility Shims | Accepted | 2026-03-13 |
 | [0041](0041-layer-ontology-for-structural-analysis.md) | Layer Ontology for Structural Analysis | Accepted | 2026-03-13 |
 | [0042](0042-hypervolume-bbox-diagnostics.md) | Diagnostic-Only Hypervolume Bounding Boxes | Accepted | 2026-08-12 |
@@ -57,6 +57,23 @@ This directory contains records of the key architectural decisions made during t
 | [0044](0044-ordinal-hypervolume.md) | Ordinal Hypervolume | Accepted | 2026-08-19 |
 | [0045](0045-component-seed-allocation.md) | Deterministic Component Seed Allocation | Accepted | 2026-08-21 |
 | [0046](0046-relative-ordinal-hypervolume.md) | Relative Scaling for Ordinal Hypervolume | Accepted | 2026-08-21 |
+| [0047](0047-conventional-hypervolume-relative-scaling.md) | Conventional Hypervolume Relative Scaling | Accepted | 2026-08-27 |
+| [0048](0048-public-clinical-metrics-and-audit-context-parity.md) | Public Clinical Metrics and Audit Context Parity | Accepted | 2026-08-27 |
+
+## Decision Lineage
+
+The status column records whether a historical ADR remains wholly normative or has been superseded in a specific part. Superseded ADRs are retained as historical records rather than rewritten to match later behavior.
+
+### Hypervolume
+
+- Nomenclature and reporting: [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) → [0035](0035-triple-mode-hypervolume-reporting.md) → [0047](0047-conventional-hypervolume-relative-scaling.md).
+- Conventional geometry and computation: [0020](0020-standardized-reference-point-strategy-for-normalization.md) → [0042](0042-hypervolume-bbox-diagnostics.md) / [0043](0043-hypervolume-engine-selection.md), with current relative scaling in [0047](0047-conventional-hypervolume-relative-scaling.md).
+- Ordinal branch: [0044](0044-ordinal-hypervolume.md) → [0046](0046-relative-ordinal-hypervolume.md).
+
+### Clinical diagnostics
+
+- Metrology and physical/quality layers: [0026](0026-clinical-metrology.md) → [0028](0028-refined-clinical-diagnostics-v0.9.1.md) → [0029](0029-headway-nomenclature.md) / [0036](0036-half-normal-closeness-v0.12.0.md) → [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md).
+- Public API and result/view contract: [0030](0030-clinical-instrument-architecture.md) → [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) → [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) → [0048](0048-public-clinical-metrics-and-audit-context-parity.md).
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*
