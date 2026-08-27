@@ -68,7 +68,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 *   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
 *   **Cloud-centric Delegation**: The experiment object aggregates results across multiple runs automatically, providing a statistical "Cloud" perspective of the search.
-*   **Scientific Common Goods (CC0)**: By default, experiments with unspecified author metadata are licensed under **CC0-1.0** to ensure maximum scientific openness and reproducibility.
+*   **Scientific Common Goods (CC0)**: A new experiment is public-domain by default, with `author="Public domain"` and SPDX license **CC0-1.0**. Assigning `exp.author` or `exp.license` replaces those defaults explicitly.
 *   **Zero-Config Reporting**: Reporting functions (`.report()`) employ introspection to discover variable names and display comprehensive metadata automatically.
 
 ---
@@ -113,11 +113,11 @@ For example, the topology plot will show:
 **Legend Naming**: By default, the visualization layer tries to identify each experiment in the legend using the variable name or the experiment name inferred from context. This helps distinguish multiple experiments when they are shown together in the same figure. If you want full control, set the experiment metadata explicitly:
 
 *   `exp.name = "My Experiment"` $\to$ names the experiment; 
-*   `exp.author = "Dr. Doe J."` $\to$ Assigns authorship.
-*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (defaults to **CC0-1.0**).
+*   `exp.author = "Dr. Doe J."` $\to$ Assigns authorship (default: `"Public domain"`).
+*   `exp.license = "GPL-3.0-or-later"` $\to$ Assigns SPDX license (default: **CC0-1.0**).
 *   `exp.year = 2026` $\to$ Sets the publication year for copyright claim.
 
-**Open-Science Metadata**: MoeaBench persists authorship and licensing metadata together with the experimental payload when you export results. This keeps the archive scientifically traceable and ready for redistribution. See **[Persistence (`save` and `load`)](#11-persistence-save-and-load)** for the full persistence contract.
+**Open-Science Metadata**: MoeaBench persists authorship and licensing metadata together with the experimental payload when you export results. A newly created experiment stores `author="Public domain"` and `license="CC0-1.0"` as its actual metadata, not merely as report-time labels. If you assign either field explicitly, that value is persisted instead. This keeps the archive scientifically traceable and ready for redistribution. See **[Persistence (`save` and `load`)](#11-persistence-save-and-load)** for the full persistence contract.
 
 **Rich Objects**: MoeaBench is organized around rich analytical objects rather than raw arrays alone. Their metadata can be inspected and assigned programmatically, as with `exp.name` above, and the main canonical objects also expose a human-readable `.report()` narrative. This includes `Experiment` as well as the rich result objects returned by metrics, statistics, and diagnostics.
 
@@ -134,7 +134,7 @@ Typical output:
   Algorithm: NSGA3 (Pop=100, Gens=300)
   Stop:      Default
   Metadata:
-    - Authors: Anonymous
+    - Authors: Public domain
     - License: CC0-1.0
     - Year:    2026
     - Runs:    1 of 1
@@ -568,7 +568,7 @@ This keeps the same architectural pattern used throughout the library: compute a
 
 ![Reliability Bands](images/topo_bands.png)
 *Figure 4: Search Reliability Corridor showing 50% and 90% attainment bands.*
-*Interpretation: In this plot, the narrow dark band represents the median behavior (50% probability), while the lighter band shows the 90% confidence interval. A narrow 90% band (as seen here) indicates high run-to-run consistency, meaning the algorithm is reliable.*
+*Interpretation: In this plot, the narrow dark band represents the median attainment behavior (50%), while the lighter band shows the 90% empirical attainment corridor. These attainment levels describe how frequently regions are reached across stochastic runs; they are not, by themselves, statistical confidence intervals for an estimated parameter. A narrow high-attainment corridor indicates strong run-to-run spatial consistency.*
 
 
 ![Spatial Density](images/topo_density.png)
@@ -599,9 +599,9 @@ MoeaBench prioritizes mathematical honesty. When evaluating performance against 
 
 *   **Triple-Mode Hypervolume Reporting**: Starting with v0.11, Hypervolume is reported using three standardized measures:
     1.  **H_raw**: The physical dominated volume ($Physical$).
-    2.  **H_rel**: Competitive efficiency (Normalized to $session\_max$).
+    2.  **H_rel**: Competitive efficiency under the selected reference context. Without an explicit `ref`, the denominator is the best final HV among the evaluated runs/data. With an explicit `ref`, the denominator is the greatest final HV among the individual reference fronts evaluated under the same common geometry. Relative HV is not clipped: `1.0` matches the chosen denominator, and values above `1.0` are possible when evaluated data outperform an external reference.
     3.  **H_abs**: Theoretical optimality (Normalized to $Ground\_Truth$).
-*   **Performance Saturation (H_abs > 100%)**: This occurs when an algorithm's population fills spatial gaps within the discrete reference sampling of the GT. It is a sign of **Convergence Saturation**—the algorithm has reached the maximum precision allowed by the reference discretization.
+*   **Performance Saturation (H_abs > 100%)**: `H_abs > 1` means that the evaluated front has a larger measured HV than the discrete or calibrated GT denominator under the common geometry. This can arise from GT discretization, sampling density, or reference geometry and must not be interpreted automatically as the solver having exceeded the mathematical optimum. Inspect the Hypervolume diagnostics before drawing a causal interpretation.
 *   **The EMD Diagnostic**: Proximity metrics like IGD can be deceptive on degenerate fronts (e.g., DPF family). We use **Earth Mover's Distance (EMD)** as our primary indicator of **Topological Integrity**. A high EMD signal takes precedence over IGD, as it identifies clumping and loss of manifold extents that distance-based metrics might overlook.
 
 ```python
@@ -620,7 +620,7 @@ mb.view.density(exp1, exp2)
 
 ![Performance Contrast](images/perf_spread.png)
 *Figure 7: Performance Contrast using Boxplots with automated A12 and Significance annotations.*
-*Interpretation: The boxplot confirms that NSGA-III (Blue) significantly outperforms MOEA/D (Orange). The annotation `A12=1.00` and `p=0.00e+00` statistically proves that NSGA-III wins in 100% of the pairwise comparisons with extremely high confidence.*
+*Interpretation: The boxplot shows strong evidence that NSGA-III (Blue) outperforms MOEA/D (Orange) in the observed runs. `A12=1.00` means complete empirical pairwise dominance in the sampled outcomes, while a very small p-value provides strong evidence against the tested null hypothesis. Neither statistic is a mathematical proof of universal algorithmic superiority beyond the sampled experiment.*
 
 
 ![Performance Density](images/perf_density.png)
@@ -750,10 +750,15 @@ Likewise, anywhere you see `metric=mb.metrics.hv`, the same slot may often be fi
 
 ```python
 # 2. Raw Access
-traj = res.mean        # Vector of all generation means
-last = res.last        # Scalar value of final generation
-dist = res.gen()       # Distribution of final generation
+matrix = res.values      # Generations x runs matrix
+mean = res.mean()        # Mean value of the final generation
+mean_100 = res.mean(100) # Mean value at generation 100
+last = res.last          # Same final-generation mean shortcut
+dist = res.gen()         # Distribution across runs at the final generation
+traj = res.run(0)        # Full trajectory of run 0
 ```
+
+`MetricMatrix.mean(n)` is a scalar reduction for one generation, not the complete trajectory. Use `.values` for the full generation-by-run matrix, `.run(i)` for one run's trajectory, and `.gen(n)` for the cross-run distribution at one generation.
 
 **The output is something like:**
 
@@ -912,7 +917,7 @@ To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g.,
 
 ```python
 # 1. Test for Statistical Significance (Mann-Whitney U)
-# Answers: "Is the difference real?"
+# Answers: "Is there evidence of a difference?"
 res = mb.stats.perf_compare(exp1, exp2, method='mannwhitney', metric=mb.metrics.hv)
 
 # 2. Get a narrative diagnosis
@@ -935,14 +940,19 @@ Conclusion: There is a statistically significant difference favoring exp1.
 
 #### **Accessing Raw Data**
 
-Most result objects also allow programmatic access to the underlying metrics:
+Most result objects also allow programmatic access to the underlying metrics. `perf_compare()` returns a `PerfCompareResult` whose canonical fields include `method`, `statistic`, `p_value`, `effect_size`, and `decision`:
 
 ```python
-if res.is_significant:
+if res.p_value is not None and res.p_value < mb.defaults.alpha:
     # Measure Effect Size (Vargha-Delaney A12)
     # Answers: "How often does it win?"
     prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
+
+print(res.decision)
+print(res.effect_size)
 ```
+
+`decision` is the comparator's interpreted outcome. A `p_value` is available only for methods that perform a significance test; the A12 comparator instead reports its empirical win probability through `effect_size`/`statistic`.
 
 The semantic aliases below are exact shortcuts:
 - `mb.stats.perf_shift(...)` == `perf_compare(..., method='mannwhitney')`
@@ -985,14 +995,16 @@ MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.clinic`
 
 MoeaBench transforms raw performance data into a "detailed diagnostic assessment". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
 
-| Dimension | Physical Meaning (Unit: $s_k$) | Pathology Target |
+| Dimension | Physical Meaning | Pathology Target |
 | :--- | :--- | :--- |
-| **Closeness** | Normalized distance to the true manifold. | Stagnation / Poor convergence. |
-| **Coverage** | Connectivity from the target to the solution. | Holes / Uncovered regions. |
-| **Gap** | Size of the largest detected manifold hole. | Local trapping / Discontinuity. |
-| **Regularity** | Spacing uniformity between neighbors. | Clumping / Unstructured density. |
-| **Balance** | Distribution bias across Pareto regions. | Dimensional bias / Focus loss. |
-| **Headway** | Depth of convergence (95th percentile). | Poor initialization / Weak drive. |
+| **Closeness** | Median $P \to GT$ distance normalized by the resolution scale $s_K$; resolution units. | Stagnation / Poor convergence. |
+| **Coverage** | Mean $GT \to P$ nearest distance; objective-space distance units. | Holes / Uncovered regions. |
+| **Gap** | 95th percentile of $GT \to P$ nearest distances; objective-space distance units. | Local trapping / Discontinuity. |
+| **Regularity** | Wasserstein-1 difference between nearest-neighbor spacing distributions; spacing-distance units. | Clumping / Unstructured density. |
+| **Balance** | Jensen-Shannon divergence of manifold occupancy; dimensionless. | Dimensional bias / Focus loss. |
+| **Headway** | Fraction of the initial robust convergence error still remaining; dimensionless. | Poor initialization / Weak drive. |
+
+The six FAIR quantities therefore do **not** share one universal unit. $s_K$ is a resolution ruler used where the metric definition calls for it, most notably `closeness` and the raw form of `headway`; other diagnostics retain their own physical or dimensionless scale.
 
 ### **9.2. Physical Metrics (FAIR Metrics)**
 
@@ -1004,11 +1016,11 @@ In ideal multi-objective optimization, the Pareto front is often a continuous ma
 
 Because of this, it is physically impossible to achieve an "error of zero" unless the population points exactly coincide with the GT samples. To account for this, MoeaBench uses **Resolution-Based Normalization**. 
 
-We define the **Resolution Scale** ($s_K$) as the expected average distance between points in a "perfectly" distributed population of size $K$. By dividing physical distances by $s_K$, we move from absolute units to "Resolution Units". 
+We define the **Resolution Scale** ($s_K$) as the expected average distance between points in a "perfectly" distributed population of size $K$. By dividing physical distances by $s_K$ where the metric definition calls for it, we can express those quantities in resolution units without pretending that all FAIR metrics have the same dimension.
 
-> **The Target of Success**: In the physical layer (FAIR), these metrics represent **Error** or **Distance**. Consequently, the analytical ideal is **0.0** (perfect match). The Resolution Scale ($s_K$) acts as a "Macroscopic Ruler" to make these errors comparable across problems, but it does not shift the mathematical target of zero error.
+> **The Target of Success**: In the physical layer (FAIR), these metrics represent **Error** or **Distance**. Consequently, the analytical ideal is **0.0** (perfect match). The Resolution Scale ($s_K$) acts as a "Macroscopic Ruler" for the metrics that use it, but it does not shift the mathematical target of zero error.
 
-These metrics provide raw, resolution-invariant physical facts about the population:
+These metrics provide raw physical facts about the population:
 
 #### **`closeness`**
 - **Rationale**: Measures the **approximation to the optimum**. It returns a rich physical result whose scalar value is the median distance to the Ground Truth ($P \to GT$), normalized by $s_K$, while also retaining the point-wise distance distribution. It quantifies the median precision/sharpness of the convergence.
@@ -1054,17 +1066,25 @@ bal = mb.clinic.balance(exp)
 ```
 
 #### **`headway`**
-- **Rationale**: Measures **progress away from random**. It quantifies how far the population has traveled from the initial random bounding box towards the manifold. It uses the 95th percentile distance ($GD_{95}(P \to GT)$) normalized by $s_K$ to provide a robust measure of the "gain" achieved by the solver.
+- **Rationale**: Measures **progress from the initial state toward the manifold**. The default value is the fraction of the initial robust convergence error that remains at the final state:
+
+  $$
+  \mathrm{headway} =
+  \frac{GD_{95}(P_{final} \to GT)}{GD_{95}(P_{initial} \to GT)}.
+  $$
+
+  A value near `0` means that the initial convergence error has been almost completely removed; a value near `1` means little progress relative to the initial state. With `raw=True`, `headway` instead returns the final $GD_{95}$ distance normalized by $s_K$, i.e. the final distance in resolution-scaled units.
 - **Example**:
 ```python
 d = mb.clinic.headway(exp)
+raw_d = mb.clinic.headway(exp, raw=True)
 ```
 
 ---
 
 ### **9.3. Clinical Normalization (Q-Scores)**
 
-A Quality-Score (Q-Score) is not a raw physical measurement. It is a **clinical normalization** of the physical facts. It is an **interpolated rank** situated between an **Analytical Ideal** ($Q=1.0$) and a **Standardized Noise Floor** ($Q=0.0$). This ensures that a score of $0.8$ represents the same degree of "algorithmic health" regardless of whether the problem objectives are in the range $[0, 1]$ or $[0, 10^6]$.
+A Quality-Score (Q-Score) is not a raw physical measurement. It is a **clinical normalization** of the physical facts. The public Q-score contract is the closed interval $0 \le Q \le 1$: the **Analytical Ideal** is anchored at $Q=1.0$, while the standardized random/failure condition is anchored at $Q=0.0$ after the metric-specific calibration and gating. Intermediate values are calibrated coordinates between those anchors; **Q is not, in general, a percentile of random samples**. This makes the scale comparable across problems even when the underlying objectives use very different physical units.
 
 #### **Diagnostic Tiers**
 The scale is divided into five diagnostic tiers:
@@ -1074,17 +1094,17 @@ The scale is divided into five diagnostic tiers:
 - **$[0.34, 0.67]$ - Marginal / Exploratory (Yellow)**: Detectable drive, but unstable or coarse results.
 - **$[0.00, 0.34]$ - Failure / Random (Red)**: Performance indistinguishable from unguided search.
 
-#### **`q_closeness` (ECDF Scale)**
-- **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate**. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
+#### **`q_closeness` (Calibrated Distance Scale)**
+- **Rationale**: Calibrates point-wise closeness using a **Monotonicity Gate** and the distance between the observed, random-baseline, and ideal closeness distributions. It compares the population distribution against a **Blind Sampling Baseline** ($Rand_{50}$), ensuring that scores only approach $1.0$ if the solutions are structurally closer to the front than random noise.
 - **Geometric Integrity (Half-Normal Projection)**: Since v0.12.0, the baseline random noise is modeled strictly as a **Half-Normal Projection** ($| \mathcal{N}(0, \sigma^2) |$). Prior to this, adding spherical noise around the Ground Truth allowed baseline points to mathematically fall *behind* the Pareto boundary, violating the definition of Pareto optimality. Metaphorically, the true Pareto front is an unbreakable wall; errors can only bounce outwards, not penetrate it. The Half-Normal model rigidly enforces this geometric physical law.
 - **Example**:
 ```python
 score = mb.clinic.q_closeness(exp)
 ```
-- **Interpretation Example ($Q=0.8$)**: The population's proximity to the front is better than 80% of the random baseline samples. Solution precision approximates the optimum significantly better than random search.
+- **Interpretation Example ($Q=0.8$)**: The observed closeness lies well toward the ideal side of the calibrated random-to-ideal scale. It does **not** mean that the population is literally better than 80% of random samples.
 
 #### **`q_coverage` (ECDF Scale)**
-- **Rationale**: Uses a full **ECDF (Empirical Cumulative Distribution Function)** of random sampling to rank the coverage. A score of $0.5$ means the algorithm is exactly as good as a random target of the front, while $Q > 0.9$ indicates scientific-grade manifold reach.
+- **Rationale**: Uses the empirical distribution of calibrated random coverage outcomes to map coverage onto the common clinical scale. The standardized random/failure anchor remains $Q=0$, while $Q \to 1$ denotes movement toward the ideal coverage condition; `Q=0.5` must not be read as "exactly random" by definition.
 - **Example**:
 ```python
 score = mb.clinic.q_coverage(exp)
@@ -1199,6 +1219,8 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 ### **9.5. Reporting Interface and Auditing Workflow**
 
 The `mb.clinic` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
+
+The canonical individual calls such as `mb.clinic.closeness(...)`, `mb.clinic.q_closeness(...)`, and their counterparts used internally by `mb.clinic.audit(...)` resolve the same diagnostic context under ordinary default usage. In particular, requesting a metric individually should not produce a different value merely because the same component was obtained through `audit()`; explicit overrides remain explicit overrides.
 
 If you need this provenance independently of an audit, `mb.system.info()` returns the same environment metadata as a dictionary and, by default, displays it immediately.
 
@@ -1427,6 +1449,16 @@ In practice, this means `save/load` can support two distinct scientific workflow
 Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
 - **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
 - **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
+
+A newly created experiment already has real public-domain metadata:
+
+```python
+exp = mb.experiment()
+exp.author   # "Public domain"
+exp.license  # "CC0-1.0"
+```
+
+These values are serialized as such in the experiment object and in `metadata.json`, and an ordinary `load(..., mode="all")` restores them. If the researcher assigns a different author or SPDX license before saving, persistence records those explicit values instead; no report-time or persistence-time license substitution is involved.
 
 This is complementary to `mb.system.info(show=False)`: the archive records the environment inside the saved artifact, while `info()` lets you inspect that environment explicitly during interactive work.
 
