@@ -296,25 +296,16 @@ class MetricMatrix(Reportable):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the metric performance and stability."""
-        use_md = kwargs.get('markdown', self._is_notebook())
         data = self._data
         if data.size == 0:
             is_ohv = self.diagnostics.get("metric_kind") == "ordinal_hypervolume"
             ohv_scale = self.diagnostics.get("ohv_scale", "raw")
-            if use_md:
-                content = f"### Metric Report: {self.metric_name}\n**Status**: No data available"
-                if is_ohv:
-                    content += f"\n- **Scale**: {'Relative' if ohv_scale == 'rel' else 'Raw'}"
-                    if ohv_scale == "rel":
-                        denominator = self.diagnostics["ohv_scale_denominator"]
-                        content += f"\n- **Scale denominator**: {denominator:.{defaults.precision}f}"
-            else:
-                content = f"--- Metric Report: {self.metric_name} ---\n  Status: No data available"
-                if is_ohv:
-                    content += f"\n  Scale: {'Relative' if ohv_scale == 'rel' else 'Raw'}"
-                    if ohv_scale == "rel":
-                        denominator = self.diagnostics["ohv_scale_denominator"]
-                        content += f"\n  Scale denominator: {denominator:.{defaults.precision}f}"
+            content = f"### Metric Report: {self.metric_name}\n**Status**: No data available"
+            if is_ohv:
+                content += f"\n- **Scale**: {'Relative' if ohv_scale == 'rel' else 'Raw'}"
+                if ohv_scale == "rel":
+                    denominator = self.diagnostics["ohv_scale_denominator"]
+                    content += f"\n- **Scale denominator**: {denominator:.{defaults.precision}f}"
             return self._render_report(content, show, **kwargs)
 
         # Distribution at the last generation
@@ -322,10 +313,7 @@ class MetricMatrix(Reportable):
         valid_final = final_dist[np.isfinite(final_dist)]
         
         if len(valid_final) == 0:
-            if use_md:
-                content = f"### Metric Report: {self.metric_name}\n**Status**: All values are NaN"
-            else:
-                content = f"--- Metric Report: {self.metric_name} ---\n  Status: All values are NaN"
+            content = f"### Metric Report: {self.metric_name}\n**Status**: All values are NaN"
             return self._render_report(content, show, **kwargs)
 
         mean = np.mean(valid_final)
@@ -619,130 +607,72 @@ class MetricMatrix(Reportable):
                  "product of the per-objective ordinal level counts"),
             ]
 
-        if use_md:
-            lines = [f"### Metric Report: {self.metric_name}{source_info}"]
-            if is_ordinal_hypervolume:
-                if self.diagnostics.get("ohv_scale", "raw") == "rel":
-                    lines.extend([
-                        "> Relative Ordinal Hypervolume expresses raw OHV as a fraction of the best individual final OHV in the common reference context. A value of 1.0 matches that reference performance; historical values may exceed 1.0.",
-                        "",
-                    ])
-                else:
-                    lines.extend([
-                        "> Ordinal Hypervolume measures dominated volume after replacing metric objective distances by unit distances between consecutive reference levels.",
-                        "",
-                    ])
-            if is_hypervolume and self.is_ratio:
+        lines = [f"### Metric Report: {self.metric_name}{source_info}"]
+        if is_ordinal_hypervolume:
+            if self.diagnostics.get("ohv_scale", "raw") == "rel":
                 lines.extend([
-                    "> **Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
-                    "> Values are scaled by the maximum session volume ($1.0$ ceiling).",
+                    "Relative Ordinal Hypervolume expresses raw OHV as a fraction of the best individual final OHV in the common reference context. A value of 1.0 matches that reference performance; historical values may exceed 1.0.",
                     "",
                 ])
-            elif is_hypervolume and self.is_abs:
+            else:
                 lines.extend([
-                    "> **Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
-                    "> Values are normalized by the pre-calculated Ground Truth of the problem ($1.0$ = Opt).",
+                    "Ordinal Hypervolume measures dominated volume after replacing metric objective distances by unit distances between consecutive reference levels.",
                     "",
                 ])
-            lines.append("#### Final Performance (Last Gen)")
-            if is_ordinal_hypervolume:
-                lines.append("")
-                lines.extend(_explained_fields(_ordinal_final_fields()))
-            elif is_hypervolume:
-                lines.append("")
-                lines.extend(_explained_fields(_hypervolume_final_fields()))
-            else:
-                lines.extend([
-                    f"- **Mean**: {mean:.{prec}f}",
-                    f"- **StdDev**: {std_display}",
-                    f"- **Best**: {best:.{prec}f}",
-                ])
-            lines.extend(["", "#### Search Dynamics"])
-            if is_ordinal_hypervolume:
-                lines.append("")
-                lines.extend(_explained_fields(_ordinal_search_fields()))
-            elif is_hypervolume:
-                lines.append("")
-                lines.extend(_explained_fields(_hypervolume_search_fields()))
-            else:
-                lines.extend([
-                    f"- **Runs**: {data.shape[1]}",
-                    f"- **Generations**: {data.shape[0]}",
-                    f"- **Stability**: {stability}",
-                ])
-            if is_hypervolume and self.diagnostics:
-                lines.extend(["", "#### Reference", ""])
-                lines.extend(_explained_fields(_reference_fields(), label_width=30))
-                lines.extend(["", "#### Reference Boundary", ""])
-                lines.extend(_explained_fields(_reference_boundary_fields()))
-            elif is_ordinal_hypervolume:
-                lines.extend(["", "#### Ordinal Reference", ""])
-                lines.extend(_explained_fields(_ordinal_reference_fields()))
-            content = "\n".join(lines)
-        else:
-            lines = [f"--- Metric Report: {self.metric_name}{source_info} ---"]
-            if is_ordinal_hypervolume:
-                if self.diagnostics.get("ohv_scale", "raw") == "rel":
-                    lines.append(
-                        "  Meaning: raw OHV divided by the best individual final OHV in the "
-                        "common reference context; historical values may exceed 1.0."
-                    )
-                else:
-                    lines.append(
-                        "  Meaning: dominated volume after metric objective distances are replaced "
-                        "by unit distances between consecutive reference levels."
-                    )
-            if is_hypervolume and self.is_ratio:
-                lines.append("  Question: What is the competitive efficiency relative to best session performance?")
-            elif is_hypervolume and self.is_abs:
-                lines.append("  Question: How close is this algorithm to mathematical perfection?")
+        if is_hypervolume and self.is_ratio:
             lines.extend([
-                "  Final Performance (Last Gen):",
+                "**Competitive Efficiency**: What percentage of the best observed performance did this algorithm achieve?",
+                "Values are scaled by the maximum session volume (1.0 ceiling).",
+                "",
             ])
-            if is_ordinal_hypervolume:
-                lines.extend(_explained_fields(
-                    _ordinal_final_fields(), indent="    "
-                ))
-            elif is_hypervolume:
-                lines.extend(_explained_fields(
-                    _hypervolume_final_fields(), indent="    "
-                ))
-            else:
-                lines.extend([
-                    f"    - Mean: {mean:.{prec}f}",
-                    f"    - StdDev: {std_display}",
-                    f"    - Best: {best:.{prec}f}",
-                ])
-            lines.append("  Search Dynamics:")
-            if is_ordinal_hypervolume:
-                lines.extend(_explained_fields(
-                    _ordinal_search_fields(), indent="    "
-                ))
-            elif is_hypervolume:
-                lines.extend(_explained_fields(
-                    _hypervolume_search_fields(), indent="    "
-                ))
-            else:
-                lines.extend([
-                    f"    - Runs: {data.shape[1]}",
-                    f"    - Generations: {data.shape[0]}",
-                    f"    - Stability: {stability}",
-                ])
-            if is_hypervolume and self.diagnostics:
-                lines.append("  Reference:")
-                lines.extend(_explained_fields(
-                    _reference_fields(), indent="    ", label_width=30
-                ))
-                lines.append("  Reference Boundary:")
-                lines.extend(_explained_fields(
-                    _reference_boundary_fields(), indent="    "
-                ))
-            elif is_ordinal_hypervolume:
-                lines.append("  Ordinal Reference:")
-                lines.extend(_explained_fields(
-                    _ordinal_reference_fields(), indent="    "
-                ))
-            content = "\n".join(lines)
+        elif is_hypervolume and self.is_abs:
+            lines.extend([
+                "**Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
+                "Values are normalized by the pre-calculated Ground Truth of the problem (1.0 = Opt).",
+                "",
+            ])
+        lines.append("#### Final Performance (Last Gen)")
+        if is_ordinal_hypervolume:
+            lines.extend(["", self._report_block("\n".join(
+                _explained_fields(_ordinal_final_fields())
+            ))])
+        elif is_hypervolume:
+            lines.extend(["", self._report_block("\n".join(
+                _explained_fields(_hypervolume_final_fields())
+            ))])
+        else:
+            lines.extend([
+                f"- **Mean**: {mean:.{prec}f}",
+                f"- **StdDev**: {std_display}",
+                f"- **Best**: {best:.{prec}f}",
+            ])
+        lines.extend(["", "#### Search Dynamics"])
+        if is_ordinal_hypervolume:
+            lines.extend(["", self._report_block("\n".join(
+                _explained_fields(_ordinal_search_fields())
+            ))])
+        elif is_hypervolume:
+            lines.extend(["", self._report_block("\n".join(
+                _explained_fields(_hypervolume_search_fields())
+            ))])
+        else:
+            lines.extend([
+                f"- **Runs**: {data.shape[1]}",
+                f"- **Generations**: {data.shape[0]}",
+                f"- **Stability**: {stability}",
+            ])
+        if is_hypervolume and self.diagnostics:
+            lines.extend(["", "#### Reference", "", self._report_block("\n".join(
+                _explained_fields(_reference_fields(), label_width=30)
+            ))])
+            lines.extend(["", "#### Reference Boundary", "", self._report_block("\n".join(
+                _explained_fields(_reference_boundary_fields())
+            ))])
+        elif is_ordinal_hypervolume:
+            lines.extend(["", "#### Ordinal Reference", "", self._report_block("\n".join(
+                _explained_fields(_ordinal_reference_fields())
+            ))])
+        content = "\n".join(lines)
         
         return self._render_report(content, show, **kwargs)
 

@@ -178,12 +178,18 @@ class AttainmentDiff(StatsResult):
         dv = v1 - v2
         better = self.surf1.name if dv > 0 else self.surf2.name
         
+        fields = [
+            (f"{self.surf1.name} Volume", f"{v1:.6f}"),
+            (f"{self.surf2.name} Volume", f"{v2:.6f}"),
+            ("Absolute Difference", f"{abs(dv):.6f}"),
+        ]
+        width = max(len(label) for label, _ in fields)
+        rows = [f"{label:<{width}} : {value}" for label, value in fields]
         lines = [
-            f"--- Attainment Comparison Report (Level {self.level:.2f}) ---",
-            f"  - {self.surf1.name} Volume: {v1:.6f}",
-            f"  - {self.surf2.name} Volume: {v2:.6f}",
-            f"  - Absolute Difference: {abs(dv):.6f}",
-            f"\nDiagnosis: {better} dominates a larger objective region at this probability level."
+            f"### Attainment Comparison Report (Level {self.level:.2f})",
+            "",
+            self._report_block("\n".join(rows)),
+            f"\n**Diagnosis**: {better} dominates a larger objective region at this probability level.",
         ]
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)

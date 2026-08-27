@@ -54,17 +54,10 @@ class RankCompareResult(StatsResult):
         self.labels = labels
 
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get("markdown", self._is_notebook())
-        if use_md:
-            lines = ["### Rank Structure Report", "", "| Data | Depth | Pressure |", "| :--- | ---: | ---: |"]
-            for label, res in zip(self.labels, self.results):
-                lines.append(f"| {label} | {res.max_rank} | {res.selection_pressure:.4f} |")
-            content = "\n".join(lines)
-        else:
-            lines = ["Rank Structure Report", "", f"{'Data':<16} | {'Depth':>5} | {'Pressure':>8}", "-" * 38]
-            for label, res in zip(self.labels, self.results):
-                lines.append(f"{label:<16} | {res.max_rank:>5} | {res.selection_pressure:>8.4f}")
-            content = "\n".join(lines)
+        rows = [f"{'Data':<16} | {'Depth':>5} | {'Pressure':>8}", "-" * 38]
+        for label, res in zip(self.labels, self.results):
+            rows.append(f"{label:<16} | {res.max_rank:>5} | {res.selection_pressure:>8.4f}")
+        content = "### Rank Structure Report\n\n" + self._report_block("\n".join(rows))
         return self._render_report(content, show, **kwargs)
 
 
@@ -78,46 +71,27 @@ class StrataCompareResult(StatsResult):
         self.metric_name = metric_name
 
     def report(self, show: bool = True, **kwargs) -> str:
-        use_md = kwargs.get("markdown", self._is_notebook())
         rank_ids = sorted({rank for summary in self.summaries for rank in summary._data.keys()})
-
-        if use_md:
-            lines = [
-                f"### Strata Distribution Report ({self.metric_name})",
-                "",
-                f"**Mode**: {self.mode}",
-                "",
-                "| Data | Rank | n | Q1 | Median | Q3 |",
-                "| :--- | ---: | ---: | ---: | ---: | ---: |",
-            ]
-            for label, summary in zip(self.labels, self.summaries):
-                for rank in rank_ids:
-                    info = summary._data.get(rank)
-                    if not info:
-                        continue
-                    lines.append(
-                        f"| {label} | {rank} | {info['n']} | {info['q1']:.4f} | "
-                        f"{info['q']:.4f} | {info['q3']:.4f} |"
-                    )
-            content = "\n".join(lines)
-        else:
-            lines = [
-                f"Strata Distribution Report ({self.metric_name})",
-                f"Mode: {self.mode}",
-                "",
-                f"{'Data':<16} | {'Rank':>4} | {'n':>4} | {'Q1':>8} | {'Median':>8} | {'Q3':>8}",
-                "-" * 66,
-            ]
-            for label, summary in zip(self.labels, self.summaries):
-                for rank in rank_ids:
-                    info = summary._data.get(rank)
-                    if not info:
-                        continue
-                    lines.append(
-                        f"{label:<16} | {rank:>4} | {info['n']:>4} | {info['q1']:>8.4f} | "
-                        f"{info['q']:>8.4f} | {info['q3']:>8.4f}"
-                    )
-            content = "\n".join(lines)
+        rows = [
+            f"{'Data':<16} | {'Rank':>4} | {'n':>4} | {'Q1':>8} | {'Median':>8} | {'Q3':>8}",
+            "-" * 66,
+        ]
+        for label, summary in zip(self.labels, self.summaries):
+            for rank in rank_ids:
+                info = summary._data.get(rank)
+                if not info:
+                    continue
+                rows.append(
+                    f"{label:<16} | {rank:>4} | {info['n']:>4} | {info['q1']:>8.4f} | "
+                    f"{info['q']:>8.4f} | {info['q3']:>8.4f}"
+                )
+        content = "\n".join([
+            f"### Strata Distribution Report ({self.metric_name})",
+            "",
+            f"**Mode**: {self.mode}",
+            "",
+            self._report_block("\n".join(rows)),
+        ])
         return self._render_report(content, show, **kwargs)
 
 class LayerResult(StatsResult):
@@ -263,7 +237,6 @@ class LayerResult(StatsResult):
         """
         Generates an analytical narrative report of the population layer structure.
         """
-        use_md = kwargs.get('markdown', self._is_notebook())
         metric = kwargs.get('metric', None)
         import moeabench.metrics.evaluator as eval_mod
         m_func = metric if metric else eval_mod.hypervolume
@@ -272,47 +245,26 @@ class LayerResult(StatsResult):
         q_profile = self.quality_by(m_func)
         f = self.frequencies()
         
-        if use_md:
-            header = f"### Population Layer Report: {name}"
-            lines = [
-                header,
-                f"**Search Depth**: {self.max_rank} non-dominated layers",
-                f"**Selection Pressure**: {self.selection_pressure:.4f}",
-                "",
-                "| Rank | Pop % | Quality (" + m_func.__name__ + ") |",
-                "| :--- | :--- | :--- |"
-            ]
-            for r_idx, freq in enumerate(f):
-                r = r_idx + 1
-                q = q_profile[r_idx]
-                lines.append(f"| {r} | {freq*100:.1f}% | {q:.4f} |")
-            
-            if self.selection_pressure > 0.8:
-                lines.append("\n> **Diagnosis**: High Selection Pressure (Phalanx-like convergence).")
-            elif self.selection_pressure < 0.2:
-                lines.append("\n> **Diagnosis**: Low Selection Pressure (Exploratory/Scattered architecture).")
-            
-            content = "\n".join(lines)
-        else:
-            lines = [
-                f"--- Population Layer Report: {name} ---",
-                f"  Search Depth: {self.max_rank} non-dominated layers",
-                f"  Selection Pressure: {self.selection_pressure:.4f}",
-                "",
-                f"{'Rank':<6} | {'Pop %':<8} | {'Quality (' + m_func.__name__ + ')':<15}",
-                "-" * 40
-            ]
-            for r_idx, freq in enumerate(f):
-                r = r_idx + 1
-                q = q_profile[r_idx]
-                lines.append(f"{r:<6} | {freq*100:>7.1f}% | {q:>12.4f}")
-            
-            if self.selection_pressure > 0.8:
-                lines.append("\nDiagnosis: High Selection Pressure (Phalanx-like convergence).")
-            elif self.selection_pressure < 0.2:
-                lines.append("\nDiagnosis: Low Selection Pressure (Exploratory/Scattered architecture).")
-            
-            content = "\n".join(lines)
+        rows = [
+            f"{'Rank':<6} | {'Pop %':<8} | {'Quality (' + m_func.__name__ + ')':<15}",
+            "-" * 40,
+        ]
+        for r_idx, freq in enumerate(f):
+            r = r_idx + 1
+            q = q_profile[r_idx]
+            rows.append(f"{r:<6} | {freq*100:>7.1f}% | {q:>12.4f}")
+        lines = [
+            f"### Population Layer Report: {name}",
+            f"**Search Depth**: {self.max_rank} non-dominated layers",
+            f"**Selection Pressure**: {self.selection_pressure:.4f}",
+            "",
+            self._report_block("\n".join(rows)),
+        ]
+        if self.selection_pressure > 0.8:
+            lines.append("\n**Diagnosis**: High Selection Pressure (Phalanx-like convergence).")
+        elif self.selection_pressure < 0.2:
+            lines.append("\n**Diagnosis**: Low Selection Pressure (Exploratory/Scattered architecture).")
+        content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
 
@@ -520,51 +472,28 @@ class TierResult(LayerResult):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Generates a competitive narrative report using Tier/F1 metaphors."""
-        use_md = kwargs.get('markdown', self._is_notebook())
         nameA, nameB = self.group_labels
         ratioA, ratioB = self.pole
-        
-        if use_md:
-            header = f"### Competitive Tier Report: {nameA} vs {nameB}"
-            lines = [
-                header,
-                f"**Search Depth**: {self.max_rank} global levels",
-                f"**Dominance Ratio (Tier 1)**: {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-                f"**Displacement Depth**: {self.gap} (Rank where rival > {defaults.displacement_threshold*100:.0f}%)",
-                "",
-                f"| Tier | {nameA} % | {nameB} % |",
-                "| :--- | :--- | :--- |"
-            ]
-            for r in range(1, self.max_rank + 1):
-                propA, propB = self.joint_frequencies.get(r, [0, 0])
-                lines.append(f"| {r} | {propA*100:.1f}% | {propB*100:.1f}% |")
-            
-            better = nameA if ratioA > 0.5 else nameB
-            lines.append(f"\n> **Diagnosis**: **{better}** occupies the Pole Position.")
-            if self.gap > defaults.large_gap_threshold:
-                lines.append(f"> **Observation**: {better} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
-            
-            content = "\n".join(lines)
-        else:
-            lines = [
-                f"--- Competitive Tier Report: {nameA} vs {nameB} ---",
-                f"  Search Depth: {self.max_rank} global levels",
-                f"  Dominance Ratio (Tier 1): {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
-                f"  Displacement Depth: {self.gap} (Rank where rival > {defaults.displacement_threshold*100:.0f}%)",
-                "",
-                f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
-                "-" * 35
-            ]
-            for r in range(1, self.max_rank + 1):
-                propA, propB = self.joint_frequencies.get(r, [0, 0])
-                lines.append(f"{r:<6} | {propA*100:>8.1f}% | {propB*100:>8.1f}%")
-            
-            better = nameA if ratioA > 0.5 else nameB
-            lines.append(f"\nDiagnosis: {better} occupies the Pole Position.")
-            if self.gap > defaults.large_gap_threshold:
-                lines.append(f"Observation: {better} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
-            
-            content = "\n".join(lines)
+        rows = [
+            f"{'Tier':<6} | {nameA + ' %':<10} | {nameB + ' %':<10}",
+            "-" * 35,
+        ]
+        for r in range(1, self.max_rank + 1):
+            propA, propB = self.joint_frequencies.get(r, [0, 0])
+            rows.append(f"{r:<6} | {propA*100:>8.1f}% | {propB*100:>8.1f}%")
+        lines = [
+            f"### Competitive Tier Report: {nameA} vs {nameB}",
+            f"**Search Depth**: {self.max_rank} global levels",
+            f"**Dominance Ratio (Tier 1)**: {nameA} ({ratioA*100:.1f}%) | {nameB} ({ratioB*100:.1f}%)",
+            f"**Displacement Depth**: {self.gap} (Rank where rival > {defaults.displacement_threshold*100:.0f}%)",
+            "",
+            self._report_block("\n".join(rows)),
+        ]
+        better = nameA if ratioA > 0.5 else nameB
+        lines.append(f"\n**Diagnosis**: **{better}** occupies the Pole Position.")
+        if self.gap > defaults.large_gap_threshold:
+            lines.append(f"**Observation**: {better} significantly 'buries' the rival (Large Gap > {defaults.large_gap_threshold} ranks).")
+        content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
 

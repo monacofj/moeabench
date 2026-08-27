@@ -246,6 +246,21 @@ def test_hypervolume_report_identifies_reference_context():
     assert f"{'References':<30}: Array" in fixed_report
 
 
+def test_hypervolume_structured_sections_use_fences_only_in_markdown():
+    result = _hv(GOOD, ref=REFERENCE)
+
+    markdown = result.report(show=False, markdown=True)
+    plain = result.report(show=False, markdown=False)
+
+    assert "#### Reference\n\n```text\n" in markdown
+    assert "#### Reference Boundary\n\n```text\n" in markdown
+    assert "```" not in plain
+    assert "####" not in plain
+    expected_row = f"- {'References':<30}: Array"
+    assert expected_row in markdown
+    assert expected_row in plain
+
+
 def test_attainment_ref_point_remains_a_geometric_endpoint():
     surface = AttainmentSurface([[0.2, 0.8], [0.8, 0.2]])
 
@@ -427,10 +442,10 @@ def test_external_report_uses_compact_reference_diagnostics():
 
     report = result.report(show=False, markdown=False)
 
-    assert "Reference:" in report
+    assert "Reference" in report.splitlines()
     assert "Global-ND reference points" in report
     assert "Dominated reference fraction" in report
-    assert "Reference Boundary:" in report
+    assert "Reference Boundary" in report.splitlines()
     assert "HV/BBox" in report
     assert "HV backend" in report
     assert "exact" in report

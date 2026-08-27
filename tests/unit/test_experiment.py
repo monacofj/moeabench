@@ -162,8 +162,8 @@ def test_experiment_report_distinguishes_base_and_run_seeds():
 
     report = exp.report(show=False, markdown=False)
 
-    assert "Base seed: 10" in report
-    assert "Run seeds: [10, 11]" in report
+    assert "Base seed : 10" in report
+    assert "Run seeds : [10, 11]" in report
 
 def test_experiment_run_silent(capsys):
     """Verify that run(..., silent=True) suppresses run output."""
