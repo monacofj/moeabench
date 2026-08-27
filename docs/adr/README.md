@@ -47,7 +47,7 @@ This directory contains records of the key architectural decisions made during t
 | [0034](0034-unified-metric-analysis-api.md) | Unified Metric Analysis API | Accepted | 2026-02-24 |
 | [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 | 2026-02-25 |
 | [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Partially Superseded by 0037 | 2026-02-25 |
-| [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Accepted | 2026-03-08 |
+| [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Partially Superseded by 0049 | 2026-03-08 |
 | [0038](0038-runtime-output-and-sidecar-hygiene-v0.13.3.md) | Runtime Output Control and Sidecar Hygiene (v0.13.3) | Accepted | 2026-03-11 |
 | [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) | Canonical API and Compare Semantics (v0.14.0) | Partially Superseded by 0048 | 2026-03-11 |
 | [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) | Canonical View Inputs and No Compatibility Shims | Accepted | 2026-03-13 |
@@ -59,6 +59,7 @@ This directory contains records of the key architectural decisions made during t
 | [0046](0046-relative-ordinal-hypervolume.md) | Relative Scaling for Ordinal Hypervolume | Accepted | 2026-08-21 |
 | [0047](0047-conventional-hypervolume-relative-scaling.md) | Conventional Hypervolume Relative Scaling | Accepted | 2026-08-27 |
 | [0048](0048-public-clinical-metrics-and-audit-context-parity.md) | Public Clinical Metrics and Audit Context Parity | Accepted | 2026-08-27 |
+| [0049](0049-longitudinal-headway-definition.md) | Longitudinal Headway Definition | Accepted | 2026-08-27 |
 
 ## Decision Lineage
 
@@ -72,7 +73,7 @@ The status column records whether a historical ADR remains wholly normative or h
 
 ### Clinical diagnostics
 
-- Metrology and physical/quality layers: [0026](0026-clinical-metrology.md) → [0028](0028-refined-clinical-diagnostics-v0.9.1.md) → [0029](0029-headway-nomenclature.md) / [0036](0036-half-normal-closeness-v0.12.0.md) → [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md).
+- Metrology and physical/quality layers: [0026](0026-clinical-metrology.md) → [0028](0028-refined-clinical-diagnostics-v0.9.1.md) → [0029](0029-headway-nomenclature.md) / [0036](0036-half-normal-closeness-v0.12.0.md) → [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) → [0049](0049-longitudinal-headway-definition.md) for the current HEADWAY definition.
 - Public API and result/view contract: [0030](0030-clinical-instrument-architecture.md) → [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) → [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) → [0048](0048-public-clinical-metrics-and-audit-context-parity.md).
 
 ---
