@@ -35,6 +35,30 @@ def test_experiment_created_at_defaults_to_iso_and_drives_year():
     assert exp.year == int(exp.created_at[:4])
 
 
+def test_experiment_defaults_to_public_domain_metadata():
+    exp = mb.experiment()
+
+    assert exp.author == "Public domain"
+    assert exp.license == "CC0-1.0"
+
+    report = exp.report(show=False, markdown=False)
+    assert "Author    : Public domain" in report
+    assert "License   : CC0-1.0" in report
+
+
+def test_experiment_metadata_overrides_are_reported_verbatim():
+    exp = mb.experiment()
+    exp.author = "Jane Doe"
+    exp.license = "MIT"
+
+    assert exp.author == "Jane Doe"
+    assert exp.license == "MIT"
+
+    report = exp.report(show=False, markdown=False)
+    assert "Author    : Jane Doe" in report
+    assert "License   : MIT" in report
+
+
 def test_experiment_year_override_takes_precedence_over_created_at():
     exp = mb.experiment()
     exp.created_at = "2024-05-10T15:30:00Z"
@@ -235,8 +259,36 @@ def test_persistence():
         assert metadata["context"]["created_at"] == "2024-07-01T12:00:00Z"
         assert metadata["context"]["author"] == "Monaco"
         assert metadata["context"]["authors"] == "Monaco"
+        assert metadata["context"]["license"] == "CC0-1.0"
         assert metadata["context"]["year"] == 2030
         assert metadata["context"]["year_override"] == 2030
         
+    finally:
+        shutil.rmtree(tmp_dir)
+
+
+def test_default_metadata_persistence_round_trip():
+    """Default public-domain metadata must be real persisted experiment state."""
+    tmp_dir = tempfile.mkdtemp()
+    save_path = os.path.join(tmp_dir, "default_metadata.zip")
+
+    try:
+        exp = mb.experiment()
+        exp.save(save_path, mode="config")
+
+        with zipfile.ZipFile(save_path, "r") as zf:
+            metadata = json.loads(zf.read("metadata.json").decode("utf-8"))
+
+        assert metadata["context"]["author"] == "Public domain"
+        assert metadata["context"]["authors"] == "Public domain"
+        assert metadata["context"]["license"] == "CC0-1.0"
+
+        loaded = mb.experiment()
+        loaded.author = "Temporary"
+        loaded.license = "MIT"
+        loaded.load(save_path, mode="all")
+
+        assert loaded.author == "Public domain"
+        assert loaded.license == "CC0-1.0"
     finally:
         shutil.rmtree(tmp_dir)
