@@ -1,10 +1,13 @@
 # ADR 0037: Plausible Q1 and Search-Drive Headway (v0.13.1)
 
-**Status:** Accepted
+**Status:** Partially Superseded by ADR 0049 (HEADWAY definition only)
 **Date:** 2026-03-08
 **Author:** Monaco F. J.
 **Supersedes:** Physical layer definitions in ADR 0029 and ADR 0036.
 **Drivers:** Clinical Fairness, Semantic Consistency, Finite Approximation-Inherent Resolution Integrity.
+
+> [!NOTE]
+> **Current HEADWAY semantics:** Section 3 below records the v0.13.1 definition historically. The current physical HEADWAY denominator is the actual initial search error, not a random-search baseline. See [ADR 0049](0049-longitudinal-headway-definition.md).
 
 ---
 
