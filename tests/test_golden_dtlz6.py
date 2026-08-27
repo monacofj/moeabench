@@ -49,10 +49,10 @@ class TestGoldenDTLZ6(unittest.TestCase):
         self.assertAlmostEqual(s_k, expected_s_k, places=15,
                                msg="Critical: s_K runtime calculation diverged from Golden Value.")
 
-    def test_baseline_v0132_integrity(self):
-        """Verifies that baselines_v0.13.2.json still matches the frozen DTLZ6 check."""
+    def test_canonical_baseline_integrity(self):
+        """Verifies that the canonical baseline matches the frozen DTLZ6 check."""
         # Load JSON directly
-        v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines_v0.13.2.json")
+        v_path = os.path.join(os.path.dirname(__file__), "../moeabench/diagnostics/resources/baselines.json")
         with open(GOLDEN_PATH, 'r') as f:
             golden = json.load(f)
         
@@ -63,7 +63,7 @@ class TestGoldenDTLZ6(unittest.TestCase):
         try:
             rand50 = data["problems"]["DTLZ6"]["200"]["closeness"]["rand50"]
         except KeyError:
-            self.fail("DTLZ6/200/closeness/rand50 missing from baselines_v0.13.2.json")
+            self.fail("DTLZ6/200/closeness/rand50 missing from baselines.json")
         
         expected_rand = golden["DTLZ6"]["200"]["closeness_rand50_v0_13_2"]
         

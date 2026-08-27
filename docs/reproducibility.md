@@ -92,7 +92,7 @@ To achieve 100% "Blindagem" in your articles, follow these guidelines:
 To protect against RNG implementation shifts in the underlying language or libraries, MoeaBench implements a **Fail-Safe Baseline Protocol**:
 
 ### A. Environment DNA
-Every baseline JSON file (e.g., `baselines_v0.13.2.json`) contains "Environment DNA" captured at the moment of calibration:
+The canonical `baselines.json` contains "Environment DNA" captured at the moment of calibration:
 - `python_version`
 - `numpy_version`
 - `moeabench_version`
