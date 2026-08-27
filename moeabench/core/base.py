@@ -23,10 +23,14 @@ class Reportable:
     """
     @staticmethod
     def _is_notebook() -> bool:
-        """Returns True when running inside IPython/Jupyter."""
+        """Return True when running in a Jupyter notebook or JupyterLab."""
         try:
             from IPython import get_ipython
-            return get_ipython() is not None
+            shell = get_ipython()
+            return (
+                shell is not None
+                and shell.__class__.__name__ == "ZMQInteractiveShell"
+            )
         except (ImportError, NameError):
             return False
 
