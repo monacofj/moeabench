@@ -100,36 +100,31 @@ class QualityAuditResult(Reportable):
         if not full:
             return self._render_report(_quality_executive_summary(self.scores), show, **kwargs)
 
-        use_md = kwargs.get('markdown', self._is_notebook())
-        subject = self.experiment_name or self.mop_name
-        if use_md:
-            header = "# Clinical Quality Scores"
-            sep = ""
-        else:
-            header = "Clinical Quality Scores"
-            sep = ""
-            
-        lines = [header, sep] if not use_md else [header, ""]
-        
-        if use_md:
-            table = ["| Dimension | Q-Score | Verdict |", "| :--- | :--- | :--- |"]
-            for name, qres in self.scores.items():
-                q = float(qres.value)
-                matrix = qres._LABELS.get(qres.name, {})
-                label = "Undefined"
-                for thresh in sorted(matrix.keys(), reverse=True):
-                    if q >= thresh:
-                        label = matrix[thresh]
-                        break
-                table.append(f"| {_display_name(name)} | {q:.3f} | {label} |")
-            lines.extend(table)
-        else:
-            # Terminal: List format matching FairAuditResult
-            # Calculate max width for alignment
-            width = max(len(_display_name(name)) for name in self.scores.keys()) if self.scores else 0
-            
-            for name, qres in self.scores.items():
-                 lines.append(f"  {qres.report(show=False, markdown=False, width=width)}")
+        rows = []
+        for name, qres in self.scores.items():
+            q = float(qres.value)
+            matrix = qres._LABELS.get(qres.name, {})
+            label = "Undefined"
+            for thresh in sorted(matrix.keys(), reverse=True):
+                if q >= thresh:
+                    label = matrix[thresh]
+                    break
+            rows.append((_display_name(name), f"{q:.3f}", label))
+        dimension_width = max(
+            [len("Dimension"), *(len(dimension) for dimension, _, _ in rows)]
+        )
+        verdict_width = max(
+            [len("Verdict"), *(len(verdict) for _, _, verdict in rows)]
+        )
+        table = [
+            f"{'Dimension':<{dimension_width}} | {'Q-Score':>7} | {'Verdict':<{verdict_width}}",
+            f"{'-' * dimension_width}-+-{'-' * 7}-+-{'-' * verdict_width}",
+        ]
+        table.extend(
+            f"{dimension:<{dimension_width}} | {score:>7} | {verdict:<{verdict_width}}"
+            for dimension, score, verdict in rows
+        )
+        lines = ["# Clinical Quality Scores", "", self._report_block("\n".join(table))]
                 
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
@@ -140,16 +135,16 @@ class FairAuditResult(Reportable):
     metrics: Dict[str, fair.FairResult]
     
     def report(self, show: bool = True, full: bool = False, **kwargs) -> str:
-        use_md = kwargs.get('markdown', self._is_notebook())
-        header = "# FAIR Performance Metrics" if use_md else "FAIR Performance Metrics"
-        lines = [header, ""]
+        rows = []
+        width = max(
+            (len(_display_name(name)) for name in self.metrics),
+            default=0,
+        )
         for name, fres in self.metrics.items():
             disp = _display_name(name)
             desc = _fair_description(name, fres.description)
-            if use_md:
-                lines.append(f"- **{disp}**: {float(fres.value):.4f} ({desc})")
-            else:
-                lines.append(f"  {disp:<12} : {float(fres.value):.4f} - {desc}")
+            rows.append(f"{disp:<{width}} : {float(fres.value):.4f} - {desc}")
+        lines = ["# FAIR Performance Metrics", "", self._report_block("\n".join(rows))]
         content = "\n".join(lines)
         return self._render_report(content, show, **kwargs)
 
@@ -198,31 +193,21 @@ class DiagnosticResult(Reportable):
                 return self._render_report(_quality_executive_summary(self.q_audit_res.scores), show, **kwargs)
             return self._render_report(self.description, show, **kwargs)
 
-        use_md = kwargs.get('markdown', self._is_notebook())
         subject = self.experiment_name or (
             self.q_audit_res.experiment_name if self.q_audit_res else None
         ) or (
             self.q_audit_res.mop_name if self.q_audit_res else None
         ) or "Unknown"
-        if use_md:
-            header = f"# MoeaBench Clinical Report: {subject}"
-            status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
-            exec_line = f"**Executive Summary**: {self.description}"
-            sub_f = "## FAIR Performance Metrics"
-            sub_q = "## Clinical Quality Scores"
-        else:
-            header = f"Clinical Report: {subject}"
-            status_line = f"Primary Status: {self.status.name.replace('_', ' ').title()}"
-            exec_line = f"Executive Summary: {self.description}"
-            sub_f = "FAIR Performance Metrics"
-            sub_q = "Clinical Quality Scores"
+        header = f"# MoeaBench Clinical Report: {subject}"
+        status_line = f"**Primary Status**: {self.status.name.replace('_', ' ').title()}"
+        exec_line = f"**Executive Summary**: {self.description}"
 
         # We call nested reports with show=False to gather their strings
         if self.status == DiagnosticStatus.MISSING_BASELINE:
              q_rep = self.description
         else:
-             q_rep = self.q_audit_res.report(show=False, full=True, **kwargs) if self.q_audit_res else "N/A"
-        f_rep = self.fair_audit_res.report(show=False, full=True, **kwargs) if self.fair_audit_res else "N/A"
+             q_rep = self.q_audit_res.report(show=False, full=True, markdown=True) if self.q_audit_res else "N/A"
+        f_rep = self.fair_audit_res.report(show=False, full=True, markdown=True) if self.fair_audit_res else "N/A"
 
         lines = [
             status_line,
@@ -236,9 +221,8 @@ class DiagnosticResult(Reportable):
             lines.insert(0, header)
 
         if self.reproducibility:
-            sub_r = "## Reproducibility Metadata" if use_md else "Reproducibility Metadata"
-            r_info = [f"- **{k.replace('_', ' ').title()}**: {v}" for k, v in self.reproducibility.items()] if use_md else \
-                     [f"{k.replace('_', ' ').title()}: {v}" for k, v in self.reproducibility.items()]
+            sub_r = "## Reproducibility Metadata"
+            r_info = [f"- **{k.replace('_', ' ').title()}**: {v}" for k, v in self.reproducibility.items()]
             lines += ["", sub_r] + r_info
 
         content = "\n".join(lines)

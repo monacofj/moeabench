@@ -133,8 +133,6 @@ class experiment(Reportable):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Narrative report of the experiment configuration and metadata."""
-        use_md = kwargs.get('markdown', self._is_notebook())
-        
         # 1. Resolve experiment name
         name = self.name
 
@@ -185,62 +183,32 @@ class experiment(Reportable):
             except Exception:
                 pass
 
-        if use_md:
-            header = f"### Experiment: {name}"
-            lines = [
-                header,
-                f"  - **Status**:    {status}",
-                f"  - **Problem**:   {mop_name} ({', '.join(mop_info)})",
-                f"  - **Algorithm**: {moea_name} ({', '.join(moea_info)})",
-                f"  - **Base seed**: {base_seed if base_seed is not None else 'None'}",
-                f"  - **Run seeds**: {run_seeds if run_seeds else 'Not run'}",
-                f"  - **Stop**:      {self.stop or 'Default'}",
-            ]
-            if component_seed_runs:
-                lines.append("  - **Component seeds**:")
-                for run_index, seeds in component_seed_runs:
-                    values = ", ".join(f"{key}={value}" for key, value in seeds.items())
-                    lines.append(f"    - Run {run_index}: {values}")
-            lines.append("  - **Metadata**:")
-            lines.extend([
-                f"    - Author:  {self.author or 'Anonymous'}",
-                f"    - License: {license_str}",
-                f"    - Created: {self.created_at}",
-                f"    - Year:    {self.year}",
-                f"    - Runs:    {n_runs} of {self.repeat}"
-            ])
-            if consensus_line:
-                lines.append(f"    - Consensus: {consensus_line}")
-                
-            content = "\n".join(lines)
-        else:
-            # Plain Text
-            lines = [
-                f"--- Experiment Report: {name} ---",
-                f"  Status:    {status}",
-                f"  Problem:   {mop_name} ({', '.join(mop_info)})",
-                f"  Algorithm: {moea_name} ({', '.join(moea_info)})",
-                f"  Base seed: {base_seed if base_seed is not None else 'None'}",
-                f"  Run seeds: {run_seeds if run_seeds else 'Not run'}",
-                f"  Stop:      {self.stop or 'Default'}",
-            ]
-            if component_seed_runs:
-                lines.append("  Component seeds:")
-                for run_index, seeds in component_seed_runs:
-                    values = ", ".join(f"{key}={value}" for key, value in seeds.items())
-                    lines.append(f"    Run {run_index}: {values}")
-            lines.extend([
-                "  Metadata:",
-                f"    - Author:   {self.author or 'Anonymous'}",
-                f"    - License: {license_str}",
-                f"    - Created: {self.created_at}",
-                f"    - Year:    {self.year}",
-                f"    - Runs:    {n_runs} of {self.repeat}"
-            ])
-            if consensus_line:
-                lines.append(f"    - Consensus: {consensus_line}")
-                
-            content = "\n".join(lines)
+        configuration = [
+            f"Status    : {status}",
+            f"Problem   : {mop_name} ({', '.join(mop_info)})",
+            f"Algorithm : {moea_name} ({', '.join(moea_info)})",
+            f"Base seed : {base_seed if base_seed is not None else 'None'}",
+            f"Run seeds : {run_seeds if run_seeds else 'Not run'}",
+            f"Stop      : {self.stop or 'Default'}",
+        ]
+        lines = [f"### Experiment: {name}", "", self._report_block("\n".join(configuration))]
+        if component_seed_runs:
+            seed_lines = []
+            for run_index, seeds in component_seed_runs:
+                values = ", ".join(f"{key}={value}" for key, value in seeds.items())
+                seed_lines.append(f"Run {run_index}: {values}")
+            lines.extend(["", "#### Component seeds", "", self._report_block("\n".join(seed_lines))])
+        metadata = [
+            f"Author    : {self.author or 'Anonymous'}",
+            f"License   : {license_str}",
+            f"Created   : {self.created_at}",
+            f"Year      : {self.year}",
+            f"Runs      : {n_runs} of {self.repeat}",
+        ]
+        if consensus_line:
+            metadata.append(f"Consensus : {consensus_line}")
+        lines.extend(["", "#### Metadata", "", self._report_block("\n".join(metadata))])
+        content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
     @property

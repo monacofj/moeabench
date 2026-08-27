@@ -63,8 +63,5 @@ class DiagnosticValue(Reportable):
 
     def report(self, show: bool = True, **kwargs) -> str:
         """Returns a basic narrative report."""
-        if kwargs.get('markdown', self._is_notebook()):
-            content = f"### {self.name}\n- **Value**: {self.value:.4f}\n- **Insight**: {self.description}"
-        else:
-            content = f"{self.name}\n  Value: {self.value:.4f}\n  Insight: {self.description}"
+        content = f"### {self.name}\n- **Value**: {self.value:.4f}\n- **Insight**: {self.description}"
         return self._render_report(content, show, **kwargs)

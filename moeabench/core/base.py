@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import re
+
 class _SilentDisplayedText(str):
     """String payload that stays quiet when it is the last notebook expression."""
 
@@ -20,6 +22,12 @@ class Reportable:
     """
     Mixin for objects that support narrative reporting in MoeaBench.
     Provides a consistent interface for environment-aware diagnostics.
+
+    Reporting convention:
+    - headings use Markdown ATX headings;
+    - structured, aligned data use ``_report_block()``;
+    - prose uses ordinary Markdown/text;
+    - environment-specific presentation is handled only by ``_render_report()``.
     """
     @staticmethod
     def _is_notebook() -> bool:
@@ -27,12 +35,18 @@ class Reportable:
         try:
             from IPython import get_ipython
             shell = get_ipython()
-            return (
-                shell is not None
-                and shell.__class__.__name__ == "ZMQInteractiveShell"
-            )
+            if shell is None:
+                return False
+            shell_class = shell.__class__
+            if shell_class.__name__ == "ZMQInteractiveShell":
+                return True
+            return shell_class.__module__.startswith("google.colab.")
         except (ImportError, NameError):
             return False
+
+    def _report_block(self, text: str) -> str:
+        """Wrap aligned report data in canonical Markdown text fencing."""
+        return f"```text\n{text.rstrip()}\n```"
 
     def report(self, show: bool = True, **kwargs) -> str:
         """
@@ -47,12 +61,16 @@ class Reportable:
 
     def _render_report(self, content: str, show: bool = True, **kwargs) -> str:
         """
-        Internal helper to handle the display logic of reports.
+        Render canonical report Markdown according to the requested format and
+        the active frontend.
         """
-        if not show:
-            return content
+        markdown = kwargs.get("markdown")
+        use_markdown = self._is_notebook() if markdown is None else bool(markdown)
+        rendered = content if use_markdown else self._to_plain_sober(content)
 
-        rendered = self._decorate_report_content(content)
+        if not show:
+            return rendered
+
         is_notebook = self._is_notebook()
 
         if is_notebook:
@@ -60,13 +78,14 @@ class Reportable:
                 from IPython.display import display, Markdown
                 display(Markdown(rendered))
             except ImportError:
-                print(rendered)
-                return content
-            return _SilentDisplayedText(content)
+                print(self._decorate_report_content(self._to_plain_sober(rendered)))
+                return rendered
+            return _SilentDisplayedText(rendered)
         else:
-            print(self._to_plain_sober(rendered))
+            plain = self._to_plain_sober(rendered)
+            print(self._decorate_report_content(plain))
             
-        return content
+        return rendered
 
     @staticmethod
     def _extract_report_title(content: str) -> str:
@@ -75,8 +94,9 @@ class Reportable:
             title = line.strip()
             if not title:
                 continue
-            if title.startswith("### "):
-                title = title[4:].strip()
+            heading = re.match(r"^#{1,6}(?:\s+|$)", title)
+            if heading:
+                title = title[heading.end():].strip()
             if title.startswith("--- ") and title.endswith(" ---") and len(title) > 8:
                 title = title[4:-4].strip()
             title = title.replace("**", "").replace("`", "")
@@ -91,13 +111,25 @@ class Reportable:
 
     @staticmethod
     def _to_plain_sober(content: str) -> str:
-        """Light cleanup for terminal output to keep reports sober and readable."""
+        """Convert MoeaBench's small canonical Markdown subset to plain text."""
         has_trailing_newline = content.endswith("\n")
         lines = []
+        in_fence = False
         for line in content.splitlines():
+            if not in_fence and re.match(r"^\s{0,3}```text\s*$", line):
+                in_fence = True
+                continue
+            if in_fence:
+                if re.match(r"^\s{0,3}```\s*$", line):
+                    in_fence = False
+                else:
+                    lines.append(line)
+                continue
+
             stripped = line.strip()
-            if stripped.startswith("### "):
-                line = stripped[4:]
+            heading = re.match(r"^\s{0,3}#{1,6}(?:\s+|$)", line)
+            if heading:
+                line = line[heading.end():]
             if stripped.startswith("--- ") and stripped.endswith(" ---") and len(stripped) > 8:
                 line = stripped[4:-4].strip()
             line = line.replace("**", "")
@@ -135,11 +167,7 @@ def emit_output(text: str, markdown: str | None = None) -> str:
     Environment-aware output helper for non-report functions.
     Uses Markdown rendering in notebooks when provided.
     """
-    try:
-        from IPython import get_ipython
-        is_notebook = get_ipython() is not None
-    except (ImportError, NameError):
-        is_notebook = False
+    is_notebook = Reportable._is_notebook()
 
     if is_notebook and markdown is not None:
         try:

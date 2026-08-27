@@ -63,13 +63,11 @@ class QResult(DiagnosticValue):
                     label = matrix[thresh]
                     break
         
-        if kwargs.get('markdown', self._is_notebook()):
-            content = f"**{self.display_name}** (Clinical Score): {q:.3f}\n- *Verdict*: {label}\n- *Insight*: {self.description}"
-        else:
-            # Clean terminal output: pad name to width if provided
-            width = kwargs.get('width', len(self.display_name))
-            name_str = f"{self.display_name}".ljust(width)
-            content = f"{name_str} : {q:.3f} [{label}] - {self.description}"
+        content = (
+            f"**{self.display_name}** (Clinical Score): {q:.3f}\n"
+            f"- **Verdict**: {label}\n"
+            f"- **Insight**: {self.description}"
+        )
             
         return self._render_report(content, show, **kwargs)
 
