@@ -61,8 +61,8 @@ class experiment(Reportable):
         self._repeat: int = 1
         
         # Scientific Metadata
-        self._author: Optional[str] = None
-        self._license: str = "GPL-3.0-or-later" 
+        self._author: Optional[str] = "Public domain"
+        self._license: str = "CC0-1.0"
         self._created_at: str = self._now_iso_utc()
         self._year_override: Optional[int] = None
 
@@ -136,12 +136,7 @@ class experiment(Reportable):
         # 1. Resolve experiment name
         name = self.name
 
-        # 2. License/Author logic: If no author, force CC0
-        license_str = self.license
-        if not self.author or self.author.strip() == "":
-            license_str = "CC0-1.0"
-
-        # 3. Resolve Component Metadata
+        # 2. Resolve Component Metadata
         mop_name = getattr(self.mop, 'name', self.mop.__class__.__name__) if self.mop else "None"
         moea_name = getattr(self.moea, 'name', self.moea.__class__.__name__) if self.moea else "None"
         
@@ -199,8 +194,8 @@ class experiment(Reportable):
                 seed_lines.append(f"Run {run_index}: {values}")
             lines.extend(["", "#### Component seeds", "", self._report_block("\n".join(seed_lines))])
         metadata = [
-            f"Author    : {self.author or 'Anonymous'}",
-            f"License   : {license_str}",
+            f"Author    : {self.author}",
+            f"License   : {self.license}",
             f"Created   : {self.created_at}",
             f"Year      : {self.year}",
             f"Runs      : {n_runs} of {self.repeat}",
