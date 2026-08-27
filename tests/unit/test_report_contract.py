@@ -9,6 +9,14 @@ from moeabench.diagnostics.qscore import QResult
 from moeabench.core.base import Reportable
 
 
+class ZMQInteractiveShell:
+    pass
+
+
+class TerminalInteractiveShell:
+    pass
+
+
 def _make_quality_result() -> QualityAuditResult:
     scores = {
         "Q_CLOSENESS": QResult(0.8, "Q_CLOSENESS", "ok"),
@@ -74,3 +82,27 @@ def test_render_report_returns_silent_string_in_notebook(monkeypatch):
     assert str(res) == "### Example"
     assert repr(res) == ""
     assert shown
+
+
+def test_is_notebook_detects_jupyter(monkeypatch):
+    import IPython
+
+    monkeypatch.setattr(IPython, "get_ipython", lambda: ZMQInteractiveShell())
+
+    assert Reportable._is_notebook() is True
+
+
+def test_is_notebook_rejects_terminal_ipython(monkeypatch):
+    import IPython
+
+    monkeypatch.setattr(IPython, "get_ipython", lambda: TerminalInteractiveShell())
+
+    assert Reportable._is_notebook() is False
+
+
+def test_is_notebook_rejects_regular_terminal(monkeypatch):
+    import IPython
+
+    monkeypatch.setattr(IPython, "get_ipython", lambda: None)
+
+    assert Reportable._is_notebook() is False
