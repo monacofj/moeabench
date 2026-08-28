@@ -297,7 +297,6 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 > **Best Practice**: For academic studies, use one fixed external reference such as `exp.optimal_front()` or an explicitly frozen pool of all algorithms. Reuse that same object for every comparison so values do not fluctuate with the evaluated experiment.
 
 #### Diagnosing the fixed Hypervolume geometry
-
 The **nbox** is the normalization box between `ideal` and `nadir`. The Hypervolume **bbox** extends from `ideal` to the normalized reference point 1.1; in original coordinates its endpoint is `ideal + 1.1 * (nadir - ideal)`.
 
 For an external reference, `hv_result.diagnostics` exposes the nbox and bbox geometry, reference domination, range inflation, final-front fractions outside each box, and raw `HV / V_bbox`. A global non-dominated reference front is computed only as a counterfactual diagnostic for detecting whether dominated reference points stretch the supplied bounds. It never replaces the supplied reference or changes the metric.
@@ -503,16 +502,14 @@ Regardless of the delegation level, you can always use short aliases to access t
 
 ## **7. Analytical Domains**
 
-MoeaBench still benefits from a three-part analytical ontology, but this ontology should be read as a **conceptual lens**, not as a strict one-to-one map of public namespaces.
+MoeaBench organizes analysis into three scientific domains—topography, performance, and stratification—according to the kind of question being asked.
 
-In earlier phases of the project, domain boundaries appeared more directly in function naming. In the current canonical API, those same ideas are distributed across:
+The corresponding public API is organized across:
 
 - `mb.metrics`, for scalar metric trajectories and reductions;
 - `mb.stats`, for comparison, attainment, and structural analysis;
 - `mb.clinic`, for diagnostic synthesis and FAIR/Q-score reasoning;
 - `mb.view`, for chart-oriented visualization that dispatches according to the analytical object it receives.
-
-So the three domains below remain useful because they describe **what kind of scientific question is being asked**, even though the public API now emphasizes result objects and plotting grammar over domain-prefixed function names.
 
 ### **7.1. Topography (Metric Space Analysis)**
 Topography is the spatial lens of MoeaBench. It asks how solutions occupy the search manifold in objective or decision space: where they lie, how reliably they cover the front, whether two methods reach the same regions, and where structural gaps remain.
@@ -797,7 +794,6 @@ The `Reference` section is present for both implicit self-reference and explicit
 
 ### **7.3. Stratification (Population Structure)**
 Stratification is the structural lens of MoeaBench. It examines how the population is internally organized across non-domination layers, how quality is distributed across those layers, and how two methods compete when their populations are merged into a shared rank structure.
-
 This domain became more precise over time and is now canonically framed through the ontology:
 
 - `mb.stats.ranks(...)`
@@ -1197,7 +1193,6 @@ mb.view.density(exp, domain='clinic', metric="coverage")
 
 **Didactic Guide**:
 Search errors are rarely normal (Gaussian). Look for **Multi-modality**. If you see two distinct peaks, your algorithm has "split" its focus: it found a local optimum for some objectives while being trapped for others. A wide, flat distribution suggests that the populations' proximity to the front is chaotic and unorganized.
-
 #### **Instrument 4: The History (`history`)**
 *   **Role**: *Temporal Evolution Analysis*.
 *   **Description**: Tracks the evolution of a physical fact over generations across all runs.
