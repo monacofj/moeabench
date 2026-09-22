@@ -4,7 +4,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from .DTLZ2 import DTLZ2
+from .DTLZ2 import (
+    DTLZ2,
+    _hypersphere_directions_to_angles,
+    _sample_positive_hypersphere,
+)
+
 
 class DTLZ4(DTLZ2):
     """
@@ -16,27 +21,23 @@ class DTLZ4(DTLZ2):
         M = self.M
         X_m = X[:, M-1:]
         g = np.sum((X_m - 0.5)**2, axis=1).reshape(-1, 1)
-        
+
         # Biased theta: x_i^100
         theta = (X[:, :M-1]**100) * (np.pi / 2)
-        
+
         return self._spherical_evaluation(X, g, theta=theta)
 
     def ps(self, n_points=100):
-        """
-        Improved sampling for DTLZ4.
-        Instead of uniform X, we sample theta uniformly to cover the sphere triangle densely.
-        """
+        """Analytical sampling of the DTLZ4 Pareto Set (deterministic)."""
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
-        rng = np.random.RandomState(42)
-        
-        # 1. Sample theta uniformly in [0, pi/2]
-        # X**100 * (pi/2) = theta  => X = (2*theta/pi)**(1/100)
-        theta = rng.random((n_points, M - 1)) * (np.pi / 2)
+
+        directions = _sample_positive_hypersphere(n_points, M)
+        theta = _hypersphere_directions_to_angles(directions)
+
+        # DTLZ4 uses theta_i = x_i**100 * pi/2. Invert that map so
+        # evaluating these Pareto-set points reproduces the sampled directions.
         res[:, :M-1] = (theta / (np.pi / 2))**(1/100)
-        
-        # 2. Distance function variables
         res[:, M-1:] = 0.5
         return res
