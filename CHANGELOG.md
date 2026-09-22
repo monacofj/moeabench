@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-09-22
+
 ### Added
 - **Relative Ordinal Hypervolume**:
   - `mb.metrics.ohv(..., scale="rel")` reports raw OHV relative to the best individual final reference front in one fixed ordinal context.
@@ -50,6 +52,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Comparable Hypervolume Evaluation**:
   - `raw`, `rel`, and `abs` reuse the same selected normalization bounds, preventing separately evaluated fronts from silently redefining their comparison context.
   - Reports distinguish self-referenced values from values evaluated against a fixed external reference.
+- **Analytical DTLZ Pareto-front Sampling (#52)**:
+  - DTLZ2, DTLZ3, and DTLZ4 now use deterministic, approximately surface-uniform sampling on the positive unit hypersphere instead of independent uniform angular parameters, eliminating the many-objective analytical-GT collapse.
+  - DTLZ4 maps the corrected objective-space directions back through its `x_i^100` angular transformation, preserving Pareto-set/front correspondence.
+  - DTLZ5 now defines its degenerate Pareto-set sampling explicitly so the DTLZ2 correction does not change its geometry.
 
 ## [0.15.0] - 2026-03-16
 
