@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Plotly Dependency Floor (#61)**:
+  - Require Plotly >= 5.22 because MoeaBench interactive plots use the `font.weight` API introduced in that release.
+  - Add a packaging regression test so the declared minimum cannot silently drift below the API used by the plotting layer.
+
 ## [0.16.1] - 2026-10-14
 
 ### Fixed
