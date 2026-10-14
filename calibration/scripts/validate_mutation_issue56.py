@@ -15,10 +15,17 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import os
+import sys
 from contextlib import contextmanager
 
 import numpy as np
 from pymoo.operators.mutation.pm import PolynomialMutation
+
+
+PROJ_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+if PROJ_ROOT not in sys.path:
+    sys.path.insert(0, PROJ_ROOT)
 
 import moeabench as mb
 from moeabench.moeas._operators_pymoo import standard_polynomial_mutation
