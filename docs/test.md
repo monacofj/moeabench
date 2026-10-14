@@ -186,6 +186,46 @@ tests/integration/test_view_dispatch_pipeline.py::test_view_dispatch_pipeline
 
 and annotates each collected test with its exact level.
 
+## Dependency Verification
+
+Dependency verification is a separate, manual battery for external-library
+semantics that can materially affect MoeaBench behavior or scientific results.
+It is deliberately **not** a fourth test scope: selected tests retain their
+normal `unit`, `integration`, or `stability` classification and also carry the
+orthogonal `dependency_verify` marker.
+
+Run it with:
+
+```bash
+python3 test.py --dependency-verify
+```
+
+The battery is risk-driven rather than symmetric across dependencies. A library
+is included only when MoeaBench relies on behavior that is scientifically
+important and sufficiently sensitive to upstream API or semantic changes.
+Checks are added when such a risk is identified; MoeaBench does not attempt to
+re-test third-party libraries comprehensively.
+
+The first validated dependency is `pymoo 0.6.2`. The initial battery protects:
+
+- the individual-level versus per-variable polynomial-mutation semantics that
+  caused #56;
+- the observed effective mutation rate, exercising pymoo rather than only
+  inspecting MoeaBench configuration;
+- frozen solver-front reproducibility for pymoo-backed smoke cases.
+
+MoeaBench distinguishes a package version that satisfies installation
+requirements from one whose relevant behavior has been explicitly validated.
+When a sensitive installed dependency differs from the recorded validated
+version, importing MoeaBench emits a warning and recommends running
+`--dependency-verify`. The warning does not block execution, so a newer
+dependency can be deliberately tested before the validated-version record is
+updated.
+
+The current validation record is available programmatically through
+`moeabench.dependency_validation` and is included in `mb.system.info()` for
+scientific provenance.
+
 ## Marker Policy
 
 All official tests must carry exactly one scope marker and exactly one level marker.
@@ -198,6 +238,7 @@ The active marker vocabulary is:
 - `level_smoke`
 - `level_basic`
 - `level_deep`
+- `dependency_verify` (orthogonal manual dependency-verification marker)
 
 These markers are the normative classification mechanism of the suite.
 

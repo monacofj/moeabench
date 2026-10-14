@@ -5,6 +5,9 @@
 
 import importlib.util as _importlib_util
 from .core.base import emit_output as _emit_output
+from .dependency_validation import (
+    dependency_validation_statuses as _dependency_validation_statuses,
+)
 
 def version(show: bool = True) -> str:
     """Returns the current moeabench version and optionally prints it."""
@@ -49,6 +52,7 @@ def info(show: bool = True) -> dict:
         "moeabench_version": version(show=False),
         "python_version": sys.version.split()[0],
         "numpy_version": np.__version__,
+        "dependency_validation": _dependency_validation_statuses(),
         "platform": platform.platform(),
         "timestamp": datetime.now().isoformat()
     }
@@ -58,6 +62,17 @@ def info(show: bool = True) -> dict:
             f"- moeabench : {payload['moeabench_version']}",
             f"- python    : {payload['python_version']}",
             f"- numpy     : {payload['numpy_version']}",
+            *[
+                (
+                    f"- {dep['name']:<9}: {dep['installed_version']} (validated)"
+                    if dep["is_validated"]
+                    else (
+                        f"- {dep['name']:<9}: {dep['installed_version']} "
+                        f"(UNVALIDATED; validated version: {dep['validated_version']})"
+                    )
+                )
+                for dep in payload["dependency_validation"]
+            ],
             f"- platform  : {payload['platform']}",
             f"- timestamp : {payload['timestamp']}",
         ]
@@ -67,6 +82,17 @@ def info(show: bool = True) -> dict:
             f"- **moeabench**: `{payload['moeabench_version']}`",
             f"- **python**: `{payload['python_version']}`",
             f"- **numpy**: `{payload['numpy_version']}`",
+            *[
+                (
+                    f"- **{dep['name']}**: `{dep['installed_version']}` (validated)"
+                    if dep["is_validated"]
+                    else (
+                        f"- **{dep['name']}**: `{dep['installed_version']}` "
+                        f"(**UNVALIDATED**; validated version: `{dep['validated_version']}`)"
+                    )
+                )
+                for dep in payload["dependency_validation"]
+            ],
             f"- **platform**: `{payload['platform']}`",
             f"- **timestamp**: `{payload['timestamp']}`",
         ]

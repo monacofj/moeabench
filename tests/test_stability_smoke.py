@@ -45,6 +45,19 @@ SMOKE_GT_CASES = [
     "DTLZ9",
 ]
 RNG_SIGNATURE_SEED = 7
+PYMOO_STABILITY_ALGORITHMS = {"NSGA3", "MOEAD", "UNSGA3", "RVEA", "SPEA2"}
+
+
+def _front_parameter(entry):
+    """Keep dependency verification orthogonal to the normal stability scope."""
+    marks = []
+    if entry["algorithm"] in PYMOO_STABILITY_ALGORITHMS:
+        marks.append(pytest.mark.dependency_verify)
+    return pytest.param(
+        entry,
+        marks=marks,
+        id=f"{entry['algorithm']}x{entry['mop']}",
+    )
 
 
 def _build_problem(mop_name: str):
@@ -214,8 +227,7 @@ def test_smoke_gt_reproducibility(problem_name):
 
 @pytest.mark.parametrize(
     "entry",
-    STABILITY_FRONTS["smoke"],
-    ids=lambda entry: f"{entry['algorithm']}x{entry['mop']}",
+    [_front_parameter(entry) for entry in STABILITY_FRONTS["smoke"]],
 )
 def test_smoke_front_reproducibility(entry):
     mop = _build_problem(entry["mop"])
