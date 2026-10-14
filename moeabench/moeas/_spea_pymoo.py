@@ -6,8 +6,8 @@
 from pymoo.algorithms.moo.spea2 import SPEA2
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PolynomialMutation
 from ._base_pymoo import BasePymoo
+from ._operators_pymoo import standard_polynomial_mutation
 
 class SPEA_pymoo(BasePymoo):
     """
@@ -16,7 +16,7 @@ class SPEA_pymoo(BasePymoo):
     def evaluation(self):
         """Standard moeabench evaluation entry point."""
         ref_dirs = get_reference_directions("energy", self.M, self.population, seed=self.seed)
-        mutation = PolynomialMutation(prob=1.0, prob_var=1/self.Nvar, eta=20) 
+        mutation = standard_polynomial_mutation(self.Nvar)
         crossover = SBX(prob=1.0, eta=15)
         
         algorithm = SPEA2(ref_dirs=ref_dirs, pop_size=self.population, 
