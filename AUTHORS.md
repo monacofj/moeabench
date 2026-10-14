@@ -25,6 +25,16 @@ For formal academic citation of the research framework, please refer to the
 `CITATION.cff` file in the repository root.
 
 
+### Acknowledgements
+
+The authors gratefully acknowledge specific, bounded contributions from external
+collaborators. These acknowledgements recognize particular contributions to the
+project and do not imply authorship or co-authorship of the software or the
+research framework.
+
+* Luis Aires <https://github.com/LeAresC>
+
+
 ### AI Usage Disclosure
 
 Auxiliary AI assistance tools have been used in this project under the authors'
