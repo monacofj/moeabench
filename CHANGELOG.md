@@ -14,6 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.16.1] - 2026-10-14
+
+### Fixed
+- **pymoo Polynomial Mutation Semantics (#56, #57)**:
+  - Corrected the affected pymoo wrappers to apply polynomial mutation to every offspring (`prob=1.0`) while retaining the conventional per-variable rate `prob_var=1/Nvar` required by pymoo >= 0.6.
+  - Centralized the shared mutation policy for MOEA/D, NSGA-III, U-NSGA-III, RVEA, and SPEA2 and added regression coverage for the individual- and variable-level gates.
+  - Refreshed only the deterministic solver-front stability references affected by the corrected mutation semantics.
+  - Many-objective DTLZ3 validation (M=15, 2000 generations) confirms the correction restores convergence across three independent seeds.
+  - Original fix contributed by Luis Aires (@LeAresC); validation, regression coverage, and integration follow-up completed in PR #57.
+
 ## [0.16.0] - 2026-09-22
 
 ### Added
