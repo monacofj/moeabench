@@ -104,6 +104,19 @@ def _run_pytest(label: str, args: list[str], marker_expr: str):
     return proc.returncode == 0, parsed, elapsed
 
 
+def _print_dependency_verify_context():
+    """Show exactly which installed versions are being behaviorally checked."""
+    from moeabench.dependency_validation import dependency_validation_statuses
+
+    print("\nDependency validation context:")
+    for dep in dependency_validation_statuses():
+        status = "VALIDATED" if dep["is_validated"] else "UNVALIDATED"
+        print(
+            f"- {dep['name']}: installed={dep['installed_version']}, "
+            f"validated={dep['validated_version']} [{status}]"
+        )
+
+
 def _format_duration(seconds: float) -> str:
     if seconds < 60:
         return f"{seconds:.2f}s"
@@ -252,6 +265,11 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
+    parser.add_argument(
+        "--dependency-verify",
+        action="store_true",
+        help="Run targeted behavioral checks for scientifically sensitive dependencies",
+    )
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
@@ -265,12 +283,36 @@ def main():
     scope = _selected_scope(args)
     level = _selected_level(args)
 
+    if args.dependency_verify and (args.list or scope is not None or level is not None):
+        parser.error(
+            "`--dependency-verify` is a standalone manual battery and cannot "
+            "be combined with scope, level, or `--list` options."
+        )
+
     if scope == "integration" and level == "deep":
         parser.error("`--integration` only supports `--smoke` or `--basic`.")
 
     if args.list:
         _list_tests(scope, level)
         return
+
+    if args.dependency_verify:
+        _print_dependency_verify_context()
+        ok, summary, elapsed = _run_pytest(
+            "DEPENDENCY VERIFY", ["tests"], "dependency_verify"
+        )
+        rows = [{
+            "name": "DEPENDENCY VERIFY",
+            "status": "PASS" if ok else "FAIL",
+            "summary": summary,
+            "elapsed": elapsed,
+        }]
+        _print_final_summary(rows)
+        if not ok:
+            print("\n[CRITICAL] Dependency verification failed!")
+            sys.exit(1)
+        print("\nDependency verification completed successfully.")
+        sys.exit(0)
 
     selected_scope = scope
     level = level or "smoke"

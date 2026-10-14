@@ -8,12 +8,16 @@ from __future__ import annotations
 
 import importlib
 
+import numpy as np
 import pytest
+from pymoo.core.population import Population
+from pymoo.core.problem import Problem
 
 from moeabench.mops.DTLZ2 import DTLZ2
 from moeabench.moeas._operators_pymoo import standard_polynomial_mutation
 
 
+@pytest.mark.dependency_verify
 def test_standard_polynomial_mutation_preserves_per_variable_rate():
     """pymoo >= 0.6 must apply 1/n_var at the variable, not individual, gate."""
     n_var = 20
@@ -24,6 +28,34 @@ def test_standard_polynomial_mutation_preserves_per_variable_rate():
     assert mutation.eta.value == pytest.approx(20.0)
 
 
+@pytest.mark.dependency_verify
+def test_standard_polynomial_mutation_observed_rate_is_per_variable():
+    """Exercise pymoo itself so semantic drift cannot hide behind attributes."""
+    n_var = 20
+    n_individuals = 4000
+    expected_rate = 1.0 / n_var
+
+    problem = Problem(
+        n_var=n_var,
+        xl=np.zeros(n_var),
+        xu=np.ones(n_var),
+    )
+    original = np.full((n_individuals, n_var), 0.5)
+    population = Population.new("X", original.copy())
+    mutation = standard_polynomial_mutation(n_var)
+
+    mutated = mutation.do(
+        problem,
+        population,
+        inplace=False,
+        random_state=np.random.default_rng(12345),
+    ).get("X")
+
+    observed_rate = np.count_nonzero(mutated != original) / original.size
+    assert observed_rate == pytest.approx(expected_rate, abs=0.005)
+
+
+@pytest.mark.dependency_verify
 @pytest.mark.parametrize(
     "module_name, engine_name, algorithm_name",
     [

@@ -24,6 +24,13 @@ except (ImportError, AttributeError, Exception):
     pass # Fallback handled by plotting layer
 # ----------------------------------------------------------------------------
 
+# External dependency validation
+# Package requirements describe what can be installed; this warning records a
+# stricter scientific claim: which sensitive dependency versions have had the
+# relevant behavior explicitly verified by MoeaBench.
+from .dependency_validation import warn_unvalidated_dependencies as _warn_unvalidated_dependencies
+_warn_unvalidated_dependencies()
+
 # Core Engine
 from .core.experiment import experiment
 from .core.run import Run
@@ -72,6 +79,7 @@ for _name in (
     "user_site",
     "local_mpl",
     "_clinic_module",
+    "_warn_unvalidated_dependencies",
     "core",
     "diagnostics",
     "plotting",

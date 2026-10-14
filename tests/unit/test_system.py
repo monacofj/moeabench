@@ -32,15 +32,19 @@ def test_info(capsys):
     assert "moeabench_version" in payload
     assert "python_version" in payload
     assert "numpy_version" in payload
+    assert "dependency_validation" in payload
+    assert any(dep["name"] == "pymoo" for dep in payload["dependency_validation"])
 
     payload2 = mb.system.info(show=True)
     captured = capsys.readouterr()
     assert payload2["moeabench_version"] == payload["moeabench_version"]
     assert payload2["python_version"] == payload["python_version"]
     assert payload2["numpy_version"] == payload["numpy_version"]
+    assert payload2["dependency_validation"] == payload["dependency_validation"]
     assert payload2["platform"] == payload["platform"]
     assert "timestamp" in payload2
     assert "moeabench environment info" in captured.out.lower()
+    assert "pymoo" in captured.out.lower()
 
 def test_output(capsys):
     """Verify environment-aware plain output helper."""

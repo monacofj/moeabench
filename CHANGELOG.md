@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Dependency Behavior Verification (#63)**:
+  - Added `python test.py --dependency-verify` as a manual, risk-driven battery for scientifically sensitive external-library contracts.
+  - Records behaviorally validated dependency versions separately from packaging requirements and emits a runtime warning when a sensitive installed version differs.
+  - Initial pymoo coverage verifies polynomial-mutation semantics and effective rate plus frozen solver-front reproducibility.
+
 ## [0.16.1] - 2026-10-14
 
 ### Fixed
