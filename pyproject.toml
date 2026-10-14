@@ -28,7 +28,7 @@ dependencies = [
     "pymoo>=0.6.2",
     "moocore>=0.1.7",
     "ipywidgets",
-    "plotly",
+    "plotly>=5.22",
     "ipython",
     "pandas",
     "ordered_set",
