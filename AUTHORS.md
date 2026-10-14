@@ -27,10 +27,7 @@ For formal academic citation of the research framework, please refer to the
 
 ### Acknowledgements
 
-The authors gratefully acknowledge specific, bounded contributions from external
-collaborators. These acknowledgements recognize particular contributions to the
-project and do not imply authorship or co-authorship of the software or the
-research framework.
+The authors are grateful to the following people for their specific contributions:
 
 * Luis Aires <https://github.com/LeAresC>
 
