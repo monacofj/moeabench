@@ -8,7 +8,6 @@ from pymoo.optimize import minimize
 import numpy as np
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PolynomialMutation
 from pymoo.core.problem import Problem
 from pymoo.core.callback import Callback
 from moeabench.progress import get_active_pbar
@@ -17,8 +16,8 @@ from moeabench.progress import get_active_pbar
 from pymoo.algorithms.moo.nsga3 import NSGA3
 from pymoo.util.ref_dirs import get_reference_directions
 from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PolynomialMutation
 from ._base_pymoo import BasePymoo
+from ._operators_pymoo import standard_polynomial_mutation
 from moeabench.core.seeding import UINT32_MAX, derive_component_seed, validate_seed
 
 
@@ -45,7 +44,7 @@ class NSGA_pymoo(BasePymoo):
         ref_dirs = get_reference_directions(
             "energy", self.M, self.population, seed=effective_seed
         )
-        mutation = PolynomialMutation(prob=1/self.Nvar, eta=20)
+        mutation = standard_polynomial_mutation(self.Nvar)
         crossover = SBX(prob=1.0, eta=15)
         
         algorithm = NSGA3(ref_dirs=ref_dirs, pop_size=self.population, 
