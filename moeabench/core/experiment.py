@@ -563,16 +563,9 @@ class experiment(Reportable):
             silent (bool): If True, suppresses run output (prints and progress bars).
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
-        # Fast, memoized compatibility check; no numerical tests are run implicitly.
-        from ..environment_verification import verify_version, snapshot, EnvironmentWarning
-        import warnings
-        version_check = verify_version()
-        if version_check["status"] != "MATCH" and not getattr(self, "_version_warning_given", False):
-            warnings.warn(
-                "MoeaBench environment is %s; use mb.system.verify_stability() "
-                "for an explicit numerical check." % version_check["status"],
-                EnvironmentWarning, stacklevel=2)
-            self._version_warning_given = True
+        # Compare once per runtime environment; no costly tests are implicit.
+        from ..environment_verification import warn_on_unverified, snapshot
+        warn_on_unverified()
         current_environment = snapshot()
         previous_environment = getattr(self, "_execution_environment", None)
         if append and self._runs and previous_environment and current_environment != previous_environment:
