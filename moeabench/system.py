@@ -13,6 +13,28 @@ def version(show: bool = True) -> str:
         _emit_output(f"moeabench v{v}", markdown=f"**moeabench** `v{v}`")
     return v
 
+# Reuse the same comparison engine for the public API and experiment lifecycle.
+# Import lazily to avoid initialization cycles with core experiment imports.
+def verify_version(show: bool = True, force: bool = False):
+    from .environment_verification import verify_version as _verify
+    return _verify(show=show, force=force)
+
+
+def verify_stability(show: bool = True, **kwargs):
+    from .environment_verification import verify_stability as _verify
+    return _verify(show=show, **kwargs)
+
+
+def verify_experiment(exp, show: bool = True):
+    from .environment_verification import verify_experiment as _verify
+    return _verify(exp, show=show)
+
+
+def verification_status(exp=None):
+    from .environment_verification import environment_report
+    return environment_report(exp)
+
+
 def check_dependencies():
     """Prints a report of installed optional dependencies."""
     deps = ["numpy", "matplotlib", "pandas", "plotly", "IPython", "joblib"]
@@ -52,6 +74,7 @@ def info(show: bool = True) -> dict:
         "platform": platform.platform(),
         "timestamp": datetime.now().isoformat()
     }
+    payload["verification"] = verification_status()
     if show:
         lines = [
             "moeabench environment info",
@@ -60,6 +83,8 @@ def info(show: bool = True) -> dict:
             f"- numpy     : {payload['numpy_version']}",
             f"- platform  : {payload['platform']}",
             f"- timestamp : {payload['timestamp']}",
+            f"- versions  : {payload['verification']['versions']}",
+            f"- stability : {payload['verification']['stability']}",
         ]
         md_lines = [
             "### moeabench Environment Info",
@@ -69,6 +94,8 @@ def info(show: bool = True) -> dict:
             f"- **numpy**: `{payload['numpy_version']}`",
             f"- **platform**: `{payload['platform']}`",
             f"- **timestamp**: `{payload['timestamp']}`",
+            f"- **versions**: `{payload['verification']['versions']}`",
+            f"- **stability**: `{payload['verification']['stability']}`",
         ]
         _emit_output("\n".join(lines), markdown="\n".join(md_lines))
     return payload
@@ -166,6 +193,10 @@ def export_variables(data, filename=None):
 
 __all__ = [
     "version",
+    "verify_version",
+    "verify_stability",
+    "verify_experiment",
+    "verification_status",
     "check_dependencies",
     "info",
     "output",
