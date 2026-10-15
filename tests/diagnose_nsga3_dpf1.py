@@ -7,6 +7,9 @@ import hashlib
 import json
 import platform
 from importlib.metadata import version
+from unittest.mock import patch
+
+import moeabench.moeas._nsga_pymoo as nsga_backend
 
 import numpy as np
 from pymoo.util.ref_dirs import get_reference_directions
@@ -62,6 +65,28 @@ def main():
             "component_seeds": run.component_seeds,
         }, sort_keys=True))
     print("FINAL " + json.dumps(array_record(exp.front()), sort_keys=True))
+
+    # Diagnostic-only control: round away sub-ulp reference-direction
+    # discrepancies before selection; production code remains unchanged.
+    original = nsga_backend.get_reference_directions
+
+    def rounded(*args, **kwargs):
+        return np.round(original(*args, **kwargs), decimals=13)
+
+    with patch.object(nsga_backend, "get_reference_directions", side_effect=rounded):
+        controlled = mb.experiment(mop=mb.mops.DPF1(M=3, D=2),
+                                   moea=mb.moeas.NSGA3(
+                                       population=24, generations=12, seed=seed))
+        controlled.run(repeat=1, silent=True)
+    for i in range(len(controlled[0])):
+        print("CONTROL " + json.dumps({
+            "index": i,
+            "population_f": array_record(controlled[0].pop(i).objectives)["sha256"],
+            "population_x": array_record(controlled[0].pop(i).variables)["sha256"],
+            "front": array_record(controlled[0].front(i))["sha256"],
+            "front_count": len(controlled[0].front(i)),
+        }, sort_keys=True))
+    print("CONTROL_FINAL " + json.dumps(array_record(controlled.front()), sort_keys=True))
 
 
 if __name__ == "__main__":
