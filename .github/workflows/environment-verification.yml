@@ -1,0 +1,23 @@
+name: Environment verification branch checks
+on:
+  push:
+    branches:
+      - issue-67-environment-verification
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . pytest
+      - name: Unit and integration smoke
+        run: python test.py --smoke
+      - name: Environment regression tests
+        run: python -m pytest tests/unit/test_environment_verification.py -q
+      - name: Public stability verification
+        run: python -c "import moeabench as mb; result = mb.system.verify_stability(); assert result['status'] == 'PASSED', result"
