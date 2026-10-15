@@ -65,6 +65,8 @@ class experiment(Reportable):
         self._license: str = "CC0-1.0"
         self._created_at: str = self._now_iso_utc()
         self._year_override: Optional[int] = None
+        self._execution_environment = None
+        self._environment_comparison = None
 
         
         # Use properties for auto-instantiation and validation
@@ -203,6 +205,16 @@ class experiment(Reportable):
         if consensus_line:
             metadata.append(f"Consensus : {consensus_line}")
         lines.extend(["", "#### Metadata", "", self._report_block("\n".join(metadata))])
+        # Reporting observes status only; it must not re-run any checks.
+        from ..environment_verification import environment_report
+        verification = environment_report(self)
+        reproducibility = [
+            f"Certified versions     : {verification['versions']}",
+            f"Numerical stability    : {verification['stability']}",
+            f"Experiment environment : {verification['experiment']}",
+        ]
+        lines.extend(["", "#### Reproducibility", "",
+                      self._report_block("\n".join(reproducibility))])
         content = "\n".join(lines)
             
         return self._render_report(content, show, **kwargs)
@@ -551,6 +563,20 @@ class experiment(Reportable):
             silent (bool): If True, suppresses run output (prints and progress bars).
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
+        # Fast, memoized compatibility check; no numerical tests are run implicitly.
+        from ..environment_verification import verify_version, snapshot, EnvironmentWarning
+        import warnings
+        version_check = verify_version()
+        if version_check["status"] != "MATCH" and not getattr(self, "_version_warning_given", False):
+            warnings.warn(
+                "MoeaBench environment is %s; use mb.system.verify_stability() "
+                "for an explicit numerical check." % version_check["status"],
+                EnvironmentWarning, stacklevel=2)
+            self._version_warning_given = True
+        current_environment = snapshot()
+        previous_environment = getattr(self, "_execution_environment", None)
+        if append and self._runs and previous_environment and current_environment != previous_environment:
+            raise RuntimeError("Cannot append runs from a different runtime environment")
         if not append:
             self.clear()
         repeat = self.repeat if repeat is None else int(repeat)
@@ -581,6 +607,8 @@ class experiment(Reportable):
             emit_output(f"Running {self.name}", markdown=f"### Running **{self.name}**")
 
             # Execute serially
+            self._execution_environment = current_environment
+            self._environment_comparison = {"status": "MATCH", "differences": {}}
             self._run_serial(repeat, base_seed, start_index=len(self._runs), silent=silent)
 
             if diagnose and self._runs:
