@@ -61,6 +61,8 @@ This directory contains records of the key architectural decisions made during t
 | [0048](0048-public-clinical-metrics-and-audit-context-parity.md) | Public Clinical Metrics and Audit Context Parity | Accepted | 2026-08-27 |
 | [0049](0049-longitudinal-headway-definition.md) | Longitudinal Headway Definition | Accepted | 2026-08-27 |
 
+| [0050](0050-certified-environment-verification-and-provenance.md) | Certified Environment Verification and Experiment Provenance | Accepted | 2026-10-15 |
+
 ## Decision Lineage
 
 The status column records whether a historical ADR remains wholly normative or has been superseded in a specific part. Superseded ADRs are retained as historical records rather than rewritten to match later behavior.
