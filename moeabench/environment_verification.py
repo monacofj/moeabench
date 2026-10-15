@@ -197,8 +197,10 @@ def environment_report(exp=None):
 
 def warn_on_unverified():
     """A single advisory at first run, not a warning on every report."""
-    result = verify_version(show=False)
-    fingerprint = tuple(sorted(snapshot().items()))
+    # exp.run() uses the cached version check after the first invocation.
+    # Explicit verify_version(force=True) is available if the environment changes.
+    result = (_version_cache or {}).get("result") or verify_version(show=False)
+    fingerprint = tuple(sorted(result["current"].items()))
     if result["status"] != "MATCH" and stability_status() != "PASSED" and fingerprint not in _warned_fingerprints:
         _warned_fingerprints.add(fingerprint)
         warnings.warn("MoeaBench environment %s relative to certified versions; "
