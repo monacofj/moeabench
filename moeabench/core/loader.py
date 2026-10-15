@@ -20,7 +20,16 @@ class loader:
        
         with zipfile.ZipFile(path_z, 'r') as zf:
             bytes_data = zf.read('Moeabench.joblib')
+            # Older archives may not contain modern provenance metadata.
+            archive_metadata = None
+            if 'metadata.json' in zf.namelist():
+                import json
+                archive_metadata = json.loads(zf.read('metadata.json'))
             loaded_obj = load(BytesIO(bytes_data))
+
+        # Historical archives lacking execution-time provenance remain UNKNOWN.
+        # Do not confuse versions captured at export with versions at execution.
+        from ..environment_verification import verify_experiment
 
         # Handle selective loading based on mode
         if mode == 'config':
@@ -35,6 +44,7 @@ class loader:
         elif mode == 'data':
             # Only update runs from the loaded object
             target_obj._runs = loaded_obj._runs
+            target_obj._execution_environment = getattr(loaded_obj, "_execution_environment", None)
             # We might want to update the result pointer too if used
             if hasattr(loaded_obj, 'result'):
                 target_obj.result = loaded_obj.result
@@ -42,6 +52,7 @@ class loader:
             # Default 'all': full update
             target_obj.__dict__.update(loaded_obj.__dict__)
             
+        verify_experiment(target_obj, show=False)
         return target_obj
 
 

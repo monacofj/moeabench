@@ -1,0 +1,49 @@
+name: Environment verification branch checks
+on:
+  push:
+    branches:
+      - issue-67-environment-verification
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . pytest
+      - name: Generate missing integration fixture archives
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+          for algorithm, name in [(mb.moeas.NSGA2, "example_full_exp1.zip"), (mb.moeas.NSGA3, "example_full_exp2.zip")]:
+              exp = mb.experiment(mop=mb.mops.DTLZ2(M=3), moea=algorithm(population=32, generations=8, seed=17))
+              exp.run(repeat=3, silent=True)
+              exp.save(str(Path("examples") / name))
+          PY
+      - name: Full unit, integration and stability suites
+        run: python test.py --deep
+      - name: Environment regression tests
+        run: python -m pytest tests/unit/test_environment_verification.py -q
+      - name: Public stability verification
+        run: python -c "import moeabench as mb; result = mb.system.verify_stability(); assert result['status'] == 'PASSED', result"
+
+  diagnose-nsga3-dpf1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.14.4', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install -e .
+      - name: Capture complete NSGA3 DPF1 trajectory
+        run: python tests/diagnose_nsga3_dpf1.py

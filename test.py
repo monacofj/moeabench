@@ -246,12 +246,44 @@ def _selected_level(args) -> str | None:
     return None
 
 
+def _certify_environment():
+    """Certify only after a fresh, complete deep test run passes.
+
+    Never modify numerical reference fixtures here: acceptance of a new
+    dependency combination must be based on existing canonical baselines.
+    """
+    import json
+    import pathlib
+
+    print("Running full deep suite before certifying dependency versions...", flush=True)
+    completed = subprocess.run([sys.executable, __file__, "--deep"])
+    if completed.returncode != 0:
+        print("Certification denied: the full deep suite did not pass.", file=sys.stderr)
+        return 1
+
+    from moeabench.environment_verification import snapshot, _MANIFEST_PATH
+    versions = snapshot()
+    target = pathlib.Path(_MANIFEST_PATH)
+    payload = {
+        "schema": 1,
+        "description": "Developer-certified dependency versions after a complete deep suite.",
+        "versions": versions,
+    }
+    pending = target.with_suffix(".pending")
+    pending.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    pending.replace(target)
+    print("Certified environment manifest updated:", target)
+    print("Review and commit this manifest as part of the release.")
+    return 0
+
+
 def main():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     os.chdir(script_dir)
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
+    parser.add_argument("--certify", action="store_true", help="Run complete deep suite; certify versions only on success")
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
@@ -262,6 +294,10 @@ def main():
     level_group.add_argument("--deep", action="store_true", help="Run or list through the deep level")
 
     args = parser.parse_args()
+    if args.certify:
+        if args.list or args.unit or args.integration or args.stability or args.smoke or args.basic or args.deep:
+            parser.error('--certify cannot be combined with test selectors')
+        sys.exit(_certify_environment())
     scope = _selected_scope(args)
     level = _selected_level(args)
 

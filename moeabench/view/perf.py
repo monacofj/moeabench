@@ -300,7 +300,12 @@ def perf_spread(*args, metric=None, gen=-1, title=None, alpha=None, **kwargs):
     
     # 2. Setup Plot
     fig, ax = plt.subplots(figsize=(8, 5))
-    bp = ax.boxplot(samples, labels=labels, patch_artist=True, 
+    # Matplotlib renamed 'labels' to 'tick_labels' in 3.9 and removed
+    # the legacy name in newer releases. Inspect the callable rather than
+    # guessing compatibility from a package version string.
+    import inspect
+    label_arg = 'tick_labels' if 'tick_labels' in inspect.signature(ax.boxplot).parameters else 'labels'
+    bp = ax.boxplot(samples, **{label_arg: labels}, patch_artist=True, 
                      medianprops={'color': 'black', 'linewidth': 2},
                      boxprops={'alpha': 0.7})
     

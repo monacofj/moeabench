@@ -81,7 +81,11 @@ class save:
         except Exception:
             m_provenance["baseline_hash"] = "unknown"
 
+        # Execution provenance must not be confused with export-time versions.
+        # Archive readers may use this even when the object is loaded in data mode.
+        execution_environment = getattr(obj, "_execution_environment", None)
         m_context = {
+            "execution_environment": execution_environment,
             "name": obj.name,
             "author": obj.author,
             "authors": obj.author,
