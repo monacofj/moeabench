@@ -1,0 +1,5 @@
+{
+  "schema": 1,
+  "description": "Developer-certified runtime dependency versions. Run python test.py --certify after passing all tests to populate.",
+  "versions": {}
+}
