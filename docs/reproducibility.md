@@ -6,7 +6,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Scientific Reproducibility & RNG Stability in MoeaBench
 
-Reproducibility is a pillar of computational research. MoeaBench is designed with a "Fail-Strict" philosophy to ensure that results published in peer-reviewed literature remain exactly reproducible across time, platforms, and library updates.
+Reproducibility is a pillar of computational research. MoeaBench aims to make reproducibility claims auditable by recording provenance, explicitly checking reference numerical behaviors, and identifying environmental mismatches. The framework does not guarantee exact replay across arbitrary platforms or library updates.
 
 ## Environment verification: identity, behavior, and provenance
 
@@ -45,7 +45,7 @@ Use the actual stability and provenance evidence when making scientific
 claims. Matplotlib is checked for functional compatibility, not used to
 define the numerical certification fingerprint.
 
-## 1. The Bit-for-Bit Stability Standard
+## 1. Bit-for-Bit Stability as a Testable Goal
 
 For many multi-objective optimization experiments, a "statistically similar" result is not enough; researchers often require exact bit-for-bit identity between the original run and the validation audit. 
 
@@ -54,11 +54,11 @@ Standard pseudo-random number generators (PRNGs) evolve. As libraries like NumPy
 
 ## 2. Our Implementation Strategy
 
-MoeaBench employs three layers of "blindagem" (protection) to lock in reproducibility:
+MoeaBench employs three complementary mechanisms to improve reproducibility and detect drift:
 
 ### A. Legacy PRNG for Diagnostics
 The clinical diagnostic engine (FAIR Metrics and Q-Scores) uses the **Legacy NumPy RandomState API** (`np.random.RandomState`). 
-- **Rationale**: NumPy has explicitly "frozen" this API to ensure bit-of-bit stability for long-term research. By standardizing on `RandomState`, MoeaBench ensures that the numerical targets for a specific version remain identical in all future NumPy releases.
+- **Rationale**: NumPy has explicitly "frozen" this API to ensure bit-of-bit stability for long-term research. Using `RandomState` reduces the risk of PRNG algorithm changes, but does not by itself guarantee identical results across all future numerical environments.
 
 ### B. Local RNG state for Algorithms
 To prevent interference between parallel experiments or global state side effects, MoeaBench MOEAs (like `NSGA2deap`) utilize **localized generator instances** (e.g., `random.Random(seed)`).
@@ -115,7 +115,7 @@ This information is persisted in exported JSON reports, allowing future auditors
 
 ## 3. Best Practices for Researchers
 
-To achieve 100% "Blindagem" in your articles, follow these guidelines:
+To strengthen the evidence for reproducibility in scientific articles, follow these guidelines:
 
 1.  **Always Record Seeds**: Use the `seed` parameter in all MOEA and Experiment initializations.
     For controlled NSGA-III studies, also report the effective value from
