@@ -21,6 +21,7 @@ _MANIFEST_PATH = Path(__file__).parent / "diagnostics" / "resources" / "certifie
 _FRONTS_PATH = Path(__file__).parent / "diagnostics" / "resources" / "stability_smoke.json"
 _version_cache = None
 _stability_cache = None
+_warned_fingerprints = set()
 
 
 class EnvironmentWarning(UserWarning):
@@ -118,18 +119,32 @@ def verify_stability(show=True, atol=1e-12, rtol=1e-8):
     def check(name, condition):
         results[name] = "PASS" if condition else "FAIL"
 
-    check("python_random", [random.Random(7).random() for _ in range(1)] ==
-          [0.32383276483316237])
+    python_rng = random.Random(7)
+    check("python_random", [python_rng.random() for _ in range(5)] ==
+          [0.32383276483316237, 0.15084917392450192,
+           0.6509344730398537, 0.07243628666754276,
+           0.5358820043066892])
     check("numpy_randomstate",
           np.array_equal(np.random.RandomState(7).random_sample(5),
                          np.array([0.07630828937395717, 0.7799187922401146,
                                    0.4384092314408935, 0.7234651778309412,
                                    0.9779895119966027])))
+    check("numpy_randomstate_ints",
+          np.array_equal(np.random.RandomState(7).randint(0, 1000, size=5),
+                         np.array([175, 196, 537, 502, 579])))
     check("numpy_generator",
           np.array_equal(np.random.default_rng(7).random(5),
                          np.array([0.625095466604667, 0.8972138009695755,
                                    0.7756856902451935, 0.22520718999059186,
                                    0.30016628491122543])))
+    check("numpy_generator_normal",
+          np.array_equal(np.random.default_rng(7).normal(size=5),
+                         np.array([0.0012301533574825742, 0.2987455375084699,
+                                   -0.2741378553622176, -0.8905918387572742,
+                                   -0.45467078517172255])))
+    check("numpy_generator_ints",
+          np.array_equal(np.random.default_rng(7).integers(0, 1000, size=5),
+                         np.array([944, 625, 684, 897, 578])))
     with _FRONTS_PATH.open(encoding="utf-8") as f:
         reference = json.load(f)
     if reference.get("schema") != 1:
@@ -183,7 +198,9 @@ def environment_report(exp=None):
 def warn_on_unverified():
     """A single advisory at first run, not a warning on every report."""
     result = verify_version(show=False)
-    if result["status"] not in ("MATCH",):
+    fingerprint = tuple(sorted(snapshot().items()))
+    if result["status"] != "MATCH" and stability_status() != "PASSED" and fingerprint not in _warned_fingerprints:
+        _warned_fingerprints.add(fingerprint)
         warnings.warn("MoeaBench environment %s relative to certified versions; "
                       "run mb.system.verify_stability() to check numerical behavior."
                       % result["status"], EnvironmentWarning, stacklevel=3)
