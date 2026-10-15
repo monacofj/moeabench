@@ -25,8 +25,8 @@ jobs:
               exp.run(repeat=3, silent=True)
               exp.save(str(Path("examples") / name))
           PY
-      - name: Unit and integration smoke
-        run: python test.py --smoke
+      - name: Full unit, integration and stability suites
+        run: python test.py --deep
       - name: Environment regression tests
         run: python -m pytest tests/unit/test_environment_verification.py -q
       - name: Public stability verification
