@@ -27,19 +27,8 @@ class loader:
                 archive_metadata = json.loads(zf.read('metadata.json'))
             loaded_obj = load(BytesIO(bytes_data))
 
-        # Prefer execution provenance captured on the object, falling back to
-        # archive metadata for legacy exports (whose versions reflect save time).
-        if not getattr(loaded_obj, "_execution_environment", None) and archive_metadata:
-            provenance = archive_metadata.get("provenance", {})
-            original = {
-                "moeabench": provenance.get("moeabench"),
-                "python": provenance.get("python"),
-            }
-            for dep in ("numpy", "scipy", "pymoo", "pandas", "moocore", "deap"):
-                if dep + "_version" in provenance:
-                    original[dep] = provenance[dep + "_version"]
-            if original["moeabench"] is not None and original["python"] is not None:
-                loaded_obj._execution_environment = original
+        # Historical archives lacking execution-time provenance remain UNKNOWN.
+        # Do not confuse versions captured at export with versions at execution.
         from ..environment_verification import verify_experiment
 
         # Handle selective loading based on mode
@@ -55,6 +44,7 @@ class loader:
         elif mode == 'data':
             # Only update runs from the loaded object
             target_obj._runs = loaded_obj._runs
+            target_obj._execution_environment = getattr(loaded_obj, "_execution_environment", None)
             # We might want to update the result pointer too if used
             if hasattr(loaded_obj, 'result'):
                 target_obj.result = loaded_obj.result
