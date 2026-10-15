@@ -29,3 +29,27 @@ def test_stability_cache_invalidation(monkeypatch):
     assert ev.stability_status() == "PASSED"
     monkeypatch.setattr(ev, "snapshot", lambda: {"numpy": "2"})
     assert ev.stability_status() == "UNCHECKED"
+
+
+def test_export_load_preserves_execution_provenance(tmp_path):
+    import moeabench as mb
+    from moeabench.environment_verification import snapshot
+    first = mb.experiment()
+    first._execution_environment = snapshot()
+    path = tmp_path / "provenance.zip"
+    first.save(str(path), mode="config")
+    second = mb.experiment()
+    second.load(str(path))
+    assert second._execution_environment == first._execution_environment
+    assert second._environment_comparison["status"] == "MATCH"
+
+
+def test_report_reads_state_without_rechecking(monkeypatch):
+    import moeabench as mb
+    exp = mb.experiment()
+    def unexpected(**kwargs):
+        raise AssertionError("report attempted version verification")
+    monkeypatch.setattr(ev, "verify_version", unexpected)
+    content = exp.report(show=False)
+    assert "Reproducibility" in content
+    assert "Numerical stability" in content
