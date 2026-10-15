@@ -16,6 +16,43 @@ For mathematical implementation of built-in MOPs and MOEAS, see the **[MOPs Guid
 *   **[DTLZ]** K. Deb et al. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." (2002).
 *   **[DPF]** L. Zhen et al. "[Multiobjective test problems with degenerate Pareto fronts](https://doi.org/10.48550/arXiv.1806.02706)." (2018).
 
+## Verifying the execution environment
+
+For reproducible scientific comparisons, distinguish a matching software
+version set from demonstrated numerical behavior and from the environment
+where a saved experiment was originally run:
+
+```python
+import moeabench as mb
+
+versions = mb.system.verify_version()        # compare certified package versions
+stability = mb.system.verify_stability()     # run explicit numerical smoke checks
+```
+
+The `versions["status"]` value is `MATCH`, `MISMATCH`, or
+`UNCONFIGURED`. The `stability["status"]` value is `PASSED` or
+`FAILED`; `stability["checks"]` identifies individual PRNG and solver
+tests. Neither outcome proves that *every* possible experiment is
+bit-for-bit reproducible.
+
+After executing or loading an experiment, inspect its execution provenance:
+
+```python
+comparison = mb.system.verify_experiment(exp)
+# comparison["status"]: MATCH, MISMATCH or UNKNOWN
+```
+
+The first `exp.run()` automatically checks certified versions and issues a
+nonrepeating advisory for an unverified environment; it does not perform
+the expensive numerical check. Archive loading compares recorded provenance
+when present, and `exp.report()` displays the cached state without silently
+running additional tests. An old archive with no provenance yields `UNKNOWN`.
+
+For practical interpretation, developer certification, and limitations of
+cross-platform NSGA-III reference directions, see
+[Environment verification](environment-verification.md) and
+[Scientific reproducibility](reproducibility.md).
+
 ## **Summary**
 1.  **[Introduction: Design Philosophy](#1-introduction-design-philosophy)**
 2.  **[Getting Started: Minimal Working Example](#2-getting-started-minimal-working-example)**
