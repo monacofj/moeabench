@@ -186,6 +186,44 @@ tests/integration/test_view_dispatch_pipeline.py::test_view_dispatch_pipeline
 
 and annotates each collected test with its exact level.
 
+## Developer environment certification
+
+The testing scopes above also underpin the environment verification system
+([ADR 0050](adr/0050-certified-environment-verification-and-provenance.md)).
+For release preparation, run the entire suite and then certify the developer
+reference environment:
+
+```bash
+python test.py --deep
+python test.py --certify
+```
+
+`--certify` independently executes the complete deep battery (all unit,
+basic integration, and deep stability checks) before updating the shipped
+`moeabench/diagnostics/resources/certified_environment.json`. If any test
+fails, the manifest is **not** updated. Review and commit changes to the
+manifest; do not revise numerical fixtures simply to make a failing
+environment pass. An explicitly skipped test remains recorded as skipped,
+and does not count as a passing observation.
+
+This developer command is different from the installed-package API:
+
+```python
+import moeabench as mb
+
+versions = mb.system.verify_version()       # version identity, not numerical proof
+stability = mb.system.verify_stability()    # explicit PRNG/front smoke checks
+```
+
+The public stability check tests only its packaged signatures and front
+fixtures, whereas `--certify` runs the broader development suite. The
+certified environment may be more narrowly specified than an arbitrary CI
+runner; equal seeds and dependency versions alone cannot guarantee bitwise
+identity of NSGA-III trajectories across runtimes. Functional dependencies
+such as Matplotlib are covered by integration tests, not entered in the
+numerical-version manifest. See
+[Environment verification](environment-verification.md) for interpretation.
+
 ## Marker Policy
 
 All official tests must carry exactly one scope marker and exactly one level marker.
