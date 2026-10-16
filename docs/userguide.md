@@ -67,27 +67,23 @@ cross-platform NSGA-III reference directions, see
 5.  **[Data Filtering and Extraction](#5-data-filtering-and-extraction)**
 6.  **[Data Access Convenience Methods](#6-data-access-convenience-methods)**
 7.  **[Analytical Domains](#7-analytical-domains)**
-    - [7.1. Topography (Metric Space)](#71-topography-metric-space-analysis)
-    - [7.2. Performance (Metric Trajectories)](#72-performance-metric-trajectories)
+    - [7.1. Topography (Metric Space Analysis)](#71-topography-metric-space-analysis)
+    - [7.2. Performance (Scalar Metrics)](#72-performance-scalar-metrics)
     - [7.3. Stratification (Population Structure)](#73-stratification-population-structure)
-8.  **[Statistical Analysis (`mb.stats`)](#8-statistical-analysis-mbstats)**
-    - [8.1. Hypothesis Testing & Significance](#81-hypothesis-testing--significance)
-9.  **[Algorithmic Diagnostics and Pathology Detection](#9-algorithmic-diagnostics-and-pathology-detection)**
-    - [9.1. Diagnostic Ontology](#91-diagnostic-ontology)
-    - [9.2. Physical Metrics (FAIR Metrics)](#92-physical-metrics-fair-metrics)
-    - [9.3. Clinical Normalization (Q-Scores)](#93-clinical-normalization-q-scores)
-    - [9.4. Diagnostic Instruments](#94-diagnostic-instruments) (Radar, ECDF, Distribution, History)
-    - [9.5. Reporting Interface & Auditing](#95-reporting-interface-and-auditing-workflow)
-    - [9.6. Validation Hierarchy & Baselines](#96-the-validation-hierarchy)
-10. **[Extensibility: Custom Plugins](#10-extensibility-plugging-your-algorithm)**
+8.  **[Algorithmic Diagnostics and Pathology Detection](#8-algorithmic-diagnostics-and-pathology-detection)**
+    - [8.1. Diagnostic Ontology](#81-diagnostic-ontology)
+    - [8.2. Physical Metrics (FAIR Metrics)](#82-physical-metrics-fair-metrics)
+    - [8.3. Clinical Normalization (Q-Scores)](#83-clinical-normalization-q-scores)
+    - [8.4. Diagnostic Instruments](#84-diagnostic-instruments) (Radar, ECDF, Distribution, History)
+    - [8.5. Reporting Interface & Auditing](#85-reporting-interface-and-auditing-workflow)
+    - [8.6. Validation Hierarchy & Baselines](#86-the-validation-hierarchy)
+9.  **[Extensibility: Custom Plugins](#9-extensibility-plugging-your-algorithm)**
     - [Custom MOP & MOEA Plugins](#custom-mop-plugin)
-    - [Calibration & Sidecar Workflow](#101-mop-plugin-support-and-calibration)
-11. **[Persistence and Export](#11-persistence-save-and-load)**
-    - [Saving and Loading](#11-persistence-save-and-load)
-    - [Data Export (CSV)](#12-data-export-csv)
-12. **[References](#13-references)**
-13. **[Architectural Decisions](#16-architectural-decisions-and-engineering-values)**
-
+    - [Calibration & Sidecar Workflow](#91-mop-plugin-support-and-calibration)
+10. **[Persistence](#10-persistence-save-and-load)**
+11. **[Data Export (CSV)](#11-data-export-csv)**
+12. **[References](#12-references)**
+13. **[Architectural Decisions](#13-architectural-decisions-and-engineering-values)**
 ---
 
 ## **1. Introduction: Design Philosophy**
@@ -616,6 +612,34 @@ This keeps the same architectural pattern used throughout the library: compute a
 *Interpretation: The highlighted red regions indicate areas of the Pareto front that Algo A found but Algo B missed completely. This reveals a "blind spot" in Algo B's search strategy despite exhibiting similar overall hypervolume values.*
 
 
+
+#### Statistical evidence for topological comparisons
+
+Beyond plotting objective- or decision-space distributions, `mb.stats` can test or quantify their differences. Its comparisons are descriptive or statistical assessments of the sampled distributions, not guarantees of identical Pareto fronts.
+
+#### Statistical comparison of spatial distributions
+To assess whether two experiments exhibit similar distributions in the objective or decision space, use the topological comparators. These compare per-axis distributions, not a proof of identical multidimensional fronts:
+
+```python
+# Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
+topo_res = mb.stats.topo_compare(exp_baseline, exp_optimized, method='ks')
+
+# Hybrid Output: renders Markdown in notebooks, prints in terminal
+topo_res.report()
+```
+
+Topological semantic aliases:
+- `mb.stats.topo_match(...)` == `topo_compare(..., method='ks')`
+- `mb.stats.topo_tail(...)` == `topo_compare(..., method='anderson')`
+- `mb.stats.topo_shift(...)` == `topo_compare(..., method='emd')`
+
+`mb.stats.topo_shift(...)` uses `threshold=mb.defaults.displacement_threshold` when not provided (current default: `0.1`).
+
+> [!NOTE]
+> **Further Reading**: moeabench supports a wide array of statistical tests, including Anderson-Darling, Earth Mover's Distance (EMD), and Kolmogorov-Smirnov for distribution shapes. For a complete list of available tests and their mathematical definitions, consult the **[API Reference](reference.md#stats)**.
+
+---
+
 ### **7.2. Performance (Scalar Metrics)**
 Performance is the reduction lens of MoeaBench. It compresses high-dimensional search outcomes into scalar trajectories or distributions such as Hypervolume, IGD, GD, EMD, or front ratio, making statistical comparison and longitudinal convergence analysis possible.
 
@@ -830,6 +854,56 @@ All evaluated final-front points lie within both the nbox and bbox.
 
 The `Reference` section is present for both implicit self-reference and explicit `ref`. Global/local ND coverage compares the objective-wise extent retained after the locally non-dominated reference sources are merged and filtered globally. Reference expansion compares the selected reference extent with the fronts represented by the final reported row. Both are descriptive diagnostics: they neither repair the reference nor change Hypervolume. Full vectors remain available through `res.diagnostics`.
 
+
+#### Statistical evidence from repeated runs
+
+The `mb.stats` performance comparators complement trajectories and summary statistics with non-parametric hypothesis tests and effect-size estimates. Each returns a rich result with `.report()`, allowing the researcher to inspect and reuse the same analysis. Statistical significance provides evidence against a null hypothesis; it does not prove universal algorithmic superiority.
+
+#### Statistical comparison of performance
+To compare two experimental performance distributions using a metric (e.g., Hypervolume):
+
+```python
+# Compare final run-wise Hypervolume samples (Mann-Whitney U)
+res = mb.stats.perf_compare(exp1, exp2, method='mannwhitney', metric=mb.metrics.hv)
+
+# Inspect the result and its statistical interpretation
+res.report() 
+```
+
+An illustrative report may look like:
+
+```text
+--- Mann-Whitney U (Win Evidence) Test Report ---
+  Comparison: exp1 vs exp2
+  Alternative: two-sided
+  Statistic: 1450.0000
+  P-Value:   0.001204 (Significant at alpha=0.05)
+  A12 Effect Size: 0.8200 (Large)
+
+Conclusion: Sampled outcomes show evidence of a difference favoring exp1.
+```
+
+#### Inspecting statistical results
+
+Most result objects also allow programmatic access to the underlying metrics. `perf_compare()` returns a `PerfCompareResult` whose canonical fields include `method`, `statistic`, `p_value`, `effect_size`, and `decision`:
+
+```python
+if res.p_value is not None and res.p_value < mb.defaults.alpha:
+    # Measure Effect Size (Vargha-Delaney A12)
+    # Answers: "How often does it win?"
+    prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
+
+print(res.decision)
+print(res.effect_size)
+```
+
+`decision` is the comparator's interpreted outcome. A `p_value` is available only for methods that perform a significance test; the A12 comparator instead reports its empirical win probability through `effect_size`/`statistic`.
+
+The semantic aliases below are exact shortcuts:
+- `mb.stats.perf_shift(...)` == `perf_compare(..., method='mannwhitney')`
+- `mb.stats.perf_match(...)` == `perf_compare(..., method='ks')`
+- `mb.stats.perf_win(...)` == `perf_compare(..., method='a12')`
+
 ### **7.3. Stratification (Population Structure)**
 Stratification is the structural lens of MoeaBench. It examines how the population is internally organized across non-domination layers, how quality is distributed across those layers, and how two methods compete when their populations are merged into a shared rank structure.
 
@@ -939,85 +1013,7 @@ The underlying layer computation is internal; the public analytical surface is `
 
 ---
 
-## **8. Statistical Analysis (`mb.stats`)**
-
-The `mb.stats` module transforms raw stochastic trajectories into scientific evidence. 
-A core philosophy of MoeaBench is that results should be **narrative diagnostics**, not just raw numbers. Every statistical function returns a **Rich Result Object** equipped with a `.report()` method that handles display for you.
-
-### **8.1. Hypothesis Testing & Significance**
-These tools answer the critical question: *"Is the difference purely due to luck?"*
-
-#### **Proving Superiority (Performance Analysis)**
-To rigorously compare two algorithms (`exp1` vs `exp2`) based on a metric (e.g., Hypervolume):
-
-```python
-# 1. Test for Statistical Significance (Mann-Whitney U)
-# Answers: "Is there evidence of a difference?"
-res = mb.stats.perf_compare(exp1, exp2, method='mannwhitney', metric=mb.metrics.hv)
-
-# 2. Get a narrative diagnosis
-# Automatically prints or renders Markdown
-res.report() 
-```
-
-The output is something like:
-
-```text
---- Mann-Whitney U (Win Evidence) Test Report ---
-  Comparison: exp1 vs exp2
-  Alternative: two-sided
-  Statistic: 1450.0000
-  P-Value:   0.001204 (Significant at alpha=0.05)
-  A12 Effect Size: 0.8200 (Large)
-
-Conclusion: There is a statistically significant difference favoring exp1.
-```
-
-#### **Accessing Raw Data**
-
-Most result objects also allow programmatic access to the underlying metrics. `perf_compare()` returns a `PerfCompareResult` whose canonical fields include `method`, `statistic`, `p_value`, `effect_size`, and `decision`:
-
-```python
-if res.p_value is not None and res.p_value < mb.defaults.alpha:
-    # Measure Effect Size (Vargha-Delaney A12)
-    # Answers: "How often does it win?"
-    prob = mb.stats.perf_compare(exp1, exp2, method='a12', metric=mb.metrics.hv)
-
-print(res.decision)
-print(res.effect_size)
-```
-
-`decision` is the comparator's interpreted outcome. A `p_value` is available only for methods that perform a significance test; the A12 comparator instead reports its empirical win probability through `effect_size`/`statistic`.
-
-The semantic aliases below are exact shortcuts:
-- `mb.stats.perf_shift(...)` == `perf_compare(..., method='mannwhitney')`
-- `mb.stats.perf_match(...)` == `perf_compare(..., method='ks')`
-- `mb.stats.perf_win(...)` == `perf_compare(..., method='a12')`
-
-#### **Testing Topological Consistency**
-To verify if two algorithms found the same regions of the objective space (e.g., comparing a baseline against an optimized version):
-
-```python
-# Check if spatial distributions match (Kolmogorov-Smirnov test per axis)
-topo_res = mb.stats.topo_compare(exp_baseline, exp_optimized, method='ks')
-
-# Hybrid Output: renders Markdown in notebooks, prints in terminal
-topo_res.report()
-```
-
-Topological semantic aliases:
-- `mb.stats.topo_match(...)` == `topo_compare(..., method='ks')`
-- `mb.stats.topo_tail(...)` == `topo_compare(..., method='anderson')`
-- `mb.stats.topo_shift(...)` == `topo_compare(..., method='emd')`
-
-`mb.stats.topo_shift(...)` uses `threshold=mb.defaults.displacement_threshold` when not provided (current default: `0.1`).
-
-> [!NOTE]
-> **Further Reading**: moeabench supports a wide array of statistical tests, including Anderson-Darling, Earth Mover's Distance (EMD), and Kolmogorov-Smirnov for distribution shapes. For a complete list of available tests and their mathematical definitions, consult the **[API Reference](reference.md#stats)**.
-
----
-
-## **9. Algorithmic Diagnostics and Pathology Detection**
+## **8. Algorithmic Diagnostics and Pathology Detection**
     
 Modern optimization algorithms can fail in subtle ways that raw numbers often hide. For example, an algorithm might achieve a near-perfect Generational Distance (GD) score by finding a single optimal point, while completely failing to cover the rest of the Pareto Front. This phenomenon, known as **Diversity Collapse**, can easily mislead researchers who only look at a single metric table.
 
@@ -1026,7 +1022,7 @@ MoeaBench introduces a dedicated **Algorithmic Diagnostics** module (`mb.clinic`
 > [!TIP]
 > **Further Reading**: Curious about why we renamed "Fitness" to "Headway" or how we handle "Worse-than-Random" results? Read the full engineering decision record: **[ADR 0028](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
 
-### **9.1. Diagnostic Ontology**
+### **8.1. Diagnostic Ontology**
 
 MoeaBench transforms raw performance data into a "detailed diagnostic assessment". This system is designed for deep algorithmic diagnostics, helping you understand not just *how much* an algorithm failed, but *why* it failed. The diagnostic system targets six primary dimensions of algorithmic health:
 
@@ -1041,7 +1037,7 @@ MoeaBench transforms raw performance data into a "detailed diagnostic assessment
 
 The six FAIR quantities therefore do **not** share one universal unit. $s_K$ is a resolution ruler used where the metric definition calls for it, most notably `closeness` and the raw form of `headway`; other diagnostics retain their own physical or dimensionless scale.
 
-### **9.2. Physical Metrics (FAIR Metrics)**
+### **8.2. Physical Metrics (FAIR Metrics)**
 
 For detailed mathematical definitions, see the [FAIR Metrics documentation](fair_metrics.md).
 
@@ -1117,7 +1113,7 @@ raw_d = mb.clinic.headway(exp, raw=True)
 
 ---
 
-### **9.3. Clinical Normalization (Q-Scores)**
+### **8.3. Clinical Normalization (Q-Scores)**
 
 A Quality-Score (Q-Score) is not a raw physical measurement. It is a **clinical normalization** of the physical facts. The public Q-score contract is the closed interval $0 \le Q \le 1$: the **Analytical Ideal** is anchored at $Q=1.0$, while the standardized random/failure condition is anchored at $Q=0.0$ after the metric-specific calibration and gating. Intermediate values are calibrated coordinates between those anchors; **Q is not, in general, a percentile of random samples**. This makes the scale comparable across problems even when the underlying objectives use very different physical units.
 
@@ -1180,7 +1176,7 @@ score = mb.clinic.q_headway(exp)
 
 ---
 
-### **9.4. Diagnostic Instruments**
+### **8.4. Diagnostic Instruments**
 
 MoeaBench provides four primary visualization tools (instruments) to inspect any performance dimension across Layer 1 (FAIR/Physical) or Layer 2 (Clinical/Q-Score). These instruments are polymorphic and agnostic to the underlying metric.
 
@@ -1251,7 +1247,7 @@ Watch the slope of the curve. A horizontal line that appears early in the experi
 
 ---
 
-### **9.5. Reporting Interface and Auditing Workflow**
+### **8.5. Reporting Interface and Auditing Workflow**
 
 The `mb.clinic` API handles all the complexity of Ground Truth resolution and metric interpretation for you. Beyond raw numbers, every audit report captures **Environment DNA** (Python/NumPy versions) and tracks the specific baseline used.
 
@@ -1324,7 +1320,7 @@ These helpers are more specialized than the aggregate diagnostic workflow, so th
 
 
 
-### **9.6. The Validation Hierarchy**
+### **8.6. The Validation Hierarchy**
 
 A common question is: *"Why are some algorithms (like NSGA-II) marked as 'Validated' while others (like SPEA2) are not? Can I still use SPEA2?"*
 
@@ -1366,7 +1362,7 @@ mb.clinic.audit(exp, ground_truth="data/published_gt.npz")
 
 ---
 
-## **10. Extensibility: Plugging your Algorithm**
+## **9. Extensibility: Plugging your Algorithm**
 
 Extensibility is the core reason for MoeaBench's existence. You use the framework to evaluate **your** code.
 
@@ -1394,7 +1390,7 @@ class MyProblem(mb.mops.BaseMop):
 ### **Custom MOEA Plugin**
 To wrap your own algorithm, inherit from `mb.moeas.BaseMoea`. By implementing the `evaluation()` interface, your algorithm gains access to all of MoeaBench's infrastructure (automated runs, seeds, and persistence).
 
-### **10.1. MOP Plugin Support and Calibration**
+### **9.1. MOP Plugin Support and Calibration**
 
 MoeaBench uses a decentralized calibration system for custom MOPs. This allows you to add new problems with full clinical diagnostic support (Radar plots, Q-Scores) without modifying the library's core.
 
@@ -1448,7 +1444,7 @@ class MyProblem(mb.mops.BaseMop):
 
 ---
 
-## **11. Persistence (`save` and `load`)**
+## **10. Persistence (`save` and `load`)**
 
 MoeaBench allows you to persist experiments to disk as compressed ZIP files. 
 
@@ -1499,7 +1495,7 @@ This is complementary to `mb.system.info(show=False)`: the archive records the e
 
 ---
 
-## **12. Data Export (CSV)**
+## **11. Data Export (CSV)**
 
 MoeaBench provides a dedicated **Export API** in the `mb.system` module for raw numerical results.
 
@@ -1529,7 +1525,7 @@ Two additional utilities in `mb.system` are worth knowing:
 
 ---
 
-## **13. References**
+## **12. References**
 
 *   **[API Reference](reference.md)**: Total technical mapping of the library.
 *   **[Pymoo](https://pymoo.org)**: The optimization engine powering built-in algorithms.
@@ -1537,7 +1533,7 @@ Two additional utilities in `mb.system` are worth knowing:
 
 ---
 
-## **16. Architectural Decisions and Engineering Values**
+## **13. Architectural Decisions and Engineering Values**
 
 MoeaBench is built on a set of core engineering values designed to balance scientific rigor with user experience. These decisions, documented formally in `docs/design.md` and `docs/adr/`, ensure that the framework serves as an instrument of insight rather than just a calculation engine.
 
