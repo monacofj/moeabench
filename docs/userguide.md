@@ -60,7 +60,6 @@ cross-platform NSGA-III reference directions, see
     - [Repeated Executions](#repeated-executions)
     - [Multi-Run Aggregation](#multi-run-aggregation)
     - [Joint Universe (`ref`)](#the-ref-argument-defining-the-universe)
-    - [Custom Stop Criteria](#custom-stop-criteria)
 4.  **[Data Architecture and Access Patterns](#4-data-architecture-and-access-patterns)**
     - [Selection Patterns](#example)
     - [Ergonomic Aliases](#ergonomic-aliases-layer-4)
@@ -613,11 +612,8 @@ This keeps the same architectural pattern used throughout the library: compute a
 
 
 
-#### Statistical evidence for topological comparisons
-
-Beyond plotting objective- or decision-space distributions, `mb.stats` can test or quantify their differences. Its comparisons are descriptive or statistical assessments of the sampled distributions, not guarantees of identical Pareto fronts.
-
 #### Statistical comparison of spatial distributions
+
 To assess whether two experiments exhibit similar distributions in the objective or decision space, use the topological comparators. These compare per-axis distributions, not a proof of identical multidimensional fronts:
 
 ```python
@@ -855,11 +851,10 @@ All evaluated final-front points lie within both the nbox and bbox.
 The `Reference` section is present for both implicit self-reference and explicit `ref`. Global/local ND coverage compares the objective-wise extent retained after the locally non-dominated reference sources are merged and filtered globally. Reference expansion compares the selected reference extent with the fronts represented by the final reported row. Both are descriptive diagnostics: they neither repair the reference nor change Hypervolume. Full vectors remain available through `res.diagnostics`.
 
 
-#### Statistical evidence from repeated runs
+#### Statistical comparison of performance
 
 The `mb.stats` performance comparators complement trajectories and summary statistics with non-parametric hypothesis tests and effect-size estimates. Each returns a rich result with `.report()`, allowing the researcher to inspect and reuse the same analysis. Statistical significance provides evidence against a null hypothesis; it does not prove universal algorithmic superiority.
 
-#### Statistical comparison of performance
 To compare two experimental performance distributions using a metric (e.g., Hypervolume):
 
 ```python
