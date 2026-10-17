@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - issue-67-environment-verification
+      - issue-72-topology-marker-trace-alignment
   workflow_dispatch:
 jobs:
   test:
