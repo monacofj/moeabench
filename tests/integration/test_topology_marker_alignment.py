@@ -47,6 +47,9 @@ class _Experiment:
 @pytest.mark.parametrize("explicit", [False, True])
 def test_clinical_markers_follow_source_after_gt_reordering(monkeypatch, mode, explicit):
     exp = _Experiment()
+    # Other integration tests may change the global backend. Force each
+    # requested renderer so static/interactive are really both exercised.
+    monkeypatch.setattr(mb.defaults, "backend", "auto")
     called = []
 
     def marker_scores(source, **kwargs):
