@@ -44,6 +44,9 @@ def topology(
             mode = 'static'
             
     processed_args = []
+    # Keep the source object attached to its plotted values when GT is moved.
+    # Indexing the original positional args after reordering mixes unrelated traces.
+    source_objects = []
     names = []
     trace_modes = [] # Store if we want markers or lines
     gt_flags = []
@@ -226,6 +229,7 @@ def topology(
         
         val = _coerce_plot_array(val)
         processed_args.append(val)
+        source_objects.append(arg)
         names.append(name)
         gt_flags.append(bool(inferred_gt_idx is not None and i == inferred_gt_idx))
         
@@ -248,6 +252,7 @@ def topology(
             gt_idx = gt_positions[0]
             if gt_idx != 0:
                 processed_args.insert(0, processed_args.pop(gt_idx))
+                source_objects.insert(0, source_objects.pop(gt_idx))
                 names.insert(0, names.pop(gt_idx))
                 trace_modes.insert(0, trace_modes.pop(gt_idx))
                 marker_styles.insert(0, marker_styles.pop(gt_idx))
@@ -259,7 +264,10 @@ def topology(
     if markers:
         # Clinical Quality Markers logic (Q-Closeness)
         for i, val in enumerate(processed_args):
-            if trace_modes[i] != 'markers': continue
+            if trace_modes[i] != 'markers' or gt_flags[i]:
+                # The inferred analytical reference is contextual background,
+                # not an empirical cloud needing clinical point classification.
+                continue
             
             # If the user already provided a specific symbol for this trace,
             # we don't overwrite it with semantic quality markers.
@@ -268,7 +276,7 @@ def topology(
                 
             try:
                 # The original source object (carrying context like mop/problem)
-                orig_obj = args[i]
+                orig_obj = source_objects[i]
 
                 # Inject auto_ref if found and not explicitly overridden
                 call_kwargs = kwargs.copy()
@@ -308,6 +316,18 @@ def topology(
                      except: pass
                 
                 if len(q_vals) > 0:
+                    # A per-point clinical annotation must describe THIS trace.
+                    # If the metrology returned a different number of results,
+                    # leaving the trace unclassified is safer than mismapping
+                    # symbols (or silently truncating/reshaping them).
+                    if len(q_vals) != len(val):
+                        warnings.warn(
+                            f"view.topology: clinical markers for trace {names[i]!r} "
+                            f"contain {len(q_vals)} values, expected {len(val)}; "
+                            "using default markers for this trace.",
+                            RuntimeWarning,
+                        )
+                        continue
                     # Audit Report Parity:
                     # Q >= 0.5: Solid Circle
                     # 0.0 <= Q < 0.5: Hollow Circle
