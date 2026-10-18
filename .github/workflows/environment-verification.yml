@@ -26,16 +26,16 @@ jobs:
               exp.run(repeat=3, silent=True)
               exp.save(str(Path("examples") / name))
           PY
-      - name: Full unit, integration and stability suites
-        run: python test.py --deep
-      - name: Environment regression tests
-        run: python -m pytest tests/unit/test_environment_verification.py -q
       - name: Example 13 scientific consistency regression
         run: python -m pytest tests/integration/test_example13_consistency.py -q
       - name: Run example 13 with headless Matplotlib
         env:
           MPLBACKEND: Agg
         run: python examples/example_13.py
+      - name: Full unit, integration and stability suites
+        run: python test.py --deep
+      - name: Environment regression tests
+        run: python -m pytest tests/unit/test_environment_verification.py -q
       - name: Public stability verification
         run: python -c "import moeabench as mb; result = mb.system.verify_stability(); assert result['status'] == 'PASSED', result"
 
