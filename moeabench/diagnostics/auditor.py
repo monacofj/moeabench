@@ -452,6 +452,20 @@ def audit(target: Any,
                              f"Dimension mismatch: P={P.shape[1]}, GT_registry={GT_raw.shape[1]}"
                          )
 
+            # Check whether the frozen Q-score calibration was generated
+            # against this precise reference. Two GTs with the same problem
+            # name and objective count are *not* automatically interchangeable:
+            # a 500-point GT can have a different scale/density from the
+            # registered 10k-point GT. Compare full arrays, not merely M or N.
+            gt_registry = bases.get("_gt_registry", {})
+            baseline_gt = gt_registry.get(f"{mop_name}__M{P.shape[1]}")
+            if baseline_gt is None:
+                baseline_gt = gt_registry.get(mop_name)
+            gt_baseline_compatible = (
+                bool(np.array_equal(GT, np.asarray(baseline_gt)))
+                if baseline_gt is not None else None
+            )
+
             # A. Shared Reference Objects
             U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
             centroids, _ = baselines.get_ref_clusters(GT, c=32, seed=0)
@@ -478,6 +492,7 @@ def audit(target: Any,
             ctx.update({
                 "GT": GT,
                 "gt_source": gt_source,
+                "baseline_gt_compatible": gt_baseline_compatible,
                 "k": K_target,
                 "s_k": s_k,
                 "U_ref": U_ref,
@@ -515,7 +530,26 @@ def audit(target: Any,
                     experiment_name=experiment_name
                 )
             
-            # D. Compute Q-Scores (Engineering)
+            # D. Compute Q-Scores (Engineering).
+            # Physical FAIR measurements are still valid against an explicit
+            # reference, but frozen Q-score anchors calibrated for a different
+            # GT must not be borrowed without warning or recalibration.
+            if gt_baseline_compatible is False:
+                return DiagnosticResult(
+                    q_audit_res=None,
+                    fair_audit_res=fr_res,
+                    status=DiagnosticStatus.MISSING_BASELINE,
+                    description=(
+                        "Clinical Q-scores require calibration for the selected "
+                        "Ground Truth. The registered calibration uses a different "
+                        "reference; supply a matching calibrated baseline or use "
+                        "quality=False for physical FAIR measurements."
+                    ),
+                    reproducibility=r_info,
+                    diagnostic_context=ctx,
+                    experiment_name=experiment_name,
+                )
+
             q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
             q_clo = qscore.q_closeness(f_closeness_val, problem=mop_name, k=K_target)
             q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
