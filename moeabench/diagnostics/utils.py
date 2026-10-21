@@ -110,12 +110,24 @@ def _resolve_diagnostic_context(data: Any, ref: Any = None, s_k: Any = None, **k
         except:
             pass
     
-    # 4. Resolve Resolution Scale (s_k)
+    # 4. Resolve Resolution Scale (s_k).
+    # The resolution is a property of the *selected* GT and the effective
+    # approximation size (ADR 0026 / dissertation Eq. 6.2), not an arbitrary
+    # constant. In particular, the previous default 1.0 silently changed
+    # the scientific meaning of Closeness and of its clinical baselines.
+    #
+    # Honor an explicitly supplied s_k. Otherwise compute a deterministic
+    # FPS-based scale on the actual reference, using the same K policy as the
+    # clinical baselines. Do not trust an unverified MOP-level cached scale
+    # for a possibly different, user-supplied GT.
     if res is None:
-        if mop is not None:
-            res = getattr(mop, 's_fit', getattr(mop, 's_k', 1.0))
+        if gt is None or len(np.asarray(gt)) < 2:
+            res = np.nan  # No meaningful geometric resolution exists.
         else:
-            res = 1.0
+            from .baselines import get_resolution_factor_k, snap_k
+            m = p_final.shape[1] if isinstance(p_final, np.ndarray) and p_final.ndim == 2 else 0
+            effective_k = snap_k(int(k_val or 0), problem=problem_name if m > 3 else None)
+            res = get_resolution_factor_k(np.asarray(gt), effective_k, seed=0)
 
     return {
         'P_final': np.asarray(p_final),
