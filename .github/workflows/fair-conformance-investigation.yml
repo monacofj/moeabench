@@ -101,4 +101,19 @@ jobs:
               print(key, val)
               assert np.isfinite(val) and 0 <= val <= 1, (key, val)
           print("Closeness physical:", float(report.fr.metrics["CLOSENESS"].value))
+          calibration = context.get("normalization")
+          if calibration is not None:
+              import matplotlib
+              matplotlib.use("Agg")
+              from matplotlib import pyplot as plt
+              visual_gt = GT * (calibration["nadir"] - calibration["ideal"]) + calibration["ideal"]
+              plot = mb.view.topology(
+                  exp, gt=visual_gt, markers=True, mode="static", show=False,
+              )
+              np.testing.assert_allclose(plot.vet_pts[0], visual_gt)
+              np.testing.assert_allclose(plot.vet_pts[1], physical_P)
+              assert plot.marker_styles[1] is not None, "Clinical markers were silently dropped"
+              assert len(plot.marker_styles[1]["symbol"]) == len(physical_P)
+              print("Clinical markers assigned:", len(plot.marker_styles[1]["symbol"]))
+              plt.close("all")
           PY
