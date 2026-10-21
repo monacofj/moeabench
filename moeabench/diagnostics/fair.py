@@ -188,13 +188,20 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     # 3. Apply Plausible Ideal Correction (Residue Subtraction)
     from . import baselines as base
     ideal_res = 0.0
-    try:
-        if problem_name and k:
+    if problem_name and problem_name != "Unknown" and k:
+        try:
             b_data = base.get_baseline_data(problem_name, k, "closeness")
-            ideal_res = b_data.get("ideal_res", 0.0)
-    except:
-        pass
-    
+            # Some historical baselines explicitly predate the residual
+            # correction, for which an uncorrected physical measurement is
+            # still meaningful. Missing *records* are handled separately.
+            ideal_res = float(b_data.get("ideal_res", 0.0))
+        except base.UndefinedBaselineError:
+            # The physical statistic remains available without correction;
+            # the quality layer must fail closed if calibration is absent.
+            pass
+    if not np.isfinite(ideal_res) or ideal_res < 0:
+        raise ValueError("Invalid ideal_res calibration: must be finite and nonnegative")
+
     u_vals = np.maximum(0.0, u_vals_raw - ideal_res)
     f_val = float(np.median(u_vals))
     
