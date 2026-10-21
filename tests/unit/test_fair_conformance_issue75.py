@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from scipy.spatial.distance import cdist
 
-from moeabench.diagnostics import auditor, baselines
+from moeabench.diagnostics import auditor, baselines, fair
 from moeabench.diagnostics.enums import DiagnosticStatus
 from moeabench.diagnostics.utils import _resolve_diagnostic_context
 
@@ -195,3 +195,30 @@ def test_registered_calibration_transform_applies_to_final_and_initial(monkeypat
     np.testing.assert_allclose(resolved["P_initial"], initial_normalized)
     np.testing.assert_array_equal(resolved["GT"], gt)
     assert resolved["normalization"]["method"] == "calibration_ideal_nadir"
+
+
+def test_closeness_uses_nonzero_calibrated_residue(monkeypatch):
+    """Verify a nonzero ideal_res actually influences both FR scalar and points."""
+    gt = _line(41)
+    population = gt[::4] + np.array([0.03, 0.03])
+    scale, residue = 0.15, 0.20
+    monkeypatch.setattr(
+        baselines, "get_baseline_data",
+        lambda problem, k, metric: {"ideal_res": residue},
+    )
+    distances = cdist(population, gt).min(axis=1)
+    expected_points = np.maximum(0.0, distances / scale - residue)
+    result = fair.closeness(population, ref=gt, s_k=scale, problem="Toy", k=len(population))
+    np.testing.assert_allclose(result.raw_data, expected_points, atol=1e-12)
+    assert float(result.value) == pytest.approx(float(np.median(expected_points)))
+
+
+def test_closeness_rejects_invalid_calibrated_residue(monkeypatch):
+    """Malformed or negative residue must not be treated as zero silently."""
+    gt = _line(41)
+    monkeypatch.setattr(
+        baselines, "get_baseline_data",
+        lambda problem, k, metric: {"ideal_res": -0.1},
+    )
+    with pytest.raises(ValueError, match="ideal_res"):
+        fair.closeness(gt[::4], ref=gt, s_k=0.15, problem="Toy", k=11)
