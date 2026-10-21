@@ -42,9 +42,16 @@ def main():
         )
     audit.quality.report(full=True)
 
-    # 3. Draw exactly the reference used by the audit, not a new sampling.
-    # The gt keyword adds one reference trace; no second run is needed.
-    gt = audit.diagnostic_context["GT"]
+    # 3. Plot in the experiment's *physical* coordinates, reversing the
+    # exact calibration transform for the registered GT. The clinical marker
+    # layer can still evaluate against the calibrated coordinate system.
+    # Never plot raw P next to normalized GT: their geometry would be false.
+    ctx = audit.diagnostic_context
+    gt = ctx["GT"]
+    normalization = ctx.get("normalization")
+    if normalization is not None:
+        ideal, nadir = normalization["ideal"], normalization["nadir"]
+        gt = gt * (nadir - ideal) + ideal
     mb.view.topology(exp, gt=gt, markers=True)
 
 
