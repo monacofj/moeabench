@@ -293,21 +293,25 @@ def topology(
                     if isinstance(pop_k, int) and pop_k > 0:
                         call_kwargs['k'] = pop_k
                 
-                # Clinical Sensitivity Adjustment:
-                # DTLZ1 global baseline is very large (~2.0), which makes 
-                # points at 0.8 (visurally far) look like Solids.
-                # We apply a didactic tightening (s_k=0.02) for better visual feedback.
-                if 'problem' in call_kwargs:
-                    pname = str(call_kwargs['problem']).upper()
-                elif hasattr(orig_obj, 'mop'):
-                    pname = str(orig_obj.mop.name).upper()
-                else: pname = ""
-                
-                if "DTLZ1" in pname and 's_k' not in call_kwargs:
-                    # DTLZ1 global baseline is very large (~2.0), making small errors look like Solids.
-                    # We use a very strict 0.02 factor to match human visual perception in [0, 1] scale.
-                    call_kwargs['s_k'] = 0.02 
-                
+                # A normalized offline GT may have been mapped back to
+                # physical objective coordinates for display. When the plotted
+                # reference is exactly that inverse transform, classify the
+                # points against the canonical *normalized* GT, not against
+                # the raw plot coordinates. Never insert an arbitrary visual
+                # s_k factor: marker classes are FAIR measurements, not art.
+                if hasattr(orig_obj, 'mop') or (
+                    hasattr(orig_obj, 'source') and hasattr(orig_obj.source, 'mop')
+                ):
+                    from ..diagnostics.utils import _resolve_diagnostic_context
+                    clinical_ctx = _resolve_diagnostic_context(orig_obj)
+                    normalization = clinical_ctx.get('normalization')
+                    if normalization is not None and auto_ref is not None:
+                        ideal = normalization['ideal']
+                        nadir = normalization['nadir']
+                        gt_physical = clinical_ctx['GT'] * (nadir - ideal) + ideal
+                        if np.array_equal(np.asarray(auto_ref), gt_physical):
+                            call_kwargs['ref'] = clinical_ctx['GT']
+
                 q_vals = q_closeness_points(orig_obj, **call_kwargs)
                 
                 # Fallback, if orig_obj failed (e.g. Population lacking context) but 'val' is a valid array
