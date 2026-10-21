@@ -5,8 +5,8 @@
 """Issue #75: independent probes of FAIR's GT and resolution contracts.
 
 These tests intentionally separate a mathematical oracle from the currently
-broken production paths. Known violations are strict XFAILs while the
-investigation is in progress; remove their marks when implementation is fixed.
+broken production paths. The two original RED reproductions now check their fixed contracts
+directly; a regression must once again fail rather than be accepted as XFAIL.
 The tests are small and never run an MOEA or regenerate baseline artifacts.
 """
 
@@ -53,7 +53,6 @@ def test_independent_resolution_oracle_has_non_unit_scale():
     assert 0.0 < expected < 1.0
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#75: resolver incorrectly defaults to s_K=1.0")
 def test_resolver_computes_documented_resolution_from_explicit_gt():
     """No MOP override: s_K must come from FPS on the selected GT at K."""
     gt = _line()
@@ -64,7 +63,6 @@ def test_resolver_computes_documented_resolution_from_explicit_gt():
     assert np.isclose(actual, expected, rtol=1e-12, atol=1e-12)
 
 
-@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#75: auditor replaces explicit GT with registered GT")
 def test_audit_preserves_explicit_gt_when_registry_has_another_reference(monkeypatch):
     """Stop the real audit at U_K construction and inspect its actual input GT."""
     explicit_gt = _line(21)
@@ -105,3 +103,25 @@ def test_fps_subset_cannot_estimate_off_sample_discretization_residue():
     analytic_midpoints = (gt[:-1] + gt[1:]) / 2.0
     independent_dist = cdist(analytic_midpoints, gt).min(axis=1)
     assert np.median(independent_dist) > 0.0
+
+
+def test_explicit_resolution_override_remains_authoritative():
+    """A user-supplied numerical scale is an intentional context override."""
+    gt = _line(41)
+    population = gt[::4]
+    resolved = _resolve_diagnostic_context(population, ref=gt, s_k=0.375)
+    assert resolved["s_k"] == pytest.approx(0.375)
+
+
+def test_audit_explicit_gt_and_scale_are_visible_in_result_context():
+    """No hidden replacement or rescaling is allowed in FAIR-only mode."""
+    gt = _line(41)
+    population = gt[::4]
+    result = auditor.audit(
+        population, ground_truth=gt, s_k=0.375, quality=False,
+    )
+    context = result.diagnostic_context
+    np.testing.assert_array_equal(context["GT"], gt)
+    assert context["gt_source"] == "explicit"
+    assert context["s_k"] == pytest.approx(0.375)
+    assert context["k"] == len(population)
