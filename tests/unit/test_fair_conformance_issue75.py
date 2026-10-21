@@ -15,6 +15,7 @@ import pytest
 from scipy.spatial.distance import cdist
 
 from moeabench.diagnostics import auditor, baselines
+from moeabench.diagnostics.enums import DiagnosticStatus
 from moeabench.diagnostics.utils import _resolve_diagnostic_context
 
 
@@ -125,3 +126,32 @@ def test_audit_explicit_gt_and_scale_are_visible_in_result_context():
     assert context["gt_source"] == "explicit"
     assert context["s_k"] == pytest.approx(0.375)
     assert context["k"] == len(population)
+
+
+def test_q_scores_fail_closed_for_explicit_gt_with_incompatible_registry(monkeypatch):
+    """An otherwise valid physical audit must not borrow a different GT's Q baselines."""
+    explicit_gt = _line(41)
+    registered_gt = explicit_gt * 2.0
+    population = explicit_gt[::4]
+
+    def offline_baselines(**kwargs):
+        return {
+            "_gt_registry": {"Unknown__M2": registered_gt},
+            "problems": {},
+            "version": "test",
+        }
+
+    monkeypatch.setattr(baselines, "load_offline_baselines", offline_baselines)
+
+    result = auditor.audit(population, ground_truth=explicit_gt)
+    assert result.status == DiagnosticStatus.MISSING_BASELINE
+    assert result.quality is None
+    assert result.fr is not None
+    assert set(result.fr.metrics) == {
+        "CLOSENESS", "COVERAGE", "GAP", "REGULARITY", "BALANCE", "HEADWAY"
+    }
+    assert result.diagnostic_context["baseline_gt_compatible"] is False
+
+    physical_only = auditor.audit(population, ground_truth=explicit_gt, quality=False)
+    assert physical_only.fr is not None
+    assert physical_only.quality is None
