@@ -20,7 +20,7 @@ def test_example13_audit_and_topology_share_run_and_reference(monkeypatch):
     exp = SimpleNamespace(run=Mock(), optimal_front=Mock(return_value=gt))
     mop, moea = object(), object()
     report = Mock()
-    audit = Mock(return_value=SimpleNamespace(quality=SimpleNamespace(report=report)))
+    audit = Mock(return_value=SimpleNamespace(quality=SimpleNamespace(report=report), diagnostic_context={"GT": gt}))
     plot = Mock()
     constructor = Mock(return_value=exp)
     mop_factory = Mock(return_value=mop)
@@ -44,7 +44,7 @@ def test_example13_audit_and_topology_share_run_and_reference(monkeypatch):
     assert exp.mop is mop
     assert exp.moea is moea
     exp.run.assert_called_once_with(seed=1)
-    exp.optimal_front.assert_called_once_with()
-    audit.assert_called_once_with(exp, ground_truth=gt)
+    exp.optimal_front.assert_not_called()
+    audit.assert_called_once_with(exp)
     report.assert_called_once_with(full=True)
     plot.assert_called_once_with(exp, gt=gt, markers=True)
