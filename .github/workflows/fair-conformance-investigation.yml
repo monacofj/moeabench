@@ -6,6 +6,11 @@ on:
   push:
     branches:
       - fix/75-fair-conformance
+    paths:
+      - 'moeabench/diagnostics/**'
+      - 'tests/unit/test_fair_conformance_issue75.py'
+      - 'tests/integration/test_example13_consistency.py'
+      - '.github/workflows/fair-conformance-investigation.yml'
   workflow_dispatch:
 
 jobs:
