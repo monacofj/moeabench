@@ -259,3 +259,12 @@ Record actual pass/XFAIL/XPASS/failure output here. Only then begin narrow produ
 - **EXPECTED DEVELOPMENT FAILURE — CI runs [39658692509](https://github.com/monacofj/moeabench/actions/runs/39658692509) and [39658769457](https://github.com/monacofj/moeabench/actions/runs/39658769457):** the two earlier tests were still marked `xfail(strict=True)` and **XPASS(strict)** after the code defects were corrected, so those workflows correctly failed (`2 failed, 2 passed`). This is evidence of changed behavior, but not evidence of a completed regression pass. The XFAIL decorators were removed in the subsequent test commit.
 - **TEST EXPANSION — Explicit API overrides:** added unit assertions for explicit `s_k` and for observing the effective GT/source/scale in FAIR-only audit metadata.
 - **VERIFICATION IN PROGRESS:** a new branch CI build includes the corrected tests and runs the full unit and basic integration suites. Scientific Q-score/GT-baseline compatibility is **still open** and is not asserted to be solved by these two plumbing changes.
+
+
+### 2026-10-21 — Regression suite run and CI fixture failure
+
+- **PASS — Corrected conformance tests:** [Actions run 39658837761](https://github.com/monacofj/moeabench/actions/runs/39658837761) passed once the obsolete XFAIL decorators had been removed and explicit overrides tested.
+- **PASS — Unit regression:** [Actions run 39658876164](https://github.com/monacofj/moeabench/actions/runs/39658876164) passed `276/276` unit tests after the GT/s_K plumbing changes.
+- **FAIL — Integration suite environment:** the same run failed with `8 passed, 15 errors`. All 15 errors came from a missing required integration fixture `examples/example_full_exp1.zip`, NOT from a test assertion about FAIR metrics. This is an environment/preparation failure and does not certify integration success or a product regression.
+- **CI FIX — Restored fixture preparation:** the branch's temporary GitHub Actions workflow now generates `example_full_exp1.zip` and `example_full_exp2.zip` using short DTLZ2 NSGA-II/NSGA-III runs, following the established repository workflow `.github/workflows/environment-verification.yml`, before executing the basic integration suite.
+- **STILL OPEN — End-to-end Q-score baseline compatibility and full Example 13:** numerical validity is not yet certified; GT precedence and scale are only the first layer of the audit.
