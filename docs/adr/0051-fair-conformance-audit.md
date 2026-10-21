@@ -180,3 +180,13 @@ Ao final, teremos algo mais significativo do que um Example 13 funcionando: tere
 ### Rules for subsequent log entries
 
 Record each attempt with date, exact command or code entry point, environment, expected vs observed values, outcome (**PASS**, **FAIL**, **BLOCKED**, **INCONCLUSIVE**), explanation, and commit/PR link if any. Retain failed attempts as evidence. Update this ADR on the branch after each meaningful investigation or modification. Mark the ADR **Accepted** only after issue acceptance criteria and regressions are met.
+
+
+### 2026-10-21 — Reproduction probes committed and independent numerical check
+
+- **SUCCESS — Test cases added:** `tests/unit/test_fair_conformance_issue75.py` introduces an independent FPS-resolution oracle, strict expected failures (XFAIL) for the implicit `s_K=1.0` fallback and GT-registry override, and a positive mathematical demonstration of the zero-by-construction subset residue. XFAIL indicates a known defect, **not** validation of correct behavior. The tests have been committed but have **not been executed against an installed MoeaBench package**.
+- **PASS — Independent numerical check (outside MoeaBench):** Python/NumPy/SciPy direct calculation on `GT = [(x, 1-x) for x in np.linspace(0, 1, 41)]`, seed-zero FPS, `K=11`: median nearest-neighbor spacing `s_K=0.1767766952966369`, distinct from the currently configured implicit fallback `1.0`.
+- **PASS — Independent numerical check:** For `K=10`, seed-999 FPS subset of the *same* `GT`, the median distance to `GT` is exactly `0.0`. On independent midpoints of this same analytic line, the median nearest-GT distance is `0.017677669529663664`. This confirms the claimed mechanism cannot measure an off-sample residue.
+- **LIMITATION — Not a full application reproduction:** these numerical checks ran as small stand-alone calculations; they are not equivalent to running `example_13.py` nor the MoeaBench pytest suite. No real DTLZ1 Q-score has been recalculated yet.
+- **ENVIRONMENT:** local isolated Python had NumPy `2.3.5`, SciPy `1.17.0`, pytest `9.0.2`; pymoo is not installed and the repository could not be cloned in that runtime (network/DNS unavailable). Current testing therefore remains **BLOCKED** until an environment containing MoeaBench and its dependencies is available. Do not report the XFAIL tests as executed.
+
