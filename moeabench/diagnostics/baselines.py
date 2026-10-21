@@ -248,6 +248,30 @@ def load_offline_baselines(target_m: Optional[int] = None) -> Dict[str, Any]:
     _CACHE_DIRTY = False
     return _CACHE
 
+def get_baseline_data(problem: str, k: int, metric: str, target_m: Optional[int] = None) -> Dict[str, Any]:
+    """Return the full calibrated record for one physical metric.
+
+    Closeness needs not only the ECDF anchors but also the favorable finite-GT
+    residue (ideal_res). This function uses the same K fallback tolerance as
+    get_baseline_values(), without fabricating a record for an unknown regime.
+    """
+    bases = load_offline_baselines(target_m=target_m)
+    pdata = bases.get("problems", {}).get(problem, {})
+    key = str(k)
+    if key not in pdata:
+        ks = [int(x) for x in pdata if x.isdigit()]
+        if not ks:
+            raise UndefinedBaselineError(f"Missing baseline for {problem}, K={k}, {metric}")
+        nearest = min(ks, key=lambda x: abs(x - k))
+        if abs(nearest - k) / max(1, k) > 0.1:
+            raise UndefinedBaselineError(f"Missing compatible baseline for {problem}, K={k}, {metric}")
+        key = str(nearest)
+    record = pdata[key].get(metric)
+    if not isinstance(record, dict):
+        raise UndefinedBaselineError(f"Missing baseline for {problem}, K={k}, {metric}")
+    return record
+
+
 def get_baseline_values(problem: str, k: int, metric: str, target_m: Optional[int] = None) -> Tuple[float, float]:
     """
     Retrieves (uni50, rand50) for a given (problem, k, metric).
