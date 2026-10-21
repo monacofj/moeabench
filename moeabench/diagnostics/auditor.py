@@ -376,7 +376,8 @@ def audit(target: Any,
     ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
     P = ctx['P_final']
     GT = ctx['GT']
-    s_k_mop = ctx['s_k']
+    # Only an explicit caller override can replace the GT-derived s_K.
+    s_k_override = kwargs.get('s_k', None)
     mop_name = ctx['problem']
     K_raw = ctx['k']
     experiment_name = getattr(target, 'name', None) or getattr(getattr(target, 'source', None), 'name', None)
@@ -427,9 +428,13 @@ def audit(target: Any,
         try:
             bases = baselines.load_offline_baselines(target_m=target_m)
             
-            # Smart GT resolution: allow registry to provide the canonical 10k-point reference
-            # if the dimension matches. This is necessary for numerical consistency across versions.
-            if "_gt_registry" in bases:
+            # The registered GT belongs to the frozen clinical calibration.
+            # It is the preferred *automatic* reference, but a caller-supplied
+            # ground_truth must never be silently overwritten (ADR 0048).
+            # Baseline compatibility with a different explicit GT is assessed
+            # separately, before interpreting any clinical Q-score.
+            gt_source = "explicit" if ground_truth is not None else "inferred"
+            if ground_truth is None and "_gt_registry" in bases:
                  gt_registry = bases["_gt_registry"]
                  gt_key = f"{mop_name}__M{P.shape[1]}"
                  GT_raw = None
@@ -440,6 +445,7 @@ def audit(target: Any,
                  if GT_raw is not None:
                      if GT_raw.shape[1] == P.shape[1]:
                          GT = GT_raw
+                         gt_source = "registered"
                      else:
                          # Force baseline missing if dimensions don't match
                          raise baselines.UndefinedBaselineError(
@@ -457,13 +463,21 @@ def audit(target: Any,
             hist_ref /= np.sum(hist_ref)
             
             # B. Normalization Resolution
-            # Use s_k from mop if available, otherwise calculate from GT
-            s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+            # Compute s_K from the *final* selected GT. The resolver may have
+            # seen a different automatically inferred reference before the
+            # calibrated registry was consulted, so its early scale cannot be
+            # reused. Only an explicit s_k argument intentionally overrides it.
+            s_k = (
+                float(s_k_override)
+                if s_k_override is not None and float(s_k_override) > 1e-12
+                else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+            )
 
             # Expose the exact canonical context used by the audit so that the
             # public single-metric API can reuse it (including history data).
             ctx.update({
                 "GT": GT,
+                "gt_source": gt_source,
                 "k": K_target,
                 "s_k": s_k,
                 "U_ref": U_ref,
