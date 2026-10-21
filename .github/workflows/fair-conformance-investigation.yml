@@ -1,0 +1,27 @@
+# Temporary branch-only reproduction workflow for MoeaBench issue #75.
+# Remove this workflow before merging once tests enter the normal suite.
+name: FAIR conformance investigation (#75)
+
+on:
+  push:
+    branches:
+      - fix/75-fair-conformance
+  workflow_dispatch:
+
+jobs:
+  diagnostic-probes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Run issue 75 independent reproduction probes
+        run: python -m pytest tests/unit/test_fair_conformance_issue75.py -rx -q
+      - name: Preserve Example 13 interface contract
+        run: python -m pytest tests/integration/test_example13_consistency.py -q
