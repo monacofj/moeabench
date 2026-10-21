@@ -224,3 +224,10 @@ python -m pytest tests/integration/test_example13_consistency.py -q
 ```
 
 Record actual pass/XFAIL/XPASS/failure output here. Only then begin narrow production fixes. Regenerate frozen baseline artifacts **only if** required by a documented reference/calibration change, and separately verify that the new values follow an independent oracle.
+
+
+### 2026-10-21 — Targeted CI initiated
+
+- **SUCCESS — Draft review opened:** [PR #76](https://github.com/monacofj/moeabench/pull/76) tracks the investigation, tests, and this ADR without proposing an unvalidated production patch.
+- **SUCCESS — CI workflow created:** added temporary branch-only `.github/workflows/fair-conformance-investigation.yml` to execute the issue-specific unit probes and the existing Example 13 integration contract against an installed MoeaBench package, using Python 3.14.4. **This temporary workflow must be removed from the final PR** after tests are integrated in the ordinary test suite.
+- **IN PROGRESS — First remote CI run:** [Actions run 39656387447](https://github.com/monacofj/moeabench/actions/runs/39656387447) was observed with state `in_progress` (not yet a PASS or FAIL). An open PR is not itself evidence of numerical correctness.
