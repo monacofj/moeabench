@@ -155,3 +155,43 @@ def test_q_scores_fail_closed_for_explicit_gt_with_incompatible_registry(monkeyp
     physical_only = auditor.audit(population, ground_truth=explicit_gt, quality=False)
     assert physical_only.fr is not None
     assert physical_only.quality is None
+
+
+def test_registered_calibration_transform_applies_to_final_and_initial(monkeypatch):
+    """The same ideal/nadir transform must be applied to both generations."""
+    from types import SimpleNamespace
+    from moeabench.diagnostics import utils
+
+    gt = _line(41)
+    ideal = np.array([1.0, 2.0])
+    nadir = np.array([3.0, 6.0])
+    span = nadir - ideal
+    final_normalized = gt[::4]
+    initial_normalized = final_normalized + 0.3
+
+    class ToyExperiment:
+        def __init__(self):
+            self.mop = SimpleNamespace(name="Toy", pf=lambda: gt * span + ideal)
+
+        def front(self, generation):
+            return (final_normalized if generation == -1 else initial_normalized) * span + ideal
+
+        def pop(self, generation):
+            return SimpleNamespace(
+                objectives=(final_normalized if generation == -1 else initial_normalized) * span + ideal
+            )
+
+    def offline_baselines(**kwargs):
+        return {"_gt_registry": {"Toy__M2": gt}, "problems": {}}
+
+    monkeypatch.setattr(baselines, "load_offline_baselines", offline_baselines)
+    monkeypatch.setattr(
+        utils, "_calibration_coordinates",
+        lambda selected_gt, problem: (ideal, nadir)
+        if problem == "Toy" and np.array_equal(selected_gt, gt) else None,
+    )
+    resolved = _resolve_diagnostic_context(ToyExperiment())
+    np.testing.assert_allclose(resolved["P_final"], final_normalized)
+    np.testing.assert_allclose(resolved["P_initial"], initial_normalized)
+    np.testing.assert_array_equal(resolved["GT"], gt)
+    assert resolved["normalization"]["method"] == "calibration_ideal_nadir"
