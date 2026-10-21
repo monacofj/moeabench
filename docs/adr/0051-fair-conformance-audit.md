@@ -190,3 +190,37 @@ Record each attempt with date, exact command or code entry point, environment, e
 - **LIMITATION — Not a full application reproduction:** these numerical checks ran as small stand-alone calculations; they are not equivalent to running `example_13.py` nor the MoeaBench pytest suite. No real DTLZ1 Q-score has been recalculated yet.
 - **ENVIRONMENT:** local isolated Python had NumPy `2.3.5`, SciPy `1.17.0`, pytest `9.0.2`; pymoo is not installed and the repository could not be cloned in that runtime (network/DNS unavailable). Current testing therefore remains **BLOCKED** until an environment containing MoeaBench and its dependencies is available. Do not report the XFAIL tests as executed.
 
+
+
+### 2026-10-21 — Normative cross-check against the dissertation
+
+- **SUCCESS — Normative source recovered:** inspected `monografia-nova.pdf`, Chapter 6, PDF pages 114–118, directly rather than relying only on existing ADRs or on earlier discussion. The dissertation makes the physical definitions explicit (equations 6.1–6.8) and gives the Q-score ECDF formula (6.9).
+- **CONFIRMED — Mathematical contracts:** the dissertation's `s_K` is the median nearest-neighbor distance in an FPS subset `U_K`; Closeness uses median `P→GT` divided by `s_K` minus `epsilon_ideal`; Coverage mean `GT→P`; Gap 95th percentile `GT→P`; Regularity Wasserstein-1 of NN-spacing distributions; Balance **square root** of Jensen–Shannon divergence of regional occupancy histograms; Headway ratio of final and initial GD95. In the inspected code, the `jensenshannon(...,base=2)` implementation for Balance is therefore **correct**; do not replace it with unrooted JS divergence.
+- **IMPORTANT QUALIFICATION — epsilon_ideal:** the dissertation explicitly allows `epsilon_ideal=0` in a regime where the discretization residue is zero. Hence zero by itself does not prove a bug. The **defect is the purported estimator**, which is structurally forced to zero even in settings for which an independent ideal reference would have nonzero distance. Any fix must distinguish legitimate exact-zero residual from a missing/invalid estimate.
+- **DISCOVERED SPECIFICATION TENSION:** ADR 0037 describes a fresh analytical ideal front; `docs/fair_metrics.md` describes ideal draws from FPS subsets of the same finite GT. Both cannot independently support a positive off-sample residue. Before altering calibration, decide which definition governs and document the method for independently sampling ideal points.
+- **CONFIRMED — Q-score definitions in dissertation:** Coverage, Gap, Regularity, Balance use a calibrated ECDF mapping between favorable and unfavorable references; Closeness uses Wasserstein against a half-normal perturbation baseline; Headway uses a log-linear mapping. These mappings will be tested separately, not assumed interchangeable.
+- **BLOCKED — Automated suite:** no GitHub commit statuses were reported for the draft PR head at inspection time, and the current configured GitHub workflow is specific to branch `issue-67-environment-verification` or manual dispatch. This is not a successful CI run.
+
+### Provisional normative conformance matrix (2026-10-21)
+
+| Physical metric | Dissertation definition | Units/reference | Current status after source audit |
+|---|---|---|---|
+| Closeness | `max(0, median(P→GT)/s_K − epsilon_ideal)` | FPS resolution units; independent finite-GT residue | **Broken reference/resolution plumbing; ideal residue estimator invalid for off-sample residue** |
+| Coverage | `mean(GT→P)` | Objective-space Euclidean distance | Formula matches code; common GT/scale still needs verification |
+| Gap | `percentile95(GT→P)` | Objective-space Euclidean distance | Formula matches code; common GT/scale still needs verification |
+| Regularity | `W1(NN(P),NN(U_K))` | Wasserstein distance over objective-space NN separations | Formula matches code; `U_K`/GT provenance needs verification |
+| Balance | `sqrt(JS(H_P,H_UK))` | Dimensionless distance of regional occupancy histograms | SciPy `jensenshannon` formula matches thesis; reference centroids/histogram provenance needs verification |
+| Headway | `GD95(P_final→GT)/GD95(P_initial→GT)` | Dimensionless longitudinal ratio | Formula matches ADR 0049; must retest under corrected GT selection and preserve undefined-initial handling |
+
+A formula-level match is **not** an end-to-end correctness certification. The physical reference and coordinate system can invalidate a correctly implemented formula.
+
+### Next execution gate
+
+On an installed project environment, run:
+
+```bash
+python -m pytest tests/unit/test_fair_conformance_issue75.py -rx -q
+python -m pytest tests/integration/test_example13_consistency.py -q
+```
+
+Record actual pass/XFAIL/XPASS/failure output here. Only then begin narrow production fixes. Regenerate frozen baseline artifacts **only if** required by a documented reference/calibration change, and separately verify that the new values follow an independent oracle.
