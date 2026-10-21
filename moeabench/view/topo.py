@@ -299,9 +299,11 @@ def topology(
                 # points against the canonical *normalized* GT, not against
                 # the raw plot coordinates. Never insert an arbitrary visual
                 # s_k factor: marker classes are FAIR measurements, not art.
-                if hasattr(orig_obj, 'mop') or (
-                    hasattr(orig_obj, 'source') and hasattr(orig_obj.source, 'mop')
-                ):
+                # Only true Experiment/Run objects expose pop() and thus
+                # support the complete longitudinal diagnostic resolver.
+                # Lightweight plot-source objects may have mop metadata but
+                # no population interface; marker scoring still works for them.
+                if callable(getattr(orig_obj, 'pop', None)):
                     from ..diagnostics.utils import _resolve_diagnostic_context
                     clinical_ctx = _resolve_diagnostic_context(orig_obj)
                     normalization = clinical_ctx.get('normalization')
