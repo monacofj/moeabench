@@ -51,3 +51,33 @@ jobs:
         run: python test.py --unit
       - name: Basic integration regressions
         run: python test.py --integration --basic
+      - name: Real Example 13 FAIR pipeline and scale diagnostics
+        run: |
+          python - <<'PY'
+          import numpy as np
+          import moeabench as mb
+          from moeabench.diagnostics.baselines import get_resolution_factor_k
+
+          exp = mb.experiment()
+          exp.mop = mb.mops.DTLZ1(M=3)
+          exp.moea = mb.moeas.NSGA2(population=100, generations=280)
+          exp.run(seed=1, silent=True)
+
+          report = mb.clinic.audit(exp)
+          context = report.diagnostic_context or {}
+          P, GT = context["P_final"], context["GT"]
+          print("reference_source:", context.get("gt_source"))
+          print("P shape:", P.shape, "GT shape:", GT.shape)
+          print("P median(sum objectives):", float(np.median(P.sum(axis=1))))
+          print("GT median(sum objectives):", float(np.median(GT.sum(axis=1))))
+          print("effective K:", context["k"], "s_K:", context["s_k"])
+          independent = get_resolution_factor_k(GT, context["k"], seed=0)
+          assert np.isclose(context["s_k"], independent), (context["s_k"], independent)
+          assert context.get("gt_source") == "registered"
+          assert report.quality is not None, report.description
+          for key, item in report.quality.scores.items():
+              val = float(item.value)
+              print(key, val)
+              assert np.isfinite(val) and 0 <= val <= 1, (key, val)
+          print("Closeness physical:", float(report.fr.metrics["CLOSENESS"].value))
+          PY
