@@ -53,7 +53,7 @@ def test_independent_resolution_oracle_has_non_unit_scale():
     assert 0.0 < expected < 1.0
 
 
-@pytest.mark.xfail(strict=True, reason="#75: resolver incorrectly defaults to s_K=1.0")
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#75: resolver incorrectly defaults to s_K=1.0")
 def test_resolver_computes_documented_resolution_from_explicit_gt():
     """No MOP override: s_K must come from FPS on the selected GT at K."""
     gt = _line()
@@ -64,7 +64,7 @@ def test_resolver_computes_documented_resolution_from_explicit_gt():
     assert np.isclose(actual, expected, rtol=1e-12, atol=1e-12)
 
 
-@pytest.mark.xfail(strict=True, reason="#75: auditor replaces explicit GT with registered GT")
+@pytest.mark.xfail(strict=True, raises=AssertionError, reason="#75: auditor replaces explicit GT with registered GT")
 def test_audit_preserves_explicit_gt_when_registry_has_another_reference(monkeypatch):
     """Stop the real audit at U_K construction and inspect its actual input GT."""
     explicit_gt = _line(21)
