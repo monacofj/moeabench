@@ -30,3 +30,7 @@ jobs:
         run: python -m pytest tests/unit/test_fair_conformance_issue75.py -rx -q
       - name: Preserve Example 13 interface contract
         run: python -m pytest tests/integration/test_example13_consistency.py -q
+      - name: Full unit regressions
+        run: python test.py --unit
+      - name: Basic integration regressions
+        run: python test.py --integration --basic
