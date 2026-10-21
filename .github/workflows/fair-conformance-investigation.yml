@@ -70,6 +70,20 @@ jobs:
           print("P shape:", P.shape, "GT shape:", GT.shape)
           print("P median(sum objectives):", float(np.median(P.sum(axis=1))))
           print("GT median(sum objectives):", float(np.median(GT.sum(axis=1))))
+          from pathlib import Path
+          pkg_path = (Path(mb.__file__).resolve().parent /
+                      "diagnostics/resources/references/DTLZ1/calibration_package.npz")
+          print("calibration package:", str(pkg_path), "exists:", pkg_path.exists())
+          if pkg_path.exists():
+              with np.load(pkg_path) as pkg:
+                  ideal, nadir = pkg["ideal"], pkg["nadir"]
+                  print("package ideal:", ideal, "nadir:", nadir)
+                  print("package GT equals registry:", np.array_equal(pkg["gt_norm"], GT))
+                  p_cal = (P - ideal) / np.where(nadir - ideal == 0, 1.0, nadir - ideal)
+                  print("P normalized median(sum objectives):", float(np.median(p_cal.sum(axis=1))))
+                  from scipy.spatial import cKDTree
+                  print("median P-to-GT raw:", float(np.median(cKDTree(GT).query(P)[0])))
+                  print("median P-to-GT normalized:", float(np.median(cKDTree(GT).query(p_cal)[0])))
           print("effective K:", context["k"], "s_K:", context["s_k"])
           independent = get_resolution_factor_k(GT, context["k"], seed=0)
           assert np.isclose(context["s_k"], independent), (context["s_k"], independent)
