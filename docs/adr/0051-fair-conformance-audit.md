@@ -231,3 +231,14 @@ Record actual pass/XFAIL/XPASS/failure output here. Only then begin narrow produ
 - **SUCCESS — Draft review opened:** [PR #76](https://github.com/monacofj/moeabench/pull/76) tracks the investigation, tests, and this ADR without proposing an unvalidated production patch.
 - **SUCCESS — CI workflow created:** added temporary branch-only `.github/workflows/fair-conformance-investigation.yml` to execute the issue-specific unit probes and the existing Example 13 integration contract against an installed MoeaBench package, using Python 3.14.4. **This temporary workflow must be removed from the final PR** after tests are integrated in the ordinary test suite.
 - **IN PROGRESS — First remote CI run:** [Actions run 39656387447](https://github.com/monacofj/moeabench/actions/runs/39656387447) was observed with state `in_progress` (not yet a PASS or FAIL). An open PR is not itself evidence of numerical correctness.
+
+
+### 2026-10-21 — First real CI reproduction (confirmed)
+
+- **PASS — GitHub Actions environment:** [run 39656387447](https://github.com/monacofj/moeabench/actions/runs/39656387447) completed with conclusion `success`; installed MoeaBench `0.16.1` and dependencies in Python `3.14.4`.
+- **PASS — Mathematical oracle tests:** `2 passed` (independent non-unit FPS resolution and proof that a same-GT FPS subset has zero distance whereas analytical midpoints do not).
+- **EXPECTED FAIL — Two implementation bugs actually reproduced:** `2 xfailed`: `test_resolver_computes_documented_resolution_from_explicit_gt` (`s_K=1.0` fallback) and `test_audit_preserves_explicit_gt_when_registry_has_another_reference` (registry overrides explicit GT). These are not successes of the product: strict XFAIL records real, previously known defects without destabilizing the investigation branch.
+- **PASS — Existing Example 13 interface regression:** `tests/integration/test_example13_consistency.py`: `1 passed`. This only tests the call contract with mocks, not end-to-end Q-score validity.
+- **PASS — Stronger XFAIL guards:** the two expected-failure tests now specify `raises=AssertionError`; a runtime exception unrelated to the asserted contract will be a test **failure**, not an accepted XFAIL. [run 39656554029](https://github.com/monacofj/moeabench/actions/runs/39656554029) completed `success` on this improved version: `2 passed, 2 xfailed`, plus `1 passed` in the Example 13 interface test.
+- **NOT YET VERIFIED — Complete scientific correctness:** neither CI run tested an entire DTLZ1 optimization or recalculated the final Q-scores. Do not treat successful execution of a suite containing XFAILs as a product conformance certification.
+- **INFRASTRUCTURE NOTE:** the temporary branch workflow was restricted to changes in the FAIR implementation/tests/workflow itself, so routine ADR diary updates need not start additional runs.
