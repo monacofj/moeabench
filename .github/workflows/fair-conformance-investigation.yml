@@ -63,7 +63,8 @@ jobs:
         run: |
           python calibration/scripts/migrate_closeness_residue.py \
             --problem DTLZ1 \
-            --impact-report /tmp/fair-75-dtlz1-residue-impact.json
+            --impact-report /tmp/fair-75-dtlz1-residue-impact.json \
+            --output /tmp/fair-75-dtlz1-candidate.json
       - name: Upload numerical baseline impact report
         uses: actions/upload-artifact@v4
         with:
@@ -81,7 +82,52 @@ jobs:
           exp.moea = mb.moeas.NSGA2(population=100, generations=280)
           exp.run(seed=1, silent=True)
 
+          # Compare two calibrations on the *same* fixed run. The staged
+          # source was derived from the frozen v0.14.0 baseline, not a new GT.
+          from moeabench.diagnostics import baselines as clinical_baselines
+          candidate = "/tmp/fair-75-dtlz1-candidate.json"
           report = mb.clinic.audit(exp)
+          with clinical_baselines.use_baselines(candidate):
+              candidate_report = mb.clinic.audit(exp)
+          assert candidate_report.quality is not None
+          assert report.quality is not None
+          k = report.diagnostic_context["k"]
+          original_close = report.fr.metrics["CLOSENESS"]
+          staged_close = candidate_report.fr.metrics["CLOSENESS"]
+          with clinical_baselines.use_baselines(candidate):
+              epsilon = clinical_baselines.get_baseline_data(
+                  "DTLZ1", k, "closeness"
+              )["ideal_res"]
+          expected_corrected = np.maximum(
+              0.0, np.asarray(original_close.raw_data) - epsilon
+          )
+          np.testing.assert_allclose(
+              staged_close.raw_data, expected_corrected, rtol=0, atol=1e-11
+          )
+          assert staged_close.value <= original_close.value
+          q_old = report.quality.scores["Q_CLOSENESS"].value
+          q_new = candidate_report.quality.scores["Q_CLOSENESS"].value
+          assert np.isfinite(q_old) and np.isfinite(q_new)
+          for key in ["COVERAGE", "GAP", "REGULARITY", "BALANCE", "HEADWAY"]:
+              np.testing.assert_allclose(
+                  report.fr.metrics[key].value,
+                  candidate_report.fr.metrics[key].value,
+                  rtol=0, atol=1e-12, equal_nan=True
+              )
+          for key in ["Q_COVERAGE", "Q_GAP", "Q_REGULARITY",
+                      "Q_BALANCE", "Q_HEADWAY"]:
+              np.testing.assert_allclose(
+                  report.quality.scores[key].value,
+                  candidate_report.quality.scores[key].value,
+                  rtol=0, atol=1e-12, equal_nan=True
+              )
+          print("MIGRATION_COMPARE K:", k)
+          print("MIGRATION_COMPARE ideal_res:", epsilon)
+          print("MIGRATION_COMPARE Closeness old/new:",
+                original_close.value, staged_close.value)
+          print("MIGRATION_COMPARE Q_CLOSENESS old/new:", q_old, q_new)
+          print("MIGRATION_COMPARE other FAIR/Q metrics unchanged: PASS")
+
           context = report.diagnostic_context or {}
           P, GT = context["P_final"], context["GT"]
           physical_P = np.asarray(exp.front(-1))
