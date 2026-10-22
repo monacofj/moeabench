@@ -161,3 +161,29 @@ def test_production_ideal_reference_deduplicates_repeated_generator_points():
     )
     assert fresh is not None
     assert len(fresh) == len(np.unique(fresh, axis=0)) == 200
+
+
+def test_duplicate_weighted_pf_cannot_distort_unique_objective_region_coverage():
+    """More copies of one objective point should never increase its weight."""
+    from moeabench.diagnostics.calibration import independent_analytical_reference
+    from scipy.spatial import cKDTree
+
+    class DuplicateWeightedPF:
+        def pf(self, n_points):
+            x = np.linspace(0, 1, n_points)
+            unique = np.column_stack((x, 1-x, np.full_like(x, 0.003)))
+            # Artificially add 10x duplicates of the first 20% of the front.
+            # The old choose-first / weighted candidate selection would
+            # strongly overrepresent these points.
+            return np.vstack((unique, np.repeat(unique[:n_points//5], 10, axis=0)))
+
+    gx = np.linspace(0,1,101)
+    gt = np.column_stack((gx, 1-gx, np.zeros_like(gx)))
+    chosen = independent_analytical_reference(
+        DuplicateWeightedPF(), gt, n_fresh=250, sampling_seed=73
+    )
+    assert chosen is not None and chosen.shape == (250,3)
+    assert np.all(cKDTree(gt).query(chosen)[0] > 0)
+    bins = _region_hist(chosen, gt)
+    assert all(b > 20 for b in bins), bins
+    assert max(bins)/min(bins) < 2.0
