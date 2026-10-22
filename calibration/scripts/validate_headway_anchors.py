@@ -12,18 +12,21 @@ does not invent a random-sample Headway ECDF or replace any certified file.
 """
 
 import argparse
-import hashlib
 import json
 from pathlib import Path
+import sys
+
+# Preserve direct-CLI support (python calibration/scripts/...). Installed
+# moeabench alone does not make the calibration namespace importable.
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import numpy as np
 from scipy.spatial import cKDTree
 
 from moeabench.diagnostics import fair, qscore
 from calibration.scripts.audit_longitudinal_pilot import run_pilot
-
-ROOT = Path(__file__).resolve().parents[2]
-
 
 def _gd95(points, reference):
     return float(np.percentile(cKDTree(reference).query(points, k=1)[0], 95))
