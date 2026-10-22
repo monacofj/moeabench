@@ -456,17 +456,21 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
         return np.array([])
 
     if P.ndim == 1:
-        raw_u = P 
+        # Historical 1D input represents raw geometric distances. No
+        # reference-specific finite-GT residue may be inferred without GT.
+        u_vals = P / s_fit if s_fit > 1e-12 else P
     else:
         if GT is None:
-             raise ValueError("Ground truth (ref) required to calculate distances from front.")
-        d = cdist(P, GT, metric='euclidean')
-        raw_u = np.min(d, axis=1)
-    
-    # Apply resolution scaling
-    u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
-    
-    # 2. Get Baseline (Rand50 in FR space)
+            raise ValueError("Ground truth (ref) required to calculate distances from front.")
+        # Reuse the *same physical computation* as FAIR Closeness, including
+        # its reference-specific ideal_res correction. Previously visual
+        # marker classifications used uncorrected distances against a
+        # corrected rand50, which biased every symbol after calibration.
+        u_vals = fair.closeness(
+            P, ref=GT, s_k=s_fit, problem=problem, k=k
+        ).raw_data
+
+    # 2. Get Baseline (Rand50 in corrected FR units)
     k_snap = baselines.snap_k(k, problem=problem)
     target_m = kwargs.get('mop_dimension')
     _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness", target_m=target_m)
@@ -479,4 +483,4 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
 
     num_raw = np.maximum(u_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
-    return 1.0 - error_score
+    return np.clip(1.0 - error_score, 0.0, 1.0)
