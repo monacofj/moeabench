@@ -97,3 +97,67 @@ def test_region_occupancy_exposes_one_axis_clustering():
     assert first[0] > 500
     distributed = _region_hist(pool, gt)
     assert all(n > 0 for n in distributed)
+
+
+def test_production_reference_samples_whole_grid_instead_of_first_n():
+    """A DPF-style objective-sorted grid must cover all five front regions."""
+    from moeabench.diagnostics.calibration import independent_analytical_reference
+
+    class SortedAnalyticalPF:
+        def pf(self, n_points):
+            x = np.linspace(0.0, 1.0, n_points)
+            return np.column_stack((x, 1.0-x, np.zeros_like(x)))
+
+    gt_x = np.linspace(0.0, 1.0, 121)
+    gt = np.column_stack((gt_x, 1.0-gt_x, np.zeros_like(gt_x)))
+    oracle = SortedAnalyticalPF()
+    new = independent_analytical_reference(
+        oracle, gt, n_fresh=250, sampling_seed=73
+    )
+    assert new.shape == (250, 3)
+    counts = _region_hist(new, gt)
+    assert sum(counts) == 250
+    assert all(n >= 20 for n in counts), counts
+    from scipy.spatial import cKDTree
+    assert np.all(cKDTree(gt).query(new)[0] > 1e-12)
+    np.testing.assert_array_equal(
+        new, independent_analytical_reference(
+            oracle, gt, n_fresh=250, sampling_seed=73
+        )
+    )
+    alternate = independent_analytical_reference(
+        oracle, gt, n_fresh=250, sampling_seed=74
+    )
+    assert not np.array_equal(new, alternate)
+
+    # The library helper must not alter callers' global PRNG state.
+    import random
+    random.seed(117)
+    np.random.seed(227)
+    py_before = random.getstate()
+    np_before = np.random.get_state()
+    independent_analytical_reference(oracle, gt, n_fresh=250)
+    assert random.getstate() == py_before
+    after = np.random.get_state()
+    assert after[0] == np_before[0]
+    np.testing.assert_array_equal(after[1], np_before[1])
+    assert after[2:] == np_before[2:]
+
+
+def test_production_ideal_reference_deduplicates_repeated_generator_points():
+    from moeabench.diagnostics.calibration import independent_analytical_reference
+
+    class DuplicatedGrid:
+        def pf(self, n_points):
+            # Deliberately returns every analytical point twice.
+            x = np.linspace(0, 1, n_points)
+            p = np.column_stack((x, 1-x, np.zeros_like(x)))
+            return np.repeat(p, 2, axis=0)
+
+    gt_x = np.linspace(0, 1, 101)
+    gt = np.column_stack((gt_x, 1-gt_x, np.zeros_like(gt_x)))
+    fresh = independent_analytical_reference(
+        DuplicatedGrid(), gt, n_fresh=200
+    )
+    assert fresh is not None
+    assert len(fresh) == len(np.unique(fresh, axis=0)) == 200
