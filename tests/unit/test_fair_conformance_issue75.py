@@ -263,3 +263,23 @@ def test_ideal_residue_unavailable_for_empirical_gt_is_not_disguised_as_estimate
     )["10"]["closeness"]
     assert calibrated["ideal_res"] > 0.0
     assert calibrated["ideal_res_method"] == "independent_analytical_pf"
+
+
+def test_staged_residue_migration_shifts_ecdf_without_modifying_legacy_input():
+    """All Q-Closeness baseline samples must receive the physical correction."""
+    from calibration.scripts.migrate_closeness_residue import residue_update_record
+    old = {
+        "ideal_res": 0.0,
+        "rand_ecdf": [0.03, 0.20, 0.8],
+        "rand50": 0.20,
+        "p95": 0.75,
+        "sigma": 0.4,
+    }
+    after = residue_update_record(old, 0.10)
+    np.testing.assert_allclose(after["rand_ecdf"], [0.0, 0.10, 0.70])
+    assert after["rand50"] == pytest.approx(0.10)
+    assert after["p95"] == pytest.approx(0.65)
+    assert after["sigma"] == old["sigma"]
+    assert old["ideal_res"] == 0.0  # Frozen historical artifact untouched.
+    with pytest.raises(ValueError, match="already been corrected"):
+        residue_update_record(after, 0.10)
