@@ -190,8 +190,10 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
     """
     metrics = {}
     
-    # 1. HEADWAY (Proximity)
-    metrics['headway'] = fair.headway(samples, gt_norm, s_k=s_fit, raw=True).value
+    # HEADWAY is intentionally omitted here. A single population cannot
+    # calibrate the ADR 0049 longitudinal GD95(P_final)/GD95(P_initial)
+    # ratio. raw=True returns a different *final-distance* statistic and
+    # must never be labeled as longitudinal Headway.
 
     # 2. COV (Coverage)
     metrics['cov'] = fair.coverage(samples, gt_norm).value
@@ -329,7 +331,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
 
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
-        rand_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        rand_vals = {"cov": [], "gap": [], "reg": [], "bal": []}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES):
@@ -340,7 +342,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
             
         # --- GENERATION (IDEAL) ---
         # "Success" Baseline: Uniform Sampling from GT (u_ref itself, or perturbations?)
-        uni_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        uni_vals = {"cov": [], "gap": [], "reg": [], "bal": []}
         for i in range(N_IDEAL):
             # Sample Uniformly from GT (Simulates a perfect algorithm)
             # Seed varies to get distribution of "Perfect"
@@ -353,7 +355,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
 
         # --- STORAGE ---
         k_data = {}
-        for metric in ["headway", "cov", "gap", "reg", "bal"]:
+        for metric in ["cov", "gap", "reg", "bal"]:
             # Random (ECDF)
             r_all = np.sort(rand_vals[metric])
             r_50 = float(np.median(r_all))
@@ -362,15 +364,22 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
             # Ideal (Scalar Anchor)
             u_50 = float(np.median(uni_vals[metric]))
             
-            # Special case for HEADWAY: Ideal is 0.0 by definition of distance
-            if metric == "headway": u_50 = 0.0
-            
             k_data[metric] = {
                 "uni50": u_50,
                 "rand50": r_50,
                 "rand_ecdf": r_ecdf
             }
             
+        # ADR 0049: analytic anchors, not an empirical distribution.
+        # The production Q_HEADWAY mapping uses ideal=0, no-progress=1.
+        # No Headway ECDF is generated from single-population samples.
+        k_data["headway"] = {
+            "ideal": 0.0,
+            "no_progress": 1.0,
+            "method": "analytic_anchors_adr0049",
+            "status": "no_empirical_longitudinal_baseline",
+        }
+
         # Store CLOSENESS
         # Ideal is degenerate 0.0
         k_data["closeness"] = {
