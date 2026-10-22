@@ -204,7 +204,36 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
 
     return metrics
 
-def generate_ecdf_for_problem(prob_name, gt_norm):
+def _analytical_ideal_from_package(prob_name, gt_norm, package):
+    """Recover independent analytical PF points in the packaged coordinates.
+
+    The calibration GT is min/max normalized and often generated with a
+    deterministic MOP sampler. Verify that the original analytical sampler
+    reproduces its complete GT before using its fresh extension. This
+    prevents attaching a mathematically unrelated ideal residue to a sidecar.
+    """
+    from moeabench import mops
+    from moeabench.diagnostics.calibration import independent_analytical_reference
+    mop_class = getattr(mops, prob_name, None)
+    if mop_class is None:
+        return None
+    mop = mop_class()
+    ideal, nadir = np.asarray(package['ideal']), np.asarray(package['nadir'])
+    span = nadir - ideal
+    if gt_norm.ndim != 2 or np.any(span <= 0):
+        return None
+    original = (np.asarray(mop.pf(n_points=len(gt_norm))) - ideal) / span
+    if original.shape != gt_norm.shape or not np.allclose(original, gt_norm, atol=1e-10, rtol=0):
+        return None
+
+    class CalibratedMop:
+        def pf(self, n_points):
+            return (np.asarray(mop.pf(n_points=n_points)) - ideal) / span
+
+    return independent_analytical_reference(CalibratedMop(), gt_norm)
+
+
+def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
     problem_data = {}
     M = gt_norm.shape[1] # Objectives
 
@@ -269,11 +298,14 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             u_blur_ecdf = u_blur_sorted
             
         # --- GENERATION (IDEAL RESIDUE) ---
-        # Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
-        u_ideal_sample = base.get_ref_uk(gt_norm, k, seed=999)
-        d_ideal, _ = tree.query(u_ideal_sample, k=1)
-        u_ideal_vals = d_ideal / s_fit if s_fit > 1e-12 else d_ideal
-        ideal_res = float(np.median(u_ideal_vals))
+        # A differently seeded subset of the *same* GT necessarily yields
+        # zero distance to GT, so it cannot estimate ADR 0037's residual.
+        if independent_ideal is None:
+            ideal_res, residue_method = 0.0, "unavailable_no_independent_ideal"
+        else:
+            from moeabench.diagnostics.calibration import estimate_ideal_residue
+            ideal_res = estimate_ideal_residue(gt_norm, independent_ideal, s_fit)
+            residue_method = "independent_analytical_pf"
             
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
@@ -326,6 +358,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             "rand50": float(med_blur),
             "rand_ecdf": [float(x) for x in u_blur_ecdf],
             "ideal_res": ideal_res,
+            "ideal_res_method": residue_method,
             "sigma": float(sigma),
             "p95": float(p95_blur),
             "seed": SEED_START + k
@@ -375,7 +408,12 @@ def main():
             pkg = np.load(pkg_path)
             gt_norm = pkg['gt_norm']
             
-            p_data = generate_ecdf_for_problem(prob, gt_norm)
+            # Store provenance alongside residue: a GT that cannot be
+            # reproduced analytically must not get an invented correction.
+            independent_ideal = _analytical_ideal_from_package(prob, gt_norm, pkg)
+            p_data = generate_ecdf_for_problem(
+                prob, gt_norm, independent_ideal=independent_ideal
+            )
             final_json["problems"][prob] = p_data
             print(" Done.")
             
