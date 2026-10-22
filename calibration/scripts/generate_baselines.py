@@ -209,7 +209,7 @@ def _analytical_ideal_from_package(prob_name, gt_norm, package):
 
     The calibration GT is min/max normalized and often generated with a
     deterministic MOP sampler. Verify that the original analytical sampler
-    reproduces its complete GT before using its fresh extension. This
+    samples the same manifold within local GT spacing before using its extension. This
     prevents attaching a mathematically unrelated ideal residue to a sidecar.
     """
     from moeabench import mops
@@ -223,7 +223,21 @@ def _analytical_ideal_from_package(prob_name, gt_norm, package):
     if gt_norm.ndim != 2 or np.any(span <= 0):
         return None
     original = (np.asarray(mop.pf(n_points=len(gt_norm))) - ideal) / span
-    if original.shape != gt_norm.shape or not np.allclose(original, gt_norm, atol=1e-10, rtol=0):
+    if original.shape != gt_norm.shape or not np.all(np.isfinite(original)):
+        return None
+
+    # The certified GT may have been sampled with a different seed or an
+    # earlier analytical sampling implementation. Requiring byte-for-byte
+    # equality would incorrectly reject another valid sampling of *the same*
+    # manifold. Require instead that the current analytical PF agrees with
+    # the archived surface at the archival GT's own local resolution.
+    from scipy.spatial import cKDTree
+    tree = cKDTree(gt_norm)
+    spacing = float(np.median(tree.query(gt_norm, k=2)[0][:, 1]))
+    mismatch = float(np.median(tree.query(original, k=1)[0]))
+    if spacing <= 0 or not np.isfinite(spacing):
+        return None
+    if mismatch > 5.0 * spacing:
         return None
 
     class CalibratedMop:
