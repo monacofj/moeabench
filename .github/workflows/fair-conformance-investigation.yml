@@ -135,6 +135,20 @@ jobs:
           name: fair-75-three-mop-calibration-cost
           path: /tmp/fair-75-three-mop-cost.json
           if-no-files-found: warn
+      - name: Benchmark larger K=100 on same three MOPs
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/benchmark_fair_calibration_cost.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --k 100 --random-draws 200 --ideal-draws 30 \
+            --output /tmp/fair-75-three-mop-cost-k100.json
+      - name: Upload K=100 multi-MOP calibration timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-calibration-cost-k100
+          path: /tmp/fair-75-three-mop-cost-k100.json
+          if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
