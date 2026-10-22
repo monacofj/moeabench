@@ -10,10 +10,12 @@ on:
       - 'moeabench/diagnostics/**'
       - 'moeabench/moeas/**'
       - 'calibration/scripts/generate_baselines.py'
+      - 'calibration/scripts/migrate_closeness_residue.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
       - 'tests/unit/test_nsga2_seed_issue75.py'
+      - 'tests/unit/test_dtlz_hypersphere_sampling.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -57,6 +59,16 @@ jobs:
         run: python test.py --unit
       - name: Basic integration regressions
         run: python test.py --integration --basic
+      - name: Preview calibrated ideal residue impact (no historical overwrite)
+        run: |
+          python calibration/scripts/migrate_closeness_residue.py \
+            --problem DTLZ1 \
+            --impact-report /tmp/fair-75-dtlz1-residue-impact.json
+      - name: Upload numerical baseline impact report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-dtlz1-residue-impact
+          path: /tmp/fair-75-dtlz1-residue-impact.json
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
