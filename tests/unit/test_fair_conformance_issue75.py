@@ -334,3 +334,28 @@ def test_pointwise_closeness_visual_scores_use_same_calibrated_residue(monkeypat
     )
     np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-12)
     assert np.all((0 <= actual) & (actual <= 1))
+
+
+def test_q_closeness_responds_to_residue_in_nondegenerate_calibration(monkeypatch):
+    """Wasserstein Q must react when identical physical and null scales shift.
+
+    Fixed independent oracle: observed values 1, bad reference values 2
+    give W1(observed, ideal=0)=1 and W1(observed, bad)=1; Q=1/2.
+    After a finite-GT correction 0.2 applied to both observed and bad
+    samples, the distances are 0.8 and 1 respectively, giving Q=1/1.8.
+    Unlike an optimizer run clipped at Q=0, this isolates score sensitivity.
+    """
+    monkeypatch.setattr(baselines, "snap_k", lambda k, problem=None: k)
+    reference = {"bad": 2.0}
+
+    def ecdf(problem, k, metric, target_m=None):
+        return 0.0, reference["bad"], np.full(200, reference["bad"])
+
+    monkeypatch.setattr(baselines, "get_baseline_ecdf", ecdf)
+    original = qscore.q_closeness(np.ones(50), problem="Toy", k=50)
+    assert original.value == pytest.approx(0.5)
+
+    reference["bad"] = 1.8
+    corrected = qscore.q_closeness(np.full(50, 0.8), problem="Toy", k=50)
+    assert corrected.value == pytest.approx(1.0 / 1.8)
+    assert corrected.value > original.value
