@@ -61,15 +61,10 @@ def test_unequal_sample_cardinality_accepted_only_with_compatible_tail(monkeypat
             x=np.linspace(0,1,int(np.sqrt(n_points))**2)
             return np.column_stack((x,1-x))
 
-    monkeypatch.setattr(generator.mops if hasattr(generator,"mops") else __import__(
-        "moeabench.mops", fromlist=["mops"]
-    ),"ToyGrid",GoodGrid,raising=False)
-    monkeypatch.setattr(
-        generator, "independent_analytical_reference", lambda mop, reference: expected,
-        raising=False,
-    )
-    # _analytical_ideal_from_package imports this symbol inside the function;
-    # patch at its authoritative definition instead.
+    import moeabench.mops as mops
+    monkeypatch.setattr(mops,"ToyGrid",GoodGrid,raising=False)
+    # The sampler extension is separately tested; this case isolates
+    # geometry acceptance at variable cardinality.
     import moeabench.diagnostics.calibration as cal
     monkeypatch.setattr(cal,"independent_analytical_reference",
                         lambda mop, reference: expected)
@@ -82,6 +77,5 @@ def test_unequal_sample_cardinality_accepted_only_with_compatible_tail(monkeypat
             front[-4:,0]+=10.0
             return front
 
-    monkeypatch.setattr(__import__("moeabench.mops",fromlist=["mops"]),
-                        "ToyGrid",BadTail,raising=False)
+    monkeypatch.setattr(mops,"ToyGrid",BadTail,raising=False)
     assert generator._analytical_ideal_from_package("ToyGrid",gt,pkg) is None
