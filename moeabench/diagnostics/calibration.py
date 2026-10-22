@@ -269,7 +269,6 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
         
         # CLOSENESS (Blur + Ideal Residue)
         sigma, u_blur = _calibrate_and_blur(gt, normals, s_fit, SEED_START + k)
-        u_blur_ecdf = _downsample_ecdf(np.sort(u_blur))
         
         # ADR 0037: the finite-GT residue must use a distinct analytical
         # ideal-front sample, never an FPS subset *of the same GT*. For
@@ -282,11 +281,18 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
             ideal_res = estimate_ideal_residue(gt, independent_ideal, s_fit)
             ideal_res_method = "independent_analytical_pf"
         
+        # Physical closeness subtracts the same ideal residue from every
+        # sample. Its ECDF/anchor must be calibrated on the *corrected* values
+        # too; comparing corrected observations against raw blurred baselines
+        # would put the two sides of the Q-score on different scales.
+        corrected_blur = np.maximum(0.0, u_blur - ideal_res)
+        u_blur_ecdf = _downsample_ecdf(np.sort(corrected_blur))
+
         # Metrics storage
         k_data = {
             "closeness": {
                 "uni50": 0.0,
-                "rand50": float(np.median(u_blur)),
+                "rand50": float(np.median(corrected_blur)),
                 "rand_ecdf": [float(x) for x in u_blur_ecdf],
                 "ideal_res": ideal_res,
                 "ideal_res_method": ideal_res_method
