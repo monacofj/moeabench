@@ -94,6 +94,23 @@ jobs:
                         float(np.median(cKDTree(GT).query(physical_P)[0])))
                   print("median normalized P-to-normalized GT:",
                         float(np.median(cKDTree(GT).query(P)[0])))
+                  from moeabench.diagnostics.calibration import (
+                      independent_analytical_reference, estimate_ideal_residue,
+                  )
+
+                  class CalibratedAnalyticalPF:
+                      def pf(self, n_points):
+                          return (exp.mop.pf(n_points=n_points) - ideal) / (nadir - ideal)
+
+                  fresh = independent_analytical_reference(
+                      CalibratedAnalyticalPF(), GT, n_fresh=1024
+                  )
+                  assert fresh is not None and len(fresh) == 1024
+                  eps = estimate_ideal_residue(
+                      GT, fresh, get_resolution_factor_k(GT, context["k"], seed=0)
+                  )
+                  print("Independent analytical ideal_res:", eps)
+                  assert eps > 0, "Same-GT FPS would have given false zero residue"
           print("effective K:", context["k"], "s_K:", context["s_k"])
           independent = get_resolution_factor_k(GT, context["k"], seed=0)
           assert np.isclose(context["s_k"], independent), (context["s_k"], independent)
@@ -119,4 +136,17 @@ jobs:
               assert len(plot.marker_styles[1]["symbol"]) == len(physical_P)
               print("Clinical markers assigned:", len(plot.marker_styles[1]["symbol"]))
               plt.close("all")
+
+          # A fixed seed must control the entire DEAP evolution, not only
+          # initial sampling or a subset of stochastic operators.
+          original_front = np.asarray(exp.front(-1)).copy()
+          original_q = float(report.quality.scores["Q_CLOSENESS"].value)
+          import random
+          random.seed(9281)
+          np.random.seed(8327)
+          exp.run(seed=1, silent=True)
+          np.testing.assert_array_equal(exp.front(-1), original_front)
+          repeated = mb.clinic.audit(exp)
+          assert float(repeated.quality.scores["Q_CLOSENESS"].value) == original_q
+          print("Repeated seed=1 front and Q_CLOSENESS: exact match")
           PY
