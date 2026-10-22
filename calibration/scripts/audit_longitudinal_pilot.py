@@ -44,7 +44,7 @@ def independent_headway(population_zero, population_final, gt):
     return df / d0
 
 
-def run_pilot(*, seed=1, generations=60, population=64):
+def run_pilot(*, seed=1, generations=60, population=64, candidate_baseline=None):
     if generations < 2 or population < 8 or population % 4:
         raise ValueError("Require generations>=2 and population>=8 divisible by 4")
     exp = mb.experiment()
@@ -84,6 +84,54 @@ def run_pilot(*, seed=1, generations=60, population=64):
     if not all(np.isfinite(v) for v in [*physical.values(), *q_scores.values()]):
         raise RuntimeError("Pilot produced nonfinite FAIR/Q results")
 
+    candidate_comparison = None
+    if candidate_baseline is not None:
+        candidate_baseline = Path(candidate_baseline)
+        if not candidate_baseline.is_file():
+            raise FileNotFoundError(candidate_baseline)
+        with baselines.use_baselines(str(candidate_baseline)):
+            staged = mb.clinic.audit(exp)
+            if staged.quality is None:
+                raise RuntimeError("Candidate baseline is incompatible with this GT")
+            epsilon = float(
+                baselines.get_baseline_data(
+                    "DTLZ1", int(ctx["k"]), "closeness"
+                )["ideal_res"]
+            )
+
+        original_u = np.asarray(old.fr.metrics["CLOSENESS"].raw_data)
+        corrected_u = np.asarray(staged.fr.metrics["CLOSENESS"].raw_data)
+        np.testing.assert_allclose(
+            corrected_u, np.maximum(0, original_u - epsilon),
+            atol=1e-12, rtol=0,
+        )
+        # This comparison uses exactly the same P0, Pf and GT. Every metric
+        # except Closeness (and its derived Q) must be unchanged.
+        other_physical = ("COVERAGE", "GAP", "REGULARITY", "BALANCE", "HEADWAY")
+        other_quality = ("Q_COVERAGE", "Q_GAP", "Q_REGULARITY",
+                         "Q_BALANCE", "Q_HEADWAY")
+        for key in other_physical:
+            np.testing.assert_allclose(
+                old.fr.metrics[key].value, staged.fr.metrics[key].value,
+                atol=1e-12, rtol=0,
+            )
+        for key in other_quality:
+            np.testing.assert_allclose(
+                old.quality.scores[key].value, staged.quality.scores[key].value,
+                atol=1e-12, rtol=0,
+            )
+        candidate_comparison = {
+            "candidate_baseline_sha256": hashlib.sha256(
+                candidate_baseline.read_bytes()
+            ).hexdigest(),
+            "ideal_res": epsilon,
+            "old_closeness": float(old.fr.metrics["CLOSENESS"].value),
+            "new_closeness": float(staged.fr.metrics["CLOSENESS"].value),
+            "old_q_closeness": float(old.quality.scores["Q_CLOSENESS"].value),
+            "new_q_closeness": float(staged.quality.scores["Q_CLOSENESS"].value),
+            "other_five_FAIR_metrics_and_Q_unchanged": True,
+        }
+
     return {
         "status": "provisional_longitudinal_pilot_not_certified",
         "experiment": {
@@ -107,6 +155,7 @@ def run_pilot(*, seed=1, generations=60, population=64):
         "clinical_q_scores_frozen_baseline": q_scores,
         "independent_headway": expected,
         "headway_validated_from_true_P0": True,
+        "candidate_closeness_comparison": candidate_comparison,
         "notes": "A newly executed reproducible study; NOT a reconstruction of a historical run.",
     }
 
@@ -117,6 +166,8 @@ def main():
     parser.add_argument("--generations", type=int, default=60)
     parser.add_argument("--population", type=int, default=64)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--candidate-baseline", type=Path,
+                        help="Optional staged, noncertified baseline for paired comparison")
     args = parser.parse_args()
     output = args.output.resolve()
     if output.is_relative_to(CERTIFIED_REPORT_DIR) or output == (ROOT/"calibration/audit_report.html").resolve():
@@ -124,7 +175,8 @@ def main():
     if output.exists():
         parser.error("Refusing to overwrite existing pilot")
     result = run_pilot(seed=args.seed, generations=args.generations,
-                       population=args.population)
+                       population=args.population,
+                       candidate_baseline=args.candidate_baseline)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2)+"\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
