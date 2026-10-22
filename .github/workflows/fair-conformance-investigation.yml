@@ -18,6 +18,7 @@ on:
       - 'calibration/scripts/benchmark_fair_calibration_cost.py'
       - 'calibration/scripts/verify_closeness_migration.py'
       - 'calibration/scripts/validate_headway_anchors.py'
+      - 'calibration/scripts/screen_analytical_residues.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -30,6 +31,8 @@ on:
       - 'tests/unit/test_fair_calibration_cost_issue75.py'
       - 'tests/unit/test_verify_closeness_migration_issue75.py'
       - 'tests/unit/test_headway_anchors_issue75.py'
+      - 'tests/unit/test_headway_pointwise_issue75.py'
+      - 'tests/unit/test_screen_analytical_residues_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -185,6 +188,19 @@ jobs:
         with:
           name: fair-75-headway-adr0049-anchor-validation
           path: /tmp/fair-75-headway-analytic-anchors.json
+          if-no-files-found: warn
+      - name: Screen remaining frozen MOPs for independent analytical residue
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/screen_analytical_residues.py \
+            --k 20 --k 100 \
+            --output /tmp/fair-75-all-mops-analytical-screen.json
+      - name: Upload 14-MOP analytical GT compatibility inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-all-mops-analytical-screen
+          path: /tmp/fair-75-all-mops-analytical-screen.json
           if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
