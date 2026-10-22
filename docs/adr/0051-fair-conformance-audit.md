@@ -450,3 +450,10 @@ Record actual pass/XFAIL/XPASS/failure output here. Only then begin narrow produ
 - **INDEPENDENT TESTS:** `tests/unit/test_fair_calibration_cost_issue75.py` asserts no Headway is derived from one-population samples, verifies physical metric finiteness, preserves fail-closed behavior for incompatible references, and checks invalid sample parameters before expensive computation.
 - **CI LAUNCHED:** [Actions run 39804447513](https://github.com/monacofj/moeabench/actions/runs/39804447513) executes the full unit/basic integration suite and then a three-MOP calibration timing trial, saving an inspectable artifact `fair-75-three-mop-calibration-cost`. At the time of this entry the workflow was **in progress**, not yet a passing result.
 - **INVARIANTS:** no official `baselines_v0.14.0.json`, `baselines.json`, versioned audit JSON, or `calibration/audit_report.html` was modified. ADR remains Proposed and PR #76 remains Draft pending evaluation.
+
+
+### 2026-10-22 — First timing run failed at CLI import (not numeric calibration)
+
+- **PASS — Existing tests:** GitHub Actions [run 39804447513](https://github.com/monacofj/moeabench/actions/runs/39804447513) passed its focused, unit, basic integration and prior DTLZ1 staging/report steps before entering the new timing benchmark.
+- **FAIL — New benchmark CLI bootstrap:** direct invocation of `calibration/scripts/benchmark_fair_calibration_cost.py` raised `ModuleNotFoundError: No module named 'calibration'` while importing the shared generator helper. None of the three MOP timing results was measured on this attempt; do **not** call this a physical or algorithmic failure, and do not invent timings.
+- **FIX — Import-path consistency:** the benchmark now explicitly adds its repository root to `sys.path` before package imports, following the already validated `migrate_closeness_residue.py` CLI approach. The corrected test run must be checked before recording any computational costs.
