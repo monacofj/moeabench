@@ -382,7 +382,7 @@ The failure anchor ($Q=0$) is determined through an offline empirical calibratio
 #### 5.3.2 `Q_HEADWAY`
 - **Input FAIR metric:** `HEADWAY` (Longitudinal Ratio).
 - **Ideal anchor:** $0$.
-- **Worst-case/random anchor:** $1$.
+- **No-progress anchor:** $1$ (analytical, not an empirical random-population baseline).
 - **Mapping:** log-linear.
 - **Meaning:** how much progress was made toward the manifold relative to the algorithm's own starting point.
 
