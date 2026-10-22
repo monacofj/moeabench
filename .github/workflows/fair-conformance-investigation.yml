@@ -17,6 +17,7 @@ on:
       - 'calibration/scripts/render_fair_evidence_preview.py'
       - 'calibration/scripts/benchmark_fair_calibration_cost.py'
       - 'calibration/scripts/verify_closeness_migration.py'
+      - 'calibration/scripts/validate_headway_anchors.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -28,6 +29,7 @@ on:
       - 'tests/unit/test_fair_preview_issue75.py'
       - 'tests/unit/test_fair_calibration_cost_issue75.py'
       - 'tests/unit/test_verify_closeness_migration_issue75.py'
+      - 'tests/unit/test_headway_anchors_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -171,6 +173,18 @@ jobs:
           path: |
             /tmp/fair-75-three-mop-migration-impact.json
             /tmp/fair-75-three-mop-migration-verified.json
+          if-no-files-found: warn
+      - name: Validate analytic Q_HEADWAY anchors and genuine P0/Pf trials
+        run: |
+          python calibration/scripts/validate_headway_anchors.py \
+            --seed 7 --seed 8 --population 32 --generations 20 \
+            --output /tmp/fair-75-headway-analytic-anchors.json
+      - name: Upload Headway analytical and empirical verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-headway-adr0049-anchor-validation
+          path: /tmp/fair-75-headway-analytic-anchors.json
           if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
