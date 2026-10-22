@@ -288,14 +288,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
         d_blur, _ = tree.query(g_blur, k=1)
         u_blur = d_blur / s_fit
         
-        # Sort and downsample to N_SAMPLES if needed (to keep JSON size uniform)
-        u_blur_sorted = np.sort(u_blur)
-        if len(u_blur_sorted) > N_SAMPLES:
-            # Linear sampling of the ECDF
-            indices = np.linspace(0, len(u_blur_sorted)-1, N_SAMPLES).astype(int)
-            u_blur_ecdf = u_blur_sorted[indices]
-        else:
-            u_blur_ecdf = u_blur_sorted
+        # ECDF construction follows the ideal-residue correction below.
             
         # --- GENERATION (IDEAL RESIDUE) ---
         # A differently seeded subset of the *same* GT necessarily yields
@@ -307,6 +300,16 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
             ideal_res = estimate_ideal_residue(gt_norm, independent_ideal, s_fit)
             residue_method = "independent_analytical_pf"
             
+        # Clinical Q-scores compare a physically residue-corrected
+        # Closeness distribution with *the same* corrected baseline.
+        corrected_blur = np.maximum(0.0, u_blur - ideal_res)
+        u_blur_sorted = np.sort(corrected_blur)
+        if len(u_blur_sorted) > N_SAMPLES:
+            indices = np.linspace(0, len(u_blur_sorted)-1, N_SAMPLES).astype(int)
+            u_blur_ecdf = u_blur_sorted[indices]
+        else:
+            u_blur_ecdf = u_blur_sorted
+
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
         rand_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
@@ -355,12 +358,12 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
         # Ideal is degenerate 0.0
         k_data["closeness"] = {
             "uni50": 0.0,
-            "rand50": float(med_blur),
+            "rand50": float(np.median(corrected_blur)),
             "rand_ecdf": [float(x) for x in u_blur_ecdf],
             "ideal_res": ideal_res,
             "ideal_res_method": residue_method,
             "sigma": float(sigma),
-            "p95": float(p95_blur),
+            "p95": float(np.percentile(corrected_blur, 95)),
             "seed": SEED_START + k
         }
         
