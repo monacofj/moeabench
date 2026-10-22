@@ -29,35 +29,52 @@ N_IDEAL_DRAWS = 30
 K_GRID_DEFAULT = list(range(10, 51)) + [100, 150, 200]
 SEED_START = 1000
 
-def independent_analytical_reference(mop: Any, gt: np.ndarray, n_fresh: int = 1024):
-    """Sample analytical PF points that are absent from the finite GT.
+def independent_analytical_reference(
+    mop: Any, gt: np.ndarray, n_fresh: int = 1024,
+    sampling_seed: int = 123,
+):
+    """Representative deterministic subsample of points absent from finite GT.
 
-    A number of built-in MOPs use deterministic generators that restart at
-    seed 42 for every call to pf(). Naively requesting the same number of
-    points reproduces *exactly* the GT, not a fresh ideal reference. Request
-    additional points and remove all exact/near-exact GT coincidences.
-    Return None when no scientifically independent sample can be obtained.
+    Some built-in Pareto-front samplers reset their RNG for every call,
+    whereas others traverse an *ordered* objective-space grid. Taking the
+    first n_fresh new points is therefore unsafe: it can concentrate all
+    samples in one objective-space region (DPF1/2/4 and DTLZ9, issue #75).
+
+    Request an analytical reservoir at least four times larger than the
+    desired sample, remove points coinciding with the finite GT, then draw
+    n_fresh points without replacement with a *private, fixed-seed* RNG.
+    This ensures reproducibility and reduces ordered-prefix bias; it does
+    not by itself establish that the underlying PF generator is statistically
+    representative. Scientific acceptance requires separate robustness tests.
+    The selection seed is independent of the MOP's own internal RNG.
     """
     gt = np.asarray(gt, dtype=float)
-    if gt.ndim != 2 or len(gt) < 2:
-        raise ValueError("GT must be a nonempty 2D reference")
+    if gt.ndim != 2 or len(gt) < 2 or not np.all(np.isfinite(gt)):
+        raise ValueError("GT must be a finite nonempty 2D reference")
     if not isinstance(n_fresh, int) or n_fresh < 2:
         raise ValueError("n_fresh must be an integer >= 2")
+    if not isinstance(sampling_seed, int) or sampling_seed < 0:
+        raise ValueError("sampling_seed must be a nonnegative integer")
+
+    # Deliberately oversample: prefix reuse is common for deterministic PFs;
+    # the independently selected pool must cover the entire returned set.
+    requested = len(gt) + 4 * n_fresh
     try:
-        candidates = np.asarray(
-            mop.pf(n_points=len(gt) + n_fresh), dtype=float
-        )
+        candidates = np.asarray(mop.pf(n_points=requested), dtype=float)
     except (AttributeError, NotImplementedError, TypeError, ValueError):
         return None
-    if candidates.ndim != 2 or candidates.shape[1] != gt.shape[1]:
-        return None
-    if not np.all(np.isfinite(candidates)):
+    if (candidates.ndim != 2 or candidates.shape[1] != gt.shape[1]
+            or not np.all(np.isfinite(candidates))):
         return None
     distances = cKDTree(gt).query(candidates, k=1)[0]
-    # Exclude deterministic prefix reuse and exact geometric duplicates.
     threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
     fresh = candidates[distances > threshold]
-    return fresh[:n_fresh] if len(fresh) >= 2 else None
+    if len(fresh) < n_fresh:
+        return None
+    choice = np.random.default_rng(sampling_seed).choice(
+        len(fresh), size=n_fresh, replace=False
+    )
+    return fresh[choice]
 
 
 def estimate_ideal_residue(gt: np.ndarray, independent_ideal: np.ndarray, s_k: float) -> float:
