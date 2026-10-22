@@ -228,22 +228,29 @@ def _analytical_ideal_from_package(prob_name, gt_norm, package):
     if gt_norm.ndim != 2 or np.any(span <= 0):
         return None
     original = (np.asarray(mop.pf(n_points=len(gt_norm))) - ideal) / span
-    if original.shape != gt_norm.shape or not np.all(np.isfinite(original)):
+    if (original.ndim != 2 or original.shape[1] != gt_norm.shape[1]
+            or len(original) < 2 or not np.all(np.isfinite(original))):
         return None
 
-    # The certified GT may have been sampled with a different seed or an
-    # earlier analytical sampling implementation. Requiring byte-for-byte
-    # equality would incorrectly reject another valid sampling of *the same*
-    # manifold. Require instead that the current analytical PF agrees with
-    # the archived surface at the archival GT's own local resolution.
+    # Current MOP samplers can return fewer points than requested: e.g.
+    # DPF5 rounds a 2D Pareto-set grid down to a perfect square. Do not
+    # equate *cardinality* with frontier geometry. On the other hand, a
+    # non-dominated filter can also produce a badly undersampled section
+    # of the front (observed for DPF3), where the *median* distance looks
+    # good while the tail differs from the archived GT by >200 local steps.
+    # For variable-cardinality samplers demand both robust center and tail
+    # proximity before treating the extension as analytically compatible.
     from scipy.spatial import cKDTree
     tree = cKDTree(gt_norm)
     spacing = float(np.median(tree.query(gt_norm, k=2)[0][:, 1]))
-    mismatch = float(np.median(tree.query(original, k=1)[0]))
     if spacing <= 0 or not np.isfinite(spacing):
         return None
-    if mismatch > 5.0 * spacing:
+    offsets = tree.query(original, k=1)[0]
+    if float(np.median(offsets)) > 5.0 * spacing:
         return None
+    if len(original) != len(gt_norm):
+        if float(np.percentile(offsets, 95)) > 5.0 * spacing:
+            return None
 
     class CalibratedMop:
         def pf(self, n_points):
