@@ -99,6 +99,7 @@ jobs:
         run: |
           python calibration/scripts/audit_longitudinal_pilot.py \
             --seed 7 --generations 60 --population 64 \
+            --candidate-baseline /tmp/fair-75-dtlz1-candidate.json \
             --output /tmp/fair-75-true-p0-pilot.json
       - name: Upload true-P0 pilot audit
         uses: actions/upload-artifact@v4
