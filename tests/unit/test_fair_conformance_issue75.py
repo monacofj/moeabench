@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from scipy.spatial.distance import cdist
 
-from moeabench.diagnostics import auditor, baselines, fair
+from moeabench.diagnostics import auditor, baselines, fair, calibration
 from moeabench.diagnostics.enums import DiagnosticStatus
 from moeabench.diagnostics.utils import _resolve_diagnostic_context
 
@@ -222,3 +222,44 @@ def test_closeness_rejects_invalid_calibrated_residue(monkeypatch):
     )
     with pytest.raises(ValueError, match="ideal_res"):
         fair.closeness(gt[::4], ref=gt, s_k=0.15, problem="Toy", k=11)
+
+
+def test_fresh_analytical_ideal_sample_excludes_deterministic_gt_prefix():
+    """DTLZ1.ps() restarts seed=42 each call; its first N points repeat exactly."""
+    from moeabench.mops import DTLZ1
+    gt = DTLZ1(M=3).pf(n_points=100)
+    sample = calibration.independent_analytical_reference(DTLZ1(M=3), gt, n_fresh=40)
+    assert sample is not None
+    assert sample.shape == (40, 3)
+    distances = cdist(sample, gt).min(axis=1)
+    assert np.all(distances > 1e-10)
+
+
+def test_ideal_residue_uses_independent_analytic_points_not_same_gt_subset():
+    """A tiny analytical reference has a directly verifiable positive residue."""
+    gt = _line(41)
+    ideal = (gt[:-1] + gt[1:]) / 2
+    s_k = 0.25
+    expected = float(np.median(cdist(ideal, gt).min(axis=1))) / s_k
+    assert calibration.estimate_ideal_residue(gt, ideal, s_k) == pytest.approx(expected)
+    assert expected > 0.0
+    with pytest.raises(ValueError, match="overlaps finite GT"):
+        calibration.estimate_ideal_residue(gt, gt[::4], s_k)
+
+
+def test_ideal_residue_unavailable_for_empirical_gt_is_not_disguised_as_estimate(monkeypatch):
+    """Non-analytical GT gets an explicit provenance tag with its zero correction."""
+    monkeypatch.setattr(calibration, "N_SAMPLES_ECDF", 3)
+    monkeypatch.setattr(calibration, "N_IDEAL_DRAWS", 2)
+    gt = _line(41)
+    baseline = calibration._generate_baselines(
+        "Toy", gt, [10], independent_ideal=None
+    )["10"]["closeness"]
+    assert baseline["ideal_res"] == 0.0
+    assert baseline["ideal_res_method"] == "unavailable_no_independent_ideal"
+    midpoints = (gt[:-1] + gt[1:]) / 2
+    calibrated = calibration._generate_baselines(
+        "Toy", gt, [10], independent_ideal=midpoints
+    )["10"]["closeness"]
+    assert calibrated["ideal_res"] > 0.0
+    assert calibrated["ideal_res_method"] == "independent_analytical_pf"
