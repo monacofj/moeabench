@@ -1181,7 +1181,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to interpolate the metric between its calibrated anchors, with clipping to the public $[0,1]$ contract.
 
 #### **`mb.clinic.q_headway_points(data, ...)`** / **`mb.clinic.q_closeness_points(data, ...)`**
-*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics.
+*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics. `q_headway_points` produces **per-point contributions**, not the population HEADWAY ratio: it compares each final point's nearest-GT distance with `GD95(P_initial→GT)`, using the genuine initial population from the same run (or an explicit `initial_data`). Without longitudinal context, it returns NaNs rather than borrowing obsolete Headway baseline records. `q_closeness_points` uses reference-specific finite-GT correction when a matching calibration is available.
 *   **Returns**: `np.ndarray`.
 
 ---
