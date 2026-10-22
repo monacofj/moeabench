@@ -12,12 +12,14 @@ on:
       - 'calibration/scripts/generate_baselines.py'
       - 'calibration/scripts/migrate_closeness_residue.py'
       - 'calibration/scripts/audit_report_preflight.py'
+      - 'calibration/scripts/audit_fair_archive.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
       - 'tests/unit/test_nsga2_seed_issue75.py'
       - 'tests/unit/test_dtlz_hypersphere_sampling.py'
       - 'tests/unit/test_audit_report_preflight_issue75.py'
+      - 'tests/unit/test_audit_fair_archive_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -81,6 +83,16 @@ jobs:
         with:
           name: fair-75-audit-report-preflight
           path: /tmp/fair-75-audit-report-preflight.json
+      - name: Provisional historical FAIR audit (not a certified report)
+        run: |
+          python calibration/scripts/audit_fair_archive.py \
+            --study DTLZ1_NSGA2 --max-runs 2 \
+            --output /tmp/fair-75-historical-physical-only.json
+      - name: Upload provisional FAIR numerical report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-historical-physical-only
+          path: /tmp/fair-75-historical-physical-only.json
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
