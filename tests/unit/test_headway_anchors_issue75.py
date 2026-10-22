@@ -100,3 +100,28 @@ def test_offline_generator_outputs_analytical_anchors_without_random_headway(mon
     for metric in ("cov","gap","reg","bal","closeness"):
         assert metric in result["10"]
         assert np.isfinite(result["10"][metric]["rand50"])
+
+
+def test_new_analytic_headway_record_refuses_legacy_rand50_api(monkeypatch):
+    """Legacy distribution access must fail explicitly, not invent anchors."""
+    from moeabench.diagnostics import baselines
+    new_record = {
+        "headway": {
+            "ideal": 0.0, "no_progress": 1.0,
+            "method": "analytic_anchors_adr0049",
+            "status": "no_empirical_longitudinal_baseline",
+        },
+        "cov": {"uni50": 0.0, "rand50": 0.6, "rand_ecdf": [0.6] * 200},
+    }
+    monkeypatch.setattr(
+        baselines, "load_offline_baselines",
+        lambda target_m=None: {"problems": {"Toy": {"10": new_record}}},
+    )
+    with pytest.raises(baselines.UndefinedBaselineError, match="analytic"):
+        baselines.get_baseline_values("Toy", 10, "headway")
+    with pytest.raises(baselines.UndefinedBaselineError, match="no random ECDF"):
+        baselines.get_baseline_ecdf("Toy", 10, "headway")
+    assert baselines.get_baseline_values("Toy", 10, "cov") == (0.0, 0.6)
+    assert qscore.q_headway(0.25).value == pytest.approx(
+        1.0 - np.log1p(0.25)/np.log(2.0)
+    )
