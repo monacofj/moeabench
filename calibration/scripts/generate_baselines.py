@@ -37,13 +37,16 @@ if PROJ_ROOT not in sys.path:
 import json
 import numpy as np
 import moeabench.diagnostics.baselines as base
-import moeabench.diagnostics.fr as fair
+from moeabench.diagnostics import fair
+from moeabench.system import version as lib_version
 from scipy.spatial.distance import cdist
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 
 # Configuration
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines.json")
+# Never write a calibration run directly through the certified baselines.json
+# alias. Set MOEABENCH_BASELINE_OUTPUT to a distinct staging path.
+OUTPUT_FILE = os.environ.get("MOEABENCH_BASELINE_OUTPUT")
 N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
 N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
@@ -389,6 +392,16 @@ def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
     return problem_data
 
 def main():
+    if not OUTPUT_FILE:
+        raise SystemExit(
+            "Set MOEABENCH_BASELINE_OUTPUT to a new staging file; "
+            "refusing to overwrite certified baselines.json."
+        )
+    certified_alias = os.path.realpath(
+        os.path.join(PROJ_ROOT, "moeabench/diagnostics/resources/baselines.json")
+    )
+    if os.path.realpath(OUTPUT_FILE) == certified_alias:
+        raise SystemExit("Refusing to overwrite frozen canonical baseline alias")
     print(f"Generating Baselines v4 (ECDF)...")
     print(f"Output: {OUTPUT_FILE}")
     print(f"K_VALUES: {K_VALUES}")
@@ -410,7 +423,7 @@ def main():
     print(f"Found {len(problems)} problems: {problems}")
     
     final_json = {
-        "version": base.version(),
+        "version": lib_version(show=False),
         "schema": "baselines_v4_ecdf",
         "python_version": sys.version.split()[0],
         "numpy_version": np.__version__,
