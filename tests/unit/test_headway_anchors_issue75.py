@@ -79,3 +79,24 @@ def test_real_two_run_headway_scores_are_independently_reproducible():
         assert 0 <= trial["q_headway"] <= 1
         assert trial["P0_sha256"] != trial["Pf_sha256"]
         assert trial["q_headway"] == pytest.approx(headway_oracle.expected_q(trial["headway"]))
+
+
+def test_offline_generator_outputs_analytical_anchors_without_random_headway(monkeypatch):
+    """The full offline writer must not encode single-P GD95 as HEADWAY."""
+    gt=_reference()
+    monkeypatch.setattr(offline,"N_SAMPLES",3)
+    monkeypatch.setattr(offline,"N_IDEAL",2)
+    monkeypatch.setattr(offline,"K_VALUES",[10])
+    # Reuse the normal/blur code but a bounded 41-point GT; this checks the
+    # actual generated JSON structure rather than inspecting source text.
+    result=offline.generate_ecdf_for_problem("Toy",gt)
+    rec=result["10"]["headway"]
+    assert rec == {
+        "ideal":0.0, "no_progress":1.0,
+        "method":"analytic_anchors_adr0049",
+        "status":"no_empirical_longitudinal_baseline",
+    }
+    assert "rand_ecdf" not in rec
+    for metric in ("cov","gap","reg","bal","closeness"):
+        assert metric in result["10"]
+        assert np.isfinite(result["10"][metric]["rand50"])
