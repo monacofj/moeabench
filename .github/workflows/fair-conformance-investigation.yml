@@ -14,6 +14,7 @@ on:
       - 'calibration/scripts/audit_report_preflight.py'
       - 'calibration/scripts/audit_fair_archive.py'
       - 'calibration/scripts/audit_longitudinal_pilot.py'
+      - 'calibration/scripts/render_fair_evidence_preview.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -22,6 +23,7 @@ on:
       - 'tests/unit/test_audit_report_preflight_issue75.py'
       - 'tests/unit/test_audit_fair_archive_issue75.py'
       - 'tests/unit/test_longitudinal_pilot_issue75.py'
+      - 'tests/unit/test_fair_preview_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -106,6 +108,17 @@ jobs:
         with:
           name: fair-75-true-p0-longitudinal-pilot
           path: /tmp/fair-75-true-p0-pilot.json
+      - name: Generate separated provisional FAIR evidence HTML preview
+        run: |
+          python calibration/scripts/render_fair_evidence_preview.py \
+            --pilot /tmp/fair-75-true-p0-pilot.json \
+            --archive /tmp/fair-75-historical-physical-only.json \
+            --output /tmp/fair-75-provisional-evidence.html
+      - name: Upload provisional report preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-provisional-evidence-preview
+          path: /tmp/fair-75-provisional-evidence.html
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
