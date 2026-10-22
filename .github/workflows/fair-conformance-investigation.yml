@@ -16,6 +16,7 @@ on:
       - 'calibration/scripts/audit_longitudinal_pilot.py'
       - 'calibration/scripts/render_fair_evidence_preview.py'
       - 'calibration/scripts/benchmark_fair_calibration_cost.py'
+      - 'calibration/scripts/verify_closeness_migration.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -26,6 +27,7 @@ on:
       - 'tests/unit/test_longitudinal_pilot_issue75.py'
       - 'tests/unit/test_fair_preview_issue75.py'
       - 'tests/unit/test_fair_calibration_cost_issue75.py'
+      - 'tests/unit/test_verify_closeness_migration_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -148,6 +150,27 @@ jobs:
         with:
           name: fair-75-three-mop-calibration-cost-k100
           path: /tmp/fair-75-three-mop-cost-k100.json
+          if-no-files-found: warn
+      - name: Stage three-MOP Closeness-only migration for all archived K values
+        timeout-minutes: 8
+        run: |
+          python calibration/scripts/migrate_closeness_residue.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --impact-report /tmp/fair-75-three-mop-migration-impact.json \
+            --output /tmp/fair-75-three-mop-migration-candidate.json
+          python calibration/scripts/verify_closeness_migration.py \
+            --original moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            --candidate /tmp/fair-75-three-mop-migration-candidate.json \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --output /tmp/fair-75-three-mop-migration-verified.json
+      - name: Upload verified 3-MOP calibration impact (not full baselines)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-migration-impact
+          path: |
+            /tmp/fair-75-three-mop-migration-impact.json
+            /tmp/fair-75-three-mop-migration-verified.json
           if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
