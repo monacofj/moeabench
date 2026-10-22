@@ -234,9 +234,20 @@ def analyze_problem(name, source, *, sizes=(256, 512, 1024),
             return (np.asarray(self.native.pf(n_points=n_points)) - ideal) / (nadir-ideal)
 
     normal = NormalizedMop(getattr(mops, name)())
-    pool = independent_analytical_reference(normal, gt, n_fresh=pool_extra)
+    # Crucial: retain ALL unique fresh candidates from the larger call.
+    # The production helper intentionally truncates to its requested
+    # n_fresh; doing that here would impose a *second* ordered-prefix bias
+    # on a DPF5 grid before we attempt to measure the legacy bias.
+    candidates = np.asarray(
+        normal.pf(n_points=len(gt) + pool_extra), dtype=float
+    )
+    if candidates.ndim != 2 or candidates.shape[1] != gt.shape[1] or not np.all(np.isfinite(candidates)):
+        raise ValueError(f"Invalid analytical candidate geometry for {name}")
+    threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
+    d = cKDTree(gt).query(candidates, k=1)[0]
+    pool = candidates[d > threshold]
     old = independent_analytical_reference(normal, gt, n_fresh=1024)
-    if pool is None or old is None:
+    if len(pool) < 2 or old is None:
         raise ValueError(f"Cannot construct independent analytical pool for {name}")
     if len(pool) < max(sizes)*repetitions:
         raise ValueError(f"{name}: only {len(pool)} pool points, need {max(sizes)*repetitions}")
