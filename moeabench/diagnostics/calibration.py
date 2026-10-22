@@ -69,6 +69,9 @@ def independent_analytical_reference(
     distances = cKDTree(gt).query(candidates, k=1)[0]
     threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
     fresh = candidates[distances > threshold]
+    # Distinct array rows prevent repeated analytical points from receiving
+    # extra selection weight merely because a grid or parser duplicates them.
+    fresh = np.unique(fresh, axis=0)
     if len(fresh) < n_fresh:
         return None
     choice = np.random.default_rng(sampling_seed).choice(
