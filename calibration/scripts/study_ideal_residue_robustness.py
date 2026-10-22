@@ -258,8 +258,17 @@ def analyze_problem(name, source, *, sizes=(256, 512, 1024),
     threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
     d = cKDTree(gt).query(candidates, k=1)[0]
     pool = candidates[d > threshold]
-    old = independent_analytical_reference(normal, gt, n_fresh=1024)
-    if len(pool) < 2 or old is None:
+    # Reconstruct the *historical* first-1024 estimator verbatim, even
+    # after the production helper changes to unbiased private-RNG sampling.
+    # Otherwise the study would silently compare the proposed policy with
+    # itself and discard its original counterexample.
+    legacy_candidates = np.asarray(
+        normal.pf(n_points=len(gt) + 1024), dtype=float
+    )
+    legacy_d = cKDTree(gt).query(legacy_candidates, k=1)[0]
+    old = legacy_candidates[legacy_d > threshold][:1024]
+    revised = independent_analytical_reference(normal, gt, n_fresh=1024)
+    if len(pool) < 2 or len(old) < 1024 or revised is None:
         raise ValueError(f"Cannot construct independent analytical pool for {name}")
     if len(pool) < max(sizes)*repetitions:
         raise ValueError(f"{name}: only {len(pool)} pool points, need {max(sizes)*repetitions}")
@@ -267,6 +276,15 @@ def analyze_problem(name, source, *, sizes=(256, 512, 1024),
         gt, pool, old, raw_blur, sample_sizes=sizes,
         repetitions=repetitions, seed=seed,
     )
+    record["revised_random_reservoir_1024"] = {
+        "regions_f1": _region_hist(revised, gt),
+        "k": {
+            str(k): {"epsilon": estimate_ideal_residue(
+                gt, revised, baselines.get_resolution_factor_k(gt, k, seed=0)
+            )} for k in (20, 100)
+        },
+        "method": "private_rng_without_replacement_from_4x_analytical_reservoir",
+    }
     record["problem"] = name
     record["archived_gt_shape"] = list(gt.shape)
     record["gt_sha256"] = hashlib.sha256(np.ascontiguousarray(gt).tobytes()).hexdigest()
@@ -313,6 +331,8 @@ def main():
                 "warning_signals": result["warning_signals"],
                 "prefix_regions_f1": result["baseline_first_1024"]["regions_f1"],
                 "whole_pool_regions_f1": result["candidate_pool_regions_f1"],
+                "revised_epsilon": result["revised_random_reservoir_1024"]["k"]["100"]["epsilon"],
+                "revised_regions_f1": result["revised_random_reservoir_1024"]["regions_f1"],
             }), flush=True)
         except (ValueError, TypeError, AttributeError, IndexError, OSError) as exc:
             data["failures"][name] = f"{type(exc).__name__}: {exc}"
