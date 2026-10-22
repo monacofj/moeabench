@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from scipy.spatial.distance import cdist
 
-from moeabench.diagnostics import auditor, baselines, fair, calibration
+from moeabench.diagnostics import auditor, baselines, fair, calibration, qscore
 from moeabench.diagnostics.enums import DiagnosticStatus
 from moeabench.diagnostics.utils import _resolve_diagnostic_context
 
@@ -308,3 +308,29 @@ def test_physical_closeness_mismatched_gt_never_borrows_other_residue(monkeypatc
     np.testing.assert_allclose(
         overridden.raw_data, np.maximum(0.0, expected - 0.10)
     )
+
+
+def test_pointwise_closeness_visual_scores_use_same_calibrated_residue(monkeypatch):
+    """Plot symbols must not use raw distances when FAIR subtracts ideal_res."""
+    gt = _line(41)
+    pop = gt[::4] + np.array([0.03, 0.03])
+    scale, epsilon, bad_median = 0.15, 0.20, 2.0
+    monkeypatch.setattr(baselines, "reference_compatibility", lambda problem, ref: True)
+    monkeypatch.setattr(
+        baselines, "get_baseline_data",
+        lambda problem, k, metric: {"ideal_res": epsilon},
+    )
+    monkeypatch.setattr(baselines, "snap_k", lambda k, problem=None: k)
+    monkeypatch.setattr(
+        baselines, "get_baseline_values",
+        lambda problem, k, metric, target_m=None: (0.0, bad_median),
+    )
+    physical = fair.closeness(pop, ref=gt, s_k=scale, problem="Toy", k=len(pop))
+    expected = np.clip(
+        1.0 - np.log1p(physical.raw_data) / np.log1p(bad_median), 0.0, 1.0
+    )
+    actual = qscore.q_closeness_points(
+        pop, ref=gt, s_k=scale, problem="Toy", k=len(pop)
+    )
+    np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-12)
+    assert np.all((0 <= actual) & (actual <= 1))
