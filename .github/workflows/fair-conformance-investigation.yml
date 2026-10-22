@@ -401,3 +401,34 @@ jobs:
           assert float(repeated.quality.scores["Q_CLOSENESS"].value) == original_q
           print("Repeated seed=1 front and Q_CLOSENESS: exact match")
           PY
+
+  # Separate job prevents the main 75-step audit from hiding early
+  # scientific sensitivity results behind repeated heavy regressions.
+  sampling-robustness-all-mops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install numerical package
+        run: python -m pip install -e .
+      - name: Test analytical-residue robustness on every screened MOP
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_ideal_residue_robustness.py \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
+            --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
+            --problem DTLZ7 --problem DTLZ9 \
+            --sample-size 256 --sample-size 512 --sample-size 1024 \
+            --repetitions 4 --pool-extra 8192 \
+            --output /tmp/fair-75-all-screened-residue-robustness.json
+      - name: Upload complete 12-MOP sensitivity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-all-screened-residue-robustness
+          path: /tmp/fair-75-all-screened-residue-robustness.json
+          if-no-files-found: warn
