@@ -13,6 +13,7 @@ on:
       - 'calibration/scripts/migrate_closeness_residue.py'
       - 'calibration/scripts/audit_report_preflight.py'
       - 'calibration/scripts/audit_fair_archive.py'
+      - 'calibration/scripts/audit_longitudinal_pilot.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -20,6 +21,7 @@ on:
       - 'tests/unit/test_dtlz_hypersphere_sampling.py'
       - 'tests/unit/test_audit_report_preflight_issue75.py'
       - 'tests/unit/test_audit_fair_archive_issue75.py'
+      - 'tests/unit/test_longitudinal_pilot_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -93,6 +95,16 @@ jobs:
         with:
           name: fair-75-historical-physical-only
           path: /tmp/fair-75-historical-physical-only.json
+      - name: Genuine initial population longitudinal FAIR audit pilot
+        run: |
+          python calibration/scripts/audit_longitudinal_pilot.py \
+            --seed 7 --generations 60 --population 64 \
+            --output /tmp/fair-75-true-p0-pilot.json
+      - name: Upload true-P0 pilot audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-true-p0-longitudinal-pilot
+          path: /tmp/fair-75-true-p0-pilot.json
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
