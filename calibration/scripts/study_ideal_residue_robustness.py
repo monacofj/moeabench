@@ -311,6 +311,8 @@ def main():
                 "replicate_1024_epsilon": result["sample_sizes"]["1024"]["summary"]["100"]["epsilon"],
                 "q_sensitivity": result["sample_sizes"]["1024"]["summary"]["100"]["q"],
                 "warning_signals": result["warning_signals"],
+                "prefix_regions_f1": result["baseline_first_1024"]["regions_f1"],
+                "whole_pool_regions_f1": result["candidate_pool_regions_f1"],
             }), flush=True)
         except (ValueError, TypeError, AttributeError, IndexError, OSError) as exc:
             data["failures"][name] = f"{type(exc).__name__}: {exc}"
