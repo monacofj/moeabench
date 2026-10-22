@@ -45,3 +45,43 @@ def test_gt_mismatch_never_receives_analytical_residue(tmp_path):
     result=screen.inventory(source,k_values=(10,),root=tmp_path)
     assert result["supported_count"] == 0
     assert "does not match" in result["unsupported"]["Wrong"]["reason"]
+
+
+def test_unequal_sample_cardinality_accepted_only_with_compatible_tail(monkeypatch):
+    """DPF5-like grids are allowed; DPF3-like severe tail gaps are not."""
+    from calibration.scripts import generate_baselines as generator
+    gt = np.column_stack((np.linspace(0,1,41),1-np.linspace(0,1,41)))
+    pkg = {"ideal": np.array([0.0,0.0]), "nadir": np.array([1.0,1.0])}
+    expected = (gt[:-1] + gt[1:])/2
+
+    class GoodGrid:
+        def pf(self,n_points=100):
+            # Rounds requested cardinality down to a square just as
+            # DPF5's Pareto-set grid does.
+            x=np.linspace(0,1,int(np.sqrt(n_points))**2)
+            return np.column_stack((x,1-x))
+
+    monkeypatch.setattr(generator.mops if hasattr(generator,"mops") else __import__(
+        "moeabench.mops", fromlist=["mops"]
+    ),"ToyGrid",GoodGrid,raising=False)
+    monkeypatch.setattr(
+        generator, "independent_analytical_reference", lambda mop, reference: expected,
+        raising=False,
+    )
+    # _analytical_ideal_from_package imports this symbol inside the function;
+    # patch at its authoritative definition instead.
+    import moeabench.diagnostics.calibration as cal
+    monkeypatch.setattr(cal,"independent_analytical_reference",
+                        lambda mop, reference: expected)
+    out=generator._analytical_ideal_from_package("ToyGrid",gt,pkg)
+    np.testing.assert_allclose(out,expected)
+
+    class BadTail(GoodGrid):
+        def pf(self,n_points=100):
+            front=super().pf(n_points)
+            front[-4:,0]+=10.0
+            return front
+
+    monkeypatch.setattr(__import__("moeabench.mops",fromlist=["mops"]),
+                        "ToyGrid",BadTail,raising=False)
+    assert generator._analytical_ideal_from_package("ToyGrid",gt,pkg) is None
