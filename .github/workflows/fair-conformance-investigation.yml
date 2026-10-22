@@ -204,32 +204,32 @@ jobs:
           name: fair-75-all-mops-analytical-screen
           path: /tmp/fair-75-all-mops-analytical-screen.json
           if-no-files-found: warn
-      - name: Stage full-K Closeness correction for all 11 screened MOPs
+      - name: Stage full-K Closeness correction for all 12 screened MOPs
         timeout-minutes: 10
         run: |
           python calibration/scripts/migrate_closeness_residue.py \
-            --problem DPF1 --problem DPF2 --problem DPF4 \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
             --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
             --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
             --problem DTLZ7 --problem DTLZ9 \
-            --impact-report /tmp/fair-75-eleven-mop-impact.json \
-            --output /tmp/fair-75-eleven-mop-candidate.json
+            --impact-report /tmp/fair-75-twelve-mop-impact.json \
+            --output /tmp/fair-75-twelve-mop-candidate.json
           python calibration/scripts/verify_closeness_migration.py \
             --original moeabench/diagnostics/resources/baselines_v0.14.0.json \
-            --candidate /tmp/fair-75-eleven-mop-candidate.json \
-            --problem DPF1 --problem DPF2 --problem DPF4 \
+            --candidate /tmp/fair-75-twelve-mop-candidate.json \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
             --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
             --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
             --problem DTLZ7 --problem DTLZ9 \
-            --output /tmp/fair-75-eleven-mop-verified.json
-      - name: Upload independent 11-MOP full-K correction verification
+            --output /tmp/fair-75-twelve-mop-verified.json
+      - name: Upload independent 12-MOP full-K correction verification
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: fair-75-eleven-mop-full-k-verification
+          name: fair-75-twelve-mop-full-k-verification
           path: |
-            /tmp/fair-75-eleven-mop-impact.json
-            /tmp/fair-75-eleven-mop-verified.json
+            /tmp/fair-75-twelve-mop-impact.json
+            /tmp/fair-75-twelve-mop-verified.json
           if-no-files-found: warn
       - name: Diagnose three unsupported analytical samplers without changing baselines
         timeout-minutes: 10
