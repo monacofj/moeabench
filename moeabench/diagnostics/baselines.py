@@ -320,7 +320,12 @@ def get_baseline_values(problem: str, k: int, metric: str, target_m: Optional[in
             k_data = p_data[str(closest_k)]
             
         m_data = k_data.get(metric, {})
-        
+        if metric == "headway" and m_data.get("method") == "analytic_anchors_adr0049":
+            raise UndefinedBaselineError(
+                "ADR 0049 Q_HEADWAY uses fixed analytic 0/1 anchors, not "
+                "an empirical rand50; call q_headway instead."
+            )
+
         uni = m_data.get("uni50")
         rand = m_data.get("rand50")
         
@@ -357,7 +362,12 @@ def get_baseline_ecdf(problem: str, k: int, metric: str, target_m: Optional[int]
             k_data = p_data[str(closest_k)]
             
         m_data = k_data.get(metric, {})
-        
+        if metric == "headway" and m_data.get("method") == "analytic_anchors_adr0049":
+            raise UndefinedBaselineError(
+                "ADR 0049 Q_HEADWAY is analytical and has no random ECDF; "
+                "call q_headway with a genuine initial population."
+            )
+
         uni = m_data.get("uni50")
         rand = m_data.get("rand50")
         rand_ecdf = m_data.get("rand_ecdf")
