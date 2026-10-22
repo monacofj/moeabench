@@ -15,6 +15,7 @@ on:
       - 'calibration/scripts/audit_fair_archive.py'
       - 'calibration/scripts/audit_longitudinal_pilot.py'
       - 'calibration/scripts/render_fair_evidence_preview.py'
+      - 'calibration/scripts/benchmark_fair_calibration_cost.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -24,6 +25,7 @@ on:
       - 'tests/unit/test_audit_fair_archive_issue75.py'
       - 'tests/unit/test_longitudinal_pilot_issue75.py'
       - 'tests/unit/test_fair_preview_issue75.py'
+      - 'tests/unit/test_fair_calibration_cost_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -119,6 +121,20 @@ jobs:
         with:
           name: fair-75-provisional-evidence-preview
           path: /tmp/fair-75-provisional-evidence.html
+      - name: Benchmark one complete calibration K on three MOPs (excluding HEADWAY)
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/benchmark_fair_calibration_cost.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --k 20 --random-draws 200 --ideal-draws 30 \
+            --output /tmp/fair-75-three-mop-cost.json
+      - name: Upload multi-MOP calibration timing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-calibration-cost
+          path: /tmp/fair-75-three-mop-cost.json
+          if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
