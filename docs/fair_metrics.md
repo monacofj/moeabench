@@ -384,7 +384,7 @@ The failure anchor ($Q=0$) is determined through an offline empirical calibratio
 - **Ideal anchor:** $0$.
 - **No-progress anchor:** $1$ (analytical, not an empirical random-population baseline).
 - **Mapping:** log-linear.
-- **Meaning:** how much progress was made toward the manifold relative to the algorithm's own starting point.
+- **Meaning:** how much progress was made toward the manifold relative to the algorithm's genuine generation-zero state. Without the initial population, HEADWAY and Q_HEADWAY are undefined. A physical HEADWAY above 1 indicates regression and maps to Q=0.
 
 **Q=1 Baseline (The Plausible Ideal):**
 The ideal anchor ($Q=1$) is exactly $0.0$ for the raw Headway ratio. This represents a scenario where the algorithm has completely eliminated its initial search error, driving the population all the way from its starting state (Generation 0) to land exactly on the Ground Truth.
