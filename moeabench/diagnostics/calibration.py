@@ -16,6 +16,7 @@ import inspect
 import numpy as np
 from typing import Optional, List, Dict, Any, Union
 from scipy.spatial.distance import cdist
+from scipy.spatial import cKDTree
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 from . import baselines as base
@@ -27,6 +28,61 @@ N_SAMPLES_ECDF = 200
 N_IDEAL_DRAWS = 30
 K_GRID_DEFAULT = list(range(10, 51)) + [100, 150, 200]
 SEED_START = 1000
+
+def independent_analytical_reference(mop: Any, gt: np.ndarray, n_fresh: int = 1024):
+    """Sample analytical PF points that are absent from the finite GT.
+
+    A number of built-in MOPs use deterministic generators that restart at
+    seed 42 for every call to pf(). Naively requesting the same number of
+    points reproduces *exactly* the GT, not a fresh ideal reference. Request
+    additional points and remove all exact/near-exact GT coincidences.
+    Return None when no scientifically independent sample can be obtained.
+    """
+    gt = np.asarray(gt, dtype=float)
+    if gt.ndim != 2 or len(gt) < 2:
+        raise ValueError("GT must be a nonempty 2D reference")
+    if not isinstance(n_fresh, int) or n_fresh < 2:
+        raise ValueError("n_fresh must be an integer >= 2")
+    try:
+        candidates = np.asarray(
+            mop.pf(n_points=len(gt) + n_fresh), dtype=float
+        )
+    except (AttributeError, NotImplementedError, TypeError, ValueError):
+        return None
+    if candidates.ndim != 2 or candidates.shape[1] != gt.shape[1]:
+        return None
+    if not np.all(np.isfinite(candidates)):
+        return None
+    distances = cKDTree(gt).query(candidates, k=1)[0]
+    # Exclude deterministic prefix reuse and exact geometric duplicates.
+    threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
+    fresh = candidates[distances > threshold]
+    return fresh[:n_fresh] if len(fresh) >= 2 else None
+
+
+def estimate_ideal_residue(gt: np.ndarray, independent_ideal: np.ndarray, s_k: float) -> float:
+    """Estimate finite-GT residue from independent ideal-front samples.
+
+    Implements ADR 0037: median_{ideal sample} d(x, GT) / s_K.
+    A sample composed of GT points is *invalid*, even if a different
+    farthest-point-sampling seed was used to select those same points.
+    """
+    gt = np.asarray(gt, dtype=float)
+    independent_ideal = np.asarray(independent_ideal, dtype=float)
+    if gt.ndim != 2 or independent_ideal.ndim != 2 or gt.shape[1] != independent_ideal.shape[1]:
+        raise ValueError("GT and independent ideal samples require matching objective dimensions")
+    if len(gt) < 2 or len(independent_ideal) < 2:
+        raise ValueError("At least two points are required for residue estimation")
+    if not (np.all(np.isfinite(gt)) and np.all(np.isfinite(independent_ideal))):
+        raise ValueError("Ideal reference and GT must contain finite values")
+    if not np.isfinite(s_k) or s_k <= 0:
+        raise ValueError("s_K must be strictly positive")
+    distances = cKDTree(gt).query(independent_ideal, k=1)[0]
+    threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
+    if np.any(distances <= threshold):
+        raise ValueError("ideal reference overlaps finite GT: independent samples required")
+    return float(np.median(distances) / s_k)
+
 
 def calibrate_mop(mop: Any, 
                   source_baseline: Optional[str] = None, 
@@ -144,7 +200,14 @@ def calibrate_mop(mop: Any,
     else:
         k_grid = K_GRID_DEFAULT
         
-    problem_data = _generate_baselines(mop_name, gt, k_grid)
+    # Only the native analytical protocol can certify independent ideal
+    # samples here. A user-supplied/empirical GT may describe a different
+    # manifold; never infer an analytical residue from an unrelated MOP.
+    independent_ideal = (
+        independent_analytical_reference(mop, gt)
+        if source_gt is None and source_search is None else None
+    )
+    problem_data = _generate_baselines(mop_name, gt, k_grid, independent_ideal=independent_ideal)
 
     # 5. Save Sidecar
     import datetime
@@ -177,7 +240,8 @@ def calibrate_mop(mop: Any,
     )
     return True
 
-def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[str, Any]:
+def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
+                        independent_ideal: Optional[np.ndarray] = None) -> Dict[str, Any]:
     """Internal math engine for baseline calculation."""
     M = gt.shape[1]
     
@@ -207,15 +271,16 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
         sigma, u_blur = _calibrate_and_blur(gt, normals, s_fit, SEED_START + k)
         u_blur_ecdf = _downsample_ecdf(np.sort(u_blur))
         
-        # PROPOSAL: Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
-        # We need a fresh analytical sample if available, or a different FPS subset.
-        # Protocol: If GT is large enough, use a different FPS slice. 
-        # Better: use a higher seed for get_ref_uk to simulate a "perfect" but non-identical front.
-        u_ideal_sample = base.get_ref_uk(gt, k, seed=999) 
-        d_ideal = cdist(u_ideal_sample, gt)
-        min_d_ideal = np.min(d_ideal, axis=1)
-        u_ideal_vals = min_d_ideal / s_fit if s_fit > 1e-12 else min_d_ideal
-        ideal_res = float(np.median(u_ideal_vals))
+        # ADR 0037: the finite-GT residue must use a distinct analytical
+        # ideal-front sample, never an FPS subset *of the same GT*. For
+        # empirical/externally supplied GT there may be no analytical oracle.
+        # In that case the physical correction remains zero, explicitly
+        # marked as unavailable, not misreported as a measured zero residue.
+        if independent_ideal is None:
+            ideal_res, ideal_res_method = 0.0, "unavailable_no_independent_ideal"
+        else:
+            ideal_res = estimate_ideal_residue(gt, independent_ideal, s_fit)
+            ideal_res_method = "independent_analytical_pf"
         
         # Metrics storage
         k_data = {
@@ -223,7 +288,8 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
                 "uni50": 0.0,
                 "rand50": float(np.median(u_blur)),
                 "rand_ecdf": [float(x) for x in u_blur_ecdf],
-                "ideal_res": ideal_res
+                "ideal_res": ideal_res,
+                "ideal_res_method": ideal_res_method
             }
         }
         
