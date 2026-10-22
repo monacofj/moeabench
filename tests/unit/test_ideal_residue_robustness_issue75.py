@@ -22,7 +22,7 @@ def _data():
     zz = 0.005 + 0.02 * xx
     pool = np.column_stack((xx, 1-xx, zz))
     blur = np.linspace(0.05, 2.0, 200)
-    return gt, pool, blur
+    return gt, pool, {"20": blur, "100": blur * 1.05}
 
 
 def test_robustness_exposes_prefix_bias_and_preserves_disjoint_replicates():
@@ -78,6 +78,16 @@ def test_bad_candidate_pool_does_not_silently_produce_scientific_result():
     with pytest.raises(ValueError, match="overlaps"):
         compare_subsets(gt, bad_pool, pool[:1024], blur,
                         sample_sizes=(256,), repetitions=4)
+
+
+def test_missing_k_matched_ecdf_fails_closed():
+    gt, pool, blur = _data()
+    with pytest.raises(ValueError, match="K=100"):
+        compare_subsets(
+            gt, pool, pool[:1024], {"20": blur["20"]},
+            sample_sizes=(256,), repetitions=4,
+            k_values=(20, 100),
+        )
 
 
 def test_region_occupancy_exposes_one_axis_clustering():
