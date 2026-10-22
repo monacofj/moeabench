@@ -238,8 +238,10 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
             description="Unavailable: Longitudinal context (Pop 0) missing. Pass Experiment/Run object."
         )
 
-    # The physical HEADWAY (ratio) range is [0, 1] (where 0=Ideal, 1=No progress)
-    # We map this to [1, 0] using log-linear expansion
+    # ADR 0049: physical Headway is unbounded above (values >1 denote
+    # regression), but the quality score is bounded. Its *analytical*
+    # anchors are 0 => Q=1 and 1 => Q=0; values above 1 yield Q=0.
+    # No empirical one-population Headway ECDF is consulted.
     q_val = _compute_q_loglinear(f_val, 0.0, 1.0)
     
     return QResult(
