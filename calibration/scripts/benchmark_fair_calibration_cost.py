@@ -20,7 +20,14 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import sys
 import time
+
+# Direct CLI invocation makes calibration/scripts the import root. Add the
+# repository root before importing the scientific package or shared scripts.
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 import numpy as np
 from scipy.spatial.distance import cdist
@@ -32,7 +39,6 @@ from calibration.scripts.generate_baselines import (
     calibrate_sigma, generate_half_normal_blur,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
 METRICS = ("COVERAGE", "GAP", "REGULARITY", "BALANCE")
 
 
