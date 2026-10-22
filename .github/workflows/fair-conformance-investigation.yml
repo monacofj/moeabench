@@ -11,11 +11,13 @@ on:
       - 'moeabench/moeas/**'
       - 'calibration/scripts/generate_baselines.py'
       - 'calibration/scripts/migrate_closeness_residue.py'
+      - 'calibration/scripts/audit_report_preflight.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
       - 'tests/unit/test_nsga2_seed_issue75.py'
       - 'tests/unit/test_dtlz_hypersphere_sampling.py'
+      - 'tests/unit/test_audit_report_preflight_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -70,6 +72,15 @@ jobs:
         with:
           name: fair-75-dtlz1-residue-impact
           path: /tmp/fair-75-dtlz1-residue-impact.json
+      - name: Preflight historical audit_report regeneration (no writes to certified artifacts)
+        run: |
+          python calibration/scripts/audit_report_preflight.py \
+            --output /tmp/fair-75-audit-report-preflight.json
+      - name: Upload audit_report input preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-audit-report-preflight
+          path: /tmp/fair-75-audit-report-preflight.json
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
           python - <<'PY'
