@@ -20,6 +20,7 @@ on:
       - 'calibration/scripts/validate_headway_anchors.py'
       - 'calibration/scripts/screen_analytical_residues.py'
       - 'calibration/scripts/diagnose_unsupported_pf.py'
+      - 'calibration/scripts/study_ideal_residue_robustness.py'
       - 'moeabench/view/**'
       - 'examples/example_13.py'
       - 'tests/unit/test_fair_conformance_issue75.py'
@@ -35,6 +36,7 @@ on:
       - 'tests/unit/test_headway_pointwise_issue75.py'
       - 'tests/unit/test_screen_analytical_residues_issue75.py'
       - 'tests/unit/test_diagnose_unsupported_pf_issue75.py'
+      - 'tests/unit/test_ideal_residue_robustness_issue75.py'
       - 'tests/integration/test_example13_consistency.py'
       - 'tests/integration/test_topology_marker_alignment.py'
       - '.github/workflows/fair-conformance-investigation.yml'
@@ -74,6 +76,8 @@ jobs:
         run: python -m pytest tests/unit/test_fair_conformance_issue75.py -rx -q
       - name: Preserve Example 13 interface contract
         run: python -m pytest tests/integration/test_example13_consistency.py -q
+      - name: Validate analytical sample robustness test oracles
+        run: python -m pytest tests/unit/test_ideal_residue_robustness_issue75.py -q
       - name: Full unit regressions
         run: python test.py --unit
       - name: Basic integration regressions
@@ -243,6 +247,21 @@ jobs:
         with:
           name: fair-75-unsupported-pf-diagnostics
           path: /tmp/fair-75-unsupported-pf-diagnostics.json
+          if-no-files-found: warn
+      - name: Challenge Closeness residue robustness (DTLZ1/DTLZ2/DPF5)
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_ideal_residue_robustness.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DPF5 \
+            --sample-size 256 --sample-size 512 --sample-size 1024 \
+            --repetitions 4 --pool-extra 8192 \
+            --output /tmp/fair-75-independent-residue-robustness.json
+      - name: Upload statistical robustness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-independent-residue-robustness
+          path: /tmp/fair-75-independent-residue-robustness.json
           if-no-files-found: warn
       - name: Real Example 13 FAIR pipeline and scale diagnostics
         run: |
