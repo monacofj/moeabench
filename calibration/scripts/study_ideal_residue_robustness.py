@@ -105,15 +105,24 @@ def compare_subsets(gt, fresh_pool, old_prefix, raw_blur, *,
     reference_gt_nn = float(np.median(tree.query(gt, k=2)[0][:, 1]))
     if reference_gt_nn <= 0:
         raise ValueError("Invalid archived nearest-neighbor GT spacing")
-    raw_blur = np.asarray(raw_blur, dtype=float)
-    if raw_blur.ndim != 1 or len(raw_blur) < 2 or np.any(~np.isfinite(raw_blur)):
-        raise ValueError("Expected archived positive normalized blur ECDF")
-    if np.any(raw_blur < 0):
-        raise ValueError("Expected nonnegative uncorrected blur")
-    # Observed distance distributions are fully frozen and independent of the
-    # candidate epsilon. Both are generated *once* from the old frozen ECDF;
-    # 0.35 and 0.65 avoid automatically making every Q=0 (unlike bad=blur).
-    obs_raw = {str(f): f * raw_blur for f in (0.35, 0.65)}
+    # Each K has its *own* frozen blur ECDF; treating K=20 ECDF as the
+    # K=100 reference would produce an invalid Q sensitivity experiment.
+    if not isinstance(raw_blur, dict):
+        raise ValueError("Expected K-specific frozen blur ECDF mapping")
+    raw_blur_by_k = {}
+    obs_raw_by_k = {}
+    for k in k_values:
+        name = str(k)
+        if name not in raw_blur:
+            raise ValueError(f"Missing frozen Closeness blur ECDF for K={name}")
+        sample = np.asarray(raw_blur[name], dtype=float)
+        if sample.ndim != 1 or len(sample) < 2 or np.any(~np.isfinite(sample)):
+            raise ValueError(f"Invalid archived blur ECDF for K={name}")
+        if np.any(sample < 0):
+            raise ValueError(f"Negative uncorrected blur values for K={name}")
+        raw_blur_by_k[name] = sample
+        # Fixed observations independent of candidate epsilon.
+        obs_raw_by_k[name] = {str(f): f * sample for f in (0.35, 0.65)}
     scale_by_k = {
         str(k): float(baselines.get_resolution_factor_k(gt, int(k), seed=0))
         for k in k_values
@@ -142,8 +151,8 @@ def compare_subsets(gt, fresh_pool, old_prefix, raw_blur, *,
         e = estimate_ideal_residue(gt, old_prefix, scale)
         record["baseline_first_1024"][k] = {
             "epsilon": e,
-            "q": {fraction: _fixed_q(raw, raw_blur, e, k=int(k))
-                  for fraction, raw in obs_raw.items()},
+            "q": {fraction: _fixed_q(raw, raw_blur_by_k[k], e, k=int(k))
+                  for fraction, raw in obs_raw_by_k[k].items()},
         }
     record["baseline_first_1024"]["regions_f1"] = _region_hist(old_prefix, gt)
 
@@ -176,8 +185,8 @@ def compare_subsets(gt, fresh_pool, old_prefix, raw_blur, *,
                 epsilon = float(np.median(distances) / scale)
                 run["k"][k] = {
                     "epsilon": epsilon,
-                    "q": {fraction: _fixed_q(raw, raw_blur, epsilon, k=int(k))
-                          for fraction, raw in obs_raw.items()},
+                    "q": {fraction: _fixed_q(raw, raw_blur_by_k[k], epsilon, k=int(k))
+                          for fraction, raw in obs_raw_by_k[k].items()},
                 }
             repeats.append(run)
         summary = {}
@@ -187,7 +196,7 @@ def compare_subsets(gt, fresh_pool, old_prefix, raw_blur, *,
                 "epsilon": _stats(eps),
                 "q": {fraction: _stats([
                     x["k"][k]["q"][fraction] for x in repeats
-                ]) for fraction in obs_raw},
+                ]) for fraction in obs_raw_by_k[k]},
             }
             if n == 1024:
                 earlier = record["baseline_first_1024"][k]["epsilon"]
@@ -223,9 +232,12 @@ def analyze_problem(name, source, *, sizes=(256, 512, 1024),
         ideal, nadir = np.asarray(package["ideal"]), np.asarray(package["nadir"])
     if np.any(nadir <= ideal):
         raise ValueError("Invalid calibration normalization")
-    raw_blur = np.asarray(rec["20"]["closeness"]["rand_ecdf"], dtype=float)
-    if not np.all(np.isfinite(raw_blur)):
-        raise ValueError("Bad frozen reference ECDF")
+    raw_blur = {
+        str(k): np.asarray(rec[str(k)]["closeness"]["rand_ecdf"], dtype=float)
+        for k in (20, 100)
+    }
+    if not all(np.all(np.isfinite(dist)) for dist in raw_blur.values()):
+        raise ValueError("Bad frozen K-specific reference ECDF")
 
     class NormalizedMop:
         def __init__(self, native):
@@ -258,7 +270,9 @@ def analyze_problem(name, source, *, sizes=(256, 512, 1024),
     record["problem"] = name
     record["archived_gt_shape"] = list(gt.shape)
     record["gt_sha256"] = hashlib.sha256(np.ascontiguousarray(gt).tobytes()).hexdigest()
-    record["frozen_baseline_closeness_ecdf_k20_count"] = len(raw_blur)
+    record["frozen_baseline_closeness_ecdf_counts"] = {
+        k: len(v) for k, v in raw_blur.items()
+    }
     record["sample_sizes_n"] = list(sizes)
     return record
 
