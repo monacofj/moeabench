@@ -73,6 +73,11 @@ def compare_reservoir_factors(gt, sampler, *, n_fresh=1024,
             "requested_pf_points":count,
             "returned_pf_points":len(candidates),
             "unique_fresh_candidates":len(fresh),
+            "raw_non_GT_candidates": int(np.count_nonzero(distances > thresh)),
+            "duplicate_non_GT_count": int(np.count_nonzero(distances > thresh) - len(fresh)),
+            "duplicate_non_GT_fraction": float(
+                1.0 - len(fresh)/max(1, np.count_nonzero(distances > thresh))
+            ),
             "candidate_regions_f1":_region_hist(fresh,gt),
             "replicates":values,
             "epsilon_stats":{k:_stats([r["epsilons"][k] for r in values])
@@ -151,6 +156,9 @@ def main():
                     ["relative_range_over_median"],
                     "candidate_regions_f1":{
                         factor:val["candidate_regions_f1"]
+                        for factor,val in rec["factors"].items()},
+                    "candidate_duplicate_fraction":{
+                        factor:val["duplicate_non_GT_fraction"]
                         for factor,val in rec["factors"].items()} }),flush=True)
         except (ValueError,TypeError,OSError,IndexError) as exc:
             data["failures"][name]=f"{type(exc).__name__}: {exc}"
