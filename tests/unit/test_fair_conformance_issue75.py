@@ -202,6 +202,7 @@ def test_closeness_uses_nonzero_calibrated_residue(monkeypatch):
     gt = _line(41)
     population = gt[::4] + np.array([0.03, 0.03])
     scale, residue = 0.15, 0.20
+    monkeypatch.setattr(baselines, "reference_compatibility", lambda problem, gt: True)
     monkeypatch.setattr(
         baselines, "get_baseline_data",
         lambda problem, k, metric: {"ideal_res": residue},
@@ -216,6 +217,7 @@ def test_closeness_uses_nonzero_calibrated_residue(monkeypatch):
 def test_closeness_rejects_invalid_calibrated_residue(monkeypatch):
     """Malformed or negative residue must not be treated as zero silently."""
     gt = _line(41)
+    monkeypatch.setattr(baselines, "reference_compatibility", lambda problem, gt: True)
     monkeypatch.setattr(
         baselines, "get_baseline_data",
         lambda problem, k, metric: {"ideal_res": -0.1},
@@ -283,3 +285,26 @@ def test_staged_residue_migration_shifts_ecdf_without_modifying_legacy_input():
     assert old["ideal_res"] == 0.0  # Frozen historical artifact untouched.
     with pytest.raises(ValueError, match="already been corrected"):
         residue_update_record(after, 0.10)
+
+
+def test_physical_closeness_mismatched_gt_never_borrows_other_residue(monkeypatch):
+    """A physical metric with custom GT remains uncorrected unless calibrated."""
+    gt = _line(41)
+    pop = gt[::4] + np.array([0.03, 0.03])
+    scale = 0.15
+    monkeypatch.setattr(baselines, "reference_compatibility", lambda problem, ref: False)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("An incompatible baseline residue was requested")
+
+    monkeypatch.setattr(baselines, "get_baseline_data", forbidden)
+    physical = fair.closeness(pop, ref=gt, s_k=scale, problem="Toy", k=len(pop))
+    expected = cdist(pop, gt).min(axis=1) / scale
+    np.testing.assert_allclose(physical.raw_data, expected)
+
+    overridden = fair.closeness(
+        pop, ref=gt, s_k=scale, problem="Toy", k=len(pop), ideal_res=0.10
+    )
+    np.testing.assert_allclose(
+        overridden.raw_data, np.maximum(0.0, expected - 0.10)
+    )
