@@ -300,8 +300,8 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
         }
         
         # Other Metrics (Random and Ideal)
-        rand_metrics = {m: [] for m in ["headway", "cov", "gap", "reg", "bal"]}
-        ideal_metrics = {m: [] for m in ["headway", "cov", "gap", "reg", "bal"]}
+        rand_metrics = {m: [] for m in ["cov", "gap", "reg", "bal"]}
+        ideal_metrics = {m: [] for m in ["cov", "gap", "reg", "bal"]}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES_ECDF):
@@ -317,13 +317,23 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
             for key in ideal_metrics: ideal_metrics[key].append(m[key])
             
         # Consolidate
-        for m in ["headway", "cov", "gap", "reg", "bal"]:
+        for m in ["cov", "gap", "reg", "bal"]:
             r_all = np.sort(rand_metrics[m])
             k_data[m] = {
-                "uni50": 0.0 if m == "headway" else float(np.median(ideal_metrics[m])),
+                "uni50": float(np.median(ideal_metrics[m])),
                 "rand50": float(np.median(r_all)),
                 "rand_ecdf": [float(x) for x in r_all]
             }
+
+        # ADR 0049: Q_HEADWAY has fixed 0/1 analytic anchors. Do not
+        # substitute a single-population final distance or an undefined
+        # HEADWAY statistic for a true paired P0/Pf trajectory.
+        k_data["headway"] = {
+            "ideal": 0.0,
+            "no_progress": 1.0,
+            "method": "analytic_anchors_adr0049",
+            "status": "no_empirical_longitudinal_baseline",
+        }
             
         problem_data[k_str] = k_data
         pbar.update_to(i + 1)
@@ -334,7 +344,7 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
 def _calc_all(p, gt, s_fit, u_ref, c_cents, hist_ref):
     """Calculates all fair metrics for a sample."""
     return {
-        "headway": fair.headway(p, gt, s_fit).value,
+        # No HEADWAY: requires true P0/Pf from the same run (ADR 0049).
         "cov": fair.coverage(p, gt).value,
         "gap": fair.gap(p, gt).value,
         "reg": fair.regularity(p, u_ref).value,
