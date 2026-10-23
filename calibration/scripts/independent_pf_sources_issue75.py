@@ -60,6 +60,65 @@ def sample_independent_pf(name, n_points, seed, *, mop=None):
     return F, law
 
 
+
+def sample_dtlz2_uniform_normalized_surface(n_points, seed, *, ideal, nadir):
+    """Independent DTLZ2 PF sampling uniform by area *after* normalization.
+
+    DTLZ2's physical Pareto front is the positive unit sphere. Let
+    T(f)=(f-ideal)/(nadir-ideal), with the frozen package's affine bounds.
+    Uniform physical-sphere area is NOT uniform on T(PF) when the coordinate
+    spans differ. For an invertible diagonal map A=diag(1/span), its induced
+    (M-1)-surface-area Jacobian is
+
+        J_A(n) = abs(det(A)) * ||A^(-T) n||,
+
+    where n is the unit sphere normal (= the raw sphere point). The constant
+    determinant cancels during rejection sampling. A direction proposed
+    uniformly on the physical positive sphere is accepted with probability
+    ||span*n|| / max(span).
+
+    This is a *research-only* sampler for a candidate normative measure,
+    not a certified FAIR baseline or a replacement for DTLZ2's standard PF
+    generator. Supports M >= 2 (also tests dimensional generalization).
+    """
+    if not isinstance(n_points, int) or n_points < 2:
+        raise ValueError("At least two independent surface points required")
+    if not isinstance(seed, int) or seed < 0:
+        raise ValueError("Require a nonnegative private seed")
+    ideal = np.asarray(ideal, dtype=float)
+    nadir = np.asarray(nadir, dtype=float)
+    if (ideal.ndim != 1 or nadir.shape != ideal.shape
+            or ideal.size < 2
+            or not np.all(np.isfinite(ideal))
+            or not np.all(np.isfinite(nadir))):
+        raise ValueError("Require finite matching ideal/nadir of dimension >= 2")
+    span = nadir - ideal
+    if np.any(span <= 0) or not np.all(np.isfinite(span)):
+        raise ValueError("Normalized objective spans must be finite and positive")
+
+    rng = np.random.default_rng(seed)
+    accepted = []
+    remaining = n_points
+    # A private RNG ensures reproducibility and no process-global RNG mutation.
+    while remaining:
+        batch = max(256, min(65536, 4 * remaining))
+        direction = np.abs(rng.standard_normal((batch, ideal.size)))
+        norms = np.linalg.norm(direction, axis=1)
+        direction /= norms[:, None]
+        weighted_area = np.linalg.norm(direction * span, axis=1)
+        take = rng.random(batch) * np.max(span) <= weighted_area
+        new = direction[take][:remaining]
+        if len(new):
+            accepted.append(new)
+            remaining -= len(new)
+
+    physical = np.concatenate(accepted, axis=0)
+    normalized = (physical - ideal) / span
+    if not np.all(np.isfinite(normalized)):
+        raise ValueError("Normalized surface candidate contains nonfinite points")
+    return normalized, "uniform_normalized_dtlz2_surface_area_rejection"
+
+
 def surface_identity(name, raw_F):
     """Independent, known exact geometry for DTLZ1/2; no such claim for DPF5."""
     F = np.asarray(raw_F,dtype=float)
