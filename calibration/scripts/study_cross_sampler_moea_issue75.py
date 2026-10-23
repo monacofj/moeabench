@@ -52,6 +52,8 @@ def summarize_law_shift(trials, samples):
     """
     summary={"by_front":[],"non_clipped_fronts":0,"clipped_all_zero_fronts":0,
              "max_cross_law_q_median_shift_nonclipped":None,
+             "max_within_law_q_seed_span_nonclipped":None,
+             "cross_law_shift_exceeds_within_law_seed_span":None,
              "max_cross_law_epsilon_median_shift":None,
              "not_certified":True}
     built=[float(v["eps_distance_median"]) for k,v in samples.items()
@@ -63,6 +65,7 @@ def summarize_law_shift(trials, samples):
     delta=abs(float(np.median(built))-float(np.median(external)))
     summary["max_cross_law_epsilon_median_shift"]=delta
     shifts=[]
+    within_spans=[]
     for trial in trials:
         for gen,front in trial["fronts"].items():
             byseed=front["q_by_analytical_seed"]
@@ -74,8 +77,10 @@ def summarize_law_shift(trials, samples):
             all_one=all(x==1.0 for x in left+right)
             informative=not (all_zero or all_one)
             difference=abs(float(np.median(left))-float(np.median(right)))
+            within=float(max(max(left)-min(left),max(right)-min(right)))
             if informative:
                 shifts.append(difference)
+                within_spans.append(within)
             if all_zero: summary["clipped_all_zero_fronts"]+=1
             if informative: summary["non_clipped_fronts"]+=1
             summary["by_front"].append({
@@ -86,10 +91,18 @@ def summarize_law_shift(trials, samples):
                 "library_q":_stats(left),
                 "independent_q":_stats(right),
                 "median_q_shift":difference,
+                "within_law_q_seed_span_max":within,
                 "non_clipped":informative,
                 "all_zero":all_zero,"all_one":all_one,
             })
-    if shifts:summary["max_cross_law_q_median_shift_nonclipped"]=max(shifts)
+    if shifts:
+        summary["max_cross_law_q_median_shift_nonclipped"]=max(shifts)
+        summary["max_within_law_q_seed_span_nonclipped"]=max(within_spans)
+        # Descriptive scale comparison ONLY. This is not a hypothesis test
+        # or a justified clinical-acceptance cutoff.
+        summary["cross_law_shift_exceeds_within_law_seed_span"]=bool(
+            max(shifts)>max(within_spans)
+        )
     return summary
 
 
@@ -218,6 +231,10 @@ def main():
                     if k.startswith("independent_")]),
                 "max_cross_law_q_median_shift_nonclipped":
                   rec["summary"]["max_cross_law_q_median_shift_nonclipped"],
+                "max_within_law_q_seed_span_nonclipped":
+                  rec["summary"]["max_within_law_q_seed_span_nonclipped"],
+                "cross_law_shift_exceeds_within_law_seed_span":
+                  rec["summary"]["cross_law_shift_exceeds_within_law_seed_span"],
                 "non_clipped_fronts":rec["summary"]["non_clipped_fronts"],
                 "zero_clipped_fronts":rec["summary"]["clipped_all_zero_fronts"],
             }),flush=True)
