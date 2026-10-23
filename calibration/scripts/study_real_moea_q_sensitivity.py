@@ -286,6 +286,16 @@ def main():
                 "max_drift_from_frozen_q":rec["max_drift_from_frozen_q"],
                 "clipped_zero_fronts":rec["clipped_zero_fronts"],
                 "clipped_one_fronts":rec["clipped_one_fronts"],
+                "per_seed_generation_q": {
+                    str(trial["seed"]): {
+                        g: {"Q_old": info["archived_zero_residue_q"],
+                            "Q_sample_min": info["q_range"]["min"],
+                            "Q_sample_max": info["q_range"]["max"],
+                            "front_points": info["front_points"],
+                            "raw_closeness_median": info["raw_closeness_median"]}
+                        for g, info in trial["fronts"].items()
+                    } for trial in rec["trials"]
+                },
                 "analytical_epsilons":{
                     k:v["ideal_res"] for k,v in rec["calibration"].items()
                 },
