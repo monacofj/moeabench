@@ -85,3 +85,23 @@ def test_independent_gt_freshness_and_preserves_frozen_coordinates():
     assert metadata["certified"] is False
     assert metadata["mismatch"]["fresh_count"]==len(normalized)
     assert len(normalized)>=143
+
+
+def test_dtlz1_builtin_pf_law_is_not_uniform_objective_simplex_area():
+    """Mathematically distinct reference measures have distinct f3 moments.
+
+    At the Pareto set, DTLZ1 M=3 yields:
+       f1 = .5*x1*x2, f2 = .5*x1*(1-x2), f3 = .5*(1-x1).
+    Built-in ps() draws x1,x2 independently Uniform(0,1), hence E[f] =
+    (.125,.125,.25). Uniform *simplex area* instead yields (1/6,1/6,1/6).
+    This is a distribution-choice issue, not Monte-Carlo rounding.
+    """
+    import moeabench as mb
+    library=np.asarray(mb.mops.DTLZ1(M=3).pf(n_points=20000),dtype=float)
+    independent,_=sample_independent_pf("DTLZ1",20000,seed=92)
+    assert library.shape==(20000,3)
+    np.testing.assert_allclose(np.mean(library,axis=0),[.125,.125,.25],
+                               atol=.007,rtol=0)
+    np.testing.assert_allclose(np.mean(independent,axis=0),
+                               [1/6,1/6,1/6],atol=.007,rtol=0)
+    assert np.mean(library[:,2])-np.mean(independent[:,2])>.06
