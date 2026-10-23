@@ -14,6 +14,10 @@ on:
       - 'tests/unit/test_verify_closeness_migration_issue75.py'
       - 'calibration/scripts/migrate_closeness_residue.py'
       - 'calibration/scripts/verify_closeness_migration.py'
+      - 'calibration/scripts/study_area_candidate_q_issue75.py'
+      - 'calibration/scripts/build_fair_candidate_manifest_issue75.py'
+      - 'calibration/scripts/render_fair_release_preview_issue75.py'
+      - 'tests/unit/test_fair_release_preview_issue75.py'
       - '.github/workflows/fair-75-normalized-area-probe.yml'
   pull_request:
     branches:
@@ -26,6 +30,10 @@ on:
       - 'tests/unit/test_verify_closeness_migration_issue75.py'
       - 'calibration/scripts/migrate_closeness_residue.py'
       - 'calibration/scripts/verify_closeness_migration.py'
+      - 'calibration/scripts/study_area_candidate_q_issue75.py'
+      - 'calibration/scripts/build_fair_candidate_manifest_issue75.py'
+      - 'calibration/scripts/render_fair_release_preview_issue75.py'
+      - 'tests/unit/test_fair_release_preview_issue75.py'
       - '.github/workflows/fair-75-normalized-area-probe.yml'
   workflow_dispatch:
 
@@ -47,7 +55,8 @@ jobs:
           python -m pytest -q -s \
             tests/unit/test_independent_pf_sources_issue75.py \
             tests/unit/test_cross_sampler_moea_issue75.py \
-            tests/unit/test_verify_closeness_migration_issue75.py
+            tests/unit/test_verify_closeness_migration_issue75.py \
+            tests/unit/test_fair_release_preview_issue75.py
       - name: Measure DTLZ2 raw-area vs normalized-area impact on real NSGA-II
         timeout-minutes: 11
         run: |
@@ -129,6 +138,65 @@ jobs:
             /tmp/fair-75-area-impact.json
             /tmp/fair-75-area-verification.json
             /tmp/fair-75-area-migration-log.txt
+          if-no-files-found: warn
+      - name: Compare candidate Q on actual DTLZ1 NSGA-II 500-generation histories
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/study_area_candidate_q_issue75.py \
+            --candidate /tmp/fair-75-area-candidate.json \
+            --problem DTLZ1 --optimizer-seed 1 --optimizer-seed 7 \
+            --population 100 --generations 500 \
+            --output /tmp/fair-75-dtlz1-area-q-impact.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('/tmp/fair-75-dtlz1-area-q-impact.json').read_text())
+          assert result['status']=='NONCERTIFIED_PAIRED_REAL_MOEA_Q_CANDIDATE'
+          assert result['unrelated_fair_q_unchanged']
+          assert result['informative_checkpoint_count']>=1
+          assert result['max_informative_absolute_q_shift'] is not None
+          assert all(x['P0_sha256'] and x['P0_points']>=1
+                     for x in result['trials'])
+          print('DTLZ1 REAL MOEA CANDIDATE Q:',{
+            k:v for k,v in result.items() if k in (
+              'area_ideal_res','all_checkpoint_count',
+              'informative_checkpoint_count','clipped_checkpoint_count',
+              'max_informative_absolute_q_shift')})
+          PY
+      - name: Bind normalized-area candidate and real Q to versioned noncertified manifest
+        run: |
+          python calibration/scripts/build_fair_candidate_manifest_issue75.py \
+            --original moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            --candidate /tmp/fair-75-area-candidate.json \
+            --impact /tmp/fair-75-area-impact.json \
+            --verified /tmp/fair-75-area-verification.json \
+            --source-revision "${GITHUB_SHA}" \
+            --output /tmp/fair-75-area-manifest-v1.json
+      - name: Inventory historical P0 provenance and render versioned FAIR audit preview
+        run: |
+          python calibration/scripts/audit_report_preflight.py \
+            --output /tmp/fair-75-versioned-report-preflight.json \
+            > /tmp/fair-75-historical-preflight-log.txt
+          python calibration/scripts/render_fair_release_preview_issue75.py \
+            --manifest /tmp/fair-75-area-manifest-v1.json \
+            --q-study /tmp/fair-75-dtlz1-area-q-impact.json \
+            --historical-preflight /tmp/fair-75-versioned-report-preflight.json \
+            --output /tmp/fair-75-candidate-audit-v1.html
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            calibration/audit_report.html
+          echo "Versioned preview prepared without overwriting canonical audit"
+      - name: Upload all versioned provisional publication evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-versioned-candidate-v1-not-certified
+          path: |
+            /tmp/fair-75-area-candidate.json
+            /tmp/fair-75-area-manifest-v1.json
+            /tmp/fair-75-dtlz1-area-q-impact.json
+            /tmp/fair-75-versioned-report-preflight.json
+            /tmp/fair-75-candidate-audit-v1.html
           if-no-files-found: warn
       - name: Upload prospective normalized-area study (not a certified baseline)
         if: always()
