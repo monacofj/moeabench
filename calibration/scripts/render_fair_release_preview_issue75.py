@@ -28,7 +28,7 @@ def _number(v):
         raise ValueError("Non-finite FAIR value")
     return f"{f:.7f}"
 
-def render_versioned_preview(manifest,q,history):
+def render_versioned_preview(manifest,q,history,assessment=None):
     if manifest.get("status")!="NONCERTIFIED_EXPERIMENTAL_MANIFEST" or (
         manifest.get("for_publication") is not False or
         manifest.get("replaces_certified_baseline") is not False):
@@ -68,6 +68,34 @@ def render_versioned_preview(manifest,q,history):
         for t in q["trials"]):
         raise ValueError("Longitudinal Q evidence lacks real P0 provenance")
     esc=lambda x:html.escape(str(x),quote=True)
+    compatibility_html = ""
+    if assessment is not None:
+        if (assessment.get("status")!="BLOCKED_PENDING_SCIENTIFIC_RELEASE_REVIEW" or
+            assessment.get("publishable") is not False or
+            assessment.get("certified") is not False):
+            raise ValueError("Release assessment must keep provisional report blocked")
+        provenance=assessment.get("calibration_provenance",{})
+        if (provenance.get("original_baseline_sha256")!=manifest["source_baseline_sha256"] or
+            provenance.get("candidate_baseline_sha256")!=manifest["candidate_baseline_sha256"]):
+            raise ValueError("Release compatibility assessment SHA256 mismatch")
+        blockers=assessment.get("release_blockers")
+        if not blockers or not all(isinstance(x.get("code"),str) and x.get("reason")
+                                  for x in blockers):
+            raise ValueError("Missing scientific release decision blockers")
+        lis="".join("<li><code>"+esc(x["code"])+"</code>: "+esc(x["reason"])+"</li>"
+                    for x in blockers)
+        compatibility_html=(
+            "<h2>Scientific release readiness / version compatibility</h2>"
+            "<p class='notice'>PUBLICATION BLOCKED — numerical smoke checks do not "
+            "certify historical baselines or authorize replacing the canonical report.</p>"
+            "<p>Archived calibration version: <code>"+
+            esc(provenance.get("original_baseline_version"))+
+            "</code>; consuming MoeaBench library: <code>"+
+            esc(provenance.get("consumer_library_version"))+
+            "</code>; numerical stability check: <code>"+
+            esc(assessment.get("environment",{}).get("stability_status"))+
+            "</code>.</p><ul>"+lis+"</ul>"
+        )
     details=[]
     for trial in q["trials"]:
         for c in trial["checkpoints"]:
@@ -137,6 +165,7 @@ _number(q["max_informative_absolute_q_shift"])+""".</p>
 <table><thead><tr><th>Seed</th><th>Gen.</th><th>ND points</th><th>Q frozen</th>
 <th>Q candidate</th><th>Absolute shift</th><th>Status</th></tr></thead>
 <tbody>"""+ "".join(details)+"""</tbody></table>
+"""+compatibility_html+"""
 <h2>Historical archived data (separate, uncalibrated)</h2>
 <p>"""+historical+"""</p>
 <p class="notice">No synthetic generation-zero populations; no guessed historical Q-scores.</p>
@@ -153,13 +182,15 @@ def main():
     p.add_argument("--manifest",type=Path,required=True)
     p.add_argument("--q-study",type=Path,required=True)
     p.add_argument("--historical-preflight",type=Path,required=True)
+    p.add_argument("--release-assessment",type=Path,required=True)
     p.add_argument("--output",type=Path,required=True)
     a=p.parse_args()
     out=a.output.resolve()
     if (out.exists() or out.suffix.lower()!=".html" or
         out.is_relative_to(REPORTS) or out.is_relative_to(RESOURCES) or out==CANONICAL):
         p.error("Refusing overwrite or certified report destination")
-    data=[json.loads(pth.read_text()) for pth in (a.manifest,a.q_study,a.historical_preflight)]
+    data=[json.loads(pth.read_text()) for pth in (
+        a.manifest,a.q_study,a.historical_preflight,a.release_assessment)]
     html_body=render_versioned_preview(*data)
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(html_body,encoding="utf-8")
