@@ -186,6 +186,29 @@ jobs:
             moeabench/diagnostics/resources/baselines_v0.14.0.json \
             calibration/audit_report.html
           echo "Versioned preview prepared without overwriting canonical audit"
+      - name: Run complete unit regression battery
+        timeout-minutes: 6
+        run: python test.py --unit
+      - name: Prepare genuine integration fixture archives
+        timeout-minutes: 4
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+          for algorithm,name in [
+              (mb.moeas.NSGA2,"example_full_exp1.zip"),
+              (mb.moeas.NSGA3,"example_full_exp2.zip"),
+          ]:
+              exp=mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32,generations=8,seed=17),
+              )
+              exp.run(repeat=3,silent=True)
+              exp.save(str(Path("examples")/name))
+          PY
+      - name: Run complete basic integration battery
+        timeout-minutes: 5
+        run: python test.py --integration --basic
       - name: Upload all versioned provisional publication evidence
         if: always()
         uses: actions/upload-artifact@v4
