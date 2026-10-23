@@ -35,7 +35,9 @@ from scipy.spatial import cKDTree
 import moeabench as mb
 
 from moeabench.diagnostics import baselines
-from calibration.scripts.independent_pf_sources_issue75 import normalized_independent_pf
+from calibration.scripts.independent_pf_sources_issue75 import (
+    normalized_independent_pf, sample_dtlz2_uniform_normalized_surface,
+)
 from calibration.scripts.study_real_moea_q_sensitivity import (
     _analytical_samples, _moea_trial, _digest,
 )
@@ -106,6 +108,59 @@ def summarize_law_shift(trials, samples):
     return summary
 
 
+
+def summarize_raw_vs_normalized_area(trials, samples):
+    """Compare two distinct surface-area measures on *identical* MOEA fronts.
+
+    Report only descriptive nonclipped sensitivity. Repeated reference seeds
+    estimate Monte Carlo variation and cannot justify clinical drift bounds.
+    """
+    left_keys = [k for k in samples if k.startswith("independent_")]
+    right_keys = [k for k in samples if k.startswith("normalized_area_")]
+    if len(left_keys) < 2 or len(right_keys) < 2:
+        raise ValueError("Both area measures require repeated reference seeds")
+    q_differences, seed_spans = [], []
+    clipped, informative = 0, 0
+    records = []
+    for trial in trials:
+        for generation, front in trial["fronts"].items():
+            q = front["q_by_analytical_seed"]
+            try:
+                left = [float(q[k]) for k in left_keys]
+                right = [float(q[k]) for k in right_keys]
+            except KeyError as exc:
+                raise ValueError("Missing physical/normalized area Q scores") from exc
+            saturated = (all(v == 0.0 for v in left + right) or
+                         all(v == 1.0 for v in left + right))
+            delta = abs(float(np.median(left)) - float(np.median(right)))
+            within = max(max(left)-min(left), max(right)-min(right))
+            informative += int(not saturated)
+            clipped += int(saturated)
+            if not saturated:
+                q_differences.append(delta)
+                seed_spans.append(within)
+            records.append({
+                "optimizer_seed":trial["seed"], "generation":generation,
+                "front_sha256":front["front_sha256"],
+                "physical_area_Q":_stats(left),
+                "normalized_area_Q":_stats(right),
+                "median_q_shift":delta,
+                "within_law_seed_span":float(within),
+                "informative":not saturated,
+            })
+    physical = [samples[k]["eps_distance_median"] for k in left_keys]
+    normalized = [samples[k]["eps_distance_median"] for k in right_keys]
+    return {
+        "physical_area_epsilon_median":float(np.median(physical)),
+        "normalized_area_epsilon_median":float(np.median(normalized)),
+        "max_nonclipped_q_shift":max(q_differences) if q_differences else None,
+        "max_nonclipped_within_law_seed_span":max(seed_spans) if seed_spans else None,
+        "nonclipped_fronts":informative,"fully_clipped_fronts":clipped,
+        "per_front":records,
+        "not_certified":True,
+    }
+
+
 def analyze(name, *, moea_seeds=(1,7), ideal_seeds=(123,124,125,126),
             population=40, generations=60, n_fresh=1024):
     if name not in ("DTLZ1","DTLZ2","DPF5"):
@@ -158,6 +213,23 @@ def analyze(name, *, moea_seeds=(1,7), ideal_seeds=(123,124,125,126),
             "source":metadata["law"],
         }
         independent_metadata[str(seed)]=metadata
+    if name == "DTLZ2":
+        # Raw sphere-area and frozen-normalized sphere-area are generally
+        # different target measures under an anisotropic affine transform.
+        for seed in ideal_seeds:
+            candidate, law = sample_dtlz2_uniform_normalized_surface(
+                n_fresh, int(seed), ideal=ideal, nadir=original_nadir
+            )
+            delta = tree.query(candidate, k=1)[0]
+            threshold = max(1e-12, 1e-10*float(np.max(np.ptp(GT,axis=0))))
+            if np.any(delta <= threshold):
+                raise ValueError("Normalized-area ideal sample overlaps frozen GT")
+            samples["normalized_area_"+str(seed)] = {
+                "eps_distance_median":float(np.median(delta)),
+                "sha256":_digest(candidate),
+                "regions_f1":_region_hist(candidate,GT),
+                "source":law,
+            }
     raw_trials=[]
     for optimizer_seed in moea_seeds:
         # The existing real-front experiment already performs full
@@ -169,10 +241,22 @@ def analyze(name, *, moea_seeds=(1,7), ideal_seeds=(123,124,125,126),
             analytical_samples=samples,
         ))
     result=summarize_law_shift(raw_trials,samples)
+    normalized_area_comparison = (
+        summarize_raw_vs_normalized_area(raw_trials,samples)
+        if name == "DTLZ2" else None
+    )
     return {
         "status":"NONCERTIFIED_CROSS_SAMPLER_REAL_MOEA_Q_STUDY",
-        "problem":name,"surface_law":"independent_uniform_area" if name!="DPF5"
-                 else "exploratory_decision_space_density_unknown",
+        "problem":name,
+        "surface_law":("raw_objective_surface_area" if name!="DPF5"
+                       else "exploratory_decision_space_density_unknown"),
+        "normalization":{
+            "ideal":ideal.tolist(),
+            "nadir":original_nadir.tolist(),
+            "span":span.tolist(),
+            "max_span_over_min_span":float(np.max(span)/np.min(span)),
+        },
+        "raw_vs_normalized_area_DTLZ2":normalized_area_comparison,
         "optimizer_seeds":list(moea_seeds),"analytical_seeds":list(ideal_seeds),
         "population":population,"generations":generations,"K":population,
         "s_K":s_k,"GT_sha256":_digest(GT),
@@ -193,6 +277,8 @@ def analyze(name, *, moea_seeds=(1,7), ideal_seeds=(123,124,125,126),
             "oversample some objective regions.",
             "Two real NSGA-II trajectories and four analytical seeds are a "
             "bounded sensitivity experiment, not a certified statistical tolerance.",
+            "Raw area-uniform and frozen-normalized area-uniform are distinct "
+            "measures for curved fronts if affine coordinate spans differ.",
         ],
     }
 
@@ -237,6 +323,14 @@ def main():
                   rec["summary"]["cross_law_shift_exceeds_within_law_seed_span"],
                 "non_clipped_fronts":rec["summary"]["non_clipped_fronts"],
                 "zero_clipped_fronts":rec["summary"]["clipped_all_zero_fronts"],
+                "normalization_span_ratio":
+                    rec["normalization"]["max_span_over_min_span"],
+                "normalized_area_comparison":
+                    None if rec["raw_vs_normalized_area_DTLZ2"] is None else {
+                        key: val for key,val in
+                        rec["raw_vs_normalized_area_DTLZ2"].items()
+                        if key != "per_front"
+                    },
             }),flush=True)
         except (ValueError, TypeError, AssertionError, KeyError, OSError) as err:
             results["failures"][name]=f"{type(err).__name__}: {err}"
