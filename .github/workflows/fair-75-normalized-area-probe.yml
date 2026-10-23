@@ -18,6 +18,8 @@ on:
       - 'calibration/scripts/build_fair_candidate_manifest_issue75.py'
       - 'calibration/scripts/render_fair_release_preview_issue75.py'
       - 'tests/unit/test_fair_release_preview_issue75.py'
+      - 'calibration/scripts/assess_fair_release_issue75.py'
+      - 'tests/unit/test_assess_fair_release_issue75.py'
       - '.github/workflows/fair-75-normalized-area-probe.yml'
   pull_request:
     branches:
@@ -34,6 +36,8 @@ on:
       - 'calibration/scripts/build_fair_candidate_manifest_issue75.py'
       - 'calibration/scripts/render_fair_release_preview_issue75.py'
       - 'tests/unit/test_fair_release_preview_issue75.py'
+      - 'calibration/scripts/assess_fair_release_issue75.py'
+      - 'tests/unit/test_assess_fair_release_issue75.py'
       - '.github/workflows/fair-75-normalized-area-probe.yml'
   workflow_dispatch:
 
@@ -56,7 +60,8 @@ jobs:
             tests/unit/test_independent_pf_sources_issue75.py \
             tests/unit/test_cross_sampler_moea_issue75.py \
             tests/unit/test_verify_closeness_migration_issue75.py \
-            tests/unit/test_fair_release_preview_issue75.py
+            tests/unit/test_fair_release_preview_issue75.py \
+            tests/unit/test_assess_fair_release_issue75.py
       - name: Measure DTLZ2 raw-area vs normalized-area impact on real NSGA-II
         timeout-minutes: 11
         run: |
@@ -172,15 +177,63 @@ jobs:
             --verified /tmp/fair-75-area-verification.json \
             --source-revision "${GITHUB_SHA}" \
             --output /tmp/fair-75-area-manifest-v1.json
-      - name: Inventory historical P0 provenance and render versioned FAIR audit preview
+      - name: Inventory genuine generation-zero availability in historical archive
         run: |
           python calibration/scripts/audit_report_preflight.py \
             --output /tmp/fair-75-versioned-report-preflight.json \
             > /tmp/fair-75-historical-preflight-log.txt
+      - name: Verify certified dependencies and numerical stability independently
+        timeout-minutes: 4
+        run: |
+          python - <<'PY'
+          import json
+          import moeabench as mb
+          from pathlib import Path
+          version=mb.system.verify_version(show=False,force=True)
+          stability=mb.system.verify_stability(show=False)
+          snapshot=mb.system.info(show=False)
+          data={
+              "library_version":mb.system.version(show=False),
+              "version_check":version,
+              "stability_check":stability,
+              "runtime":snapshot,
+          }
+          Path("/tmp/fair-75-environment.json").write_text(
+              json.dumps(data,indent=2,default=str)+"\n"
+          )
+          print("CERTIFIED VERSIONS:",version["status"])
+          print("NUMERICAL STABILITY:",stability["status"])
+          print("STABILITY DETAILS:",stability["checks"])
+          PY
+      - name: Assess FAIR candidate scientific release blockers (must fail closed)
+        run: |
+          python calibration/scripts/assess_fair_release_issue75.py \
+            --manifest /tmp/fair-75-area-manifest-v1.json \
+            --q-study /tmp/fair-75-dtlz1-area-q-impact.json \
+            --historical-preflight /tmp/fair-75-versioned-report-preflight.json \
+            --environment /tmp/fair-75-environment.json \
+            --output /tmp/fair-75-release-readiness.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          record=json.loads(Path("/tmp/fair-75-release-readiness.json").read_text())
+          assert record["status"]=="BLOCKED_PENDING_SCIENTIFIC_RELEASE_REVIEW"
+          assert record["certified"] is False and record["publishable"] is False
+          assert record["overwrite_canonical_allowed"] is False
+          assert record["checks"]["paired_real_q_informative"]
+          assert record["paired_q_impact"]["allowable_drift_threshold"] is None
+          assert record["calibration_provenance"]["original_baseline_version"]=="0.14.0"
+          assert record["calibration_provenance"]["consumer_library_version"]=="0.16.1"
+          assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" in {
+              x["code"] for x in record["release_blockers"]}
+          PY
+      - name: Render versioned FAIR audit with explicit compatibility blocker section
+        run: |
           python calibration/scripts/render_fair_release_preview_issue75.py \
             --manifest /tmp/fair-75-area-manifest-v1.json \
             --q-study /tmp/fair-75-dtlz1-area-q-impact.json \
             --historical-preflight /tmp/fair-75-versioned-report-preflight.json \
+            --release-assessment /tmp/fair-75-release-readiness.json \
             --output /tmp/fair-75-candidate-audit-v1.html
           git diff --exit-code -- \
             moeabench/diagnostics/resources/baselines_v0.14.0.json \
@@ -217,6 +270,8 @@ jobs:
           path: |
             /tmp/fair-75-area-candidate.json
             /tmp/fair-75-area-manifest-v1.json
+            /tmp/fair-75-environment.json
+            /tmp/fair-75-release-readiness.json
             /tmp/fair-75-dtlz1-area-q-impact.json
             /tmp/fair-75-versioned-report-preflight.json
             /tmp/fair-75-candidate-audit-v1.html
