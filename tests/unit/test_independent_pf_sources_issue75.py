@@ -150,3 +150,50 @@ def test_normalized_sphere_area_is_uniform_for_isotropic_bounds_and_generalizes(
         sample_dtlz2_uniform_normalized_surface(
             10,0,ideal=np.zeros(3),nadir=np.array([1.,0.,1.])
         )
+
+
+def test_dtlz2_frozen_gt_common_candidate_area_reweighting():
+    """Reproduce a fixed-GT importance-weighted counterfactual without MOEA.
+
+    Reusing the *same* area-uniform physical-sphere points suppresses
+    between-sample RNG noise. The normalized-area surface Jacobian
+    J_A(n) ∝ ||span*n|| becomes a weight on the unchanged physical points.
+    This test checks reproducible descriptive estimates, NOT a post-hoc
+    numerical acceptance bound or a production calibration.
+    """
+    from pathlib import Path
+    from scipy.spatial import cKDTree
+
+    def weighted_median(values, weights):
+        order=np.argsort(values)
+        values=np.asarray(values)[order]
+        weights=np.asarray(weights)[order]
+        centers=(np.cumsum(weights)-0.5*weights)/np.sum(weights)
+        return float(np.interp(0.5,centers,values))
+
+    def estimate(seed):
+        F,_=sample_independent_pf("DTLZ2",4096,seed=seed)
+        normalized=(F-ideal)/span
+        distances=cKDTree(gt).query(normalized,k=1)[0]
+        weights=np.linalg.norm(F*span,axis=1)
+        assert np.all(weights>0)
+        return float(np.median(distances)),weighted_median(distances,weights)
+
+    root=Path(__file__).resolve().parents[2]
+    path=root/"moeabench/diagnostics/resources/references/DTLZ2/calibration_package.npz"
+    with np.load(path,allow_pickle=False) as package:
+        gt=np.asarray(package["gt_norm"],dtype=float)
+        ideal=np.asarray(package["ideal"],dtype=float)
+        nadir=np.asarray(package["nadir"],dtype=float)
+    span=nadir-ideal
+    assert gt.shape==(10000,3)
+    assert np.all(span>0)
+    assert np.max(span)/np.min(span)<1.01  # recorded fixture geometry, not Q drift
+    assert weighted_median([1.,2.,3.,4.],[1.,1.,1.,1.])==2.5
+
+    for seed in (123,124,125,126):
+        physical,normalized=estimate(seed)
+        assert np.isfinite(physical) and physical>0
+        assert np.isfinite(normalized) and normalized>0
+        assert (physical,normalized)==estimate(seed)
+        print("paired raw/normalized DTLZ2 median",seed,physical,normalized)
