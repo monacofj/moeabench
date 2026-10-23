@@ -53,8 +53,29 @@ def verify(original, candidate, changed_problems):
                     raise ValueError(f"Unrelated FAIR metric changed: {name}/{key}/{metric}")
             old = before_k["closeness"]
             new = after_k["closeness"]
-            if new.get("ideal_res_method") != "independent_analytical_pf":
+            method = new.get("ideal_res_method")
+            allowed_methods = (
+                "independent_analytical_pf",
+                "uniform_normalized_objective_pf_area_v1",
+            )
+            if method not in allowed_methods:
                 raise ValueError(f"Residue provenance missing: {name}/{key}")
+            extra_fields = set()
+            if method == "uniform_normalized_objective_pf_area_v1":
+                if new.get("reference_measure") != "uniform_intrinsic_area_normalized_objective_pf":
+                    raise ValueError(f"Area measure provenance invalid: {name}/{key}")
+                if not isinstance(new.get("ideal_res_sampler"), str) or not new["ideal_res_sampler"]:
+                    raise ValueError(f"Area sampler provenance missing: {name}/{key}")
+                if (not isinstance(new.get("ideal_res_sampling_seed"), int) or
+                        new["ideal_res_sampling_seed"] < 0):
+                    raise ValueError(f"Area RNG provenance invalid: {name}/{key}")
+                if (not isinstance(new.get("ideal_res_sample_count"), int) or
+                        new["ideal_res_sample_count"] < 2):
+                    raise ValueError(f"Area sample count invalid: {name}/{key}")
+                extra_fields = {
+                    "reference_measure", "ideal_res_sampler",
+                    "ideal_res_sampling_seed", "ideal_res_sample_count",
+                }
             eps = float(new["ideal_res"])
             if not np.isfinite(eps) or eps <= 0:
                 raise ValueError(f"Invalid positive analytical residue: {name}/{key}")
@@ -68,11 +89,16 @@ def verify(original, candidate, changed_problems):
                     new["p95"], max(0.0, float(old["p95"]) - eps), atol=1e-12, rtol=0
                 )
             for attr, value in old.items():
-                if attr not in ("ideal_res", "ideal_res_method", "rand_ecdf", "rand50", "p95"):
+                if attr not in ({"ideal_res", "ideal_res_method", "rand_ecdf", "rand50", "p95"} | extra_fields):
                     if new.get(attr) != value:
                         raise ValueError(f"Unexpected closeness field modified: {name}/{key}/{attr}")
+            allowed_new = {"ideal_res_method", "rand_ecdf", "rand50",
+                           "p95", "ideal_res"} | extra_fields
+            if set(new).difference(set(old)) - allowed_new:
+                raise ValueError(f"Unrecognized new Closeness fields: {name}/{key}")
             result[key] = {"epsilon": eps, "old_rand50": old["rand50"],
-                           "new_rand50": new["rand50"]}
+                           "new_rand50": new["rand50"],
+                           "ideal_res_method": method}
         if not result:
             raise ValueError(f"No calibration K records migrated: {name}")
         records[name] = result
