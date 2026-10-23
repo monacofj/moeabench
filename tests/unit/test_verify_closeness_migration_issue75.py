@@ -56,3 +56,56 @@ def test_rejects_corruption_of_corrected_ecdf():
     b["problems"]["DTLZ1"]["20"]["closeness"]["rand_ecdf"][0]=0.15
     with pytest.raises(AssertionError):
         verify(a,b,["DTLZ1"])
+
+
+def test_versioned_area_measure_candidate_is_independently_verified():
+    original,candidate=_examples()
+    close=candidate["problems"]["DTLZ1"]["20"]["closeness"]
+    close.update({
+        "ideal_res_method":"uniform_normalized_objective_pf_area_v1",
+        "reference_measure":"uniform_intrinsic_area_normalized_objective_pf",
+        "ideal_res_sampler":"uniform_simplex_area_dirichlet_111",
+        "ideal_res_sampling_seed":123,
+        "ideal_res_sample_count":4096,
+    })
+    result=verify(original,candidate,["DTLZ1"])
+    assert result["k_counts"]=={"DTLZ1":1}
+    assert result["untouched_problem_count"]==1
+    assert (result["k_records"]["DTLZ1"]["20"]["ideal_res_method"]
+            =="uniform_normalized_objective_pf_area_v1")
+
+    close["reference_measure"]="uniform_decision_variables"
+    with pytest.raises(ValueError,match="Area measure provenance"):
+        verify(original,candidate,["DTLZ1"])
+    close["reference_measure"]="uniform_intrinsic_area_normalized_objective_pf"
+    close["ideal_res_sampling_seed"]=-1
+    with pytest.raises(ValueError,match="Area RNG provenance"):
+        verify(original,candidate,["DTLZ1"])
+    close["ideal_res_sampling_seed"]=123
+    close["unexpected_metric"]="invented"
+    with pytest.raises(ValueError,match="Unrecognized new Closeness"):
+        verify(original,candidate,["DTLZ1"])
+
+
+def test_area_record_clips_ecdf_and_rejects_unknown_methods():
+    from calibration.scripts.migrate_closeness_residue import (
+        residue_update_record, NORMALIZED_AREA_METHOD,
+    )
+    original={"rand_ecdf":[.1,.3,.9],"rand50":.3,"p95":.8,"ideal_res":0.0}
+    provenance={"law":"uniform_simplex_area_dirichlet_111",
+                "seed":17,"n_fresh":4096}
+    migrated=residue_update_record(
+        original,.2,method=NORMALIZED_AREA_METHOD,provenance=provenance)
+    assert migrated["rand_ecdf"]==pytest.approx([0.,.1,.7])
+    assert migrated["rand50"]==pytest.approx(.1)
+    assert migrated["p95"]==pytest.approx(.6)
+    assert migrated["ideal_res_sampling_seed"]==17
+    assert migrated["ideal_res_sample_count"]==4096
+    assert original["rand_ecdf"]==[.1,.3,.9]
+    with pytest.raises(ValueError,match="provenance"):
+        residue_update_record(original,.2,method=NORMALIZED_AREA_METHOD)
+    with pytest.raises(ValueError,match="Unknown ideal residue"):
+        residue_update_record(original,.2,method="undefined")
+    with pytest.raises(ValueError,match="already been corrected"):
+        residue_update_record(migrated,.2,method=NORMALIZED_AREA_METHOD,
+                              provenance=provenance)
