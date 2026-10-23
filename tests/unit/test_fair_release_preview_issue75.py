@@ -140,3 +140,26 @@ def test_versioned_report_escapes_untrusted_source_revision():
     body=render_versioned_preview(m,_q(),_history())
     assert "<script" not in body
     assert "&lt;script&gt;" in body
+
+
+def test_versioned_report_shows_release_blockers_and_cannot_claim_certification(monkeypatch):
+    from calibration.scripts.assess_fair_release_issue75 import assess_release
+    monkeypatch.setattr("moeabench.system.version",lambda show=False:"0.16.1")
+    manifest=_manifest()
+    manifest["source_version"]="0.14.0"
+    env={
+        "library_version":"0.16.1",
+        "version_check":{"status":"MISMATCH","differences":{}},
+        "stability_check":{"status":"PASSED","checks":{"prng":"PASS"}},
+        "runtime":{},
+    }
+    assessment=assess_release(manifest,_q(),_history(),env)
+    body=render_versioned_preview(manifest,_q(),_history(),assessment)
+    assert "PUBLICATION BLOCKED" in body
+    assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" in body
+    assert "0.14.0" in body and "0.16.1" in body
+    assert "PASSED" in body
+    assert "No synthetic generation-zero populations" in body
+    assessment["calibration_provenance"]["candidate_baseline_sha256"]="spoofed"
+    with pytest.raises(ValueError,match="SHA256 mismatch"):
+        render_versioned_preview(manifest,_q(),_history(),assessment)
