@@ -86,6 +86,13 @@ def score_fronts(name, candidate_path, *, optimizer_seeds=(1,7),
             not np.isclose(ctx["s_k"],s_k,rtol=0,atol=1e-12) or
             not np.isclose(ctxnew["s_k"],s_k,rtol=0,atol=1e-12)):
             raise AssertionError("Real audit changed normalized GT or s_K")
+        actual_p0=ctx.get("P_initial")
+        if actual_p0 is None or ctxnew.get("P_initial") is None:
+            raise AssertionError("No genuine saved initial population: abstain")
+        if not np.array_equal(np.asarray(actual_p0), np.asarray(ctxnew["P_initial"])):
+            raise AssertionError("Initial population differs between audits")
+        if not np.isfinite(old.fr.metrics["HEADWAY"].value):
+            raise AssertionError("No longitudinal Headway on this actual search")
         for metric in ("COVERAGE","GAP","REGULARITY","BALANCE","HEADWAY"):
             np.testing.assert_allclose(
                 old.fr.metrics[metric].value,new.fr.metrics[metric].value,
@@ -126,7 +133,15 @@ def score_fronts(name, candidate_path, *, optimizer_seeds=(1,7),
                 "both_endpoints_clipped":bool(clipped),
                 "median_raw_u":float(np.median(distances)),
             })
-        trials.append({"optimizer_seed":int(seed),"checkpoints":checkpoints})
+        trials.append({
+            "optimizer_seed":int(seed),
+            "P0_sha256":_digest(actual_p0),
+            "P0_points":len(actual_p0),
+            "headway_from_genuine_P0":float(old.fr.metrics["HEADWAY"].value),
+            "q_headway":float(old.quality.scores["Q_HEADWAY"].value),
+            "headway_same_under_candidate":True,
+            "checkpoints":checkpoints,
+        })
     all_rows=[c for t in trials for c in t["checkpoints"]]
     usable=[x for x in all_rows if not x["both_endpoints_clipped"]]
     return {
