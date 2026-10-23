@@ -102,7 +102,7 @@ def render_versioned_preview(manifest,q,history):
         "evidence required for longitudinal Headway. Historic Q-scores are "+
         "<b>Unavailable</b> without independently certified, coordinate-compatible baselines."
     )
-    return """<!doctype html>
+    return ("""<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>FAIR #75 — Versioned Candidate V1</title>
 <style>body{font:16px/1.5 system-ui,sans-serif;max-width:1100px;margin:auto;padding:2rem}
 table{border-collapse:collapse;width:100%}td,th{padding:.5rem;border-bottom:1px solid #ddd;text-align:left}
@@ -146,7 +146,7 @@ _number(q["max_informative_absolute_q_shift"])+""".</p>
 <p>Release blockers: approved sampling measure, candidate Q acceptability,
 full regressions, historic report compatibility. These findings do not
 authorize replacing the installed FAIR baseline or canonical audit report.</p>
-</body></html>"""
+</body></html>""")
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
