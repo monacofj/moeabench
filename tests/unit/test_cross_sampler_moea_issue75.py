@@ -33,6 +33,8 @@ def test_cross_source_q_shift_uses_medians_not_extreme_seed_pair():
     assert r["non_clipped_fronts"]==1
     assert r["clipped_all_zero_fronts"]==0
     assert r["max_cross_law_q_median_shift_nonclipped"]==pytest.approx(.12)
+    assert r["max_within_law_q_seed_span_nonclipped"]==pytest.approx(.02)
+    assert r["cross_law_shift_exceeds_within_law_seed_span"] is True
     assert r["max_cross_law_epsilon_median_shift"]==pytest.approx(.02)
     assert r["not_certified"]
 
@@ -42,6 +44,8 @@ def test_clipped_zero_must_not_pretend_independent_methods_agree():
     assert r["clipped_all_zero_fronts"]==1
     assert r["non_clipped_fronts"]==0
     assert r["max_cross_law_q_median_shift_nonclipped"] is None
+    assert r["max_within_law_q_seed_span_nonclipped"] is None
+    assert r["cross_law_shift_exceeds_within_law_seed_span"] is None
 
 
 def test_cross_source_evidence_requires_replicates_for_both_laws():
