@@ -499,3 +499,34 @@ jobs:
           name: fair-75-real-moea-q-sensitivity
           path: /tmp/fair-75-real-moea-q-sensitivity.json
           if-no-files-found: warn
+
+  # DTLZ1's initial short NSGA-II budget left all Q=0; check a far larger
+  # optimization budget independently so clipping cannot masquerade as
+  # convincing numerical stability of ideal_res.
+  dtlz1-convergence-budget-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench
+        run: python -m pip install -e .
+      - name: Test DTLZ1 with larger NSGA-II optimization budget
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_real_moea_q_sensitivity.py \
+            --problem DTLZ1 \
+            --run-seed 1 --run-seed 7 \
+            --analytical-seed 123 --analytical-seed 124 \
+            --analytical-seed 125 --analytical-seed 126 \
+            --population 100 --generations 500 \
+            --output /tmp/fair-75-dtlz1-larger-budget-q-sensitivity.json
+      - name: Upload DTLZ1 large-budget real-front pilot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-dtlz1-large-budget-q-sensitivity
+          path: /tmp/fair-75-dtlz1-larger-budget-q-sensitivity.json
+          if-no-files-found: warn
