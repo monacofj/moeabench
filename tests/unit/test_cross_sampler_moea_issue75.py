@@ -57,3 +57,62 @@ def test_cross_source_evidence_requires_replicates_for_both_laws():
     broken[0]["fronts"]["-1"]["q_by_analytical_seed"].pop("independent_124")
     with pytest.raises(ValueError,match="Missing cross-law"):
         summarize_law_shift(broken,_samples())
+
+
+def test_normalized_area_comparison_uses_same_front_and_excludes_clipping():
+    from calibration.scripts.study_cross_sampler_moea_issue75 import (
+        summarize_raw_vs_normalized_area,
+    )
+    samples={
+        "independent_1":{"eps_distance_median":0.04},
+        "independent_2":{"eps_distance_median":0.05},
+        "normalized_area_1":{"eps_distance_median":0.06},
+        "normalized_area_2":{"eps_distance_median":0.07},
+    }
+    trial=[{"seed":5,"fronts":{
+        "10":{"front_sha256":"same_front_1","q_by_analytical_seed":{
+            "independent_1":0.60,"independent_2":0.62,
+            "normalized_area_1":0.70,"normalized_area_2":0.72,
+        }},
+        "0":{"front_sha256":"same_front_2","q_by_analytical_seed":{
+            "independent_1":0,"independent_2":0,
+            "normalized_area_1":0,"normalized_area_2":0,
+        }}
+    }}]
+    result=summarize_raw_vs_normalized_area(trial,samples)
+    assert result["nonclipped_fronts"]==1
+    assert result["fully_clipped_fronts"]==1
+    assert result["max_nonclipped_q_shift"]==pytest.approx(.10)
+    assert result["max_nonclipped_within_law_seed_span"]==pytest.approx(.02)
+    assert result["physical_area_epsilon_median"]==pytest.approx(.045)
+    assert result["normalized_area_epsilon_median"]==pytest.approx(.065)
+    assert result["per_front"][0]["front_sha256"]=="same_front_1"
+    assert result["not_certified"]
+
+
+def test_normalized_area_comparison_abstains_when_all_fronts_clipped():
+    from calibration.scripts.study_cross_sampler_moea_issue75 import (
+        summarize_raw_vs_normalized_area,
+    )
+    s={
+        "independent_1":{"eps_distance_median":.04},
+        "independent_2":{"eps_distance_median":.05},
+        "normalized_area_1":{"eps_distance_median":.06},
+        "normalized_area_2":{"eps_distance_median":.07},
+    }
+    q={key:0.0 for key in s}
+    t=[{"seed":1,"fronts":{"-1":{
+        "front_sha256":"fixed","q_by_analytical_seed":q,
+    }}}]
+    result=summarize_raw_vs_normalized_area(t,s)
+    assert result["fully_clipped_fronts"]==1
+    assert result["nonclipped_fronts"]==0
+    assert result["max_nonclipped_q_shift"] is None
+    assert result["max_nonclipped_within_law_seed_span"] is None
+    with pytest.raises(ValueError,match="repeated"):
+        summarize_raw_vs_normalized_area(t,dict(list(s.items())[:3]))
+    with pytest.raises(ValueError,match="Missing physical/normalized"):
+        broken=[{"seed":1,"fronts":{"-1":{
+            "front_sha256":"fixed","q_by_analytical_seed":{key:0.2 for key in list(s)[:3]},
+        }}}]
+        summarize_raw_vs_normalized_area(broken,s)
