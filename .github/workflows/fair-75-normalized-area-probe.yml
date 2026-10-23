@@ -1,0 +1,82 @@
+# Temporary focused scientific check for issue #75.
+# Delete before merging the investigation PR into main.
+name: FAIR 75 normalized-area scientific probe
+
+on:
+  push:
+    branches:
+      - fix/75-fair-conformance
+    paths:
+      - 'calibration/scripts/independent_pf_sources_issue75.py'
+      - 'calibration/scripts/study_cross_sampler_moea_issue75.py'
+      - 'tests/unit/test_independent_pf_sources_issue75.py'
+      - 'tests/unit/test_cross_sampler_moea_issue75.py'
+      - '.github/workflows/fair-75-normalized-area-probe.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'calibration/scripts/independent_pf_sources_issue75.py'
+      - 'calibration/scripts/study_cross_sampler_moea_issue75.py'
+      - 'tests/unit/test_independent_pf_sources_issue75.py'
+      - 'tests/unit/test_cross_sampler_moea_issue75.py'
+      - '.github/workflows/fair-75-normalized-area-probe.yml'
+  workflow_dispatch:
+
+jobs:
+  independent-geometry-and-real-fronts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install numerical and MOEA dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Check independent analytical reference laws and comparison guards
+        run: |
+          python -m pytest -q \
+            tests/unit/test_independent_pf_sources_issue75.py \
+            tests/unit/test_cross_sampler_moea_issue75.py
+      - name: Measure DTLZ2 raw-area vs normalized-area impact on real NSGA-II
+        timeout-minutes: 11
+        run: |
+          python calibration/scripts/study_cross_sampler_moea_issue75.py \
+            --problem DTLZ2 \
+            --moea-seed 1 --moea-seed 7 \
+            --ideal-seed 123 --ideal-seed 124 \
+            --ideal-seed 125 --ideal-seed 126 \
+            --population 40 --generations 90 \
+            --output /tmp/fair-75-dtlz2-normalized-area-q.json
+      - name: Require nondegenerate science evidence and unchanged frozen baseline
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("/tmp/fair-75-dtlz2-normalized-area-q.json").read_text())
+          assert not payload["failures"], payload["failures"]
+          data = payload["results"]["DTLZ2"]
+          comparison = data["raw_vs_normalized_area_DTLZ2"]
+          assert comparison["not_certified"]
+          assert comparison["nonclipped_fronts"] >= 1, comparison
+          assert comparison["max_nonclipped_q_shift"] is not None
+          assert comparison["max_nonclipped_within_law_seed_span"] is not None
+          assert len(comparison["per_front"]) == 6
+          assert data["normalization"]["max_span_over_min_span"] > 1
+          assert data["normalization"]["max_span_over_min_span"] < 1.01
+          assert len([k for k in data["samples"] if k.startswith("normalized_area_")]) == 4
+          print("NONCERTIFIED DTLZ2 raw-vs-normalized area:", {
+              k: v for k, v in comparison.items() if k != "per_front"
+          })
+          print("Expected frozen baseline stays untouched: PASS")
+          PY
+      - name: Upload prospective normalized-area study (not a certified baseline)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-dtlz2-normalized-area-probe
+          path: /tmp/fair-75-dtlz2-normalized-area-q.json
+          if-no-files-found: warn
