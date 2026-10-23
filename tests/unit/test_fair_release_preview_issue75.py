@@ -116,7 +116,7 @@ def test_versioned_report_explicitly_withholds_historical_q_and_real_p0_provenan
     assert "0 actual generation-zero" in body
     assert "Historic Q-scores are" in body
     assert "No synthetic generation-zero" in body
-    assert "truep0sha" not in body  # P0 proofs remain in JSON study, not conflated.
+    assert "truep0sha" in body  # Audit links genuine P0 hash to its optimizer seed.
     assert "0.4800000" in body
     assert "UNSUPPORTED_FOR_THIS_OBJECTIVE_AREA_CANDIDATE" in body
 
