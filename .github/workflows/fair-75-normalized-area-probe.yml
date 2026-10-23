@@ -38,7 +38,7 @@ jobs:
           python -m pip install -e . pytest
       - name: Check independent analytical reference laws and comparison guards
         run: |
-          python -m pytest -q \
+          python -m pytest -q -s \
             tests/unit/test_independent_pf_sources_issue75.py \
             tests/unit/test_cross_sampler_moea_issue75.py
       - name: Measure DTLZ2 raw-area vs normalized-area impact on real NSGA-II
@@ -71,8 +71,15 @@ jobs:
           print("NONCERTIFIED DTLZ2 raw-vs-normalized area:", {
               k: v for k, v in comparison.items() if k != "per_front"
           })
-          print("Expected frozen baseline stays untouched: PASS")
+          print("No baseline write requested by the study: PASS")
           PY
+          # Read-only intent is checked against the actual Git worktree:
+          # fail if the experiment changed any frozen reference or report.
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references/DTLZ2/calibration_package.npz \
+            calibration/audit_report.html
+          echo "Frozen reference/report files unchanged: PASS"
       - name: Upload prospective normalized-area study (not a certified baseline)
         if: always()
         uses: actions/upload-artifact@v4
