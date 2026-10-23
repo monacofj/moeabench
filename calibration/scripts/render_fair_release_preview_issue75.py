@@ -80,6 +80,15 @@ def render_versioned_preview(manifest,q,history):
                 _number(c["absolute_q_shift"])+"</td><td>"+
                 ("Excluded: saturated" if c["both_endpoints_clipped"] else "Informative")+
                 "</td></tr>")
+    p0_evidence = []
+    for trial in q["trials"]:
+        p0_evidence.append(
+            "<tr><td>"+esc(trial["optimizer_seed"])+"</td><td>"+
+            esc(trial["P0_points"])+"</td><td><code>"+
+            esc(trial["P0_sha256"])+"</code></td><td>"+
+            _number(trial.get("headway_from_genuine_P0"))+"</td><td>"+
+            _number(trial.get("q_headway"))+"</td></tr>"
+        )
     coverage=[]
     for name,rec in sorted(manifest["problems"].items()):
         coverage.append("<tr><td>"+esc(name)+"</td><td>"+
@@ -118,6 +127,9 @@ ideal residue """+_number(q["area_ideal_res"])+""".
 Genuine initial populations are identified by SHA256 per optimizer seed.
 Headway and all unrelated FAIR and Q measures were independently checked unchanged
 when switching between the frozen and candidate baselines.</p>
+<table><thead><tr><th>Seed</th><th>Genuine P0 size</th><th>P0 SHA256</th>
+<th>Headway (actual P0)</th><th>Q-Headway</th></tr></thead>
+<tbody>"""+ "".join(p0_evidence)+"""</tbody></table>
 <p>Informative checkpoints: """+esc(q["informative_checkpoint_count"])+""";
 both-endpoints-clipped checkpoints: """+esc(q["clipped_checkpoint_count"])+""";
 max informative absolute Q-Closeness change: """+
