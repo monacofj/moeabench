@@ -6,7 +6,7 @@ import copy
 import pytest
 
 from calibration.scripts.assess_fair_release_issue75 import assess_release
-from tests.unit.test_fair_release_preview_issue75 import _manifest, _q, _history
+from test_fair_release_preview_issue75 import _manifest, _q, _history
 
 
 def _env(monkeypatch, version_status="MISMATCH", stability_status="PASSED"):
