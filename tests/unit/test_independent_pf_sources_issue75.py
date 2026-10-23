@@ -105,3 +105,48 @@ def test_dtlz1_builtin_pf_law_is_not_uniform_objective_simplex_area():
     np.testing.assert_allclose(np.mean(independent,axis=0),
                                [1/6,1/6,1/6],atol=.007,rtol=0)
     assert np.mean(library[:,2])-np.mean(independent[:,2])>.06
+
+
+def test_normalized_sphere_area_is_distinct_from_physical_area_under_anisotropic_bounds():
+    """Independent surface Jacobian test: normalized area != raw area."""
+    from calibration.scripts.independent_pf_sources_issue75 import (
+        sample_dtlz2_uniform_normalized_surface,
+    )
+    ideal=np.zeros(3)
+    nadir=np.array([1.0,1.0,4.0])
+    normalized,law=sample_dtlz2_uniform_normalized_surface(
+        20000,47,ideal=ideal,nadir=nadir
+    )
+    assert law=="uniform_normalized_dtlz2_surface_area_rejection"
+    physical=normalized*nadir+ideal
+    np.testing.assert_allclose(np.linalg.norm(physical,axis=1),1.0,atol=1e-12)
+    assert np.all(physical>=0)
+    # An independently sampled physical-area law has E[z]=1/2.
+    # The normalized-surface area Jacobian preferentially weights the
+    # z-axis, yielding substantially larger E[z] under 1:1:4 spans.
+    assert np.mean(physical[:,2])>0.58
+    assert np.mean(physical[:,0])<0.48
+    again,_=sample_dtlz2_uniform_normalized_surface(
+        20000,47,ideal=ideal,nadir=nadir
+    )
+    np.testing.assert_array_equal(normalized,again)
+
+
+def test_normalized_sphere_area_is_uniform_for_isotropic_bounds_and_generalizes():
+    from calibration.scripts.independent_pf_sources_issue75 import (
+        sample_dtlz2_uniform_normalized_surface,
+    )
+    for m in (3,5):
+        ideal=np.zeros(m)
+        nadir=np.ones(m)
+        f,_=sample_dtlz2_uniform_normalized_surface(
+            12000,18,ideal=ideal,nadir=nadir
+        )
+        np.testing.assert_allclose(np.linalg.norm(f,axis=1),1.,atol=1e-12)
+        assert np.all(f>=0)
+        # Rotational symmetry in the positive orthant means equal means.
+        assert np.ptp(np.mean(f,axis=0))<0.025
+    with pytest.raises(ValueError,match="positive"):
+        sample_dtlz2_uniform_normalized_surface(
+            10,0,ideal=np.zeros(3),nadir=np.array([1.,0.,1.])
+        )
