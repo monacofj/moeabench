@@ -121,8 +121,12 @@ def test_separate_source_baseline_version_from_library_version(monkeypatch):
     assert result["checks"]["numerical_stability_smoke_passed"] is True
     assert result["paired_q_impact"]["allowable_drift_threshold"] is None
     blockers={x["code"] for x in result["release_blockers"]}
-    assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" in blockers
-    assert "DEPENDENCY_CERTIFICATION_MISSING" in blockers
+    notes={x["code"] for x in result["compatibility_notes"]}
+    assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" not in blockers
+    assert "DEPENDENCY_CERTIFICATION_MISSING" not in blockers
+    assert "ARCHIVED_SOURCE_VERSION_DIFFERS_FROM_CONSUMER" in notes
+    assert "CERTIFIED_DEPENDENCY_VERSIONS_DIFFER" in notes
+    assert result["version_difference_alone_requires_new_baseline"] is False
     assert "BREAKING_Q_CHANGE_REQUIRES_REVIEW" in blockers
     assert "HISTORICAL_P0_UNOBSERVABLE" in blockers
 
@@ -173,3 +177,32 @@ def test_reject_mop_reclassification_without_scientific_provenance(monkeypatch):
     m["problems"]["DPF5"]["status"]="PROVISIONAL_NOT_CERTIFIED"
     with pytest.raises(ValueError,match="scope"):
         assess_release(m,_q(),_history(),env)
+
+
+def test_old_source_baseline_remains_valid_version_provenance_when_numerically_stable(monkeypatch):
+    # The developer-certified dependency version check is a separate question
+    # from whether a historical baseline may be consumed by newer code.
+    env=_env(monkeypatch,version_status="MATCH",stability_status="PASSED")
+    m=_manifest()
+    m["source_version"]="0.14.0"
+    result=assess_release(m,_q(),_history(),env)
+    assert result["checks"]["numerical_stability_smoke_passed"]
+    assert result["checks"]["certified_dependency_versions_match"]
+    assert result["checks"]["source_calibration_and_runtime_version_equal"] is False
+    assert {b["code"] for b in result["compatibility_notes"]}=={
+        "ARCHIVED_SOURCE_VERSION_DIFFERS_FROM_CONSUMER"}
+    assert not any("VERSION" in b["code"] or "DEPENDENCY" in b["code"]
+                   for b in result["release_blockers"])
+    assert result["publishable"] is False  # new normative law still unapproved
+
+
+def test_matching_old_new_version_is_not_sufficient_to_certify_candidate(monkeypatch):
+    env=_env(monkeypatch,version_status="MATCH",stability_status="PASSED")
+    m=_manifest()
+    m["source_version"]="0.16.1"
+    result=assess_release(m,_q(),_history(),env)
+    assert not result["compatibility_notes"]
+    assert result["checks"]["source_calibration_and_runtime_version_equal"]
+    assert result["publishable"] is False
+    assert "NORMATIVE_MEASURE_NOT_APPROVED" in {
+        b["code"] for b in result["release_blockers"]}
