@@ -84,17 +84,32 @@ def render_versioned_preview(manifest,q,history,assessment=None):
             raise ValueError("Missing scientific release decision blockers")
         lis="".join("<li><code>"+esc(x["code"])+"</code>: "+esc(x["reason"])+"</li>"
                     for x in blockers)
+        notes=assessment.get("compatibility_notes",[])
+        if not isinstance(notes,list) or any(
+            not isinstance(x,dict) or not isinstance(x.get("code"),str)
+            or not isinstance(x.get("reason"),str) for x in notes
+        ):
+            raise ValueError("Invalid version/dependency provenance notes")
+        if assessment.get("version_difference_alone_requires_new_baseline") is not False:
+            raise ValueError("Source/consumer version difference cannot mandate new baseline")
+        note_items="".join(
+            "<li><code>"+esc(x["code"])+"</code>: "+esc(x["reason"])+"</li>"
+            for x in notes)
         compatibility_html=(
-            "<h2>Scientific release readiness / version compatibility</h2>"
-            "<p class='notice'>PUBLICATION BLOCKED — numerical smoke checks do not "
-            "certify historical baselines or authorize replacing the canonical report.</p>"
+            "<h2>Scientific release readiness / version provenance</h2>"
+            "<p class='notice'>PROPOSED AREA-LAW CALIBRATION NOT CERTIFIED — "
+            "do not replace the canonical baseline/report.</p>"
             "<p>Archived calibration version: <code>"+
             esc(provenance.get("original_baseline_version"))+
             "</code>; consuming MoeaBench library: <code>"+
             esc(provenance.get("consumer_library_version"))+
             "</code>; numerical stability check: <code>"+
             esc(assessment.get("environment",{}).get("stability_status"))+
-            "</code>.</p><ul>"+lis+"</ul>"
+            "</code>.</p><p>A source/consumer version difference is normal "
+            "provenance and does not require a new baseline by itself.</p>"
+            "<h3>Scientific decision blockers</h3><ul>"+lis+"</ul>"
+            "<h3>Version/dependency provenance notes (not blockers)</h3><ul>"+
+            note_items+"</ul>"
         )
     details=[]
     for trial in q["trials"]:
