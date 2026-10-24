@@ -5,7 +5,8 @@
 """Issue #75: fail-closed scientific release/readiness assessment.
 
 A frozen baseline's version is *its original calibration provenance*, not a
-claim that the current library has the same version. A reproducible paired Q
+claim that the current library has the same version. A source/consumer version
+difference by itself is NOT a reason to recalibrate or block publication. A reproducible paired Q
 study, and even a passing numerical smoke/stability check, do not certify a
 new probability law or retroactively validate archived Q values. This tool
 joins evidence without rewriting that history or setting post-hoc tolerances.
@@ -92,15 +93,21 @@ def assess_release(manifest, q_study, historical, environment):
         {"code":"CALIBRATION_FORMAT_AND_REPORT_RELEASE_REVIEW",
          "reason":"Frozen baseline and canonical audit-report replacement policy requires a separate versioned release approval."},
     ]
+    # Two version identifiers refer to different scientific objects:
+    # the version of the library that PRODUCED an archival baseline and the
+    # version of the library that CONSUMES it. Their inequality is normal.
+    # Neither a version string mismatch nor developer dependency mismatch
+    # alone demonstrates a metric or GT incompatibility.
+    compatibility_notes=[]
     if source != current:
-        blockers.append({
-            "code":"ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER",
-            "reason":"Archived calibration version and current consumer-library version differ. Preserve the original version, do not silently retag; review mathematical/GT/algorithm compatibility.",
+        compatibility_notes.append({
+            "code":"ARCHIVED_SOURCE_VERSION_DIFFERS_FROM_CONSUMER",
+            "reason":"The frozen baseline records its producing library version, not a requirement on the current consumer. This is provenance, not a release blocker. Compatibility follows the scientific protocol, reference and observed numerical behavior.",
         })
     if version["status"]!="MATCH":
-        blockers.append({
-            "code":"DEPENDENCY_CERTIFICATION_MISSING",
-            "reason":"Installed dependency versions differ from the developer-certified manifest; numerical stability checks are informative but not a replacement for a certified environment.",
+        compatibility_notes.append({
+            "code":"CERTIFIED_DEPENDENCY_VERSIONS_DIFFER",
+            "reason":"Dependency versions differ from the developer-certified environment; preserve and report this qualification. A passed numerical stability smoke check supports observed stability but does not prove complete equivalence.",
         })
     if stability["status"]!="PASSED":
         blockers.append({
@@ -137,6 +144,8 @@ def assess_release(manifest, q_study, historical, environment):
         },
         "checks":checks,
         "release_blockers":blockers,
+        "compatibility_notes":compatibility_notes,
+        "version_difference_alone_requires_new_baseline":False,
     }
 
 
