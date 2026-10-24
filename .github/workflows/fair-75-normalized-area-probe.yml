@@ -224,8 +224,14 @@ jobs:
           assert record["paired_q_impact"]["allowable_drift_threshold"] is None
           assert record["calibration_provenance"]["original_baseline_version"]=="0.14.0"
           assert record["calibration_provenance"]["consumer_library_version"]=="0.16.1"
-          assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" in {
-              x["code"] for x in record["release_blockers"]}
+          assert record["version_difference_alone_requires_new_baseline"] is False
+          blockers={x["code"] for x in record["release_blockers"]}
+          notes={x["code"] for x in record["compatibility_notes"]}
+          assert "ARCHIVED_SOURCE_VERSION_DIFFERS_FROM_CONSUMER" in notes
+          assert "CERTIFIED_DEPENDENCY_VERSIONS_DIFFER" in notes
+          assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" not in blockers
+          assert "DEPENDENCY_CERTIFICATION_MISSING" not in blockers
+          assert "NORMATIVE_MEASURE_NOT_APPROVED" in blockers
           PY
       - name: Render versioned FAIR audit with explicit compatibility blocker section
         run: |
