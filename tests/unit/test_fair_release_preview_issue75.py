@@ -155,8 +155,11 @@ def test_versioned_report_shows_release_blockers_and_cannot_claim_certification(
     }
     assessment=assess_release(manifest,_q(),_history(),env)
     body=render_versioned_preview(manifest,_q(),_history(),assessment)
-    assert "PUBLICATION BLOCKED" in body
-    assert "ARCHIVED_BASELINE_LIBRARY_VERSION_DIFFER" in body
+    assert "PROPOSED AREA-LAW CALIBRATION NOT CERTIFIED" in body
+    assert "ARCHIVED_SOURCE_VERSION_DIFFERS_FROM_CONSUMER" in body
+    assert "source/consumer version difference is normal" in body
+    assert "Scientific decision blockers" in body
+    assert "Version/dependency provenance notes (not blockers)" in body
     assert "0.14.0" in body and "0.16.1" in body
     assert "PASSED" in body
     assert "No synthetic generation-zero populations" in body
