@@ -238,8 +238,10 @@ def q_headway(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
             description="Unavailable: Longitudinal context (Pop 0) missing. Pass Experiment/Run object."
         )
 
-    # The physical HEADWAY (ratio) range is [0, 1] (where 0=Ideal, 1=No progress)
-    # We map this to [1, 0] using log-linear expansion
+    # ADR 0049: physical Headway is unbounded above (values >1 denote
+    # regression), but the quality score is bounded. Its *analytical*
+    # anchors are 0 => Q=1 and 1 => Q=0; values above 1 yield Q=0.
+    # No empirical one-population Headway ECDF is consulted.
     q_val = _compute_q_loglinear(f_val, 0.0, 1.0)
     
     return QResult(
@@ -397,48 +399,53 @@ def q_balance(data: Any, centroids: Optional[np.ndarray] = None, ref_hist: Optio
     return QResult(value=q_val, name="Q_BALANCE", description=_baseline_desc("Q_BALANCE", ""))
 
 def q_headway_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
-    """
-    [Smart API] Vectorized Q-Score calculation for point cloud (HEADWAY).
-    Supports either (P, GT) or pre-calculated dists.
+    """Per-point *contributions* to longitudinal HEADWAY Q (ADR 0049).
+
+    HEADWAY itself is a population-level 95th-percentile ratio. For a
+    visualization, each point's nearest-GT distance can be expressed relative
+    to the *same real initial population's* GD95, then passed through the
+    exact Q_HEADWAY log-linear 0/1 anchor map. A pointwise contribution is not
+    itself the population HEADWAY statistic.
+
+    A final front without a genuine P_initial has no longitudinal context,
+    so return an array of NaNs. Never borrow the obsolete single-population
+    headway.rand50 baseline or fabricate a random initial population.
     """
     ctx = _resolve_diagnostic_context(data, ref, s_k, **kwargs)
     P = ctx['P_final']
     P_i = ctx['P_initial']
     GT = ctx['GT']
-    s_fit = ctx['s_k']
-    problem = ctx['problem']
-    k = ctx['k']
-    
-    if P is None or len(P) == 0:
-        return np.array([])
 
-    # If data was 1D and no GT, assume they are already raw dists
+    if P is None or len(P) == 0:
+        return np.array([], dtype=float)
+
+    P = np.asarray(P, dtype=float)
     if P.ndim == 1:
-        u_vals = P 
+        # Precomputed *unscaled physical* nearest-GT distances.
+        point_distances = P
     else:
         if GT is None:
-             raise ValueError("Ground truth (ref) required to calculate distances from front.")
-        d = cdist(P, GT, metric='euclidean')
-        u_vals = np.min(d, axis=1)
+            raise ValueError("Ground truth required for HEADWAY point contributions.")
+        point_distances = np.min(cdist(P, GT, metric='euclidean'), axis=1)
 
-    # Apply resolution scaling
-    fr_vals = u_vals / s_fit if s_fit > 1e-12 else u_vals
-    
-    # 2. Get Baseline (Rand50 in FR space)
-    k_snap = baselines.snap_k(k, problem=problem)
-    target_m = kwargs.get('mop_dimension')
-    _, rand50_raw = baselines.get_baseline_values(problem, k_snap, "headway", target_m=target_m)
-    rand50 = rand50_raw / s_fit if (s_fit and s_fit > 1e-12) else rand50_raw
+    if P_i is None or GT is None:
+        return np.full(len(point_distances), np.nan, dtype=float)
 
-    # 3. Vectorized log-linear mapping
-    denom_raw = max(rand50, 0.0)
-    denom = np.log1p(denom_raw)
-    if denom <= 1e-12:
-        return np.where(fr_vals <= 1e-12, 1.0, 0.0)
+    initial = np.asarray(P_i, dtype=float)
+    GT = np.asarray(GT, dtype=float)
+    if initial.ndim != 2 or initial.shape[1] != GT.shape[1] or len(initial) == 0:
+        raise ValueError("Initial population must match the GT objective dimension.")
+    initial_distances = np.min(cdist(initial, GT, metric='euclidean'), axis=1)
+    d0 = float(np.percentile(initial_distances, 95))
+    if not np.isfinite(d0) or np.any(~np.isfinite(point_distances)):
+        raise ValueError("HEADWAY point contributors must be finite.")
+    if d0 <= 1e-12:
+        # ADR 0049 defines no-error P0 as 0 for a perfect final state,
+        # and 1 (Q=0) for any positive final error.
+        return np.where(point_distances <= 1e-12, 1.0, 0.0)
 
-    num_raw = np.maximum(fr_vals, 0.0)
-    error_score = np.log1p(num_raw) / denom
-    return 1.0 - np.clip(error_score, 0.0, 1.0)
+    ratios = np.maximum(point_distances / d0, 0.0)
+    return 1.0 - np.clip(np.log1p(ratios) / np.log(2.0), 0.0, 1.0)
 
 def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None, **kwargs) -> np.ndarray:
     """
@@ -456,17 +463,21 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
         return np.array([])
 
     if P.ndim == 1:
-        raw_u = P 
+        # Historical 1D input represents raw geometric distances. No
+        # reference-specific finite-GT residue may be inferred without GT.
+        u_vals = P / s_fit if s_fit > 1e-12 else P
     else:
         if GT is None:
-             raise ValueError("Ground truth (ref) required to calculate distances from front.")
-        d = cdist(P, GT, metric='euclidean')
-        raw_u = np.min(d, axis=1)
-    
-    # Apply resolution scaling
-    u_vals = raw_u / s_fit if s_fit > 1e-12 else raw_u
-    
-    # 2. Get Baseline (Rand50 in FR space)
+            raise ValueError("Ground truth (ref) required to calculate distances from front.")
+        # Reuse the *same physical computation* as FAIR Closeness, including
+        # its reference-specific ideal_res correction. Previously visual
+        # marker classifications used uncorrected distances against a
+        # corrected rand50, which biased every symbol after calibration.
+        u_vals = fair.closeness(
+            P, ref=GT, s_k=s_fit, problem=problem, k=k
+        ).raw_data
+
+    # 2. Get Baseline (Rand50 in corrected FR units)
     k_snap = baselines.snap_k(k, problem=problem)
     target_m = kwargs.get('mop_dimension')
     _, rand50 = baselines.get_baseline_values(problem, k_snap, "closeness", target_m=target_m)
@@ -479,4 +490,4 @@ def q_closeness_points(data: Any, ref: Optional[Any] = None, s_k: Optional[float
 
     num_raw = np.maximum(u_vals, 0.0)
     error_score = np.log1p(num_raw) / denom
-    return 1.0 - error_score
+    return np.clip(1.0 - error_score, 0.0, 1.0)

@@ -1,0 +1,580 @@
+# Temporary branch-only reproduction workflow for MoeaBench issue #75.
+# Remove this workflow before merging once tests enter the normal suite.
+name: FAIR conformance investigation (#75)
+
+on:
+  push:
+    branches:
+      - fix/75-fair-conformance
+    paths:
+      - 'moeabench/diagnostics/**'
+      - 'moeabench/moeas/**'
+      - 'calibration/scripts/generate_baselines.py'
+      - 'calibration/scripts/migrate_closeness_residue.py'
+      - 'calibration/scripts/audit_report_preflight.py'
+      - 'calibration/scripts/audit_fair_archive.py'
+      - 'calibration/scripts/audit_longitudinal_pilot.py'
+      - 'calibration/scripts/render_fair_evidence_preview.py'
+      - 'calibration/scripts/benchmark_fair_calibration_cost.py'
+      - 'calibration/scripts/verify_closeness_migration.py'
+      - 'calibration/scripts/validate_headway_anchors.py'
+      - 'calibration/scripts/screen_analytical_residues.py'
+      - 'calibration/scripts/diagnose_unsupported_pf.py'
+      - 'calibration/scripts/study_ideal_residue_robustness.py'
+      - 'calibration/scripts/study_reservoir_cardinality_issue75.py'
+      - 'calibration/scripts/study_real_moea_q_sensitivity.py'
+      - 'calibration/scripts/independent_pf_sources_issue75.py'
+      - 'calibration/scripts/study_cross_sampler_moea_issue75.py'
+      - 'moeabench/view/**'
+      - 'examples/example_13.py'
+      - 'tests/unit/test_fair_conformance_issue75.py'
+      - 'tests/unit/test_nsga2_seed_issue75.py'
+      - 'tests/unit/test_dtlz_hypersphere_sampling.py'
+      - 'tests/unit/test_audit_report_preflight_issue75.py'
+      - 'tests/unit/test_audit_fair_archive_issue75.py'
+      - 'tests/unit/test_longitudinal_pilot_issue75.py'
+      - 'tests/unit/test_fair_preview_issue75.py'
+      - 'tests/unit/test_fair_calibration_cost_issue75.py'
+      - 'tests/unit/test_verify_closeness_migration_issue75.py'
+      - 'tests/unit/test_headway_anchors_issue75.py'
+      - 'tests/unit/test_headway_pointwise_issue75.py'
+      - 'tests/unit/test_screen_analytical_residues_issue75.py'
+      - 'tests/unit/test_diagnose_unsupported_pf_issue75.py'
+      - 'tests/unit/test_ideal_residue_robustness_issue75.py'
+      - 'tests/unit/test_reservoir_cardinality_issue75.py'
+      - 'tests/unit/test_real_moea_q_sensitivity_issue75.py'
+      - 'tests/unit/test_independent_pf_sources_issue75.py'
+      - 'tests/unit/test_cross_sampler_moea_issue75.py'
+      - 'tests/integration/test_example13_consistency.py'
+      - 'tests/integration/test_topology_marker_alignment.py'
+      - '.github/workflows/fair-conformance-investigation.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnostic-probes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install project and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Generate missing integration fixture archives
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+
+          for algorithm, name in [
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ]:
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(Path("examples") / name))
+          PY
+      - name: Run issue 75 independent reproduction probes
+        run: python -m pytest tests/unit/test_fair_conformance_issue75.py -rx -q
+      - name: Preserve Example 13 interface contract
+        run: python -m pytest tests/integration/test_example13_consistency.py -q
+      - name: Validate analytical sample robustness test oracles
+        run: python -m pytest tests/unit/test_ideal_residue_robustness_issue75.py -q
+      - name: Validate reservoir-size statistical controls
+        run: python -m pytest tests/unit/test_reservoir_cardinality_issue75.py -q
+      - name: Full unit regressions
+        run: python test.py --unit
+      - name: Basic integration regressions
+        run: python test.py --integration --basic
+      - name: Preview calibrated ideal residue impact (no historical overwrite)
+        run: |
+          python calibration/scripts/migrate_closeness_residue.py \
+            --problem DTLZ1 \
+            --impact-report /tmp/fair-75-dtlz1-residue-impact.json \
+            --output /tmp/fair-75-dtlz1-candidate.json
+      - name: Upload numerical baseline impact report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-dtlz1-residue-impact
+          path: /tmp/fair-75-dtlz1-residue-impact.json
+      - name: Preflight historical audit_report regeneration (no writes to certified artifacts)
+        run: |
+          python calibration/scripts/audit_report_preflight.py \
+            --output /tmp/fair-75-audit-report-preflight.json
+      - name: Upload audit_report input preflight
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-audit-report-preflight
+          path: /tmp/fair-75-audit-report-preflight.json
+      - name: Provisional historical FAIR audit (not a certified report)
+        run: |
+          python calibration/scripts/audit_fair_archive.py \
+            --study DTLZ1_NSGA2 --max-runs 2 \
+            --output /tmp/fair-75-historical-physical-only.json
+      - name: Upload provisional FAIR numerical report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-historical-physical-only
+          path: /tmp/fair-75-historical-physical-only.json
+      - name: Genuine initial population longitudinal FAIR audit pilot
+        run: |
+          python calibration/scripts/audit_longitudinal_pilot.py \
+            --seed 7 --generations 60 --population 64 \
+            --candidate-baseline /tmp/fair-75-dtlz1-candidate.json \
+            --output /tmp/fair-75-true-p0-pilot.json
+      - name: Upload true-P0 pilot audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-true-p0-longitudinal-pilot
+          path: /tmp/fair-75-true-p0-pilot.json
+      - name: Generate separated provisional FAIR evidence HTML preview
+        run: |
+          python calibration/scripts/render_fair_evidence_preview.py \
+            --pilot /tmp/fair-75-true-p0-pilot.json \
+            --archive /tmp/fair-75-historical-physical-only.json \
+            --output /tmp/fair-75-provisional-evidence.html
+      - name: Upload provisional report preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-provisional-evidence-preview
+          path: /tmp/fair-75-provisional-evidence.html
+      - name: Benchmark one complete calibration K on three MOPs (excluding HEADWAY)
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/benchmark_fair_calibration_cost.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --k 20 --random-draws 200 --ideal-draws 30 \
+            --output /tmp/fair-75-three-mop-cost.json
+      - name: Upload multi-MOP calibration timing
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-calibration-cost
+          path: /tmp/fair-75-three-mop-cost.json
+          if-no-files-found: warn
+      - name: Benchmark larger K=100 on same three MOPs
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/benchmark_fair_calibration_cost.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --k 100 --random-draws 200 --ideal-draws 30 \
+            --output /tmp/fair-75-three-mop-cost-k100.json
+      - name: Upload K=100 multi-MOP calibration timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-calibration-cost-k100
+          path: /tmp/fair-75-three-mop-cost-k100.json
+          if-no-files-found: warn
+      - name: Stage three-MOP Closeness-only migration for all archived K values
+        timeout-minutes: 8
+        run: |
+          python calibration/scripts/migrate_closeness_residue.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --impact-report /tmp/fair-75-three-mop-migration-impact.json \
+            --output /tmp/fair-75-three-mop-migration-candidate.json
+          python calibration/scripts/verify_closeness_migration.py \
+            --original moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            --candidate /tmp/fair-75-three-mop-migration-candidate.json \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ5 \
+            --output /tmp/fair-75-three-mop-migration-verified.json
+      - name: Upload verified 3-MOP calibration impact (not full baselines)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-three-mop-migration-impact
+          path: |
+            /tmp/fair-75-three-mop-migration-impact.json
+            /tmp/fair-75-three-mop-migration-verified.json
+          if-no-files-found: warn
+      - name: Validate analytic Q_HEADWAY anchors and genuine P0/Pf trials
+        run: |
+          python calibration/scripts/validate_headway_anchors.py \
+            --seed 7 --seed 8 --population 32 --generations 20 \
+            --output /tmp/fair-75-headway-analytic-anchors.json
+      - name: Upload Headway analytical and empirical verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-headway-adr0049-anchor-validation
+          path: /tmp/fair-75-headway-analytic-anchors.json
+          if-no-files-found: warn
+      - name: Screen remaining frozen MOPs for independent analytical residue
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/screen_analytical_residues.py \
+            --k 20 --k 100 \
+            --output /tmp/fair-75-all-mops-analytical-screen.json
+      - name: Upload 14-MOP analytical GT compatibility inventory
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-all-mops-analytical-screen
+          path: /tmp/fair-75-all-mops-analytical-screen.json
+          if-no-files-found: warn
+      - name: Stage full-K Closeness correction for all 12 screened MOPs
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/migrate_closeness_residue.py \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
+            --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
+            --problem DTLZ7 --problem DTLZ9 \
+            --impact-report /tmp/fair-75-twelve-mop-impact.json \
+            --output /tmp/fair-75-twelve-mop-candidate.json
+          python calibration/scripts/verify_closeness_migration.py \
+            --original moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            --candidate /tmp/fair-75-twelve-mop-candidate.json \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
+            --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
+            --problem DTLZ7 --problem DTLZ9 \
+            --output /tmp/fair-75-twelve-mop-verified.json
+      - name: Upload independent 12-MOP full-K correction verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-twelve-mop-full-k-verification
+          path: |
+            /tmp/fair-75-twelve-mop-impact.json
+            /tmp/fair-75-twelve-mop-verified.json
+          if-no-files-found: warn
+      - name: Diagnose three unsupported analytical samplers without changing baselines
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/diagnose_unsupported_pf.py \
+            --problem DPF3 --problem DPF5 --problem DTLZ8 \
+            --output /tmp/fair-75-unsupported-pf-diagnostics.json
+      - name: Upload unsupported MOP sampling evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-unsupported-pf-diagnostics
+          path: /tmp/fair-75-unsupported-pf-diagnostics.json
+          if-no-files-found: warn
+      - name: Challenge Closeness residue robustness (DTLZ1/DTLZ2/DPF5)
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_ideal_residue_robustness.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DPF5 \
+            --sample-size 256 --sample-size 512 --sample-size 1024 \
+            --repetitions 4 --pool-extra 8192 \
+            --output /tmp/fair-75-independent-residue-robustness.json
+      - name: Upload statistical robustness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-independent-residue-robustness
+          path: /tmp/fair-75-independent-residue-robustness.json
+          if-no-files-found: warn
+      - name: Real Example 13 FAIR pipeline and scale diagnostics
+        run: |
+          python - <<'PY'
+          import numpy as np
+          import moeabench as mb
+          from moeabench.diagnostics.baselines import get_resolution_factor_k
+
+          exp = mb.experiment()
+          exp.mop = mb.mops.DTLZ1(M=3)
+          exp.moea = mb.moeas.NSGA2(population=100, generations=280)
+          exp.run(seed=1, silent=True)
+
+          # Compare two calibrations on the *same* fixed run. The staged
+          # source was derived from the frozen v0.14.0 baseline, not a new GT.
+          from moeabench.diagnostics import baselines as clinical_baselines
+          candidate = "/tmp/fair-75-dtlz1-candidate.json"
+          report = mb.clinic.audit(exp)
+          with clinical_baselines.use_baselines(candidate):
+              candidate_report = mb.clinic.audit(exp)
+          assert candidate_report.quality is not None
+          assert report.quality is not None
+          k = report.diagnostic_context["k"]
+          original_close = report.fr.metrics["CLOSENESS"]
+          staged_close = candidate_report.fr.metrics["CLOSENESS"]
+          with clinical_baselines.use_baselines(candidate):
+              epsilon = clinical_baselines.get_baseline_data(
+                  "DTLZ1", k, "closeness"
+              )["ideal_res"]
+          expected_corrected = np.maximum(
+              0.0, np.asarray(original_close.raw_data) - epsilon
+          )
+          np.testing.assert_allclose(
+              staged_close.raw_data, expected_corrected, rtol=0, atol=1e-11
+          )
+          assert staged_close.value <= original_close.value
+          q_old = report.quality.scores["Q_CLOSENESS"].value
+          q_new = candidate_report.quality.scores["Q_CLOSENESS"].value
+          assert np.isfinite(q_old) and np.isfinite(q_new)
+          for key in ["COVERAGE", "GAP", "REGULARITY", "BALANCE", "HEADWAY"]:
+              np.testing.assert_allclose(
+                  report.fr.metrics[key].value,
+                  candidate_report.fr.metrics[key].value,
+                  rtol=0, atol=1e-12, equal_nan=True
+              )
+          for key in ["Q_COVERAGE", "Q_GAP", "Q_REGULARITY",
+                      "Q_BALANCE", "Q_HEADWAY"]:
+              np.testing.assert_allclose(
+                  report.quality.scores[key].value,
+                  candidate_report.quality.scores[key].value,
+                  rtol=0, atol=1e-12, equal_nan=True
+              )
+          print("MIGRATION_COMPARE K:", k)
+          print("MIGRATION_COMPARE ideal_res:", epsilon)
+          print("MIGRATION_COMPARE Closeness old/new:",
+                original_close.value, staged_close.value)
+          print("MIGRATION_COMPARE Q_CLOSENESS old/new:", q_old, q_new)
+          print("MIGRATION_COMPARE other FAIR/Q metrics unchanged: PASS")
+
+          context = report.diagnostic_context or {}
+          P, GT = context["P_final"], context["GT"]
+          physical_P = np.asarray(exp.front(-1))
+          print("reference_source:", context.get("gt_source"))
+          print("P shape:", P.shape, "GT shape:", GT.shape)
+          print("physical P median(sum objectives):", float(np.median(physical_P.sum(axis=1))))
+          print("calibrated P median(sum objectives):", float(np.median(P.sum(axis=1))))
+          print("GT median(sum objectives):", float(np.median(GT.sum(axis=1))))
+          from pathlib import Path
+          pkg_path = (Path(mb.__file__).resolve().parent /
+                      "diagnostics/resources/references/DTLZ1/calibration_package.npz")
+          print("calibration package:", str(pkg_path), "exists:", pkg_path.exists())
+          if pkg_path.exists():
+              with np.load(pkg_path) as pkg:
+                  ideal, nadir = pkg["ideal"], pkg["nadir"]
+                  print("package ideal:", ideal, "nadir:", nadir)
+                  print("package GT equals registry:", np.array_equal(pkg["gt_norm"], GT))
+                  p_cal = (physical_P - ideal) / np.where(nadir - ideal == 0, 1.0, nadir - ideal)
+                  np.testing.assert_allclose(P, p_cal, rtol=1e-12, atol=1e-12)
+                  from scipy.spatial import cKDTree
+                  print("median RAW P-to-normalized GT (invalid comparison):",
+                        float(np.median(cKDTree(GT).query(physical_P)[0])))
+                  print("median normalized P-to-normalized GT:",
+                        float(np.median(cKDTree(GT).query(P)[0])))
+                  from moeabench.diagnostics.calibration import (
+                      independent_analytical_reference, estimate_ideal_residue,
+                  )
+
+                  class CalibratedAnalyticalPF:
+                      def pf(self, n_points):
+                          return (exp.mop.pf(n_points=n_points) - ideal) / (nadir - ideal)
+
+                  fresh = independent_analytical_reference(
+                      CalibratedAnalyticalPF(), GT, n_fresh=1024
+                  )
+                  assert fresh is not None and len(fresh) == 1024
+                  eps = estimate_ideal_residue(
+                      GT, fresh, get_resolution_factor_k(GT, context["k"], seed=0)
+                  )
+                  print("Independent analytical ideal_res:", eps)
+                  assert eps > 0, "Same-GT FPS would have given false zero residue"
+          print("effective K:", context["k"], "s_K:", context["s_k"])
+          independent = get_resolution_factor_k(GT, context["k"], seed=0)
+          assert np.isclose(context["s_k"], independent), (context["s_k"], independent)
+          assert context.get("gt_source") == "registered"
+          assert report.quality is not None, report.description
+          for key, item in report.quality.scores.items():
+              val = float(item.value)
+              print(key, val)
+              assert np.isfinite(val) and 0 <= val <= 1, (key, val)
+          print("Closeness physical:", float(report.fr.metrics["CLOSENESS"].value))
+          calibration = context.get("normalization")
+          if calibration is not None:
+              import matplotlib
+              matplotlib.use("Agg")
+              from matplotlib import pyplot as plt
+              visual_gt = GT * (calibration["nadir"] - calibration["ideal"]) + calibration["ideal"]
+              plot = mb.view.topology(
+                  exp, gt=visual_gt, markers=True, mode="static", show=False,
+              )
+              np.testing.assert_allclose(plot.vet_pts[0], visual_gt)
+              np.testing.assert_allclose(plot.vet_pts[1], physical_P)
+              assert plot.marker_styles[1] is not None, "Clinical markers were silently dropped"
+              assert len(plot.marker_styles[1]["symbol"]) == len(physical_P)
+              print("Clinical markers assigned:", len(plot.marker_styles[1]["symbol"]))
+              plt.close("all")
+
+          # A fixed seed must control the entire DEAP evolution, not only
+          # initial sampling or a subset of stochastic operators.
+          original_front = np.asarray(exp.front(-1)).copy()
+          original_q = float(report.quality.scores["Q_CLOSENESS"].value)
+          import random
+          random.seed(9281)
+          np.random.seed(8327)
+          exp.run(seed=1, silent=True)
+          np.testing.assert_array_equal(exp.front(-1), original_front)
+          repeated = mb.clinic.audit(exp)
+          assert float(repeated.quality.scores["Q_CLOSENESS"].value) == original_q
+          print("Repeated seed=1 front and Q_CLOSENESS: exact match")
+          PY
+
+  # Separate job prevents the main 75-step audit from hiding early
+  # scientific sensitivity results behind repeated heavy regressions.
+  sampling-robustness-all-mops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install numerical package
+        run: python -m pip install -e .
+      - name: Test analytical-residue robustness on every screened MOP
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_ideal_residue_robustness.py \
+            --problem DPF1 --problem DPF2 --problem DPF4 --problem DPF5 \
+            --problem DTLZ1 --problem DTLZ2 --problem DTLZ3 \
+            --problem DTLZ4 --problem DTLZ5 --problem DTLZ6 \
+            --problem DTLZ7 --problem DTLZ9 \
+            --sample-size 256 --sample-size 512 --sample-size 1024 \
+            --repetitions 4 --pool-extra 8192 \
+            --output /tmp/fair-75-all-screened-residue-robustness.json
+      - name: Upload complete 12-MOP sensitivity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-all-screened-residue-robustness
+          path: /tmp/fair-75-all-screened-residue-robustness.json
+          if-no-files-found: warn
+
+  # Scientific sampling-protocol sensitivity, kept separate from the main
+  # full FAIR regression job and the all-MOP subset-variance study.
+  reservoir-cardinality-study:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install package
+        run: python -m pip install -e .
+      - name: Challenge analytical PF request cardinality with fixed sample/seed
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_reservoir_cardinality_issue75.py \
+            --problem DTLZ1 --problem DTLZ2 \
+            --problem DPF1 --problem DPF2 --problem DPF4 \
+            --problem DPF5 --problem DTLZ9 \
+            --factor 2 --factor 4 --factor 8 --factor 16 \
+            --seed 123 --seed 124 --seed 125 \
+            --n-fresh 1024 \
+            --output /tmp/fair-75-reservoir-cardinality-sensitivity.json
+      - name: Upload reservoir-cardinality diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-reservoir-cardinality-sensitivity
+          path: /tmp/fair-75-reservoir-cardinality-sensitivity.json
+          if-no-files-found: warn
+
+  # Dedicated scientific gate; the same real MOEA fronts are held fixed
+  # while independent analytical-PF subsampling seeds change.
+  real-moea-q-sensitivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench
+        run: python -m pip install -e .
+      - name: Compare Q-Closeness on real fixed NSGA-II fronts
+        timeout-minutes: 10
+        run: |
+          python calibration/scripts/study_real_moea_q_sensitivity.py \
+            --problem DTLZ1 --problem DTLZ2 --problem DPF5 \
+            --run-seed 7 --run-seed 8 \
+            --analytical-seed 123 --analytical-seed 124 \
+            --analytical-seed 125 --analytical-seed 126 \
+            --population 40 --generations 40 \
+            --output /tmp/fair-75-real-moea-q-sensitivity.json
+      - name: Upload real-MOEA scoring sensitivity report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-real-moea-q-sensitivity
+          path: /tmp/fair-75-real-moea-q-sensitivity.json
+          if-no-files-found: warn
+
+  # DTLZ1's initial short NSGA-II budget left all Q=0; check a far larger
+  # optimization budget independently so clipping cannot masquerade as
+  # convincing numerical stability of ideal_res.
+  dtlz1-convergence-budget-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench
+        run: python -m pip install -e .
+      - name: Test DTLZ1 with larger NSGA-II optimization budget
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/study_real_moea_q_sensitivity.py \
+            --problem DTLZ1 \
+            --run-seed 1 --run-seed 7 \
+            --analytical-seed 123 --analytical-seed 124 \
+            --analytical-seed 125 --analytical-seed 126 \
+            --population 100 --generations 500 \
+            --output /tmp/fair-75-dtlz1-larger-budget-q-sensitivity.json
+      - name: Upload DTLZ1 large-budget real-front pilot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-dtlz1-large-budget-q-sensitivity
+          path: /tmp/fair-75-dtlz1-larger-budget-q-sensitivity.json
+          if-no-files-found: warn
+
+  # Different sampling *laws* rather than merely different seeds of one
+  # deterministic PF generator. The DPF5 comparison is explicitly
+  # exploratory (uniform decision PS != uniform objective surface area).
+  independent-pf-law-comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - problem: DTLZ1
+            population: 100
+            generations: 500
+          - problem: DTLZ2
+            population: 40
+            generations: 90
+          - problem: DPF5
+            population: 40
+            generations: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install numerical package
+        run: python -m pip install -e .
+      - name: Evaluate cross-law ideal_res and Q on real NSGA-II fronts
+        timeout-minutes: 13
+        run: |
+          python calibration/scripts/study_cross_sampler_moea_issue75.py \
+            --problem ${{ matrix.problem }} \
+            --moea-seed 1 --moea-seed 7 \
+            --ideal-seed 123 --ideal-seed 124 \
+            --ideal-seed 125 --ideal-seed 126 \
+            --population ${{ matrix.population }} --generations ${{ matrix.generations }} \
+            --output /tmp/fair-75-cross-law-${{ matrix.problem }}.json
+      - name: Upload external PF-law comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair-75-cross-law-${{ matrix.problem }}
+          path: /tmp/fair-75-cross-law-${{ matrix.problem }}.json
+          if-no-files-found: warn

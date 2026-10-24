@@ -37,13 +37,16 @@ if PROJ_ROOT not in sys.path:
 import json
 import numpy as np
 import moeabench.diagnostics.baselines as base
-import moeabench.diagnostics.fr as fair
+from moeabench.diagnostics import fair
+from moeabench.system import version as lib_version
 from scipy.spatial.distance import cdist
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 
 # Configuration
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "../../moeabench/diagnostics/resources/baselines.json")
+# Never write a calibration run directly through the certified baselines.json
+# alias. Set MOEABENCH_BASELINE_OUTPUT to a distinct staging path.
+OUTPUT_FILE = os.environ.get("MOEABENCH_BASELINE_OUTPUT")
 N_SAMPLES = 200  # Size of the ECDF (Physics of Failure)
 N_IDEAL = 30     # Size of Ideal population for determining uni50
 SEED_START = 1000
@@ -187,8 +190,10 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
     """
     metrics = {}
     
-    # 1. HEADWAY (Proximity)
-    metrics['headway'] = fair.headway(samples, gt_norm, s_k=s_fit, raw=True).value
+    # HEADWAY is intentionally omitted here. A single population cannot
+    # calibrate the ADR 0049 longitudinal GD95(P_final)/GD95(P_initial)
+    # ratio. raw=True returns a different *final-distance* statistic and
+    # must never be labeled as longitudinal Headway.
 
     # 2. COV (Coverage)
     metrics['cov'] = fair.coverage(samples, gt_norm).value
@@ -204,7 +209,57 @@ def calculate_metrics(samples, gt_norm, s_fit, u_ref, c_cents, hist_ref):
 
     return metrics
 
-def generate_ecdf_for_problem(prob_name, gt_norm):
+def _analytical_ideal_from_package(prob_name, gt_norm, package):
+    """Recover independent analytical PF points in the packaged coordinates.
+
+    The calibration GT is min/max normalized and often generated with a
+    deterministic MOP sampler. Verify that the original analytical sampler
+    samples the same manifold within local GT spacing before using its extension. This
+    prevents attaching a mathematically unrelated ideal residue to a sidecar.
+    """
+    from moeabench import mops
+    from moeabench.diagnostics.calibration import independent_analytical_reference
+    mop_class = getattr(mops, prob_name, None)
+    if mop_class is None:
+        return None
+    mop = mop_class()
+    ideal, nadir = np.asarray(package['ideal']), np.asarray(package['nadir'])
+    span = nadir - ideal
+    if gt_norm.ndim != 2 or np.any(span <= 0):
+        return None
+    original = (np.asarray(mop.pf(n_points=len(gt_norm))) - ideal) / span
+    if (original.ndim != 2 or original.shape[1] != gt_norm.shape[1]
+            or len(original) < 2 or not np.all(np.isfinite(original))):
+        return None
+
+    # Current MOP samplers can return fewer points than requested: e.g.
+    # DPF5 rounds a 2D Pareto-set grid down to a perfect square. Do not
+    # equate *cardinality* with frontier geometry. On the other hand, a
+    # non-dominated filter can also produce a badly undersampled section
+    # of the front (observed for DPF3), where the *median* distance looks
+    # good while the tail differs from the archived GT by >200 local steps.
+    # For variable-cardinality samplers demand both robust center and tail
+    # proximity before treating the extension as analytically compatible.
+    from scipy.spatial import cKDTree
+    tree = cKDTree(gt_norm)
+    spacing = float(np.median(tree.query(gt_norm, k=2)[0][:, 1]))
+    if spacing <= 0 or not np.isfinite(spacing):
+        return None
+    offsets = tree.query(original, k=1)[0]
+    if float(np.median(offsets)) > 5.0 * spacing:
+        return None
+    if len(original) != len(gt_norm):
+        if float(np.percentile(offsets, 95)) > 5.0 * spacing:
+            return None
+
+    class CalibratedMop:
+        def pf(self, n_points):
+            return (np.asarray(mop.pf(n_points=n_points)) - ideal) / span
+
+    return independent_analytical_reference(CalibratedMop(), gt_norm)
+
+
+def generate_ecdf_for_problem(prob_name, gt_norm, independent_ideal=None):
     problem_data = {}
     M = gt_norm.shape[1] # Objectives
 
@@ -259,25 +314,31 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
         d_blur, _ = tree.query(g_blur, k=1)
         u_blur = d_blur / s_fit
         
-        # Sort and downsample to N_SAMPLES if needed (to keep JSON size uniform)
-        u_blur_sorted = np.sort(u_blur)
+        # ECDF construction follows the ideal-residue correction below.
+            
+        # --- GENERATION (IDEAL RESIDUE) ---
+        # A differently seeded subset of the *same* GT necessarily yields
+        # zero distance to GT, so it cannot estimate ADR 0037's residual.
+        if independent_ideal is None:
+            ideal_res, residue_method = 0.0, "unavailable_no_independent_ideal"
+        else:
+            from moeabench.diagnostics.calibration import estimate_ideal_residue
+            ideal_res = estimate_ideal_residue(gt_norm, independent_ideal, s_fit)
+            residue_method = "independent_analytical_pf"
+            
+        # Clinical Q-scores compare a physically residue-corrected
+        # Closeness distribution with *the same* corrected baseline.
+        corrected_blur = np.maximum(0.0, u_blur - ideal_res)
+        u_blur_sorted = np.sort(corrected_blur)
         if len(u_blur_sorted) > N_SAMPLES:
-            # Linear sampling of the ECDF
             indices = np.linspace(0, len(u_blur_sorted)-1, N_SAMPLES).astype(int)
             u_blur_ecdf = u_blur_sorted[indices]
         else:
             u_blur_ecdf = u_blur_sorted
-            
-        # --- GENERATION (IDEAL RESIDUE) ---
-        # Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
-        u_ideal_sample = base.get_ref_uk(gt_norm, k, seed=999)
-        d_ideal, _ = tree.query(u_ideal_sample, k=1)
-        u_ideal_vals = d_ideal / s_fit if s_fit > 1e-12 else d_ideal
-        ideal_res = float(np.median(u_ideal_vals))
-            
+
         # --- GENERATION (RANDOM) ---
         # "Failure" Baseline: Random Sampling in [0,1]^M
-        rand_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        rand_vals = {"cov": [], "gap": [], "reg": [], "bal": []}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES):
@@ -288,7 +349,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             
         # --- GENERATION (IDEAL) ---
         # "Success" Baseline: Uniform Sampling from GT (u_ref itself, or perturbations?)
-        uni_vals = {"headway": [], "cov": [], "gap": [], "reg": [], "bal": []}
+        uni_vals = {"cov": [], "gap": [], "reg": [], "bal": []}
         for i in range(N_IDEAL):
             # Sample Uniformly from GT (Simulates a perfect algorithm)
             # Seed varies to get distribution of "Perfect"
@@ -301,7 +362,7 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
 
         # --- STORAGE ---
         k_data = {}
-        for metric in ["headway", "cov", "gap", "reg", "bal"]:
+        for metric in ["cov", "gap", "reg", "bal"]:
             # Random (ECDF)
             r_all = np.sort(rand_vals[metric])
             r_50 = float(np.median(r_all))
@@ -310,24 +371,32 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
             # Ideal (Scalar Anchor)
             u_50 = float(np.median(uni_vals[metric]))
             
-            # Special case for HEADWAY: Ideal is 0.0 by definition of distance
-            if metric == "headway": u_50 = 0.0
-            
             k_data[metric] = {
                 "uni50": u_50,
                 "rand50": r_50,
                 "rand_ecdf": r_ecdf
             }
             
+        # ADR 0049: analytic anchors, not an empirical distribution.
+        # The production Q_HEADWAY mapping uses ideal=0, no-progress=1.
+        # No Headway ECDF is generated from single-population samples.
+        k_data["headway"] = {
+            "ideal": 0.0,
+            "no_progress": 1.0,
+            "method": "analytic_anchors_adr0049",
+            "status": "no_empirical_longitudinal_baseline",
+        }
+
         # Store CLOSENESS
         # Ideal is degenerate 0.0
         k_data["closeness"] = {
             "uni50": 0.0,
-            "rand50": float(med_blur),
+            "rand50": float(np.median(corrected_blur)),
             "rand_ecdf": [float(x) for x in u_blur_ecdf],
             "ideal_res": ideal_res,
+            "ideal_res_method": residue_method,
             "sigma": float(sigma),
-            "p95": float(p95_blur),
+            "p95": float(np.percentile(corrected_blur, 95)),
             "seed": SEED_START + k
         }
         
@@ -339,6 +408,16 @@ def generate_ecdf_for_problem(prob_name, gt_norm):
     return problem_data
 
 def main():
+    if not OUTPUT_FILE:
+        raise SystemExit(
+            "Set MOEABENCH_BASELINE_OUTPUT to a new staging file; "
+            "refusing to overwrite certified baselines.json."
+        )
+    certified_alias = os.path.realpath(
+        os.path.join(PROJ_ROOT, "moeabench/diagnostics/resources/baselines.json")
+    )
+    if os.path.realpath(OUTPUT_FILE) == certified_alias:
+        raise SystemExit("Refusing to overwrite frozen canonical baseline alias")
     print(f"Generating Baselines v4 (ECDF)...")
     print(f"Output: {OUTPUT_FILE}")
     print(f"K_VALUES: {K_VALUES}")
@@ -360,7 +439,7 @@ def main():
     print(f"Found {len(problems)} problems: {problems}")
     
     final_json = {
-        "version": base.version(),
+        "version": lib_version(show=False),
         "schema": "baselines_v4_ecdf",
         "python_version": sys.version.split()[0],
         "numpy_version": np.__version__,
@@ -375,7 +454,12 @@ def main():
             pkg = np.load(pkg_path)
             gt_norm = pkg['gt_norm']
             
-            p_data = generate_ecdf_for_problem(prob, gt_norm)
+            # Store provenance alongside residue: a GT that cannot be
+            # reproduced analytically must not get an invented correction.
+            independent_ideal = _analytical_ideal_from_package(prob, gt_norm, pkg)
+            p_data = generate_ecdf_for_problem(
+                prob, gt_norm, independent_ideal=independent_ideal
+            )
             final_json["problems"][prob] = p_data
             print(" Done.")
             

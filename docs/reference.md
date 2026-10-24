@@ -1168,7 +1168,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Logic**: Each Q-score calibrates its FAIR quantity between metric-specific ideal and random/failure anchors. The transformation may be log-linear, ECDF-based, or Wasserstein-based; a Q-score is therefore not generally a percentile of random samples.
 
 #### **`mb.clinic.q_headway(data, ...) -> QResult`**
-*   **Baselines**: Ideal=$0.0$, Random=$1.0$ on the longitudinal headway ratio.
+*   **Anchors**: Ideal=$0.0$ and **no progress**=$1.0$ on the genuine-P0 longitudinal Headway ratio. These are analytical anchors, not an empirical random-population baseline. New calibrations do not synthesize Headway `rand50` or `rand_ecdf`.
 *   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ while preserving the anchors $Q=1$ at ideal progress and $Q=0$ at no progress.
 
 #### **`mb.clinic.q_closeness(data, ...) -> QResult`**
@@ -1181,7 +1181,7 @@ They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**
 *   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to interpolate the metric between its calibrated anchors, with clipping to the public $[0,1]$ contract.
 
 #### **`mb.clinic.q_headway_points(data, ...)`** / **`mb.clinic.q_closeness_points(data, ...)`**
-*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics.
+*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics. `q_headway_points` produces **per-point contributions**, not the population HEADWAY ratio: it compares each final point's nearest-GT distance with `GD95(P_initial→GT)`, using the genuine initial population from the same run (or an explicit `initial_data`). Without longitudinal context, it returns NaNs rather than borrowing obsolete Headway baseline records. `q_closeness_points` uses reference-specific finite-GT correction when a matching calibration is available.
 *   **Returns**: `np.ndarray`.
 
 ---
