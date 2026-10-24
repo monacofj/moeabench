@@ -4,7 +4,7 @@
 explains the release gates exposed by PR #76 and ADR 0051. It does **not**
 declare the experimental candidate scientifically certified.
 
-## 1. Three distinct versions, three distinct obligations
+## 1. Distinguish library releases from calibration datasets and method revisions
 
 1. **MoeaBench library version** identifies code that consumes and produces
    diagnostics (at the time of the pilot, `0.16.1`).
@@ -20,10 +20,15 @@ declare the experimental candidate scientifically certified.
    Its use would require an explicit **new baseline artifact identity** rather
    than silently altering `baselines_v0.14.0.json` or relabeling that file.
 
-The only scientifically meaningful compatibility assertion must reference
-**all three**, as well as GT SHA256, baseline SHA256, normalized coordinates,
-K-specific reference ECDF, sample method and seed, library/dependency
-environment and observed diagnostic behavior.
+**Important:** neither a mismatch between archived producer and consumer
+library versions nor a difference in developer-certified dependency versions
+automatically invalidates the historical baseline or mandates a new one.
+The baseline can be reused when its mathematical definitions, coordinates,
+reference GT and numerical behavior remain compatible with the consumer.
+For a *new scientific calibration claim*, evidence should separately record
+the source and consumer versions, GT and baseline SHA256, normalization,
+K-specific ECDF, sampling protocol, dependency environment and actual
+diagnostic behavior. These version strings are provenance, not equality gates.
 
 ## 2. Evidence currently available
 
@@ -62,16 +67,16 @@ code/dependencies and the current clinical scoring protocol.
    its nonzero effect belongs in the compatibility notes.
 5. **Environment check:** run both `mb.system.verify_version()` and
    `mb.system.verify_stability()` in the documented execution environment.
-   A dependency-version mismatch remains an explicit qualification even
-   when numerical smoke checks pass. Prefer a certified dependency set or
-   separately reviewed cross-environment equivalence evidence; never hide
-   warnings or rewrite the archived baseline version.
-6. **Immutable release artifacts:** publish a newly identified,
-   content-addressed calibration baseline plus manifest with source/target
-   versions, hashes, generator seed, sampler identity, GT, K coverage,
-   unsupported statuses and evidence links. Update the library's canonical
-   alias **only in a separately reviewed release** and verify it resolves
-   to the intended artifact.
+   A dependency-version mismatch is a **provenance note**, not an
+   automatic release blocker or reason to recalibrate. If numerical stability
+   tests *fail*, investigate and block an unsupported numerical certification.
+   Do not hide warnings or rewrite the archived baseline version.
+6. **Only if numeric calibration changes:** retain the source baseline
+   untouched and identify the revised records/method through immutable hashes,
+   reproducible generator seed, sampler identity, GT and K coverage.
+   Reuse unaffected metric baselines. An actual change to the canonical
+   baseline alias requires scientific review; normal library version
+   increments do **not** trigger baseline regeneration.
 
 ## 4. `audit_report` replacement policy
 
@@ -104,7 +109,9 @@ report.
 `BLOCKED_PENDING_SCIENTIFIC_RELEASE_REVIEW` report binding hashes,
 paired-Q evidence, version and numerical-stability results, and the
 historical-data limitations. The `release_blockers` list is a scientific
-review checklist. A green CI run is required for engineering confidence but
+review checklist, while `compatibility_notes` records descriptive producer/
+consumer and certified-dependency differences **without** blocking publication
+on version inequality alone. A green CI run is required for engineering confidence but
 **never** automatically converts the candidate to a certified artifact.
 
 The current PR remains Draft. No merge or publication is authorized by this
