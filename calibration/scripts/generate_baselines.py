@@ -217,6 +217,13 @@ def _analytical_ideal_from_package(prob_name, gt_norm, package):
     samples the same manifold within local GT spacing before using its extension. This
     prevents attaching a mathematically unrelated ideal residue to a sidecar.
     """
+    # A corrected source sampler does not repair the historical frozen GT.
+    # These three MOPs fail the issue-75 scientific reference review:
+    # DPF2/DTLZ7 frozen GT contains dominated points, and DPF5's
+    # mixed-dimensional branch measure changes under objective deduplication.
+    # Never attach a new finite-GT epsilon to those archival references.
+    if prob_name in ("DPF2", "DTLZ7", "DPF5"):
+        return None
     from moeabench import mops
     from moeabench.diagnostics.calibration import independent_analytical_reference
     mop_class = getattr(mops, prob_name, None)
