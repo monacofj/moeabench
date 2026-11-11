@@ -73,3 +73,27 @@ def test_inventory_rejects_partial_archive_and_unbounded_sampling():
         run_audit({"problems":{"DTLZ1":{}}})
     with pytest.raises(ValueError,match="bounded"):
         run_audit({"problems":{name:{} for name in LAWS}},n_points=99999)
+
+
+def test_dpf5_piecewise_decision_grid_changes_distribution_after_dedup():
+    # This is a structural property of the actual M=3 implementation, not
+    # a statistical hypothesis about optimization performance.
+    from moeabench.mops import DPF5
+
+    mop=DPF5()
+    X=mop.ps(n_points=1024)
+    F=np.asarray(mop.evaluation(X)["F"],dtype=float)
+    D=X[:,0]>1/3
+    raw_mass_D=float(np.mean(D))
+    unique_D=len(np.unique(F[D],axis=0))
+    unique_P=len(np.unique(F[~D],axis=0))
+    unique_mass_D=unique_D/(unique_D+unique_P)
+    assert raw_mass_D > 0.60
+    assert unique_mass_D < 0.10
+    assert raw_mass_D / unique_mass_D > 5.0
+    # In the D branch the last decision-coordinate variation disappears
+    # from the objective map; this is why objective duplicates concentrate.
+    for x1 in np.unique(X[D,0]):
+        same_x1=F[D & (X[:,0]==x1)]
+        assert len(same_x1)>1
+        np.testing.assert_allclose(same_x1,same_x1[:1],atol=0,rtol=0)
