@@ -46,3 +46,39 @@ def test_outside_grid_or_missing_k_refused():
         compare_grid(7)
     with pytest.raises(ValueError,match="positive K"):
         compare_grid(16,ks=(-1,))
+
+
+def test_dpf5_counterfactual_baselines_only_adjust_one_closeness_record():
+    import copy
+    from calibration.scripts.study_dpf5_paired_q_issue78 import candidate_for_law
+
+    old={
+        "version":"0.14.0",
+        "problems":{
+            "DPF5":{
+                "gt_reference":[[0.0,1.0],[1.0,0.0]],
+                "40":{
+                    "closeness":{"ideal_res":0.0,
+                                 "rand_ecdf":[.1,.2,.3],
+                                 "rand50":.2},
+                    "headway":{"method":"archived"},
+                },
+            },
+            "DPF1":{"40":{"closeness":{"ideal_res":0.0}}},
+        },
+    }
+    frozen=copy.deepcopy(old)
+    name="uniform_decision_grid_pushforward"
+    candidate=candidate_for_law(old,40,.15,name)
+    assert old==frozen
+    assert candidate["version"]==old["version"]
+    assert candidate["problems"]["DPF1"]==old["problems"]["DPF1"]
+    assert candidate["problems"]["DPF5"]["gt_reference"]==old["problems"]["DPF5"]["gt_reference"]
+    assert candidate["problems"]["DPF5"]["40"]["headway"]==old["problems"]["DPF5"]["40"]["headway"]
+    observed=candidate["problems"]["DPF5"]["40"]["closeness"]
+    assert observed["rand_ecdf"]==pytest.approx([0.,.05,.15])
+    assert observed["rand50"]==pytest.approx(.05)
+    assert observed["ideal_res"]==pytest.approx(.15)
+    assert observed["ideal_res_method"]=="noncertified_DPF5_"+name
+    with pytest.raises(ValueError,match="Unsupported"):
+        candidate_for_law(old,40,.15,"unknown")
