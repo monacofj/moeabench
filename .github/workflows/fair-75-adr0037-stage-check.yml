@@ -46,6 +46,29 @@ jobs:
           print("ADR0037 existing MOP PF law: 528 K records staged; DPF3/DTLZ8 unsupported")
           print("CI candidate is NONCERTIFIED, no normalized-area law adopted")
           PY
+      - name: Measure paired real-NSGA-II Q change on unchanged DTLZ1 fronts
+        timeout-minutes: 11
+        run: |
+          python calibration/scripts/verify_adr0037_paired_q.py \
+            --candidate /tmp/fair75-existing-pf-closeness-candidate.json \
+            --problem DTLZ1 --K 100 --generations 500 \
+            --seed 1 --seed 7 \
+            --output /tmp/fair75-adr0037-paired-real-q.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          study=json.loads(Path("/tmp/fair75-adr0037-paired-real-q.json").read_text())
+          assert study["status"]=="NONCERTIFIED_REAL_PAIR_EXISTING_PF_LAW"
+          assert study["reference_law"]=="existing_mop_analytical_pf_independent_gt"
+          assert study["certified"] is False
+          assert len(study["runs"])==2
+          assert study["ideal_res"]>0
+          assert all(all(run["other_five_fair_and_q_unchanged"].values())
+                     for run in study["runs"])
+          assert all(run["P0_sha256"] and run["Pf_sha256"] and run["GT_sha256"]
+                     for run in study["runs"])
+          print("PAIRED Q:",study["max_absolute_q_closeness_shift"])
+          PY
       - name: Run complete unit suite
         timeout-minutes: 6
         run: python test.py --unit
@@ -63,4 +86,5 @@ jobs:
           path: |
             /tmp/fair75-existing-pf-closeness-impact.json
             /tmp/fair75-existing-pf-closeness-candidate.json
+            /tmp/fair75-adr0037-paired-real-q.json
           if-no-files-found: warn
