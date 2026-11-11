@@ -5,6 +5,7 @@
 
 import numpy as np
 from .base_dpf import BaseDPF
+from ._dtlz7_pareto_regions import sample_dtlz7_record_parameters
 
 class DPF2(BaseDPF):
     """
@@ -31,3 +32,20 @@ class DPF2(BaseDPF):
         F_base[:, D-1:] = (1 + g) * h
         
         return {'F': self._project(F_base, square=True)}
+
+    def ps(self, n_points: int = 100):
+        """Sample the genuine DPF2 Pareto set without dominated base points.
+
+        For D=2, retain a deterministic decision-parameter grid, but map
+        it onto the two exact DTLZ7-like record intervals. For D>2,
+        sample each allowed parameter with the historical private seed.
+        The nonnegative monotone redundant projection leaves the base
+        Pareto ordering unchanged. The law is parameter-uniform, not
+        objective-surface-area uniform.
+        """
+        points = super().ps(n_points=n_points)
+        points[:, :self.D-1] = sample_dtlz7_record_parameters(
+            len(points), self.D-1,
+            seed=42, structured=(self.D == 2),
+        )
+        return points
