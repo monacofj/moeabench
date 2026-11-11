@@ -14,7 +14,7 @@ The Q-scores summarize different aspects of approximation quality, while
 clinical markers show the closeness of individual plotted solutions.
 
 Both the audit and the visualization use the same optimization run and the
-same analytical reference front. Their interpretation depends on the
+same calibrated reference front. Their interpretation depends on the
 measured results, rather than assuming a particular pathology beforehand.
 """
 
@@ -32,13 +32,26 @@ def main():
     exp.name = "NSGA-II on DTLZ1"
     exp.run(seed=1)
 
-    # 2. Compare its approximation against an analytical reference front.
-    gt = exp.optimal_front()
-    q_res = mb.clinic.audit(exp, ground_truth=gt).quality
-    q_res.report(full=True)
+    # 2. Evaluate against the registered calibration GT. The Q-score
+    # baselines were produced for this precise reference; passing an unrelated
+    # 500-point analytical sampling could invalidate the clinical scores.
+    audit = mb.clinic.audit(exp)
+    if audit.quality is None:
+        raise RuntimeError(
+            "Example 13 requires compatible FAIR calibration baselines."
+        )
+    audit.quality.report(full=True)
 
-    # 3. Visualize the SAME experiment and reference as those just audited.
-    # The gt keyword adds one reference trace; no second run is needed.
+    # 3. Plot in the experiment's *physical* coordinates, reversing the
+    # exact calibration transform for the registered GT. The clinical marker
+    # layer can still evaluate against the calibrated coordinate system.
+    # Never plot raw P next to normalized GT: their geometry would be false.
+    ctx = audit.diagnostic_context
+    gt = ctx["GT"]
+    normalization = ctx.get("normalization")
+    if normalization is not None:
+        ideal, nadir = normalization["ideal"], normalization["nadir"]
+        gt = gt * (nadir - ideal) + ideal
     mb.view.topology(exp, gt=gt, markers=True)
 
 

@@ -1309,7 +1309,7 @@ fact.report()
 Some diagnostic tasks require local, per-solution scoring rather than one aggregate verdict per population. For these cases, MoeaBench also exposes point-wise helpers:
 
 *   **`mb.clinic.q_closeness_points(...)`**: Returns one Q-score per point, useful for colored topology overlays and local convergence inspection.
-*   **`mb.clinic.q_headway_points(...)`**: Returns one point-wise progression score per point, useful for highlighting which regions have genuinely escaped the random initialization regime.
+*   **`mb.clinic.q_headway_points(...)`**: Returns a pointwise contribution to progress relative to the **actual** generation-zero population's GD95; it is not the aggregate HEADWAY metric. Provide an Experiment/Run or `initial_data=...` with the same GT. Missing genuine P0 gives undefined (NaN) contributions, never an artificial random baseline.
 
 These helpers are more specialized than the aggregate diagnostic workflow, so they are not central to the first-pass tutorial narrative. Still, they belong to the public clinical surface and are especially useful when building semantic marker overlays or custom per-point visual encodings. For argument details, see the **[API Reference](reference.md#diagnostics)**.
 

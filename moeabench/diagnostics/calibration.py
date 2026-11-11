@@ -16,6 +16,7 @@ import inspect
 import numpy as np
 from typing import Optional, List, Dict, Any, Union
 from scipy.spatial.distance import cdist
+from scipy.spatial import cKDTree
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import csr_matrix
 from . import baselines as base
@@ -27,6 +28,81 @@ N_SAMPLES_ECDF = 200
 N_IDEAL_DRAWS = 30
 K_GRID_DEFAULT = list(range(10, 51)) + [100, 150, 200]
 SEED_START = 1000
+
+def independent_analytical_reference(
+    mop: Any, gt: np.ndarray, n_fresh: int = 1024,
+    sampling_seed: int = 123,
+):
+    """Representative deterministic subsample of points absent from finite GT.
+
+    Some built-in Pareto-front samplers reset their RNG for every call,
+    whereas others traverse an *ordered* objective-space grid. Taking the
+    first n_fresh new points is therefore unsafe: it can concentrate all
+    samples in one objective-space region (DPF1/2/4 and DTLZ9, issue #75).
+
+    Request an analytical reservoir at least four times larger than the
+    desired sample, remove points coinciding with the finite GT, then draw
+    n_fresh points without replacement with a *private, fixed-seed* RNG.
+    This ensures reproducibility and reduces ordered-prefix bias; it does
+    not by itself establish that the underlying PF generator is statistically
+    representative. Scientific acceptance requires separate robustness tests.
+    The selection seed is independent of the MOP's own internal RNG.
+    """
+    gt = np.asarray(gt, dtype=float)
+    if gt.ndim != 2 or len(gt) < 2 or not np.all(np.isfinite(gt)):
+        raise ValueError("GT must be a finite nonempty 2D reference")
+    if not isinstance(n_fresh, int) or n_fresh < 2:
+        raise ValueError("n_fresh must be an integer >= 2")
+    if not isinstance(sampling_seed, int) or sampling_seed < 0:
+        raise ValueError("sampling_seed must be a nonnegative integer")
+
+    # Deliberately oversample: prefix reuse is common for deterministic PFs;
+    # the independently selected pool must cover the entire returned set.
+    requested = len(gt) + 4 * n_fresh
+    try:
+        candidates = np.asarray(mop.pf(n_points=requested), dtype=float)
+    except (AttributeError, NotImplementedError, TypeError, ValueError):
+        return None
+    if (candidates.ndim != 2 or candidates.shape[1] != gt.shape[1]
+            or not np.all(np.isfinite(candidates))):
+        return None
+    distances = cKDTree(gt).query(candidates, k=1)[0]
+    threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
+    fresh = candidates[distances > threshold]
+    # Distinct array rows prevent repeated analytical points from receiving
+    # extra selection weight merely because a grid or parser duplicates them.
+    fresh = np.unique(fresh, axis=0)
+    if len(fresh) < n_fresh:
+        return None
+    choice = np.random.default_rng(sampling_seed).choice(
+        len(fresh), size=n_fresh, replace=False
+    )
+    return fresh[choice]
+
+
+def estimate_ideal_residue(gt: np.ndarray, independent_ideal: np.ndarray, s_k: float) -> float:
+    """Estimate finite-GT residue from independent ideal-front samples.
+
+    Implements ADR 0037: median_{ideal sample} d(x, GT) / s_K.
+    A sample composed of GT points is *invalid*, even if a different
+    farthest-point-sampling seed was used to select those same points.
+    """
+    gt = np.asarray(gt, dtype=float)
+    independent_ideal = np.asarray(independent_ideal, dtype=float)
+    if gt.ndim != 2 or independent_ideal.ndim != 2 or gt.shape[1] != independent_ideal.shape[1]:
+        raise ValueError("GT and independent ideal samples require matching objective dimensions")
+    if len(gt) < 2 or len(independent_ideal) < 2:
+        raise ValueError("At least two points are required for residue estimation")
+    if not (np.all(np.isfinite(gt)) and np.all(np.isfinite(independent_ideal))):
+        raise ValueError("Ideal reference and GT must contain finite values")
+    if not np.isfinite(s_k) or s_k <= 0:
+        raise ValueError("s_K must be strictly positive")
+    distances = cKDTree(gt).query(independent_ideal, k=1)[0]
+    threshold = max(1e-12, 1e-10 * float(np.max(np.ptp(gt, axis=0))))
+    if np.any(distances <= threshold):
+        raise ValueError("ideal reference overlaps finite GT: independent samples required")
+    return float(np.median(distances) / s_k)
+
 
 def calibrate_mop(mop: Any, 
                   source_baseline: Optional[str] = None, 
@@ -144,7 +220,14 @@ def calibrate_mop(mop: Any,
     else:
         k_grid = K_GRID_DEFAULT
         
-    problem_data = _generate_baselines(mop_name, gt, k_grid)
+    # Only the native analytical protocol can certify independent ideal
+    # samples here. A user-supplied/empirical GT may describe a different
+    # manifold; never infer an analytical residue from an unrelated MOP.
+    independent_ideal = (
+        independent_analytical_reference(mop, gt)
+        if source_gt is None and source_search is None else None
+    )
+    problem_data = _generate_baselines(mop_name, gt, k_grid, independent_ideal=independent_ideal)
 
     # 5. Save Sidecar
     import datetime
@@ -177,7 +260,8 @@ def calibrate_mop(mop: Any,
     )
     return True
 
-def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[str, Any]:
+def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int],
+                        independent_ideal: Optional[np.ndarray] = None) -> Dict[str, Any]:
     """Internal math engine for baseline calculation."""
     M = gt.shape[1]
     
@@ -205,31 +289,39 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
         
         # CLOSENESS (Blur + Ideal Residue)
         sigma, u_blur = _calibrate_and_blur(gt, normals, s_fit, SEED_START + k)
-        u_blur_ecdf = _downsample_ecdf(np.sort(u_blur))
         
-        # PROPOSAL: Calculate Finite Approximation-Inherent Resolution Ideal Residue (epsilon)
-        # We need a fresh analytical sample if available, or a different FPS subset.
-        # Protocol: If GT is large enough, use a different FPS slice. 
-        # Better: use a higher seed for get_ref_uk to simulate a "perfect" but non-identical front.
-        u_ideal_sample = base.get_ref_uk(gt, k, seed=999) 
-        d_ideal = cdist(u_ideal_sample, gt)
-        min_d_ideal = np.min(d_ideal, axis=1)
-        u_ideal_vals = min_d_ideal / s_fit if s_fit > 1e-12 else min_d_ideal
-        ideal_res = float(np.median(u_ideal_vals))
+        # ADR 0037: the finite-GT residue must use a distinct analytical
+        # ideal-front sample, never an FPS subset *of the same GT*. For
+        # empirical/externally supplied GT there may be no analytical oracle.
+        # In that case the physical correction remains zero, explicitly
+        # marked as unavailable, not misreported as a measured zero residue.
+        if independent_ideal is None:
+            ideal_res, ideal_res_method = 0.0, "unavailable_no_independent_ideal"
+        else:
+            ideal_res = estimate_ideal_residue(gt, independent_ideal, s_fit)
+            ideal_res_method = "independent_analytical_pf"
         
+        # Physical closeness subtracts the same ideal residue from every
+        # sample. Its ECDF/anchor must be calibrated on the *corrected* values
+        # too; comparing corrected observations against raw blurred baselines
+        # would put the two sides of the Q-score on different scales.
+        corrected_blur = np.maximum(0.0, u_blur - ideal_res)
+        u_blur_ecdf = _downsample_ecdf(np.sort(corrected_blur))
+
         # Metrics storage
         k_data = {
             "closeness": {
                 "uni50": 0.0,
-                "rand50": float(np.median(u_blur)),
+                "rand50": float(np.median(corrected_blur)),
                 "rand_ecdf": [float(x) for x in u_blur_ecdf],
-                "ideal_res": ideal_res
+                "ideal_res": ideal_res,
+                "ideal_res_method": ideal_res_method
             }
         }
         
         # Other Metrics (Random and Ideal)
-        rand_metrics = {m: [] for m in ["headway", "cov", "gap", "reg", "bal"]}
-        ideal_metrics = {m: [] for m in ["headway", "cov", "gap", "reg", "bal"]}
+        rand_metrics = {m: [] for m in ["cov", "gap", "reg", "bal"]}
+        ideal_metrics = {m: [] for m in ["cov", "gap", "reg", "bal"]}
         
         rng = np.random.RandomState(SEED_START + k)
         for _ in range(N_SAMPLES_ECDF):
@@ -245,13 +337,23 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
             for key in ideal_metrics: ideal_metrics[key].append(m[key])
             
         # Consolidate
-        for m in ["headway", "cov", "gap", "reg", "bal"]:
+        for m in ["cov", "gap", "reg", "bal"]:
             r_all = np.sort(rand_metrics[m])
             k_data[m] = {
-                "uni50": 0.0 if m == "headway" else float(np.median(ideal_metrics[m])),
+                "uni50": float(np.median(ideal_metrics[m])),
                 "rand50": float(np.median(r_all)),
                 "rand_ecdf": [float(x) for x in r_all]
             }
+
+        # ADR 0049: Q_HEADWAY has fixed 0/1 analytic anchors. Do not
+        # substitute a single-population final distance or an undefined
+        # HEADWAY statistic for a true paired P0/Pf trajectory.
+        k_data["headway"] = {
+            "ideal": 0.0,
+            "no_progress": 1.0,
+            "method": "analytic_anchors_adr0049",
+            "status": "no_empirical_longitudinal_baseline",
+        }
             
         problem_data[k_str] = k_data
         pbar.update_to(i + 1)
@@ -262,7 +364,7 @@ def _generate_baselines(name: str, gt: np.ndarray, k_grid: List[int]) -> Dict[st
 def _calc_all(p, gt, s_fit, u_ref, c_cents, hist_ref):
     """Calculates all fair metrics for a sample."""
     return {
-        "headway": fair.headway(p, gt, s_fit).value,
+        # No HEADWAY: requires true P0/Pf from the same run (ADR 0049).
         "cov": fair.coverage(p, gt).value,
         "gap": fair.gap(p, gt).value,
         "reg": fair.regularity(p, u_ref).value,

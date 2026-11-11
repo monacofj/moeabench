@@ -62,6 +62,7 @@ This directory contains records of the key architectural decisions made during t
 | [0049](0049-longitudinal-headway-definition.md) | Longitudinal Headway Definition | Accepted | 2026-08-27 |
 
 | [0050](0050-certified-environment-verification-and-provenance.md) | Certified Environment Verification and Experiment Provenance | Accepted | 2026-10-15 |
+| [0051](0051-fair-conformance-audit.md) | FAIR Conformance Audit, Scientific Oracles, and Validation Log | Proposed (investigation in progress) | 2026-10-21 |
 | [0052](0052-dpf2-dtlz7-exact-pareto-regions.md) | Exact Pareto-region sampling for DPF2 and DTLZ7 (issue #78) | Proposed | 2026-11-11 |
 
 ## Decision Lineage
