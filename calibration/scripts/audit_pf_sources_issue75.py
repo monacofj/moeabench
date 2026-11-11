@@ -122,17 +122,30 @@ def _physical_sample(mop,n_points):
     if mop.__class__.__name__=="DPF5":
         mask=decision[:,0]>1.0/3.0
         unique=np.unique(physical,axis=0)
+        unique_P=np.unique(physical[~mask],axis=0)
+        unique_D=np.unique(physical[mask],axis=0)
         nd=NonDominatedSorting().do(unique,only_non_dominated_front=True)
-        # DPF5's x1 grid is deterministic. When duplicates are present
-        # do not map unique rows back to branches without an exact join.
+        # Set D depends only on x1; the M=3 decision-grid's x2 values
+        # collapse to repeated objective vectors. The MOP-ps pushforward
+        # weights set D VERY differently from the unique-objective pool
+        # actually used by independent_analytical_reference().
+        n_P,n_D=int(np.count_nonzero(~mask)),int(np.count_nonzero(mask))
+        u_P,u_D=len(unique_P),len(unique_D)
+        p_raw=float(n_D/(n_P+n_D))
+        p_unique=float(u_D/(u_P+u_D))
         branch={
             "threshold":"x1 > 1/3",
-            "decision_grid_rows_set_P":int(np.count_nonzero(~mask)),
-            "decision_grid_rows_set_D":int(np.count_nonzero(mask)),
+            "decision_grid_rows_set_P":n_P,
+            "decision_grid_rows_set_D":n_D,
+            "unique_objective_rows_set_P":int(u_P),
+            "unique_objective_rows_set_D":int(u_D),
             "set_P_fraction":float(np.mean(~mask)),
-            "set_D_fraction":float(np.mean(mask)),
+            "set_D_fraction":p_raw,
+            "set_D_fraction_after_unique_objective_rows":p_unique,
+            "set_D_raw_to_unique_probability_ratio":float(p_raw/p_unique),
             "whole_sample_nd_unique_points":int(len(nd)),
             "objective_regions_have_distinct_conditional_formulas":True,
+            "warning":"Removing objective duplicates changes the implied sampling probability measure",
         }
     return physical,feasible,branch
 
