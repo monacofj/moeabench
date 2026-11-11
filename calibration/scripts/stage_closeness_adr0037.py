@@ -35,6 +35,21 @@ RESOURCES = (ROOT / "moeabench/diagnostics/resources").resolve()
 REPORTS = (ROOT / "calibration/reports").resolve()
 CANONICAL_REPORT = (ROOT / "calibration/audit_report.html").resolve()
 
+# The 14-MOP science audit (docs/fair_pf_source_audit_issue75.md)
+# refuted the near-GT-only assumption for these MOPs. DPF2 and DTLZ7
+# have *now* corrected source samplers, but their frozen v0.14.0 GT contains
+# dominated historical objectives. DPF5's collapsed branch introduces an
+# undefined probability weight after objective deduplication.
+#
+# A runtime source fix is not a license to stage new Q anchors against an
+# invalid/mixed-measure historical GT. These explicit holds are about THIS
+# archive, not a permanent ban on a future independently reviewed version.
+HELD_ARCHIVAL_SOURCES = {
+    "DPF2": "Historical GT includes dominated points; corrected PF cannot certify frozen reference",
+    "DTLZ7": "Historical GT includes dominated points; corrected PF cannot certify frozen reference",
+    "DPF5": "Mixed-dimensional PF branch weights change under objective deduplication",
+}
+
 
 def revise_closeness_record(old, epsilon):
     """Return a copy correcting the physical metric and its null ECDF together."""
@@ -71,6 +86,9 @@ def stage(source, problems, *, packages=RESOURCES / "references"):
         "unsupported": {},
     }
     for name in problems:
+        if name in HELD_ARCHIVAL_SOURCES:
+            report["unsupported"][name] = "HOLD_ARCHIVAL_REFERENCE: " + HELD_ARCHIVAL_SOURCES[name]
+            continue
         records = source.get("problems", {}).get(name)
         pkgpath = Path(packages) / name / "calibration_package.npz"
         if not isinstance(records, dict) or not pkgpath.is_file():
@@ -128,6 +146,11 @@ def verify(source, candidate, report):
     if set(source["problems"]) != set(candidate["problems"]):
         raise ValueError("MOP inventory changed")
     covered = set(report["supported"])
+    if covered.intersection(HELD_ARCHIVAL_SOURCES):
+        raise ValueError("Cannot certify held historical GT/branch measure in Closeness migration")
+    if any(name in source["problems"] and name not in report["unsupported"]
+           for name in HELD_ARCHIVAL_SOURCES):
+        raise ValueError("Held historical source missing explicit unsupported status")
     for name, records in source["problems"].items():
         revised = candidate["problems"][name]
         if set(records) != set(revised):
