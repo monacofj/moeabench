@@ -130,3 +130,12 @@ independent GT incompatibility remain separate.
 canonical `audit_report` as part of this isolated source-PF correction.
 Scientific review of the legacy GT and subsequent `ideal_res`/ECDF
 compatibility remains pending.
+
+
+### 2026-11-11 — Frozen-GT compatibility measured, WITHOUT modifying historic references
+
+- **PASS — [CI 43078550239](https://github.com/monacofj/moeabench/actions/runs/43078550239):** Repeated **9/9 focused and 279/279 unit tests**, then ran `audit_archived_pareto_sources_issue78.py` using 1,024 sampled frozen-GT points (seed 1337) and the exact 1,024-point newly corrected analytical source for each MOP. Verified original v0.14.0 JSON GT equals packaged NPZ GT byte-for-byte in numeric arrays; archived frozen baseline and GT package unchanged. Read-only evidence artifact `issue78-frozen-gt-versus-corrected-pf-not-certified` ID **13883601215**.
+- **DPF2:** Among 1,024 distinct original archived GT points, **504 (49.21875%)** are nondominated *within that sample*. The 1,024 unique corrected PF points are **100%** within-sample nondominated. Corrected source to frozen 10k GT median nearest-neighbor distance = **0.236421** frozen-GT local spacings (95th percentile 1.050716). Proximity to the old GT does not certify that GT's dominated points as valid Pareto references.
+- **DTLZ7:** Among 1,024 distinct original archived GT points, only **311 (30.37109%)** are nondominated *within that sample*. The 1,024 unique corrected PF points are **100%** within-sample nondominated. Corrected-to-frozen-GT nearest distance median **1.032925** local spacings (95th percentile 2.304114). This large discrepancy indicates that recalibration against the unchanged old GT would need careful scientific evaluation; it cannot simply be assumed valid.
+- **IMPORTANT:** All fractions above describe a **bounded sample** and do not claim a full 10k-point Pareto classification. A 100% within-sample ND rate also is not a substitute for the global prefix-record proof above. Do not run `stage_closeness_adr0037.py` and promote the DPF2/DTLZ7 `ideal_res` against old GT without an explicit reference-GT review.
+- **NEXT ENGINEERING GATE:** Basic integration with real regenerated fixture experiments has been added to temporary branch workflow; its CI result is pending. Afterwards remove the temporary workflow and update PR/issue evidence before merge.
