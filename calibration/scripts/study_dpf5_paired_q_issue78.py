@@ -13,7 +13,14 @@ import argparse
 import copy
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+# Executed as a standalone script in CI; add the repository root before
+# importing calibration.scripts, which is not a separately installed package.
+PROJECT_ROOT=Path(__file__).resolve().parents[2]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0,str(PROJECT_ROOT))
 
 import numpy as np
 import moeabench as mb
