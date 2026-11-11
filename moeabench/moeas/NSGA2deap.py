@@ -70,6 +70,29 @@ class NSGA2deap(BaseMoea):
         except TypeError:
             return [self.rng.uniform(a, b) for a, b in zip([low]*size, [up]*size)]
 
+    def _with_private_deap_rng(self, fn, *args, **kwargs):
+        """Execute DEAP's RNG-global operator using this run's private stream.
+
+        DEAP's bounded crossover, polynomial mutation, and DCD tournament
+        draw from Python's module-global random, whereas individual
+        initialization and operator gating use self.rng. Merely seeding
+        self.rng was therefore insufficient for reproducible experiments.
+
+        Preserve and restore the process RNG around each operator, advancing
+        this run's private stream with the draws made by DEAP. This avoids
+        contaminating callers' global RNG state. MoeaBench executes these
+        operators serially; global RNG swapping is not thread-safe and must
+        be revisited before supporting concurrent runs.
+        """
+        previous_state = random.getstate()
+        try:
+            random.setstate(self.rng.getstate())
+            result = fn(*args, **kwargs)
+            self.rng.setstate(random.getstate())
+            return result
+        finally:
+            random.setstate(previous_state)
+
     def _evaluate_ind(self, ind):
         """Evaluates a single DEAP individual."""
         res = self.evaluation_benchmark(np.array(ind))
@@ -135,14 +158,14 @@ class NSGA2deap(BaseMoea):
         pop = self.toolbox.select(pop, len(pop))
         
         for gen in range(1, self.get_generations() + 1):
-            offspring = tools.selTournamentDCD(pop, len(pop))
+            offspring = self._with_private_deap_rng(tools.selTournamentDCD, pop, len(pop))
             offspring = [self.toolbox.clone(ind) for ind in offspring]
             
             for ind1, ind2 in zip(offspring[::2], offspring[1::2]):
                 if self.rng.random() <= 0.9:
-                    self.toolbox.mate(ind1, ind2)
-                self.toolbox.mutate(ind1)
-                self.toolbox.mutate(ind2)
+                    self._with_private_deap_rng(self.toolbox.mate, ind1, ind2)
+                self._with_private_deap_rng(self.toolbox.mutate, ind1)
+                self._with_private_deap_rng(self.toolbox.mutate, ind2)
                 del ind1.fitness.values, ind2.fitness.values
             
             invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
