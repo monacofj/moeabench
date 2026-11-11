@@ -84,10 +84,14 @@ def test_dtlz2_calibrate_uses_corrected_analytical_gt(tmp_path, monkeypatch):
 
     captured = {}
 
-    def fake_generate_baselines(name, gt, k_grid):
+    def fake_generate_baselines(name, gt, k_grid, independent_ideal=None):
         captured["name"] = name
         captured["gt"] = np.array(gt, copy=True)
         captured["k_grid"] = list(k_grid)
+        captured["independent_ideal"] = (
+            None if independent_ideal is None
+            else np.array(independent_ideal, copy=True)
+        )
         return {}
 
     monkeypatch.setattr(calibration, "_generate_baselines", fake_generate_baselines)
@@ -111,3 +115,10 @@ def test_dtlz2_calibrate_uses_corrected_analytical_gt(tmp_path, monkeypatch):
         atol=0.02,
         rtol=0.0,
     )
+    # The fresh ideal sample must also lie on the same analytical front,
+    # but cannot reuse points already included in the 2000-point GT.
+    from scipy.spatial import cKDTree
+    fresh = captured["independent_ideal"]
+    assert fresh is not None and len(fresh) >= 2
+    np.testing.assert_allclose(np.sum(fresh**2, axis=1), 1.0, atol=1e-12, rtol=0)
+    assert np.all(cKDTree(gt).query(fresh)[0] > 1e-10)
