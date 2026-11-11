@@ -12,6 +12,7 @@ does not invent a random-sample Headway ECDF or replace any certified file.
 """
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -26,7 +27,7 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 from moeabench.diagnostics import fair, qscore
-from calibration.scripts.audit_longitudinal_pilot import run_pilot
+import moeabench as mb
 
 def _gd95(points, reference):
     return float(np.percentile(cKDTree(reference).query(points, k=1)[0], 95))
@@ -83,23 +84,54 @@ def validate_analytic_controls():
     return report
 
 
+def _array_sha256(values):
+    """Stable fingerprint of the actual numerical objective population."""
+    array = np.ascontiguousarray(np.asarray(values, dtype=np.float64))
+    return hashlib.sha256(array.tobytes()).hexdigest()
+
+
 def validate_real_pairs(seeds, *, population=32, generations=20):
+    """Validate true longitudinal P0/Pf directly, without research pilot imports.
+
+    Each seed launches a real NSGA-II run; the exact normalized GT, P0, Pf
+    from its diagnostic context are independently checked against the
+    physical HEADWAY and clinical Q_HEADWAY values.
+    """
+    if generations < 2 or population < 8 or population % 4:
+        raise ValueError("Need real NSGA-II generations and population divisible by four")
     trials = []
     for seed in seeds:
-        pilot = run_pilot(seed=seed, population=population, generations=generations)
-        measured = float(pilot["physical_metrics"]["HEADWAY"])
-        reported = float(pilot["clinical_q_scores_frozen_baseline"]["Q_HEADWAY"])
-        expected = expected_q(measured)
-        assert np.isclose(measured, pilot["independent_headway"], atol=1e-12, rtol=0)
-        assert np.isclose(reported, expected, atol=1e-12, rtol=0)
-        assert pilot["headway_validated_from_true_P0"]
+        exp = mb.experiment(
+            mop=mb.mops.DTLZ1(M=3),
+            moea=mb.moeas.NSGA2(population=population, generations=generations),
+        )
+        exp.run(seed=int(seed), silent=True)
+        audit = mb.clinic.audit(exp)
+        if audit.fr is None or audit.quality is None:
+            raise AssertionError("No valid registered FAIR/clinical audit")
+        ctx = audit.diagnostic_context
+        if ctx.get("gt_source") != "registered" or ctx.get("normalization") is None:
+            raise AssertionError("Real longitudinal audit lacks calibration provenance")
+        reference = np.asarray(ctx["GT"], dtype=np.float64)
+        initial = np.asarray(ctx["P_initial"], dtype=np.float64)
+        final = np.asarray(ctx["P_final"], dtype=np.float64)
+        if (initial.ndim != 2 or final.ndim != 2 or
+                initial.shape[1] != reference.shape[1] or
+                final.shape[1] != reference.shape[1] or
+                not len(initial) or not len(final)):
+            raise AssertionError("True initial/final objectives are unavailable")
+        measured = float(audit.fr.metrics["HEADWAY"].value)
+        reported = float(audit.quality.scores["Q_HEADWAY"].value)
+        oracle = independent_ratio(initial, final, reference)
+        assert np.isclose(measured, oracle, atol=1e-12, rtol=0)
+        assert np.isclose(reported, expected_q(measured), atol=1e-12, rtol=0)
         trials.append({
             "seed": int(seed),
-            "P0_sha256": pilot["provenance"]["P0_sha256"],
-            "Pf_sha256": pilot["provenance"]["Pf_sha256"],
-            "GT_sha256": pilot["provenance"]["gt_sha256"],
-            "P0_points": pilot["sample_sizes"]["P0"],
-            "Pf_points": pilot["sample_sizes"]["Pf"],
+            "P0_sha256": _array_sha256(initial),
+            "Pf_sha256": _array_sha256(final),
+            "GT_sha256": _array_sha256(reference),
+            "P0_points": len(initial),
+            "Pf_points": len(final),
             "headway": measured,
             "q_headway": reported,
         })
