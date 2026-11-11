@@ -22,6 +22,26 @@ jobs:
       - name: Verify mathematical disconnected Pareto domains
         timeout-minutes: 5
         run: python -m pytest -q tests/unit/test_dtlz7_dpf2_pareto_sources_issue78.py
+      - name: Audit corrected Pareto fronts against immutable frozen references
+        timeout-minutes: 4
+        run: |
+          python calibration/scripts/audit_archived_pareto_sources_issue78.py \
+            --points 1024 --seed 1337 \
+            --output /tmp/issue78-archived-pf-compatibility.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          evidence=json.loads(Path('/tmp/issue78-archived-pf-compatibility.json').read_text())
+          assert evidence["status"]=="NONCERTIFIED_ARCHIVED_PF_GT_SOURCE_COMPATIBILITY_AUDIT"
+          assert evidence["no_official_files_changed"]
+          assert set(evidence["problems"])=={"DPF2","DTLZ7"}
+          for name,row in evidence["problems"].items():
+              assert row["certified"] is False
+              assert row["corrected_pf"]["nondominated_fraction_within_sample"]==1.0
+              assert row["legacy_within_sample"]["nondominated_fraction_within_sample"]<.9
+              assert row["frozen_GT_must_not_be_assumed_recaptured_by_new_pf"]
+              print(name,'old ND',row["legacy_within_sample"]["nondominated_fraction_within_sample"])
+          PY
       - name: Run complete unit regressions
         timeout-minutes: 6
         run: python test.py --unit
@@ -31,3 +51,10 @@ jobs:
             moeabench/diagnostics/resources/baselines_v0.14.0.json \
             calibration/audit_report.html \
             moeabench/diagnostics/resources/references
+      - name: Store read-only historical GT audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue78-frozen-gt-versus-corrected-pf-not-certified
+          path: /tmp/issue78-archived-pf-compatibility.json
+          if-no-files-found: warn
