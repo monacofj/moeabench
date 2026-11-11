@@ -1,0 +1,66 @@
+# Temporary research CI; remove after reproducible evidence is archived.
+name: Issue 78 DPF5 reference measure sensitivity
+
+on:
+  push:
+    branches: [research/78-dpf5-measure-sensitivity]
+  workflow_dispatch:
+
+jobs:
+  dpf5-weighting:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify DPF5 sampling structure and independent weighted-median math
+        run: python -m pytest -q tests/unit/test_dpf5_measure_sensitivity_issue78.py
+      - name: Run bounded paired 3-law sensitivity on unchanged frozen DPF5 GT
+        timeout-minutes: 8
+        run: |
+          python calibration/scripts/study_dpf5_branch_measure_issue78.py \
+            --side 32 --side 64 --side 128 \
+            --K 40 --K 100 --K 200 \
+            --output /tmp/dpf5-branch-measure-sensitivity.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/dpf5-branch-measure-sensitivity.json').read_text())
+          assert r['status']=='NONCERTIFIED_DPF5_MIXED_DIMENSION_MEASURE_AUDIT'
+          assert not r['objective_area_uniformity_adopted']
+          assert r['not_a_release_baseline']
+          for side,row in r['grids'].items():
+              assert row['physical_PF_radial_max_error']<1e-12
+              assert row['raw_branch_D_probability'] > .6
+              assert row['dedup_branch_D_probability'] < .1
+              assert len(row['K'])==3
+              assert set(row['measures'])=={
+                  'uniform_decision_grid_pushforward',
+                  'uniform_distinct_objective_vectors',
+                  'illustrative_equal_branch_mixture'
+              }
+              print('DPF5',side,'raw branch',row['raw_branch_D_probability'],
+                    'distinct branch',row['dedup_branch_D_probability'])
+              for k,ref in row['K'].items():
+                  print('K',k,'epsilons',ref['ideal_res_by_measure'],
+                        'epsilon spread',ref['max_minus_min_ideal_res'])
+          PY
+      - name: Check official baselines/GT/report untouched
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Upload noncertified sensitivity data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue78-dpf5-three-law-paired-sensitivity
+          path: /tmp/dpf5-branch-measure-sensitivity.json
+          if-no-files-found: warn
