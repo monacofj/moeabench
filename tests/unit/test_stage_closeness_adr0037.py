@@ -106,3 +106,37 @@ def test_absent_analytical_source_is_explicitly_unsupported(tmp_path):
     assert verify(original,result,report)["K_records_checked"]==0
     with pytest.raises(ValueError,match="distinct"):
         stage(original,["Unsupported","Unsupported"],packages=tmp_path)
+
+
+def test_archival_pf_science_hold_is_hard_gate_even_with_corrected_source(tmp_path):
+    # The source pf() is corrected in main after issue #79, but these
+    # historical GT / sampling-law records are NOT automatically eligible.
+    old = {
+        "version": "0.14.0",
+        "problems": {
+            name: {
+                "gt_reference": [[0.0, 0.0, 0.0], [1.0, 1.0, 1.0]],
+                "100": {"closeness": {"ideal_res": 0.0}},
+            }
+            for name in ("DPF2", "DTLZ7", "DPF5")
+        },
+    }
+    candidate, impact = stage(
+        old, ["DPF2","DTLZ7","DPF5"], packages=tmp_path)
+    assert candidate == old
+    assert not impact["supported"]
+    assert impact["K_records_changed"] == 0
+    assert set(impact["unsupported"]) == {"DPF2", "DTLZ7", "DPF5"}
+    assert all(value.startswith("HOLD_ARCHIVAL_REFERENCE:")
+               for value in impact["unsupported"].values())
+    assert verify(old,candidate,impact)["K_records_checked"] == 0
+
+    tampered = copy.deepcopy(impact)
+    tampered["supported"]["DPF2"] = {"K": {"100": {"epsilon": .1}}}
+    with pytest.raises(ValueError, match="held historical GT"):
+        verify(old,candidate,tampered)
+
+    tampered = copy.deepcopy(impact)
+    del tampered["unsupported"]["DPF5"]
+    with pytest.raises(ValueError, match="missing explicit unsupported"):
+        verify(old,candidate,tampered)
