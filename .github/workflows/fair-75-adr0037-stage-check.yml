@@ -1,0 +1,66 @@
+# Temporary issue-75 candidate-data verification; remove after a successful CI run.
+name: FAIR issue75 ADR0037 existing-PF migration check
+
+on:
+  push:
+    branches:
+      - fix/75-fair-core
+  workflow_dispatch:
+
+jobs:
+  stage-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify pure migration math and fail-closed checks
+        run: python -m pytest -q tests/unit/test_stage_closeness_adr0037.py
+      - name: Stage corrected Closeness from existing analytical MOP samplers
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/stage_closeness_adr0037.py \
+            --candidate /tmp/fair75-existing-pf-closeness-candidate.json \
+            --impact /tmp/fair75-existing-pf-closeness-impact.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path("/tmp/fair75-existing-pf-closeness-impact.json").read_text())
+          candidate=json.loads(Path("/tmp/fair75-existing-pf-closeness-candidate.json").read_text())
+          frozen=json.loads(Path("moeabench/diagnostics/resources/baselines_v0.14.0.json").read_text())
+          assert report["status"]=="PROVISIONAL_ADR0037_INDEPENDENT_MOP_PF_NOT_CERTIFIED"
+          assert report["objective_area_uniform"] is False
+          assert report["source_calibration_version"]==frozen["version"]
+          assert len(report["supported"])==12, report["supported"].keys()
+          assert set(report["unsupported"])=={"DPF3","DTLZ8"}, report["unsupported"]
+          assert report["K_records_changed"]==528
+          assert len(candidate["problems"])==len(frozen["problems"])==14
+          for name in report["unsupported"]:
+              assert candidate["problems"][name]==frozen["problems"][name]
+          print("ADR0037 existing MOP PF law: 528 K records staged; DPF3/DTLZ8 unsupported")
+          print("CI candidate is NONCERTIFIED, no normalized-area law adopted")
+          PY
+      - name: Run complete unit suite
+        timeout-minutes: 6
+        run: python test.py --unit
+      - name: Verify frozen official files unchanged
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            calibration/audit_report.html
+          echo "No official calibration file changed"
+      - name: Save candidate for scientific review, not installation
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fair75-adr0037-existing-mop-pf-candidate-not-certified
+          path: |
+            /tmp/fair75-existing-pf-closeness-impact.json
+            /tmp/fair75-existing-pf-closeness-candidate.json
+          if-no-files-found: warn
