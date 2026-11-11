@@ -96,4 +96,4 @@ def test_dpf5_piecewise_decision_grid_changes_distribution_after_dedup():
     for x1 in np.unique(X[D,0]):
         same_x1=F[D & (X[:,0]==x1)]
         assert len(same_x1)>1
-        np.testing.assert_allclose(same_x1,same_x1[:1],atol=0,rtol=0)
+        assert len(np.unique(same_x1,axis=0))==1
