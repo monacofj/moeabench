@@ -147,6 +147,19 @@ $$
 **Why the median?**
 The median is robust to tails and is intended to represent “typical closeness.” In practice, it complements `HEADWAY`, which is more tail-sensitive.
 
+**Calibration provenance (issue #75).** The frozen v0.14.0 Closeness baseline currently
+distributed with MoeaBench stores `ideal_res=0` from a historical calculation
+that selected its ideal sample *from the same GT*. That zero is **not an
+independently measured finite-GT residue**. The repaired code respects the
+residue recorded in a matching baseline and can stage corrected values from a
+fresh analytical PF, but it **does not silently replace the historical
+Closeness ECDF or assert newly certified Q-scores**. The staged ADR 0037
+candidate remains noncertified; DPF2/DTLZ7 have invalid *archived* GTs,
+DPF5 has unresolved branch weighting, and DPF3/DTLZ8 have no compatible
+independent analytical reference. A missing correction means an uncorrected
+distance, **not proof that the true residue is zero**. See
+[`fair_pf_source_audit_issue75.md`](fair_pf_source_audit_issue75.md).
+
 **Examples:**
 - **Raw Closeness = 0.1**: This means excellent precision. The points are, on average, only 1/10th of a typical grid-step ($s_K$) away from the manifold.
 - **Raw Closeness = 2.0**: This means significant blur. The points are two full grid-steps away, indicating a systematic bias or lack of convergence pressure.
@@ -264,7 +277,7 @@ The **Q-Score** (Clinical Score) translates the physical metric into a **score f
 2. **The $Q=0.0$ Baseline (The Worst Acceptable / The Limit of Chaos):**
    Where do we draw the line for summary failure? $Q=0.0$ is the statistical behavior we would achieve "blindfolded" — that is, sampling points **completely randomly** (blind chaos), or (in the specific case of *Closeness*) hitting the threshold of *tolerable half-gaussian noise*. If an algorithm delivers a Q-Score of 0.0, it technically tied (or lost) to pure luck/mathematical ignorance.
 
-In short, the baselines guarantee that the required score is **realistic** (100% is not impossible) and **strict** (0% is indeed a broken algorithm).
+In principle, these calibrated anchors aim to make the score **realistic** and **strict**. That interpretation requires a scientifically compatible reference and a validated baseline for the specific problem and metric; historical Closeness anchors are subject to the issue #75 provenance caveat above.
 
 In MoeaBench, baselines are stored per triple:
 
