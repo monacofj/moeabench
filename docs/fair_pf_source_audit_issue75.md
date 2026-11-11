@@ -8,6 +8,36 @@ analytical Pareto-front sample, divided by frozen resolution `s_K`.
 It does **not** adopt the proposed uniform normalized-objective-area law
 studied separately in PR #76.
 
+## Update after merging source correction PR #79 (2026-11-11)
+
+[PR #79](https://github.com/monacofj/moeabench/pull/79) has now been
+**merged into main** (commit `b734ea8`). DPF2 and DTLZ7 `ps()/pf()`
+now sample their mathematically valid disconnected Pareto regions, with
+unit and basic-integration tests passed. The source-defect findings in
+the table below are retained as a **dated audit of the former generators**;
+they do **not** describe the corrected source implementation.
+
+Crucially, the **frozen v0.14.0 GT files remain unchanged** and still
+include dominated points. A source repair alone does not validate an
+archived clinical GT or support recalibrating its Closeness/Q anchors.
+The DPF5 mixed-dimensional branch-mass ambiguity is also unresolved.
+
+Consequently, `calibration/scripts/stage_closeness_adr0037.py` now
+**hard-excludes DPF2 and DTLZ7** (invalid archived GT) and **DPF5**
+(undecided branch probability law) from the experimental Closeness
+migration. DPF3 and DTLZ8 remain without compatible independent sources.
+The updated preview stages only **9×44 = 396 noncertified Closeness K
+records**, leaves all five excluded MOPs unchanged, preserves all other
+FAIR metrics and the archived baseline version, and includes explicit
+`HOLD_ARCHIVAL_REFERENCE` statuses for the first three exclusions.
+The [post-merge CI #43081128363](https://github.com/monacofj/moeabench/actions/runs/43081128363)
+passed **66 focused, 320 complete unit and 24 basic integration** tests,
+including the 396-record independent verifier and preservation checks.
+The old 528-record candidate is **superseded as a release candidate**,
+but retained as historical experimental evidence.
+
+**No new sampling law was adopted, and no official baseline was replaced.**
+
 ## Scope and method
 
 The provisional `stage_closeness_adr0037.py` initially found an independent
@@ -97,8 +127,9 @@ The independent source corrections are tracked in [issue #78](https://github.com
 Resolve the mathematical definition and domain of the sampling law for
 the nine conditional cases, separating genuinely Pareto-optimal source
 samplers from distributions that may be biased by nonlinear parameterization.
-Repair or independently replace the demonstrably invalid DPF2/DTLZ7 PF
-samplers, and define the intended branch-weighting law for DPF5.
+The DPF2/DTLZ7 *source samplers* have been repaired in PR #79;
+their *frozen historical GTs and Closeness baselines* still require
+independent treatment. Define the intended branch-weighting law for DPF5.
 Only then revise the per-MOP/K eligible Closeness/ECDF values with an
 explicit comparison of real clinical Q-scores and no retrospective drift
 tolerance. Do not silently introduce the experimental normalized-area law
