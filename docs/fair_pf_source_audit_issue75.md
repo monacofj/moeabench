@@ -92,6 +92,8 @@ is provenance, **not** a reason to recalibrate.
 
 ## Next work
 
+The independent source corrections are tracked in [issue #78](https://github.com/monacofj/moeabench/issues/78), separately from the FAIR runtime fix in PR #77.
+
 Resolve the mathematical definition and domain of the sampling law for
 the nine conditional cases, separating genuinely Pareto-optimal source
 samplers from distributions that may be biased by nonlinear parameterization.
