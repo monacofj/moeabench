@@ -1,0 +1,33 @@
+# Temporary validation workflow for issue #78, remove after proven green.
+name: Issue 78 DPF2 and DTLZ7 Pareto source verification
+
+on:
+  push:
+    branches: [fix/78-dpf2-dtlz7-pareto-sources]
+  workflow_dispatch:
+
+jobs:
+  true-pareto-regions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench with tested dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify mathematical disconnected Pareto domains
+        timeout-minutes: 5
+        run: python -m pytest -q tests/unit/test_dtlz7_dpf2_pareto_sources_issue78.py
+      - name: Run complete unit regressions
+        timeout-minutes: 6
+        run: python test.py --unit
+      - name: Ensure official baseline and GT are unchanged
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            calibration/audit_report.html \
+            moeabench/diagnostics/resources/references
