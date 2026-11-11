@@ -32,6 +32,9 @@ def test_all_fourteen_sources_have_explicit_nonuniform_provenance():
     assert "NDS_filter" in LAWS["DPF3"][0]
     assert "static" in LAWS["DTLZ8"][0]
     assert "disconnected" in LAWS["DTLZ7"][1]
+    assert "record_interval" in LAWS["DPF2"][0]
+    assert "record_intervals" in LAWS["DTLZ7"][0]
+    assert "no_PF_filter" not in LAWS["DTLZ7"][0]
 
 
 def test_no_probability_law_is_automatically_certified_by_geometric_overlap():
@@ -46,6 +49,23 @@ def test_no_probability_law_is_automatically_certified_by_geometric_overlap():
     assert classify("DTLZ8",analytical_supported=False,
                     candidates=_sample_nd(),feasibility=None,branch=None
                    )=="NO_COMPATIBLE_INDEPENDENT_ANALYTICAL_PF"
+
+
+def test_issue79_corrected_source_does_not_certify_frozen_gt():
+    # The corrected samplers can be sampled with no dominated points;
+    # archived source GT remains scientifically invalid.
+    for name in ("DPF2", "DTLZ7"):
+        status=classify(name,analytical_supported=True,
+                        candidates=_sample_nd(),feasibility=None,branch=None)
+        assert status=="HOLD_ARCHIVED_GT_INVALID_WITH_CORRECTED_SOURCE"
+        status_without_compatible_archive=classify(
+            name,analytical_supported=False,candidates=_sample_nd(),
+            feasibility=None,branch=None)
+        assert status_without_compatible_archive==status
+        # A regression that returns dominated points must still be detected.
+        assert classify(name,analytical_supported=True,
+                        candidates=_sample_nd(1),feasibility=None,branch=None
+                        )=="HOLD_DOMINATED_ANALYTICAL_POINTS"
 
 
 def test_dominated_or_infeasible_analytical_samples_must_be_held():
