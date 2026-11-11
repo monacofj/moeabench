@@ -40,7 +40,7 @@ OFFICIAL_REPORT=(ROOT/"calibration/audit_report.html").resolve()
 # not reverse-engineered from near-neighbor distances.
 LAWS={
     "DPF1":("linspace_base_decision_parameter","degenerate_1d_curve"),
-    "DPF2":("linspace_base_decision_parameter","potentially_disconnected_dtlz7_like"),
+    "DPF2":("record_interval_mapped_parameter_grid_issue78","two_exact_DTLZ7_like_disconnected_PF_components"),
     "DPF3":("linspace_base_decision_parameter_then_NDS_filter","variable_cardinality_chaotic_projection"),
     "DPF4":("linspace_base_decision_parameter","piecewise_chaotic_projection"),
     "DPF5":("meshgrid_x1_x2_with_x1_gt_one_third_piecewise_branch","2d_decision_grid_and_piecewise_objective_map"),
@@ -50,7 +50,7 @@ LAWS={
     "DTLZ4":("inverse_power_100_positive_sphere_directions","positive_hypersphere"),
     "DTLZ5":("fixed_rng_uniform_decision_parameters","degenerate_1d_PF"),
     "DTLZ6":("fixed_rng_uniform_decision_parameters","degenerate_1d_PF"),
-    "DTLZ7":("fixed_rng_uniform_decision_parameters_no_PF_filter","disconnected_PF"),
+    "DTLZ7":("fixed_rng_uniform_parameters_mapped_to_exact_record_intervals_issue78","2_power_M_minus_1_disconnected_PF_components"),
     "DTLZ8":("static_optimal_x_csv_or_guided_analytical_solver","constrained_heterogeneous_sampling"),
     "DTLZ9":("linspace_last_objective_then_inverse_to_decisions","constrained_1d_curve"),
 }
@@ -80,16 +80,19 @@ def classify(name, *, analytical_supported, candidates, feasibility, branch):
     """Conservative status. A screen never auto-certifies a probability law."""
     if name not in LAWS:
         raise ValueError("Unknown MOP")
-    if not analytical_supported:
-        return "NO_COMPATIBLE_INDEPENDENT_ANALYTICAL_PF"
     if feasibility is not None and feasibility["infeasible"]>0:
         return "HOLD_INFEASIBLE_ANALYTICAL_POINTS"
     if candidates["within_sample_dominated"]>0:
         return "HOLD_DOMINATED_ANALYTICAL_POINTS"
+    # PR #79 repaired DPF2/DTLZ7 source PFs, but their archived v0.14.0 GT
+    # demonstrably contains dominated points. Distinguish that historical
+    # reference invalidity from the *now corrected* analytical samplers.
+    if name in ("DTLZ7","DPF2"):
+        return "HOLD_ARCHIVED_GT_INVALID_WITH_CORRECTED_SOURCE"
     if name=="DPF5":
         return "HOLD_DPF5_PIECEWISE_BRANCH_AND_OBJECTIVE_DENSITY_UNPROVEN"
-    if name in ("DTLZ7","DPF2"):
-        return "HOLD_DISCONNECTED_FRONT_SUPPORT_UNPROVEN"
+    if not analytical_supported:
+        return "NO_COMPATIBLE_INDEPENDENT_ANALYTICAL_PF"
     if name in ("DTLZ5","DTLZ6","DTLZ9"):
         return "CONDITIONAL_DEGENERATE_CURVE_LAW_NEEDS_REVIEW"
     if name=="DTLZ8":
@@ -208,6 +211,9 @@ def audit_mop(name, baseline, *, n_points=1024, package_root=REFERENCES):
         "independent_PF_nd_check":_nd_evidence(fresh) if fresh is not None else None,
         "normative_probability_law_approved":False,
         "global_Pareto_optimality_proven":False,
+        "source_repaired_in_issue78":bool(name in ("DPF2","DTLZ7")),
+        "frozen_GT_has_independently_demonstrated_dominated_points":bool(
+            name in ("DPF2","DTLZ7")),
     }
     if fresh is not None:
         report["independent_PF_sha256"]=_sha(fresh)
