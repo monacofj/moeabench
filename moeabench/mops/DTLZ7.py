@@ -5,6 +5,7 @@
 
 import numpy as np
 from .base_mop import BaseMop
+from ._dtlz7_pareto_regions import sample_dtlz7_record_parameters
 
 class DTLZ7(BaseMop):
     """
@@ -52,12 +53,21 @@ class DTLZ7(BaseMop):
         return {'F': F}
 
     def ps(self, n_points=100):
-        """Analytical sampling of DTLZ7 Pareto Set."""
+        """Sample only the analytically Pareto-optimal disconnected regions.
+
+        Parameter-uniform on the exact record intervals, not objective-area
+        uniform. Never treat this as a recalibration of frozen legacy GT.
+        """
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
-        rng = np.random.RandomState(42)
-        res[:, :M-1] = rng.random((n_points, M - 1))
+        # The unrestricted [0,1]^(M-1) parameter cube contains many
+        # dominated points: DTLZ7 has 2^(M-1) disconnected PF components.
+        # Sample instead from the exact Pareto-record domain of
+        # x*(1+sin(3*pi*x)), retaining the historical private RNG seed.
+        res[:, :M-1] = sample_dtlz7_record_parameters(
+            n_points, M-1, seed=42
+        )
         # Optimal g=1 when xi=0 for i >= M
         res[:, M-1:] = 0.0
         return res
