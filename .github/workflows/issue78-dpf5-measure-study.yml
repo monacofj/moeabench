@@ -51,6 +51,29 @@ jobs:
                   print('K',k,'epsilons',ref['ideal_res_by_measure'],
                         'epsilon spread',ref['max_minus_min_ideal_res'])
           PY
+      - name: Compare real same-P0/Pf DPF5 NSGA-II under all three provisional laws
+        timeout-minutes: 11
+        run: |
+          python calibration/scripts/study_dpf5_paired_q_issue78.py \
+            --side 128 --K 100 --generations 300 \
+            --seed 1 --seed 7 \
+            --output /tmp/dpf5-paired-real-q.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('/tmp/dpf5-paired-real-q.json').read_text())
+          assert j['status']=='NONCERTIFIED_DPF5_REAL_MOEA_PAIRED_Q_SENSITIVITY'
+          assert j['certified'] is False
+          assert j['all_other_metrics_unchanged']
+          assert j['changed_only_closeness_in_memory']
+          assert not j['baseline_files_modified']
+          assert len(j['runs'])==2
+          assert all(len(x['counterfactuals'])==3 for x in j['runs'])
+          for item in j['runs']:
+              print('REAL DPF5 seed',item['seed'],
+                    'old_Q',item['original_q_closeness'],
+                    'Q_spread',item['max_between_laws_q_closeness_difference'])
+          PY
       - name: Check official baselines/GT/report untouched
         run: |
           git diff --exit-code -- \
@@ -62,5 +85,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: issue78-dpf5-three-law-paired-sensitivity
-          path: /tmp/dpf5-branch-measure-sensitivity.json
+          path: |
+            /tmp/dpf5-branch-measure-sensitivity.json
+            /tmp/dpf5-paired-real-q.json
           if-no-files-found: warn
