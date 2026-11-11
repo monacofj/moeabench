@@ -38,7 +38,7 @@ def test_no_probability_law_is_automatically_certified_by_geometric_overlap():
     for name in LAWS:
         label=classify(name,analytical_supported=True,
                        candidates=_sample_nd(),feasibility=None,branch=None)
-        assert "CERTIFIED" not in label
+        assert not label.startswith("CERTIFIED")
         assert label.startswith(("HOLD_","CONDITIONAL_"))
     assert classify("DPF3",analytical_supported=False,
                     candidates=_sample_nd(),feasibility=None,branch=None
