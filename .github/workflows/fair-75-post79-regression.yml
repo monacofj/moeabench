@@ -31,6 +31,26 @@ jobs:
             tests/unit/test_audit_pf_sources_issue75.py \
             tests/unit/test_dtlz7_dpf2_pareto_sources_issue78.py \
             tests/integration/test_example13_consistency.py
+      - name: Assert held science sources cannot enter staged Closeness candidate
+        timeout-minutes: 6
+        run: |
+          python calibration/scripts/stage_closeness_adr0037.py \
+            --impact /tmp/issue75-post79-closeness-impact.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          impact=json.loads(Path("/tmp/issue75-post79-closeness-impact.json").read_text())
+          assert impact["status"]=="PROVISIONAL_ADR0037_INDEPENDENT_MOP_PF_NOT_CERTIFIED"
+          assert impact["objective_area_uniform"] is False
+          assert set(impact["unsupported"])=={"DPF2","DTLZ7","DPF5","DPF3","DTLZ8"}
+          assert all(impact["unsupported"][n].startswith("HOLD_ARCHIVAL_REFERENCE:")
+                     for n in ("DPF2","DTLZ7","DPF5"))
+          assert len(impact["supported"])==9
+          assert impact["K_records_changed"]==396
+          assert impact["verification"]["K_records_checked"]==396
+          assert impact["verification"]["official_files_modified"] is False
+          print("SAFE NONCERTIFIED ADR0037 PREVIEW: 9 MOPs, 396 K records, 5 excluded")
+          PY
       - name: Full unit suite
         run: python test.py --unit
       - name: Regenerate legitimate fixtures for basic integration
