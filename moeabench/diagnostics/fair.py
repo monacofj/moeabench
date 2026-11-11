@@ -188,13 +188,26 @@ def closeness(data: Any, ref: Optional[Any] = None, s_k: Optional[float] = None,
     # 3. Apply Plausible Ideal Correction (Residue Subtraction)
     from . import baselines as base
     ideal_res = 0.0
-    try:
-        if problem_name and k:
-            b_data = base.get_baseline_data(problem_name, k, "closeness")
-            ideal_res = b_data.get("ideal_res", 0.0)
-    except:
-        pass
-    
+    if kwargs.get("ideal_res") is not None:
+        # An explicit physical calibration override is admissible for custom
+        # GTs, where no matching frozen clinical baseline may exist.
+        ideal_res = float(kwargs["ideal_res"])
+    elif problem_name and problem_name != "Unknown" and k:
+        try:
+            # Residue is a property of a PARTICULAR finite GT. Borrowing the
+            # calibrated epsilon from a different reference silently biases
+            # even a quality=False physical audit. Fall back to uncorrected
+            # distance when no matching correction can be established.
+            if base.reference_compatibility(problem_name, GT) is True:
+                b_data = base.get_baseline_data(problem_name, k, "closeness")
+                ideal_res = float(b_data.get("ideal_res", 0.0))
+        except base.UndefinedBaselineError:
+            # Physical distances remain measurable; only the finite-GT
+            # correction is unavailable for this reference.
+            pass
+    if not np.isfinite(ideal_res) or ideal_res < 0:
+        raise ValueError("Invalid ideal_res calibration: must be finite and nonnegative")
+
     u_vals = np.maximum(0.0, u_vals_raw - ideal_res)
     f_val = float(np.median(u_vals))
     
