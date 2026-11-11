@@ -140,3 +140,11 @@ def test_archival_pf_science_hold_is_hard_gate_even_with_corrected_source(tmp_pa
     del tampered["unsupported"]["DPF5"]
     with pytest.raises(ValueError, match="missing explicit unsupported"):
         verify(old,candidate,tampered)
+
+
+def test_full_frozen_gt_generator_abstains_on_scientifically_held_sources():
+    # The staged Closeness migrator AND the ordinary offline baseline
+    # generator must not implicitly attach ideal_res to an invalid archive.
+    from calibration.scripts.generate_baselines import _analytical_ideal_from_package
+    for name in ("DPF2", "DTLZ7", "DPF5"):
+        assert _analytical_ideal_from_package(name, None, None) is None
