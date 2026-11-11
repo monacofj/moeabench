@@ -88,7 +88,9 @@ Maintaining scientific consistency is paramount. The framework relies on an **Or
 - If your contribution affects the core IGD/HV performance, you MUST regenerate the baselines and the report.
 - The framework also utilizes **Calibration Reference Data** (JSON) for numerical regression testing.
 - Raw calibration traces are stored in `calibration/data/calibration_data/`.
-- Use `calibration/scripts/generate_baselines.py` and `calibration/scripts/generate_visual_report.py` to maintain these artifacts.
+- **Do not overwrite certified baselines during development.** Full baseline generation now requires an explicit staged output, for example `MOEABENCH_BASELINE_OUTPUT=/tmp/baselines-candidate.json python calibration/scripts/generate_baselines.py`. The generator refuses writes through the current certified alias.
+- For the ADR 0037 finite-GT Closeness correction, first preview the impact without modifying historical data: `python calibration/scripts/migrate_closeness_residue.py --problem DTLZ1 --impact-report /tmp/dtlz1-residue-impact.json`. Supplying `--output` stages a distinct corrected baseline JSON, never an in-place replacement.
+- Rebuilding the official `calibration/audit_report.html` requires validating the benchmark data and numerical audit JSON **against the new calibration** before running `calibration/scripts/generate_visual_report.py`. The historical `calibration/scripts/audit_calibration.py` is not yet certified against the current FAIR/Headway APIs under issue #75; its output must not be treated as a newly validated report until that migration is tested. Preserve existing versioned audit reports and update canonical aliases only as part of the validated release.
 
 ---
 

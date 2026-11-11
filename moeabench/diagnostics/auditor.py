@@ -376,7 +376,8 @@ def audit(target: Any,
     ctx = _resolve_diagnostic_context(target, ref=ground_truth, **kwargs)
     P = ctx['P_final']
     GT = ctx['GT']
-    s_k_mop = ctx['s_k']
+    # Only an explicit caller override can replace the GT-derived s_K.
+    s_k_override = kwargs.get('s_k', None)
     mop_name = ctx['problem']
     K_raw = ctx['k']
     experiment_name = getattr(target, 'name', None) or getattr(getattr(target, 'source', None), 'name', None)
@@ -427,9 +428,13 @@ def audit(target: Any,
         try:
             bases = baselines.load_offline_baselines(target_m=target_m)
             
-            # Smart GT resolution: allow registry to provide the canonical 10k-point reference
-            # if the dimension matches. This is necessary for numerical consistency across versions.
-            if "_gt_registry" in bases:
+            # The registered GT belongs to the frozen clinical calibration.
+            # It is the preferred *automatic* reference, but a caller-supplied
+            # ground_truth must never be silently overwritten (ADR 0048).
+            # Baseline compatibility with a different explicit GT is assessed
+            # separately, before interpreting any clinical Q-score.
+            gt_source = "explicit" if ground_truth is not None else "inferred"
+            if ground_truth is None and "_gt_registry" in bases:
                  gt_registry = bases["_gt_registry"]
                  gt_key = f"{mop_name}__M{P.shape[1]}"
                  GT_raw = None
@@ -440,11 +445,26 @@ def audit(target: Any,
                  if GT_raw is not None:
                      if GT_raw.shape[1] == P.shape[1]:
                          GT = GT_raw
+                         gt_source = "registered"
                      else:
                          # Force baseline missing if dimensions don't match
                          raise baselines.UndefinedBaselineError(
                              f"Dimension mismatch: P={P.shape[1]}, GT_registry={GT_raw.shape[1]}"
                          )
+
+            # Check whether the frozen Q-score calibration was generated
+            # against this precise reference. Two GTs with the same problem
+            # name and objective count are *not* automatically interchangeable:
+            # a 500-point GT can have a different scale/density from the
+            # registered 10k-point GT. Compare full arrays, not merely M or N.
+            gt_registry = bases.get("_gt_registry", {})
+            baseline_gt = gt_registry.get(f"{mop_name}__M{P.shape[1]}")
+            if baseline_gt is None:
+                baseline_gt = gt_registry.get(mop_name)
+            gt_baseline_compatible = (
+                bool(np.array_equal(GT, np.asarray(baseline_gt)))
+                if baseline_gt is not None else None
+            )
 
             # A. Shared Reference Objects
             U_ref = baselines.get_ref_uk(GT, K_target, seed=0)
@@ -457,13 +477,22 @@ def audit(target: Any,
             hist_ref /= np.sum(hist_ref)
             
             # B. Normalization Resolution
-            # Use s_k from mop if available, otherwise calculate from GT
-            s_k = s_k_mop if s_k_mop > 1e-12 else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+            # Compute s_K from the *final* selected GT. The resolver may have
+            # seen a different automatically inferred reference before the
+            # calibrated registry was consulted, so its early scale cannot be
+            # reused. Only an explicit s_k argument intentionally overrides it.
+            s_k = (
+                float(s_k_override)
+                if s_k_override is not None and float(s_k_override) > 1e-12
+                else baselines.get_resolution_factor_k(GT, K_target, seed=0)
+            )
 
             # Expose the exact canonical context used by the audit so that the
             # public single-metric API can reuse it (including history data).
             ctx.update({
                 "GT": GT,
+                "gt_source": gt_source,
+                "baseline_gt_compatible": gt_baseline_compatible,
                 "k": K_target,
                 "s_k": s_k,
                 "U_ref": U_ref,
@@ -501,7 +530,26 @@ def audit(target: Any,
                     experiment_name=experiment_name
                 )
             
-            # D. Compute Q-Scores (Engineering)
+            # D. Compute Q-Scores (Engineering).
+            # Physical FAIR measurements are still valid against an explicit
+            # reference, but frozen Q-score anchors calibrated for a different
+            # GT must not be borrowed without warning or recalibration.
+            if gt_baseline_compatible is False:
+                return DiagnosticResult(
+                    q_audit_res=None,
+                    fair_audit_res=fr_res,
+                    status=DiagnosticStatus.MISSING_BASELINE,
+                    description=(
+                        "Clinical Q-scores require calibration for the selected "
+                        "Ground Truth. The registered calibration uses a different "
+                        "reference; supply a matching calibrated baseline or use "
+                        "quality=False for physical FAIR measurements."
+                    ),
+                    reproducibility=r_info,
+                    diagnostic_context=ctx,
+                    experiment_name=experiment_name,
+                )
+
             q_h = qscore.q_headway(f_headway, problem=mop_name, k=K_target, s_k=s_k)
             q_clo = qscore.q_closeness(f_closeness_val, problem=mop_name, k=K_target)
             q_c = qscore.q_coverage(f_cov, problem=mop_name, k=K_target)
