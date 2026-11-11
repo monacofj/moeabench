@@ -135,3 +135,18 @@ unique fair or physically uniform objective-space measure.
   uses *in-memory* counterfactual Closeness-only baselines and
   checks exact unchanged P0/Pf/GT/`s_K` plus five other FAIR/Q
   families. CI results pending. Append both failures and successes.
+- **2026-11-11 — FAILED, engineering-only:** [GitHub Actions #43090638106](https://github.com/monacofj/moeabench/actions/runs/43090638106)
+  passed all three sensitivity tests and the three-law GT calculation,
+  but the real-NSGA-II script aborted on direct CLI invocation with
+  `ModuleNotFoundError: No module named 'calibration'`. This was
+  due to the repository root not being present on `sys.path` when a
+  script under `calibration/scripts` is executed by filename,
+  **not** a numerical or scientific contradiction.
+  Fixed by inserting the resolved repository root before importing the
+  sibling research modules, commit `4493a8c1`. The resumed CI must
+  independently confirm real-MOEA behavior; never claim the failed run
+  passed the Q experiment.
+- **2026-11-11:** Opened isolated [Draft PR #80](https://github.com/monacofj/moeabench/pull/80),
+  indexed this proposed ADR 0053. **No merge planned until a
+  sampling-law scientific decision**; source code, archived GT,
+  baselines and canonical report remain unmodified.
