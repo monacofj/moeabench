@@ -1,0 +1,66 @@
+# Temporary verification workflow; remove after successful scientific gate.
+name: Issue83 one-sided outward half-normal GT blur
+
+on:
+  push:
+    branches: [fix/83-outward-half-normal-blur]
+  workflow_dispatch:
+
+jobs:
+  geometric-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify half-blur dominated-side proofs and controller target
+        timeout-minutes: 4
+        run: python -m pytest -q tests/unit/test_outward_half_normal_blur_issue83.py
+      - name: Audit 14 actual frozen GT geometries without replacing data
+        timeout-minutes: 8
+        run: |
+          python calibration/scripts/audit_outward_blur_issue83.py \
+            --points 512 --K 100 \
+            --output /tmp/issue83-outward-half-blur-14mop.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('/tmp/issue83-outward-half-blur-14mop.json').read_text())
+          assert j['status']=='NONCERTIFIED_ISSUE83_OUTWARD_HALF_BLUR_AUDIT'
+          assert j['MOP_count']==14
+          assert j['same_sigma_target']==2.0
+          assert j['same_sigma_target_relative_tolerance']==.05
+          assert j['baseline_GT_and_audit_report_unchanged']
+          assert j['certified'] is False
+          for name,row in j['MOPs'].items():
+              assert row['blurs_weakly_dominated_by_parent_fraction']==1.
+              assert row['blurs_strictly_dominated_by_parent_fraction']==1.
+              assert row['sigma']>0 and row['s_K_on_bounded_GT_subset']>0
+              assert 0<=row['pca_normal_projection_required_fraction']<=1
+              assert row['independent_blur_median_u']>0
+              print(name,'PCA proj frac',row['pca_normal_projection_required_fraction'],
+                    'fitted median',row['calibration_controller_median_u'],
+                    '5pct reached',row['calibration_controller_within_5pct'])
+          PY
+      - name: All unit regressions
+        timeout-minutes: 5
+        run: python test.py --unit
+      - name: Guard official scientific datasets and canonical report
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Preserve noncertified 14-MOP geometry audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue83-outward-half-normal-14mop-not-certified
+          path: /tmp/issue83-outward-half-blur-14mop.json
+          if-no-files-found: warn
