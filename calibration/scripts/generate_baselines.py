@@ -88,6 +88,46 @@ def dominance_outward_direction(normal: np.ndarray) -> np.ndarray:
     return direction / norm
 
 
+def dominance_outward_pca_direction(
+        eigenvalues: np.ndarray, eigenvectors: np.ndarray) -> np.ndarray:
+    """Prefer a true local normal *subspace* vector on rank-deficient PFs.
+
+    A 1D curve in 3D has a 2D normal plane. Its smallest covariance
+    eigenvector is arbitrary within that plane and may have mixed
+    objective signs even when the plane contains a nonnegative normal.
+    Detect a clear eigengap (relative 2%) and project the positive
+    diagonal into the low-variance normal subspace instead. Only if
+    this candidate cannot point into the dominated cone do we fall
+    back to the projected single PCA eigenvector. This improves
+    geometric fidelity on lower-dimensional Pareto sets without
+    changing the source/GT or the half-normal magnitude law.
+    """
+    vals = np.asarray(eigenvalues, dtype=float)
+    vecs = np.asarray(eigenvectors, dtype=float)
+    if (vals.ndim != 1 or vecs.shape != (len(vals),len(vals)) or
+            not np.all(np.isfinite(vals)) or
+            not np.all(np.isfinite(vecs))):
+        raise ValueError("Invalid covariance eigensystem")
+    n=len(vals)
+    top=max(float(vals[-1]),0.0)
+    if top<=1e-14:
+        return np.ones(n)/np.sqrt(n)
+    # At least one principal tangent direction must remain.
+    low=vals<=top*0.02
+    low[-1]=False
+    if np.count_nonzero(low)>=2:
+        basis=vecs[:,low]
+        target=np.ones(n)/np.sqrt(n)
+        projected=basis@(basis.T@target)
+        norm=float(np.linalg.norm(projected))
+        if norm>1e-12 and np.min(projected)>=-1e-10:
+            return dominance_outward_direction(np.maximum(projected,0.0))
+    # Full-dimensional smooth PF: the smallest PCA eigenvector is
+    # already a unique local normal. Explicitly constrain it to the
+    # objective-space dominated cone when its sign is unsuitable.
+    return dominance_outward_direction(vecs[:,0])
+
+
 def estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
     """Estimate local PCA normals *oriented to the dominated objective cone*.
 
@@ -114,8 +154,9 @@ def estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
         neighbors = gt[indices[i, 1:]]
         centered = neighbors - np.mean(neighbors, axis=0)
         covariance = centered.T @ centered
-        _, eigenvectors = np.linalg.eigh(covariance)
-        normals[i] = dominance_outward_direction(eigenvectors[:, 0])
+        eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+        normals[i] = dominance_outward_pca_direction(
+            eigenvalues, eigenvectors)
     return normals
 
 
