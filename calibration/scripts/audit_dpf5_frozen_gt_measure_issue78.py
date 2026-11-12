@@ -72,6 +72,24 @@ def audit():
     frozen_info=_unique_nd_info(gt)
     source_info=_unique_nd_info(gen_norm)
 
+    # Test the hypothesis suggested by the archived 3367-point cardinality:
+    # the GT might be the DISTINCT OBJECTIVE VECTORS from a 100x100
+    # Pareto-set grid, rather than 3367 samples from a 58x58 grid.
+    original_grid_side=100
+    original_decisions=model.ps(n_points=original_grid_side**2)
+    original_raw=np.asarray(model.evaluation(original_decisions)["F"],dtype=np.float64)
+    original_norm=(original_raw-ideal)/(nadir-ideal)
+    original_distinct=np.unique(original_norm,axis=0)
+    raw_D=original_decisions[:,0]>1/3
+    n_P_distinct=len(np.unique(original_norm[~raw_D],axis=0))
+    n_D_distinct=len(np.unique(original_norm[raw_D],axis=0))
+    original_grid_unique_matches_gt=bool(
+        len(original_distinct)==len(gt) and
+        np.allclose(original_distinct,
+                    np.unique(gt,axis=0),
+                    atol=1e-12,rtol=0))
+    original_grid_unique_nearest=cKDTree(original_distinct).query(gt,k=1)[0]
+
     # Row-wise equality is stronger than mere two-way Hausdorff closeness.
     # Sort lexicographically as the archived GT need not preserve source row order.
     def sorted_rows(x):
@@ -135,6 +153,20 @@ def audit():
         "x1_archived_histogram":counts_old.tolist(),
         "x1_generated_histogram":counts_src.tolist(),
         "x1_histogram_total_variation":float(empirical_tv),
+        "source_reconstruction_hypothesis":{
+            "grid_side":original_grid_side,
+            "raw_decision_rows":int(len(original_decisions)),
+            "original_grid_true_D_rows":int(np.sum(raw_D)),
+            "original_grid_true_D_probability":float(np.mean(raw_D)),
+            "original_grid_unique_P_rows":int(n_P_distinct),
+            "original_grid_unique_D_rows":int(n_D_distinct),
+            "original_grid_unique_total":int(len(original_distinct)),
+            "unique_objective_set_matches_archived_GT":original_grid_unique_matches_gt,
+            "nearest_to_hypothesized_unique_set_max":float(np.max(original_grid_unique_nearest)),
+            "hypothetical_raw_grid_to_unique_1d_weight_ratio":float(
+                np.mean(raw_D)/(n_D_distinct/len(original_distinct))),
+            "interpretation":"Source-objective support equivalence, not historical producer metadata",
+        },
         "GT_can_be_read_as_uniform_decision_grid_pushforward":bool(
             same_size and np.allclose(
                 sorted_rows(gen_norm),sorted_rows(gt),atol=1e-12,rtol=0)),
@@ -162,6 +194,7 @@ def main():
         "archived_diagonal_mass":result["archived_on_diagonal_fraction"],
         "expected_true_D_mass":result["current_generator_true_D_fraction"],
         "x1_histogram_tv":result["x1_histogram_total_variation"],
+        "reconstruction":result["source_reconstruction_hypothesis"],
     },indent=2))
 
 
