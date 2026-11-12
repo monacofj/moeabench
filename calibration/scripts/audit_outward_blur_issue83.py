@@ -50,8 +50,10 @@ def evaluate_one(name, gt, *, max_points=512,K=100):
                                   min(max_points,len(gt))).astype(int))
     subset=gt[indices]
     normals=estimate_gt_normals(subset)
-    directions_pca=[]
     cosines=[]
+    subspace_alignments=[]
+    rescued_in_normal_plane=0
+    low_rank_locations=0
     projections=0
     neighbors=min(len(subset)-1,int(np.clip(
         np.round(np.sqrt(len(subset))),10,30)))
@@ -60,14 +62,23 @@ def evaluate_one(name, gt, *, max_points=512,K=100):
     for i,x in enumerate(subset):
         neighbors_points=subset[nearest[i,1:]]
         center=neighbors_points-np.mean(neighbors_points,axis=0)
-        _,vec=np.linalg.eigh(center.T@center)
+        values,vec=np.linalg.eigh(center.T@center)
         n=vec[:,0]
-        # A true either-orientation normal is usable without
-        # altering its direction iff all its signed components
-        # can be made nonnegative.
+        # A single PCA eigenvector may have arbitrary sign/mixed
+        # components, especially on lower-dimensional PF sets.
         compatible=bool(np.all(n>=-1e-12) or np.all(n<=1e-12))
         projections+=int(not compatible)
         cosines.append(float(abs(np.dot(n,normals[i]))))
+        threshold=max(float(values[-1]),0.0)*.02
+        low=values<=threshold
+        low[-1]=False
+        low_rank=bool(np.count_nonzero(low)>=2)
+        low_rank_locations+=int(low_rank)
+        basis=vec[:,low] if low_rank else vec[:,:1]
+        alignment=float(np.linalg.norm(basis.T@normals[i]))
+        subspace_alignments.append(alignment)
+        rescued_in_normal_plane+=int(
+            not compatible and low_rank and alignment>1-1e-9)
     scale=float(get_resolution_factor_k(subset,K,seed=0))
     if not np.isfinite(scale) or scale<=0:
         raise AssertionError("Invalid registered K-resolution")
@@ -94,6 +105,13 @@ def evaluate_one(name, gt, *, max_points=512,K=100):
         "pca_normal_projection_required_fraction":float(projections/len(subset)),
         "pca_normal_min_absolute_cosine_after_projection":float(min(cosines)),
         "pca_normal_median_absolute_cosine_after_projection":float(np.median(cosines)),
+        "clear_low_dimensional_PCA_normal_subspace_count":int(low_rank_locations),
+        "mixed_sign_eigenvector_rescued_by_true_normal_subspace":int(
+            rescued_in_normal_plane),
+        "median_alignment_to_estimated_normal_subspace":float(
+            np.median(subspace_alignments)),
+        "min_alignment_to_estimated_normal_subspace":float(
+            min(subspace_alignments)),
         "blurs_weakly_dominated_by_parent_fraction":float(np.mean(np.all(actual>=subset,axis=1))),
         "blurs_strictly_dominated_by_parent_fraction":float(np.mean(strict)),
         "sigma":float(sigma),
@@ -151,6 +169,8 @@ def main():
     for name,row in report["MOPs"].items():
         print(name, "projection_fraction",
               f'{row["pca_normal_projection_required_fraction"]:.4f}',
+              "subspace_recovered",row["mixed_sign_eigenvector_rescued_by_true_normal_subspace"],
+              "subspace_alignment",f'{row["median_alignment_to_estimated_normal_subspace"]:.4f}',
               "calibration_median",f'{row["calibration_controller_median_u"]:.4f}',
               "inside_5percent",row["calibration_controller_within_5pct"],
               "outward",row["blurs_strictly_dominated_by_parent_fraction"])
