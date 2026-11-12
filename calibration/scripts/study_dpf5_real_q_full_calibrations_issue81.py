@@ -1,0 +1,217 @@
+#!/usr/bin/env python3
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Non-destructive DPF5 real-MOEA Q sensitivity to independent full calibrations.
+
+Research only: issue #81 / proposed ADR 0055. No registered baseline is written.
+Each replicate has disjoint ideal, sigma-fit and held-out blur RNG streams.
+The same real NSGA-II populations are evaluated against every replicate.
+"""
+import argparse
+import hashlib
+import json
+from pathlib import Path
+
+import numpy as np
+import moeabench as mb
+from scipy.spatial import cKDTree
+
+from calibration.scripts.validate_dpf5_closeness_protocol_issue81 import (
+    ROOT, FROZEN, RESOURCE_DIR, REPORTS, OFFICIAL, _sha,
+    frozen_reference, sample_independent_ideal,
+)
+from calibration.scripts.generate_baselines import (
+    calibrate_sigma, estimate_gt_normals, generate_half_normal_blur, N_SAMPLES,
+)
+from moeabench.diagnostics.baselines import get_resolution_factor_k
+from moeabench.diagnostics.qscore import compute_q_wasserstein
+
+METRICS = ("COVERAGE", "GAP", "REGULARITY", "BALANCE", "HEADWAY")
+
+
+def seed_triplet(k, replicate):
+    """Unique seed namespaces over a bounded positive integer domain."""
+    if not (2 <= k <= 200 and 0 <= replicate < 10000):
+        raise ValueError("K or replicate outside designed seed namespace")
+    base = 100000 + 100000 * k + 3 * replicate
+    return base, base + 1, base + 2
+
+
+def make_replicate(*, model, gt, ideal, nadir, tree, normals, k, scale,
+                   replicate, ideal_size):
+    ideal_seed, fit_seed, blur_seed = seed_triplet(k, replicate)
+    fresh, d_branch = sample_independent_ideal(
+        model, size=ideal_size, seed=ideal_seed)
+    fresh_norm = (fresh - ideal) / (nadir - ideal)
+    epsilon = float(np.median(tree.query(fresh_norm)[0]) / scale)
+    if not np.isfinite(epsilon) or epsilon <= 0:
+        raise AssertionError("Independent ideal residual must be positive")
+    sigma, fit_median, _ = calibrate_sigma(
+        gt, normals, scale, fit_seed, tree=tree)
+    if abs(fit_median - 2.0) >= 0.1:
+        raise AssertionError("Sigma controller failed its original tolerance")
+    blurred = generate_half_normal_blur(
+        gt, normals, sigma, np.random.RandomState(blur_seed))
+    if not (np.all(blurred >= gt) and np.all(np.any(blurred > gt, axis=1))):
+        raise AssertionError("Half-normal reference crossed improving side")
+    distances = tree.query(blurred)[0] / scale
+    corrected = np.maximum(0.0, distances - epsilon)
+    ordered = np.sort(corrected)
+    ecdf = ordered[np.linspace(0, len(ordered)-1, N_SAMPLES).astype(int)]
+    if not (len(ecdf) == N_SAMPLES and np.all(np.diff(ecdf) >= 0)
+            and np.all(np.isfinite(ecdf))):
+        raise AssertionError("Invalid reference order statistics")
+    return {
+        "replicate": replicate, "seeds": {
+            "ideal": ideal_seed, "fit": fit_seed, "blur": blur_seed},
+        "ideal_objectives_sha256": _sha(fresh_norm),
+        "ideal_D_mass_realized": float(np.mean(d_branch)),
+        "epsilon": epsilon, "sigma": float(sigma),
+        "fit_normalized_median": float(fit_median),
+        "held_out_normalized_median": float(np.median(distances)),
+        "blur_objectives_sha256": _sha(blurred),
+        "ecdf_sha256": _sha(ecdf),
+        "ecdf": ecdf,
+    }
+
+
+def q_from_raw(raw_normalized_distance, epsilon, failure_ecdf):
+    """Exact current Q-Closeness W1 mapping on corrected physical distances."""
+    u = np.maximum(0.0, np.asarray(raw_normalized_distance) - epsilon)
+    return float(compute_q_wasserstein(u, np.zeros_like(u), failure_ecdf))
+
+
+def _baseline_snapshot(audit):
+    return {
+        name: (float(audit.fr.metrics[name].value),
+               float(audit.quality.scores["Q_" + name].value))
+        for name in METRICS
+    }
+
+
+def _ranking(scores):
+    # Ties retain a stable index order; report score gaps separately.
+    return tuple(sorted(range(len(scores)), key=lambda i: (-scores[i], i)))
+
+
+def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
+          replicates=8, ideal_size=16384):
+    if (not ks or len(set(ks)) != len(ks) or
+            not optimizer_seeds or len(set(optimizer_seeds)) != len(optimizer_seeds)
+            or any(not isinstance(s, int) or s < 0 for s in optimizer_seeds)
+            or not 2 <= replicates <= 10000 or ideal_size < 64 or
+            ideal_size > 100000 or generations < 2):
+        raise ValueError("Invalid experimental design")
+    source, gt, ideal, nadir, model = frozen_reference()
+    tree = cKDTree(gt)
+    normals = estimate_gt_normals(gt)
+    by_k = {}
+    all_seeds = set()
+    for k in ks:
+        if not isinstance(k, int) or not 2 <= k <= 200 or (
+                str(k) not in source["problems"]["DPF5"]):
+            raise ValueError("Unregistered K")
+        scale = float(get_resolution_factor_k(gt, k, seed=0))
+        candidates = [
+            make_replicate(model=model, gt=gt, ideal=ideal, nadir=nadir,
+                           tree=tree, normals=normals, k=k, scale=scale,
+                           replicate=r, ideal_size=ideal_size)
+            for r in range(replicates)
+        ]
+        for candidate in candidates:
+            seeds = tuple(candidate["seeds"].values())
+            if len(set(seeds)) != 3 or any(s in all_seeds for s in seeds):
+                raise AssertionError("Calibration RNG namespaces overlap")
+            all_seeds.update(seeds)
+        real = []
+        for seed in optimizer_seeds:
+            experiment = mb.experiment(
+                mop=mb.mops.DPF5(D=2, M=3),
+                moea=mb.moeas.NSGA2(population=k, generations=generations))
+            experiment.run(seed=seed, silent=True)
+            audit = mb.clinic.audit(experiment)
+            if audit.fr is None or audit.quality is None:
+                raise AssertionError("Real optimizer audit unavailable")
+            ctx = audit.diagnostic_context
+            if (ctx.get("gt_source") != "registered"
+                    or not np.array_equal(ctx["GT"], gt)
+                    or not np.isclose(float(ctx["s_k"]), scale, atol=1e-12, rtol=0)
+                    or ctx["P_initial"] is None or ctx["P_final"] is None):
+                raise AssertionError("Authentic paired P0/Pf/registered GT required")
+            raw_corrected = np.asarray(
+                audit.fr.metrics["CLOSENESS"].raw_data, dtype=float)
+            old_epsilon = float(source["problems"]["DPF5"][str(k)]
+                                ["closeness"].get("ideal_res", 0.0))
+            # Better than reconstructing clipped raw data from the old report:
+            # recompute true nearest-GT distances from the immutable final points.
+            physical = tree.query(np.asarray(ctx["P_final"], dtype=float))[0] / scale
+            np.testing.assert_allclose(
+                raw_corrected, np.maximum(0.0, physical - old_epsilon),
+                atol=1e-10, rtol=0)
+            fixed_metrics = _baseline_snapshot(audit)
+            q_values = [q_from_raw(physical, c["epsilon"], c["ecdf"])
+                        for c in candidates]
+            if not all(np.isfinite(q) and 0 <= q <= 1 for q in q_values):
+                raise AssertionError("Invalid candidate clinical Q")
+            if fixed_metrics != _baseline_snapshot(audit):
+                raise AssertionError("Non-Closeness indicators mutated")
+            real.append({
+                "optimizer": "NSGA2", "seed": seed, "K": k,
+                "P0_sha256": _sha(ctx["P_initial"]),
+                "Pf_sha256": _sha(ctx["P_final"]),
+                "historical_q": float(audit.quality.scores["Q_CLOSENESS"].value),
+                "candidate_q": q_values,
+                "candidate_q_range": max(q_values)-min(q_values),
+                "non_closeness_snapshot": fixed_metrics,
+            })
+        orders = [_ranking([run["candidate_q"][j] for run in real])
+                  for j in range(replicates)]
+        by_k[str(k)] = {
+            "s_K": scale,
+            "replicates": [{key: value for key, value in c.items()
+                            if key != "ecdf"} for c in candidates],
+            "real_runs": real,
+            "candidate_ranking_orders": [list(o) for o in orders],
+            "ranking_stable": len(set(orders)) == 1,
+            "max_real_run_q_range": max(r["candidate_q_range"] for r in real),
+        }
+    return {
+        "status": "NONCERTIFIED_REAL_Q_FULL_CALIBRATION_SENSITIVITY",
+        "mop": "DPF5", "M": 3, "D": 2,
+        "optimizer": "NSGA2", "generations": generations,
+        "optimizer_seeds": list(optimizer_seeds),
+        "complete_calibrations_per_K": replicates, "ideal_size": ideal_size,
+        "frozen_baseline_sha256": hashlib.sha256(FROZEN.read_bytes()).hexdigest(),
+        "frozen_GT_sha256": _sha(gt), "source_version": source.get("version"),
+        "results_by_K": by_k, "certified": False,
+        "no_official_artifacts_modified": True,
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--K", type=int, action="append", dest="ks")
+    parser.add_argument("--seed", type=int, action="append", dest="seeds")
+    parser.add_argument("--generations", type=int, default=300)
+    parser.add_argument("--replicates", type=int, default=8)
+    parser.add_argument("--ideal-size", type=int, default=16384)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    dest = args.output.resolve()
+    if (dest.exists() or dest.is_relative_to(RESOURCE_DIR)
+            or dest.is_relative_to(REPORTS) or dest == OFFICIAL):
+        parser.error("Refusing existing or protected output path")
+    result = study(ks=tuple(args.ks or (40, 100, 200)),
+                   generations=args.generations,
+                   optimizer_seeds=tuple(args.seeds or (1, 7)),
+                   replicates=args.replicates, ideal_size=args.ideal_size)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(result, indent=2) + "\n", encoding="utf8")
+    for k, item in result["results_by_K"].items():
+        print("K", k, "max real-Q range", item["max_real_run_q_range"],
+              "ranking stable", item["ranking_stable"])
+    print("NONCERTIFIED. No official baseline, GT or audit report modified.")
+
+
+if __name__ == "__main__":
+    main()
