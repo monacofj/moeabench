@@ -15,9 +15,9 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -e . pytest
-      - run: python -m compileall -q calibration/scripts/study_dpf5_real_q_full_calibrations_issue81.py tests/test_issue81_full_calibration_q.py
+      - run: python -m compileall -q calibration/scripts/study_dpf5_real_q_full_calibrations_issue81.py tests/unit/test_issue81_full_calibration_q.py
       - run: python calibration/scripts/study_dpf5_real_q_full_calibrations_issue81.py --help
-      - run: python -m pytest tests/test_issue81_full_calibration_q.py -q
+      - run: python -m pytest tests/unit/test_issue81_full_calibration_q.py -q
       - run: |
           python calibration/scripts/study_dpf5_real_q_full_calibrations_issue81.py \
             --K 100 --replicates 3 --generations 40 \
