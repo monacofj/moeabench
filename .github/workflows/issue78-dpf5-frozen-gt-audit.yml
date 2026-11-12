@@ -1,0 +1,59 @@
+# Temporary archived GT audit; remove after producing verified evidence.
+name: Issue 78 DPF5 archived GT branch measure audit
+
+on:
+  push:
+    branches: [research/78-dpf5-measure-sensitivity]
+  workflow_dispatch:
+
+jobs:
+  frozen-gt-distribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Prove DPF5 mixed-dimensional branch classifications
+        run: python -m pytest -q tests/unit/test_dpf5_frozen_gt_measure_issue78.py tests/unit/test_dpf5_measure_sensitivity_issue78.py
+      - name: Compare frozen 10k GT to analytical DPF5 source, including duplicates
+        timeout-minutes: 9
+        run: |
+          python calibration/scripts/audit_dpf5_frozen_gt_measure_issue78.py \
+            --output /tmp/issue78-dpf5-frozen-gt-measure-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/issue78-dpf5-frozen-gt-measure-audit.json').read_text())
+          assert r['status']=='NONCERTIFIED_DPF5_FROZEN_GT_DENSITY_PROVENANCE_AUDIT'
+          assert r['no_official_files_changed']
+          assert r['reference_baseline_version']=='0.14.0'
+          assert r['archived_N']>=1024
+          assert r['archived_unique_and_nondominated']['nondominated_fraction']>.99
+          assert r['archived_spherical_radial_max_error']<1e-8
+          assert r['current_sampler_radial_max_error']<1e-12
+          assert .6<r['current_generator_true_D_fraction']<.7
+          print('ARCHIVAL SOURCE-MATCH:',r['archives_match_generator_sorted_rows'])
+          print('ARCHIVAL MASS ON DIAGONAL:',r['archived_on_diagonal_fraction'])
+          print('SOURCE TRUE D MASS:',r['current_generator_true_D_fraction'])
+          print('ARCHIVED DISTINCT:',r['archived_unique_and_nondominated'])
+          print('SOURCE DISTINCT:',r['current_sampler_unique_and_nondominated'])
+          PY
+      - name: Official baseline, GT and report unchanged
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Save provenance and branch-law evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue78-dpf5-frozen-gt-measure-provenance
+          path: /tmp/issue78-dpf5-frozen-gt-measure-audit.json
+          if-no-files-found: warn
