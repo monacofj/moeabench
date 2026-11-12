@@ -171,3 +171,29 @@ remains a separate release gate in issue #81.
   A read-only multi-K/multi-seed validation script and unit tests
   will be added on this branch; failures and results must be
   appended here before further recommendations.
+
+
+### 2026-11-12 — Multi-K, multi-seed experimental validation PASSED (but not certified)
+
+- **PASS — [GitHub Actions #43240515113](https://github.com/monacofj/moeabench/actions/runs/43240515113):** All **9/9 focused unit tests** and the full read-only three-K scientific study succeeded. Original DPF5 M3/D2 frozen GT and NPZ were checked equal; its **3,367 objectives** reproduce exactly the 100×100 analytical Pareto-set grid after objective deduplication. Verified that every generated negative sample was componentwise dominated by its own GT anchor and that sigma calibration used the **unchanged six-iteration 2*s_K / 5%-fit** criterion. The full experiment output is preserved as Actions artifact `issue81-dpf5-dual-reference-multiK-seed-uncertainty`, ID **13954731198**. No source FAIR changes and no official baselines, GT packages or audit report changed.
+- **Design:** For each K in **40,100,200**, sampled two ideal-reference sizes `N=4,096` and `N=16,384`, **four independent ideal seeds** 123–126. For the failure model, ran **four independent sigma-fitting seeds** 1100–1103 and then **four negative-reference seeds** 1600–1603 at each fitted sigma (**16 independent negative draws per K**). Recorded the source GT and sample SHA256 values, K-specific frozen `s_K`, `epsilon_K`, fitted `sigma_K`, controller-fit median, independent-ECDF realized median, and 200-order-statistic corrected ECDF p10/p50/p90 by seed. No optimization algorithm was used in deriving the references.
+- **Independent ideal, N=16,384, across four seeds:**
+
+  | K | `epsilon_K` minimum | median | maximum | seed range |
+  |---:|---:|---:|---:|---:|
+  | 40 | 0.0305055524 | 0.0307632043 | 0.0308554907 | 0.0003499383 |
+  | 100 | 0.0520999461 | 0.0525399856 | 0.0526976001 | 0.0005976540 |
+  | 200 | 0.0747230108 | 0.0753541261 | 0.0755801807 | 0.0008571700 |
+
+- **Fitted sigma across four seeds:**
+
+  | K | minimum | median | maximum | range |
+  |---:|---:|---:|---:|---:|
+  | 40 | 0.447369081 | 0.459516554 | 0.474310932 | 0.026941851 |
+  | 100 | 0.261943475 | 0.269056062 | 0.277718464 | 0.015774989 |
+  | 200 | 0.182637728 | 0.187596916 | 0.193636697 | 0.010998969 |
+
+- **Independent negative ECDF realizations:** At each K, the 16 held-out blur draws had **raw median normalized distance 1.940172–2.146925**, with median **2.035256**. **14/16** were within the controller's ±5% band, **2/16 outside**, although all four sigma-fitting seeds had met the original controller's convergence criterion. These out-of-band final draws are **observed sampling variability**, not a silent failure of the sigma-fitting loop. The corresponding corrected ECDF p50 spans were K40 **1.908602–2.118409**, K100 **1.886825–2.096633**, and K200 **1.864011–2.073819**. The median-of-four ideal epsilon was used for these ECDF-only sensitivity values; **it has not been selected as a released estimator**.
+- **Important non-independence caveat:** Because the same frozen GT, ideal-reference seeds, sigma-fitting seeds and blur seeds are reused for K=40,100,200, the **normalized negative median range is mathematically the same** after sigma scales with `s_K` (up to floating-point variation). Thus there are **16 distinct negative reference random realizations**, **not 48 independent trials**. The three-K comparison tests the *scale-normalization protocol*, not three independent stochastic data sets. The observed 14/16 frequency must **not** be interpreted as a population success probability or a statistical confidence interval.
+- **Interpretation:** The explicitly specified two-reference model passes reproducibility and geometry tests, but these finite-sample min/max spans are not confidence intervals and **no quantitative release-precision tolerance has yet been approved**. A next scientific release decision should choose (a) a priori reference sample count and seeds, (b) a reproducible way to aggregate/calibrate sigma and final ECDF under independent draws, (c) the acceptable stability of `Q_CLOSENESS` on a broader paired real-MOEA experiment panel, and (d) a separately versioned Closeness-only calibration file. Only then might the DPF5 model transition from **Proposed** to **Accepted for publication** under issue #81. The other 13 MOPs remain outside this DPF5 experiment.
+
