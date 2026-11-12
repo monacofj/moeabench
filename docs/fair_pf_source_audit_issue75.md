@@ -38,6 +38,50 @@ but retained as historical experimental evidence.
 
 **No new sampling law was adopted, and no official baseline was replaced.**
 
+## Scientific handoff after issue #75 implementation merge (2026-11-12)
+
+The FAIR/Example13 runtime correctness fixes [PR #77](https://github.com/monacofj/moeabench/pull/77)
+and DPF2/DTLZ7 Pareto-source fixes [PR #79](https://github.com/monacofj/moeabench/pull/79)
+are already merged into `main`. The original issue #75 is an
+implementation and conformance audit, not a promise to publish a new
+certified calibration for all archived MOPs.
+
+Further DPF5 work reconstructs the 3,367-point historical GT **exactly**
+from the unique objectives of the 100×100 decision grid. Its 1D D branch
+accounts for **67/3367 = 1.99%** of the GT's distinct objective points,
+but **6700/10000 = 67%** of the original sampled decision rows. An
+independent ideal PF sampled iid uniformly from the analytical decision
+parameters instead has theoretical D-branch mass **2/3**. None of these
+facts by itself selects the correct clinical negative reference law.
+
+The existing `GT-normal blur` negative ECDF generator perturbs
+**each distinct GT row once**. Thus it uses the 1.99% source-anchor
+mass rather than the proposed ideal sample's 2/3. A controlled,
+read-only comparison using identical blurred points, frozen sigma, GT,
+resolution `s_K`, and independently sampled `ideal_res` found that
+reweighting the negative ECDF according to the original decision-grid
+multiplicities changes **Q-Closeness by as much as 0.03032126** on two
+real NSGA-II trials, with all other FAIR measures/Q unchanged
+([CI 43227250792](https://github.com/monacofj/moeabench/actions/runs/43227250792)).
+This is a *counterfactual sensitivity*, not proof that the
+historical ECDF's weighting is invalid. Different ideal and
+negative-reference measures can be scientifically coherent when
+they represent **different, explicitly chosen hypotheses**.
+
+The full mathematical derivation, exact GT reconstruction, independent
+PF-sampler tests, real-MOEA sensitivity, and negative-ECDF experiment
+are preserved in [ADR 0053](adr/0053-dpf5-mixed-dimensional-reference-measure.md)
+as **noncertified scientific evidence**. The original frozen v0.14.0
+GT/baseline and the canonical `audit_report` were not modified.
+
+**All future scientific calibration releases** (nine conditionally
+screened MOPs, three held and two unsupported, true-P0 report policy,
+and versioned Closeness/Q records) are assigned to
+[issue #81](https://github.com/monacofj/moeabench/issues/81),
+with DPF5 analytical-law interpretation in
+[issue #78](https://github.com/monacofj/moeabench/issues/78).
+No normalized-objective-area law has been adopted.
+
 ## Scope and method
 
 The provisional `stage_closeness_adr0037.py` initially found an independent
