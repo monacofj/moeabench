@@ -30,6 +30,7 @@ from calibration.scripts.stage_closeness_adr0037 import revise_closeness_record
 from calibration.scripts.study_dpf5_branch_measure_issue78 import (
     ROOT, FROZEN, RESOURCES, REPORTS, OFFICIAL, run,
 )
+from calibration.scripts.study_dpf5_independent_pf_issue78 import run_study
 
 
 def _hash(a):
@@ -45,6 +46,7 @@ def candidate_for_law(source, k, epsilon, measure_name):
         "uniform_decision_grid_pushforward",
         "uniform_distinct_objective_vectors",
         "illustrative_equal_branch_mixture",
+        "continuous_iid_decision_pushforward",
     ):
         raise ValueError("Unsupported DPF5 probability law")
     candidate=copy.deepcopy(source)
@@ -55,13 +57,24 @@ def candidate_for_law(source, k, epsilon, measure_name):
     return candidate
 
 
-def study(*,side=128,k=100,generations=300,seeds=(1,7)):
+def study(*,side=128,k=100,generations=300,seeds=(1,7),
+          continuous_samples=None,reference_seed=123):
     if (len(seeds)<2 or len(seeds)!=len(set(seeds)) or
             k<8 or generations<2):
         raise ValueError("Require two distinct real-MOEA seeds and valid budget")
-    sensitivity=run((side,),(k,))
-    row=sensitivity["grids"][str(side)]["K"][str(k)]
-    eps=row["ideal_res_by_measure"]
+    if continuous_samples is None:
+        sensitivity=run((side,),(k,))
+        row=sensitivity["grids"][str(side)]["K"][str(k)]
+        eps=row["ideal_res_by_measure"]
+        selected_law="paired_grid_weight_counterfactuals"
+    else:
+        # A genuinely independent continuous analytical reference sample,
+        # not the grid with reweighted or deduplicated objective rows.
+        reference=run_study(
+            n_points=(continuous_samples,),seeds=(reference_seed,),ks=(k,))
+        epsilon=reference["rows"][0]["ideal_res"][str(k)]
+        eps={"continuous_iid_decision_pushforward":epsilon}
+        selected_law="independent_iid_uniform_decision_parameters"
     source=json.loads(FROZEN.read_text())
     variants={name:candidate_for_law(source,k,epsilon,name)
               for name,epsilon in eps.items()}
@@ -129,7 +142,10 @@ def study(*,side=128,k=100,generations=300,seeds=(1,7)):
     return {
         "status":"NONCERTIFIED_DPF5_REAL_MOEA_PAIRED_Q_SENSITIVITY",
         "problem":"DPF5","K":int(k),"generations":int(generations),
-        "grid_side":int(side),
+        "grid_side":int(side) if continuous_samples is None else None,
+        "reference_sampling_law":selected_law,
+        "continuous_samples":continuous_samples,
+        "reference_seed":reference_seed if continuous_samples is not None else None,
         "frozen_baseline_sha256":hashlib.sha256(FROZEN.read_bytes()).hexdigest(),
         "reference_laws_are_counterfactual":True,
         "changed_only_closeness_in_memory":True,
@@ -140,6 +156,9 @@ def study(*,side=128,k=100,generations=300,seeds=(1,7)):
         "runs":results,
         "maximum_between_laws_q_shift":max(
             r["max_between_laws_q_closeness_difference"] for r in results),
+        "maximum_abs_q_shift_from_historical":max(
+            v["abs_shift_from_historical"]
+            for r in results for v in r["counterfactuals"].values()),
         "certified":False,
     }
 
@@ -150,6 +169,9 @@ def main():
     p.add_argument("--K",type=int,default=100)
     p.add_argument("--generations",type=int,default=300)
     p.add_argument("--seed",type=int,action="append",dest="seeds")
+    p.add_argument("--continuous-samples",type=int,
+                   help="Opt in to independent iid Pareto-set reference")
+    p.add_argument("--reference-seed",type=int,default=123)
     p.add_argument("--output",type=Path,required=True)
     a=p.parse_args()
     out=a.output.resolve()
@@ -157,13 +179,17 @@ def main():
             out.is_relative_to(REPORTS) or out==OFFICIAL):
         p.error("Refusing existing/official scientific output")
     report=study(side=a.side,k=a.K,generations=a.generations,
-                 seeds=tuple(a.seeds or (1,7)))
+                 seeds=tuple(a.seeds or (1,7)),
+                 continuous_samples=a.continuous_samples,
+                 reference_seed=a.reference_seed)
     out.parent.mkdir(parents=True,exist_ok=True)
     out.write_text(json.dumps(report,indent=2)+"\n")
     print(json.dumps({
         "status":report["status"],
         "generations":report["generations"],
         "max_between_laws_q_shift":report["maximum_between_laws_q_shift"],
+        "max_abs_q_shift_from_historical":report["maximum_abs_q_shift_from_historical"],
+        "reference_sampling_law":report["reference_sampling_law"],
         "runs":[{
             "seed":x["seed"],
             "old_q":x["original_q_closeness"],
