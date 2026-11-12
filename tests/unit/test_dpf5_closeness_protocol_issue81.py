@@ -84,3 +84,20 @@ def test_small_nonnormative_multiseed_study_stays_within_explicit_scope():
 def test_invalid_protocol_parameters_rejected(kwargs):
     with pytest.raises(ValueError):
         study(**kwargs)
+
+
+def test_distinct_heldout_blur_rng_streams_are_unique_across_K_and_sigma():
+    r=study(ks=(40,100),ideal_sizes=(256,),ideal_seeds=(123,),
+            fit_seeds=(1100,1101),blur_seeds=(1600,1601),
+            independent_noise=True)
+    assert r["negative_noise_design"]=="distinct_noise_per_K_fit_and_blur"
+    assert r["sigma_fit_seeds_shared_across_K"]
+    seeds=[]
+    for k,row in r["results_by_K"].items():
+        for fit in row["trials"]:
+            seeds.extend(x["blur_seed"] for x in fit["independent_null_draws"])
+            assert all(x["blur_seed"]!=x["base_blur_seed"]
+                       for x in fit["independent_null_draws"])
+    assert len(seeds)==8
+    assert len(set(seeds))==8
+    assert r["no_baseline_or_GT_or_audit_report_modified"]
