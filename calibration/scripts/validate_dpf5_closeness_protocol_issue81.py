@@ -105,7 +105,8 @@ def _summary(values):
 def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
           ideal_seeds=(123,124,125,126),
           fit_seeds=(1100,1101,1102,1103),
-          blur_seeds=(1600,1601,1602,1603)):
+          blur_seeds=(1600,1601,1602,1603),
+          independent_noise=False):
     ks=tuple(ks)
     ideal_sizes=tuple(ideal_sizes)
     ideal_seeds=tuple(ideal_seeds)
@@ -168,12 +169,13 @@ def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
         controller_values=[]
         final_medians=[]
         quantiles10,quantiles50,quantiles90=[],[],[]
-        # Paired common-random-numbers design: the SAME four blur seeds are
-        # deliberately reused with each fitted sigma. Therefore the 16
-        # fit×blur outcomes within a K are NOT 16 statistically independent
-        # Gaussian noise sequences (only four different base sequences).
-        # K reuses those seeds again, so three K values are not 48 trials.
-        for fit_seed in fit_seeds:
+        # Two explicitly different study designs:
+        # paired (historical pilot): four common-random-number streams
+        # reused across fit sigma and K; 16 dependent combinations/K.
+        # independent_noise=True: distinct streams for every K×fit×blur
+        # combination, while the same four sigma-fit seeds remain shared
+        # across K. This is NOT 48 independent entire calibrations.
+        for fit_index,fit_seed in enumerate(fit_seeds):
             sigma,controller_median,controller_p95=calibrate_sigma(
                 gt,normals,scale,fit_seed,tree=gt_tree)
             if (not np.isfinite(sigma) or sigma<=0 or
@@ -182,7 +184,9 @@ def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
             sigma_values.append(float(sigma))
             controller_values.append(float(controller_median))
             final=[]
-            for negative_seed in blur_seeds:
+            for base_seed in blur_seeds:
+                negative_seed=(base_seed+1000*fit_index+10000*K
+                               if independent_noise else base_seed)
                 new=generate_half_normal_blur(
                     gt,normals,sigma,np.random.RandomState(negative_seed))
                 if not (np.all(new>=gt) and np.all(np.any(new>gt,axis=1))):
@@ -202,6 +206,7 @@ def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
                 quantiles10.append(q10);quantiles50.append(q50);quantiles90.append(q90)
                 final.append({
                     "blur_seed":negative_seed,
+                    "base_blur_seed":base_seed,
                     "blurred_objective_sha256":_sha(new),
                     "realized_raw_median_u":med,
                     "within_controller_5percent_band":bool(abs(med-2.)<.1),
@@ -262,6 +267,10 @@ def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
         "ideal_seeds":list(ideal_seeds),
         "fit_seeds":list(fit_seeds),
         "blur_seeds":list(blur_seeds),
+        "negative_noise_design":("distinct_noise_per_K_fit_and_blur"
+                                  if independent_noise else
+                                  "paired_common_random_numbers"),
+        "sigma_fit_seeds_shared_across_K":True,
         "ideal_samples_by_size":ideals,
         "results_by_K":by_K,
         "no_normative_release":True,
@@ -276,6 +285,8 @@ def main():
     p.add_argument("--ideal-seed",type=int,action="append",dest="ideal_seeds")
     p.add_argument("--fit-seed",type=int,action="append",dest="fit_seeds")
     p.add_argument("--blur-seed",type=int,action="append",dest="blur_seeds")
+    p.add_argument("--independent-noise",action="store_true",
+                   help="Use distinct held-out blur RNG seeds per K×sigma×draw")
     p.add_argument("--output",type=Path,required=True)
     a=p.parse_args()
     dest=a.output.resolve()
@@ -288,6 +299,7 @@ def main():
         ideal_seeds=tuple(a.ideal_seeds or (123,124,125,126)),
         fit_seeds=tuple(a.fit_seeds or (1100,1101,1102,1103)),
         blur_seeds=tuple(a.blur_seeds or (1600,1601,1602,1603)),
+        independent_noise=a.independent_noise,
     )
     dest.parent.mkdir(parents=True,exist_ok=True)
     dest.write_text(json.dumps(report,indent=2)+"\n",encoding="utf8")
