@@ -19,7 +19,14 @@ def test_dpf5_branch_detection_is_geometrically_grounded():
     # Every D objective is on the f1=f2 diagonal. A P meridian can also
     # intersect it and is explicitly ambiguous in the archive audit.
     assert np.all(label[physical_D])
-    assert np.sum(label&~physical_D)>0
+    # Even when the chosen even-sized grid has no x2=1/2 column,
+    # the P meridian at x2=1/2 lies on the diagonal. Construct it
+    # explicitly instead of assuming a particular grid parity.
+    xp=X[:1].copy()
+    xp[0,0]=0.2
+    xp[0,1]=0.5
+    xp[0,2]=0.2
+    assert classify_branch(mop.evaluation(xp)["F"])[0]
     assert np.mean(label)>=np.mean(physical_D)
     assert len(np.unique(F[physical_D],axis=0)) < np.sum(physical_D)/5
 
