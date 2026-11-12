@@ -1,0 +1,22 @@
+{
+  "method-comparison.csv": {
+    "sha256": "bb1bf005461847413526786f044c32e247fb609d265351d95d9eb9213455a1be",
+    "bytes": 2535
+  },
+  "pairwise.json.gz": {
+    "sha256": "a201c2e9a304824b4358a6200f03eb4583e2a8eaf5a5bcc0192fb1108d53a851",
+    "bytes": 1113299
+  },
+  "q-by-cell.csv.gz": {
+    "sha256": "a60999d936b80eeb75520edfbddd79f5a4cbc29a883c3263f9da58c04d723b64",
+    "bytes": 202998
+  },
+  "reconstructed-full-references.npz": {
+    "sha256": "f28fa30fff35b82f4de992d54af22f33dc998abda65ebf6b0dc29a8c2445a87f",
+    "bytes": 596897
+  },
+  "summary.json": {
+    "sha256": "75779e5ac9c194d9819a25de6a4085a97c7988f3ee3a0be1729105d65ff1efb0",
+    "bytes": 748382
+  }
+}

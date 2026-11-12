@@ -320,3 +320,91 @@ The one-factor comparisons are paired counterfactuals, not independent extra cal
 **Evidence hashes (uncompressed bytes):** expanded original JSON `412e77e289b71e45e877e7aa5dd64a52a18a3a85da4534886cf4c48d6f38bdd1`; final analysis hashes and gzip hashes are in the committed manifest. Source hashes and environment are recorded in the JSON; after the schema-reporting fix, full-file reproduction hashes may change while numerical cells remain reproducible.
 
 **Limitations and scientific decisions still requiring approval:** this is DPF5 M3/D2 at three K values, two optimizer implementations, two generation budgets, four seeds and eight complete calibrations/K on one fixed GT/normalization, not a certified population of runs. The 128 per-K run×calibration Q cells share rows/columns and are not 128 independent experiments. Finite min/max and sample SD are not uncertainty bounds. Approve separately (1) normative ideal/failure laws, (2) production sample counts/seeds and precision/ranking requirements tied to use, (3) whether the 200-point representation is sufficient for near ties and how aggregation should be defined, and (4) any separately versioned Closeness-only artifact after review. No tolerance, estimator, schema revision, normative law or scientific baseline is adopted here; issue #81 stays open and PR #86 stays Draft without merge. Other-MOP release gates remain outstanding.
+
+### 2026-11-12 — ECDF representation resolution isolated from calibration variability (executed; not certified)
+
+**Scope and artifacts:** reused the preceding **24 complete calibrations and 48 authentic runs**, unchanged. New script [`study_dpf5_ecdf_compression_issue81.py`](../../calibration/scripts/study_dpf5_ecdf_compression_issue81.py), focused tests [`test_issue81_ecdf_compression.py`](../../tests/unit/test_issue81_ecdf_compression.py), and versioned [compression evidence](../../calibration/experimental/issue81/2026-11-12-compression/README.md). The detailed [Portuguese report](../../calibration/experimental/issue81/2026-11-12-compression/REPORT.md) provides the complete method definitions, tables, commands and explicit answers to the five scientific questions. The [20-condition table](../../calibration/experimental/issue81/2026-11-12-compression/method-comparison.csv), gzip per-cell CSV and all-pair JSON preserve all numerical results, not only selected examples. Working tree started clean at `1c32629`; PR head confirmed the same commit before work.
+
+**Reconstruction audit:** the original artifact saved sigma, final blur seed, epsilon, s_K, GT/normalization and blur hashes, but not the full negative rows. Therefore recovery from the 200 order statistics alone would be impossible. Replayed **only the original held-out blur**, at its saved sigma/seed, using the unchanged geometric generator. No call to sigma calibration, fresh ideal sampling or optimization was made. All **24 original blur hashes, 24 stored200 ECDFs, 48 P0/Pf hashes and 384 previous full-law Q values** match exactly; Pf distances also match. Preserved all 3367 corrected values, zeros and multiplicities per replicate. Newly versioned NPZ contains these 24 full laws, so future compression comparisons do not require replay. The original manifest and source/environment hashes accompany the evidence. Legacy top-level optimizer/budget fields were ignored; authentic row-specific labels were retained.
+
+**Definitions:** sort one replicate's corrected values as z[0..n−1], n3367; hold its epsilon, sigma, seed, GT, normalization, s_K and optimizer points constant. For m=200/400/800/1600/3367, give each of m representatives mass 1/m:
+
+1. **Compatibility:** `z[floor(j*(n−1)/(m−1))]`, j0..m−1, implemented with exactly the existing `np.linspace(...).astype(int)` convention.
+2. **Endpoint linear:** linearly interpolate z at `j*(n−1)/(m−1)` (type-7 quantile interpolation on the endpoint grid). This isolates index rounding while retaining endpoints/equal weights.
+3. **Midpoint inverse:** `Q_emp((j+1/2)/m)=z[ceil(n*(j+1/2)/m)−1]`, using integer arithmetic. This selects the median in each probability bin and minimizes `∫|Q_emp−Q_reduced|`, hence W1, over m equally weighted representatives. At a quantile discontinuity the chosen endpoint is a valid median.
+4. **Bin mean:** `m*∫_[j/m,(j+1)/m] Q_emp(p) dp`, computed from exact integer overlaps of empirical probability cells. This minimizes integrated squared quantile error in each fixed bin and preserves the mean. It is not generally W1-optimal.
+
+At m=n all definitions are **exactly the original empirical law**; full3367 is the comparator, not an additional independent calibration. No mixture/pooled-reference rule is introduced in this study. All laws are deterministic functions of the same reference sample, without optimizer identity or optimizer output in their construction. The runtime Wasserstein mapping, including its gate and equal-weight interpretation, remains unchanged.
+
+**Error definitions:** `e=Q_m−Q_full`; absolute error |e|; relative error `|e|/|Q_full|`. A zero denominator is marked unavailable and counted rather than regularized by an arbitrary epsilon (none occurred in this panel). Report mean/RMS/min/max and 0/10/25/50/75/90/95/99/100% descriptive quantiles, globally and by K. One method/resolution yields 384 paired cells sharing the same 48 populations and 24 calibrations; 7680 Q evaluations are **not 7680 independent observations**.
+
+**Current-method compression error and resolution:**
+
+| m | Mean absolute Q error | p95 | Maximum absolute Q error | Maximum relative error |
+|---:|---:|---:|---:|---:|
+| 200 | 0.000557437243 | 0.00127627598 | 0.00254904843 | 0.350688952% |
+| 400 | 0.000227921872 | 0.000518208289 | 0.00108484487 | 0.149249072% |
+| 800 | 6.91160071e-05 | 0.000179977872 | 0.000355674386 | 0.0489324081% |
+| 1600 | 1.75648039e-05 | 4.41831672e-05 | 0.00011234428 | 0.0150054748% |
+| 3367 | 0 | 0 | 0 | 0% |
+
+Worst current200 cell: K40 NSGA-II G40 seed43 calibration2, full Q `0.7268687566860689` versus stored200 Q `0.7294178051111964`, signed error `+0.002549048425127487`. This same-reference representation error must not be conflated with candidate-versus-historical shifts, which also change the calibration model/epsilon.
+
+**Method comparison:**
+
+| Method, m200 | Mean absolute Q error | Maximum absolute Q error | Mean reference-law W1 error |
+|---|---:|---:|---:|
+| compatibility_floor | 0.000557437243 | 0.00254904843 | 0.0257130312 |
+| endpoint_linear | 0.000585021286 | 0.00268354891 | 0.0261346911 |
+| midpoint_inverse | 4.27739679e-05 | 0.0002552786 | 0.0131980085 |
+| bin_mean | 8.09394843e-06 | 0.000229295303 | 0.0135482392 |
+
+Endpoint interpolation alone does not improve fidelity: it retains overweighted extreme values. At m200 the maximum source order statistic has mass 1/200 instead of 1/3367 (**16.835 times**); compatibility200 raises the reference mean by `0.01199761854..0.03081639203`. Bin means preserve it within `4.44e−16`. Midpoint inverse is mathematically optimal for reference-law W1 among equally weighted m-atom laws. Bin means yield the smallest **mean Q error** at every tested resolution, but do not dominate all Q errors: at m800, midpoint maximum Q error `0.000082565843` is below bin-mean maximum `0.000164524306`. At m1600, their maxima are respectively `0.000087745968` and `0.000073201502`.
+
+**Important methodological refinement before recommendation:** all compressed m values are multiples of the actual population sizes K40/100/200. The population quantile is constant on every compression bin. Jensen therefore gives `|mean(R_bin)−F_bin|≤mean(|R_bin−F_bin|)`, so bin means cannot increase d_r in this aligned design; delta is preserved and d_i unchanged, hence Q cannot increase except for rounding. Exact preservation of d_r additionally requires the full and reduced quantile differences to retain the same sign in each bin. This favorable structure is **not universal**: a synthetic unit-test counterexample with population `[0,.9,1.8,2.7]`, reference `[0,1,2,3]`, m2, increases Q from 0.1 to 0.25 because bins are not aligned. The synthetic example is a method test, not a new optimizer run or calibration. No method was fitted to the MOEAs.
+
+**Ranking and close-pair evidence:** evaluate all 120 within-K pairs for each reference, never pairs between K. Record all gaps, exact ties, nonzero differences within max(ULP(Q_a),ULP(Q_b)), raw signs and strict reversals separately. The one-ULP check is a floating-point diagnostic, **not practical equivalence or an acceptance tolerance**. No exact or one-ULP ties occurred; independently computed SciPy Q yields the same gap signs in every condition.
+
+Compatibility and endpoint-linear m200 have one K200 pair reversing between calibrations and **six** pair×calibration disagreements with full ordering. At m400 that same pair still reverses, with **two** disagreements. At m800/m1600/m3367 both methods have zero reversals and zero full-order disagreements. Midpoint and bin-mean methods have zero such inversions/disagreements at every tested resolution. These are correlated descriptive counts, not probabilities or independent rank-stability samples.
+
+For K200, NSGA-II G40 seed19 minus SPEA2 G150 seed19:
+
+| m, compatibility | Minimum gap | Maximum gap | Disagreements with full order / 8 |
+|---:|---:|---:|---:|
+| 200 | -0.000242991827 | 0.000505154673 | 6 |
+| 400 | -0.000435099232 | 5.92829709e-05 | 2 |
+| 800 | -0.0005266082 | -0.000112374019 | 0 |
+| 1600 | -0.000565106921 | -0.000167689649 | 0 |
+| 3367 | -0.000567990396 | -0.000168535585 | 0 |
+
+Midpoint200 gap range is `−0.000617937370..−0.000184694870`; bin-mean200 reproduces the full gap range exactly for this pair. Full laws have no across-calibration strict reversal for any within-K pair. Nevertheless, the **three K200 pairs reversed relative to historical Q persist at every method/resolution, including full3367**. They are not erased by removing compression. Ten smallest-full-gap pairs per K are highlighted for inspection only; no scientific significance threshold is attached to that display choice.
+
+**Convergence is not uniformly pointwise:** the compatibility method's global mean/p95/maximum errors decrease with resolution, but 1/7/19 individual cells increase in absolute error in transitions 200→400/400→800/800→1600. Midpoint global maximum rises slightly from m800 to m1600 even while its mean falls. Bin means show a maximum-error plateau m400→m800; their small pointwise increases in this panel do not exceed the sum of two Q ULPs. Non-nested probability grids and distribution crossings prevent assuming monotone Q-error convergence from sample count alone. No statistical tolerance is inferred from these observations.
+
+**Residual calibration variability versus representation error:**
+
+| K | Mean full-law calibration Q range | Maximum full-law calibration Q range | Maximum compatibility200 range |
+|---:|---:|---:|---:|
+| 40 | 0.00646573602 | 0.0189230387 | 0.0188294308 |
+| 100 | 0.00884103832 | 0.0165935341 | 0.0171740568 |
+| 200 | 0.00405780836 | 0.00707644927 | 0.00691201151 |
+
+For each fixed population, the study reports the descriptive divisor-8 identity `Var(Q_m)=Var(Q_full)+Var(e)+2Cov(Q_full,e)`, with maximum observed identity residual at floating-point scale, plus each population's full/represented Q range. The covariance can be negative: compatibility200 reduces apparent variance at K40. Thus a causal percentage attributable to compression cannot be obtained by simply subtracting variances. The signed changes in across-calibration Q range caused by compatibility200 were K40 `−0.0000936079..−0.0000131257`, K100 `−0.0002916300..+0.0005805227`, K200 `−0.0001644378..+0.0005039666`. Full-law ranking stability in this finite panel does **not** mean Q is calibration-invariant or certify stability on new optimizer outputs.
+
+Optimizer variability stays separately summarized over four seeds inside each algorithm/K/generation-budget at a fixed calibration and representation. No new optimizer realizations were added; trajectories/calibration columns and seeds across budgets/K are shared. No random-effects inference, confidence interval, algorithm-superiority claim or practical-significance decision is made.
+
+**Explicit answers / technical recommendation:**
+
+- Current200 adds mean absolute Q error `0.000557437243`, p95 `0.001276275978`, maximum `0.002549048425` (maximum relative `0.350688952%`) on these 384 paired cells, and can change a close pair's ordering.
+- Increasing compatibility resolution reduces aggregate error; m400 still reverses the close pair, m800/m1600 match all full orders in this panel, and m3367 has exactly zero representation error. Individual-cell monotonic convergence is not guaranteed.
+- Full3367 is lossless relative to the finite empirical comparator. Among compressed methods, midpoint inverse minimizes reference-law W1; bin mean gives the best observed mean Q fidelity but has special alignment advantages and no universal Q-optimality guarantee.
+- Compression-driven inversions disappear at compatibility m800 and above, and already at m200 for midpoint/bin-mean; historical-reference inversions persist even with full samples.
+- **Recommend full3367 technically as the lossless DPF5 verification/reference option**, with a production proposal conditional on persistence/performance/scientific review. Raw float64 values cost 26936 bytes/calibration versus 1600 at m200. There is no measured production-cost result and no approved precision/use-case criterion permitting certification of a compressed production resolution. m800 is merely the smallest **tested compatibility resolution** matching these observed orders; it is not an accepted baseline or demonstrated universal minimum. Preserve full draws regardless of any future compressed representation.
+
+**Execution, evidence and boundaries:** **74 tests passed in 10.04 s**, including no-new-optimization/calibration guards and a nonaligned-bin counterexample. All 61 protected hashes were checked again after computation. Maximum Q discrepancy against the independent SciPy W1 oracle is `3.3306690738754696e−16`; the numerical `1e−12` oracle check is not a release criterion. The five generated data artifacts reproduce byte-for-byte in a second final-source invocation. No execution/test failure occurred in this battery; the pre-publication refinement was recognizing the population-bin alignment limitation, documented above rather than claiming universal bin-mean superiority. Source hashes, exact parameters, manifests, environment and execution/test/reproduction logs are versioned.
+
+Reproduce with `MPLCONFIGDIR=/tmp/issue81-mpl .venv/bin/python calibration/scripts/study_dpf5_ecdf_compression_issue81.py --output-dir /tmp/issue81-compression-new` and the six focused unit-test files listed in the report. The script refuses existing or protected output paths. No FAIR runtime, official baseline, frozen GT, normalization or canonical `audit_report` changed. PR #86 remains **Draft, no merge**, no new calibration certified. Scientific precision, practical handling of near ties, normative method/resolution, aggregation and persistence/architecture changes remain for explicit approval.
+
+- **Serialization check correction:** `git diff --check` initially flagged CSV CRLF line endings from the standard csv writer as trailing whitespace. Set explicit LF terminators, regenerated the data artifacts, and verified byte-for-byte reproduction again. This changed serialization/source hashes, not any Q, calibration or ranking result.
+
+- **Supplementary integrity-check environment error:** a post-study helper was accidentally invoked with system `python3`, which lacks `pymoo`, and failed during import before any calculation. Reran with the documented `.venv/bin/python` and writable Matplotlib cache: manifest/source/NPZ hashes and all 7680 preserved epsilon values passed. This did not affect the study runs or the 74 passing tests. The failure/correction is recorded in versioned `integrity-check.txt`.
