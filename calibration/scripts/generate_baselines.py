@@ -54,90 +54,142 @@ SEED_START = 1000
 # Full K Grid for Fixed K-Policy
 K_VALUES = list(range(10, 51)) + [100, 150, 200]
 
-def estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
+def dominance_outward_direction(normal: np.ndarray) -> np.ndarray:
+    """Project either orientation of a PCA normal into the dominated cone.
+
+    All objectives are minimized. A displacement d >= 0 (componentwise)
+    makes GT[i] weakly dominate GT[i]+d, and hence *guarantees* that the
+    perturbed point lies on the worse-than-Pareto side. This is stronger
+    than choosing an eigenvector by dot(n, GT[i]) > 0, which says nothing
+    about domination.
+
+    PCA eigenvectors are unoriented. Select the sign whose orthogonal
+    projection onto the nonnegative orthant has the larger norm: this
+    is the closest nonnegative unit direction to either ±n. When the
+    local PCA direction has mixed signs, the result is an outward
+    *projected* direction, not an exact manifold normal. A numerically
+    zero normal uses the positive unit diagonal instead. Never return
+    a direction that points to potentially improving objective values.
     """
-    Estimates unit normals for each GT point using local PCA with KDTree for speed.
+    n = np.asarray(normal, dtype=np.float64)
+    if n.ndim != 1 or not n.size or not np.all(np.isfinite(n)):
+        raise ValueError("Normal must be a finite, nonempty vector")
+    length = float(np.linalg.norm(n))
+    if length < 1e-12:
+        return np.ones_like(n) / np.sqrt(len(n))
+
+    u = n / length
+    plus = np.maximum(u, 0.0)
+    minus = np.maximum(-u, 0.0)
+    direction = plus if np.linalg.norm(plus) >= np.linalg.norm(minus) else minus
+    norm = float(np.linalg.norm(direction))
+    if norm < 1e-12:
+        raise AssertionError("No outward projected normal")
+    return direction / norm
+
+
+def dominance_outward_pca_direction(
+        eigenvalues: np.ndarray, eigenvectors: np.ndarray) -> np.ndarray:
+    """Prefer a true local normal *subspace* vector on rank-deficient PFs.
+
+    A 1D curve in 3D has a 2D normal plane. Its smallest covariance
+    eigenvector is arbitrary within that plane and may have mixed
+    objective signs even when the plane contains a nonnegative normal.
+    Detect a clear eigengap (relative 2%) and project the positive
+    diagonal into the low-variance normal subspace instead. Only if
+    this candidate cannot point into the dominated cone do we fall
+    back to the projected single PCA eigenvector. This improves
+    geometric fidelity on lower-dimensional Pareto sets without
+    changing the source/GT or the half-normal magnitude law.
+    """
+    vals = np.asarray(eigenvalues, dtype=float)
+    vecs = np.asarray(eigenvectors, dtype=float)
+    if (vals.ndim != 1 or vecs.shape != (len(vals),len(vals)) or
+            not np.all(np.isfinite(vals)) or
+            not np.all(np.isfinite(vecs))):
+        raise ValueError("Invalid covariance eigensystem")
+    n=len(vals)
+    top=max(float(vals[-1]),0.0)
+    if top<=1e-14:
+        return np.ones(n)/np.sqrt(n)
+    # At least one principal tangent direction must remain.
+    low=vals<=top*0.02
+    low[-1]=False
+    if np.count_nonzero(low)>=2:
+        basis=vecs[:,low]
+        target=np.ones(n)/np.sqrt(n)
+        projected=basis@(basis.T@target)
+        norm=float(np.linalg.norm(projected))
+        if norm>1e-12 and np.min(projected)>=-1e-10:
+            return dominance_outward_direction(np.maximum(projected,0.0))
+    # Full-dimensional smooth PF: the smallest PCA eigenvector is
+    # already a unique local normal. Explicitly constrain it to the
+    # objective-space dominated cone when its sign is unsuitable.
+    return dominance_outward_direction(vecs[:,0])
+
+
+def estimate_gt_normals(gt: np.ndarray) -> np.ndarray:
+    """Estimate local PCA normals *oriented to the dominated objective cone*.
+
+    Uses the original local-PCA neighbor scale (sqrt(N), clipped at
+    10..30), with safe handling for small finite point sets. On
+    boundaries, degenerate and mixed-dimensional PFs, an eigenvector
+    need not have a nonnegative orientation: the selected projection
+    is explicitly an outward surrogate, not a geometrically exact
+    surface normal. This rule is independent of a particular MOEA.
     """
     from scipy.spatial import KDTree
+
+    gt = np.asarray(gt, dtype=np.float64)
+    if (gt.ndim != 2 or len(gt) < 2 or gt.shape[1] < 2 or
+            not np.all(np.isfinite(gt)) or np.any(gt < 0)):
+        raise ValueError("Expected at least two finite, nonnegative GT objectives")
     N, M = gt.shape
-    
-    # Use KDTree for fast neighborhood search
     tree = KDTree(gt)
-    k_pca = int(np.clip(np.round(np.sqrt(N)), 10, 30))
-    
-    # Query all neighbors at once
+    k_pca = min(N - 1, int(np.clip(np.round(np.sqrt(N)), 10, 30)))
     _, indices = tree.query(gt, k=k_pca + 1)
-    
-    normals = np.zeros((N, M))
+
+    normals = np.zeros((N, M), dtype=float)
     for i in range(N):
-        # Neighbors (exclude self)
         neighbors = gt[indices[i, 1:]]
-        
-        # Local PCA
-        mean = np.mean(neighbors, axis=0)
-        centered = neighbors - mean
-        cov = np.dot(centered.T, centered)
-        eigvals, eigvecs = np.linalg.eigh(cov)
-        
-        # Normal is the eigenvector of the smallest eigenvalue
-        n = eigvecs[:, 0]
-        
-        # Force outward orientation (pointing away from origin)
-        if np.dot(n, gt[i]) < 0:
-            n = -n
-            
-        normals[i] = n / np.linalg.norm(n)
-        
+        centered = neighbors - np.mean(neighbors, axis=0)
+        covariance = centered.T @ centered
+        eigenvalues, eigenvectors = np.linalg.eigh(covariance)
+        normals[i] = dominance_outward_pca_direction(
+            eigenvalues, eigenvectors)
     return normals
 
-def generate_half_normal_blur(gt: np.ndarray, normals: np.ndarray, sigma: float, rng: np.random.RandomState) -> np.ndarray:
+
+def generate_half_normal_blur(
+        gt: np.ndarray, normals: np.ndarray, sigma: float,
+        rng: np.random.RandomState) -> np.ndarray:
+    """One-sided half-normal blur, ALWAYS to the dominated objective side.
+
+    Each point p_i is displaced by |N(0,sigma^2)| times an outward
+    (nonnegative) unit direction derived from its PCA normal. The
+    resulting point is weakly dominated by p_i for minimization;
+    a positive magnitude makes it strictly worse in >=1 objective.
+
+    Neither flipping the sign nor merely testing objective >= 0
+    establishes this property. No decision-space feasibility is
+    claimed: this is an algorithm-independent *geometric error null*,
+    not a simulation of a particular bad MOEA.
     """
-    Generates a blurred version of GT using Half-Normal displacement along normals.
-    Includes domain safety (coordinates >= 0).
-    """
-    N, M = gt.shape
-    blurred = np.zeros_like(gt)
-    
-    for i in range(N):
-        n = normals[i]
-        valid = False
-        retry = 0
-        mag_scale = 1.0
-        
-        while not valid and retry < 5:
-            # Half-Normal magnitude
-            mag = abs(rng.normal(0, sigma * mag_scale))
-            # Random sign
-            sign = rng.choice([-1, 1])
-            
-            # If normal is zero (fallback), use random isotropic direction
-            if np.linalg.norm(n) < 1e-12:
-                n_rand = rng.normal(size=M)
-                n_rand /= np.linalg.norm(n_rand)
-                p_prime = gt[i] + sign * mag * n_rand
-            else:
-                p_prime = gt[i] + sign * mag * n
-                
-            # Domain safety: Objective space [0, inf)
-            if np.all(p_prime >= -1e-10):
-                valid = True
-                blurred[i] = p_prime
-            else:
-                # Retry strategy: try other sign, then reduce magnitude
-                if retry == 0:
-                    p_prime_flip = gt[i] - sign * mag * n
-                    if np.all(p_prime_flip >= -1e-10):
-                        valid = True
-                        blurred[i] = p_prime_flip
-                else:
-                    mag_scale *= 0.5
-                retry += 1
-        
-        if not valid:
-            # Last resort: just stay at GT
-            blurred[i] = gt[i]
-            
+    gt = np.asarray(gt, dtype=np.float64)
+    normals = np.asarray(normals, dtype=np.float64)
+    if (gt.ndim != 2 or normals.shape != gt.shape or
+            not np.all(np.isfinite(gt)) or np.any(gt < 0)):
+        raise ValueError("GT and normals must have matching finite objective arrays")
+    if not np.isfinite(sigma) or sigma <= 0:
+        raise ValueError("Half-normal sigma must be finite and positive")
+    directions = np.array([dominance_outward_direction(n) for n in normals])
+    magnitudes = np.abs(rng.normal(0.0, sigma, size=len(gt)))
+    blurred = gt + magnitudes[:, None] * directions
+    if not (np.all(np.isfinite(blurred)) and
+            np.all(blurred >= gt)):
+        raise AssertionError("Outward half-blur violated minimization dominance")
     return blurred
+
 
 def calibrate_sigma(gt: np.ndarray, normals: np.ndarray, s_fit: float, rng_seed: int, tree: Any = None) -> float:
     """
