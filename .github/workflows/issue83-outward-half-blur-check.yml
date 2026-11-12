@@ -51,6 +51,25 @@ jobs:
       - name: All unit regressions
         timeout-minutes: 5
         run: python test.py --unit
+      - name: Regenerate genuine basic integration fixtures
+        timeout-minutes: 4
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+          for algorithm,name in [
+              (mb.moeas.NSGA2,"example_full_exp1.zip"),
+              (mb.moeas.NSGA3,"example_full_exp2.zip"),
+          ]:
+              exp=mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32,generations=8,seed=17))
+              exp.run(repeat=3,silent=True)
+              exp.save(str(Path("examples")/name))
+          PY
+      - name: Full basic integration regression
+        timeout-minutes: 6
+        run: python test.py --integration --basic
       - name: Guard official scientific datasets and canonical report
         run: |
           git diff --exit-code -- \
