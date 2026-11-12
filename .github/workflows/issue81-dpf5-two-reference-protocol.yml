@@ -1,0 +1,74 @@
+# Temporary research CI; remove once results and failures are in ADR 0055.
+name: Issue81 DPF5 two-reference noncertified stability protocol
+
+on:
+  push:
+    branches: [research/81-dpf5-calibration-protocol]
+  workflow_dispatch:
+
+jobs:
+  dpf5-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Unit-test proposed ideal and unfavorable laws
+        timeout-minutes: 5
+        run: |
+          python -m pytest -q tests/unit/test_dpf5_closeness_protocol_issue81.py
+      - name: Read-only K40/K100/K200, independent ideal and outward-null seed study
+        timeout-minutes: 9
+        run: |
+          python calibration/scripts/validate_dpf5_closeness_protocol_issue81.py \
+            --K 40 --K 100 --K 200 \
+            --ideal-size 4096 --ideal-size 16384 \
+            --ideal-seed 123 --ideal-seed 124 --ideal-seed 125 --ideal-seed 126 \
+            --fit-seed 1100 --fit-seed 1101 --fit-seed 1102 --fit-seed 1103 \
+            --blur-seed 1600 --blur-seed 1601 --blur-seed 1602 --blur-seed 1603 \
+            --output /tmp/issue81-dpf5-multik-reference-stability.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('/tmp/issue81-dpf5-multik-reference-stability.json').read_text())
+          assert j['status']=='NONCERTIFIED_DPF5_TWO_REFERENCE_STABILITY_PROTOCOL'
+          assert j['no_normative_release'] is True
+          assert j['no_baseline_or_GT_or_audit_report_modified']
+          assert j['archived_GT_exact_100_by_100_unique_PF']
+          assert j['frozen_GT_count']==3367
+          assert j['ideal_branch_D_theoretical_mass']==2/3
+          assert set(j['results_by_K'])=={'40','100','200'}
+          assert j['ideal_sizes']==[4096,16384]
+          assert len(j['ideal_seeds'])==len(j['fit_seeds'])==len(j['blur_seeds'])==4
+          for K,row in j['results_by_K'].items():
+              assert row['sigma_fit_summary']['n']==4
+              assert row['independent_null_median_summary']['n']==16
+              assert row['ideal_epsilon_by_size']['16384']['summary']['n']==4
+              assert all(abs(x['controller_median_u']-2)<.1 for x in row['trials'])
+              assert all(x['strict_parent_dominance_fraction']==1
+                         for fit in row['trials']
+                         for x in fit['independent_null_draws'])
+              print('K',K,'epsilon',row['ideal_epsilon_by_size']['16384']['summary'],
+                    'sigma',row['sigma_fit_summary'],
+                    'outward-null independent medians',row['independent_null_median_summary'],
+                    'outward-null ECDF p50',row['corrected_null_ecdf_p50_summary'])
+          PY
+      - name: Verify no official baseline, GT or canonical report touched
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Upload reproducible noncertified seed study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue81-dpf5-dual-reference-multiK-seed-uncertainty
+          path: /tmp/issue81-dpf5-multik-reference-stability.json
+          if-no-files-found: warn
