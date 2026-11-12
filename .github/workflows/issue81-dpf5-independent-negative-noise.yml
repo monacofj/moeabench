@@ -1,0 +1,73 @@
+# Temporary independent held-out negative ECDF experiment for issue81.
+name: Issue81 DPF5 independent negative half-blur seed replication
+
+on:
+  push:
+    branches: [research/81-dpf5-calibration-protocol]
+  workflow_dispatch:
+
+jobs:
+  independently-sampled-negative:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install project and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Validate paired versus independent noise provenance
+        timeout-minutes: 5
+        run: python -m pytest -q tests/unit/test_dpf5_closeness_protocol_issue81.py
+      - name: Execute K-wise distinct final negative-noise streams
+        timeout-minutes: 8
+        run: |
+          python calibration/scripts/validate_dpf5_closeness_protocol_issue81.py \
+            --K 40 --K 100 --K 200 \
+            --ideal-size 4096 --ideal-size 16384 \
+            --ideal-seed 123 --ideal-seed 124 --ideal-seed 125 --ideal-seed 126 \
+            --fit-seed 1100 --fit-seed 1101 --fit-seed 1102 --fit-seed 1103 \
+            --blur-seed 1600 --blur-seed 1601 --blur-seed 1602 --blur-seed 1603 \
+            --independent-noise \
+            --output /tmp/issue81-dpf5-distinct-negative-noise.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('/tmp/issue81-dpf5-distinct-negative-noise.json').read_text())
+          assert j["status"]=="NONCERTIFIED_DPF5_TWO_REFERENCE_STABILITY_PROTOCOL"
+          assert j["negative_noise_design"]=="distinct_noise_per_K_fit_and_blur"
+          assert j["sigma_fit_seeds_shared_across_K"]
+          assert not (not j["no_baseline_or_GT_or_audit_report_modified"])
+          seeds=[]
+          for K,row in j["results_by_K"].items():
+              assert row["sigma_fit_summary"]["n"]==4
+              assert row["independent_null_median_summary"]["n"]==16
+              for fit in row["trials"]:
+                  assert abs(fit["controller_median_u"]-2)<.1
+                  for sample in fit["independent_null_draws"]:
+                      assert sample["strict_parent_dominance_fraction"]==1
+                      seeds.append(sample["blur_seed"])
+              print("K",K,"sigma",row["sigma_fit_summary"],
+                    "realized-null median",row["independent_null_median_summary"],
+                    "fraction 5pct",row["independent_null_fraction_within_controller_band"],
+                    "ECDF p50",row["corrected_null_ecdf_p50_summary"])
+          assert len(seeds)==48 and len(set(seeds))==48
+          print("Distinct held-out Gaussian seeds across K, sigma-fit and blur:",len(seeds))
+          print("NOTE: same sigma-fitting seeds are shared across K; these are not 48 independent full calibrations.")
+          PY
+      - name: Prevent changes to certified scientific artifacts
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Preserve noncertified independent negative seed study
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue81-dpf5-distinct-negative-noise-multiK
+          path: /tmp/issue81-dpf5-distinct-negative-noise.json
+          if-no-files-found: warn
