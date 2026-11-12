@@ -5,7 +5,7 @@
 
 Research only: issue #81 / proposed ADR 0055. No registered baseline is written.
 Each replicate has disjoint ideal, sigma-fit and held-out blur RNG streams.
-The same real NSGA-II populations are evaluated against every replicate.
+The same authentic optimizer populations are evaluated against every replicate.
 """
 import argparse
 import hashlib
@@ -271,7 +271,8 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
         "algorithms": list(algorithms), "generation_budgets": list(budgets),
         "status": "NONCERTIFIED_REAL_Q_FULL_CALIBRATION_SENSITIVITY",
         "mop": "DPF5", "M": 3, "D": 2,
-        "optimizer": "NSGA2", "generations": generations,
+        "optimizer": algorithms[0] if len(algorithms) == 1 else "MULTIPLE",
+        "generations": budgets[0] if len(budgets) == 1 else None,
         "optimizer_seeds": list(optimizer_seeds),
         "complete_calibrations_per_K": replicates, "ideal_size": ideal_size,
         "frozen_baseline_sha256": hashlib.sha256(FROZEN.read_bytes()).hexdigest(),

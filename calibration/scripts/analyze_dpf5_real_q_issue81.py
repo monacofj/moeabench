@@ -148,12 +148,20 @@ def verify_saved_evidence(report):
                       for c, raw in zip(cell['replicates'], raw_references)]
             compression[k].append(dict(optimizer=row['optimizer'], generations=row['generations'], seed=row['seed'],
                 individual_stored200_minus_full3367=summary(np.asarray(row['candidate_q']) - full_q),
+                full3367_candidate_q=full_q,
                 pooled200_minus_uncompressed_stored_quantile_mixture=row['pooled_reference_q_experimental'] - q_from_raw(
                     physical, epsilon, np.concatenate([c['ecdf'] for c in cell['replicates']])),
                 pooled200_minus_mixture_of_all_corrected_raw_draws=row['pooled_reference_q_experimental'] - q_from_raw(
                     physical, epsilon, np.concatenate(raw_references))))
             runs_checked += 1
-    return dict(max_absolute_q_error_vs_scipy=max_scipy_q_error,
+    full_raw_pairs = {}
+    for k, cell in report['results_by_K'].items():
+        rows = [dict(row, candidate_q=extra['full3367_candidate_q'],
+                     pooled_reference_q_experimental=row['pooled_reference_q_experimental'] - extra['pooled200_minus_mixture_of_all_corrected_raw_draws'])
+                for row, extra in zip(cell['real_runs'], compression[k])]
+        full_raw_pairs[k] = pair_analysis(rows)
+    return dict(full3367_pairwise_comparisons=full_raw_pairs,
+                max_absolute_q_error_vs_scipy=max_scipy_q_error,
                 compression_sensitivity_by_K=compression,
                 protected_file_hashes_checked=len(report['protected_artifact_sha256']),
                 full_calibrations_rebuilt_exactly=calibrations_checked,

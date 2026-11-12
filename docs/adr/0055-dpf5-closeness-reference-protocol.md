@@ -262,3 +262,61 @@ The two completed studies quantify variability of the **reference construction**
 - **AGGREGATION LIMITATION RETAINED:** the exploratory pool is a re-compression of the equal mixture of 200-point corrected ECDFs with arithmetic-mean epsilon. It is not a pool of original raw blurs, may introduce compression effects and is not a scientific release choice. A before/after snapshot of the existing audit only detects mutation; it is not an independent clinical recomputation under installed candidate records. Candidates are computed locally from distances and cannot change other FAIR families by construction. No production baseline is installed in this experiment.
 - Local execution emitted Matplotlib/font-cache permissions warnings before setting `MPLCONFIGDIR=/tmp/issue81-mpl`; the pilot nevertheless completed. No numerical failure was inferred from those cache warnings. The expanded study uses the writable temporary cache. Release decisions and all other-MOP gates remain open.
 - **ADDITIONAL HISTORICAL DEPENDENCE FOUND:** traced the earlier validator's fitting seeds at K100: 1100 consumes `[1100,1101]`; 1101 consumes `[1101,1102]`; 1102 consumes `[1102,1103,1104]`; 1103 consumes `[1103,1104]`. The latter two even produce exactly the same sigma `0.2619434753723717` and fit median `1.9691476755122945`. Thus the earlier four fits were **not independent complete fitting procedures**, in addition to the already documented common-noise/K dependencies. Distinct held-out final seeds in the second historical study do not repair this fitting dependence. Earlier numeric observations remain valid descriptive outputs, but claims of four independent sigma fits are withdrawn. The historical validator is retained to reproduce its declared seed lists; the corrected complete-calibration producer is the source of the new independent-block study.
+
+### 2026-11-12 — Expanded complete-calibration / two-MOEA study executed locally (not certified)
+
+**Evidence location:** [`calibration/experimental/issue81/2026-11-12`](../../calibration/experimental/issue81/2026-11-12/README.md). The [CSV](../../calibration/experimental/issue81/2026-11-12/real-q-by-run.csv) records **every individual historical, eight-calibration and pooled Q value**. Compressed full JSONs retain authentic normalized P0/Pf arrays, per-K resolution, all ECDFs and calibration parameters/seeds/hashes; the manifest retains original and compressed SHA256. The invalid-design pilot is preserved separately. No local `/tmp` path is the only surviving evidence.
+
+**Design and execution:** K40/100/200 × NSGA-II(DEAP)/SPEA2(pymoo) × generation budgets40/150 × seeds1/7/19/43 = **48 authentic runs**, 16 per K. Each K has **eight complete reference draws**, N16384 ideal points, disjoint ten-slot RNG blocks including all six possible fitting attempts. Same 16 final populations per K are evaluated against all eight references and their exploratory pool. References are constructed before the optimizer panel and consume no optimizer results. The exact producer at execution is commit `ccb7445`; commands and environment versions accompany the evidence. Temporary pilot CI workflow removed after local evidence capture; **no new Actions result is claimed**.
+
+**Metadata reporting defect identified after execution and corrected for future runs:** original expanded JSON's legacy top-level `optimizer=NSGA2` and `generations=300` reflect old single-condition defaults. Actual `algorithms`, `generation_budgets` and **every per-run optimizer/generations field** correctly record the design above. Original bytes are retained; current producer reports `MULTIPLE`/null for the corresponding legacy fields. Historical outputs are not rewritten to hide this error.
+
+| K | Maximum Q range on one fixed run, across 8 calibrations | Signed candidate-minus-historical Q, all cells | Strict rank reversals across calibrations | Pairs with reversal vs historical |
+|---:|---:|---:|---:|---:|
+| 40 | 0.01882943083 | −0.00065445451 to +0.01817497632 | 0/120 | 0/120 |
+| 100 | 0.01717405679 | −0.00077689100 to +0.01992354509 | 0/120 | 0/120 |
+| 200 | 0.00691201151 | +0.02032171113 to +0.03129951010 | 1/120 | 3/120 |
+
+Each denominator is the **120 pairs within one K's 16-run panel**, not independent Bernoulli trials. No exact candidate ties, Q=0 saturation or Q=1 saturation occurred. All within-algorithm/budget seed orderings were stable in this panel; the observed reversals involve different algorithm/budget conditions. Absolute Q ranges alone therefore do not establish decision stability, especially for nearly tied outputs.
+
+**Specific K200 ordering evidence:**
+
+- NSGA-II G40 seed19 minus SPEA2 G150 seed19: historical gap `+0.0000200888510281`; eight compressed-candidate gaps range `−0.000242991827106` to `+0.000505154672957` (two negative, six positive); pooled gap `+0.000520268018386`. This is a strict reversal across complete calibration draws, not a sorting tie.
+- NSGA-II G150 seed7 minus SPEA2 G40 seed1: historical `+0.000707742060294`; all candidate gaps negative, range `−0.00181814049203` to `−0.00169206846635`; pool `−0.00173646678122`.
+- NSGA-II G150 seed43 minus SPEA2 G40 seed1: historical `+0.000227167024686`; all candidate gaps negative, range `−0.00249360551205` to `−0.00233782420627`; pool `−0.00238353819007`.
+
+**Calibration versus optimizer variability:** the candidate ranges above vary reference columns while holding each authentic run fixed. The following ranges vary the four optimizer seeds **inside each algorithm/K/budget at a fixed calibration**, then report the minimum and maximum of that seed-range over eight reference columns. Complete sample-SD values for both kinds of variation are in the analysis artifact. These summaries are descriptive; they are not variance components from a random-effects model or confidence intervals.
+
+| K | NSGA-II G40 optimizer-seed range | NSGA-II G150 | SPEA2 G40 | SPEA2 G150 |
+|---:|---:|---:|---:|---:|
+| 40 | 0.179484–0.192589 | 0.045572–0.048914 | 0.063119–0.067729 | 0.057483–0.061668 |
+| 100 | 0.077211–0.084000 | 0.171988–0.181908 | 0.076192–0.084581 | 0.056520–0.062351 |
+| 200 | 0.107187–0.111052 | 0.076538–0.078977 | 0.069002–0.071940 | 0.014817–0.015736 |
+
+Optimizer seed dispersion is larger than calibration dispersion in these grouped comparisons, but that does **not** make the close-pair inversion irrelevant. The same seeds are reused across budgets and K; NSGA-II budget prefixes may coincide. NSGA-II records G+1 histories including generation zero; SPEA2 records G histories. The study compares generation budgets, **not equal function-evaluation cost**, and makes no algorithm-superiority claim.
+
+**Reference variability and one-factor sensitivity:**
+
+| K | epsilon range | Fit median range / s_K | Independent final median range / s_K | Largest Q range varying only epsilon, fixed pooled ECDF | Largest Q range varying only ECDF, fixed mean epsilon |
+|---:|---:|---:|---:|---:|---:|
+| 40 | 0.03048732701–0.03103627483 | 1.952987613–2.089088229 | 1.938585609–2.108959500 | 0.000230704 | 0.018659692 |
+| 100 | 0.05169666842–0.05302621507 | 1.909121321–2.079969661 | 1.922580117–2.116681781 | 0.000530668 | 0.017451090 |
+| 200 | 0.07500617512–0.07707909216 | 1.933011948–2.024288568 | 1.925421491–2.050238446 | 0.000800292 | 0.006939547 |
+
+The one-factor comparisons are paired counterfactuals, not independent extra calibration samples or an additive variance decomposition. Under these conditions negative-ECDF variability has the larger effect. Every fitting draw met the original controller criterion; some final draws exceeded its band, which remains a fitting tolerance only.
+
+**Aggregation and compression investigation:** pooled-minus-individual-mean Q ranged K40 `+0.000120641..+0.001288721`, K100 `+0.000288571..+0.001099017`, K200 `−0.000558226..+0.000759656`. The pooled result is not an arithmetic average of Q and can give a pair gap outside the individual gap interval. To isolate numerical representation, rebuilt the actual 3,367 corrected negative distances for each calibration, evaluated unchanged optimizer populations against those full empirical laws, and compared with the mandated 200-point representation. No reference was installed.
+
+| K | Individual stored200 Q minus full3367 Q, all run×calibration cells | Pooled200 Q minus uncompressed mixture of stored quantiles | Pooled200 Q minus mixture of all raw corrected blur rows |
+|---:|---:|---:|---:|
+| 40 | +0.000123471 to +0.002549048 | +0.000107652 to +0.001152626 | +0.000279464 to +0.002989554 |
+| 100 | −0.001434610 to +0.001858712 | +0.000249803 to +0.000947441 | −0.000209873 to +0.002238908 |
+| 200 | −0.001041674 to +0.001013433 | −0.000530318 to +0.000751515 | −0.001061744 to +0.001119973 |
+
+**The K200 across-calibration inversion disappears using full3367 reference laws:** NSGA-II G40 seed19 minus SPEA2 G150 seed19 is then always negative, `−0.000567990395744..−0.000168535584739`, and the mixture of all raw corrected draws gives gap `−0.000333047020858`. Thus the observed compressed-schema inversion is sensitive to the reference representation, not evidence of an optimizer-input mutation. No within-K pair reverses across calibrations under the full3367 diagnostic variant. This does **not** approve changing the 200-point schema or adopting raw pooling; those remain scientific/release decisions. Both compressed and raw variants retain the three K200 reversals relative to historical Q.
+
+**Verification and preserved scope:** rebuilt **24/24 complete calibrations exactly**, reaudited **48/48 saved authentic P0/Pf pairs exactly** (historical Q and all five other FAIR physical/Q families), verified all stored candidate/pool Q values, population/ECDF hashes and **61 protected file hashes**. Independent SciPy Wasserstein computation agrees within maximum absolute Q difference **3.3306690738754696e−16**; its `1e−12` numerical check is **not a scientific acceptance tolerance**. Final focused tests: **53 passed in 5.47 s**. Source corrections and evidence serialization were checked with `git diff --check`. No FAIR runtime, MOP, official baseline, GT or canonical audit report changed.
+
+**Evidence hashes (uncompressed bytes):** expanded original JSON `412e77e289b71e45e877e7aa5dd64a52a18a3a85da4534886cf4c48d6f38bdd1`; final analysis hashes and gzip hashes are in the committed manifest. Source hashes and environment are recorded in the JSON; after the schema-reporting fix, full-file reproduction hashes may change while numerical cells remain reproducible.
+
+**Limitations and scientific decisions still requiring approval:** this is DPF5 M3/D2 at three K values, two optimizer implementations, two generation budgets, four seeds and eight complete calibrations/K on one fixed GT/normalization, not a certified population of runs. The 128 per-K run×calibration Q cells share rows/columns and are not 128 independent experiments. Finite min/max and sample SD are not uncertainty bounds. Approve separately (1) normative ideal/failure laws, (2) production sample counts/seeds and precision/ranking requirements tied to use, (3) whether the 200-point representation is sufficient for near ties and how aggregation should be defined, and (4) any separately versioned Closeness-only artifact after review. No tolerance, estimator, schema revision, normative law or scientific baseline is adopted here; issue #81 stays open and PR #86 stays Draft without merge. Other-MOP release gates remain outstanding.
