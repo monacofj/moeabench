@@ -10,7 +10,14 @@ The same real NSGA-II populations are evaluated against every replicate.
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+# Direct invocation by file path sets sys.path[0] to calibration/scripts,
+# not the repository root. Mirror the established issue81 validator.
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+if str(_PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_ROOT))
 
 import numpy as np
 import moeabench as mb
