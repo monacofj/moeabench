@@ -160,3 +160,129 @@ unique fair or physically uniform objective-space measure.
 - **Seed 7:** historical Q-CLOSENESS `0.8518897113402047`; parameter-grid pushforward `0.8675769011795502`; unique objectives `0.8709905954517703`; illustrative equal-branch mixture `0.8686352688132152`. Maximum counterfactual law-to-law Q shift `0.003413694272220047`.
 - **INTERPRETATION:** These two genuine optimization trajectories are informative and demonstrate that a measure choice changes the observable Q-score even when all underlying P0/Pf/GT and all five other FAIR values/Q are unchanged. The measured max difference `0.00402733` is **descriptive**, not an accepted tolerance or proof of scientific equivalence. The comparison with the historical Q is larger, because the archived `ideal_res=0` is a different (flawed) calibration, not a fourth independently justified sampling law. Only two optimizer seeds and one K were checked; no statistical generalization or certification follows.
 - **ARTIFACT:** `issue78-dpf5-three-law-paired-sensitivity`, ID **13889201253**, contains JSON for three grid/K scenarios and both paired real-MOEA trajectories. All test and frozen-file-preservation gates passed. **No law was adopted and no baseline was regenerated or installed.** Next decision remains explicit mixed-dimensional measure `mu_lambda` and archival GT compatibility.
+
+
+## Recommended precise reference interpretation — 2026-11-11
+
+**Proposal for DPF5 M=3, D=2 Closeness only:** interpret the ADR 0037
+independent ideal-front sample as the pushforward of **independent iid
+uniform decision parameters** on the analytical Pareto set, with
+`x1,x2 ~ U[0,1]`, `x3=x1`, all trailing `x_i=0.5`.
+This corresponds to the explicit mixed-dimensional probability law
+
+```text
+mu = (1/3) mu_P + (2/3) mu_D,
+mu_P = (DPF5_P)_# Uniform([0,1/3] × [0,1]),
+mu_D = (DPF5_D)_# Uniform((1/3,1]).
+```
+
+Here `#` denotes pushforward. The weight `2/3` is **not** a guessed
+fairness preference; it is the Lebesgue measure of the existing
+`x1>1/3` region of the original decision-parameter sampler.
+It preserves the one-dimensional D branch rather than erasing it.
+The law is *not* uniform on the 2D objective surface; on D,
+uniform `x1` is also uniform in physical arc length, whereas P's
+conditional law is parameter-uniform with a mild nonconstant
+objective-area Jacobian `cos(theta1)`.
+
+**Important scientific distinction:** The **frozen GT is the
+reference geometric *support*** used for nearest-neighbor distances,
+not a probability sample with the same law. Its archived point
+multiplicities cannot be used to estimate `mu`. A new independent
+ideal sample must be obtained by continuous direct decision-parameter
+draws and **must not pass through objective deduplication**.
+The normalized historical GT and `s_K` can be retained *as geometric
+reference data* if their support and coverage are independently
+verified. No other FAIR reference distributions are reinterpreted
+by this DPF5-specific proposal.
+
+**Decision status:** The formula above is the **preferred, explicit
+candidate interpretation**, supported by mathematical source
+semantics and the quantitative checks below. It is **not yet an
+accepted normative baseline release**, and it is not a claim that
+other mathematically valid mixtures are wrong. The future versioned
+Closeness release must record this measure, its random seeds and
+sample size, source/GT SHA256, numerical uncertainty, and paired Q
+behavior. Until that review, the production generator's
+`HOLD_ARCHIVAL_REFERENCE` guard remains in force.
+
+### 2026-11-11 — FROZEN GT reconstructed exactly; provenance hypothesis checked
+
+- **FIRST FAIL — [CI 43128009733](https://github.com/monacofj/moeabench/actions/runs/43128009733):**
+  one new test incorrectly assumed that a 32×32 evenly spaced
+  grid includes `x2=1/2`. It does not, so its purported diagonal
+  P-meridian point was absent. This was a test-grid parity mistake,
+  not a scientific contradiction. Corrected the test by constructing
+  an explicit `x1=0.2,x2=0.5` point to prove the boundary
+  ambiguity without relying on the grid size.
+- **PASS — [CI 43128097424](https://github.com/monacofj/moeabench/actions/runs/43128097424):**
+  **6/6 focused tests** and the first read-only archived-GT
+  examination. The frozen DPF5 reference in the actual
+  v0.14.0 JSON and NPZ is **3,367 unique objective points**,
+  all 3,367 non-dominated within the exact archived set,
+  lying on the positive unit sphere within numerical precision.
+  Merely calling `MOP.pf(n_points=3367)` yields a coarser
+  58×58 decision grid and is **not** the archival source.
+- **EXACT RECONSTRUCTION — [CI 43128403905](https://github.com/monacofj/moeabench/actions/runs/43128403905):**
+  Generated the *actual current* `DPF5(M3,D2).pf(n_points=10000)`,
+  normalized it using the **unchanged frozen** package ideal/nadir,
+  then applied `np.unique(...,axis=0)`. The resulting set **matches
+  the archived 3,367-point GT exactly** (maximum nearest-neighbor
+  distance **0**). There are **3,300 distinct P-branch vectors**
+  and **67 distinct D-branch vectors**. The original 100×100
+  Pareto-set grid had **3,300 P decision samples** but **6,700 D
+  samples**, all 6,700 collapsing to those 67 objective vectors.
+  Hence the D branch has `0.67` raw decision mass versus
+  `67/3367 = 0.0198990198990199` archived distinct-objective
+  mass, an exact **33.67-fold** effective probability change.
+  This is stronger than geometric resemblance: the reconstructed
+  objective *support* is identical. It does **not**, on its own,
+  prove the original historical pipeline's authorship or commit
+  beyond that exact equivalence.
+- **CONCLUSION:** The existing frozen DPF5 GT has demonstrable
+  geometrically correct *support*, but its **empirical frequency
+  measure** corresponds to unique objectives rather than uniform
+  Pareto-set decision samples. The exact support match means
+  regeneration of GT is **not automatically required** for the
+  geometric nearest-neighbor calculation. The scientific question
+  shifts to which *independent ideal sampling probability law* to
+  use for finite-GT residual calibration and whether the branch
+  coverage/resolution is sufficiently fine.
+
+### 2026-11-11 — Independent continuous PF sampler and numerical stability
+
+- Added `calibration/scripts/study_dpf5_independent_pf_issue78.py`
+  and `tests/unit/test_dpf5_independent_pf_issue78.py`.
+  Unlike the earlier grid study, this draws independent continuous
+  `x1,x2` variates (private `default_rng(seed)`), evaluates
+  the same MOP at `g=0`, and **never deduplicates** objective
+  points. Structural guards verify nonnegative unit-sphere PF,
+  exact D branch formula, independent sample–frozen GT
+  nonoverlap, exact archive reproduction and frozen `s_K`.
+  No baseline or report is created.
+- **PASS — [CI 43128887381](https://github.com/monacofj/moeabench/actions/runs/43128887381):**
+  all **9/9 focused tests** passed (six frozen GT/measure,
+  three independent source). Tested **2 sample sizes (4,096
+  and 16,384)**, **four independent seeds (123–126)** and
+  **K=40/100/200** against unchanged frozen GT and normalization.
+  D-branch empirical mass ranged `0.659912–0.665039` for
+  4,096 samples and `0.662903–0.669861` for 16,384,
+  consistent with target `2/3`.
+- **K=100 results:** At 4,096 independent samples the
+  `ideal_res` ranged **0.052009716–0.053300252** (max
+  across-seed span **0.001290537**); at 16,384 samples
+  **0.052099946–0.052697600** (span **0.000597654**).
+  This is finite-sample variability, not a certified
+  confidence interval or an acceptance tolerance. At 16,384
+  samples the observed max across-seed epsilon span was
+  **0.000349938** for K40 and **0.000857170** for K200.
+- **EVIDENCE:** CI artifact
+  `issue78-dpf5-frozen-gt-measure-provenance` ID
+  **13903946958**, containing both a frozen-GT 100×100
+  reconstruction JSON and the independent continuous
+  sampling/stability JSON. The previous real two-seed NSGA-II
+  Q pilot in this ADR remains valid as a *grid-based three-law
+  sensitivity experiment* but does not replace a future
+  real-MOEA Q verification under the proposed **continuous**
+  sampler. The archived baseline, GT, and official audit
+  report remain untouched.
