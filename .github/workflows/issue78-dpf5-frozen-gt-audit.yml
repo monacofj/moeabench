@@ -44,6 +44,34 @@ jobs:
           print('ARCHIVED DISTINCT:',r['archived_unique_and_nondominated'])
           print('SOURCE DISTINCT:',r['current_sampler_unique_and_nondominated'])
           PY
+      - name: Validate independent DPF5 parameter-law sampler
+        run: python -m pytest -q tests/unit/test_dpf5_independent_pf_issue78.py
+      - name: Measure actual independent finite-GT residual with fixed K and seeds
+        timeout-minutes: 7
+        run: |
+          python calibration/scripts/study_dpf5_independent_pf_issue78.py \
+            --points 4096 --points 16384 \
+            --seed 123 --seed 124 --seed 125 --seed 126 \
+            --K 40 --K 100 --K 200 \
+            --output /tmp/issue78-dpf5-iid-pf-measure.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('/tmp/issue78-dpf5-iid-pf-measure.json').read_text())
+          assert r['status']=='NONCERTIFIED_DPF5_IID_DECISION_PARAMETER_PF_PROPOSAL'
+          assert r['archived_GT_exact_unique_100_grid_support_reproduced']
+          assert r['archived_GT_points']==3367
+          assert len(r['rows'])==8
+          assert not r['normative_measure_adopted']
+          assert not r['baseline_or_GT_modified']
+          assert not r['certified']
+          for x in r['rows']:
+              assert x['raw_dist_median']>0
+              assert x['unique_objective_count']==x['n_points']
+              assert .60<x['true_D_branch_fraction']<.72
+              assert all(y>0 for y in x['ideal_res'].values())
+          print('DPF5 2/3 decision pushforward proposal, K100:',r['summary_by_sample_size'])
+          PY
       - name: Official baseline, GT and report unchanged
         run: |
           git diff --exit-code -- \
@@ -55,5 +83,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: issue78-dpf5-frozen-gt-measure-provenance
-          path: /tmp/issue78-dpf5-frozen-gt-measure-audit.json
+          path: |
+            /tmp/issue78-dpf5-frozen-gt-measure-audit.json
+            /tmp/issue78-dpf5-iid-pf-measure.json
           if-no-files-found: warn
