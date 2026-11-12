@@ -60,3 +60,54 @@ def test_pooled_quantiles_are_monotone_and_reproducible():
 def test_pooled_quantiles_require_independent_input_count():
     with pytest.raises(ValueError):
         pooled_candidate([{"epsilon": .1, "ecdf": np.zeros(200)}])
+
+
+def test_all_controller_iteration_streams_are_disjoint_from_ideal_and_blur():
+    # Regression: old triplets (base, base+1, base+2) collided at fit it=1
+    # and even with the next replicate's seeds at later iterations.
+    seen = set()
+    for k in range(2, 201):
+        for replicate in (0, 1, 2, 9998, 9999):
+            ideal, fit, blur = seed_triplet(k, replicate)
+            consumed = {ideal, *range(fit, fit + 6), blur}
+            assert len(consumed) == 8
+            assert not seen.intersection(consumed)
+            seen.update(consumed)
+
+
+def test_complete_replicate_held_out_draw_uses_no_controller_stream(monkeypatch):
+    from scipy.spatial import cKDTree
+    import calibration.scripts.study_dpf5_real_q_full_calibrations_issue81 as module
+    from calibration.scripts.validate_dpf5_closeness_protocol_issue81 import frozen_reference
+    from calibration.scripts.generate_baselines import estimate_gt_normals
+    _, gt, ideal, nadir, model = frozen_reference()
+    consumed = []
+    original = np.random.RandomState
+
+    class spy(original):
+        def __init__(self, seed):
+            consumed.append(seed)
+            super().__init__(seed)
+
+    monkeypatch.setattr(np.random, 'RandomState', spy)
+    record = module.make_replicate(model=model, gt=gt, ideal=ideal, nadir=nadir,
+                                  tree=cKDTree(gt), normals=estimate_gt_normals(gt),
+                                  k=100, scale=.09085520863957625,
+                                  replicate=0, ideal_size=256)
+    assert len(consumed) >= 3  # fitting actually adjusts sigma
+    assert len(set(consumed)) == len(consumed)
+    assert consumed[-1] == record['seeds']['blur']
+    assert set(consumed[:-1]).issubset(record['fit_reserved_seeds'])
+
+
+def test_pairwise_analysis_distinguishes_ties_and_strict_reversals():
+    from calibration.scripts.analyze_dpf5_real_q_issue81 import pair_analysis
+    rows = [
+        dict(candidate_q=[.5, .5, .6], historical_q=.4, pooled_reference_q_experimental=.55),
+        dict(candidate_q=[.5, .6, .5], historical_q=.5, pooled_reference_q_experimental=.55),
+    ]
+    pair, = pair_analysis(rows)
+    assert pair['exact_tie_columns'] == 1
+    assert pair['strict_reversal_across_calibrations']
+    assert pair['strict_reversal_vs_historical']
+    assert not pair['strict_reversal_pool_vs_historical']

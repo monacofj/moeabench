@@ -11,6 +11,9 @@ import argparse
 import hashlib
 import json
 import sys
+import platform
+from importlib.metadata import version
+from itertools import product
 from pathlib import Path
 
 # Direct invocation by file path sets sys.path[0] to calibration/scripts,
@@ -41,8 +44,10 @@ def seed_triplet(k, replicate):
     """Unique seed namespaces over a bounded positive integer domain."""
     if not (2 <= k <= 200 and 0 <= replicate < 10000):
         raise ValueError("K or replicate outside designed seed namespace")
-    base = 100000 + 100000 * k + 3 * replicate
-    return base, base + 1, base + 2
+    # calibrate_sigma consumes fit_seed + iteration, for iterations 0..5.
+    # Reserve the WHOLE controller block, not just its initial seed.
+    base = 100000 + 1000000 * k + 10 * replicate
+    return base, base + 1, base + 7
 
 
 def make_replicate(*, model, gt, ideal, nadir, tree, normals, k, scale,
@@ -51,7 +56,10 @@ def make_replicate(*, model, gt, ideal, nadir, tree, normals, k, scale,
     fresh, d_branch = sample_independent_ideal(
         model, size=ideal_size, seed=ideal_seed)
     fresh_norm = (fresh - ideal) / (nadir - ideal)
-    epsilon = float(np.median(tree.query(fresh_norm)[0]) / scale)
+    ideal_distances = tree.query(fresh_norm)[0]
+    if np.min(ideal_distances) <= 1e-10:
+        raise AssertionError("Independent ideal sample overlaps frozen GT")
+    epsilon = float(np.median(ideal_distances) / scale)
     if not np.isfinite(epsilon) or epsilon <= 0:
         raise AssertionError("Independent ideal residual must be positive")
     sigma, fit_median, _ = calibrate_sigma(
@@ -72,6 +80,7 @@ def make_replicate(*, model, gt, ideal, nadir, tree, normals, k, scale,
     return {
         "replicate": replicate, "seeds": {
             "ideal": ideal_seed, "fit": fit_seed, "blur": blur_seed},
+        "fit_reserved_seeds": list(range(fit_seed, fit_seed + 6)),
         "ideal_objectives_sha256": _sha(fresh_norm),
         "ideal_D_mass_realized": float(np.mean(d_branch)),
         "epsilon": epsilon, "sigma": float(sigma),
@@ -127,13 +136,22 @@ def _ranking(scores):
 
 
 def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
-          replicates=8, ideal_size=16384):
+          replicates=8, ideal_size=16384, algorithms=("NSGA2",), budgets=None):
     if (not ks or len(set(ks)) != len(ks) or
             not optimizer_seeds or len(set(optimizer_seeds)) != len(optimizer_seeds)
             or any(not isinstance(s, int) or s < 0 for s in optimizer_seeds)
             or not 2 <= replicates <= 10000 or ideal_size < 64 or
             ideal_size > 100000 or generations < 2):
         raise ValueError("Invalid experimental design")
+    budgets = tuple(budgets or (generations,))
+    if (not algorithms or len(set(algorithms)) != len(algorithms)
+            or any(a not in ("NSGA2", "SPEA2") for a in algorithms)
+            or len(set(budgets)) != len(budgets)
+            or any(not isinstance(b, int) or b < 2 for b in budgets)):
+        raise ValueError("Invalid algorithms or generation budgets")
+    protected = list(RESOURCE_DIR.rglob("*")) + [OFFICIAL]
+    before = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in protected if p.is_file()}
     source, gt, ideal, nadir, model = frozen_reference()
     tree = cKDTree(gt)
     normals = estimate_gt_normals(gt)
@@ -151,16 +169,17 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
             for r in range(replicates)
         ]
         for candidate in candidates:
-            seeds = tuple(candidate["seeds"].values())
-            if len(set(seeds)) != 3 or any(s in all_seeds for s in seeds):
+            seeds = (candidate["seeds"]["ideal"], candidate["seeds"]["blur"],
+                     *candidate["fit_reserved_seeds"])
+            if len(set(seeds)) != 8 or any(s in all_seeds for s in seeds):
                 raise AssertionError("Calibration RNG namespaces overlap")
             all_seeds.update(seeds)
         pool_epsilon, pool_ecdf = pooled_candidate(candidates)
         real = []
-        for seed in optimizer_seeds:
+        for algorithm, budget, seed in product(algorithms, budgets, optimizer_seeds):
             experiment = mb.experiment(
                 mop=mb.mops.DPF5(D=2, M=3),
-                moea=mb.moeas.NSGA2(population=k, generations=generations))
+                moea=getattr(mb.moeas, algorithm)(population=k, generations=budget))
             experiment.run(seed=seed, silent=True)
             audit = mb.clinic.audit(experiment)
             if audit.fr is None or audit.quality is None:
@@ -193,16 +212,24 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
                 original_q, float(audit.quality.scores["Q_CLOSENESS"].value),
                 atol=1e-10, rtol=0)
             fixed_metrics = _baseline_snapshot(audit)
+            population_hashes = (_sha(ctx["P_initial"]), _sha(ctx["P_final"]))
             q_values = [q_from_raw(physical, c["epsilon"], c["ecdf"])
                         for c in candidates]
             pool_q = q_from_raw(physical, pool_epsilon, pool_ecdf)
             if not all(np.isfinite(q) and 0 <= q <= 1
                        for q in (*q_values, pool_q)):
                 raise AssertionError("Invalid candidate clinical Q")
+            if population_hashes != (_sha(ctx["P_initial"]), _sha(ctx["P_final"])):
+                raise AssertionError("Paired population arrays mutated")
             if fixed_metrics != _baseline_snapshot(audit):
                 raise AssertionError("Non-Closeness indicators mutated")
             real.append({
-                "optimizer": "NSGA2", "seed": seed, "K": k,
+                "optimizer": algorithm, "generations": budget, "seed": seed, "K": k,
+                "P0_normalized": ctx["P_initial"].tolist(),
+                "Pf_normalized": ctx["P_final"].tolist(),
+                "raw_normalized_distances": physical.tolist(),
+                "evaluated_population_size": len(physical),
+                "generation_history_length": len(experiment.moea.F_gen_all),
                 "P0_sha256": _sha(ctx["P_initial"]),
                 "Pf_sha256": _sha(ctx["P_final"]),
                 "historical_q": float(audit.quality.scores["Q_CLOSENESS"].value),
@@ -217,19 +244,31 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
         by_k[str(k)] = {
             "s_K": scale,
             "experimental_pooled_reference": {
-                "epsilon_mean": pool_epsilon,
+                "epsilon_mean": pool_epsilon, "ecdf": pool_ecdf.tolist(),
                 "ecdf_sha256": _sha(pool_ecdf),
                 "pooling_method": "equal_mixture_of_200_stored_quantiles",
                 "warning": "NOT original 3367 samples; NOT approved",
             },
-            "replicates": [{key: value for key, value in c.items()
-                            if key != "ecdf"} for c in candidates],
+            "replicates": [{key: value.tolist() if isinstance(value, np.ndarray) else value
+                            for key, value in c.items()} for c in candidates],
             "real_runs": real,
             "candidate_ranking_orders": [list(o) for o in orders],
             "ranking_stable": len(set(orders)) == 1,
             "max_real_run_q_range": max(r["candidate_q_range"] for r in real),
         }
+    after = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+             for p in protected if p.is_file()}
+    if before != after:
+        raise AssertionError("Protected artifacts changed during study")
     return {
+        "protected_artifact_sha256": before,
+        "normalization_sha256": _sha(np.stack([ideal, nadir])),
+        "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+                          for p in (Path(__file__), ROOT / "calibration/scripts/generate_baselines.py")},
+        "environment": {"python": platform.python_version(),
+                        **{name: version(name) for name in ("numpy", "scipy", "pymoo", "deap", "moeabench")}},
+        "seed_design": "v2_reserved_six_fit_streams_stride10",
+        "algorithms": list(algorithms), "generation_budgets": list(budgets),
         "status": "NONCERTIFIED_REAL_Q_FULL_CALIBRATION_SENSITIVITY",
         "mop": "DPF5", "M": 3, "D": 2,
         "optimizer": "NSGA2", "generations": generations,
@@ -247,6 +286,8 @@ def main():
     parser.add_argument("--K", type=int, action="append", dest="ks")
     parser.add_argument("--seed", type=int, action="append", dest="seeds")
     parser.add_argument("--generations", type=int, default=300)
+    parser.add_argument("--budget", type=int, action="append", dest="budgets")
+    parser.add_argument("--algorithm", choices=("NSGA2", "SPEA2"), action="append", dest="algorithms")
     parser.add_argument("--replicates", type=int, default=8)
     parser.add_argument("--ideal-size", type=int, default=16384)
     parser.add_argument("--output", type=Path, required=True)
@@ -258,7 +299,8 @@ def main():
     result = study(ks=tuple(args.ks or (40, 100, 200)),
                    generations=args.generations,
                    optimizer_seeds=tuple(args.seeds or (1, 7)),
-                   replicates=args.replicates, ideal_size=args.ideal_size)
+                   replicates=args.replicates, ideal_size=args.ideal_size,
+                   algorithms=tuple(args.algorithms or ("NSGA2",)), budgets=args.budgets)
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(result, indent=2) + "\n", encoding="utf8")
     for k, item in result["results_by_K"].items():
