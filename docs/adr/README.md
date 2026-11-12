@@ -65,6 +65,7 @@ This directory contains records of the key architectural decisions made during t
 | [0051](0051-fair-conformance-audit.md) | FAIR Conformance Audit, Scientific Oracles, and Validation Log | Proposed (investigation in progress) | 2026-10-21 |
 | [0052](0052-dpf2-dtlz7-exact-pareto-regions.md) | Exact Pareto-region sampling for DPF2 and DTLZ7 (issue #78) | Proposed | 2026-11-11 |
 | [0053](0053-dpf5-mixed-dimensional-reference-measure.md) | DPF5: mixed-dimensional ideal reference and negative ECDF law (scientific research, issue #81) | Proposed / noncertified | 2026-11-12 |
+| [0054](0054-dominance-constrained-one-sided-gt-blur.md) | Dominated-side one-sided GT half-normal blur (issue #83) | Proposed | 2026-11-12 |
 
 ## Decision Lineage
 
