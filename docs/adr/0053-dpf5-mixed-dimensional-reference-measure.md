@@ -296,3 +296,101 @@ behavior. Until that review, the production generator's
 - **INVARIANTS:** Under both optimizer seeds, exact P0, Pf, archived GT, resolution `s_K`, and the five other FAIR physical measures and clinical Q-scores were independently asserted unchanged (numeric tolerance 1e-12 for FAIR). The original frozen baseline was restored after each temporary in-memory candidate audit; unchanged official baseline, reference-package and canonical audit report checked by CI.
 - **ARTIFACT:** `issue78-dpf5-independent-continuous-PF-real-Q-not-certified`, ID **13904841436**, contains the numerical paired experiments, original/candidate Q and SHA256 source fingerprints. Temporary CI workflow `issue78-dpf5-continuous-q.yml` was removed after verified PASS (commit `087e3fa2`), as were earlier exploratory CI workflows. No new sampling law is automatically active in production.
 - **SCIENTIFIC INTERPRETATION:** Independent iid continuous decision sampling resolves the **artifact of deduplication in the ideal reference**, and the frozen GT is geometrically verified to cover both branches precisely as the unique original 100×100 grid. Nevertheless, using a decision-parameter pushforward with `lambda=2/3` rather than a 2D-area or other mixture distribution is a *normative modeling choice*. It is now **explicitly specified, mathematically justified and numerically reproducible**, but formally **PROPOSED**, not a certified scientific release. The failure-profile ECDF of GT-normal blur also has its own empirical GT weighting and must be documented as a distinct reference distribution when reviewing Q interpretation. Do not adopt `ideal_res=0.0526976` as a universal constant; it depends on K, frozen GT, sampling law, sample count and seed. Versioned K-wise Closeness baseline release requires a separate decision.
+
+
+## 2026-11-12 — GT-normal-blur negative ECDF branch weighting independently audited
+
+**Purpose and scope.** The DPF5 source study is complete enough to
+distinguish the *ideal reference sampling probability law* from the
+*negative (failure) reference distribution* before any scientific
+baseline release. This study does **not** make a normative choice to
+equate them.
+
+**Actual code contract.** `generate_baselines.py` currently generates
+the Closeness GT-normal-blur failure profile by estimating local PCA
+normals for each **distinct GT row** and applying one signed
+half-normal perturbation at that row. Thus, regardless of the
+documented independent-ideal law `μ=(1/3)μ_P+(2/3)μ_D`, the negative
+reference's **source anchor** has empirical mass
+`67/3367=0.0198990198990199` for D, not `2/3`. The exact
+reconstructed 100×100 grid's raw multiplicity measure instead
+allocates `6700/10000=0.67` to D. Both are mathematically legitimate
+*different negative reference constructions* if explicitly chosen;
+matching the ideal distribution is **not** intrinsically required.
+
+**Reproducible counterfactual.** Added
+`calibration/scripts/audit_dpf5_negative_ecdf_issue78.py` and
+`tests/unit/test_dpf5_negative_ecdf_issue78.py`, with fail-closed
+reconstruction of *all 10,000 original grid-row → 3,367 archived
+unique-GT-row* assignments. For **K=100**, used the frozen GT and its
+normalization, the original stored `sigma`, the standard deterministic
+blur seed (`SEED_START+K+500`), **the identical realized normal
+perturbation at each of the 3,367 GT rows**, and the exact frozen
+`s_K`. Computed two 200-point null quantile profiles by
+**reweighting the SAME normalized blurred distances**, with either
+(1) one vote per distinct GT row or (2) the original decision-grid
+multiplicity `1` for each of the 3,300 P rows and `100` for each
+of the 67 D rows. Corrected both ECDFs and physical Closeness by
+the **same** independent continuous-parameter sample residue
+`ideal_res=0.052697600117886496` (16,384 points, reference seed
+123). There was no retraining, change of MOEA outcomes, GT, sigma,
+normal vectors or finite reference geometry.
+
+**PASS — [Actions 43227250792](https://github.com/monacofj/moeabench/actions/runs/43227250792):**
+all **6/6** relevant mathematical/GT reconstruction tests and the
+full paired-Q counterfactual passed; the frozen baseline, NPZ GT and
+canonical audit report were unchanged. Evidence artifact
+`issue78-dpf5-negative-blur-null-Q-counterfactual`
+**13947744766** contains the input source fingerprints, actual
+numerical profiles and optimizer comparisons. Observed raw median
+GT-normal-blur distance in `s_K` units was **2.1049141314583224**
+under distinct-GT rows versus **1.8910002265512709** with raw-grid
+multiplicity. These are controlled realized-blur results, **not**
+an assertion that recomputing the archived `rand_ecdf` is
+bitwise identical to the historical calibration producer.
+
+**Same real NSGA-II fronts, K=100, 300 generations:**
+
+| Optimizer seed | Historical Q-Closeness | New ideal + distinct-GT null | New ideal + decision-multiplicity null | Absolute difference solely from null weights |
+|---|---:|---:|---:|---:|
+| 1 | 0.94042786158407 | 0.958015925821466 | 0.9483184881219491 | 0.00969743769951692 |
+| 7 | 0.8518897113402047 | 0.8677337136818387 | 0.8374124578195584 | 0.030321255862280294 |
+
+Across these two informative trajectories the **maximum
+counterfactual Q shift from null weighting alone was 0.03032126**
+(about 3.032 percentage points). **Identical** P0, Pf, GT, frozen
+`s_K`, per-point physical Closeness residue and the five other FAIR
+physical/Q metric families were verified at numerical tolerance
+`1e-12`. No numerical threshold or statistical generalization is
+inferred from two seeds.
+
+**Conservative recommendation for eventual release:** Keep the
+historical **distinct-GT anchor** interpretation for negative
+GT-normal blur *unless* a separate scientific argument motivates
+sampling failure origins according to Pareto-set decision mass.
+Distinct anchor measures for ideal and negative references are not
+mathematically contradictory, but they imply different clinical
+hypotheses and need provenance in a **versioned Closeness calibration**.
+In particular, do **not** silently multiply each D anchor by 100,
+do **not** relabel the existing frozen ECDF as generated from the new
+continuous PF law, and do **not** treat the one-blur-per-anchor
+reweighting sensitivity experiment as an officially regenerated
+negative ECDF.
+
+**Scope boundary:** This DPF5 investigation has now clarified
+geometry, archived GT support, independent reference sample law,
+seed-size variability, real-MOEA Q sensitivity, and the negative ECDF
+weighting issue. **The remaining item is an explicit normative
+scientific calibration-release decision, now separately tracked in
+[issue #81](https://github.com/monacofj/moeabench/issues/81)**,
+alongside the other 13 MOPs and archival report provenance. Do not
+block or reopen the completed implementation bugfix PR #77 or source
+fix PR #79 for that broader project. The broader normalized-objective
+surface-area proposal remains optional and unapproved in PR #76.
+Research PR #80 remains Draft and is **not a merge-ready production
+calibration**.
+
+The temporary issue78 negative-ECDF CI workflow was removed after
+the verified green run (commit `8c8b653e`). Historical failures,
+including the previously corrected test-grid assumption and CLI
+import issue, remain recorded above.
