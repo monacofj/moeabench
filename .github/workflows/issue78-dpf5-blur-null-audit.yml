@@ -1,0 +1,68 @@
+# Temporary research CI; remove after recording reproducible data.
+name: Issue78 DPF5 GT-normal blur negative ECDF weighting audit
+
+on:
+  push:
+    branches: [research/78-dpf5-measure-sensitivity]
+  workflow_dispatch:
+
+jobs:
+  paired-negative-null:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install repository and tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . pytest
+      - name: Verify exact DPF5 raw-vs-unique GT null weights and weighted ECDF math
+        timeout-minutes: 5
+        run: |
+          python -m pytest -q \
+            tests/unit/test_dpf5_negative_ecdf_issue78.py \
+            tests/unit/test_dpf5_independent_pf_issue78.py
+      - name: Paired GT-normal blur null reweighting and real NSGA-II Q
+        timeout-minutes: 12
+        run: |
+          python calibration/scripts/audit_dpf5_negative_ecdf_issue78.py \
+            --K 100 --reference-n 16384 --reference-seed 123 \
+            --generations 300 --seed 1 --seed 7 \
+            --output /tmp/dpf5-negative-ecdf-weight-audit.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path("/tmp/dpf5-negative-ecdf-weight-audit.json").read_text())
+          assert j["status"]=="NONCERTIFIED_DPF5_NULL_ECDF_WEIGHTING_AUDIT"
+          assert j["frozen_GT_points"]==3367
+          assert j["original_decision_grid_rows"]==10000
+          assert j["distinct_P_rows"]==3300 and j["distinct_D_rows"]==67
+          assert j["original_D_decision_rows"]==6700
+          assert j["null_ecdfs"]["distinct_frozen_GT_rows"]["branch_D_anchor_probability"]<.021
+          assert j["null_ecdfs"]["original_decision_grid_multiplicity"]["branch_D_anchor_probability"]==.67
+          assert j["ideal_residue"]>0
+          assert len(j["paired_real_moea"])==2
+          assert all(x["null_weighting_absolute_q_difference"]>=0
+                     for x in j["paired_real_moea"])
+          assert j["other_fair_metrics_unchanged"] is True
+          assert not j["scientific_measure_approved"] and not j["baseline_modified"]
+          print("OBSERVED NEGATIVE-NULL WEIGHTING Q-SHIFT:",
+                j["q_shift_by_null_weighting"])
+          print("PAIRED REAL MOEA:",j["paired_real_moea"])
+          PY
+      - name: Verify no official data changed
+        run: |
+          git diff --exit-code -- \
+            moeabench/diagnostics/resources/baselines_v0.14.0.json \
+            moeabench/diagnostics/resources/references \
+            calibration/audit_report.html
+      - name: Preserve noncertified experimental measurements
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue78-dpf5-negative-blur-null-Q-counterfactual
+          path: /tmp/dpf5-negative-ecdf-weight-audit.json
+          if-no-files-found: warn
