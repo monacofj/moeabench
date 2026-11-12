@@ -8,6 +8,7 @@ from scipy.spatial import cKDTree
 
 from calibration.scripts.generate_baselines import (
     dominance_outward_direction,
+    dominance_outward_pca_direction,
     estimate_gt_normals,
     generate_half_normal_blur,
     calibrate_sigma,
@@ -45,6 +46,30 @@ def test_minimization_dominance_oriented_outward_projection():
 def test_invalid_normal_refused(invalid):
     with pytest.raises(ValueError,match="finite, nonempty"):
         dominance_outward_direction(invalid)
+
+
+def test_rank_deficient_pca_uses_real_positive_normal_subspace():
+    # A 1D Pareto curve embedded in 3 objectives has TWO valid normal
+    # dimensions. The PCA smallest eigenvector alone is arbitrary.
+    tangent=np.array([1.,-1.,0.])/np.sqrt(2.)
+    C=np.outer(tangent,tangent)
+    values,vectors=np.linalg.eigh(C)
+    outward=dominance_outward_pca_direction(values,vectors)
+    np.testing.assert_allclose(outward,np.ones(3)/np.sqrt(3),atol=1e-12)
+    assert abs(float(np.dot(outward,tangent)))<1e-12
+    assert np.all(outward>=0.)
+
+    # A smooth 2D front in 3D has a unique normal; never add a
+    # spurious extra tangent direction to the "normal" subspace.
+    t2=np.array([1.,1.,-2.])/np.sqrt(6.)
+    C=np.outer(tangent,tangent)*.5+np.outer(t2,t2)
+    values,vectors=np.linalg.eigh(C)
+    outward=dominance_outward_pca_direction(values,vectors)
+    np.testing.assert_allclose(outward,np.ones(3)/np.sqrt(3),atol=1e-12)
+    assert abs(float(np.dot(outward,t2)))<1e-12
+
+    with pytest.raises(ValueError,match="eigensystem"):
+        dominance_outward_pca_direction([0.,1.],np.eye(3))
 
 
 def test_one_sided_half_normal_never_improves_any_objective():
