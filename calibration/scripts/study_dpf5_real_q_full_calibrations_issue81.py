@@ -76,6 +76,30 @@ def make_replicate(*, model, gt, ideal, nadir, tree, normals, k, scale,
     }
 
 
+def pooled_candidate(candidates):
+    """Experimental equal-replicate pooled empirical law, not an approved estimator.
+
+    Each replicate contributes the same number of its stored 200 order
+    statistics. This is a mixture of the 200-point compressed ECDFs, NOT
+    pooling the original 3367 negative samples (which are not saved here).
+    """
+    if len(candidates) < 2:
+        raise ValueError("Need at least two complete calibration replicates")
+    ecdfs = [np.asarray(item["ecdf"], dtype=float) for item in candidates]
+    if any(len(a) != N_SAMPLES or not np.all(np.isfinite(a))
+           or np.any(np.diff(a) < 0) for a in ecdfs):
+        raise ValueError("Invalid candidate ECDF for pooling")
+    mixture = np.sort(np.concatenate(ecdfs))
+    pooled_ecdf = mixture[
+        np.linspace(0, len(mixture) - 1, N_SAMPLES).astype(int)]
+    # Research choice: arithmetic mean epsilon before correcting the fixed
+    # real distances, while the failure mixture is built from *already*
+    # epsilon-corrected reference ECDFs. This is not automatically
+    # equivalent to a single full pooled raw-distance calibration.
+    epsilon = float(np.mean([item["epsilon"] for item in candidates]))
+    return epsilon, pooled_ecdf
+
+
 def q_from_raw(raw_normalized_distance, epsilon, failure_ecdf):
     """Exact current Q-Closeness W1 mapping on corrected physical distances."""
     u = np.maximum(0.0, np.asarray(raw_normalized_distance) - epsilon)
@@ -124,6 +148,7 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
             if len(set(seeds)) != 3 or any(s in all_seeds for s in seeds):
                 raise AssertionError("Calibration RNG namespaces overlap")
             all_seeds.update(seeds)
+        pool_epsilon, pool_ecdf = pooled_candidate(candidates)
         real = []
         for seed in optimizer_seeds:
             experiment = mb.experiment(
@@ -163,7 +188,9 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
             fixed_metrics = _baseline_snapshot(audit)
             q_values = [q_from_raw(physical, c["epsilon"], c["ecdf"])
                         for c in candidates]
-            if not all(np.isfinite(q) and 0 <= q <= 1 for q in q_values):
+            pool_q = q_from_raw(physical, pool_epsilon, pool_ecdf)
+            if not all(np.isfinite(q) and 0 <= q <= 1
+                       for q in (*q_values, pool_q)):
                 raise AssertionError("Invalid candidate clinical Q")
             if fixed_metrics != _baseline_snapshot(audit):
                 raise AssertionError("Non-Closeness indicators mutated")
@@ -173,6 +200,8 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
                 "Pf_sha256": _sha(ctx["P_final"]),
                 "historical_q": float(audit.quality.scores["Q_CLOSENESS"].value),
                 "candidate_q": q_values,
+                "pooled_reference_q_experimental": pool_q,
+                "pooled_minus_single_mean_q": pool_q-float(np.mean(q_values)),
                 "candidate_q_range": max(q_values)-min(q_values),
                 "non_closeness_snapshot": fixed_metrics,
             })
@@ -180,6 +209,12 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
                   for j in range(replicates)]
         by_k[str(k)] = {
             "s_K": scale,
+            "experimental_pooled_reference": {
+                "epsilon_mean": pool_epsilon,
+                "ecdf_sha256": _sha(pool_ecdf),
+                "pooling_method": "equal_mixture_of_200_stored_quantiles",
+                "warning": "NOT original 3367 samples; NOT approved",
+            },
             "replicates": [{key: value for key, value in c.items()
                             if key != "ecdf"} for c in candidates],
             "real_runs": real,
