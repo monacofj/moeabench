@@ -1,5 +1,7 @@
 name: Temporary issue 81 full-calibration real-Q research
 on:
+  pull_request:
+    branches: [main]
   push:
     branches: [research/81-dpf5-calibration-protocol]
   workflow_dispatch:
