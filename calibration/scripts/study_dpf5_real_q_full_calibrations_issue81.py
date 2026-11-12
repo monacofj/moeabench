@@ -23,6 +23,7 @@ from calibration.scripts.validate_dpf5_closeness_protocol_issue81 import (
 from calibration.scripts.generate_baselines import (
     calibrate_sigma, estimate_gt_normals, generate_half_normal_blur, N_SAMPLES,
 )
+from moeabench.diagnostics import baselines
 from moeabench.diagnostics.baselines import get_resolution_factor_k
 from moeabench.diagnostics.qscore import compute_q_wasserstein
 
@@ -147,6 +148,17 @@ def study(*, ks=(40, 100, 200), generations=300, optimizer_seeds=(1, 7),
             physical = tree.query(np.asarray(ctx["P_final"], dtype=float))[0] / scale
             np.testing.assert_allclose(
                 raw_corrected, np.maximum(0.0, physical - old_epsilon),
+                atol=1e-10, rtol=0)
+            # Independent implementation oracle: recompute the *archived*
+            # clinical Q with exactly the existing baseline ECDF and W1 map
+            # before any candidate comparisons. This catches normalization,
+            # population and baseline-schema mismatches immediately.
+            _, _, historical_ecdf = baselines.get_baseline_ecdf(
+                "DPF5", baselines.snap_k(k, problem="DPF5"),
+                "closeness", target_m=3)
+            original_q = q_from_raw(physical, old_epsilon, historical_ecdf)
+            np.testing.assert_allclose(
+                original_q, float(audit.quality.scores["Q_CLOSENESS"].value),
                 atol=1e-10, rtol=0)
             fixed_metrics = _baseline_snapshot(audit)
             q_values = [q_from_raw(physical, c["epsilon"], c["ecdf"])
