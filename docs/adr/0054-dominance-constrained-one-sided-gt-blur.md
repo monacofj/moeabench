@@ -48,6 +48,22 @@ selects the closest nonnegative unit direction to either
 unoriented PCA normal. For exactly/numerically zero normals use the
 positive unit diagonal.
 
+**Lower-dimensional Pareto fronts require one refinement.** A
+one-dimensional curve embedded in three objectives has a
+two-dimensional normal *plane*, not a unique normal vector. Its
+smallest local covariance eigenvector is arbitrary in that plane and
+can have mixed signs even when another vector in the same plane lies
+entirely on the dominated side. The implementation now detects a
+clear PCA low-variance eigensubspace using a **2% relative eigenvalue
+threshold** against the largest local eigenvalue (keeping at least
+one tangent axis), projects the nonnegative unit diagonal into
+this normal subspace, and uses that direction when nonnegative.
+Only otherwise does it project the individual lowest eigenvector
+onto the positive dominance cone. This is a deterministic
+**heuristic intrinsic-rank cutoff**, not a global proof of the
+manifold's dimension. The read-only audit reports the frequency
+of true-normal-subspace recovery versus the fallback.
+
 Sample `t = abs(N(0,sigma²))`, and set `b=g+t*d`. **No independent
 random sign** and no retry that can cross into improving directions.
 The generator checks finite inputs, positive finite sigma, exact
@@ -144,3 +160,18 @@ and will not define new baseline values.
 5. Merge the **source correction** only after review; issue #81
    remains solely responsible for **scientific baseline
    recalibration**, including DPF5's ideal/negative measure choices.
+
+
+### 2026-11-12 — First full source audit: PASS, important normal-fidelity limitation discovered
+
+- **PASS — [CI #43235004493](https://github.com/monacofj/moeabench/actions/runs/43235004493):** 13/13 focused and 335/335 full unit tests passed; bounded, 512-row per-MOP tests on all **14 actual frozen MOP GT packages** found **100%** of generated blur points weakly dominated by their own GT origin, and all strictly worse in at least one objective. The unchanged `2s_K` sigma controller fitted within its original ±5% target for all fourteen bounded samples. No frozen baseline/GT or official `audit_report` changed. Artifact `issue83-outward-half-normal-14mop-not-certified` ID **13952560461**.
+- **SCIENTIFIC/GEOMETRIC LIMITATION DISCOVERED (not hidden):** The first implementation projected a *single* PCA lowest eigenvector into the nonnegative dominance cone. That was sufficient for domination but often abandoned the *true local normal subspace*. Among 512 sampled points of each archived GT, the original raw lowest eigenvector was mixed-sign at **100% of DTLZ5, DTLZ6 and DTLZ9** locations, **67.77% DPF1**, **97.85% DPF2**, and **59.38% DTLZ7**. The old raw GTs of DPF2/DTLZ7 are independently known to include dominated points; they are unsuitable for scientific calibration. Even for valid curved 1D PFs the smallest PCA normal is arbitrary because the null space is multidimensional. A naive orthant projection would misrepresent the actual local normal.
+- **REPAIR OF THE REPAIR:** Added `dominance_outward_pca_direction` to select a *nonnegative vector of the true low-variance PCA normal subspace* when the covariance spectrum indicates a rank-deficient manifold (eigenvalues ≤2% of the largest eigenvalue, keeping at least one tangent dimension). Only ambiguous/non-Pareto cases fall back to the conservative nonnegative cone projection. Added focused rank-1 curve and rank-2 surface spectral proof tests. This correction is still algorithm-independent and retains the original sigma controller unchanged.
+
+### 2026-11-12 — Normal-subspace refinement PASSED, 14-MOP sampled evidence
+
+- **PASS — [CI #43235806488](https://github.com/monacofj/moeabench/actions/runs/43235806488):** **14/14 focused tests and 336/336 complete unit tests**, all fourteen 512-point frozen GT subsamples, all strict domination checks and old 2-unit-resolution sigma tolerance checks. No official scientific data changes. Audit evidence artifact `issue83-outward-half-normal-14mop-not-certified` ID **13953095756**.
+- **Geometrical fidelity improved:** For all **512 sampled points each** of DTLZ5, DTLZ6 and DTLZ9, the low-dimensional normal-subspace criterion recovered a genuine normal direction in the dominated cone (subspace alignment **1.0**), instead of forcing the arbitrary raw smallest eigenvector onto a coordinate cone boundary. For DPF1 the normal subspace recovered **347 of 347** of its mixed-sign lowest PCA eigenvectors; for DPF3 **49 of 49**; for DPF4 **25 of 25**. DTLZ1,2,3,4, DPF5 needed no raw-normal cone projection in this bounded test.
+- **Residual scientific caveats:** In the *historically invalid GT* of DPF2, 501 of 512 raw normals have mixed sign and only 261 are recovered in the low-rank normal plane. DTLZ7's historical GT has mixed-sign PCA normals at 304/512 sampled points with estimated median normal-subspace alignment 0.9945. Those GTs are **not certified true PFs**; no generator revision can make them so. DTLZ8 had only 13/512 mixed normals; its independent ideal reference remains unsupported. For remaining cases an outward cone projection is explicitly a **surrogate**, not an exact manifold normal. These cases are visible in the read-only audit and assigned to scientific baseline issue #81.
+- **Controller preservation:** All 14 bounded audit cases attained calibrated median normalized distance between **1.9004 and 2.0827**; the target remains 2.0 with 5% relative tolerance. These are 512-point *bounded subsample* controller observations, **not** certified results for the full frozen 10K GT or a new versioned baseline.
+- **Release interpretation:** This is a source-level correctness fix for the **outward-only null**, independently from the still unapproved DPF5 branch-mixture sampling law. Basic integration and final source/docs cleanup remain release gates; the new failure ECDF must be scientifically recalibrated and reviewed under issue #81 before anyone publishes new clinical Q scores.
