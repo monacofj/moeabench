@@ -168,6 +168,11 @@ def study(*,ks=(40,100,200),ideal_sizes=(4096,16384),
         controller_values=[]
         final_medians=[]
         quantiles10,quantiles50,quantiles90=[],[],[]
+        # Paired common-random-numbers design: the SAME four blur seeds are
+        # deliberately reused with each fitted sigma. Therefore the 16
+        # fit×blur outcomes within a K are NOT 16 statistically independent
+        # Gaussian noise sequences (only four different base sequences).
+        # K reuses those seeds again, so three K values are not 48 trials.
         for fit_seed in fit_seeds:
             sigma,controller_median,controller_p95=calibrate_sigma(
                 gt,normals,scale,fit_seed,tree=gt_tree)
