@@ -394,3 +394,110 @@ The temporary issue78 negative-ECDF CI workflow was removed after
 the verified green run (commit `8c8b653e`). Historical failures,
 including the previously corrected test-grid assumption and CLI
 import issue, remain recorded above.
+
+
+## 2026-11-12 — Corrected outward half-blur generator source paired pilot (issue #83 / #81)
+
+**Implementation gate complete:** [PR #84](https://github.com/monacofj/moeabench/pull/84)
+fixed the old `abs(Gaussian) * random(±1)` sign mistake, merged
+to `main` as `a089b1b`. The new generator provably moves every
+perturbed point to the **dominated** side of its origin in objective
+space for minimization, using a genuine local normal subspace when
+available and a conservative projected outward surrogate otherwise.
+The original half-normal `median(d(blur,GT)/s_K)≈2` intensity policy
+was not changed. [ADR 0054](0054-dominance-constrained-one-sided-gt-blur.md)
+contains the mathematical proof, original failure, geometric
+exceptions and full 14-MOP source-regression history. **No historical
+baseline was retroactively replaced.**
+
+**Independent research follow-up:** The research-only PR #80
+explicitly synchronized its `calibration/scripts/generate_baselines.py`
+file byte-for-byte with the merged source-generator version
+(`e43713b8...` Git blob SHA). Added
+`calibration/scripts/study_dpf5_outward_blur_issue83.py` and
+`tests/unit/test_dpf5_outward_blur_issue83.py`, which keep the
+**original frozen 3,367 distinct GT anchors**, original normalization,
+the fixed `K=100` `s_K=0.09085520863957625`, the positive unit
+PCA/subspace normal directions and independently sampled continuous
+Pareto ideal (`N=16,384`, seed 123) to estimate
+`ideal_res=0.05269760011788649`. This is still a **PROPOSED,
+NONCERTIFIED** ideal reference law from uniform decision parameters,
+not the original historical Q calibration.
+
+The script calibrates a **new sigma** from the unchanged target
+`median(nearest_dist/s_K)≈2`, regenerates the **corrected outward-only
+negative Closeness ECDF** with **exactly one half-normal draw per
+distinct GT row**, and modifies only the DPF5/K100 Closeness record
+in an **in-memory** candidate. A second in-memory control changes
+only the old historical null's `ideal_res` and ECDF
+shift, holding the historical negative distribution fixed. Both
+are applied to the exact same actual NSGA-II final populations,
+without any mutation of source GT, P0/Pf, `s_K`, Headway, or the five
+other FAIR/Q families.
+
+**PASS — [CI #43237481702](https://github.com/monacofj/moeabench/actions/runs/43237481702):**
+8 focused unit tests and genuine two-seed NSGA-II paired experiments
+(`K=100`, 300 generations) passed. The corrected one-sided
+half-normal source code was SHA256-verified against the source
+synchronized from merged PR #84; strict domination, baseline
+immutability and all five unrelated FAIR/Q metric equivalences
+passed. Evidence artifact
+`issue83-dpf5-corrected-half-blur-real-Q-noncertified` ID
+**13953002341** includes all numeric outcomes. No official
+baseline, reference NPZ or `audit_report` changed.
+
+- **Sigma:** historical frozen `0.27478018598050824`;
+  recalibrated unilateral generator `0.27616864921934225`.
+  The calibration-controller median was `1.9888389498266674 s_K`,
+  **within original 5% tolerance**. An **independent final blur
+  draw** under the different fixed generation seed had median
+  `2.1349443439762044 s_K`, outside ±5% around 2: this is
+  observed between-seed sampling variability, not a claim that
+  every realized failure ECDF has median exactly 2. Its corrected
+  ECDF median (`rand50`) is `2.0822467438583177`.
+- **Independent ideal residue:** `0.05269760011788649`
+  (same existing DPF5 exploratory decision-parameter iid law;
+  not universally fixed and not installed).
+- **Real NSGA-II seed 1:** historical Q-Closeness
+  `0.94042786158407`; corrected residue with historical
+  negative ECDF `0.9579859119108038`; corrected residue
+  **and** newly calibrated unilateral GT-normal blur
+  `0.9591487008391547`. The *extra effect of the corrected
+  negative ECDF alone* under the same epsilon is
+  `+0.0011627889283508663`.
+- **Real NSGA-II seed 7:** historical `0.8518897113402047`;
+  corrected residue with historical negative ECDF
+  `0.8676722778596149`; corrected residue and unilateral
+  negative ECDF `0.8712282677580667`. Additional null
+  effect `+0.00355598989845185`.
+- **Exact invariants:** for each seed the experiment's
+  genuine P0/Pf, registered DPF5 GT, resolution `s_K`,
+  and `Q_HEADWAY`, `Q_COVERAGE`, `Q_GAP`,
+  `Q_REGULARITY`, `Q_BALANCE` (plus their physical
+  metrics) are unchanged to numerical tolerance 1e-12.
+  The original in-memory baseline is restored after each
+  counterfactual audit and verified.
+
+**Interpretation / release decision:** The corrected one-sided
+generator fixes a verified software defect; the small *additional*
+Q shifts under the two tested trajectories do **not** imply the
+historical Q-Closeness is certified. Most observed Q improvement
+comes from the still-provisional **independent finite-GT ideal
+residue**, not the corrected negative-null geometry. The final
+blur median's deviation from the controller seed emphasizes that
+a versioned scientific calibration should specify its
+reproducibility/uncertainty policy (possibly repeat seeds) rather
+than blindly treating a single negative ECDF as exact.
+The distinct GT-row null weighting is deliberately maintained:
+this study does **not** adopt the previously investigated
+67%-weight D branch reweighting. The one-sided blur null remains
+an algorithm-independent **geometric error model**, not a
+simulation of a particular MOEA with limited generations.
+
+The optional and separately justified scientific release of
+Closeness-only baseline data remains under
+[issue #81](https://github.com/monacofj/moeabench/issues/81),
+which must choose the ideal/negative measures, source provenance
+and uncertainty before publication. Research Draft PR #80 is not
+a production calibration and is not merged; temporary study CI
+workflow removed after verified success (commit `a4791354`).
