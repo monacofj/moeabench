@@ -66,6 +66,7 @@ This directory contains records of the key architectural decisions made during t
 | [0052](0052-dpf2-dtlz7-exact-pareto-regions.md) | Exact Pareto-region sampling for DPF2 and DTLZ7 (issue #78) | Proposed | 2026-11-11 |
 | [0053](0053-dpf5-mixed-dimensional-reference-measure.md) | DPF5: mixed-dimensional ideal reference and negative ECDF law (scientific research, issue #81) | Proposed / noncertified | 2026-11-12 |
 | [0054](0054-dominance-constrained-one-sided-gt-blur.md) | Dominated-side one-sided GT half-normal blur (issue #83) | Proposed | 2026-11-12 |
+| [0055](0055-dpf5-closeness-reference-protocol.md) | DPF5 Closeness ideal and unfavorable reference laws; multi-seed validation contract (issue #81) | Proposed / noncertified | 2026-11-12 |
 
 ## Decision Lineage
 
