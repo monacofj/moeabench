@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from calibration.scripts.study_dpf5_real_q_full_calibrations_issue81 import (
-    seed_triplet, q_from_raw, _ranking,
+    seed_triplet, q_from_raw, _ranking, pooled_candidate,
 )
 from moeabench.diagnostics.qscore import compute_q_wasserstein
 
@@ -42,3 +42,21 @@ def test_ordering_is_deterministic_and_sensitive_to_rank_reversal():
     assert _ranking([.9, .3, .5]) == (0, 2, 1)
     assert _ranking([.3, .9, .5]) == (1, 2, 0)
     assert _ranking([.5, .5]) == (0, 1)
+
+
+def test_pooled_quantiles_are_monotone_and_reproducible():
+    candidates = [
+        {"epsilon": .1, "ecdf": np.linspace(0., 1., 200)},
+        {"epsilon": .2, "ecdf": np.linspace(0., 2., 200)},
+    ]
+    e1, v1 = pooled_candidate(candidates)
+    e2, v2 = pooled_candidate(candidates)
+    assert e1 == e2
+    assert e1 == pytest.approx(.15)
+    assert np.array_equal(v1, v2)
+    assert len(v1) == 200 and np.all(np.diff(v1) >= 0)
+
+
+def test_pooled_quantiles_require_independent_input_count():
+    with pytest.raises(ValueError):
+        pooled_candidate([{"epsilon": .1, "ecdf": np.zeros(200)}])
