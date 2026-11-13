@@ -31,7 +31,7 @@ import moeabench as mb
 
 ## **1. Core API**
 
-The **Core API** is the operational backbone of the library. It covers experiment construction, execution, calibration, persistence, export, environment inspection, and global configuration.
+The **Core API** is the operational backbone of the library. It covers experiment construction, execution, persistence, export, environment inspection, and global configuration.
 
 | Namespace | Method / Object | Role | Input | Output / Effect |
 | :--- | :--- | :--- | :--- | :--- |
@@ -41,8 +41,6 @@ The **Core API** is the operational backbone of the library. It covers experimen
 | `exp` | `run(...)` | Executes the protocol | `repeat`, `silent`, `stop`, MOEA kwargs | Populates runs/history |
 | `exp` | `save(path, mode=...)` | Persists experiments | Path, mode | ZIP archive |
 | `exp` | `load(path, mode=...)` | Restores experiments | Path, mode | Rehydrates experiment state |
-| `mop` | `calibrate(...)` | Problem-centered clinical calibration | GT/baseline/search sources | Sidecar / baseline artifacts |
-| `mb.clinic` | `calibrate(...)` | Procedural calibration entry point | MOP and calibration sources | Same calibration engine as `mop.calibrate(...)` |
 | `mb.system` | `version(show=True)` | Version inspection | `show` flag | Version string |
 | `mb.system` | `check_dependencies()` | Environment dependency audit | None | Dependency report |
 | `mb.system` | `info(show=True)` | Reproducibility metadata | `show` flag | `dict` |
@@ -83,14 +81,13 @@ pop = run.pop(-1)
 # The same family of APIs can often consume any of these
 mm = mb.metrics.hv(exp)
 res = mb.stats.strata(pop)
-diag = mb.clinic.audit(run)
 ```
 
 ---
 
 ## **3. Analysis Domains**
 
-This is the central analytical table of the API. It correlates **analysis namespaces** (`metrics`, `stats`, `clinic`) with their canonical result objects and the views that consume them.
+This is the central analytical table of the API. It correlates **analysis namespaces** (`metrics`, `stats`) with their canonical result objects and the views that consume them.
 
 | Domain | Analysis API | Canonical Result | Correlated Views |
 | :--- | :--- | :--- | :--- |
@@ -110,7 +107,6 @@ reference context. `scale="abs"` is unsupported.
 | Stratification | `mb.stats.ranks(...)` | `RankCompareResult` | `view.ranks` |
 | Stratification | `mb.stats.strata(...)` | `StrataCompareResult` | `view.strata` |
 | Stratification | `mb.stats.tiers(...)` | `TierResult` | `view.tiers` |
-| Diagnostics | `mb.clinic.audit(...)` | `DiagnosticResult` | `view.radar`, `view.ecdf`, `view.density`, `view.history` |
 
 This table defines the canonical workflow pattern:
 
@@ -124,7 +120,7 @@ mb.view.strata(res)
 
 The same pattern applies across domains:
 
-- compute in `metrics`, `stats`, or `clinic`
+- compute in `metrics` or `stats`
 - inspect the rich result
 - visualize through `mb.view`
 
@@ -136,7 +132,6 @@ The `view` namespace is organized by **chart type**, not by the semantics of the
 
 | View | Visual Form | Typical Inputs | Produces | Domain Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| `mb.view.history(...)` | Line trajectories over generations | `MetricMatrix`, `Experiment`, `Run`, `DiagnosticResult` | Temporal figure | Performance or clinic, depending on input/domain |
 | `mb.view.spread(...)` | Boxplot / comparative spread | `PerfCompareResult`, `MetricMatrix`, experiment-like inputs | Comparative distribution figure | Performance-oriented |
 | `mb.view.density(...)` | KDE / histogram / density morphology | Performance, topology, or clinic inputs/results | Density figure | Domain-dispatched |
 | `mb.view.topology(...)` | Scatter / spatial geometry | `Population`, `Experiment`, `Run`, `AttainmentSurface` | Spatial figure | Objective-space geometry |
@@ -145,8 +140,6 @@ The `view` namespace is organized by **chart type**, not by the semantics of the
 | `mb.view.ranks(...)` | Rank occupancy bars | `RankCompareResult` or compatible structure | Rank frequency figure | Layer occupancy |
 | `mb.view.strata(...)` | Rank-wise quality distribution | `StrataCompareResult` | Hierarchical boxplot figure | Layer-quality relationship |
 | `mb.view.tiers(...)` | Comparative tier duel | `TierResult` | Duel / proportion figure | Joint competition |
-| `mb.view.radar(...)` | Spider / radar chart | `DiagnosticResult`, `audit(...)`-compatible input | Diagnostic fingerprint | Holistic clinical summary |
-| `mb.view.ecdf(...)` | Empirical cumulative curve | Clinical input / diagnostic result | Goal-attainment figure | Clinical deep inspection |
 
 Two principles govern the `view` namespace:
 
@@ -169,36 +162,8 @@ MoeaBench is not organized around raw arrays alone. Its public API is strongly c
 | `RankCompareResult` | `mb.stats.ranks(...)` | Rank occupancy structure | Yes | `ranks` |
 | `StrataCompareResult` | `mb.stats.strata(...)` | Rank-wise quality distribution | Yes | `strata` |
 | `TierResult` | `mb.stats.tiers(...)` | Shared-rank duel between methods | Yes | `tiers` |
-| `DiagnosticResult` | `mb.clinic.audit(...)` | Clinical synthesis over FAIR and Q-score layers | Yes | `radar`, `ecdf`, `density`, `history` |
 
 This result-oriented design is one of the main architectural signatures of MoeaBench.
-
----
-
-## **6. Advanced Public Methods**
-
-Some methods are public but are not intended to be the primary entry path for first-time users. They remain important because they expose deeper analytical layers and support advanced workflows, custom plots, and pathology research.
-
-| Namespace | Method | Category | Return | Why Advanced |
-| :--- | :--- | :--- | :--- | :--- |
-| `mb.clinic` | `headway`, `closeness`, `coverage`, `gap`, `regularity`, `balance` | FAIR / physical diagnostics | `FairResult` | Lower-level physical facts below the clinical synthesis |
-| `mb.clinic` | `q_headway`, `q_closeness`, `q_coverage`, `q_gap`, `q_regularity`, `q_balance` | Clinical normalized scores | `QResult` | Direct access to individual clinical layers |
-| `mb.clinic` | `q_headway_points`, `q_closeness_points` | Point-wise helpers | `np.ndarray` | Per-point diagnostics and semantic overlays |
-| `mb.clinic` | `register_baselines(source)` | Baseline management | Side effect / registry update | Session-level baseline control |
-| `mb.clinic` | `reset_baselines()` | Baseline management | `None` | Restores built-in defaults |
-| `mb.clinic` | `use_baselines(source)` | Baseline management | Context manager | Temporary baseline switching |
-
-The canonical diagnostic entry point remains:
-
-```python
-import moeabench as mb
-
-diag = mb.clinic.audit(exp, quality=True)
-diag.report()
-mb.view.radar(diag)
-```
-
-The advanced methods above should be understood as **bonus depth**, not as the default API narrative for new users.
 
 ---
 
@@ -211,8 +176,6 @@ The public API is intentionally segmented by namespace role.
 | `mb` | Top-level facade | Canonical | `mb.experiment`, `mb.metrics`, `mb.stats`, `mb.view` |
 | `mb.metrics` | Scalar metric computation | Canonical | `hv`, `igd`, `emd`, `front_ratio` |
 | `mb.stats` | Statistical comparison and structural analysis | Canonical | `perf_compare`, `attainment`, `strata`, `tiers` |
-| `mb.view` | Visualization grammar | Canonical | `history`, `density`, `topology`, `radar` |
-| `mb.clinic` | Diagnostic synthesis and advanced pathology tools | Canonical entry + advanced public methods | `audit`, `closeness`, `q_closeness`, `use_baselines` |
 | `mb.system` | Runtime environment, export, and reproducibility helpers | Canonical support | `info`, `version`, `export_objectives` |
 | `mb.mops` | Built-in benchmark problems | Support / domain content | `DTLZ2`, `DPF1`, custom MOP base classes |
 | `mb.moeas` | Built-in solver implementations | Support / domain content | `NSGA3`, `MOEAD`, custom MOEA base classes |
@@ -232,4 +195,3 @@ In architectural terms:
 - **[userguide.md](userguide.md)**: tutorial and didactic walkthrough
 - **[reference.md](reference.md)**: exhaustive contracts, arguments, and returns
 - **[mops.md](mops.md)**: benchmark families and mathematical background
-- **[fair_metrics.md](fair_metrics.md)**: FAIR metrics and clinical diagnostics internals

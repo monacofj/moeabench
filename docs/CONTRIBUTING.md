@@ -83,17 +83,6 @@ Use the `test.py` script in the root directory to run the test suite.
 - Remember that `stability` protects both numerical stability of analytical measurements and numerical stability of produced algorithm fronts.
 - Avoid adding tests that depend on heavy CPU usage or GUI backends.
 
-### Calibration and Baselines
-Maintaining scientific consistency is paramount. The framework relies on an **Oracle Baseline** (e.g., `calibration/data/baselines.csv`) and a **Calibration Report** (e.g., `calibration/audit_report.html`).
-- If your contribution affects the core IGD/HV performance, you MUST regenerate the baselines and the report.
-- The framework also utilizes **Calibration Reference Data** (JSON) for numerical regression testing.
-- Raw calibration traces are stored in `calibration/data/calibration_data/`.
-- **Do not overwrite certified baselines during development.** Full baseline generation now requires an explicit staged output, for example `MOEABENCH_BASELINE_OUTPUT=/tmp/baselines-candidate.json python calibration/scripts/generate_baselines.py`. The generator refuses writes through the current certified alias.
-- For the existing ADR 0037 Closeness definition, inspect an independent-analytical-PF candidate without touching the archived baseline: `python calibration/scripts/stage_closeness_adr0037.py --impact /tmp/adr0037-impact.json`. Add `--candidate /tmp/adr0037-candidate.json` only to stage a separate, **noncertified** baseline file. The script updates Closeness records alone and explicitly reports MOPs without a compatible independent analytical PF; it does **not** adopt a normalized-surface-area sampling law.
-- Rebuilding the official `calibration/audit_report.html` requires validating the benchmark data and numerical audit JSON **against the new calibration** before running `calibration/scripts/generate_visual_report.py`. The historical `calibration/scripts/audit_calibration.py` is not yet certified against the current FAIR/Headway APIs under issue #75; its output must not be treated as a newly validated report until that migration is tested. Preserve existing versioned audit reports and update canonical aliases only as part of the validated release.
-
----
-
 ## 4. AI Usage Disclosure
 
 While we don't rule out the use of auxiliary AI assistance tools in this project, contributors must explicitly disclose such usage, take full responsibility for the intellectual work, and ensure all submissions strictly adhere to our performance requirements and licensing compatibility.

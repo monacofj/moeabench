@@ -24,7 +24,7 @@ The detailed historical record of decisions lives in **[ADR/](adr/)**. This docu
 6.  **[6. Polymorphism Policy](#6-polymorphism-policy)**
 7.  **[7. Rich Results and Reporting](#7-rich-results-and-reporting)**
 8.  **[8. Views and Visualization Boundaries](#8-views-and-visualization-boundaries)**
-9.  **[9. Diagnostics, Calibration, and Reproducibility](#9-diagnostics-calibration-and-reproducibility)**
+9.  **[9. Scientific Provenance and Reproducibility](#9-diagnostics-calibration-and-reproducibility)**
 10. **[10. Performance and Numerical Integrity](#10-performance-and-numerical-integrity)**
 11. **[11. Extensibility and Plugin Discipline](#11-extensibility-and-plugin-discipline)**
 12. **[12. Breaking Changes and API Hygiene](#12-breaking-changes-and-api-hygiene)**
@@ -155,7 +155,6 @@ The public surface is organized under:
 - `mb.metrics`
 - `mb.stats`
 - `mb.view`
-- `mb.clinic`
 - `mb.system`
 - `mb.mops`
 - `mb.moeas`
@@ -324,8 +323,6 @@ Examples of the intended result architecture include:
 - `RankCompareResult`
 - `StrataCompareResult`
 - `TierResult`
-- `DiagnosticResult`
-- advanced public result types such as `FairResult`
 
 ---
 
@@ -384,45 +381,6 @@ This preserves:
 ## **9. Diagnostics, Calibration, and Reproducibility**
 
 Diagnostics are part of the scientific architecture, not an optional add-on.
-
-### **9.1. Canonical Diagnostic Entry Point**
-
-The canonical public diagnostic entry point is:
-
-```python
-mb.clinic.audit(target, quality=True)
-```
-
-This is the central diagnostic narrative for first-time users and the preferred entry path for general workflows.
-
-### **9.2. Advanced Public Diagnostic Methods**
-
-FAIR metrics, Q-score functions, point-wise helpers, and baseline-management methods may remain public, but they are architecturally secondary to `audit`.
-
-They exist for:
-
-- advanced analysis
-- custom instruments
-- pathology research
-- fine-grained semantic overlays
-
-### **9.3. Calibration Is First-Class Infrastructure**
-
-Calibration is not an implementation detail.
-
-The architecture assumes:
-
-- a problem may require GT acquisition
-- diagnostics depend on calibrated baselines
-- baseline provenance matters scientifically
-- contributors must treat calibration artifacts as part of the analytical infrastructure
-
-Both:
-
-- `mop.calibrate(...)`
-- `mb.clinic.calibrate(...)`
-
-are valid expressions of this design principle.
 
 ### **9.4. Reproducibility Metadata Is Mandatory Infrastructure**
 

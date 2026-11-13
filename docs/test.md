@@ -53,7 +53,7 @@ Canonical workflow tests across namespaces.
 
 These protect:
 
-- composition between `metrics`, `stats`, `clinic`, `view`, and persistence
+- composition between `metrics`, `stats`, `view`, and persistence
 - headless canonical walkthroughs
 - view dispatch and GT inference behavior
 - correlated result/view pipelines
@@ -69,7 +69,7 @@ Numerical and deterministic stability tests.
 
 Stability protects two distinct scientific contracts:
 
-- **Analytical stability**: given frozen inputs such as a front and a ground truth, the current metrics, clinical diagnostics, FAIR metrics, and Q-scores must still reproduce the certified numerical outputs.
+- **Analytical stability**: given frozen inputs such as a front and a ground truth, the current metrics must still reproduce the certified numerical outputs.
 - **Algorithmic stability**: given a canonical `(MOP, MOEA, seed, budget)` configuration, the current solver stack must still reproduce the certified final front.
 
 These two contracts are independent:

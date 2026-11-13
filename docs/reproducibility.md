@@ -56,10 +56,6 @@ Standard pseudo-random number generators (PRNGs) evolve. As libraries like NumPy
 
 MoeaBench employs three complementary mechanisms to improve reproducibility and detect drift:
 
-### A. Legacy PRNG for Diagnostics
-The clinical diagnostic engine (FAIR Metrics and Q-Scores) uses the **Legacy NumPy RandomState API** (`np.random.RandomState`). 
-- **Rationale**: NumPy has explicitly "frozen" this API to ensure bit-of-bit stability for long-term research. Using `RandomState` reduces the risk of PRNG algorithm changes, but does not by itself guarantee identical results across all future numerical environments.
-
 ### B. Local RNG state for Algorithms
 To prevent interference between parallel experiments or global state side effects, MoeaBench MOEAs (like `NSGA2deap`) utilize **localized generator instances** (e.g., `random.Random(seed)`).
 - **Rationale**: Relying on the global `random.seed()` is vulnerable to other libraries or user scripts altering the global state mid-execution. Localized state ensures that each algorithm instance is an isolated, deterministic unit.
@@ -104,7 +100,6 @@ those directions during selection. Component seeds are included in experiment
 reports, persisted archives, and `metadata.json`.
 
 ### D. Environment Metadata Capture
-Every diagnostic biopsy performed via `mb.clinic.audit()` automatically captures **Reproducibility Metadata**:
 - Python version
 - NumPy version
 - MoeaBench version
@@ -122,27 +117,4 @@ To strengthen the evidence for reproducibility in scientific articles, follow th
     `run.component_seeds` or preserve the experiment archive.
 2.  **Save the Environment**: Include a `requirements.txt` or `environment.yml` that specifies the exact version of Python and NumPy used.
 3.  **Persist Ground Truths**: While MoeaBench provides analytical PF functions, using fixed "Sidecar" JSON files ensures that any future changes to analytical MOP definitions don't invalidate your historical baselines.
-4.  **Export Diagnostic JSONs**: Use the built-in export features to save the full audit trail including the reproducibility metadata block.
 
-## 4. Baseline Version Mapping & Compatibility
-
-To protect against RNG implementation shifts in the underlying language or libraries, MoeaBench implements a **Fail-Safe Baseline Protocol**:
-
-### A. Environment DNA
-The canonical `baselines.json` contains "Environment DNA" captured at the moment of calibration:
-- `python_version`
-- `numpy_version`
-- `moeabench_version`
-
-### B. Compatibility Checks
-When performing an audit, MoeaBench compares your current session environment against the baseline's DNA:
-- **Primary Frozen Baseline**: The canonical alias `baselines.json` is allowed to remain frozen at the last certified calibration release. Its MoeaBench version tag is treated as part of the reference artifact and does not need to match the current codebase version.
-- **Historical / External Baselines**: If you explicitly load an older or alternative baseline source, version mismatch remains part of the audit trail and may trigger a `ReproducibilityWarning`.
-- **Environment Match**: If the current Python or NumPy version differs from the calibration environment, a `ReproducibilityWarning` is issued.
-- **Schema Integrity**: If the JSON structure is incompatible with the current library version, an `UndefinedBaselineError` is raised (Fail-Strict).
-
-### C. Longitudinal Auditing
-This protocol allows a researcher in 2028 to run **MoeaBench v5.0** against a **v0.13.2 baseline** to maintain historical parity. The system will allow execution but will explicitly log the version mismatch in the audit trail, ensuring full transparency in the peer-review process.
-
----
-*For more technical details on the FAIR Metrics Framework, see [fair_metrics.md](fair_metrics.md).*
