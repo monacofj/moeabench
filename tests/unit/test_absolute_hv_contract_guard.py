@@ -23,9 +23,10 @@ POP = np.array([[0.2, 0.9], [0.9, 0.2], [0.7, 0.7]])
 OTHER = np.array([[0.1, 0.95], [0.95, 0.1], [0.55, 0.65]])
 
 
-def _mop_linked_run(monkeypatch):
+def _mop_linked_run(monkeypatch, tmp_path):
     mop = mb.mops.DTLZ2(M=2)
     monkeypatch.setattr(mop, "pf", lambda n_points=500: GT.copy())
+    mop.calibrate(source_baseline=tmp_path / "mop-gt.json", n_points=4)
     exp = mb.experiment(mop=mop)
     history = [POP.copy()]
     empty = [np.empty((len(POP), 0))]
@@ -38,16 +39,16 @@ def _raw(front, ref):
                                mode="exact", progress=False))
 
 
-def test_absolute_hv_without_ref_uses_mop_gt(monkeypatch):
-    run = _mop_linked_run(monkeypatch)
+def test_absolute_hv_without_ref_uses_mop_gt(monkeypatch, tmp_path):
+    run = _mop_linked_run(monkeypatch, tmp_path)
     numerator = float(mb.metrics.hv(run, scale="raw", mode="exact", progress=False))
     denominator = _raw(GT, POP)
     actual = float(mb.metrics.hv(run, scale="abs", mode="exact", progress=False))
     assert actual == pytest.approx(numerator / denominator)
 
 
-def test_absolute_hv_ref_only_selects_bounds(monkeypatch):
-    run = _mop_linked_run(monkeypatch)
+def test_absolute_hv_ref_only_selects_bounds(monkeypatch, tmp_path):
+    run = _mop_linked_run(monkeypatch, tmp_path)
     numerator = _raw(POP, OTHER)
     denominator = _raw(GT, OTHER)
     actual = float(mb.metrics.hv(run, ref=OTHER, scale="abs",
@@ -55,8 +56,8 @@ def test_absolute_hv_ref_only_selects_bounds(monkeypatch):
     assert actual == pytest.approx(numerator / denominator)
 
 
-def test_absolute_hv_accepts_multiple_normalization_reference_sources(monkeypatch):
-    run = _mop_linked_run(monkeypatch)
+def test_absolute_hv_accepts_multiple_normalization_reference_sources(monkeypatch, tmp_path):
+    run = _mop_linked_run(monkeypatch, tmp_path)
     sources = [OTHER, GT]
     numerator = _raw(POP, sources)
     denominator = _raw(GT, sources)
