@@ -876,11 +876,13 @@ def _mop_from_evaluated_data(data):
     seen = set()
     while current is not None and id(current) not in seen:
         seen.add(id(current))
-        if hasattr(current, "pf") and hasattr(current, "evaluation"):
-            return current
+        # Experiments delegate pf()/evaluation() to their MOP; prefer the
+        # explicitly owned MOP over those delegation methods.
         mop = getattr(current, "mop", None)
         if mop is not None:
             return mop
+        if hasattr(current, "pf") and hasattr(current, "evaluation"):
+            return current
         current = getattr(current, "source", None)
     return None
 
