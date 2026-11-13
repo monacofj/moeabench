@@ -6,3 +6,5 @@ include moeabench/requirements.txt
 include README.md
 include COPYING
 include CITATION.cff
+
+recursive-include moeabench/resources *.json

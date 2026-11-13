@@ -558,11 +558,12 @@ class experiment(Reportable):
                            If True, appends new runs to the existing ones.
             workers (int): [DEPRECATED] Parallel execution is no longer supported. 
                            All runs are performed serially for stability.
-            diagnose (bool): If True, performs automated algorithmic pathology analysis 
-                             after execution and prints the rationale. Defaults to False.
+            diagnose (bool): Reserved argument; experimental diagnostics are unavailable in this release.
             silent (bool): If True, suppresses run output (prints and progress bars).
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
+        if diagnose:
+            raise NotImplementedError("Experimental diagnostics are unavailable in this release.")
         # Compare once per runtime environment; no costly tests are implicit.
         from ..environment_verification import warn_on_unverified, snapshot
         warn_on_unverified()
@@ -604,10 +605,6 @@ class experiment(Reportable):
             self._environment_comparison = {"status": "MATCH", "differences": {}}
             self._run_serial(repeat, base_seed, start_index=len(self._runs), silent=silent)
 
-            if diagnose:
-                raise NotImplementedError(
-                    "The clinical diagnostic module is research in progress and unavailable in this release."
-                )
 
     def _run_serial(self, repeat: int, base_seed: int, start_index: int = 0,
                     silent: bool = False) -> None:

@@ -10,9 +10,7 @@ from io import BytesIO, StringIO
 import pathlib
 import json
 import datetime
-import hashlib
 import sys
-import os
 from .. import system
 
 class save:   
@@ -69,17 +67,6 @@ class save:
                 m_provenance[f"{dep}_version"] = mod.__version__
             except (ImportError, AttributeError):
                 pass
-
-        # Baseline Hash for auditability
-        from ..diagnostics import baselines
-        try:
-            b_path = baselines.BASELINE_JSON_PATH
-            if os.path.exists(b_path):
-                with open(b_path, "rb") as f:
-                    b_hash = hashlib.sha256(f.read()).hexdigest()
-                m_provenance["baseline_hash"] = b_hash
-        except Exception:
-            m_provenance["baseline_hash"] = "unknown"
 
         # Execution provenance must not be confused with export-time versions.
         # Archive readers may use this even when the object is loaded in data mode.
