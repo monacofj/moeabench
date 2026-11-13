@@ -14,14 +14,29 @@ from moeabench.metrics.GEN_igd import GEN_igd
 from moeabench.core.run import Run
 from moeabench.core.experiment import experiment
 from moeabench.stats.attainment import AttainmentSurface
+from moeabench.mops import DTLZ2
 
 
 REFERENCE = np.array([[0.0, 1.0], [1.0, 0.0], [0.4, 0.4]])
 GOOD = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]])
+GT_REFERENCE = np.array([[0.0, 1.0], [1.0, 0.0], [0.5, 0.5]])
 
 
 def _hv(front, **kwargs):
     return evaluator.hypervolume(front, mode="exact", progress=False, **kwargs)
+
+
+def _calibrated_front(tmp_path, gt=GT_REFERENCE):
+    """Preserve the historical MOP/GT fixture without the removed FAIR registry."""
+    mop = DTLZ2(M=2)
+    mop.calibrate(source_gt=gt, source_baseline=tmp_path / "mop-gt.json")
+
+    class Front(np.ndarray):
+        pass
+
+    front = GOOD.view(Front)
+    front.mop = mop
+    return front
 
 
 def _run(history):
@@ -167,7 +182,7 @@ def test_multiple_runs_share_one_self_reference_box():
     assert self_values[0, 0] != pytest.approx(self_values[0, 1])
 
 
-def test_all_scales_reuse_external_reference_bounds(monkeypatch):
+def test_all_scales_reuse_external_reference_bounds(monkeypatch, tmp_path):
     calls = []
 
     class RecordingHypervolume:
@@ -179,24 +194,27 @@ def test_all_scales_reuse_external_reference_bounds(monkeypatch):
             return np.ones(len(self.fronts))
 
     monkeypatch.setattr(evaluator, "GEN_hypervolume", RecordingHypervolume)
+    front = _calibrated_front(tmp_path)
     for scale in ("raw", "rel", "abs"):
         calls.clear()
-        evaluator.hypervolume(GOOD, ref=REFERENCE, mode="exact", scale=scale, progress=False)
+        evaluator.hypervolume(front, ref=REFERENCE, mode="exact", scale=scale, progress=False)
         assert calls
         for ideal, nadir in calls:
             assert np.array_equal(ideal, np.min(REFERENCE, axis=0))
             assert np.array_equal(nadir, np.max(REFERENCE, axis=0))
 
 
-def test_absolute_hv_requires_explicit_reference():
-    with pytest.raises(ValueError, match="exactly one explicit reference"):
-        _hv(GOOD, scale="abs")
+def test_absolute_hv_requires_mop_owned_gt():
+    # An external geometry ref cannot serve as the mathematical GT.
+    with pytest.raises(ValueError, match="MOP-associated"):
+        _hv(GOOD, ref=REFERENCE, scale="abs")
 
 
-def test_absolute_hv_uses_supplied_reference():
+def test_absolute_hv_uses_mop_gt_with_supplied_geometry_reference(tmp_path):
+    front = _calibrated_front(tmp_path)
     numerator = float(_hv(GOOD, ref=REFERENCE))
-    denominator = float(_hv(REFERENCE, ref=REFERENCE))
-    assert float(_hv(GOOD, ref=REFERENCE, scale="abs")) == pytest.approx(numerator / denominator)
+    denominator = float(_hv(GT_REFERENCE, ref=REFERENCE))
+    assert float(_hv(front, ref=REFERENCE, scale="abs")) == pytest.approx(numerator / denominator)
 
 
 def test_out_of_reference_points_do_not_expand_bounds():
@@ -353,8 +371,9 @@ def test_better_than_ideal_is_recorded_without_clipping():
     assert float(result) > 1.1 * 0.6
 
 
-def test_diagnostics_are_scale_independent():
-    results = [_hv(GOOD, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
+def test_diagnostics_are_scale_independent(tmp_path):
+    front = _calibrated_front(tmp_path)
+    results = [_hv(front, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
     keys = (
         "nbox_ideal", "nbox_nadir", "bbox_reference_point", "range_inflation",
         "outside_bbox_fraction", "raw_hv_fraction_of_nominal_bbox",
