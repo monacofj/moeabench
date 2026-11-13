@@ -306,8 +306,8 @@ hv_a = mb.metrics.hv(expA, ref=R, scale='rel')
 hv_b = mb.metrics.hv(expB, ref=R, scale='rel')
 
 # Scenario C: Absolute Validation (Proximity to GT)
-# Scale is normalized against theoretical Ground Truth (H_abs).
-hv_abs = mb.metrics.hv(expA, ref=exp_truth, scale='abs')
+# The associated MOP supplies its sampled Ground Truth automatically (H_abs).
+hv_abs = mb.metrics.hv(expA, scale='abs')
 
 # Scenario D: Absolute consistency (Global Standard)
 # Compare A and B, but keep the scale fixed to the "True Front" (exp_truth)
@@ -690,7 +690,7 @@ The public metric family is broader than Hypervolume alone. The canonical perfor
 *   **`mb.metrics.emd`**: Earth Mover's Distance over front distributions.
 *   **`mb.metrics.front_ratio`**: Proportion of non-dominated individuals in the active population.
 
-For every metric that accepts it, `ref` denotes the external reference used by that metric. GD-family and IGD-family metrics use it as a reference front, EMD uses it as a reference distribution/front, and Hypervolume uses it exclusively for normalization bounds. Specifically, `hypervolume(exp)` derives one shared bounding box from all runs in `exp`, while `hypervolume(exp, ref=R)` derives bounds only from `R`. Use the same explicit `R` whenever results must be comparable across separate calls. The `raw`, `rel`, and `abs` scales are post-processing perspectives over that already selected context.
+For every metric that accepts it, `ref` denotes the external reference used by that metric. GD-family and IGD-family metrics use it as a reference front, EMD uses it as a reference distribution/front, and Hypervolume uses it exclusively for normalization bounds. Specifically, `hypervolume(exp)` derives one shared bounding box from all runs in `exp`, while `hypervolume(exp, ref=R)` derives bounds only from `R`. Use the same explicit `R` whenever results must be comparable across separate calls. The `raw`, `rel`, and `abs` scales are post-processing perspectives over that already selected context. With `scale='abs'`, GT is sampled automatically from the associated MOP via `pf()`. `ref` continues to set only the normalization box; detached arrays without an associated MOP cannot use this scale.
 
 Every item in an explicit Hypervolume reference must already contain an evaluated front. For example, `ref=[exp3, exp4]` requires both experiments to have completed `run()`; otherwise MoeaBench raises a clear `ValueError` instead of silently calculating with only the non-empty item.
 

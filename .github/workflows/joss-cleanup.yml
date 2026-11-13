@@ -1,7 +1,7 @@
 name: JOSS cleanup validation
 on:
   push:
-    branches: [chore/joss-remove-fair]
+    branches: [chore/joss-remove-fair, review/joss-1.0.0]
   workflow_dispatch:
 
 jobs:
@@ -64,7 +64,13 @@ jobs:
           assert not hasattr(mb, 'clinic')
           ref = np.array([[0.0, 1.0], [1.0, 0.0], [0.4, 0.4]])
           front = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]])
-          h = mb.metrics.hv(front, ref=ref, scale='abs', progress=False)
+          from moeabench.core.run import Run
+          exp = mb.experiment(mop=mb.mops.DTLZ2(M=2))
+          history = [front]
+          empty = [np.empty((len(front), 0))]
+          run = Run((history, empty, front, history, empty, empty, empty), experiment=exp)
+          h = mb.metrics.hv(run, ref=ref, scale='abs', progress=False)
           assert np.isfinite(float(h))
+          assert np.isfinite(float(mb.metrics.hv(run, scale='abs', progress=False)))
           assert mb.system.verify_version(show=False)['status'] in ('MATCH', 'MISMATCH', 'UNCONFIGURED')
           PY

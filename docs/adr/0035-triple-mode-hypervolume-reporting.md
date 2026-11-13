@@ -1,7 +1,7 @@
 # ADR 0035: Triple-Mode Hypervolume Reporting (Raw, Relative, Absolute)
 
 ## Status
-Partially Superseded by [ADR 0047](0047-conventional-hypervolume-relative-scaling.md) for the operational semantics of `scale='rel'`.
+Partially Superseded by [ADR 0047](0047-conventional-hypervolume-relative-scaling.md) for `scale='rel'` and [ADR 0056](0056-mop-ground-truth-independent-of-fair.md) for FAIR-independent `scale='abs'` GT resolution.
 
 ## Context
 Hypervolume needs an explicit normalization interpretation. Without an external reference, the evaluated experiment supplies a self-referenced bounding box. Comparisons across separate calls require the same external `ref`, which exclusively defines the bounding box.

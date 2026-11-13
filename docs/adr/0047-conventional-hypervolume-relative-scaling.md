@@ -52,7 +52,7 @@ entire returned trajectory.
   selection, or reference diagnostics. Those remain governed by ADR 0020,
   ADR 0042, and ADR 0043.
 - `H_rel` is a contextual competitive scale, not a statement of theoretical
-  optimality. Ground-Truth normalization remains the role of `scale="abs"`.
+  optimality. Ground-Truth normalization remains the role of `scale="abs"` (associated MOP GT; see ADR 0056).
 - The canonical public conventional-HV scales are `"raw"`, `"rel"`, and
   `"abs"`. Historical `"ratio"` terminology is not part of the current
   canonical contract.

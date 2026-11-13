@@ -14,6 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **MOP Ground Truth Independence (ADR 0056)**:
+  - Restored `hv(exp, scale="abs")` without mandatory `ref`, deriving the denominator directly from the associated MOP's sampled Pareto front rather than FAIR.
+  - Reestablished `ref` as an optional normalization-bounds reference, independent of the GT denominator.
+  - Added numerical regression tests for automatic GT resolution and orthogonal normalization geometry.
+  - Restored and adapted Example 15 (Python and notebook) without FAIR calibration.
+
 ## [0.17.0] - 2026-11-13
 
 ### Added

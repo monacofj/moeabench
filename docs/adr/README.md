@@ -67,12 +67,15 @@ This directory contains records of the key architectural decisions made during t
 | [0053](0053-dpf5-mixed-dimensional-reference-measure.md) | DPF5: mixed-dimensional ideal reference and negative ECDF law (scientific research, issue #81) | Proposed / noncertified | 2026-11-12 |
 | [0054](0054-dominance-constrained-one-sided-gt-blur.md) | Dominated-side one-sided GT half-normal blur (issue #83) | Proposed | 2026-11-12 |
 | [0055](0055-dpf5-closeness-reference-protocol.md) | DPF5 Closeness ideal and unfavorable reference laws; multi-seed validation contract (issue #81) | Proposed / noncertified | 2026-11-12 |
+| [0056](0056-mop-ground-truth-independent-of-fair.md) | MOP Ground Truth independent of FAIR for Absolute HV | Accepted | 2026-11-13 |
 
 ## Decision Lineage
 
 The status column records whether a historical ADR remains wholly normative or has been superseded in a specific part. Superseded ADRs are retained as historical records rather than rewritten to match later behavior.
 
 ### Hypervolume
+
+- MOP Ground Truth and `scale='abs'` independence from FAIR: [0056](0056-mop-ground-truth-independent-of-fair.md).
 
 - Nomenclature and reporting: [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) → [0035](0035-triple-mode-hypervolume-reporting.md) → [0047](0047-conventional-hypervolume-relative-scaling.md).
 - Conventional geometry and computation: [0020](0020-standardized-reference-point-strategy-for-normalization.md) → [0042](0042-hypervolume-bbox-diagnostics.md) / [0043](0043-hypervolume-engine-selection.md), with current relative scaling in [0047](0047-conventional-hypervolume-relative-scaling.md).
