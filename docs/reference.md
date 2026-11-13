@@ -24,7 +24,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 12. **[11. Extensibility](#extensibility)**
 13. **[12. References](#references)**
 14. **[13. Legacy Support](#legacy)**
-15. **[14. Algorithmic Diagnostics](#diagnostics)**
+15. **[13. API Status](#13-api-status)**
 
 ---
 
@@ -41,7 +41,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
 | **H_raw** | Raw Hypervolume | Dominated volume in the selected self-derived or external-reference normalization context. |
 | **H_rel** | Relative Hypervolume | Normalized by the best final HV in the selected reference context: the best evaluated run under self-reference, or the best individual final reference front under explicit `ref`. Values are not clipped and may exceed `1.0` with an external reference. (Pre-v0.11.2: `H_ratio`). |
-| **H_abs** | Absolute Hypervolume | Normalized by the **Ground Truth**. Measures proximity to theoretical optimum. |
+| **H_abs** | Absolute Hypervolume | Normalized by exactly one explicitly supplied reference front; depends on its representativeness. |
 | **OHV** | Ordinal Hypervolume | Hypervolume computed in an ordinal objective space whose consecutive distinct reference levels are separated by one unit. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
@@ -122,7 +122,7 @@ seeds allocated to internal stochastic components, when an algorithm has any;
     *   `repeat` (*int*): Number of independent runs performed by this call. Defaults to `exp.repeat`.
     *   `append` (*bool*): If `False` (default), clears previously stored runs before execution. If `True`, appends new runs and continues the seed schedule after the stored runs.
     *   `workers` (*int*, optional): Deprecated compatibility parameter. Runs are currently executed serially for stability.
-    *   `diagnose` (*bool*): If `True`, performs automated pathology analysis after execution. Defaults to `False`.
+    *   `diagnose` (*bool*): Reserved for research; requesting `True` raises `NotImplementedError` before execution.
     *   `silent` (*bool*): If `True`, suppresses runtime output (`Running {exp.name}` banner, progress bars, and run-triggered diagnostic prints). Defaults to `False`.
     *   `**kwargs`: Runtime overrides for supported MOEA properties (e.g., `population`, `generations`, `seed`). `stop=callback` is accepted here as a per-call stop override; `exp.stop = callback` sets the experiment-level policy. Algorithm-specific constructor keywords may instead be consumed by a MoeaBench wrapper before pymoo is called.
 *   **Returns**: `None`.
@@ -291,7 +291,7 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
-    *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the marker reference uses `gt` when `show_gt=True` (or explicit `ref=` if supplied).
+    *   `markers` (*bool*): Experimental quality markers are unavailable in this release.
     *   `show_gt` (*bool*): Controls GT visualization/inference. Defaults to `True`.
     *   `gt` (*np.ndarray*): Optional explicit GT array used when `show_gt=True`.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
@@ -313,11 +313,11 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 ### **2.2. Performance Analysis (`mb.view`)**
 
 #### **`mb.view.history(*args, domain='auto', metric=hv, gens=None, title=None, ...)`**
-*   **Description**: Domain-dispatched history view for performance or clinical trajectories.
+*   **Description**: History view for scalar performance trajectories.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
-    *   `domain` (*str*): `'auto'`, `'perf'`, or `'clinic'`. Auto dispatches from metric/result type.
-    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
+    *   `domain` (*str*): `'auto'` or `'perf'`.
+    *   `metric` (*callable* or *str*): Performance metric callable or name.
     *   `gens` (*int* or *slice*): Specific generations to plot.
     *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
@@ -333,11 +333,11 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 *   **Returns**: `Figure`.
 
 #### **`mb.view.density(*args, domain='auto', metric=None, gen=-1, title=None, ...)`**
-*   **Description**: Domain-dispatched density view for performance, topology, or clinic; also accepts canonical result objects directly.
+*   **Description**: Domain-dispatched density view for performance or topology; accepts canonical result objects directly.
 *   **Arguments**:
-    *   `*args`: Datasets to compare or precomputed result objects (`PerfCompareResult`, `DistMatchResult`, or clinical result).
-    *   `domain` (*str*): `'auto'`, `'perf'`, `'topo'`, or `'clinic'`.
-    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
+    *   `*args`: Datasets to compare or precomputed result objects (`PerfCompareResult` or `DistMatchResult`).
+    *   `domain` (*str*): `'auto'`, `'perf'`, or `'topo'`.
+    *   `metric` (*callable* or *str*): Performance metric callable or name.
     *   `gen` (*int*): Specific generation index. Defaults to `-1`.
     *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
@@ -506,7 +506,7 @@ Calculates Hypervolume for an experiment, run, or population. Across the metric 
 *   `scale` (str): Narrative perspective for normalization:
     *   `'raw'` (Default): Returns dominated volume in the selected normalization context. Without `ref`, it is self-referenced and not directly comparable with separately normalized experiments. With `ref`, it is comparable to results using that same fixed reference.
     *   `'rel'`: Divides the complete trajectory by one fixed best-final denominator. Without explicit `ref`, the candidates are the evaluated runs and the denominator is their greatest final HV. With explicit `ref`, each individual final reference front is evaluated under bounds derived only from that common reference context and the greatest of those HVs is used. The denominator is not the HV of the pooled union, values are not clipped, `1.0` means equality with the chosen denominator, and values above `1.0` are possible when evaluated data outperform an external reference.
-    *   `'abs'`: Divides by the calibrated **Ground Truth** HV. Both evaluated and ground-truth HV use the same selected bounds; with `ref`, those bounds come only from `ref`.
+    *   `'abs'`: Divides by the HV of exactly one explicitly supplied reference (`ref`), evaluated with identical normalization bounds. The reference must have positive HV.
 *   `gens` (optional): Slice or integer to limit the generation scope.
 *   `progress` (bool): Displays calculation progress, updated after each generation.
 
@@ -907,7 +907,7 @@ When the selected save mode includes execution data and runs are available, it a
 6.  `pof.csv`: Sampled analytical/known optimal front, when the MOP exposes a usable `pf()`.
 
 ### **`metadata.json` contract**
-The archive records reproducibility information such as MoeaBench version, Python/platform information, dependency versions when available, UTC execution timestamp, and the SHA256 hash of the canonical clinical baseline resource when available. Its experiment context includes the experiment name, `author`, `license`, `created_at`, year/year override, persistence mode, MOP/MOEA identities, stop policy, repeat setting, and per-run `seed` and `component_seeds` metadata.
+The archive records reproducibility information such as MoeaBench version, Python/platform information, dependency versions when available, UTC execution timestamp, and Its experiment context includes the experiment name, `author`, `license`, `created_at`, year/year override, persistence mode, MOP/MOEA identities, stop policy, repeat setting, and per-run `seed` and `component_seeds` metadata.
 
 A newly created experiment therefore persists `author="Public domain"` and `license="CC0-1.0"` unless those properties were explicitly replaced. These are the experiment's actual stored values, not persistence-time substitutions.
 
@@ -923,34 +923,12 @@ The abstract skeleton for all problem plugins. To create a new problem, you must
 
 **Core Mathematical Contract (Methods to Override):**
 *   **`evaluation(self, X)`**: Receives a population matrix $X$ ($PopSize \times N$). Must return a dictionary `{'F': obj_matrix}` where `obj_matrix` is ($PopSize \times M$).
-*   **`ps(self, n)`**: [MANDATORY for Diagnostics] Samples the true Pareto Set (decision space). 
+*   **`ps(self, n)`**: [Optional analytical extension] Samples the true Pareto Set (decision space). 
     *   **Argument `n`**: An integer dictating the number of points to sample along the continuous mathematical manifold.
     *   **Returns**: A NumPy matrix of shape `(n, N)` containing the ideal decision variables.
     *   **Role**: This is the analytical bedrock (Protocol A). It allows the framework to instantly sample the analytical truth instead of relying on exhaustive empirical searches.
 
-**Diagnostic API (Provided by BaseMop):**
-*   **`pf(self, n)`**: Samples the true Pareto Front (objective space). By default, it calls your `ps(n)` and maps it through `evaluation()`.
-*   **`calibrate(source_baseline=None, source_gt=None, source_search=None, force=False, **kwargs)`**: The engine that certifies your problem. This method implements the three Ground Truth (GT) protocols defined by the framework:
-
-| Protocol | Strategy | Argument | Description |
-| :--- | :--- | :--- | :--- |
-| **A** | **Analytical** | *None (Default)* | Calls `ps(n)` to generate the GT using formulaic math. |
-| **B** | **Static** | `source_gt` | Loads the GT from an external `.csv` file or NumPy array. |
-| **C** | **Empirical** | `source_search` | Runs a high-fidelity MOEA (e.g., `NSGA3`) to find the GT on-the-fly. |
-
-**Arguments:**
-*   **`source_baseline`**: Path to the Sidecar JSON file (e.g., `'my_mop_M3.json'`). If `None`, it is auto-resolved as `<ProblemName>_M<M>.json` in the problem's directory. This file "freezes" the GT and ECDFs for future use.
-*   **`source_gt`**: A path to a CSV file or a NumPy matrix containing objective-space points to be treated as the Absolute Truth.
-*   **`source_search`**: An instance of a MOEA (e.g., `mb.moeas.NSGA3()`) used to Discover the GT. The framework will run this algorithm exaustively and filter the results with `.non_dominated()`.
-*   **`force`**: If `True`, ignores existing Sidecar JSON and forces re-calibration.
-
->**Protocol C (Example)**
->If your MOP has no analytical `ps(n)` and no CSV, you can signal an empirical search during calibration:
->```python
->mop = MyComplexMop()
-># MoeaBench will discover the truth, freeze it in '<ProblemName>_M<M>.json', 
-># and never run the search again.
->```
+**Analytical front sampling:** `pf(self, n_points)` samples objective vectors by evaluating the points returned by `ps(self, n_points)`. Analytical `ps()` is optional for problems without a known Pareto set.
 
 The contract for problems requires implementing a **vectorized** evaluation function. This allows the framework to process entire populations using NumPy's high-performance broadcasting.
 
@@ -1008,7 +986,6 @@ class RandomSearch(mb.moeas.BaseMoea):
 ```
 > [!TIP]
 > For a detailed walkthrough on implementing and using custom plugins, see **`examples/example_05.py`**.
-> To see the **Automated Diagnostics** in action across different algorithmic pathologies, refer to **`examples/example_11.py`**.
 
 ---
 
@@ -1022,9 +999,8 @@ For a detailed technical narrative on the implementation history and mathematica
 
 The documentation above reflects the canonical API for the alpha/beta transition:
 
-- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `strata`, `tiers`, `ecdf`, `radar`).
+- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `strata`, `tiers`).
 - `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_shift`, `topo_tail`).
 - `summary()` is removed in favor of `report(show=True, **kwargs)`. Type-specific options such as `full=True` are documented only for result classes that implement them.
 
 
-<a name="diagnostics"></a>

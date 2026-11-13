@@ -87,7 +87,7 @@ MoeaBench operates on a **Plugin Architecture**. Its purpose is to provide the i
 *   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. The framework employs a host-guest plugin architecture where custom extensions integrate seamlessly with the core logic.
 *   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
 *   **Performance & Scalability**: Built-in specialized evaluators that automatically switch between exact metrics and efficient approximations (e.g., Monte Carlo) to ensure computability of costly calculations as complexity increases.
-*   **Rigor & Reproducibility**: Transparent handling of calibration and statistical validation to ensure robust and reproducible results.
+*   **Rigor & Reproducibility**: Transparent handling of execution provenance and statistical validation to ensure robust and reproducible results.
 *   **Interpretative Summaries**: Automatically generates interpretative summaries that complement numerical metrics with narrative insights.
 *   **Rich Visualizations**: Produces rich spatial (3D fronts), temporal (convergence performance), and stratification (ranking) visualizations.
 *   **Smart Arguments**: All functions are polymorphic and "Smart"—they understand experiments, runs, and populations directly, handling data extraction and temporal slicing (`gens`) transparently.
@@ -143,7 +143,7 @@ For example, the topology plot will show:
 
 **Open-Science Metadata**: MoeaBench persists authorship and licensing metadata together with the experimental payload when you export results. A newly created experiment stores `author="Public domain"` and `license="CC0-1.0"` as its actual metadata, not merely as report-time labels. If you assign either field explicitly, that value is persisted instead. This keeps the archive scientifically traceable and ready for redistribution. See **[Persistence (`save` and `load`)](#11-persistence-save-and-load)** for the full persistence contract.
 
-**Rich Objects**: MoeaBench is organized around rich analytical objects rather than raw arrays alone. Their metadata can be inspected and assigned programmatically, as with `exp.name` above, and the main canonical objects also expose a human-readable `.report()` narrative. This includes `Experiment` as well as the rich result objects returned by metrics, statistics, and diagnostics.
+**Rich Objects**: MoeaBench is organized around rich analytical objects rather than raw arrays alone. Their metadata can be inspected and assigned programmatically, as with `exp.name` above, and the main canonical objects also expose a human-readable `.report()` narrative. This includes `Experiment` as well as the rich result objects returned by metrics and statistics.
 
 ```python
 exp.report()
@@ -169,7 +169,7 @@ Typical output:
 ![Pareto Set](images/hello_decision.png)
 *Figure 2: Decision-space perspective: the same experiment projected in variable coordinates through `mb.view.topology(exp.set())`.*
 
-**Ground Truth**: In the figure above, MoeaBench automatically overlays the Ground Truth (GT) of the benchmark problem. This GT is a high-density reference sampling of the optimal Pareto front, obtained analytically when the problem admits a reliable closed-form construction and otherwise calibrated from certified reference procedures. The resulting reference is treated as a scientific artifact: it is generated with high numerical precision, checked against the problem definition and literature expectations, and then reused consistently across visualization, diagnostics, and performance metrics that compare the solver output against the true Pareto front.
+**Ground Truth**: In the figure above, MoeaBench automatically overlays the Ground Truth (GT) of the benchmark problem. This GT is a high-density reference sampling of the optimal Pareto front, obtained analytically when the problem admits a reliable closed-form construction for supported built-in problems. The resulting reference is treated as a scientific artifact: it is generated with high numerical precision, checked against the problem definition and literature expectations, and then reused consistently across visualization and performance metrics that compare the solver output against the true Pareto front.
 
 #### **Performance: Convergence trajectories**
 
@@ -307,7 +307,7 @@ hv_b = mb.metrics.hv(expB, ref=R, scale='rel')
 
 # Scenario C: Absolute Validation (Proximity to GT)
 # Scale is normalized against theoretical Ground Truth (H_abs).
-hv_abs = mb.metrics.hv(expA, scale='abs')
+hv_abs = mb.metrics.hv(expA, ref=exp_truth, scale='abs')
 
 # Scenario D: Absolute consistency (Global Standard)
 # Compare A and B, but keep the scale fixed to the "True Front" (exp_truth)
@@ -331,7 +331,7 @@ MoeaBench deliberately does not remove outliers, clip fronts, adjust the bbox au
 
 In scientific research, bit-for-bit reproducibility is non-negotiable. MoeaBench enforces **RNG Localization** and **Environment DNA Tracking**:
 - **Localized State**: Algorithms do not use the global Python `random` seed. Each instance has its own `self.rng` to prevent interference.
-- **Environment DNA**: The library captures Python and NumPy versions used during both calibration (baselines) and execution (audits), issuing warnings if environment shifts are detected.
+- **Environment provenance**: The library records dependency versions associated with experiments and reports compatibility status.
 
 For a detailed protocol, see the [Reproducibility Guide](reproducibility.md).
 
@@ -426,9 +426,6 @@ mb.view.history(mm)
 att = mb.stats.attainment(exp)
 mb.view.bands(att)
 
-# Diagnostics -> result object
-diag.report()
-mb.view.radar(diag)
 ```
 
 In short: pass `Experiment`, `Run`, or `Population` when you want MoeaBench to infer context for you; pass a precomputed result object when you want to preserve and reuse an already-defined analytical state.
@@ -1056,7 +1053,7 @@ In practice, this means `save/load` can support two distinct scientific workflow
 
 #### **Enhanced Scientific Metadata (v2)**
 Starting with v0.10.1, the `save()` command generates a **Schema v2** archive. This ZIP file is self-documenting and contains:
-- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, and a SHA256 hash of the `baselines.json` data package used).
+- **`metadata.json`**: Machine-readable provenance (MoeaBench version, Python environment, execution context, and component seeds).
 - **`README.md`**: Human-readable summary including **SPDX headers** (if authors and license are set in `exp`), configuration details, and execution timestamps.
 
 A newly created experiment already has real public-domain metadata:
@@ -1119,7 +1116,7 @@ MoeaBench is built on a set of core engineering values designed to balance scien
 
 *   **Performance & Scalability**: To support massive many-objective experiments, the framework enforces a **"Loop-Free" Vectorized Engine**. By leveraging NumPy broadcasting for all critical paths (benchmarks, metrics, and dominance checks), MoeaBench scales efficiently without the performance penalty of native Python iterations.
 
-*   **Rigor & Calibration**: Reliability is validated through regular **Calibration Reports** that audit metric precision. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
+*   **Rigor & Reproducibility**: Reliability is supported through regression tests and numerical stability verification. Robustness is baked into the algorithms; for instance, the **MOEA/D** solver employs a **Hybrid Decomposition Strategy (ADR 003)** that automatically switches between PBI and Tchebycheff methods to prevent population collapse on degenerate manifolds.
 
 *   **Reproducibility**: We enforce **Determinism by Design** through strict seed management, ensuring every run can be reconstructed exactly. Additionally, our **Mirror Parity** policy ensures that every production script in `examples/` has a corresponding interactive Notebook (`.ipynb`), making research both deployable and explorable.
 
