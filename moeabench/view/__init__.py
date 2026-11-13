@@ -19,12 +19,6 @@ from .strat import (
     strat_strata as _strata,
     strat_tiers as _tiers,
 )
-from .clinic import (
-    clinic_ecdf as _ecdf,
-    clinic_distribution as _clinic_density,
-    clinic_history as _clinic_history,
-    clinic_radar as _radar,
-)
 import numpy as _np
 
 from .style import apply_style
@@ -40,31 +34,17 @@ spread = _spread
 ranks = _ranks
 strata = _strata
 tiers = _tiers
-ecdf = _ecdf
-radar = _radar
 
 
 def _resolve_view_domain(args, kwargs):
     """Resolve view domain for canonical dispatchers."""
     domain = kwargs.pop("domain", "auto")
-    if domain in ("clinic", "perf", "topo"):
+    if domain in ("perf", "topo"):
         return domain
     if not args:
         return "perf"
 
     target = args[0]
-    clinic_metrics = {"closeness", "headway", "coverage", "gap", "regularity", "balance"}
-    metric = kwargs.get("metric", None)
-    if isinstance(metric, str) and metric.lower() in clinic_metrics:
-        return "clinic"
-    if (
-        hasattr(target, "q_audit_res")
-        or hasattr(target, "fair_audit_res")
-        or hasattr(target, "scores")
-        or hasattr(target, "raw_data")
-        or hasattr(target, "history_values")
-    ):
-        return "clinic"
     if (
         hasattr(target, "objectives")
         or hasattr(target, "results")
@@ -80,41 +60,29 @@ def _resolve_view_domain(args, kwargs):
 
 
 def density(*args, **kwargs):
-    """Canonical density plot dispatcher (clinic/perf/topo)."""
+    """Canonical density plot dispatcher (performance/topography)."""
     domain = _resolve_view_domain(args, kwargs)
     if domain == "clinic":
-        return _clinic_density(*args, **kwargs)
+        raise ValueError("Clinical diagnostics are not available in this release.")
     if domain == "topo":
         return _topo_density(*args, **kwargs)
     return _perf_density(*args, **kwargs)
 
 
 def history(*args, **kwargs):
-    """Canonical history plot dispatcher (clinic/perf)."""
+    """Canonical history plot dispatcher (performance)."""
     domain = kwargs.pop("domain", "auto")
-    if domain == "clinic":
-        return _clinic_history(*args, **kwargs)
+    if domain not in ("auto", "perf"):
+        raise ValueError(f"Unsupported history domain: {domain}")
     if domain == "perf":
         return _perf_history(*args, **kwargs)
 
-    # Auto: clinic if metric is a clinical metric or target is clinical result.
-    clinic_metrics = {"closeness", "headway", "coverage", "gap", "regularity", "balance"}
-    metric = kwargs.get("metric", None)
-    if isinstance(metric, str) and metric.lower() in clinic_metrics:
-        return _clinic_history(*args, **kwargs)
-    if args and (
-        hasattr(args[0], "q_audit_res")
-        or hasattr(args[0], "fair_audit_res")
-        or hasattr(args[0], "history_values")
-        or hasattr(args[0], "raw_data")
-    ):
-        return _clinic_history(*args, **kwargs)
     return _perf_history(*args, **kwargs)
 
 __all__ = [
     "topology", "bands", "gap", "density", "history", "spread",
-    "ranks", "strata", "tiers", "ecdf", "radar"
+    "ranks", "strata", "tiers"
 ]
 
-for _name in ("topo", "perf", "strat", "clinic", "style", "np"):
+for _name in ("topo", "perf", "strat", "style", "np"):
     globals().pop(_name, None)

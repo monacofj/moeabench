@@ -37,8 +37,6 @@ from . import stats
 from . import view
 from . import system
 from .defaults import defaults
-from . import diagnostics as _clinic_module
-clinic = _clinic_module
 
 # MB Wrapper for direct access
 class _MB:
@@ -55,13 +53,12 @@ class _MB:
         self.view = view
         self.system = system
         self.defaults = defaults
-        self.clinic = _clinic_module
 
 mb = _MB()
 
 __version__ = system.version(show=False)
 
-__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb", "clinic"]
+__all__ = ["experiment", "Run", "mops", "moeas", "metrics", "stats", "view", "system", "mb"]
 
 for _name in (
     "sys",
@@ -71,9 +68,7 @@ for _name in (
     "mplot3d",
     "user_site",
     "local_mpl",
-    "_clinic_module",
     "core",
-    "diagnostics",
     "plotting",
     "progress",
 ):

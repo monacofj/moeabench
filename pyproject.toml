@@ -49,4 +49,4 @@ where = ["."]
 include = ["moeabench*"]
 
 [tool.setuptools.package-data]
-"moeabench" = ["requirements.txt", "diagnostics/resources/*.json", "diagnostics/resources/references/**/*"]
+"moeabench" = ["requirements.txt"]
