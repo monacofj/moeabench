@@ -32,5 +32,16 @@ def canonical_mop(paired_experiments):
 
 
 @pytest.fixture
-def canonical_gt(canonical_mop):
-    return canonical_mop.pf(n_points=1000)
+def canonical_gt(canonical_mop, paired_experiments, tmp_path):
+    """Explicit GT fixture for both independently loaded MOP instances.
+
+    Keep the historical 1,000-point integration reference unchanged; the
+    scientific default density policy is exercised separately by GT tests.
+    """
+    gt = canonical_mop.pf(n_points=1000)
+    for index, exp in enumerate(paired_experiments):
+        exp.mop.calibrate(
+            source_gt=gt,
+            source_baseline=tmp_path / f"integration-mop-{index}-gt.json",
+        )
+    return gt
