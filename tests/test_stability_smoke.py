@@ -18,15 +18,11 @@ import moeabench as mb
 
 
 DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.13.2.json")
-TARGETS_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_targets_v0.13.2.json")
 FRONTS_JSON_PATH = os.path.join(os.path.dirname(__file__), "stability_reference_fronts.json")
 GT_JSON_PATH = os.path.join(os.path.dirname(__file__), "stability_reference_gt.json")
 
 with open(DATA_JSON_PATH, "r") as f:
     CALIBRATION_REF_DATA = json.load(f)
-
-with open(TARGETS_JSON_PATH, "r") as f:
-    CALIBRATION_REF_TARGETS = json.load(f)
 
 with open(FRONTS_JSON_PATH, "r") as f:
     STABILITY_FRONTS = json.load(f)
@@ -35,10 +31,6 @@ with open(GT_JSON_PATH, "r") as f:
     STABILITY_GT = json.load(f)
 
 
-SMOKE_ANALYTICAL_CASES = [
-    ("DTLZ2", "NSGA3"),
-    ("DPF1", "MOEAD"),
-]
 SMOKE_GT_CASES = [
     "DTLZ8",
     "DTLZ9",
