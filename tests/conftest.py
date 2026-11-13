@@ -23,7 +23,6 @@ SMOKE_INTEGRATION_FILES = {
 }
 
 BASIC_UNIT_ROOT_FILES = {
-    "tests/test_golden_dtlz6.py",
     "tests/test_light_tier.py",
 }
 
