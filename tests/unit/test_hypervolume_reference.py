@@ -388,7 +388,8 @@ def test_better_than_ideal_is_recorded_without_clipping():
 
 
 def test_diagnostics_are_scale_independent():
-    results = [_hv(GOOD, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
+    run = _run([GOOD], parent=experiment(mop=DTLZ2(M=2)))
+    results = [_hv(run, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
     keys = (
         "nbox_ideal", "nbox_nadir", "bbox_reference_point", "range_inflation",
         "outside_bbox_fraction", "raw_hv_fraction_of_nominal_bbox",
