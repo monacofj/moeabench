@@ -13,6 +13,8 @@ from moeabench.metrics.GEN_gd import GEN_gd
 from moeabench.metrics.GEN_igd import GEN_igd
 from moeabench.core.run import Run
 from moeabench.core.experiment import experiment
+from moeabench.mops.DTLZ2 import DTLZ2
+from moeabench.mops.base_mop import BaseMop
 from moeabench.stats.attainment import AttainmentSurface
 
 
@@ -24,11 +26,11 @@ def _hv(front, **kwargs):
     return evaluator.hypervolume(front, mode="exact", progress=False, **kwargs)
 
 
-def _run(history):
+def _run(history, parent=None):
     history = [np.asarray(front) for front in history]
     empty = [np.empty((len(front), 0)) for front in history]
     payload = (history, empty, history[-1], history, empty, empty, empty)
-    return Run(payload)
+    return Run(payload, experiment=parent)
 
 
 def test_hypervolume_signature_only_exposes_reference_context_api():
@@ -179,24 +181,56 @@ def test_all_scales_reuse_external_reference_bounds(monkeypatch):
             return np.ones(len(self.fronts))
 
     monkeypatch.setattr(evaluator, "GEN_hypervolume", RecordingHypervolume)
+    run = _run([GOOD], parent=experiment(mop=DTLZ2(M=2)))
     for scale in ("raw", "rel", "abs"):
         calls.clear()
-        evaluator.hypervolume(GOOD, ref=REFERENCE, mode="exact", scale=scale, progress=False)
+        evaluator.hypervolume(run, ref=REFERENCE, mode="exact", scale=scale, progress=False)
         assert calls
         for ideal, nadir in calls:
             assert np.array_equal(ideal, np.min(REFERENCE, axis=0))
             assert np.array_equal(nadir, np.max(REFERENCE, axis=0))
 
 
-def test_absolute_hv_requires_explicit_reference():
-    with pytest.raises(ValueError, match="exactly one explicit reference"):
+def test_absolute_hv_requires_associated_mop_for_detached_arrays():
+    with pytest.raises(ValueError, match="associated MOP"):
         _hv(GOOD, scale="abs")
+    with pytest.raises(ValueError, match="associated MOP"):
+        _hv(GOOD, ref=REFERENCE, scale="abs")
 
 
-def test_absolute_hv_uses_supplied_reference():
-    numerator = float(_hv(GOOD, ref=REFERENCE))
-    denominator = float(_hv(REFERENCE, ref=REFERENCE))
-    assert float(_hv(GOOD, ref=REFERENCE, scale="abs")) == pytest.approx(numerator / denominator)
+def test_absolute_hv_uses_mop_ground_truth_implicitly():
+    mop = DTLZ2(M=2)
+    run = _run([GOOD], parent=experiment(mop=mop))
+    gt = mop.pf(n_points=500)
+    numerator = float(_hv(GOOD, ref=GOOD))
+    denominator = float(_hv(gt, ref=GOOD))
+    result = _hv(run, scale="abs")
+    assert float(result) == pytest.approx(numerator / denominator)
+    assert result.diagnostics["absolute_gt_mop"] == "DTLZ2"
+    assert result.diagnostics["absolute_gt_points"] == len(gt)
+
+
+def test_absolute_hv_ref_changes_only_bounds():
+    mop = DTLZ2(M=2)
+    run = _run([GOOD], parent=experiment(mop=mop))
+    gt = mop.pf(n_points=500)
+    fixed = [REFERENCE, REFERENCE * 1.1]
+    numerator = float(_hv(GOOD, ref=fixed))
+    denominator = float(_hv(gt, ref=fixed))
+    result = _hv(run, ref=fixed, scale="abs")
+    assert float(result) == pytest.approx(numerator / denominator)
+    assert result.diagnostics["absolute_gt_points"] == len(gt)
+    assert result.reference_context == "external"
+
+
+def test_absolute_hv_requires_implemented_pareto_sampler():
+    class UnspecifiedMop(BaseMop):
+        def evaluation(self, X, n_ieq_constr=0):
+            return {"F": np.asarray(X, dtype=float)[:, :2]}
+
+    run = _run([GOOD], parent=experiment(mop=UnspecifiedMop(M=2, N=2)))
+    with pytest.raises(ValueError, match="does not supply"):
+        _hv(run, scale="abs")
 
 
 def test_out_of_reference_points_do_not_expand_bounds():

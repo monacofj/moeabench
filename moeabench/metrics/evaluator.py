@@ -628,7 +628,7 @@ class MetricMatrix(Reportable):
         elif is_hypervolume and self.is_abs:
             lines.extend([
                 "**Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
-                "Values are normalized by the pre-calculated Ground Truth of the problem (1.0 = Opt).",
+                "Values are normalized by the associated MOP\'s sampled Pareto front; finite sampling may yield values above 1.0.",
                 "",
             ])
         lines.append("#### Final Performance (Last Gen)")
@@ -859,6 +859,23 @@ def _select_hypervolume_backend(mode, objectives):
     return requested, 'exact'
 
 
+def _hypervolume_mop(source):
+    """Resolve a problem from an experiment, run, or sourced population."""
+    seen = set()
+    obj = source
+    for _ in range(8):
+        if obj is None or id(obj) in seen:
+            break
+        seen.add(id(obj))
+        mop = getattr(obj, 'mop', None)
+        if mop is not None:
+            return mop
+        if hasattr(obj, 'pf') and hasattr(obj, 'evaluation'):
+            return obj
+        obj = getattr(obj, 'source', None)
+    return None
+
+
 def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
                 mc_seed=None, gens=None, progress=True):
     """
@@ -869,6 +886,8 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         exp: Experiment, Run, or Population object.
         ref: External reference whose fronts exclusively define normalization bounds.
              When omitted, bounds are derived collectively from all runs in `exp`.
+             With scale='abs', the MOP's own sampled Pareto front is the denominator,
+             independently of this optional normalization reference.
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
         scale (str): Scaling perspective: 'raw' (default), 'rel', or 'abs'.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
@@ -893,8 +912,11 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
     scale = str(scale).lower()
-    if scale == 'abs' and (not has_external_ref or len(ref_items) != 1):
-        raise ValueError("Hypervolume scale='abs' requires exactly one explicit reference front (e.g., Pareto ground truth).")
+    if scale == 'abs' and _hypervolume_mop(exp) is None:
+        raise ValueError(
+            "Hypervolume scale='abs' requires an associated MOP with a Pareto-front sampler; "
+            "pass an Experiment, Run, or sourced Population rather than detached objective arrays."
+        )
     
     mop_names = []
     for item in [exp] + ref_items:
@@ -1072,13 +1094,22 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         final_name = "Hypervolume (Relative)"
     
     elif scale == 'abs':
-        # The caller supplies the reference front; no FAIR calibration
-        # resource or implicit ground truth is consulted.
-        gt_fronts = [np.asarray(front, dtype=float) for front in reference_sources[0]
-                     if front is not None and len(front) > 0]
-        gt = np.vstack(gt_fronts)
-        if gt.ndim != 2 or gt.shape[1] != M:
-            raise ValueError("Hypervolume absolute reference has incompatible objectives.")
+        # Ground Truth is a property of the MOP; ref selects only the bounds.
+        mop = _hypervolume_mop(exp)
+        try:
+            gt = np.asarray(mop.pf(n_points=500), dtype=float)
+        except NotImplementedError as exc:
+            raise ValueError(
+                f"Hypervolume scale='abs' unavailable: MOP "
+                f"'{getattr(mop, 'name', type(mop).__name__)}' does not supply "
+                "a Pareto-front sample through pf()."
+            ) from exc
+        if (gt.ndim != 2 or gt.shape[0] == 0 or gt.shape[1] != M
+                or not np.isfinite(gt).all()):
+            raise ValueError(
+                "Hypervolume scale='abs' requires a finite, nonempty MOP Pareto "
+                "front with the same number of objectives."
+            )
         if hv_backend == 'monte_carlo':
             gt_metric = GEN_mc_hypervolume(
                 [gt], M, min_val, max_val,
@@ -1088,8 +1119,16 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
             gt_metric = GEN_hypervolume([gt], M, min_val, max_val)
         gt_hv = float(gt_metric.evaluate()[0])
         if not np.isfinite(gt_hv) or gt_hv <= 0:
-            raise ValueError("Hypervolume absolute reference has no positive dominated volume.")
+            raise ValueError(
+                "Hypervolume scale='abs' cannot normalize: sampled MOP Pareto "
+                "front has no positive HV in the selected bounds."
+            )
         mat /= gt_hv
+        diagnostics.update({
+            "absolute_gt_mop": getattr(mop, "name", type(mop).__name__),
+            "absolute_gt_points": len(gt),
+            "absolute_gt_hv": gt_hv,
+        })
         final_name = "Hypervolume (Absolute)"
 
     elif scale == 'raw':
