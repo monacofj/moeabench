@@ -123,3 +123,10 @@ FAIR-only tests and frozen resources remain accessible in `old-fair`.
    numeric metrics, persistence, and visual APIs.
 4. Run core CI and isolated compatibility checks; record all failures.
 5. Obtain review of the final diff; do not merge automatically.
+
+## Continuation: independent verification at PR #88 head (2026-11-13)
+
+- [Core equivalence #43492145465](https://github.com/monacofj/moeabench/actions/runs/43492145465) **PASSED** against the frozen pre-cleanup commit; this remains a *scoped* probe, not a declaration of full numerical equivalence.
+- [JOSS cleanup validation #43492145533](https://github.com/monacofj/moeabench/actions/runs/43492145533) completed **278 passed, 3 failed, 33 deselected**, one warning in the unit batch. All three failures are the newly introduced H_abs contract guards. The pre-existing test named `test_absolute_hv_requires_explicit_reference` passed, despite embodying the unintended new contract. In other words, no other failure was observed in the executed unit subset, but the overall job is correctly red.
+- Read-only review reconfirmed ADR 0019's `H_abs = H_sol / H_GT` distinction and ADR 0047's separation of reference geometry from scaling. ADR 0035 historically requires `mop.calibrate()`, and ADR 0018 prescribes 2,000/10,000-point reference density for DTLZ/DPF calibration. Neither requirement has been overridden or approved for alteration.
+- **Safety gate:** Do not silently switch `H_abs` to a 500-point reference, treat `ref` as the GT, or modify/remove historical regression assertions to make CI green. Before implementation, obtain a precise design decision about canonical MOP-owned GT availability after FAIR removal. Existing tests and ADR files remain untouched in the hotfix.
