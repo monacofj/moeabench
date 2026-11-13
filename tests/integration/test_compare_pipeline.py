@@ -7,7 +7,7 @@ from __future__ import annotations
 import moeabench as mb
 
 
-def test_compare_pipeline(paired_experiments):
+def test_compare_pipeline(paired_experiments, canonical_gt):
     exp1, exp2 = paired_experiments
 
     hv1 = mb.metrics.hv(exp1, ref=canonical_gt, scale="abs")
