@@ -93,6 +93,28 @@ FAIR-only tests and frozen resources remain accessible in `old-fair`.
   GT belongs to the MOP remains; how to retain the canonical GT independently
   must be resolved and documented **before** altering that contract.
 
+## Independent validation evidence (2026-11-13)
+
+- [Core equivalence workflow #43491835518](https://github.com/monacofj/moeabench/actions/runs/43491835518):
+  **PASSED**. Compared both implementations in the same Python 3.12 runtime
+  on identical input data and seeds, covering sampled DTLZ/DPF fronts,
+  conventional HV raw/rel, GD/GD+, IGD/IGD+, EMD, and NSGA-II trajectories.
+  This check does **not** establish full codebase equivalence; it deliberately
+  omits the known-broken absolute HV semantics.
+- [Public API and numerical validation #43491835529](https://github.com/monacofj/moeabench/actions/runs/43491835529):
+  **FAILED, expected**. Three new contract tests demonstrate existing
+  absolute-HV regressions:
+  - `test_absolute_hv_without_ref_uses_mop_gt`: explicit `ref` wrongly required.
+  - `test_absolute_hv_ref_only_selects_bounds`: computed ratio differs from
+    MOP-ground-truth denominator (0.909835 vs 1.320291 in the controlled case).
+  - `test_absolute_hv_accepts_multiple_normalization_reference_sources`:
+    multiple sources wrongly rejected.
+  The existing inverted `test_absolute_hv_requires_explicit_reference` test
+  still **passes** in the same run, illustrating why prior green CI was
+  insufficient.
+- Original regression tests remain unmodified by this hotfix branch. The
+  added contract tests are in a separate new file.
+
 ## Pending before any merge
 
 1. Resolve ADR 0018 / 0035 requirements with explicit user authorization.
