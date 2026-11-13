@@ -256,7 +256,6 @@ def topology(
                 marker_styles.insert(0, marker_styles.pop(gt_idx))
                 gt_flags.insert(0, gt_flags.pop(gt_idx))
     
-    # FAIR point-wise marker classification is not part of this release.
     # The marker flag is retained for compatibility with ordinary plotting.
 
     if objectives is None:

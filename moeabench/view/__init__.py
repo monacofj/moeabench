@@ -62,8 +62,6 @@ def _resolve_view_domain(args, kwargs):
 def density(*args, **kwargs):
     """Canonical density plot dispatcher (performance/topography)."""
     domain = _resolve_view_domain(args, kwargs)
-    if domain == "clinic":
-        raise ValueError("Clinical diagnostics are not available in this release.")
     if domain == "topo":
         return _topo_density(*args, **kwargs)
     return _perf_density(*args, **kwargs)

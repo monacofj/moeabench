@@ -116,5 +116,5 @@ To strengthen the evidence for reproducibility in scientific articles, follow th
     For controlled NSGA-III studies, also report the effective value from
     `run.component_seeds` or preserve the experiment archive.
 2.  **Save the Environment**: Include a `requirements.txt` or `environment.yml` that specifies the exact version of Python and NumPy used.
-3.  **Persist Ground Truths**: While MoeaBench provides analytical PF functions, using fixed "Sidecar" JSON files ensures that any future changes to analytical MOP definitions don't invalidate your historical baselines.
+3.  **Persist Ground Truths**: While MoeaBench provides analytical PF functions, using fixed external reference files ensures that any future changes to analytical MOP definitions don't invalidate your historical baselines.
 

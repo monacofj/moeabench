@@ -103,7 +103,7 @@ This is the central analytical table of the API. It correlates **analysis namesp
 
 Ordinal Hypervolume uses `scale="raw"` by default and accepts the keyword-only
 `scale="rel"` for division by the best individual final raw OHV in the shared
-reference context. `scale="abs"` is unsupported.
+reference context. `scale="abs"` is unsupported for ordinal HV. Conventional HV supports `scale="abs"` with exactly one explicit reference front.
 | Stratification | `mb.stats.ranks(...)` | `RankCompareResult` | `view.ranks` |
 | Stratification | `mb.stats.strata(...)` | `StrataCompareResult` | `view.strata` |
 | Stratification | `mb.stats.tiers(...)` | `TierResult` | `view.tiers` |
@@ -133,7 +133,7 @@ The `view` namespace is organized by **chart type**, not by the semantics of the
 | View | Visual Form | Typical Inputs | Produces | Domain Notes |
 | :--- | :--- | :--- | :--- | :--- |
 | `mb.view.spread(...)` | Boxplot / comparative spread | `PerfCompareResult`, `MetricMatrix`, experiment-like inputs | Comparative distribution figure | Performance-oriented |
-| `mb.view.density(...)` | KDE / histogram / density morphology | Performance, topology, or clinic inputs/results | Density figure | Domain-dispatched |
+| `mb.view.density(...)` | KDE / histogram / density morphology | Performance or topology inputs/results | Density figure | Domain-dispatched |
 | `mb.view.topology(...)` | Scatter / spatial geometry | `Population`, `Experiment`, `Run`, `AttainmentSurface` | Spatial figure | Objective-space geometry |
 | `mb.view.bands(...)` | Attainment corridor | `AttainmentSurface` or experiment-like inputs | Corridor / EAF band figure | Reliability view |
 | `mb.view.gap(...)` | Surface difference | `AttainmentDiff` or two experiment-like inputs | Gap figure | Comparative coverage |
@@ -183,7 +183,7 @@ The public API is intentionally segmented by namespace role.
 
 In architectural terms:
 
-- `metrics`, `stats`, and `clinic` name **what is being analyzed**
+- `metrics` and `stats` name **what is being analyzed**
 - `view` names **how it is visualized**
 - `system` names **operational support**
 - `mops` and `moeas` provide the scientific content that the rest of the API operates on

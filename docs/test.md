@@ -200,7 +200,7 @@ python test.py --certify
 
 `--certify` independently executes the complete deep battery (all unit,
 basic integration, and deep stability checks) before updating the shipped
-`moeabench/diagnostics/resources/certified_environment.json`. If any test
+`moeabench/resources/certified_environment.json`. If any test
 fails, the manifest is **not** updated. Review and commit changes to the
 manifest; do not revise numerical fixtures simply to make a failing
 environment pass. An explicitly skipped test remains recorded as skipped,
