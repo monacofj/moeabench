@@ -1,2 +1,0 @@
-Supplementary integrity checker first used system python3 and failed at import: ModuleNotFoundError: pymoo. No study computation ran in that interpreter. Reran with MPLCONFIGDIR=/tmp/issue81-mpl .venv/bin/python.
-Final manifest, source hashes, NPZ vectors, all 7680 original epsilon values: PASS.
