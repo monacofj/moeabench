@@ -859,6 +859,34 @@ def _select_hypervolume_backend(mode, objectives):
     return requested, 'exact'
 
 
+
+def _mop_from_evaluated_data(data):
+    """Find the MOP behind an experiment/run/population without consulting ref."""
+    if isinstance(data, (list, tuple)):
+        mops = [_mop_from_evaluated_data(item) for item in data]
+        mops = [mop for mop in mops if mop is not None]
+        if not mops:
+            return None
+        first = mops[0]
+        if any((mop.name, mop.M, type(mop)) !=
+               (first.name, first.M, type(first)) for mop in mops[1:]):
+            raise ValueError("Absolute Hypervolume requires homogeneous MOPs.")
+        return first
+    current = data
+    seen = set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        # Experiments delegate pf()/evaluation() to their MOP; prefer the
+        # explicitly owned MOP over those delegation methods.
+        mop = getattr(current, "mop", None)
+        if mop is not None:
+            return mop
+        if hasattr(current, "pf") and hasattr(current, "evaluation"):
+            return current
+        current = getattr(current, "source", None)
+    return None
+
+
 def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
                 mc_seed=None, gens=None, progress=True):
     """
@@ -871,6 +899,7 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
              When omitted, bounds are derived collectively from all runs in `exp`.
         mode (str): Algorithm to use: 'auto' (default), 'exact', or 'fast'.
         scale (str): Scaling perspective: 'raw' (default), 'rel', or 'abs'.
+                     'abs' requires a calibrated MOP GT, independent of ref.
         n_samples (int): Number of Monte Carlo samples for 'fast'/'auto' mode.
         mc_seed (int): Seed for reproducible Monte Carlo sampling. Defaults to
                        ``mb.defaults.seed``.
@@ -893,8 +922,21 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
     scale = str(scale).lower()
-    if scale == 'abs' and (not has_external_ref or len(ref_items) != 1):
-        raise ValueError("Hypervolume scale='abs' requires exactly one explicit reference front (e.g., Pareto ground truth).")
+    abs_gt = None
+    if scale == 'abs':
+        evaluation_mop = _mop_from_evaluated_data(exp)
+        if evaluation_mop is None:
+            raise ValueError(
+                "Absolute Hypervolume requires a MOP-associated experiment, "
+                "run or population with calibrated Ground Truth."
+            )
+        # ADR 0035: the MOP, not the geometry reference, owns the GT.
+        abs_gt = getattr(evaluation_mop, "calibrated_gt", None)
+        if abs_gt is None:
+            raise ValueError(
+                "Absolute Hypervolume requires the MOP's calibrated GT; "
+                "call mop.calibrate() first."
+            )
     
     mop_names = []
     for item in [exp] + ref_items:
@@ -1072,13 +1114,11 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         final_name = "Hypervolume (Relative)"
     
     elif scale == 'abs':
-        # The caller supplies the reference front; no FAIR calibration
-        # resource or implicit ground truth is consulted.
-        gt_fronts = [np.asarray(front, dtype=float) for front in reference_sources[0]
-                     if front is not None and len(front) > 0]
-        gt = np.vstack(gt_fronts)
-        if gt.ndim != 2 or gt.shape[1] != M:
-            raise ValueError("Hypervolume absolute reference has incompatible objectives.")
+        # ADR 0019/0035: H_abs = H_sol/H_GT, both evaluated in the selected
+        # normalization geometry. An optional ref selects bounds only.
+        gt = np.asarray(abs_gt, dtype=float)
+        if gt.ndim != 2 or gt.shape[1] != M or not np.all(np.isfinite(gt)):
+            raise ValueError("Calibrated MOP Ground Truth has incompatible objectives.")
         if hv_backend == 'monte_carlo':
             gt_metric = GEN_mc_hypervolume(
                 [gt], M, min_val, max_val,
@@ -1088,8 +1128,10 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
             gt_metric = GEN_hypervolume([gt], M, min_val, max_val)
         gt_hv = float(gt_metric.evaluate()[0])
         if not np.isfinite(gt_hv) or gt_hv <= 0:
-            raise ValueError("Hypervolume absolute reference has no positive dominated volume.")
+            raise ValueError("Calibrated MOP Ground Truth has no positive dominated volume.")
         mat /= gt_hv
+        diagnostics["hv_abs_gt_points"] = len(gt)
+        diagnostics["hv_abs_denominator"] = gt_hv
         final_name = "Hypervolume (Absolute)"
 
     elif scale == 'raw':
