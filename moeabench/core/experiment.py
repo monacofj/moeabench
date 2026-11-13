@@ -558,11 +558,12 @@ class experiment(Reportable):
                            If True, appends new runs to the existing ones.
             workers (int): [DEPRECATED] Parallel execution is no longer supported. 
                            All runs are performed serially for stability.
-            diagnose (bool): If True, performs automated algorithmic pathology analysis 
-                             after execution and prints the rationale. Defaults to False.
+            diagnose (bool): Reserved argument; experimental diagnostics are unavailable in this release.
             silent (bool): If True, suppresses run output (prints and progress bars).
             **kwargs: Parameters to override in the MOEA (e.g., generations, population).
         """
+        if diagnose:
+            raise NotImplementedError("Experimental diagnostics are unavailable in this release.")
         # Compare once per runtime environment; no costly tests are implicit.
         from ..environment_verification import warn_on_unverified, snapshot
         warn_on_unverified()
@@ -604,53 +605,6 @@ class experiment(Reportable):
             self._environment_comparison = {"status": "MATCH", "differences": {}}
             self._run_serial(repeat, base_seed, start_index=len(self._runs), silent=silent)
 
-            if diagnose and self._runs:
-                # Import metrics and diagnostics here to avoid circular dependencies
-                from .. import diagnostics, metrics
-                
-                # Diagnose the last run (most representative of current state)
-                run = self.last_run
-                try:
-                    # Calculate quick metrics for diagnosis
-                    diagnosis_metrics = {}
-                    
-                    # Check for Ground Truth
-                    pf = None
-                    if hasattr(self.mop, 'pf'):
-                        pf = self.mop.pf()
-                    elif hasattr(self.mop, 'optimal_front'):
-                        pf = self.mop.optimal_front()
-                    elif hasattr(self.mop, 'pareto_front'):
-                        pf = self.mop.pareto_front()
-                    
-                    if pf is not None:
-                         # Calculate GD and IGD for the last population
-                         pop_f = run.last_pop.objectives
-                         
-                         # Using the public metrics API which returns a MetricMatrix
-                         # We extract the float value for auditing
-                         m_gd = metrics.gd(pop_f, ref=pf)
-                         m_igd = metrics.igd(pop_f, ref=pf)
-                         
-                         diagnosis_metrics['gd'] = float(m_gd)
-                         diagnosis_metrics['igd'] = float(m_igd)
-                         
-                         # Try H_rel if HV available
-                         try:
-                             m_hv = metrics.hv(pop_f, ref=pf)
-                             # Assuming reference set comparison for normalization
-                             # For now, we take the raw value as an indicator
-                             diagnosis_metrics['h_rel'] = float(m_hv)
-                         except:
-                             pass
-                    
-                    # Perform Audit Using the Textbook Truth Table
-                    result = diagnostics.audit(diagnosis_metrics)
-                    result.report_show()
-                    
-                except Exception as e:
-                    # Silently fail or minimal log to not disrupt main execution
-                    pass
 
     def _run_serial(self, repeat: int, base_seed: int, start_index: int = 0,
                     silent: bool = False) -> None:

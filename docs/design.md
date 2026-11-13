@@ -24,7 +24,7 @@ The detailed historical record of decisions lives in **[ADR/](adr/)**. This docu
 6.  **[6. Polymorphism Policy](#6-polymorphism-policy)**
 7.  **[7. Rich Results and Reporting](#7-rich-results-and-reporting)**
 8.  **[8. Views and Visualization Boundaries](#8-views-and-visualization-boundaries)**
-9.  **[9. Diagnostics, Calibration, and Reproducibility](#9-diagnostics-calibration-and-reproducibility)**
+9.  **[9. Scientific Provenance and Reproducibility](#9-diagnostics-calibration-and-reproducibility)**
 10. **[10. Performance and Numerical Integrity](#10-performance-and-numerical-integrity)**
 11. **[11. Extensibility and Plugin Discipline](#11-extensibility-and-plugin-discipline)**
 12. **[12. Breaking Changes and API Hygiene](#12-breaking-changes-and-api-hygiene)**
@@ -68,7 +68,7 @@ This means the library exists to solve the following problems:
 3.  High-dimensional objective spaces make naive metric interpretation physically misleading.
 4.  Researchers need a reproducible path from experiment configuration to result interpretation.
 5.  Visualization must support diagnosis, not merely presentation.
-6.  Advanced diagnostics require calibration, baselines, and scientific provenance as first-class concerns.
+6.  Scientific analysis requires explicit references, numerical verification, and reproducible provenance.
 
 From this follows a central architectural claim:
 
@@ -94,7 +94,7 @@ Different namespaces exist because they represent different semantic roles.
 
 - `metrics` computes scalar or trajectory-valued measurements.
 - `stats` compares, structures, or synthesizes analytical evidence.
-- `clinic` provides diagnostic synthesis and advanced pathology-oriented methods.
+- `system` provides environment and reproducibility support.
 - `view` renders visual perspectives only.
 - `system` provides operational support.
 
@@ -155,7 +155,6 @@ The public surface is organized under:
 - `mb.metrics`
 - `mb.stats`
 - `mb.view`
-- `mb.clinic`
 - `mb.system`
 - `mb.mops`
 - `mb.moeas`
@@ -281,7 +280,7 @@ Polymorphism is not compliant when it introduces ambiguity about:
 
 ### **6.4. Views May Be Input-Polymorphic, Not Semantically Magical**
 
-Views may accept high-level inputs and resolve the needed internal data, but they must not invent new analytical semantics that belong in `metrics`, `stats`, or `clinic`.
+Views may accept high-level inputs and resolve the needed internal data, but they must not invent new analytical semantics that belong in `metrics` or `stats`.
 
 ---
 
@@ -324,8 +323,6 @@ Examples of the intended result architecture include:
 - `RankCompareResult`
 - `StrataCompareResult`
 - `TierResult`
-- `DiagnosticResult`
-- advanced public result types such as `FairResult`
 
 ---
 
@@ -348,7 +345,7 @@ They may:
 They must not:
 
 - replace proper analytical endpoints
-- encode domain logic that belongs in `stats` or `clinic`
+- encode domain logic that belongs in `stats`
 - become compatibility dumping grounds for legacy naming
 
 ### **8.2. Chart-Type Naming Is Canonical**
@@ -364,8 +361,6 @@ The canonical view grammar is built around forms such as:
 - `ranks`
 - `strata`
 - `tiers`
-- `radar`
-- `ecdf`
 
 This grammar is part of the public identity of the library and should remain coherent.
 
@@ -384,45 +379,6 @@ This preserves:
 ## **9. Diagnostics, Calibration, and Reproducibility**
 
 Diagnostics are part of the scientific architecture, not an optional add-on.
-
-### **9.1. Canonical Diagnostic Entry Point**
-
-The canonical public diagnostic entry point is:
-
-```python
-mb.clinic.audit(target, quality=True)
-```
-
-This is the central diagnostic narrative for first-time users and the preferred entry path for general workflows.
-
-### **9.2. Advanced Public Diagnostic Methods**
-
-FAIR metrics, Q-score functions, point-wise helpers, and baseline-management methods may remain public, but they are architecturally secondary to `audit`.
-
-They exist for:
-
-- advanced analysis
-- custom instruments
-- pathology research
-- fine-grained semantic overlays
-
-### **9.3. Calibration Is First-Class Infrastructure**
-
-Calibration is not an implementation detail.
-
-The architecture assumes:
-
-- a problem may require GT acquisition
-- diagnostics depend on calibrated baselines
-- baseline provenance matters scientifically
-- contributors must treat calibration artifacts as part of the analytical infrastructure
-
-Both:
-
-- `mop.calibrate(...)`
-- `mb.clinic.calibrate(...)`
-
-are valid expressions of this design principle.
 
 ### **9.4. Reproducibility Metadata Is Mandatory Infrastructure**
 
@@ -536,7 +492,7 @@ The library provides:
 - diagnostics
 - visualization
 - persistence
-- calibration hooks
+- external reference hooks
 
 ### **11.2. Problems and Solvers Are Guests**
 
@@ -546,7 +502,7 @@ This means custom extensions should gain:
 
 - the same reporting contracts
 - the same data hierarchy
-- the same calibration pathways where applicable
+- compatible reference semantics where applicable
 - the same analytical workflows
 
 ### **11.3. Plugin Compliance Matters**
@@ -604,7 +560,7 @@ A contribution is more likely to be design-compliant when the answer to the foll
 
 ### **Semantics**
 
-- Is the semantic boundary between `metrics`, `stats`, `clinic`, and `view` respected?
+- Is the semantic boundary between `metrics`, `stats`, and `view` respected?
 - Is any new polymorphism disciplined and unambiguous?
 - Does the naming match the ontology of the domain?
 

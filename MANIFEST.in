@@ -2,9 +2,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-recursive-include moeabench/diagnostics/resources *.json
-recursive-include moeabench/diagnostics/resources/references *
 include moeabench/requirements.txt
 include README.md
 include COPYING
 include CITATION.cff
+
+recursive-include moeabench/resources *.json

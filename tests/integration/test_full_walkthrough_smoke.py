@@ -13,7 +13,7 @@ def test_full_walkthrough_smoke(paired_experiments, canonical_gt):
     assert mb.view.topology(exp1, exp2, mode="static", show=False) is not None
 
     metric_pairs = [
-        (mb.metrics.hv(exp1, scale="abs"), mb.metrics.hv(exp2, scale="abs")),
+        (mb.metrics.hv(exp1, ref=canonical_gt, scale="abs"), mb.metrics.hv(exp2, ref=canonical_gt, scale="abs")),
         (mb.metrics.gd(exp1, ref=canonical_gt), mb.metrics.gd(exp2, ref=canonical_gt)),
         (mb.metrics.gdplus(exp1, ref=canonical_gt), mb.metrics.gdplus(exp2, ref=canonical_gt)),
         (mb.metrics.igd(exp1, ref=canonical_gt), mb.metrics.igd(exp2, ref=canonical_gt)),
@@ -81,20 +81,4 @@ def test_full_walkthrough_smoke(paired_experiments, canonical_gt):
     assert mb.view.strata(strata, mode="static", show=False) is not None
     assert mb.view.tiers(tiers, mode="static", show=False) is not None
 
-    diag1 = mb.clinic.audit(exp1)
-    diag2 = mb.clinic.audit(exp2)
-    close1 = mb.clinic.closeness(exp1, ref=canonical_gt)
-    close2 = mb.clinic.closeness(exp2, ref=canonical_gt)
 
-    assert diag1.report(full=True) is not None
-    assert diag2.report(full=True) is not None
-    assert close1.report() is not None
-    assert close2.report() is not None
-
-    assert mb.view.radar(diag1, diag2, mode="static", show=False) is not None
-    assert mb.view.ecdf(close1, mode="static", show=False) is not None
-    assert mb.view.ecdf(close2, mode="static", show=False) is not None
-    assert mb.view.density(close1, mode="static", show=False) is not None
-    assert mb.view.density(close2, mode="static", show=False) is not None
-    assert mb.view.history(close1, mode="static", show=False) is not None
-    assert mb.view.history(close2, mode="static", show=False) is not None

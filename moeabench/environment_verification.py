@@ -17,8 +17,8 @@ import sys
 import warnings
 
 DEPENDENCIES = ("numpy", "scipy", "pymoo", "pandas", "moocore", "deap")
-_MANIFEST_PATH = Path(__file__).parent / "diagnostics" / "resources" / "certified_environment.json"
-_FRONTS_PATH = Path(__file__).parent / "diagnostics" / "resources" / "stability_smoke.json"
+_MANIFEST_PATH = Path(__file__).parent / "resources" / "certified_environment.json"
+_FRONTS_PATH = Path(__file__).parent / "resources" / "stability_smoke.json"
 _version_cache = None
 _stability_cache = None
 _warned_fingerprints = set()

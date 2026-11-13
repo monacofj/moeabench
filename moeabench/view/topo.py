@@ -30,8 +30,6 @@ def topology(
     [mb.view.topology] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
     """
-    from ..diagnostics.qscore import q_closeness_points
-    
     # Environment detection for 'auto' mode
     if mode == 'auto':
         try:
@@ -258,106 +256,8 @@ def topology(
                 marker_styles.insert(0, marker_styles.pop(gt_idx))
                 gt_flags.insert(0, gt_flags.pop(gt_idx))
     
-    # Reference for clinical markers: explicit gt (if shown) or explicit ref kwarg.
-    auto_ref = resolved_gt if show_gt else kwargs.get('ref', None)
+    # The marker flag is retained for compatibility with ordinary plotting.
 
-    if markers:
-        # Clinical Quality Markers logic (Q-Closeness)
-        for i, val in enumerate(processed_args):
-            if trace_modes[i] != 'markers' or gt_flags[i]:
-                # The inferred analytical reference is contextual background,
-                # not an empirical cloud needing clinical point classification.
-                continue
-            
-            # If the user already provided a specific symbol for this trace,
-            # we don't overwrite it with semantic quality markers.
-            if marker_styles[i] and 'symbol' in marker_styles[i]:
-                continue
-                
-            try:
-                # The original source object (carrying context like mop/problem)
-                orig_obj = source_objects[i]
-
-                # Inject auto_ref if found and not explicitly overridden
-                call_kwargs = kwargs.copy()
-                if auto_ref is not None and 'ref' not in call_kwargs:
-                    call_kwargs['ref'] = auto_ref
-                # Baseline K must match calibration population size, not len(front).
-                # For Experiment/Run objects, infer K from solver configuration when available.
-                if 'k' not in call_kwargs:
-                    pop_k = None
-                    if hasattr(orig_obj, 'moea') and hasattr(orig_obj.moea, 'population'):
-                        pop_k = getattr(orig_obj.moea, 'population', None)
-                    elif hasattr(orig_obj, 'source') and hasattr(orig_obj.source, 'moea'):
-                        pop_k = getattr(orig_obj.source.moea, 'population', None)
-                    if isinstance(pop_k, int) and pop_k > 0:
-                        call_kwargs['k'] = pop_k
-                
-                # A normalized offline GT may have been mapped back to
-                # physical objective coordinates for display. When the plotted
-                # reference is exactly that inverse transform, classify the
-                # points against the canonical *normalized* GT, not against
-                # the raw plot coordinates. Never insert an arbitrary visual
-                # s_k factor: marker classes are FAIR measurements, not art.
-                # Only true Experiment/Run objects expose pop() and thus
-                # support the complete longitudinal diagnostic resolver.
-                # Lightweight plot-source objects may have mop metadata but
-                # no population interface; marker scoring still works for them.
-                if callable(getattr(orig_obj, 'pop', None)):
-                    from ..diagnostics.utils import _resolve_diagnostic_context
-                    clinical_ctx = _resolve_diagnostic_context(orig_obj)
-                    normalization = clinical_ctx.get('normalization')
-                    if normalization is not None and auto_ref is not None:
-                        ideal = normalization['ideal']
-                        nadir = normalization['nadir']
-                        gt_physical = clinical_ctx['GT'] * (nadir - ideal) + ideal
-                        if np.array_equal(np.asarray(auto_ref), gt_physical):
-                            call_kwargs['ref'] = clinical_ctx['GT']
-
-                q_vals = q_closeness_points(orig_obj, **call_kwargs)
-                
-                # Fallback, if orig_obj failed (e.g. Population lacking context) but 'val' is a valid array
-                if len(q_vals) == 0 and isinstance(val, (np.ndarray, list)):
-                     try: q_vals = q_closeness_points(val, **call_kwargs)
-                     except: pass
-                
-                if len(q_vals) > 0:
-                    # A per-point clinical annotation must describe THIS trace.
-                    # If the metrology returned a different number of results,
-                    # leaving the trace unclassified is safer than mismapping
-                    # symbols (or silently truncating/reshaping them).
-                    if len(q_vals) != len(val):
-                        warnings.warn(
-                            f"view.topology: clinical markers for trace {names[i]!r} "
-                            f"contain {len(q_vals)} values, expected {len(val)}; "
-                            "using default markers for this trace.",
-                            RuntimeWarning,
-                        )
-                        continue
-                    # Audit Report Parity:
-                    # Q >= 0.5: Solid Circle
-                    # 0.0 <= Q < 0.5: Hollow Circle
-                    # Q < 0.0: Diamond Open
-                    symbols = []
-                    for q in q_vals:
-                        if q >= 0.5: symbols.append('circle')
-                        elif q >= 0.0: symbols.append('circle-open')
-                        else: symbols.append('diamond-open')
-                    
-                    if marker_styles[i] is None:
-                        marker_styles[i] = {}
-                    marker_styles[i]['symbol'] = symbols
-                    # High precision sizing (Solid=6, Hollow=10, Diamond=9)
-                    marker_styles[i]['size'] = []
-                    for q in q_vals:
-                        if q >= 0.5: marker_styles[i]['size'].append(6)
-                        elif q >= 0.0: marker_styles[i]['size'].append(10)
-                        else: marker_styles[i]['size'].append(9) # Diamond=9 matches Circle=10 visual weight
-            except Exception as e:
-                # Fail gracefully if metrology metadata is missing
-                # print(f"[moeabench] Warning: Could not calculate quality markers for trace {i}: {e}")
-                pass
-        
     if objectives is None:
         dims = [d.shape[1] for d in processed_args if len(d.shape) > 1]
         max_dim = max(dims) if dims else 2

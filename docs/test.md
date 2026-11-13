@@ -53,7 +53,7 @@ Canonical workflow tests across namespaces.
 
 These protect:
 
-- composition between `metrics`, `stats`, `clinic`, `view`, and persistence
+- composition between `metrics`, `stats`, `view`, and persistence
 - headless canonical walkthroughs
 - view dispatch and GT inference behavior
 - correlated result/view pipelines
@@ -69,7 +69,7 @@ Numerical and deterministic stability tests.
 
 Stability protects two distinct scientific contracts:
 
-- **Analytical stability**: given frozen inputs such as a front and a ground truth, the current metrics, clinical diagnostics, FAIR metrics, and Q-scores must still reproduce the certified numerical outputs.
+- **Analytical stability**: given frozen inputs such as a front and a ground truth, the current metrics must still reproduce the certified numerical outputs.
 - **Algorithmic stability**: given a canonical `(MOP, MOEA, seed, budget)` configuration, the current solver stack must still reproduce the certified final front.
 
 These two contracts are independent:
@@ -200,7 +200,7 @@ python test.py --certify
 
 `--certify` independently executes the complete deep battery (all unit,
 basic integration, and deep stability checks) before updating the shipped
-`moeabench/diagnostics/resources/certified_environment.json`. If any test
+`moeabench/resources/certified_environment.json`. If any test
 fails, the manifest is **not** updated. Review and commit changes to the
 manifest; do not revise numerical fixtures simply to make a failing
 environment pass. An explicitly skipped test remains recorded as skipped,

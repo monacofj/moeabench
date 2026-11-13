@@ -25,7 +25,6 @@ class MyProblem(mb.mops.BaseMop):
     """
     def __init__(self):
         # M=3 Objectives, N=10 Variables, Bounds=[0, 1]
-        # Providing a 'name' enables Sidecar Diagnostic generation (v0.9+)
         super().__init__(name="MyCustomProblem_3D_v1", M=3, N=10, xl=0.0, xu=1.0)
 
     def evaluation(self, X, n_ieq_constr=0):
@@ -59,11 +58,6 @@ def main():
     # 2. Setup: Instantiate and use the custom benchmark
     mop1 = MyProblem()
     
-    # 2.1 Calibration: "One-Click" Plugin registration
-    # This generates/loads a sidecar JSON with baselines for clinical diagnostics.
-    # We use the default grid to support varying population sizes.
-    mop1.calibrate()
-
     exp1 = mb.experiment()
     exp1.name = "MyCustom3DProblem"
     exp1.mop = mop1
@@ -75,10 +69,6 @@ def main():
     # 4. Visualization: Standard tools work seamlessly with custom mop
     mb.view.topology(exp1, title="Final Front of Custom Benchmark")
     
-    # 5. Scientific Validation (v0.9+): Clinical Radar
-    # This now works because we called mop1.calibrate()
-    mb.view.radar(exp1, title="Clinical Performance Profile (Custom MOP)")
-
 if __name__ == "__main__":
     main()
 

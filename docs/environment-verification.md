@@ -40,7 +40,7 @@ functional plotting compatibility is tested in the integration suite.
 
 ## Developer certification
 
-From the developer reference environment, run `python test.py --deep` (unit, integration and stability test suites). Then run `python test.py --certify`, which reruns the complete deep suite and updates `moeabench/diagnostics/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines.
+From the developer reference environment, run `python test.py --deep` (unit, integration and stability test suites). Then run `python test.py --certify`, which reruns the complete deep suite and updates `moeabench/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines.
 
 Certified versions are not inferred from package dependency lower bounds or a random user's installation. If no developer-certified manifest has been committed, the status is UNCONFIGURED and certification is pending.
 

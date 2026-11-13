@@ -14,6 +14,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.17.0] - 2026-11-13
+
+### Added
+- **Execution Environment Verification (#68, #69)**:
+  - Introduced `mb.system.verify_version()`, `verify_stability()`, `verify_experiment()`, and `verification_status()` for distinct checks of dependency identity, numerical behavior, and experiment provenance.
+  - Recorded execution-time environment and dependency versions separately from export-time metadata, including their preservation in saved experiments.
+  - Added developer certification, deterministic smoke references, compatibility advisories, and CI coverage. Version matching alone is not a guarantee of numerical reproducibility.
+
+### Changed
+- **FAIR Research Separation (Breaking, #87)**:
+  - Withdrew the experimental FAIR/clinical diagnostic subsystem from the supported release, while retaining the experimental code and historical calibration artifacts in the `old-fair` branch.
+  - Kept general-purpose performance metrics, statistical comparisons, topographic visualization, experiment management, and environment verification available independently of FAIR.
+  - Updated public documentation, notebooks, and tests to describe and exercise the supported API.
+- **Explicit Absolute Hypervolume Reference (Breaking, #87)**:
+  - `mb.metrics.hv(..., scale="abs")` now requires exactly one explicit `ref` front, rather than looking up an implicit FAIR calibration baseline.
+  - Computes the absolute ratio using the reference front's HV with the same normalization bounds as the evaluated front.
+  - The result is relative to the supplied discrete reference; values above 1 may occur and do not establish theoretical optimality.
+- **Statistical Analysis Documentation (#70, #71)**:
+  - Integrated statistical comparison methods more directly into the documented analytical workflows.
+
+### Fixed
+- **Analytical Pareto Regions (#78, #79)**:
+  - Corrected Pareto-region sampling for DPF2 and DTLZ7.
+- **Environment Provenance and Validation (#68)**:
+  - Strengthened version compatibility checks, reporting of numerical stability, and the distinction between execution-time and export-time environments.
+  - Improved deterministic reference checks and cross-environment validation behavior.
+
+### Removed
+- **Experimental FAIR/Clinical APIs (Breaking, #87)**:
+  - Removed the `mb.clinic`/clinical diagnostic APIs, FAIR metrics, Q-scores, automated clinical audits, and clinic-only radar/ECDF views.
+  - Removed `BaseMop.calibrate()` and FAIR-specific calibration registries, reference datasets, research scripts, figures, examples, and tests from the active release tree.
+  - Removed implicit FAIR calibration resources from conventional HV and experiment persistence.
+
+Research-stage FAIR corrections made after 0.16.1 and removed before 0.17.0 remain documented by their commits, issues, and ADRs rather than as shipped functionality in this release.
+
 ## [0.16.1] - 2026-10-14
 
 ### Fixed

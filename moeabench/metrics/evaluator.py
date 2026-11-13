@@ -893,7 +893,8 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
     # --- 0. MOP Validation & Meta-data ---
     # Check if we are mixing different problems
     scale = str(scale).lower()
-    from ..diagnostics.baselines import load_offline_baselines
+    if scale == 'abs' and (not has_external_ref or len(ref_items) != 1):
+        raise ValueError("Hypervolume scale='abs' requires exactly one explicit reference front (e.g., Pareto ground truth).")
     
     mop_names = []
     for item in [exp] + ref_items:
@@ -1071,64 +1072,25 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         final_name = "Hypervolume (Relative)"
     
     elif scale == 'abs':
-        # Retrieve Ground Truth from Calibration Registry
-        mop_obj = getattr(exp, 'mop', None)
-        if mop_obj is None and hasattr(exp, 'source'):
-             mop_obj = getattr(exp.source, 'mop', None)
-             
-        if mop_obj is None:
-             raise ValueError("Hypervolume 'abs' scale requires an experiment with an associated MOP.")
-             
-        mop_id = getattr(mop_obj, 'name', mop_obj.__class__.__name__)
-        absolute_ok = False
-        try:
-            bases = load_offline_baselines()
-            gt_registry = bases.get("_gt_registry", {})
-            dim_key = f"{mop_id}__M{M}"
-            gt_raw = gt_registry.get(dim_key, gt_registry.get(mop_id))
-            if gt_raw is None:
-                warnings.warn(
-                    f"Hypervolume abs unavailable: '{mop_id}' is not calibrated for M={M}. "
-                    "Falling back to raw scale.",
-                    UserWarning
-                )
-            else:
-                gt = np.array(gt_raw)
-                if gt.ndim != 2 or gt.shape[1] != M:
-                    warnings.warn(
-                        f"Hypervolume abs unavailable: incompatible GT for '{mop_id}' (shape={gt.shape}, M={M}). "
-                        "Falling back to raw scale.",
-                        UserWarning
-                    )
-                else:
-                    # Calculate reference HV (1.0 ceiling) using GT.
-                    if hv_backend == 'monte_carlo':
-                        m = GEN_mc_hypervolume(
-                            [gt], M, min_val, max_val,
-                            n_samples=n_samples,
-                            seed=resolved_mc_seed,
-                        )
-                    else:
-                        m = GEN_hypervolume([gt], M, min_val, max_val)
-
-                    gt_hv = float(m.evaluate()[0])
-                    if gt_hv > 0:
-                        mat /= gt_hv
-                        absolute_ok = True
-                    else:
-                        warnings.warn(
-                            f"Hypervolume abs unavailable: non-positive GT HV for '{mop_id}'. "
-                            "Falling back to raw scale.",
-                            UserWarning
-                        )
-        except Exception as e:
-            warnings.warn(
-                f"Hypervolume abs failed with '{type(e).__name__}: {e}'. "
-                "Falling back to raw scale.",
-                UserWarning
+        # The caller supplies the reference front; no FAIR calibration
+        # resource or implicit ground truth is consulted.
+        gt_fronts = [np.asarray(front, dtype=float) for front in reference_sources[0]
+                     if front is not None and len(front) > 0]
+        gt = np.vstack(gt_fronts)
+        if gt.ndim != 2 or gt.shape[1] != M:
+            raise ValueError("Hypervolume absolute reference has incompatible objectives.")
+        if hv_backend == 'monte_carlo':
+            gt_metric = GEN_mc_hypervolume(
+                [gt], M, min_val, max_val,
+                n_samples=n_samples, seed=resolved_mc_seed,
             )
-
-        final_name = "Hypervolume (Absolute)" if absolute_ok else "Hypervolume (Raw)"
+        else:
+            gt_metric = GEN_hypervolume([gt], M, min_val, max_val)
+        gt_hv = float(gt_metric.evaluate()[0])
+        if not np.isfinite(gt_hv) or gt_hv <= 0:
+            raise ValueError("Hypervolume absolute reference has no positive dominated volume.")
+        mat /= gt_hv
+        final_name = "Hypervolume (Absolute)"
 
     elif scale == 'raw':
         final_name = "Hypervolume (Raw)"

@@ -7,7 +7,7 @@
 API Walkthrough
 ---------------------------------
 Two experiments, canonical stats API, and a full tour through
-topology, performance, attainment, strata, and clinic diagnostics.
+topology, performance, attainment, and strata.
 """
 
 import mb_path
@@ -21,7 +21,6 @@ def main():
     ## Setup: same MOP, two MOEAs
     ##
     mop = mb.mops.DTLZ2(M=3)
-    #mop.calibrate()  # Ensure baseline/GT is available for this M (e.g., M=4).
     exp1 = mb.experiment()
     exp1.name = "NSGA-II"
     exp1.mop = mop
@@ -58,7 +57,7 @@ def main():
     ##
     # Hypervolume: compute, test, and plot with reused stats.
 
-    hv1 = mb.metrics.hv(exp1, scale="abs")  # Falls back to raw if absolute is unavailable.
+    hv1 = mb.metrics.hv(exp1, scale="raw")  # Falls back to raw if absolute is unavailable.
     hv2 = mb.metrics.hv(exp2, scale="abs")  # Falls back to raw if absolute is unavailable.
     hv1.report()                                 # exp1 HV summary.
     hv2.report()                                 # exp2 HV summary.
@@ -249,28 +248,5 @@ def main():
     # Observe selection pressure depth and class occupancy profile.
 
     ##
-    ## 5) Clinic audit
-    ##
-
-    diag1 = mb.clinic.audit(exp1)                # Clinical synthesis for exp1.
-    diag2 = mb.clinic.audit(exp2)                # Clinical synthesis for exp2.
-    diag1.report(full=True)                      # Full audit narrative.
-    diag2.report(full=True)                      # Full audit narrative.
-
-    mb.view.radar(diag1, diag2)                  # Global health radar.
-
-    close1 = mb.clinic.closeness(exp1)           # Closeness pathology for exp1.
-    close2 = mb.clinic.closeness(exp2)           # Closeness pathology for exp2.
-    close1.report()                              # Closeness summary.
-    close2.report()                              # Closeness summary.
-    mb.view.ecdf(close1)                         # Quantile profile.
-    mb.view.ecdf(close2)                         # Quantile profile.
-    mb.view.density(close1)                      # Distribution morphology.
-    mb.view.density(close2)                      # Distribution morphology.
-    mb.view.history(close1)                      # Temporal pathology evolution.
-    mb.view.history(close2)                      # Temporal pathology evolution.
-    # Observe global health shape (radar), quantiles (ecdf), and pathology morphology over time.
-
-
 if __name__ == "__main__":
     main()

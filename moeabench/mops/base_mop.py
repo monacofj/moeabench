@@ -84,9 +84,7 @@ class BaseMop(ABC):
         """
         Samples the true Pareto Set (decision variables).
         
-        This method is critical for the moeabench Diagnostic Pipeline (v0.9+). 
-        It provides the 'Analytical Truth' used to calculate Ground Truth (GT) 
-        and Baselines during calibration.
+        The analytical Pareto-set sample can be used to construct reference fronts.
         
         Args:
             n_points (int): Number of target points to sample. 
@@ -95,30 +93,3 @@ class BaseMop(ABC):
         """
         raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")
 
-    def calibrate(self, 
-                  source_baseline: Optional[str] = None, 
-                  source_gt: Optional[Union[str, np.ndarray]] = None,
-                  source_search: Optional[Any] = None,
-                  force: bool = False, 
-                  **kwargs) -> bool:
-        """
-        Calibrates the clinical diagnostics for this MOP instance.
-        
-        This process generates (or loads) a portable 'Sidecar' JSON file co-located 
-        with the problem's source code. The sidecar contains the frozen Ground Truth 
-        and statistical baselines (ECDF) required for Clinical Radar plots (Q-Scores).
-        
-        Args:
-            source_baseline (str, optional): Explicit sidecar path (JSON).
-            source_gt (str or ndarray, optional): Explicit Ground Truth reference.
-            source_search (Moea, optional): Algorithm instance to discover GT.
-            force (bool): If True, ignores the cache and forces re-calibration.
-            **kwargs: Passed to the calibration engine (e.g., k_values).
-        """
-        from ..diagnostics.calibration import calibrate_mop
-        return calibrate_mop(self, 
-                             source_baseline=source_baseline, 
-                             source_gt=source_gt,
-                             source_search=source_search,
-                             force=force, 
-                             **kwargs)

@@ -24,7 +24,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 12. **[11. Extensibility](#extensibility)**
 13. **[12. References](#references)**
 14. **[13. Legacy Support](#legacy)**
-15. **[14. Algorithmic Diagnostics](#diagnostics)**
+15. **[13. API Status](#13-api-status)**
 
 ---
 
@@ -41,7 +41,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
 | **H_raw** | Raw Hypervolume | Dominated volume in the selected self-derived or external-reference normalization context. |
 | **H_rel** | Relative Hypervolume | Normalized by the best final HV in the selected reference context: the best evaluated run under self-reference, or the best individual final reference front under explicit `ref`. Values are not clipped and may exceed `1.0` with an external reference. (Pre-v0.11.2: `H_ratio`). |
-| **H_abs** | Absolute Hypervolume | Normalized by the **Ground Truth**. Measures proximity to theoretical optimum. |
+| **H_abs** | Absolute Hypervolume | Normalized by exactly one explicitly supplied reference front; depends on its representativeness. |
 | **OHV** | Ordinal Hypervolume | Hypervolume computed in an ordinal objective space whose consecutive distinct reference levels are separated by one unit. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
@@ -122,7 +122,7 @@ seeds allocated to internal stochastic components, when an algorithm has any;
     *   `repeat` (*int*): Number of independent runs performed by this call. Defaults to `exp.repeat`.
     *   `append` (*bool*): If `False` (default), clears previously stored runs before execution. If `True`, appends new runs and continues the seed schedule after the stored runs.
     *   `workers` (*int*, optional): Deprecated compatibility parameter. Runs are currently executed serially for stability.
-    *   `diagnose` (*bool*): If `True`, performs automated pathology analysis after execution. Defaults to `False`.
+    *   `diagnose` (*bool*): Reserved for research; requesting `True` raises `NotImplementedError` before execution.
     *   `silent` (*bool*): If `True`, suppresses runtime output (`Running {exp.name}` banner, progress bars, and run-triggered diagnostic prints). Defaults to `False`.
     *   `**kwargs`: Runtime overrides for supported MOEA properties (e.g., `population`, `generations`, `seed`). `stop=callback` is accepted here as a per-call stop override; `exp.stop = callback` sets the experiment-level policy. Algorithm-specific constructor keywords may instead be consumed by a MoeaBench wrapper before pymoo is called.
 *   **Returns**: `None`.
@@ -291,7 +291,7 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 *   **Arguments**:
     *   `*args`: One or more `experiment`, `Run`, or `Population` objects.
     *   `mode` (*str*): `'auto'` (detects environment), `'interactive'` (Plotly), or `'static'` (Matplotlib).
-    *   `markers` (*bool*): Enables Clinical Quality Markers (Solid Circle = healthy, Open Circle = near-miss, Open Diamond = severe pathology) based on algorithmic health (`q_closeness`). Defaults to `False`. When `True`, the marker reference uses `gt` when `show_gt=True` (or explicit `ref=` if supplied).
+    *   `markers` (*bool*): Experimental quality markers are unavailable in this release.
     *   `show_gt` (*bool*): Controls GT visualization/inference. Defaults to `True`.
     *   `gt` (*np.ndarray*): Optional explicit GT array used when `show_gt=True`.
 *   **Returns**: `Figure` (Plotly or Matplotlib).
@@ -313,11 +313,11 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 ### **2.2. Performance Analysis (`mb.view`)**
 
 #### **`mb.view.history(*args, domain='auto', metric=hv, gens=None, title=None, ...)`**
-*   **Description**: Domain-dispatched history view for performance or clinical trajectories.
+*   **Description**: History view for scalar performance trajectories.
 *   **Arguments**:
     *   `*args`: Datasets to compare.
-    *   `domain` (*str*): `'auto'`, `'perf'`, or `'clinic'`. Auto dispatches from metric/result type.
-    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
+    *   `domain` (*str*): `'auto'` or `'perf'`.
+    *   `metric` (*callable* or *str*): Performance metric callable or name.
     *   `gens` (*int* or *slice*): Specific generations to plot.
     *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
@@ -333,11 +333,11 @@ All canonical `mb.view.*` functions support `title=None` with a semantic auto-ti
 *   **Returns**: `Figure`.
 
 #### **`mb.view.density(*args, domain='auto', metric=None, gen=-1, title=None, ...)`**
-*   **Description**: Domain-dispatched density view for performance, topology, or clinic; also accepts canonical result objects directly.
+*   **Description**: Domain-dispatched density view for performance or topology; accepts canonical result objects directly.
 *   **Arguments**:
-    *   `*args`: Datasets to compare or precomputed result objects (`PerfCompareResult`, `DistMatchResult`, or clinical result).
-    *   `domain` (*str*): `'auto'`, `'perf'`, `'topo'`, or `'clinic'`.
-    *   `metric` (*callable* or *str*): Performance metric callable or clinical metric name.
+    *   `*args`: Datasets to compare or precomputed result objects (`PerfCompareResult` or `DistMatchResult`).
+    *   `domain` (*str*): `'auto'`, `'perf'`, or `'topo'`.
+    *   `metric` (*callable* or *str*): Performance metric callable or name.
     *   `gen` (*int*): Specific generation index. Defaults to `-1`.
     *   `title` (*str*): Optional explicit title override.
 *   **Returns**: `Figure`.
@@ -355,33 +355,6 @@ The underlying structural ontology is **layer**. The public chart-oriented views
     *   Maps Quality vs Density using parametric modes ('collective' vs 'individual').
 *   **`mb.view.tiers(exp1, exp2=None, title=None, show=True, ...)`**:
     *   Competitive Duel: joint dominance proportion per global tier.
-
-### **2.4. Clinical Diagnostics (`mb.view` canonical)**
-
-#### **`mb.view.radar(*targets, ground_truth=None, mode='auto', show=True, title=None, ...)`**
-*   **Description**: Holistic validation view mapping one or more sets of 6 Q-Scores to a radar chart.
-*   **Arguments**:
-    *   `*targets`: `experiment`, `Run`, `DiagnosticResult`, or Q-score containers.
-    *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
-    *   `mode` (*str*): `'auto'`, `'interactive'`, or `'static'`.
-    *   `show` (*bool*): If `True`, renders immediately.
-    *   `title` (*str*): Optional explicit title override.
-*   **Returns**: `Figure`.
-
-#### **`mb.view.ecdf(target, ground_truth=None, metric="closeness", mode='auto', show=True, title=None, ...)`**
-*   **Description**: Plots the Empirical Cumulative Distribution Function of a clinical metric.
-*   **Arguments**:
-    *   `target`: Input data.
-    *   `ground_truth` (*np.ndarray*): Optional Pareto Front for reference.
-    *   `metric` (*str*): One of `'closeness'`, `'headway'`, `'coverage'`, `'gap'`, `'regularity'`, or `'balance'`.
-    *   `mode` (*str*): `'auto'`, `'interactive'`, or `'static'`.
-    *   `show` (*bool*): If `True`, renders immediately.
-    *   `title` (*str*): Optional explicit title override.
-*   **Returns**: `Figure`.
-
-#### **Clinical Density Via `mb.view.density(..., domain='clinic')`**
-*   **Description**: Histogram/density morphology for one physical clinical metric.
-*   **Canonical input**: `DiagnosticValue`, `FairResult`, `QResult`, `Run`, `Population`, or `experiment`.
 
 ### **3.5. Aesthetic & Styling System**
 
@@ -533,7 +506,7 @@ Calculates Hypervolume for an experiment, run, or population. Across the metric 
 *   `scale` (str): Narrative perspective for normalization:
     *   `'raw'` (Default): Returns dominated volume in the selected normalization context. Without `ref`, it is self-referenced and not directly comparable with separately normalized experiments. With `ref`, it is comparable to results using that same fixed reference.
     *   `'rel'`: Divides the complete trajectory by one fixed best-final denominator. Without explicit `ref`, the candidates are the evaluated runs and the denominator is their greatest final HV. With explicit `ref`, each individual final reference front is evaluated under bounds derived only from that common reference context and the greatest of those HVs is used. The denominator is not the HV of the pooled union, values are not clipped, `1.0` means equality with the chosen denominator, and values above `1.0` are possible when evaluated data outperform an external reference.
-    *   `'abs'`: Divides by the calibrated **Ground Truth** HV. Both evaluated and ground-truth HV use the same selected bounds; with `ref`, those bounds come only from `ref`.
+    *   `'abs'`: Divides by the HV of exactly one explicitly supplied reference (`ref`), evaluated with identical normalization bounds. The reference must have positive HV.
 *   `gens` (optional): Slice or integer to limit the generation scope.
 *   `progress` (bool): Displays calculation progress, updated after each generation.
 
@@ -934,7 +907,7 @@ When the selected save mode includes execution data and runs are available, it a
 6.  `pof.csv`: Sampled analytical/known optimal front, when the MOP exposes a usable `pf()`.
 
 ### **`metadata.json` contract**
-The archive records reproducibility information such as MoeaBench version, Python/platform information, dependency versions when available, UTC execution timestamp, and the SHA256 hash of the canonical clinical baseline resource when available. Its experiment context includes the experiment name, `author`, `license`, `created_at`, year/year override, persistence mode, MOP/MOEA identities, stop policy, repeat setting, and per-run `seed` and `component_seeds` metadata.
+The archive records reproducibility information such as MoeaBench version, Python/platform information, dependency versions when available, UTC execution timestamp, and Its experiment context includes the experiment name, `author`, `license`, `created_at`, year/year override, persistence mode, MOP/MOEA identities, stop policy, repeat setting, and per-run `seed` and `component_seeds` metadata.
 
 A newly created experiment therefore persists `author="Public domain"` and `license="CC0-1.0"` unless those properties were explicitly replaced. These are the experiment's actual stored values, not persistence-time substitutions.
 
@@ -950,35 +923,12 @@ The abstract skeleton for all problem plugins. To create a new problem, you must
 
 **Core Mathematical Contract (Methods to Override):**
 *   **`evaluation(self, X)`**: Receives a population matrix $X$ ($PopSize \times N$). Must return a dictionary `{'F': obj_matrix}` where `obj_matrix` is ($PopSize \times M$).
-*   **`ps(self, n)`**: [MANDATORY for Diagnostics] Samples the true Pareto Set (decision space). 
+*   **`ps(self, n)`**: [Optional analytical extension] Samples the true Pareto Set (decision space). 
     *   **Argument `n`**: An integer dictating the number of points to sample along the continuous mathematical manifold.
     *   **Returns**: A NumPy matrix of shape `(n, N)` containing the ideal decision variables.
     *   **Role**: This is the analytical bedrock (Protocol A). It allows the framework to instantly sample the analytical truth instead of relying on exhaustive empirical searches.
 
-**Diagnostic API (Provided by BaseMop):**
-*   **`pf(self, n)`**: Samples the true Pareto Front (objective space). By default, it calls your `ps(n)` and maps it through `evaluation()`.
-*   **`calibrate(source_baseline=None, source_gt=None, source_search=None, force=False, **kwargs)`**: The engine that certifies your problem. This method implements the three Ground Truth (GT) protocols defined by the framework:
-
-| Protocol | Strategy | Argument | Description |
-| :--- | :--- | :--- | :--- |
-| **A** | **Analytical** | *None (Default)* | Calls `ps(n)` to generate the GT using formulaic math. |
-| **B** | **Static** | `source_gt` | Loads the GT from an external `.csv` file or NumPy array. |
-| **C** | **Empirical** | `source_search` | Runs a high-fidelity MOEA (e.g., `NSGA3`) to find the GT on-the-fly. |
-
-**Arguments:**
-*   **`source_baseline`**: Path to the Sidecar JSON file (e.g., `'my_mop_M3.json'`). If `None`, it is auto-resolved as `<ProblemName>_M<M>.json` in the problem's directory. This file "freezes" the GT and ECDFs for future use.
-*   **`source_gt`**: A path to a CSV file or a NumPy matrix containing objective-space points to be treated as the Absolute Truth.
-*   **`source_search`**: An instance of a MOEA (e.g., `mb.moeas.NSGA3()`) used to Discover the GT. The framework will run this algorithm exaustively and filter the results with `.non_dominated()`.
-*   **`force`**: If `True`, ignores existing Sidecar JSON and forces re-calibration.
-
->**Protocol C (Example)**
->If your MOP has no analytical `ps(n)` and no CSV, you can signal an empirical search during calibration:
->```python
->mop = MyComplexMop()
-># MoeaBench will discover the truth, freeze it in '<ProblemName>_M<M>.json', 
-># and never run the search again.
->mop.calibrate(source_search=mb.moeas.NSGA3(pop=200, gen=1000))
->```
+**Analytical front sampling:** `pf(self, n_points)` samples objective vectors by evaluating the points returned by `ps(self, n_points)`. Analytical `ps()` is optional for problems without a known Pareto set.
 
 The contract for problems requires implementing a **vectorized** evaluation function. This allows the framework to process entire populations using NumPy's high-performance broadcasting.
 
@@ -1036,7 +986,6 @@ class RandomSearch(mb.moeas.BaseMoea):
 ```
 > [!TIP]
 > For a detailed walkthrough on implementing and using custom plugins, see **`examples/example_05.py`**.
-> To see the **Automated Diagnostics** in action across different algorithmic pathologies, refer to **`examples/example_11.py`**.
 
 ---
 
@@ -1050,183 +999,8 @@ For a detailed technical narrative on the implementation history and mathematica
 
 The documentation above reflects the canonical API for the alpha/beta transition:
 
-- `mb.clinic` is the diagnostics namespace.
-- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `strata`, `tiers`, `ecdf`, `radar`).
+- `mb.view` exposes only canonical chart names (`topology`, `bands`, `gap`, `density`, `history`, `spread`, `ranks`, `strata`, `tiers`).
 - `mb.stats` uses canonical comparators (`perf_compare`, `topo_compare`) and method aliases (`perf_shift`, `perf_match`, `perf_win`, `topo_match`, `topo_shift`, `topo_tail`).
 - `summary()` is removed in favor of `report(show=True, **kwargs)`. Type-specific options such as `full=True` are documented only for result classes that implement them.
 
 
-<a name="diagnostics"></a>
-## **14. Algorithmic Diagnostics and Pathology Detection**
-
-The `mb.clinic` module is the high-level analytical interface for **Algorithmic Pathology**. Following the pattern established in the `mb.stats` module, all diagnostic outputs implement the **Standardized Reporting Interface** (`Reportable`), providing narrative insights alongside numerical values.
-
-### **12.1. Diagnostic Reporting Interface (`Reportable`)**
-
-Instead of returning raw `float` or `ndarray` values, functions return specialized objects that preserve numerical behavior while providing narrative insights.
-
-*   **`DiagnosticValue`**: The base class for single-metric results.
-    *   **Numerical Fallback**: Objects can be cast directly to `float()`.
-    *   **`.report()`**: Returns a multi-line Markdown string with clinical labels and insights. By default, it also displays the report.
-    *   **`exp.author`**: `str` author metadata for persistence; new experiments default to `"Public domain"`.
-    *   **`exp.license`**: `str` SPDX License ID; new experiments default to `"CC0-1.0"`.
-    *   **`exp.year`**: `int` Publication year.
-    *   **`reproducibility`**: `dict` Environment DNA block (Python/NumPy versions, Baseline version, Platform, Timestamp).
-
-| Result Class | Returner functions | Characteristics |
-| :--- | :--- | :--- |
-| **`FairResult`** | `headway`, `coverage`, etc. | Physical facts whose units/scales depend on the specific metric. |
-| **`QResult`** | `q_headway`, `q_coverage`, etc. | Clinical scores $[0, 1]$, categorized into 5 quality tiers. |
-
----
-
-### **12.2. Context-Aware Dispatch Protocol**
-
-> [!NOTE]
-> **Design Background**: For the mathematical rationale behind these metrics (including the "Monotonicity Gate" and "Headway" renaming), see **[ADR 0028: Refined Clinical Diagnostics](../docs/adr/0028-refined-clinical-diagnostics-v0.9.1.md)**.
-
-All functions in `mb.clinic` use a **Context-Aware Dispatch** system (`_resolve_diagnostic_context`) that automatically interprets input data.
-
-*   **Polymorphic Input**:
-    *   `Experiment`: Uses the final multi-run aggregate/superfront, together with the MOP Ground Truth ($GT$), resolution context, and longitudinal information when required.
-    *   `Run`: Extracts the front and history from that specific execution together with its GT and scale context.
-    *   `Population`: Extracts the supplied snapshot and tries to find MOP references.
-    *   `np.ndarray`: Treated as a raw Front. Requires manual `ref` (GT) and `s_k` to be safe.
-
-*   **Context Resolution**:
-    *   **$GT$ (Ground Truth)**: If not provided explicitly via `ref=...`, the system looks for `.optimal_front()` or `.mop.pf()`.
-    *   **$s_K$ (Resolution Scale)**: The "Physics of Resolution". If not provided via `s_k=...`, it looks for `mop.s_k` or `mop.s_fit`. Defaults to `1.0` if unknown.
-
-Under equivalent/default arguments, public individual calls such as `mb.clinic.closeness(exp)` or `mb.clinic.q_closeness(exp)` resolve the same canonical diagnostic context used by the corresponding component inside `mb.clinic.audit(exp)`. The audit exposes the resolved state as `DiagnosticResult.diagnostic_context`, including the effective GT, $K$, $s_K$, and reference structures used for scoring. Explicit overrides can intentionally change that context.
-
----
-
-### **12.2. Physical Metrics (Fairview Protocol)**
-
-For detailed definitions, see the [FAIR Metrics documentation](fair_metrics.md).
-
-The six FAIR quantities do not share one universal unit. Their public scalar meanings are:
-
-| Metric | Quantity | Unit / Scale |
-| :--- | :--- | :--- |
-| **Closeness** | Median $P \to GT$ nearest distance after resolution scaling and ideal-residue correction. | Resolution units. |
-| **Coverage** | Mean $GT \to P$ nearest distance. | Objective-space distance. |
-| **Gap** | 95th-percentile $GT \to P$ nearest distance. | Objective-space distance. |
-| **Regularity** | Wasserstein-1 difference between population and reference nearest-neighbor spacing distributions. | Spacing-distance units. |
-| **Balance** | Jensen-Shannon divergence of region occupancy. | Dimensionless. |
-| **Headway** | Fraction of the initial convergence error remaining at the evaluated state. | Dimensionless. |
-
-#### **`mb.clinic.headway(data, ref=None, s_k=None, **kwargs)`**
-*   **Description**: Longitudinal residual search error,
-    $$\mathrm{headway}=\frac{GD_{95}(P_{final}\to GT)}{GD_{95}(P_{initial}\to GT)}.$$
-    `0.0` means the initial convergence error has been removed; `1.0` means essentially no progress from the initial state. If no initial population is available, the default longitudinal value is unavailable. With `raw=True`, the function instead returns the final $GD_{95}$ divided by the resolution scale $s_K$.
-*   **Arguments**:
-    *   `data`: `experiment`, `Run` or `Population`.
-    *   `ref` (*np.ndarray*): Analytical Ground Truth.
-    *   `s_k` (*float*): Expected resolution noise floor, used by the raw form and diagnostic context.
-    *   `raw` (*bool*, via `**kwargs`): If `True`, returns final convergence distance in resolution units rather than the longitudinal ratio.
-*   **Returns**: `FairResult`.
-
-#### **`mb.clinic.closeness(data, ref=None, s_k=None)`**
-*   **Description**: Distribution of point-wise distances to the manifold. Computed optimally using a `scipy.spatial.KDTree` spatial index for $O(N \log M)$ performance on large manifolds. The scalar is the median $P \to GT$ distance in resolution units after any calibrated ideal-residue correction.
-*   **Arguments**:
-    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
-    *   `ref` (*np.ndarray*): Analytical Ground Truth.
-    *   `s_k` (*float*): Expected resolution noise floor.
-*   **Returns**: `FairResult`.
-
-#### **`mb.clinic.coverage(data, ref=None)`** / **`mb.clinic.gap(data, ref=None)`**
-*   **Description**: Global coverage ($IGD_{mean}$) and robust large-hole size ($IGD_{95}$). These are $GT \to P$ objective-space distances; they are not implicitly divided by $s_K$.
-*   **Arguments**:
-    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
-    *   `ref` (*np.ndarray*): Analytical Ground Truth.
-*   **Returns**: `FairResult`.
-
-#### **`mb.clinic.regularity(data, ref_distribution=None)`**
-*   **Description**: Structural Uniformity (Wasserstein distance between nearest-neighbor spacing distributions).
-*   **Arguments**:
-    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
-    *   `ref_distribution` (*np.ndarray*): Optional ideal nearest-neighbor spacing distribution.
-*   **Returns**: `FairResult`.
-
-#### **`mb.clinic.balance(data, centroids=None, ref_hist=None)`**
-*   **Description**: Manifold Bias (dimensionless Jensen-Shannon Divergence of occupancy).
-*   **Arguments**:
-    *   `data`: `experiment`, `Run`, `Population`, or raw front array.
-    *   `centroids` (*np.ndarray*): Optional region centers for occupancy partitioning.
-    *   `ref_hist` (*np.ndarray*): Optional reference occupancy histogram.
-*   **Returns**: `FairResult`.
-
----
-
-### **12.3. Clinical Normalization (Q-Scores)**
-
-These metrics answer: *"Is this good or bad?"*
-They map physical values to a $[0, 1]$ utility scale using **Offline Baselines**.
-
-*   **Range**: $1.0$ (Ideal) to $0.0$ (Baseline/Random or worse after clipping/gating). Public Q-scores do not become negative.
-*   **Logic**: Each Q-score calibrates its FAIR quantity between metric-specific ideal and random/failure anchors. The transformation may be log-linear, ECDF-based, or Wasserstein-based; a Q-score is therefore not generally a percentile of random samples.
-
-#### **`mb.clinic.q_headway(data, ...) -> QResult`**
-*   **Anchors**: Ideal=$0.0$ and **no progress**=$1.0$ on the genuine-P0 longitudinal Headway ratio. These are analytical anchors, not an empirical random-population baseline. New calibrations do not synthesize Headway `rand50` or `rand_ecdf`.
-*   **Mapping**: **Log-Linear**. Expands resolution near $Q=1.0$ while preserving the anchors $Q=1$ at ideal progress and $Q=0$ at no progress.
-
-#### **`mb.clinic.q_closeness(data, ...) -> QResult`**
-*   **Baselines**: Ideal and calibrated random Half-Normal projected error distributions.
-*   **Mapping**: **Wasserstein-1**. Uses distances to the ideal and random distributions with a monotonicity gate; it is not a percentile interpretation.
-*   **Note (v0.12.0)**: Random noise assumes a positive-only metric space penalty enforced through Half-Normal absolute validation, prohibiting points from bleeding inside the non-dominated Pareto wall.
-
-#### **`mb.clinic.q_coverage`, `mb.clinic.q_gap`, `mb.clinic.q_regularity`, `mb.clinic.q_balance` -> `QResult`**
-*   **Baselines**: Ideal=$Uni_{50}$ (Median of FPS subsets), Random=$Rand_{50}$ (Median of Random subsets).
-*   **Mapping**: **ECDF**. Uses the full Empirical Cumulative Distribution Function of random sampling to interpolate the metric between its calibrated anchors, with clipping to the public $[0,1]$ contract.
-
-#### **`mb.clinic.q_headway_points(data, ...)`** / **`mb.clinic.q_closeness_points(data, ...)`**
-*   **Description**: Point-wise Q-score helpers returning arrays suitable for colored topology overlays and per-point diagnostics. `q_headway_points` produces **per-point contributions**, not the population HEADWAY ratio: it compares each final point's nearest-GT distance with `GD95(P_initial→GT)`, using the genuine initial population from the same run (or an explicit `initial_data`). Without longitudinal context, it returns NaNs rather than borrowing obsolete Headway baseline records. `q_closeness_points` uses reference-specific finite-GT correction when a matching calibration is available.
-*   **Returns**: `np.ndarray`.
-
----
-
-### **12.4. Automated Algorithmic Audit**
-
-#### **`mb.clinic.audit(target, ground_truth=None, source_baseline=None, quality=True, **kwargs) -> DiagnosticResult`**
-*   **Rationale**: The primary entry point for automated performance analysis. It always computes the six FAIR dimensions and, by default, also computes the Q-score layer and clinical synthesis.
-*   **Arguments**:
-    *   `target`: `experiment`, `Run`, `Population`, or compatible raw/object wrapper.
-    *   `ground_truth`: Optional GT array or path (`.npy`, `.npz`, `.csv`).
-    *   `source_baseline`: Optional JSON/dict baseline source override.
-    *   `quality` (*bool*): If `True` (default), computes Q-score layer in addition to FAIR metrics. If `False`, returns FAIR-only diagnostics without executing Q-score normalization or pathology classification.
-*   **Process (`quality=True`)**:
-    1.  Resolves one canonical diagnostic context and calculates all 6 FAIR metrics.
-    2.  Calculates all 6 Q-Scores from that context.
-    3.  Applies the **Performance Auditor** expert system and classifies the result in the pathology ontology.
-*   **Process (`quality=False`)**: Resolves the same physical context and calculates the six FAIR metrics, returning a `DiagnosticResult` with no quality audit and `UNDEFINED` clinical status because clinical scoring was not requested.
-*   **Return**: A `DiagnosticResult` object that provides the narrative result via `.report()` and exposes the resolved `diagnostic_context`.
-
-### **12.5. Baseline Management**
-
-| Function | Args | Description |
-| :--- | :--- | :--- |
-| **`mb.clinic.register_baselines`** | `source` | Appends a new JSON file or dict to the global baseline registry. |
-| **`mb.clinic.reset_baselines`** | None | Clears all custom registrations and reverts to library defaults. |
-| **`mb.clinic.use_baselines`** | `source` | **Context Manager**: Temporarily activates a primary baseline source. |
-| **`mb.clinic.calibrate`** | `mop, source_baseline=None, source_gt=None, source_search=None, force=False, ...` | Calibrates or refreshes offline clinical baselines for one problem. |
-
-#### **`ReproducibilityWarning`**
-*   **Description**: A custom warning issued during `load_offline_baselines()` when a mismatch is detected between the current environment (Python/NumPy) and the environment that generated the baseline. It supports the library's "Fail-Safe" compatibility protocol.
-
-#### **`.reset_baselines()`**
-*   **Description**: Clears any custom or sidecar baseline configurations loaded during the session (via `register_baselines` or auto-discovery). 
-*   **Behavior**: Reverts the internal baseline cache (`_CACHE`) entirely back to the canonical library defaults (the internal `baselines.json`). Ensures global state cleanliness when running multiple disparate evaluations in the same kernel.
-*   **Arguments**: None.
-*   **Returns**: `None`.
-
----
-
-### **12.4. Offline Calibration Method**
-
-moeabench uses a strict **Fail-Closed** calibration system (`baselines.json`).
-
-1.  **Discrete Sampling**: The canonical fallback supports exact $K$ values from 10 through 49 and the grid $\{50,100,150,200\}$ for larger populations.
-2.  **$Uni_{50}$ (The Anchor)**: Generated using **Farthest Point Sampling (FPS)** on the Ground Truth. Represents the "best possible" distribution for a discrete set of size $K$.
-3.  **$Rand_{50}$ & ECDF (The Noise)**: Generated by Monte Carlo sampling (Uniform randomness or Gaussian blur). Represents the "Physics of Failure".
-4.  **K Selection**: `snap_k()` maps $K<10$ to 10; preserves exact $K$ for $10\le K<50$; and for $K\ge50$ uses the greatest canonical grid value not exceeding the requested K. For many-objective audits ($M>3$), when the active problem-specific/sidecar baseline exposes its own K values, MoeaBench instead chooses the closest K available for that problem. Baseline lookup itself can use the closest stored K when the exact key is absent, but accepts that fallback only within 10% of the requested K; otherwise the baseline is treated as unavailable.

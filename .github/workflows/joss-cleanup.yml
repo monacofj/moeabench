@@ -1,0 +1,70 @@
+name: JOSS cleanup validation
+on:
+  push:
+    branches: [chore/joss-remove-fair]
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e . pytest
+      - name: Verify release metadata
+        run: |
+          python - <<'PY'
+          import importlib.metadata
+          import pathlib
+          import moeabench as mb
+          assert mb.system.version(show=False) == "0.17.0"
+          assert mb.__version__ == "0.17.0"
+          assert importlib.metadata.version("moeabench") == "0.17.0"
+          assert "version: 0.17.0" in pathlib.Path("CITATION.cff").read_text()
+          assert "## [0.17.0]" in pathlib.Path("CHANGELOG.md").read_text()
+          PY
+      - name: Syntax validation
+        run: python -m compileall -q moeabench tests examples
+      - name: Collect all tests
+        run: python -m pytest tests --collect-only -q
+      - name: Full unit tests
+        run: python test.py --unit
+      - name: Generate integration fixtures
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+          for algorithm, name in [
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ]:
+              target = Path("examples") / name
+              if target.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(target))
+          PY
+      - name: Basic integration tests
+        run: python test.py --integration --basic
+      - name: Numerical smoke tests
+        run: python test.py --stability --smoke
+      - name: Check installed-package verification and absolute HV
+        run: |
+          python - <<'PY'
+          import numpy as np
+          import moeabench as mb
+          assert not hasattr(mb, 'clinic')
+          ref = np.array([[0.0, 1.0], [1.0, 0.0], [0.4, 0.4]])
+          front = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]])
+          h = mb.metrics.hv(front, ref=ref, scale='abs', progress=False)
+          assert np.isfinite(float(h))
+          assert mb.system.verify_version(show=False)['status'] in ('MATCH', 'MISMATCH', 'UNCONFIGURED')
+          PY

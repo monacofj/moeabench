@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import inspect
-import importlib
 
 import numpy as np
 import pytest
@@ -179,29 +178,25 @@ def test_all_scales_reuse_external_reference_bounds(monkeypatch):
         def evaluate(self):
             return np.ones(len(self.fronts))
 
-    class Mop:
-        name = "TEST_MOP"
-
-    class Front(np.ndarray):
-        pass
-
-    exp = GOOD.view(Front)
-    exp.mop = Mop()
     monkeypatch.setattr(evaluator, "GEN_hypervolume", RecordingHypervolume)
-    baselines = importlib.import_module("moeabench.diagnostics.baselines")
-    monkeypatch.setattr(
-        baselines,
-        "load_offline_baselines",
-        lambda: {"_gt_registry": {"TEST_MOP__M2": REFERENCE.tolist()}},
-    )
-
     for scale in ("raw", "rel", "abs"):
         calls.clear()
-        evaluator.hypervolume(exp, ref=REFERENCE, mode="exact", scale=scale, progress=False)
+        evaluator.hypervolume(GOOD, ref=REFERENCE, mode="exact", scale=scale, progress=False)
         assert calls
         for ideal, nadir in calls:
             assert np.array_equal(ideal, np.min(REFERENCE, axis=0))
             assert np.array_equal(nadir, np.max(REFERENCE, axis=0))
+
+
+def test_absolute_hv_requires_explicit_reference():
+    with pytest.raises(ValueError, match="exactly one explicit reference"):
+        _hv(GOOD, scale="abs")
+
+
+def test_absolute_hv_uses_supplied_reference():
+    numerator = float(_hv(GOOD, ref=REFERENCE))
+    denominator = float(_hv(REFERENCE, ref=REFERENCE))
+    assert float(_hv(GOOD, ref=REFERENCE, scale="abs")) == pytest.approx(numerator / denominator)
 
 
 def test_out_of_reference_points_do_not_expand_bounds():
@@ -358,34 +353,12 @@ def test_better_than_ideal_is_recorded_without_clipping():
     assert float(result) > 1.1 * 0.6
 
 
-def test_diagnostics_are_scale_independent(monkeypatch):
-    class Mop:
-        name = "TEST_MOP"
-
-    class Front(np.ndarray):
-        pass
-
-    exp = GOOD.view(Front)
-    exp.mop = Mop()
-    baselines = importlib.import_module("moeabench.diagnostics.baselines")
-    monkeypatch.setattr(
-        baselines,
-        "load_offline_baselines",
-        lambda: {"_gt_registry": {"TEST_MOP__M2": REFERENCE.tolist()}},
-    )
-
-    results = [_hv(exp, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
+def test_diagnostics_are_scale_independent():
+    results = [_hv(GOOD, ref=REFERENCE, scale=scale) for scale in ("raw", "rel", "abs")]
     keys = (
-        "nbox_ideal",
-        "nbox_nadir",
-        "bbox_reference_point",
-        "range_inflation",
-        "outside_bbox_fraction",
-        "raw_hv_fraction_of_nominal_bbox",
-        "global_local_nd_coverage",
-        "reference_expansion",
-        "local_ideal",
-        "local_nadir",
+        "nbox_ideal", "nbox_nadir", "bbox_reference_point", "range_inflation",
+        "outside_bbox_fraction", "raw_hv_fraction_of_nominal_bbox",
+        "global_local_nd_coverage", "reference_expansion", "local_ideal", "local_nadir",
     )
     for key in keys:
         assert all(np.array_equal(results[0].diagnostics[key], result.diagnostics[key]) for result in results[1:])

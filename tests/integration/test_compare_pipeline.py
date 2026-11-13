@@ -7,11 +7,11 @@ from __future__ import annotations
 import moeabench as mb
 
 
-def test_compare_pipeline(paired_experiments):
+def test_compare_pipeline(paired_experiments, canonical_gt):
     exp1, exp2 = paired_experiments
 
-    hv1 = mb.metrics.hv(exp1, scale="abs")
-    hv2 = mb.metrics.hv(exp2, scale="abs")
+    hv1 = mb.metrics.hv(exp1, ref=canonical_gt, scale="abs")
+    hv2 = mb.metrics.hv(exp2, ref=canonical_gt, scale="abs")
 
     perf_shift = mb.stats.perf_shift(hv1, hv2)
     perf_match = mb.stats.perf_match(hv1, hv2)
