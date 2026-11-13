@@ -6,18 +6,12 @@ import moeabench as mb
 
 
 def test_public_namespaces():
-    assert hasattr(mb, "clinic"), "Expected mb.clinic namespace"
+    assert not hasattr(mb, "clinic"), "Experimental clinic namespace should be absent"
     assert hasattr(mb, "stats"), "Expected mb.stats namespace"
     assert hasattr(mb, "view"), "Expected mb.view namespace"
     assert not hasattr(mb, "diagnostics"), "diagnostics should not leak at top level"
     assert not hasattr(mb, "core"), "core should not leak at top level"
     assert not hasattr(mb, "Experiment"), "mb.Experiment should not be part of canonical public API"
-
-
-def test_clinic_surface():
-    assert hasattr(mb.clinic, "audit"), "Expected clinic.audit"
-    assert not hasattr(mb.clinic, "fair_audit"), "fair_audit should be removed"
-    assert not hasattr(mb.clinic, "q_audit"), "q_audit should be removed"
 
 
 def test_stats_compare_surface():
@@ -30,7 +24,7 @@ def test_stats_compare_surface():
 
 
 def test_view_surface():
-    for name in ("topology", "bands", "gap", "density", "history", "spread", "ranks", "strata", "tiers", "radar", "ecdf"):
+    for name in ("topology", "bands", "gap", "density", "history", "spread", "ranks", "strata", "tiers"):
         assert hasattr(mb.view, name), f"Expected mb.view.{name}"
     assert not hasattr(mb.view, "caste"), "view.caste should not be part of canonical public API"
     for hidden in ("topo", "perf", "strat", "clinic", "style", "np"):

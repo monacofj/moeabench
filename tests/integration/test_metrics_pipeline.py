@@ -11,7 +11,7 @@ def test_metrics_pipeline(paired_experiments, canonical_gt):
     exp1, exp2 = paired_experiments
 
     metric_pairs = [
-        (mb.metrics.hv(exp1, scale="abs"), mb.metrics.hv(exp2, scale="abs")),
+        (mb.metrics.hv(exp1, ref=canonical_gt, scale="abs"), mb.metrics.hv(exp2, ref=canonical_gt, scale="abs")),
         (mb.metrics.gd(exp1, ref=canonical_gt), mb.metrics.gd(exp2, ref=canonical_gt)),
         (mb.metrics.gdplus(exp1, ref=canonical_gt), mb.metrics.gdplus(exp2, ref=canonical_gt)),
         (mb.metrics.igd(exp1, ref=canonical_gt), mb.metrics.igd(exp2, ref=canonical_gt)),
