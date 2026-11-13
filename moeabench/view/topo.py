@@ -30,6 +30,11 @@ def topology(
     [mb.view.topology] Topographic Shape Perspective.
     Visualizes the geometry of the solution set (scatter/surface).
     """
+    if markers:
+        raise NotImplementedError(
+            "Experimental clinical quality markers were removed with FAIR; "
+            "the markers=True option is unavailable in this release."
+        )
     # Environment detection for 'auto' mode
     if mode == 'auto':
         try:

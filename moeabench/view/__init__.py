@@ -41,6 +41,11 @@ def _resolve_view_domain(args, kwargs):
     domain = kwargs.pop("domain", "auto")
     if domain in ("perf", "topo"):
         return domain
+    if domain != "auto":
+        raise ValueError(
+            f"Unsupported density domain: {domain!r}; FAIR/clinical views "
+            "are not available in this release."
+        )
     if not args:
         return "perf"
 
