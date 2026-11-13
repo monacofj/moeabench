@@ -21,6 +21,25 @@ jobs:
         run: python -m pytest tests --collect-only -q
       - name: Full unit tests
         run: python test.py --unit
+      - name: Generate integration fixtures
+        run: |
+          python - <<'PY'
+          import moeabench as mb
+          from pathlib import Path
+          for algorithm, name in [
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ]:
+              target = Path("examples") / name
+              if target.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(target))
+          PY
       - name: Basic integration tests
         run: python test.py --integration --basic
       - name: Numerical smoke tests
