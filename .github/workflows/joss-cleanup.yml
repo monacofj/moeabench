@@ -62,9 +62,19 @@ jobs:
           import numpy as np
           import moeabench as mb
           assert not hasattr(mb, 'clinic')
+          from tempfile import TemporaryDirectory
+          from pathlib import Path
           ref = np.array([[0.0, 1.0], [1.0, 0.0], [0.4, 0.4]])
-          front = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]])
-          h = mb.metrics.hv(front, ref=ref, scale='abs', progress=False)
-          assert np.isfinite(float(h))
+          gt = np.array([[0.0, 1.0], [1.0, 0.0], [0.5, 0.5]])
+          class Front(np.ndarray):
+              pass
+          front = np.array([[0.2, 0.8], [0.8, 0.2], [0.45, 0.45]]).view(Front)
+          with TemporaryDirectory() as work:
+              mop = mb.mops.DTLZ2(M=2)
+              assert mop.calibrate(source_gt=gt, source_baseline=Path(work) / 'gt.json')
+              front.mop = mop
+              h = mb.metrics.hv(front, ref=ref, scale='abs', progress=False)
+              assert np.isfinite(float(h))
+              assert h.diagnostics['hv_abs_gt_points'] == len(gt)
           assert mb.system.verify_version(show=False)['status'] in ('MATCH', 'MISMATCH', 'UNCONFIGURED')
           PY
