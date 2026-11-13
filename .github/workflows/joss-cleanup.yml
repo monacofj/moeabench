@@ -1,7 +1,7 @@
 name: JOSS cleanup validation
 on:
   push:
-    branches: [chore/joss-remove-fair]
+    branches: [chore/joss-remove-fair, hotfix/0.17.0-contract-recovery]
   workflow_dispatch:
 
 jobs:
