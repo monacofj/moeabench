@@ -6,8 +6,8 @@ import moeabench as mb
 
 def test_view_dispatch_pipeline(paired_experiments, canonical_gt):
     exp1, exp2 = paired_experiments
-    hv1 = mb.metrics.hv(exp1, ref=canonical_gt, scale="abs")
-    hv2 = mb.metrics.hv(exp2, ref=canonical_gt, scale="abs")
+    hv1 = mb.metrics.hv(exp1, scale="abs")
+    hv2 = mb.metrics.hv(exp2, scale="abs")
     topo_match = mb.stats.topo_match(exp1, exp2, axes=[0])
 
     perf_hist = mb.view.history(hv1, hv2, show=False)
