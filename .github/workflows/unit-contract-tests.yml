@@ -72,3 +72,13 @@ jobs:
           PY
       - name: Check complete numerical baselines in reference environment
         run: python test.py --stability --basic
+      - name: Capture reference-direction diagnostic on numerical failure
+        if: failure()
+        run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
+      - name: Preserve numerical divergence evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nsga3-dpf1-diagnostic
+          path: nsga3-dpf1-diagnostic.log
+          if-no-files-found: warn
