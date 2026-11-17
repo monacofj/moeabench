@@ -247,7 +247,7 @@ def _selected_level(args) -> str | None:
 
 
 def _certify_environment():
-    """Certify only after a fresh, complete deep test run passes.
+    """Certify only after a fresh, complete basic test run passes.
 
     Never modify numerical reference fixtures here: acceptance of a new
     dependency combination must be based on existing canonical baselines.
@@ -255,10 +255,10 @@ def _certify_environment():
     import json
     import pathlib
 
-    print("Running full deep suite before certifying dependency versions...", flush=True)
-    completed = subprocess.run([sys.executable, __file__, "--deep"])
+    print("Running full basic suite before certifying dependency versions...", flush=True)
+    completed = subprocess.run([sys.executable, __file__, "--basic"])
     if completed.returncode != 0:
-        print("Certification denied: the full deep suite did not pass.", file=sys.stderr)
+        print("Certification denied: the full basic suite did not pass.", file=sys.stderr)
         return 1
 
     from moeabench.environment_verification import snapshot, _MANIFEST_PATH
@@ -283,7 +283,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
-    parser.add_argument("--certify", action="store_true", help="Run complete deep suite; certify versions only on success")
+    parser.add_argument("--certify", action="store_true", help="Run complete basic suite; certify versions only on success")
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
