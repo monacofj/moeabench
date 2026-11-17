@@ -194,12 +194,12 @@ For release preparation, run the entire suite and then certify the developer
 reference environment:
 
 ```bash
-python test.py --deep
+python test.py --basic
 python test.py --certify
 ```
 
-`--certify` independently executes the complete deep battery (all unit,
-basic integration, and deep stability checks) before updating the shipped
+`--certify` independently executes the complete basic battery (all unit,
+basic integration, and basic numerical stability checks) before updating the shipped
 `moeabench/resources/certified_environment.json`. If any test
 fails, the manifest is **not** updated. Review and commit changes to the
 manifest; do not revise numerical fixtures simply to make a failing
@@ -261,6 +261,7 @@ In particular:
 
 - `smoke` should remain fast enough for default local use.
 - `basic` should provide broad confidence without becoming prohibitive.
+- the historical `deep` statistical case currently lacks its baseline and is non-operative; it is not a release-certification gate. Performance stability requires a separately reviewed reference and explicit invocation (ADR 0050).
 - `deep` may require explicit opt-in or extra artifacts and is not intended for routine execution.
 - the key scientific distinction inside `stability` is always twofold: numerical stability of the measurements and numerical stability of the produced fronts.
 - when no scope is provided, the runner executes `unit`, `integration`, and `stability` at the requested level; in this all-scopes mode, `integration` participates up to `basic`, so `python3 test.py --deep` still runs integration with its full `basic` reach.
