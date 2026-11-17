@@ -276,7 +276,8 @@ class MetricMatrix(Reportable):
     """
     def __init__(self, data, metric_name="Metric", source_name=None,
                  reference_context=None, diagnostics=None):
-        self._data = np.array(data) 
+        # ADR 0021: never retain lower-precision metric matrices.
+        self._data = np.array(data, dtype=np.float64, copy=True) 
         
         # Internal Storage Policy: (Generations, Runs)
         # We ensure it's always 2D
