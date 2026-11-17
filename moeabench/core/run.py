@@ -86,15 +86,25 @@ class Run:
         self.index = index
         self._component_seeds = dict(component_seeds or {})
         
-        # New direct storage
+        # ADR 0021: numerical trajectories must not retain float32 data.
+        # Existing float64 arrays are reused; lower-precision inputs are promoted.
         if data_payload:
-            self._F_history: List[np.ndarray] = data_payload[0]
-            self._X_history: List[np.ndarray] = data_payload[1]
-            self._F_final: Optional[np.ndarray] = data_payload[2]
-            self._F_nd_history: List[np.ndarray] = data_payload[3]
-            self._X_nd_history: List[np.ndarray] = data_payload[4]
-            self._F_dom_history: List[np.ndarray] = data_payload[5]
-            self._X_dom_history: List[np.ndarray] = data_payload[6]
+            def _float64_history(frames):
+                return [
+                    None if frame is None else np.asarray(frame, dtype=np.float64)
+                    for frame in frames
+                ]
+
+            self._F_history: List[np.ndarray] = _float64_history(data_payload[0])
+            self._X_history: List[np.ndarray] = _float64_history(data_payload[1])
+            self._F_final: Optional[np.ndarray] = (
+                None if data_payload[2] is None
+                else np.asarray(data_payload[2], dtype=np.float64)
+            )
+            self._F_nd_history: List[np.ndarray] = _float64_history(data_payload[3])
+            self._X_nd_history: List[np.ndarray] = _float64_history(data_payload[4])
+            self._F_dom_history: List[np.ndarray] = _float64_history(data_payload[5])
+            self._X_dom_history: List[np.ndarray] = _float64_history(data_payload[6])
         else:
             self._F_history = []
             self._X_history = []
@@ -283,12 +293,14 @@ class Population:
             label (str): Label for plotting.
             gen (int): Generation index.
         """
-        if isinstance(objectives, list): objectives = np.array(objectives)
-        if isinstance(variables, list): variables = np.array(variables)
-        
+        # ADR 0021: all stored objective and decision-variable matrices are float64.
+        objectives = np.asarray(objectives, dtype=np.float64)
+
         # Auto-create empty vars if only objectives provided (unit test convenience)
         if variables is None:
-            variables = np.zeros((objectives.shape[0], 0))
+            variables = np.zeros((objectives.shape[0], 0), dtype=np.float64)
+        else:
+            variables = np.asarray(variables, dtype=np.float64)
 
         self.objectives = SmartArray(objectives, label=label, axis_label="Objective", source=source, gen=gen)
         self.variables = SmartArray(variables, label=label, axis_label="Variable", source=source, gen=gen)
