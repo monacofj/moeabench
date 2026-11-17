@@ -24,3 +24,5 @@ jobs:
         run: python test.py --unit
       - name: Run empirical GT calibration integration contract
         run: python -m pytest tests/integration/test_gt_empirical_search_contract.py -q
+      - name: Check current numerical baselines (smoke and basic)
+        run: python test.py --stability --basic
