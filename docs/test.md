@@ -116,7 +116,7 @@ Meaning by scope:
 
 ### Statistical `performance-stability`
 
-This opt-in assessment runs only the MOP/MOEA/seed cases specified by a separately reviewed, versioned JSON reference. It compares paired performance observations against externally recorded results and uses both statistical significance and a predefined practical degradation threshold. The reference supplies the fixed objective-space front used for quality measurement. It never creates or refreshes its own baselines. Its check does not run automatically after a numerical failure.
+This opt-in assessment runs only the MOP/MOEA/seed cases specified by a separately reviewed, versioned JSON reference. The legacy v1 schema detects a particular increase-in-mean rule; a v1 `PASSED` is not evidence of equivalence. The new v2 protocol uses preregistered margins, pilot-variance sample-size planning, simultaneous familywise-adjusted confidence intervals and explicit `PASSED`, `FAILED` or `INCONCLUSIVE` outcomes. The reference supplies the fixed objective-space front used for quality measurement. It never creates or refreshes its own baselines and never runs automatically after a numerical failure. No independent statistical performance baseline is currently approved for an automatic release gate; see [Performance stability](performance-stability.md).
 
 The historical `deep` statistical test has a missing baseline and is excluded from the active execution path. The runner rejects `--stability --deep` and all-scopes `--deep` rather than implying that a skipped test passed. `--unit --deep` remains a synonym for the full unit scope.
 
