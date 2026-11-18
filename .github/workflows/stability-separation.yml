@@ -23,6 +23,8 @@ jobs:
         run: python -m pytest tests/unit/test_stability_separation_contract.py -q
       - name: Run all unit tests without altering frozen baselines
         run: python test.py --unit
+      - name: Smoke real low-budget performance measurement adapter
+        run: python -m pytest tests/integration/test_performance_measurement_adapter.py -q
       - name: Check deterministic numeric smoke baseline
         run: python test.py --numeric-stability --smoke
 
