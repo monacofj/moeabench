@@ -183,4 +183,6 @@ sample sizes to obtain a favorable result.
 The test suite includes synthetic deterministic **unit tests of the
 decision procedure**, not certified performance observations. Producing an
 official baseline from a historical release is a separate reviewed artifact
-and is intentionally **not performed** by this PR.
+and was intentionally **not performed** in PR #100 or any subsequent
+verification work. No official prior-release performance baseline is
+bundled as of this documentation update.
