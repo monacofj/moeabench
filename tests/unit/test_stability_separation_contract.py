@@ -148,5 +148,5 @@ def test_performance_dispatch_does_not_start_pytest_or_numeric_suite(monkeypatch
 
 
 def test_certification_failure_never_writes_manifest(monkeypatch, runner):
-    monkeypatch.setattr(runner.subprocess, "run", lambda cmd: SimpleNamespace(returncode=1))
+    monkeypatch.setattr(runner.subprocess, "run", lambda cmd, **kwargs: SimpleNamespace(returncode=1))
     assert runner._certify_environment() == 1
