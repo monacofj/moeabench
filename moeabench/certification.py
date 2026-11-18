@@ -364,12 +364,23 @@ def certification_history(root=None):
         record = json.loads(path.read_text(encoding="utf-8"))
         if record.get("schema") != "moeabench-numeric-certificate":
             raise ValueError("Invalid stored numerical certificate: " + str(path))
+        performance_records = []
+        for performance_path in sorted(path.parent.glob("performance-vs-*.json")):
+            performance = json.loads(performance_path.read_text(encoding="utf-8"))
+            if performance.get("schema") != "moeabench-performance-certificate":
+                raise ValueError("Invalid stored performance certificate: " + str(performance_path))
+            performance_records.append({
+                "status": performance["status"],
+                "baseline_source_revision": performance["baseline_source_revision"],
+                "candidate_source_revision": performance["candidate_source_revision"],
+                "file": performance_path.name,
+            })
         results.append({
             "version": record["version"], "source_revision": record["source_revision"],
             "environment": record["environment"],
             "numerical_fixtures_sha256": record["numerical_fixtures_sha256"],
             "evidence_url": record.get("evidence_url"), "numeric_certified": True,
-            "performance_certified": None,
+            "performance_certifications": performance_records,
         })
     return results
 
