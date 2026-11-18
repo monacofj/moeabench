@@ -80,14 +80,26 @@ merely the requested environment variable strings. Its failure means the
 host cannot claim equivalence with the tested reference profile.
 
 The pinned numerical reference CI uses this profile; routine unit and smoke
-tests remain free to run in a developer's ordinary environment. This is a
+tests remain free to run in a developer's ordinary environment. The
+regular [unit-contract workflow](https://github.com/monacofj/moeabench/actions/runs/44341867393)
+and [stability-separation workflow](https://github.com/monacofj/moeabench/actions/runs/44341867318)
+each passed **41/41 basic numerical regression cases** after applying the
+profile, as well as their unit/contract/integration jobs. This is a
 **reproducibility profile for reference verification**, not an instruction to
 change all user computations or proof of bitwise portability across arbitrary
 hardware, BLAS builds and operating systems. A user running outside this
-profile may still run experiments, but the matching package version
-fingerprint must not be interpreted as numerical equivalence (ADR 0050).
+profile may still run experiments, but matching package versions alone
+must not be interpreted as numerical equivalence (ADR 0050).
 
 The existing frozen fronts and `moeabench/resources/certified_environment.json`
-are **unchanged**. Updating the manifest for a new release remains a separate
-`python test.py --certify` operation after the full basic suite passes and
-the maintainer reviews the resulting version snapshot.
+are **unchanged**. That manifest still records the previously approved
+MoeaBench **0.16.1** version fingerprint; CI success is not a new developer
+release certification. Before a new release, first establish and validate
+the profile above, then run `python test.py --basic` and
+`python test.py --certify` from that same environment. The standalone
+`--certify` command replays the full basic suite but does not itself
+inspect CPU/BLAS dispatch, hence the explicit preflight is required for
+the designated profile. Only after a successful run should the
+maintainer review and commit the new manifest. See the
+[complete testing manual](test.md) for scopes, sample-size policy and
+release safeguards.
