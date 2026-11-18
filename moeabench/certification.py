@@ -350,6 +350,25 @@ def certify_performance(reference_path, output_path):
     return _write_once(output, result), result
 
 
+def ensure_numeric_certification_slot(root=None):
+    """Refuse same version with changed code *before* updating a manifest.
+
+    Replaying the unchanged certified revision is permitted; a different
+    source revision must use a new package version for provenance.
+    """
+    from .system import version
+    target = Path(root) if root is not None else _RESOURCE_ROOT
+    path = target / version(show=False) / "numeric-certificate.json"
+    if path.exists():
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if record.get("source_revision") != _revision():
+            raise RuntimeError(
+                "Version already certified for a different source revision; "
+                "advance package version before recertification"
+            )
+    return path
+
+
 def register_numeric_history(root=None, *, evidence_url=None, counts=None):
     """Record a compact fingerprint; do not copy numerical front arrays."""
     from .environment_verification import snapshot, certified_manifest
@@ -365,7 +384,14 @@ def register_numeric_history(root=None, *, evidence_url=None, counts=None):
             raise RuntimeError("Missing numeric regression reference: " + relative)
         digests[relative] = _hash_file(path)
     target = Path(root) if root else _RESOURCE_ROOT
-    output = target / version(show=False) / "numeric-certificate.json"
+    output = ensure_numeric_certification_slot(target)
+    if output.exists():
+        existing = json.loads(output.read_text(encoding="utf-8"))
+        if (existing.get("environment") == snapshot() and
+                existing.get("numerical_fixtures_sha256") == digests and
+                existing.get("schema") == "moeabench-numeric-certificate"):
+            return output
+        raise RuntimeError("Existing numeric certificate differs from current reference fixtures/environment")
     document = {
         "schema": "moeabench-numeric-certificate",
         "version": version(show=False),
