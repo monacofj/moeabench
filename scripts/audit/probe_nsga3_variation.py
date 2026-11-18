@@ -46,22 +46,29 @@ def main():
         before = signature(X)
         rng_before = rng_signature(kwargs)
         produced = original_crossover(self, problem, X, **kwargs)
-        events.append({
+        event = {
             "operator": "SBX", "step": len(events),
             "input": before, "output": signature(produced),
             "rng_before": rng_before, "rng_after": rng_signature(kwargs),
-        })
+        }
+        if not events:
+            # Capture only first operator output for bit-level cross-host diff.
+            event["first_output_values"] = np.asarray(produced).tolist()
+        events.append(event)
         return produced
 
     def mutation(self, problem, X, **kwargs):
         before = signature(X)
         rng_before = rng_signature(kwargs)
         produced = original_mutation(self, problem, X, **kwargs)
-        events.append({
+        event = {
             "operator": "polynomial_mutation", "step": len(events),
             "input": before, "output": signature(produced),
             "rng_before": rng_before, "rng_after": rng_signature(kwargs),
-        })
+        }
+        if len(events) == 1:
+            event["first_output_values"] = np.asarray(produced).tolist()
+        events.append(event)
         return produced
 
     with patch.object(SBX, "_do", new=crossover), \
