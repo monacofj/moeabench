@@ -71,7 +71,12 @@ within an absolute `0.05` **estimation** allowance. It deliberately does
 not freeze one platform's Monte Carlo bits as universal mathematical truth.
 
 The two-dimensional/three-dimensional fixed-input tests do not launch an MOEA
-or consume a run seed. The historical NSGA3×DPF1 drift remains in issue #92.
+or consume a run seed. The historical NSGA3×DPF1 divergence was investigated in issue
+[#92](https://github.com/monacofj/moeabench/issues/92) and resolved for the
+specified reference CI environment by PR
+[#101](https://github.com/monacofj/moeabench/pull/101), using controlled
+NumPy/OpenBLAS kernels. This did not change any of this fixture's values or
+tolerances. The correction is conditional on the documented runtime profile.
 Source/backend libraries for the tested implementation are pymoo (GD/IGD(+)
 and exact HV), SciPy (marginal Wasserstein) and moocore (approximate HV).
 Versions for release certification are governed by ADR 0050, not inferred

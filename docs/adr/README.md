@@ -78,6 +78,20 @@ The status column records whether a historical ADR remains wholly normative or h
 - Conventional geometry and computation: [0020](0020-standardized-reference-point-strategy-for-normalization.md) → [0042](0042-hypervolume-bbox-diagnostics.md) / [0043](0043-hypervolume-engine-selection.md), with current relative scaling in [0047](0047-conventional-hypervolume-relative-scaling.md).
 - Ordinal branch: [0044](0044-ordinal-hypervolume.md) → [0046](0046-relative-ordinal-hypervolume.md).
 
+### Environment, numerical stability and regression validation
+
+- [0050](0050-certified-environment-verification-and-provenance.md) records the
+  numerical/runtime certification contract and the 2026-11-17
+  maintainer-authorized separation between deterministic numerical replay
+  and optional statistical performance assessment.
+- Its 2026-11-18 addendum documents the completed verification work
+  (PRs #88, #90, #91, #99, #100), the confirmed NumPy/OpenBLAS profile
+  that reproduces the historical NSGA-III×DPF1 result (issue #92, PR #101),
+  and the distinction between passing CI and an approved release manifest.
+- The current operational classification, commands and reference safeguards
+  are in the [testing manual](../test.md); historical decisions remain
+  preserved in their original ADR sections.
+
 ### Clinical diagnostics
 
 - Metrology and physical/quality layers: [0026](0026-clinical-metrology.md) → [0028](0028-refined-clinical-diagnostics-v0.9.1.md) → [0029](0029-headway-nomenclature.md) / [0036](0036-half-normal-closeness-v0.12.0.md) → [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) → [0049](0049-longitudinal-headway-definition.md) for the current HEADWAY definition.

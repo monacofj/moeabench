@@ -14,6 +14,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Regression and Verification Contracts (#95, #97; PRs #90, #99)**:
+  - Consolidated independent unit-test oracles for conventional multiobjective
+    indicators, GT calibration, float64 behavior and persistence.
+  - Added 23 permanent fixed-input numerical-stability cases in 2D/3D for
+    GD, IGD, GD+, IGD+, EMD and `HV(raw/rel/abs)`, with explicit
+    analytically derived reference values and independent standard-library
+    cross-checks. The solver-front regression baselines were preserved.
+- **Separated Numerical and Statistical Stability (#96, #98; PRs #91, #100)**:
+  - Distinguished reproducibility of fixed-seed numerical results from
+    stochastic performance changes across a preregistered seed sample.
+  - Added explicitly invoked `--performance-stability --performance-reference`
+    and `mb.system.verify_performance_stability(PATH)`. No default
+    statistical baseline or automatic 30-run MOP×MOEA matrix is shipped.
+  - Added an optional v2 paired-performance reference protocol with
+    `PASSED`, `FAILED` and `INCONCLUSIVE`, familywise-controlled
+    confidence bounds and pilot-variance-driven sample-size requirements.
+    Legacy v1 remains an opt-in diagnostic, not proof of equivalence.
+  - Added `--certify` protection against inherited pytest selection
+    options reducing the required basic suite.
+
+### Fixed
+- **Restored FAIR-Independent Core Contracts (#94; PR #88)**:
+  - Restored `mop.calibrate()` and MOP-owned `calibrated_gt` as
+    foundational Ground Truth functionality independent of FAIR.
+    FAIR/clinical APIs remain unavailable in the active release.
+  - Restored conventional Hypervolume semantics: `raw` uses the selected
+    normalization geometry; `rel` uses the fixed reference denominator
+    established by ADR 0047; `abs` normalizes against **calibrated
+    MOP GT**, with an explicit `ref` influencing geometry only.
+    GT must be calibrated before `abs`; `ref` does not supply its GT.
+  - Restored public contracts and regression protection lost during the
+    0.17.0 FAIR removal, without weakening numerical expectations.
+- **NSGA-III × DPF1 Reference Numerical Reproducibility (#92; PR #101)**:
+  - Reproduced the historical frozen three-point NSGA-III/DPF1 front
+    under controlled NumPy `power` and OpenBLAS CPU dispatch on
+    Ubuntu 22.04/24.04. Two reference CI workflows now explicitly
+    select `NPY_DISABLE_CPU_FEATURES=X86_V4`,
+    `OPENBLAS_CORETYPE=HASWELL` and single-threaded BLAS, with a
+    fail-closed effective-kernel preflight.
+  - All **41/41 basic numerical** reference checks passed in both
+    regular workflows after the fix; no solver algorithm, seed, frozen
+    reference, test assertion or certified manifest was changed.
+
+### Documentation
+- **Verification and Architectural Traceability (#102)**:
+  - Rewrote `docs/test.md` as the canonical detailed scope/level,
+    deterministic numerical and opt-in statistical testing manual.
+  - Added the confirmed reference-environment evidence and the
+    three-stage recovery record to ADR 0050; aligned the environment,
+    reproducibility and performance-protocol guides.
+  - Corrected the distinction between the **historical 0.17.0**
+    behavior described below and the subsequently restored,
+    **current unreleased** core contracts.
+
+**Release status:** these are changes integrated after 0.17.0 and
+not yet assigned a new release. The existing developer-certified
+environment manifest still identifies MoeaBench 0.16.1; passing CI
+does not constitute a fresh `--certify` run. No independently
+approved statistical performance baseline is included in the release.
+
 ## [0.17.0] - 2026-11-13
 
 ### Added
@@ -27,7 +88,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Withdrew the experimental FAIR/clinical diagnostic subsystem from the supported release, while retaining the experimental code and historical calibration artifacts in the `old-fair` branch.
   - Kept general-purpose performance metrics, statistical comparisons, topographic visualization, experiment management, and environment verification available independently of FAIR.
   - Updated public documentation, notebooks, and tests to describe and exercise the supported API.
-- **Explicit Absolute Hypervolume Reference (Breaking, #87)**:
+- **Explicit Absolute Hypervolume Reference (Breaking, #87; at 0.17.0 release, subsequently superseded by PR #88)**:
   - `mb.metrics.hv(..., scale="abs")` now requires exactly one explicit `ref` front, rather than looking up an implicit FAIR calibration baseline.
   - Computes the absolute ratio using the reference front's HV with the same normalization bounds as the evaluated front.
   - The result is relative to the supplied discrete reference; values above 1 may occur and do not establish theoretical optimality.
@@ -42,12 +103,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Improved deterministic reference checks and cross-environment validation behavior.
 
 ### Removed
-- **Experimental FAIR/Clinical APIs (Breaking, #87)**:
+- **Experimental FAIR/Clinical APIs (Breaking, #87; historical 0.17.0 snapshot)**:
   - Removed the `mb.clinic`/clinical diagnostic APIs, FAIR metrics, Q-scores, automated clinical audits, and clinic-only radar/ECDF views.
   - Removed `BaseMop.calibrate()` and FAIR-specific calibration registries, reference datasets, research scripts, figures, examples, and tests from the active release tree.
   - Removed implicit FAIR calibration resources from conventional HV and experiment persistence.
 
 Research-stage FAIR corrections made after 0.16.1 and removed before 0.17.0 remain documented by their commits, issues, and ADRs rather than as shipped functionality in this release.
+
+**Historical correction:** the #87 descriptions in this released entry
+record the 0.17.0 FAIR-withdrawal state; they are **not** the current
+post-hotfix API. PR #88 subsequently restored FAIR-independent
+`BaseMop.calibrate()`, MOP-owned GT and `H_abs` semantics. Consult
+`[Unreleased]` above and ADRs 0035, 0047, 0048 and 0050 for the
+current contracts; do not interpret the older removal text as
+prescribing an absent `calibrate()` API today.
 
 ## [0.16.1] - 2026-10-14
 

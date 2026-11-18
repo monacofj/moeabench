@@ -211,3 +211,126 @@ historical provenance semantics remain unmodified.
 
 Protocol details and limits are described in
 [Performance stability](../performance-stability.md).
+
+
+## Completed three-stage recovery and numerical reference profile — 2026-11-18 (issue #102)
+
+**Scope and precedence.** This is a dated implementation/evidence addendum to
+the accepted ADR. It does not replace the historical accounts of PRs #68/#91,
+alter the RNG contract of ADR 0045, relax numerical tolerances, or authorize
+regeneration of reference outputs. Read the earlier unresolved-drift and
+`--deep` statements in their *historical* context: the 2026-11-17
+maintainer-authorized amendment replaced the deep release prerequisite with
+the complete basic suite; the investigation below subsequently established a
+tested reference environment. A successful CI run by itself does not update
+the certified manifest.
+
+### Sequenced verification work
+
+- **Unit correctness and core API**: PR [#88](https://github.com/monacofj/moeabench/pull/88)
+  recovered FAIR-independent GT calibration and historical
+  conventional-HV contracts; PR [#90](https://github.com/monacofj/moeabench/pull/90)
+  consolidated unit contracts and independent mathematical oracles.
+  `mop.calibrate()` and `mop.calibrated_gt` belong to the MOP irrespective
+  of any FAIR diagnostic. In `H_abs`, the MOP's calibrated GT defines
+  the denominator; optional `ref` selects external normalization
+  geometry, not the GT source. The temporary availability exception in
+  ADR 0048 concerns FAIR/clinical APIs only.
+- **Numerical and performance tests**: PR [#91](https://github.com/monacofj/moeabench/pull/91)
+  separated deterministic replay from opt-in statistical comparison.
+  PR [#99](https://github.com/monacofj/moeabench/pull/99) added 23
+  fixed-input conventional-metric stability tests, with 21 analytical
+  reference values cross-checked by an implementation using the
+  Python standard library alone. PR
+  [#100](https://github.com/monacofj/moeabench/pull/100) added the
+  optional three-way performance protocol v2, with explicit
+  `INCONCLUSIVE`, familywise adjustment and a priori sample-size
+  planning. The v1 interface remains available but its nonfailure
+  result is not evidence of equivalence.
+- **Failures detected by the tests**: issue
+  [#92](https://github.com/monacofj/moeabench/issues/92) investigated
+  the historical NSGA-III×DPF1 front discrepancy **after** implementing
+  the test architecture. PR
+  [#101](https://github.com/monacofj/moeabench/pull/101) applied a
+  controlled *CI reference runtime* rather than modifying the solver
+  or its approved reference. The issue and PR are closed/merged.
+
+### NSGA-III × DPF1: experimentally identified environmental drift
+
+With Python 3.14.4, NumPy 2.5.4, SciPy 1.18.1, pymoo 0.6.2, DEAP
+1.4.4, moocore 0.3.2 and pandas 3.0.6, different hosted CI processors
+produced different fronts **despite matching version metadata and seeds**.
+The controlled [issue #92 experiment](https://github.com/monacofj/moeabench/actions/runs/44340186293)
+isolated two relevant numerical execution choices:
+
+1. NumPy float64 `power` SIMD dispatch during SBX crossover. With
+   the default `X86_V4` dispatch the resulting final front contained
+   two points. With `NPY_DISABLE_CPU_FEATURES=X86_V4`, the SBX
+   output matched its historical signature, but a different
+   three-point front could still emerge.
+2. The OpenBLAS CPU kernel used along the NSGA-III
+   survival/normalization path. Setting `OPENBLAS_CORETYPE=HASWELL`,
+   while keeping the NumPy `X86_V4` mask and single-threaded BLAS,
+   reproduced the **exact historical three-point front** (SHA256
+   prefix `77dc14fc...`) under both Ubuntu 22.04 and 24.04.
+
+The complete *unaltered* numerical basic suite passed **18/18** on
+both images in this combination. After the independent conventional
+metric references were added, the two regular CI workflows
+([unit contract](https://github.com/monacofj/moeabench/actions/runs/44341867393)
+and [stability separation](https://github.com/monacofj/moeabench/actions/runs/44341867318))
+each passed **41/41** basic numerical checks; the unit/integration
+and smoke jobs also passed. Those are observed results for the
+tested profiles, not proof of numerical portability on all hosts.
+
+### Effective runtime policy and verification
+
+Only the two `reference-numeric-stability` CI jobs use these pinned
+Linux/x86_64 numerical environment variables:
+
+```bash
+NPY_DISABLE_CPU_FEATURES=X86_V4
+OPENBLAS_CORETYPE=HASWELL
+OPENBLAS_NUM_THREADS=1
+OMP_NUM_THREADS=1
+MKL_NUM_THREADS=1
+```
+
+The read-only
+[`scripts/check_numerical_reference_runtime.py`](../../scripts/check_numerical_reference_runtime.py)
+verifies the **actual** NumPy float64 `power` dispatch
+(`baseline(X86_V2)`), the loaded NumPy and SciPy OpenBLAS CPU kernels
+(`Haswell`) and single-thread operation. Failure of this preflight
+invalidates claims of parity with the tested reference runtime.
+This is a scoped CI verification arrangement, not a new requirement for
+all user experiments or an unconditional cross-platform reproducibility
+guarantee. No production algorithm, seed protocol, frozen front, or
+historical test was modified by PR #101.
+
+### Formal release certification remains separate
+
+The manifest
+`moeabench/resources/certified_environment.json` still records a
+previously certified MoeaBench **0.16.1** version snapshot, including
+its legacy description. It was intentionally **not rewritten** by
+the CI repair or documentation work. When certifying a new release,
+developers must establish the designated runtime, run
+`python test.py --basic`, and then run
+`python test.py --certify`, which repeats the full basic suite
+without inherited `PYTEST_ADDOPTS` selection filters and updates
+the manifest **only after success**. The standalone `--certify` runner
+currently tests the suite result but does not itself inspect the
+effective CPU/BLAS profile; that preflight is explicit in CI and
+must be run when manually preparing a certified reference environment.
+
+There is **no approved external statistical performance baseline** for
+the forthcoming FAIR-free release. Statistical comparisons remain
+opt-in and outside `--basic`/`--certify` (2026-11-17 amendment and
+issue #98). Formal manifest certification and a future approved
+performance reference require their own review; neither was implied
+by closing issues #92, #97 and #98.
+
+For the up-to-date command and classification details see the
+[complete test architecture manual](../test.md),
+[environment verification](../environment-verification.md) and
+[performance stability protocol](../performance-stability.md).
