@@ -324,7 +324,15 @@ def main():
                 sys.exit(1)
             from moeabench.certification import register_numeric_history
             try:
-                location = register_numeric_history()
+                evidence = None
+                if os.getenv("GITHUB_REPOSITORY") and os.getenv("GITHUB_RUN_ID"):
+                    evidence = "https://github.com/{}/actions/runs/{}".format(
+                        os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"]
+                    )
+                location = register_numeric_history(
+                    evidence_url=evidence,
+                    counts={"suite": "basic", "status": "PASSED"},
+                )
             except (OSError, ValueError, RuntimeError) as exc:
                 parser.exit(2, f"Could not register numeric history: {exc}\\n")
             print("Registered numerical certificate:", location)
