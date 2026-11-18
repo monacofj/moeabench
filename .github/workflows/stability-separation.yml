@@ -56,6 +56,9 @@ jobs:
       - name: Capture NSGA3 x DPF1 reference-direction fingerprint
         if: always()
         run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
+      - name: Probe captured and frozen NSGA3 directions (diagnostic only)
+        if: always()
+        run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-frozen-probe.log
       - name: Compare failing solver case against main and old-fair in same runtime
         if: failure()
         shell: bash
@@ -79,6 +82,33 @@ jobs:
           name: nsga3-dpf1-diagnostic-and-controls
           path: |
             nsga3-dpf1-diagnostic.log
+            nsga3-frozen-probe.log
             comparison-main.log
             comparison-old-fair.log
+          if-no-files-found: warn
+
+  single-thread-direction-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install matching reference numerical stack
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+      - name: Probe generated and frozen directions under single-thread BLAS
+        run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-single-thread-probe.log
+      - name: Save diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nsga3-single-thread-diagnostic
+          path: nsga3-single-thread-probe.log
           if-no-files-found: warn
