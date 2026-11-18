@@ -150,7 +150,7 @@ remain visible until its meaning is established.
 | Numerical replay fails | Keep the frozen reference; compare seeds, implementation, versions, CPU/BLAS profile and the earliest differing operation | Discarding or automatically regenerating the historic front |
 | Performance assessment reports `FAILED` | Examine baseline provenance, paired observations, effect size, assumptions and real algorithmic changes | Editing the prior performance values |
 | Performance assessment reports `INCONCLUSIVE` | Preserve the uncertainty; review statistical power, pilot variability and study design | Calling the result a pass or an equivalence proof |
-| `--certify` encounters a failing `basic` batch | Refuse certification; investigate the original failure | Updating the certified manifest anyway |
+| `--certify-numeric` encounters a failing `basic` batch | Refuse certification; investigate the original failure | Updating the certified manifest anyway |
 
 ### 3.1 A numerical failure is a diagnosis, not a recalibration order
 
@@ -320,7 +320,7 @@ There are three **pytest scopes**, with a shared marker vocabulary:
 | `integration` | Representative composition/workflows | Smoke or inclusive basic |
 | `stability` | Fixed-input indicator and seeded numerical replay | Smoke or inclusive basic |
 
-The explicitly requested statistical `performance-stability` command
+The explicitly requested `--certify-performance` command
 is **outside this pytest scope/level matrix**. It requires an external
 reference JSON file and does not trigger other scopes.
 
@@ -642,7 +642,7 @@ complete or substitute for the others.
 
 ## 11. Versioned historical evidence
 
-The first historical 0.18.0 performance artifact and numerical
+The **approved** inaugural 0.18.0 performance reference and the numerical
 certificate are kept under
 [`moeabench/resources/certifications/0.18.0/`](../moeabench/resources/certifications/0.18.0/).
 The former contains individual performance observations and immutable
@@ -657,7 +657,11 @@ stochastic performance. Claims of agreement require an actual
 comparison with recorded reference values under controlled
 inputs. See [ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md).
 
-The performance baseline created by the first experimental capture
-is submitted for independent review. It is not self-certified,
-and **future** candidate versions must verify their performance
-against an approved reference independently of numerical certification.
+The first baseline passed an independent automated audit of the original
+SHA, all 384 observations and 18 repeat solver runs
+([audit evidence](https://github.com/monacofj/moeabench/actions/runs/44409693329)).
+Its approval records the technical review scope without representing
+human review of every observation. **Future** candidate versions must
+independently certify their performance against the frozen reference.
+Re-certifying an already recorded package version with a different
+source revision is refused: advance the package version first.
