@@ -200,23 +200,18 @@ reference runtime can be reproduced and what changed.
 
 ### 3.3 Why passing a performance comparison is different
 
-The legacy performance protocol reports `PASSED` when its particular
-regression-detection rule did not fire. That can occur with too few
-runs to establish anything meaningful.
+The performance gate has exactly two **operational** outcomes:
+`CERTIFIED` and `NOT_CERTIFIED`. Every case must provide positive
+statistical evidence of noninferiority to its immutable earlier
+reference. A detected degradation or insufficient statistical precision
+blocks certification and is recorded as a **diagnostic reason**, so the
+maintainer knows whether to investigate an algorithmic change or the
+study's uncertainty. A failure never refreshes the baseline.
 
-The v2 protocol is more conservative. It can return:
-
-- **`PASSED`** when the confidence bound provides evidence against a
-  *material worsening of the mean* beyond the declared margin.
-- **`FAILED`** when it supports material worsening.
-- **`INCONCLUSIVE`** when the observations are insufficient to support
-  either conclusion.
-
-The statistical conclusion concerns the **paired mean indicator
-change**, not identical whole distributions or guarantees for untested
-problems. If a comparison is inconclusive, its uncertainty is
-preserved. We do not generate a new favorable baseline or recategorize
-the outcome as success.
+The conclusion concerns the **paired mean IGD+ change** for six
+predeclared MOP–MOEA configurations, not identical entire distributions,
+all supported algorithms, or an unconditional guarantee of numerical
+reproducibility. Those separate scientific claims require separate tests.
 
 ## 4. The different references — and what “calibration” means
 
@@ -238,7 +233,7 @@ that reference defines normalization geometry, **not** a replacement
 GT. This is an important independent public contract.
 
 Changing or recomputing a GT is a scientific/calibration decision.
-It is not what the release command `--certify` does.
+It is independent of `--certify-numeric` and never triggered by it.
 
 ### 4.2 Numerical stability references are frozen observations
 
@@ -252,8 +247,7 @@ They support reproducibility and regression detection. In the current
 repository, these include
 `tests/conventional_metric_reference_v1.json`,
 `tests/stability_reference_fronts.json`,
-`tests/stability_reference_gt.json`, and
-`tests/calibration_reference_audit_v0.13.2.json`.
+and `tests/stability_reference_gt.json`.
 
 The derivation of the 2D/3D conventional-metric values is recorded in
 [the metric-reference audit](audits/conventional-metric-reference-v1.md).
@@ -265,33 +259,30 @@ expected values.
 
 ### 4.3 Performance references are historical *experimental samples*
 
-A statistical reference must contain the previous implementation's
-quality values for **each declared seed**, along with the MOP, MOEA,
-metric, fixed reference front, run parameters and provenance. It may
-also contain a separately measured **paired pilot variance**, effect
-threshold and planned number of runs.
+The inaugural **0.18.0 candidate reference** was measured on the
+previously certified 0.18.0 source
+[at this exact historical revision](https://github.com/monacofj/moeabench/commit/0d3e66804351e23b93fb483ff25e178e06ef6e12).
+The [384-run evidence](https://github.com/monacofj/moeabench/actions/runs/44401850675)
+contains six predefined cases with 64 independent seeds per case,
+one frozen 512-point objective-space reference per MOP, and IGD+,
+GD+ and EMD observations. Source revision, reference-front checksums,
+runtime versions, CPU/BLAS profile and all seed-wise results are
+retained for scientific review.
 
-**The first approved performance reference has not yet been produced.**
-The legacy `tests/baselines_v0.8.0.csv` file referred to by an old
-`deep` test is absent. That obsolete test is inactive. It does not
-provide a usable current statistical baseline.
+A historical statistical reference is **never recomputed** when
+numeric certification runs or when a future candidate fails.
+`--record-performance-baseline` is an explicit, one-time operation.
+It creates a candidate that must undergo independent integrity review
+and explicit approval before use. Later candidates consume the frozen
+reference and repeat the same seeds, rather than drawing a favorable
+new reference. No MOEA solver fronts are duplicated in the numerical
+certificate archive; these are separate scientific datasets.
 
-To establish the first approved reference, select a designated stable
-software release and numerical environment, review the study
-configuration, run the scheduled independent seeds, store the
-per-seed results and audit the reference front and provenance. Review
-pilot variability and the planned power before accepting the artifact.
-Freeze it **before** measuring the future candidate version. Later
-candidate releases can be compared to this historical reference; any
-reference renewal should be a separate, justified and versioned
-decision, retaining the prior reference in version control.
-
-No command currently named `--certify` generates these measurements.
-The `--performance-stability` command **consumes** a separately
-prepared and reviewed reference; it neither produces nor refreshes
-one. The baseline-generation and scientific acceptance process is
-therefore a distinct research/development step, not an implicit part
-of environment certification.
+The first reference's across-seed variance is not a substitute for
+the *future paired-difference variance*. `--certify-performance`
+obtains the latter from an independent eight-pair pilot and allocates
+a bounded confirmatory sample. See
+[Performance certification](performance-stability.md).
 
 ### 4.4 The certified environment manifest records versions
 
@@ -351,28 +342,29 @@ means all unit tests, **not** statistical performance validation.
 
 ### 5.2 Command reference
 
-| Invocation | What actually runs |
+| Command | Purpose |
 |---|---|
-| `python test.py` | Unit total + integration smoke + numerical smoke |
+| `python test.py` | Full unit + integration smoke + numerical smoke |
 | `python test.py --smoke` | Same default |
-| `python test.py --basic` | Unit total + integration smoke/basic + numerical smoke/basic |
-| `python test.py --unit` | All unit tests |
-| `python test.py --unit --smoke` | All unit tests |
-| `python test.py --unit --basic` | All unit tests |
-| `python test.py --unit --deep` | All unit tests |
-| `python test.py --integration --smoke` | Only integration smoke |
-| `python test.py --integration --basic` | Integration smoke and basic |
-| `python test.py --numeric-stability --smoke` | Only numerical smoke |
-| `python test.py --numeric-stability --basic` | Numerical smoke and basic |
-| `python test.py --stability --basic` | Legacy spelling for numerical basic |
-| `python test.py --performance-stability --performance-reference PATH` | Explicit reference-backed statistical study |
-| `python test.py --list` | Collect and list classified tests |
-| `python test.py --certify` | Full basic rerun, then version manifest only if successful |
+| `python test.py --basic` | Full unit + integration smoke/basic + numerical smoke/basic |
+| `python test.py --unit` | All unit contracts |
+| `python test.py --unit --smoke` / `--basic` / `--deep` | All unit contracts |
+| `python test.py --integration --smoke` | Integration smoke only |
+| `python test.py --integration --basic` | Integration smoke/basic |
+| `python test.py --numeric-stability --smoke` | Numerical smoke only |
+| `python test.py --numeric-stability --basic` | Fixed numerical smoke/basic |
+| `python test.py --list` | Inspect classified tests |
+| `python test.py --certify-numeric` | Complete basic suite and versioned, compact numerical certificate |
+| `python test.py --record-performance-baseline --output FILE` | Explicit 0.18.0 historical performance sample, initially awaiting approval |
+| `python test.py --certify-performance --reference FILE --output FILE` | Compare against an approved prior reference and write an immutable binary verdict |
 
-The scope flags are mutually exclusive, as are level flags.
-`--performance-stability` requires `--performance-reference` and
-cannot be combined with `--list` or level flags. Likewise,
-`--certify` cannot be combined with any selector.
+Scope flags and level flags are mutually exclusive.
+All three certification operations are **independent** of scope and
+level selectors. The two performance operations require an explicit
+artifact path; no historical baseline can be silently selected or
+renewed. The previous provisional certification/statistical CLI names
+have been removed before 1.0.0, with their original source and
+decisions retained in Git history.
 
 ### 5.3 Classification and listing
 
@@ -514,99 +506,57 @@ environment**. The fact that they reproduced the historical tests
 on Ubuntu 22.04 and 24.04 does not establish equivalence on every
 processor and native BLAS build.
 
-## 8. Explicit performance verification protocol
+## 8. Scientific performance certification
 
-Run it only when a separately approved reference is available:
+The full predeclared study, measurement provenance, independent pilot,
+sample-size power planning and binary statistical decision are in
+[Performance certification](performance-stability.md) and
+[ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md).
+
+For a future candidate **distinct from the reference release**:
 
 ```bash
-python test.py --performance-stability --performance-reference /path/to/reviewed.json
+python test.py --certify-performance \
+  --reference moeabench/resources/certifications/0.18.0/performance-reference.json \
+  --output moeabench/resources/certifications/1.0.0/performance-vs-0.18.0.json
 ```
 
-The programmatic entry point is
-`mb.system.verify_performance_stability("/path/to/reviewed.json")`.
-The verifier runs **only the listed MOP–MOEA–seed cases**, and does not
-generate a baseline. It never launches automatically when numerical
-stability fails.
+The reference must have an explicit review record and `APPROVED` status.
+The candidate uses the original seeds and frozen objective-space
+reference points; no new baseline is produced during verification.
+An eight-pair pilot is used only for sample-size planning, and a
+separate confirmatory sample supports simultaneous, familywise 1%
+Student-t inference across six IGD+ cases. With no evidence sufficient
+to certify all six cases, the release gate returns `NOT_CERTIFIED`
+(nonzero exit), recording whether the cause is demonstrated regression,
+insufficient evidence or insufficient statistical power.
 
-### 8.1 Legacy v1 and conservative v2
+The 0.1% per-case engineering tolerance and 95% planning power at a
+true zero mean change are explicitly **bounded operational design
+choices**, not mathematical claims of equality of distributions or
+universal algorithm quality. Insufficient power under the 56-pair
+confirmatory ceiling causes a negative certification outcome, never
+a silent increase of the budget.
 
-V1 requires at least three distinct seeds, a prior quality value for
-each seed, and prespecified absolute/relative degradation thresholds.
-It uses a one-sided paired t-test plus the practical threshold.
-A v1 `PASSED` means that this particular degradation rule did not
-trigger; it does **not** prove equivalence or stability.
+## 9. Numerical certification of a candidate version
 
-V2 requires an explicit positive material-degradation margin, paired
-pilot standard deviation, sample-size rationale, family-level alpha,
-desired power between 0.80 and 0.99 and stronger provenance. It
-requires at least eight distinct seeds, possibly more according to the
-preregistered Student-t power calculation. It refuses a plan requiring
-more than 5,000 runs rather than launching an unbounded study.
+`--certify-numeric` is a **formal developer operation**. It runs the
+effective NumPy/OpenBLAS kernel preflight, reruns the entire unit,
+integration and numerical-stability `basic` suite without inherited
+`PYTEST_ADDOPTS` filters, and only after all checks pass updates the
+current dependency manifest and registers a **compact immutable
+versioned certificate** with software versions, runtime profile,
+hashes of existing numerical reference files and execution evidence.
 
-For minimized quality scores define
-`d_i = quality_candidate(seed_i) - quality_reference(seed_i)`.
-A positive value means worsening. The practical margin is
-`δ = max(absolute_threshold, relative_threshold × reference_mean)`.
-V2 uses a Student-t interval with a Bonferroni familywise adjustment
-across the declared cases:
+Nothing in this command generates a new solver-front baseline,
+recalculates MOP GT, measures statistical performance or triggers
+`--record-performance-baseline`.
 
-| V2 decision | Meaning |
-|---|---|
-| `PASSED` | Upper confidence bound is below `δ`: evidence against a material mean regression |
-| `FAILED` | Lower confidence bound is above `δ`: evidence supporting a material mean regression |
-| `INCONCLUSIVE` | Interval touches or overlaps `δ`: neither conclusion is justified |
-
-The result for a group of cases is `FAILED` if any case fails,
-otherwise `INCONCLUSIVE` if any case is inconclusive, otherwise
-`PASSED`.
-
-The CLI exits with **0** for `PASSED`, **1** for `FAILED`
-or `INCONCLUSIVE`, and **2** for a missing/invalid reference.
-The power calculation depends on the assumptions of the paired
-mean model, pilot variance and selected effect threshold; it is
-not a universal guarantee of distributional equivalence.
-
-For schemas, required fields, scientific assumptions and acceptance
-criteria, see [Performance stability](performance-stability.md).
-**No independently approved reference for mandatory statistical
-performance certification is currently included.**
-
-## 9. Certification: what `--certify` actually does
-
-**Certification is a record of a successfully tested software
-environment.** It is distinct from generating GT and from establishing
-a statistical performance sample.
-
-For a developer-prepared candidate version:
-
-1. Finalize the code and the candidate version number.
-2. Establish the designated numerical reference runtime and execute
-   the **preflight** from Section 7.
-3. Prepare the repository's **integration-example archives**. The integration
-   suite reads `examples/example_full_exp1.zip` and
-   `examples/example_full_exp2.zip`; a fresh checkout does not necessarily
-   contain them. The regular unit-contract CI workflow creates them before
-   integration, so a clean developer reference environment must do the
-   same, with the matching MOP/MOEA construction shown below.
-4. Run `python test.py --basic`, including all unit, integration-basic
-   and numerical-basic checks.
-5. Run `python test.py --certify`. It **repeats** the complete basic
-   battery with inherited `PYTEST_ADDOPTS` removed, to prevent external
-   `-k`, `--ignore` and `--deselect` options from silently
-   shrinking the suite.
-6. If any batch fails, the manifest is **not updated**. On success,
-   the runner writes a version snapshot to
-   `moeabench/resources/certified_environment.json` via an
-   intermediate `.pending` file. Review and commit that change
-   only after confirming the tested release candidate and its
-   environment.
-
-Commands in the prepared reference environment:
+For a clean checkout, integration example archives must be prepared
+using the same deterministic setup as regular CI, since the full
+`basic` suite requires them:
 
 ```bash
-python scripts/check_numerical_reference_runtime.py
-
-# Prepare the same two integration archives as the regular CI job:
 python - <<'PY'
 from pathlib import Path
 import moeabench as mb
@@ -616,68 +566,36 @@ for algorithm, filename in (
     (mb.moeas.NSGA3, "example_full_exp2.zip"),
 ):
     path = Path("examples") / filename
-    if path.exists():
-        continue
-    exp = mb.experiment(
-        mop=mb.mops.DTLZ2(M=3),
-        moea=algorithm(population=32, generations=8, seed=17),
-    )
-    exp.run(repeat=3, silent=True)
-    exp.save(str(path))
+    if not path.exists():
+        exp = mb.experiment(
+            mop=mb.mops.DTLZ2(M=3),
+            moea=algorithm(population=32, generations=8, seed=17),
+        )
+        exp.run(repeat=3, silent=True)
+        exp.save(str(path))
 PY
 
-python test.py --basic
-python test.py --certify
+python scripts/check_numerical_reference_runtime.py
+python test.py --certify-numeric
 ```
 
-The integration archives are **test prerequisites**, not mathematical or
-statistical baseline values. They are generated locally from a fixed,
-reviewed small example configuration; they are not replacements for
-frozen numerical fronts. A missing archive makes integration tests
-fail and correctly blocks `--certify`. The first controlled 0.18.0
-certification attempt exposed this difference between a bare checkout
-and the regular CI preparation; it was resolved by preparing the same
-archives, without modifying any historical test.
+A failing preflight or `basic` batch prevents certification; no
+historical expected values are replaced. The existing
+[0.18.0 certification evidence](https://github.com/monacofj/moeabench/actions/runs/44351880965)
+recorded 389 passing tests under the historical numeric command.
+The canonical new numeric command has also been executed successfully
+on the same original source revision:
+[compact historical certificate run](https://github.com/monacofj/moeabench/actions/runs/44403553093).
+The checked-in numerical archive has three fixture hashes and the
+recorded execution environment; it **does not duplicate complete
+numerical fronts** for each software version.
 
-The standalone `--certify` implementation currently enforces
-the full basic result but does **not** itself inspect actual CPU/BLAS
-kernels. Consequently, the preflight is an explicit prerequisite
-when using the designated reference environment. Certification
-writes **only the version manifest**. It never updates numerical
-fixtures, generates statistical performance results, launches the
-optional performance verifier, or recalibrates a MOP GT.
-
-The currently committed manifest identifies the verified
-**0.18.0** development environment. It was updated by the actual
-`--certify` command after two separate **389/389 basic-suite passes**
-in the pinned reference runtime; earlier CI successes alone did not
-create this certification.
-
-### 9.1 Certification before 1.0.0
-
-The intermediate **0.18.0 release candidate**, containing the changes
-after 0.17.0, has now been formally developer-certified in the controlled
-reference environment ([issue #106](https://github.com/monacofj/moeabench/issues/106),
-[certification run](https://github.com/monacofj/moeabench/actions/runs/44351880965)).
-The run executed `python test.py --basic` and then the actual
-`python test.py --certify`, each with **389/389 tests passing**.
-This approves the tested development environment and does **not** itself
-publish a release, Git tag or performance reference. The new manifest
-records **0.18.0**, not 1.0.0.
-
-When 1.0.0 is prepared, the package version should be changed
-first and the appropriate suites and environment certification
-executed **again**. Editing only the version string in the manifest
-would make an unsupported certification claim. Conversely, repeating
-certification is not permission to change the numerical regression
-baselines. Store the manifest's earlier revisions in Git history;
-maintain the experimental performance reference as its own
-separately versioned artifact.
-
-The first historical statistical performance reference may be
-created from an approved intermediate release and subsequently
-used to evaluate a future candidate, but **that process is not part
-of the present `--certify` command**.
+For a later package release, update the package source version,
+test and certify its own numerical environment, and compare
+performance separately with a previously approved reference. A
+baseline is created only when independently authorized, not as
+part of every numerical certification. Certification 0.18.0 did
+not publish a Git tag or a 1.0.0 release.
 
 ## 10. Contribution and completion checklist
 
@@ -720,28 +638,24 @@ by formal certification. Completing one does not silently
 complete or substitute for the others.
 
 
-## 11. Approved next-generation certificate lifecycle (not yet CLI-implemented)
+## 11. Versioned historical evidence
 
-The maintainer has approved a consolidated **target architecture** in
-[ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md),
-tracked by [issue #108](https://github.com/monacofj/moeabench/issues/108).
-It fixes a bounded, six-case, 24-seed IGD+ regression study, simultaneous
-statistical decisions, and an immutable archive of version-specific
-numerical and performance verification evidence.
+The first historical 0.18.0 performance artifact and numerical
+certificate are kept under
+[`moeabench/resources/certifications/0.18.0/`](../moeabench/resources/certifications/0.18.0/).
+The former contains individual performance observations and immutable
+geometric inputs; the latter contains only the source/environment
+snapshot and **hashes** of active frozen numerical regression files.
 
-Its three **future command names** are `--certify-numeric`,
-`--record-performance-baseline`, and `--certify-performance`.
-They have independent effects; *certifying a numerical environment
-never automatically creates, updates or renews a performance reference*.
-A reference can be recorded only by an explicit, approved operation;
-a future performance check consumes and cites that historical reference,
-and never edits it.
+`mb.system.certification_history()` lists available historical
+certificates; `mb.system.matching_certified_environments()` lists
+exact dependency-version matches. A version match is **not**
+evidence of identical numerical results on the user's MOP or equal
+stochastic performance. Claims of agreement require an actual
+comparison with recorded reference values under controlled
+inputs. See [ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md).
 
-**Implementation status:** the current `test.py` still uses
-`--certify` for the already performed 0.18.0 environment certification
-and `--performance-stability --performance-reference` for the
-existing explicit statistical comparison. The approved names and
-single-schema replacement in ADR 0056 must not be represented as
-already available until the corresponding code and contract tests
-have been audited and integrated. The 0.18.0 numerical certification
-and frozen numerical fixtures remain valid and unchanged.
+The performance baseline created by the first experimental capture
+is submitted for independent review. It is not self-certified,
+and **future** candidate versions must verify their performance
+against an approved reference independently of numerical certification.
