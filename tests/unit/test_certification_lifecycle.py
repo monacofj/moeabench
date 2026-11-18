@@ -59,7 +59,7 @@ def test_baseline_artifact_is_single_write_and_requires_external_approval(
     # A fake measurement engine allows exercising the artifact contract without
     # launching the real 384-run study in routine CI.
     monkeypatch.setattr(cert, "_reference_runtime", lambda: {"moeabench": "0.18.0"})
-    monkeypatch.setattr(cert, "_revision", lambda: "test-sha")
+    monkeypatch.setattr(cert, "_revision", lambda: "0d3e66804351e23b93fb483ff25e178e06ef6e12")
     monkeypatch.setattr(cert, "_measure", lambda case, seed, front: {
         "seed": seed, "front_size": 24, "igdplus": 0.5,
         "gdplus": 0.2, "emd": 0.3
@@ -77,6 +77,7 @@ def test_baseline_artifact_is_single_write_and_requires_external_approval(
         cert.create_performance_baseline(output)
     # Simulate an independent maintainer approval in this synthetic test only.
     data["status"] = "APPROVED"
+    data["approval"] = {"reviewed_by": "independent-reviewer-test", "evidence_url": "https://github.com/example/review/1"}
     output.write_text(json.dumps(data))
     assert cert.load_performance_reference(output)["status"] == "APPROVED"
     data["reference_fronts"]["DTLZ2"]["points"][0][0] += 1
