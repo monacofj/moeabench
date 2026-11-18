@@ -247,7 +247,9 @@ They support reproducibility and regression detection. In the current
 repository, these include
 `tests/conventional_metric_reference_v1.json`,
 `tests/stability_reference_fronts.json`,
-and `tests/stability_reference_gt.json`.
+`tests/stability_reference_gt.json`, and
+`tests/stability_gt_geometry_reference.json` (the unchanged geometry
+oracle formerly embedded in the retired audit dataset).
 
 The derivation of the 2D/3D conventional-metric values is recorded in
 [the metric-reference audit](audits/conventional-metric-reference-v1.md).
