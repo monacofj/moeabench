@@ -25,6 +25,12 @@ def verify_stability(show: bool = True, **kwargs):
     return _verify(show=show, **kwargs)
 
 
+def verify_performance_stability(reference_path, show: bool = True):
+    """Explicit performance comparison; requires an externally reviewed reference."""
+    from .performance_stability import verify_performance as _verify
+    return _verify(reference_path, show=show)
+
+
 def verify_experiment(exp, show: bool = True):
     from .environment_verification import verify_experiment as _verify
     return _verify(exp, show=show)
@@ -195,6 +201,7 @@ __all__ = [
     "version",
     "verify_version",
     "verify_stability",
+    "verify_performance_stability",
     "verify_experiment",
     "verification_status",
     "check_dependencies",
