@@ -1,0 +1,150 @@
+{
+  "schema": "moeabench_conventional_metric_reference_v1",
+  "provenance": {
+    "issue": 97,
+    "reference_type": "fixed synthetic objective-space inputs",
+    "derivation": "Exact elementary Euclidean/positive-part distance, sorted quantile Wasserstein, and rectangle/box union geometry; no MoeaBench/Pymoo outputs used as expected values",
+    "cross_validation": "Algebraic expressions and derivation notes in docs/audits/conventional-metric-reference-v1.md",
+    "status": "candidate: independent maintainer review required before release certification",
+    "tolerance_abs": 1e-10,
+    "tolerance_rel": 0,
+    "mc_validation": "Repeated fixed seed must reproduce exactly within one numerical environment; approximate hypervolume compared with analytical geometry, no unreviewed bitwise Monte Carlo baseline"
+  },
+  "cases": [
+    {
+      "id": "two_objective_tradeoff",
+      "objectives": 2,
+      "front": [
+        [
+          0.2,
+          0.8
+        ],
+        [
+          0.8,
+          0.2
+        ]
+      ],
+      "reference": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "calibrated_gt": [
+        [
+          0,
+          1
+        ],
+        [
+          0.7071067811865476,
+          0.7071067811865476
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "expected": {
+        "gd": 0.282842712474619,
+        "igd": 0.282842712474619,
+        "gdplus": 0.2,
+        "igdplus": 0.2,
+        "emd": 0.2,
+        "hv_raw": 0.45,
+        "hv_rel": 2.142857142857143,
+        "hv_abs": 1.521367928869054
+      }
+    },
+    {
+      "id": "three_objective_axis_reference",
+      "objectives": 3,
+      "front": [
+        [
+          0.25,
+          0.25,
+          0.25
+        ]
+      ],
+      "reference": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "calibrated_gt": [
+        [
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          0
+        ],
+        [
+          0,
+          0,
+          1
+        ]
+      ],
+      "expected": {
+        "gd": 0.82915619758885,
+        "igd": 0.82915619758885,
+        "gdplus": 0.3535533905932738,
+        "igdplus": 0.3535533905932738,
+        "emd": 0.4166666666666667,
+        "hv_raw": 0.6141249999999999,
+        "hv_rel": 1.8553625377643501,
+        "hv_abs": 1.8553625377643501
+      }
+    }
+  ],
+  "zero_cases": [
+    {
+      "id": "two_objective_identity",
+      "front": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "reference": [
+        [
+          0,
+          1
+        ],
+        [
+          1,
+          0
+        ]
+      ],
+      "expected": {
+        "gd": 0,
+        "igd": 0,
+        "gdplus": 0,
+        "igdplus": 0,
+        "emd": 0
+      }
+    }
+  ]
+}
