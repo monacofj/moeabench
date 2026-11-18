@@ -34,7 +34,7 @@ jobs:
         run: |
           set -u
           mkdir -p issue92-reference-results
-          ldd --version | head -1 > issue92-reference-results/libc-version.txt
+          ldd --version > issue92-reference-results/libc-version.txt
           for mode in native no_x86_v4; do
             case "$mode" in
               native) mask="" ;;
@@ -64,7 +64,7 @@ jobs:
                       "rounded_sha256":d["directions_sorted_rounded13_sha256"],
                       "baseline_exit":(root/f"{mode}.basic.exit").read_text().strip(),
                       "directions_exit":(root/f"{mode}.directions.exit").read_text().strip(),
-                      "libc":(root/"libc-version.txt").read_text().strip()}
+                      "libc":(root/"libc-version.txt").read_text().splitlines()[0].strip()}
                   print("ISSUE92_REFERENCE_SUMMARY "+json.dumps(info,sort_keys=True))
               except Exception as e:
                   print(f"ISSUE92_REFERENCE_ERROR mode={mode} error={e}")
