@@ -100,8 +100,8 @@ def _measure_case(case: dict, seed: int) -> float:
     score = float(getattr(mb.metrics, case["metric"])(
         observed, ref=ref, progress=False
     ))
-    if not np.isfinite(score):
-        raise ValueError(f"{case['id']}: metric is not finite")
+    if not np.isfinite(score) or score < 0:
+        raise ValueError(f"{case['id']}: metric must be finite and nonnegative")
     return score
 
 
@@ -113,8 +113,9 @@ def assess_case(case: dict, observed: list[float]) -> dict:
     """
     baseline = np.asarray(case["baseline_values"], dtype=float)
     current = np.asarray(observed, dtype=float)
-    if current.shape != baseline.shape or not np.isfinite(current).all():
-        raise ValueError("Current measurements must match the paired reference")
+    if (current.shape != baseline.shape or not np.isfinite(current).all()
+            or (current < 0).any()):
+        raise ValueError("Current measurements must be finite, nonnegative and match the paired reference")
     changes = current - baseline
     mean_delta = float(np.mean(changes))
     practical_floor = max(
