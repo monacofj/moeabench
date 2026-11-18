@@ -3,6 +3,8 @@ name: Stability verification separation
 on:
   pull_request:
     branches:
+      - main
+      - hotfix/0.17.0-contract-recovery
       - tests/unit-contract-consolidation
   workflow_dispatch:
 
@@ -15,17 +17,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install package and tests
+      - name: Install package and test dependencies
         run: python -m pip install -e . pytest
       - name: Check source compilation
         run: python -m compileall -q moeabench tests test.py
-      - name: Run new independent stability separation contracts
+      - name: Check explicit stability separation contracts
         run: python -m pytest tests/unit/test_stability_separation_contract.py -q
-      - name: Run all unit tests without altering frozen baselines
+      - name: Run complete unit scope
         run: python test.py --unit
-      - name: Smoke real low-budget performance measurement adapter
+      - name: Check performance measurement adapter with a real small run
         run: python -m pytest tests/integration/test_performance_measurement_adapter.py -q
-      - name: Check deterministic numeric smoke baseline
+      - name: Verify numerical smoke references
         run: python test.py --numeric-stability --smoke
 
   reference-numeric-stability:
@@ -36,101 +38,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14.4'
-      - name: Install certified numerical stack
+      - name: Install pinned reference numerical stack
         run: |
           python -m pip install -e . pytest
           python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
-      - name: Confirm certified numerical dependency identity
+      - name: Check numerical dependencies against reference manifest
         run: |
           python - <<'PY'
-          import json, sys
+          import json
+          import pathlib
+          import sys
           import importlib.metadata as im
-          from pathlib import Path
-          expected = json.loads(Path("moeabench/resources/certified_environment.json").read_text())["versions"]
+
+          expected = json.loads(
+              pathlib.Path("moeabench/resources/certified_environment.json").read_text()
+          )["versions"]
           assert sys.version.split()[0] == expected["python"]
           for name in ("numpy", "scipy", "pymoo", "deap", "moocore", "pandas"):
-              assert im.version(name) == expected[name], (name, im.version(name), expected[name])
+              assert im.version(name) == expected[name], (
+                  name, im.version(name), expected[name]
+              )
           PY
-      - name: Run numeric basic only (no statistical performance test)
+      - name: Verify entire numerical basic suite (known NSGA3 x DPF1 failure tracked in issue 92)
         run: python test.py --numeric-stability --basic
-      - name: Capture NSGA3 x DPF1 reference-direction fingerprint
-        if: always()
-        run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
-      - name: Probe captured and frozen NSGA3 directions (diagnostic only)
-        if: always()
-        run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-frozen-probe.log
-      - name: Evaluate fixed DPF1 decision vectors (diagnostic only)
-        if: always()
-        run: python scripts/audit/probe_dpf1_fixed_population.py > dpf1-fixed-evaluation.log
-      - name: Trace unmodified pymoo variation operators
-        if: always()
-        run: python scripts/audit/probe_nsga3_variation.py > nsga3-variation-probe.json
-      - name: Test isolated scalar-power variation in full NSGA3 diagnostic run
-        if: always()
-        run: python scripts/audit/probe_nsga3_scalar_power.py > nsga3-scalar-power-control.log
-      - name: Compare failing solver case against main and old-fair in same runtime
-        if: failure()
-        shell: bash
-        run: |
-          set +e
-          git fetch --no-tags --depth=1 origin refs/heads/main:refs/remotes/origin/main refs/heads/old-fair:refs/remotes/origin/old-fair
-          for branch in main old-fair; do
-            tmpdir="$(mktemp -d)"
-            git worktree add --detach "$tmpdir" "refs/remotes/origin/$branch"
-            echo "revision=$(git -C "$tmpdir" rev-parse HEAD)" > "comparison-$branch.log"
-            python -m pip install -e "$tmpdir" -q >> "comparison-$branch.log" 2>&1
-            ( cd "$tmpdir" && python -m pytest tests/test_stability_basic.py -k 'NSGA3xDPF1' -q ) >> "$GITHUB_WORKSPACE/comparison-$branch.log" 2>&1
-            echo "test_exit_code=$?" >> "comparison-$branch.log"
-            git worktree remove --force "$tmpdir"
-          done
-          exit 0
-      - name: Preserve reference-direction fingerprint and control evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nsga3-dpf1-diagnostic-and-controls
-          path: |
-            nsga3-dpf1-diagnostic.log
-            nsga3-frozen-probe.log
-            dpf1-fixed-evaluation.log
-            nsga3-variation-probe.json
-            nsga3-scalar-power-control.log
-            comparison-main.log
-            comparison-old-fair.log
-          if-no-files-found: warn
-
-  single-thread-direction-probe:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      OPENBLAS_NUM_THREADS: '1'
-      OMP_NUM_THREADS: '1'
-      MKL_NUM_THREADS: '1'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.14.4'
-      - name: Install matching reference numerical stack
-        run: |
-          python -m pip install -e . pytest
-          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
-      - name: Probe generated and frozen directions under single-thread BLAS
-        run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-single-thread-probe.log
-      - name: Evaluate fixed DPF1 decision vectors under single-thread BLAS
-        run: python scripts/audit/probe_dpf1_fixed_population.py > dpf1-fixed-single-thread.log
-      - name: Trace unmodified variation under single-thread BLAS
-        run: python scripts/audit/probe_nsga3_variation.py > nsga3-variation-single-thread.json
-      - name: Test scalar-power controls with single-thread BLAS
-        run: python scripts/audit/probe_nsga3_scalar_power.py > nsga3-scalar-power-single.log
-      - name: Save diagnostic evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: nsga3-single-thread-diagnostic
-          path: |
-            nsga3-single-thread-probe.log
-            dpf1-fixed-single-thread.log
-            nsga3-variation-single-thread.json
-            nsga3-scalar-power-single.log
-          if-no-files-found: warn
