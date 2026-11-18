@@ -24,7 +24,7 @@ jobs:
         run: |
           python -m pip install -e . pytest
           python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
-      - name: Run identical initial SBX and full trajectory with 4 CPU dispatch masks
+      - name: Run identical SBX and trajectories with 4 NumPy 2.5 CPU dispatch groups
         shell: bash
         env:
           PYTHONHASHSEED: "0"
@@ -34,12 +34,12 @@ jobs:
         run: |
           set -u
           mkdir -p issue92-results
-          for mode in native no_avx512 no_avx2_fma3 no_advanced; do
+          for mode in native no_x86_v4 no_x86_v3 no_x86_v3_v4; do
             case "$mode" in
               native) mask="" ;;
-              no_avx512) mask="AVX512F" ;;
-              no_avx2_fma3) mask="AVX2,FMA3" ;;
-              no_advanced) mask="AVX512F,AVX2,FMA3" ;;
+              no_x86_v4) mask="X86_V4" ;;
+              no_x86_v3) mask="X86_V3" ;;
+              no_x86_v3_v4) mask="X86_V3,X86_V4" ;;
             esac
             echo "=== $mode: NPY_DISABLE_CPU_FEATURES='$mask' ==="
             printf '%s\n' "$mask" > "issue92-results/$mode.mask"
@@ -78,7 +78,7 @@ jobs:
           python - <<'PY'
           import json,pathlib
           root=pathlib.Path("issue92-results")
-          for mode in ("native","no_avx512","no_avx2_fma3","no_advanced"):
+          for mode in ("native","no_x86_v4","no_x86_v3","no_x86_v3_v4"):
               def read(suffix):
                   p=root/f"{mode}.{suffix}"
                   return p.read_text(encoding="utf-8") if p.exists() else ""
