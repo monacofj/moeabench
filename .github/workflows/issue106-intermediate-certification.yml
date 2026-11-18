@@ -35,6 +35,25 @@ jobs:
           PY
       - name: Preflight -- verify effective NumPy and OpenBLAS kernels
         run: python scripts/check_numerical_reference_runtime.py
+      - name: Prepare the same integration example archives as regular CI
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import moeabench as mb
+          for algorithm, filename in (
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ):
+              path = Path("examples") / filename
+              if path.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(path))
+          PY
       - name: Run independently complete basic suite
         run: python test.py --basic
       - name: Run ACTUAL certification (repeats complete basic suite)
