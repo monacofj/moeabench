@@ -23,8 +23,8 @@ jobs:
       - name: Install exact pinned numerical stack
         run: |
           python -m pip install -e . pytest
-          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
-      - name: Compare original basic suite under native X86_V4 and AVX512_ICL masks
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6" threadpoolctl
+      - name: Compare unmodified basic suite under controlled NumPy dispatch and OpenBLAS core types
         shell: bash
         env:
           PYTHONHASHSEED: "0"
@@ -36,21 +36,24 @@ jobs:
           set -u
           mkdir -p issue92-reference-results
           ldd --version > issue92-reference-results/libc-version.txt
-          for mode in native no_x86_v4 no_avx512_icl no_x86_v4_icl; do
+          for mode in native baseline baseline_haswell baseline_haswell_icl; do
             case "$mode" in
-              native) mask="" ;;
-              no_x86_v4) mask="X86_V4" ;;
-              no_avx512_icl) mask="AVX512_ICL" ;;
-              no_x86_v4_icl) mask="X86_V4,AVX512_ICL" ;;
+              native) mask=""; core="" ;;
+              baseline) mask="X86_V4"; core="" ;;
+              baseline_haswell) mask="X86_V4"; core="HASWELL" ;;
+              baseline_haswell_icl) mask="X86_V4,AVX512_ICL"; core="HASWELL" ;;
             esac
             printf '%s\n' "$mask" > "issue92-reference-results/$mode.mask"
-            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_ref_directions_issue92.py > "issue92-reference-results/$mode.directions.json" 2> "issue92-reference-results/$mode.directions.err"
+            printf '%s\n' "$core" > "issue92-reference-results/$mode.openblas-core"
+            runtime_vars=(NPY_DISABLE_CPU_FEATURES="$mask")
+            if [[ -n "$core" ]]; then runtime_vars+=(OPENBLAS_CORETYPE="$core"); fi
+            env "${runtime_vars[@]}" python scripts/audit/probe_ref_directions_issue92.py > "issue92-reference-results/$mode.directions.json" 2> "issue92-reference-results/$mode.directions.err"
             echo $? > "issue92-reference-results/$mode.directions.exit"
-            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_frozen_directions.py > "issue92-reference-results/$mode.frozen.txt" 2> "issue92-reference-results/$mode.frozen.err"
+            env "${runtime_vars[@]}" python scripts/audit/probe_nsga3_frozen_directions.py > "issue92-reference-results/$mode.frozen.txt" 2> "issue92-reference-results/$mode.frozen.err"
             echo $? > "issue92-reference-results/$mode.frozen.exit"
-            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_variation.py > "issue92-reference-results/$mode.variation.json" 2> "issue92-reference-results/$mode.variation.err"
+            env "${runtime_vars[@]}" python scripts/audit/probe_nsga3_variation.py > "issue92-reference-results/$mode.variation.json" 2> "issue92-reference-results/$mode.variation.err"
             echo $? > "issue92-reference-results/$mode.variation.exit"
-            env NPY_DISABLE_CPU_FEATURES="$mask" python test.py --numeric-stability --basic > "issue92-reference-results/$mode.basic.log" 2>&1
+            env "${runtime_vars[@]}" python test.py --numeric-stability --basic > "issue92-reference-results/$mode.basic.log" 2>&1
             result=$?
             echo "$result" > "issue92-reference-results/$mode.basic.exit"
             echo "ISSUE92_BASIC_RESULT host=${{ matrix.os }} mode=$mode exit=$result"
@@ -62,7 +65,7 @@ jobs:
           python - <<'PY'
           import json, pathlib
           root=pathlib.Path("issue92-reference-results")
-          for mode in ("native","no_x86_v4","no_avx512_icl","no_x86_v4_icl"):
+          for mode in ("native","baseline","baseline_haswell","baseline_haswell_icl"):
               p=root/f"{mode}.directions.json"
               try:
                   d=json.loads(p.read_text())
@@ -73,6 +76,7 @@ jobs:
                       "directions_exit":(root/f"{mode}.directions.exit").read_text().strip(),
                       "frozen_exit":(root/f"{mode}.frozen.exit").read_text().strip(),
                       "variation_exit":(root/f"{mode}.variation.exit").read_text().strip(),
+                      "openblas_coretype":(root/f"{mode}.openblas-core").read_text().strip(),
                       "libc":(root/"libc-version.txt").read_text().splitlines()[0].strip()}
                   for line in (root/f"{mode}.frozen.txt").read_text().splitlines():
                       if line.startswith("RESULT "):
@@ -102,6 +106,6 @@ jobs:
       - name: Report real regression status without altering tests
         shell: bash
         run: |
-          for mode in native no_x86_v4 no_avx512_icl no_x86_v4_icl; do
+          for mode in native baseline baseline_haswell baseline_haswell_icl; do
             test "$(cat "issue92-reference-results/$mode.basic.exit")" -eq 0 || exit 1
           done
