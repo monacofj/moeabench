@@ -122,8 +122,9 @@ def assess_case(case: dict, observed: list[float]) -> dict:
         float(case["max_relative_degradation"]) * abs(float(np.mean(baseline))),
     )
     # The zero-variance case is a valid deterministic paired comparison.
-    if np.all(changes == changes[0]):
-        pvalue = 0.0 if changes[0] > 0 else 1.0
+    precision_floor = 32 * np.finfo(float).eps * max(1.0, float(np.max(np.abs(changes))))
+    if float(np.ptp(changes)) <= precision_floor:
+        pvalue = 0.0 if mean_delta > 0 else 1.0
     else:
         pvalue = float(stats.ttest_1samp(changes, popmean=0.0, alternative="greater").pvalue)
     if not np.isfinite(pvalue):
