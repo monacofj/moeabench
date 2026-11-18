@@ -313,6 +313,11 @@ def main():
         if args.certify_numeric:
             if args.output or args.reference:
                 parser.error("--certify-numeric does not take --output or --reference")
+            from moeabench.certification import ensure_numeric_certification_slot
+            try:
+                ensure_numeric_certification_slot()
+            except (OSError, ValueError, RuntimeError) as exc:
+                parser.exit(2, f"Numeric version already certified: {exc}\n")
             # Require the approved numerical kernel dispatch; never silently bypass it.
             subprocess.run([sys.executable, "scripts/check_numerical_reference_runtime.py"], check=True)
             if _certify_environment() != 0:
