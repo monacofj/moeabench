@@ -78,10 +78,7 @@ These two contracts are independent:
 - metrics may drift while the produced front stays unchanged
 - the produced front may drift while the metrics remain internally correct
 
-For that reason, `stability` always concerns both:
-
-- whether the measurements still match
-- whether the produced front still matches
+In the current FAIR-free recovery, `--numeric-stability` directly exercises frozen PRNG signatures, GT geometry and seeded solver fronts. Small independent conventional-indicator oracles run in the `unit` scope; a full `python test.py --basic` includes both. Broader permanent frozen outputs for conventional metrics remain a separately audited coverage gap, and a passing standalone `--numeric-stability` call must not be described as exhaustive metric certification.
 
 ## Levels By Scope
 
