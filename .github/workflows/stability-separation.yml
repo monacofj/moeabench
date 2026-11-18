@@ -1,0 +1,56 @@
+name: Stability verification separation
+
+on:
+  pull_request:
+    branches:
+      - tests/unit-contract-consolidation
+  push:
+    branches:
+      - refactor/separate-stability-verification
+  workflow_dispatch:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package and tests
+        run: python -m pip install -e . pytest
+      - name: Check source compilation
+        run: python -m compileall -q moeabench tests test.py
+      - name: Run new independent stability separation contracts
+        run: python -m pytest tests/unit/test_stability_separation_contract.py -q
+      - name: Run all unit tests without altering frozen baselines
+        run: python test.py --unit
+      - name: Check deterministic numeric smoke baseline
+        run: python test.py --numeric-stability --smoke
+
+  reference-numeric-stability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install certified numerical stack
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+      - name: Confirm certified numerical dependency identity
+        run: |
+          python - <<'PY'
+          import json, sys
+          import importlib.metadata as im
+          from pathlib import Path
+          expected = json.loads(Path("moeabench/resources/certified_environment.json").read_text())["versions"]
+          assert sys.version.split()[0] == expected["python"]
+          for name in ("numpy", "scipy", "pymoo", "deap", "moocore", "pandas"):
+              assert im.version(name) == expected[name], (name, im.version(name), expected[name])
+          PY
+      - name: Run numeric basic only (no statistical performance test)
+        run: python test.py --numeric-stability --basic
