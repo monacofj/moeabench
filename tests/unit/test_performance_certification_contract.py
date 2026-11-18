@@ -83,6 +83,10 @@ def test_frozen_reference_requires_real_external_approval(tmp_path):
     src = Path(__file__).resolve().parents[2] / "moeabench/resources/certifications/0.18.0/performance-reference.json"
     doc = json.loads(src.read_text())
     path = tmp_path / "baseline.json"
+    # Independently construct an unapproved copy of the now-approved reference
+    # and retain the original gate that refuses candidate artifacts.
+    doc["status"] = "CANDIDATE_REQUIRES_REVIEW"
+    doc.pop("approval", None)
     path.write_text(json.dumps(doc))
     with pytest.raises(ValueError, match="approval"):
         cert.load_performance_reference(path)
