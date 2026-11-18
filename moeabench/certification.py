@@ -284,6 +284,9 @@ def assess_paired(case, pilot_scores, confirmatory_scores, baseline):
 def certify_performance(reference_path, output_path):
     """Compare with a frozen approved historical reference; never change it."""
     reference = load_performance_reference(reference_path)
+    from .system import version
+    if version(show=False) == reference["source_version"]:
+        raise ValueError("Performance certification requires a candidate version distinct from the historical baseline")
     current_environment = _reference_runtime()
     output = Path(output_path)
     if output.exists():
