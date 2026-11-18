@@ -65,6 +65,9 @@ jobs:
       - name: Trace unmodified pymoo variation operators
         if: always()
         run: python scripts/audit/probe_nsga3_variation.py > nsga3-variation-probe.json
+      - name: Test isolated scalar-power variation in full NSGA3 diagnostic run
+        if: always()
+        run: python scripts/audit/probe_nsga3_scalar_power.py > nsga3-scalar-power-control.log
       - name: Compare failing solver case against main and old-fair in same runtime
         if: failure()
         shell: bash
@@ -91,6 +94,7 @@ jobs:
             nsga3-frozen-probe.log
             dpf1-fixed-evaluation.log
             nsga3-variation-probe.json
+            nsga3-scalar-power-control.log
             comparison-main.log
             comparison-old-fair.log
           if-no-files-found: warn
@@ -117,6 +121,8 @@ jobs:
         run: python scripts/audit/probe_dpf1_fixed_population.py > dpf1-fixed-single-thread.log
       - name: Trace unmodified variation under single-thread BLAS
         run: python scripts/audit/probe_nsga3_variation.py > nsga3-variation-single-thread.json
+      - name: Test scalar-power controls with single-thread BLAS
+        run: python scripts/audit/probe_nsga3_scalar_power.py > nsga3-scalar-power-single.log
       - name: Save diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -126,4 +132,5 @@ jobs:
             nsga3-single-thread-probe.log
             dpf1-fixed-single-thread.log
             nsga3-variation-single-thread.json
+            nsga3-scalar-power-single.log
           if-no-files-found: warn
