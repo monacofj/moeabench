@@ -4,39 +4,119 @@ SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# ADR 0048: Temporary Removal of FAIR from the 0.x Release Line
+# ADR 0048: Public Clinical Metrics and Audit Context Parity
 
 ## Status
 
-Accepted — supersedes the former public clinical API decision for the FAIR-free release.
+Accepted
+
+## Date
+
+2026-08-27
 
 ## Context
 
-The FAIR physical metrics, their Q-scores, and the aggregate clinical audit
-remain active research and are not ready to be part of the public release.
-The FAIR-free cleanup temporarily removed them to allow the independent,
-mature core of MoeaBench to be published and reviewed.
+ADR 0039 simplified diagnostics around `mb.clinic.audit(...)` and described the
+intermediate clinical computations as implementation details. The public API has
+since evolved: users may legitimately request one physical FAIR metric or one
+Q-score directly, while `audit()` remains the high-level orchestration and
+synthesis entrypoint.
+
+That broader public surface creates a scientific consistency requirement. A
+metric must not change merely because it was requested individually instead of
+as one component of an audit. GT selection, resolution, population size,
+baseline context, and other canonical references must therefore resolve in the
+same way under equivalent/default calls.
 
 ## Decision
 
-For the FAIR-free 0.x release line and its 1.0.0 preparation:
+The public clinical API consists of both the aggregate audit and the individual
+metric endpoints.
 
-- The `mb.clinic` public API, individual FAIR metrics, Q-scores, and
-  `audit()` are unavailable. A public caller must not receive a silently
-  substituted or fabricated clinical result.
-- Conventional indicators in `mb.metrics` and their established
-  `raw`/`rel`/`abs` semantics remain available and independent of FAIR.
-- `mop.calibrate()`, analytical or empirical Ground Truth and calibration
-  persistence are core MOP features, independent of FAIR.
-- Reintroduction of FAIR requires a new reviewed architectural decision and
-  regression evidence. This ADR does not select or prescribe a future FAIR API.
-- Historical FAIR code and decisions can remain in the separate research
-  branch; public documentation for the FAIR-free release must describe only
-  the supported functionality.
+Physical metrics are public:
+
+```python
+mb.clinic.headway(...)
+mb.clinic.closeness(...)
+mb.clinic.coverage(...)
+mb.clinic.gap(...)
+mb.clinic.regularity(...)
+mb.clinic.balance(...)
+```
+
+Their corresponding `q_*` functions are also public, alongside:
+
+```python
+mb.clinic.audit(...)
+```
+
+The following parity contract applies:
+
+- Individual clinical calls and the corresponding components calculated by
+  `audit()` use the same canonical diagnostic context when given equivalent
+  inputs and no conflicting explicit overrides.
+- Context resolution includes, as applicable, the evaluated final population or
+  front, initial population for longitudinal metrics, Ground Truth, problem
+  identity, effective population size `K`, resolution scale `s_k`, baseline
+  source, uniform reference set, centroids, and occupancy reference.
+- `audit()` may resolve and expose the exact context through
+  `DiagnosticResult.diagnostic_context`; this context is part of the audit's
+  reproducibility payload rather than hidden view-only state.
+- Explicit arguments such as a user-supplied GT, `s_k`, baseline source, or
+  other supported overrides may intentionally define a different context. The
+  parity guarantee applies to equivalent contexts, not to calls with different
+  explicit inputs.
+- `audit(quality=True)` computes FAIR metrics, Q-scores, and synthesized quality
+  interpretation. `audit(quality=False)` stops after the FAIR layer and does not
+  fabricate or infer Q-scores.
+- `audit()` remains the preferred entrypoint when a complete diagnosis is
+  wanted; it is not the only public way to obtain clinical measurements.
+
+Argument polymorphism remains part of this contract. In particular, an
+`Experiment` resolves its aggregate final front through the experiment's
+`front()` semantics, while a `Run` resolves that run's front and a `Population`
+uses the supplied snapshot.
 
 ## Consequences
 
-The FAIR-free release exposes conventional MOEA/MOP experiments, metrics,
-statistics, visualization and persistence without claiming that experimental
-FAIR measurements are already certified. Historical revisions of this ADR
-remain available in Git history; they are not the active public API contract.
+- Direct metric calls are first-class, documented, and testable public API.
+- Results from direct calls and from `audit()` can be compared without a hidden
+  change of calibration context.
+- The audit becomes an orchestrator and synthesizer rather than an exclusive
+  gateway to the clinical layer.
+- Public clinical views can consume canonical result objects without defining
+  independent diagnostic semantics, consistent with ADR 0040.
+- ADR 0039 remains authoritative for namespace grammar, comparison semantics,
+  and removal of `summary()`, but its "one public diagnostic entrypoint"
+  restriction is superseded by this ADR.
+
+## Relationship to Earlier Decisions
+
+- [ADR 0026](0026-clinical-metrology.md) established the metrological clinical
+  model.
+- [ADR 0028](0028-refined-clinical-diagnostics-v0.9.1.md) refined the physical
+  and quality layers.
+- [ADR 0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) established
+  the canonical namespace and former audit-only public surface.
+- [ADR 0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) requires
+  programmatic parity between canonical analytical results and views.
+
+## Temporary release exception — 2026-11-17 (maintainer-authorized)
+
+**Scope: FAIR-free 0.17.x/1.0.0 preparation.** The maintainer authorized
+the architectural exception while FAIR physical metrics, Q-scores, and the
+clinical audit remain research in progress. The public `mb.clinic` namespace
+and its endpoints specified above are **temporarily unavailable** in the
+FAIR-free release. Public absence checks are therefore intentional during
+this release; they do not redefine the semantics of any conventional
+`mb.metrics` indicator or the MOP calibration API.
+
+The original parity contract above remains the historical requirement for
+reintroduction: direct clinical metric calls and the corresponding aggregate
+audit must use equivalent diagnostic contexts and numerical semantics.
+Reintroducing FAIR requires a separate ADR/review and independent test
+evidence. In particular, `mop.calibrate()` and Ground Truth are
+FAIR-independent, and cannot be removed or reinterpreted under this exception.
+
+This exception supersedes only the availability requirement of this ADR
+during the FAIR-free release. The historical decision is preserved verbatim.
