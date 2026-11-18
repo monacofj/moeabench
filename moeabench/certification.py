@@ -352,3 +352,31 @@ def register_numeric_history(root=None, *, evidence_url=None, counts=None):
         "created_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     return _write_once(output, document)
+
+
+def certification_history(root=None):
+    """Enumerate recorded certificates; never infer numerical agreement from versions."""
+    base = Path(root) if root is not None else _RESOURCE_ROOT
+    results = []
+    if not base.exists():
+        return results
+    for path in sorted(base.glob("*/numeric-certificate.json")):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        if record.get("schema") != "moeabench-numeric-certificate":
+            raise ValueError("Invalid stored numerical certificate: " + str(path))
+        results.append({
+            "version": record["version"], "source_revision": record["source_revision"],
+            "environment": record["environment"],
+            "numerical_fixtures_sha256": record["numerical_fixtures_sha256"],
+            "evidence_url": record.get("evidence_url"), "numeric_certified": True,
+            "performance_certified": None,
+        })
+    return results
+
+
+def matching_certified_environments(current=None, root=None):
+    """Report exact version fingerprint matches, not numerical equivalence claims."""
+    from .environment_verification import snapshot
+    fingerprint = snapshot() if current is None else current
+    return [entry for entry in certification_history(root)
+            if entry["environment"] == fingerprint]
