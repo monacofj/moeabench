@@ -15,6 +15,16 @@ on the behaviors actually tested**. A fixed seed and matching dependency
 versions do not by themselves prove bit-for-bit identity on other machines.
 In particular, extremely small changes in NSGA-III energy reference
 directions have been observed to affect later evolutionary selection.
+The later controlled investigation of issue
+[#92](https://github.com/monacofj/moeabench/issues/92)
+isolated NumPy `power` dispatch and the OpenBLAS CPU kernel as
+contributing to the observed NSGA-III/DPF1 numerical regression.
+A pinned Linux/x86_64 reference profile reproduced the **unchanged**
+historical final front and the complete basic numerical suite in two
+tested Ubuntu CI environments. This demonstrates the importance of
+capturing effective native numerical dispatch, beyond package versions,
+for reproducibility-sensitive experiments. It does not prove universal
+bitwise equivalence across other CPU/runtime combinations.
 
 The environment verification interface distinguishes:
 
@@ -35,8 +45,13 @@ The environment verification interface distinguishes:
 `exp.run()` performs the inexpensive version comparison automatically and
 advises about unverified environments; it does **not** run stability tests.
 `exp.report()` summarizes cached states without triggering expensive work.
-See [Environment verification](environment-verification.md) and
-[ADR 0050](adr/0050-certified-environment-verification-and-provenance.md).
+See [Environment verification](environment-verification.md),
+the [complete testing manual](test.md), and
+[ADR 0050](adr/0050-certified-environment-verification-and-provenance.md)
+for the active deterministic/opt-in statistical test separation,
+reference-runtime preflight, and formal `--certify` policy.
+The shipped developer manifest still identifies a historically certified
+0.16.1 environment; a successful CI job does not update that manifest.
 
 **Important limitation.** The earlier wording in this document about
 universal "exactly reproducible" and "100% blindagem" is an *aspiration*,
