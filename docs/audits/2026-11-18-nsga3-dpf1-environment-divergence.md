@@ -45,3 +45,23 @@ The **very first SBX crossover** received identical input arrays (SHA256 prefix 
 A separate fixed-input experiment evaluated 24 decision vectors archived from the passing generation 1. Both jobs reproduced all 72 recorded DPF1 objective values **bit-for-bit**, including the projected redundant objective. NumPy cosine and scalar `math.cos` agreed for those inputs; `np.dot` and explicit multiplication-plus-addition differed locally by at most `1.4210854715202004e-14` but the actual DPF1 output matched the historical observation exactly. The fixed-input result supports that the observed cross-run divergence begins in variable generation, not when the same variables are passed into DPF1 in the tested environments.
 
 **Remaining diagnosis:** compare the exact first SBX output values across the success/failure jobs (not only their hashes), test whether host-specific SIMD or transcendental functions explain the difference, and determine how the sub-ulp variation propagates into selection at generation 7. No rounding or production change is justified solely by these observations.
+
+## Exact isolated SBX replay and scalar-power control (2026-11-18)
+
+Source review of `pymoo==0.6.2` identified multiple `np.power` calls in the Simulated Binary Crossover calculation. A new **diagnostic-only** replay captured the first 2×12×6 parent array and complete NumPy PCG64 state at the start of the crossover. Replaying the actual `SBX._do` with precisely those inputs and state reproduced the recorded vectorized output bit-for-bit.
+
+In the failing environment, the NumPy-vectorized result had SHA256 `e25e371e64507004408a6234839e828a61409c982d84b54035eadb88d81e5ad5`. Temporarily evaluating the same crossover's power operations with scalar `math.pow` instead produced SHA256 `7ebb5ff46d6fe547fc76e32690b10bc1b09a4e288b81fa876dcd82ed12f9e507`: this **exactly equals the first SBX output previously recorded in the passing CI run**. The maximum absolute element difference was `5.551115123125783e-17`. This is direct evidence of an environment-sensitive floating-point computation inside pymoo's SBX implementation, independent of stochastic seed selection.
+
+A separate whole-trajectory diagnostic, [run 44315326465](https://github.com/monacofj/moeabench/actions/runs/44315326465), performed three otherwise identical twelve-generation NSGA3/DPF1 runs in both the default and single-thread numerical jobs:
+
+| Diagnostic mode | Final point count | Sorted final-front SHA256 | Same in both tested jobs? |
+|---|---:|---|---|
+| Unmodified pymoo operators | 2 | `2601f31848814a6d7f818bddceddcc6dde8601da7373d5ce9cd477e51f393f43` | Yes |
+| Scalar power **only within SBX** | 3 | `e5ff34be8acb8036db9c994295dc5345a27173d60aa20b3f8ec417c96a8b9f51` | Yes |
+| Scalar power within SBX and polynomial mutation | 3 | `a302cf44654205e6445595816ca56b97b8e7b9880f9eb8f27757c679d31481f5` | Yes |
+
+The certified historical successful front is `77dc14fcde9e939ad162ec4513254a5809a5dd6b76fd32e7a58e8c5b97205086` (3 points). **Neither diagnostic scalar mode reproduces its bit-level values.** The experiment therefore supports `np.power` inside SBX as a demonstrable source of the initial drift, while it does **not** establish a production-compatible replacement. Matching only the nondominated point count is insufficient to certify reproducibility.
+
+All scalar-power substitutions used temporary Python mocking inside the diagnostic script; the production pymoo adapter, mutation policy, existing regression tests, seeds and golden references remain unmodified.
+
+**Release decision gate:** do not adopt scalar `math.pow`, relax the front comparison, or refresh reference values solely to obtain a green check. A production change would alter solver numerical behavior and needs explicit scientific review of impact across MOEAs/MOPs, reproducibility guarantees, external reference compatibility and applicable ADRs. PR #91 remains draft.
