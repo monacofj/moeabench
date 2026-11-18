@@ -346,6 +346,13 @@ def register_numeric_history(root=None, *, evidence_url=None, counts=None):
         "version": version(show=False),
         "source_revision": _revision(),
         "environment": snapshot(),
+        "platform": platform.platform(),
+        "numerical_profile": {
+            name: os.environ.get(name) for name in (
+                "NPY_DISABLE_CPU_FEATURES", "OPENBLAS_CORETYPE",
+                "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS"
+            )
+        },
         "numerical_fixtures_sha256": digests,
         "evidence_url": evidence_url,
         "counts": counts,
