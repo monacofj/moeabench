@@ -28,6 +28,7 @@ BASIC_UNIT_ROOT_FILES = {
 
 STABILITY_BASIC_FILES = {
     "tests/test_stability_basic.py",
+    "tests/test_stability_metrics.py",
 }
 
 STABILITY_SMOKE_FILES = {
