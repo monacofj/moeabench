@@ -1,0 +1,120 @@
+name: "Issue 92 - NumPy SIMD dispatch diagnostics"
+
+on:
+  push:
+    branches:
+      - investigate/92-simd-dispatch
+  workflow_dispatch:
+
+jobs:
+  controlled-simd:
+    name: "SBX SIMD control on ${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install the same pinned numerical stack
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+      - name: Run identical initial SBX and full trajectory with 4 CPU dispatch masks
+        shell: bash
+        env:
+          PYTHONHASHSEED: "0"
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+          MKL_NUM_THREADS: "1"
+        run: |
+          set -u
+          mkdir -p issue92-results
+          for mode in native no_avx512 no_avx2_fma3 no_advanced; do
+            case "$mode" in
+              native) mask="" ;;
+              no_avx512) mask="AVX512F" ;;
+              no_avx2_fma3) mask="AVX2,FMA3" ;;
+              no_advanced) mask="AVX512F,AVX2,FMA3" ;;
+            esac
+            echo "=== $mode: NPY_DISABLE_CPU_FEATURES='$mask' ==="
+            printf '%s\n' "$mask" > "issue92-results/$mode.mask"
+            env NPY_DISABLE_CPU_FEATURES="$mask" python - <<'PY' > "issue92-results/$mode.environment.json" 2> "issue92-results/$mode.environment.err"
+          import io, json, os, platform, contextlib, numpy as np
+          from importlib import metadata
+          out=io.StringIO()
+          with contextlib.redirect_stdout(out):
+              np.show_runtime()
+          try:
+              from numpy.lib.introspect import opt_func_info
+              power = opt_func_info(func_name="power", signature="float64")
+          except (ImportError, TypeError, AttributeError) as err:
+              power = {"error": str(err)}
+          print(json.dumps({
+              "numpy":np.__version__,
+              "python":platform.python_version(),
+              "os":platform.platform(),
+              "host_cpu":platform.processor(),
+              "mask":os.environ.get("NPY_DISABLE_CPU_FEATURES", ""),
+              "cpu_features":getattr(np._core._multiarray_umath,"__cpu_features__",{}),
+              "numpy_runtime":out.getvalue(),
+              "power_dispatch":power,
+              "blas_threads":os.environ.get("OPENBLAS_NUM_THREADS")
+          },default=str,sort_keys=True))
+          PY
+            echo $? > "issue92-results/$mode.environment.exit"
+            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_variation.py > "issue92-results/$mode.variation.json" 2> "issue92-results/$mode.variation.err"
+            echo $? > "issue92-results/$mode.variation.exit"
+            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_scalar_power.py > "issue92-results/$mode.trajectory.txt" 2> "issue92-results/$mode.trajectory.err"
+            echo $? > "issue92-results/$mode.trajectory.exit"
+          done
+      - name: Print compact cross-mask comparison (diagnostic only)
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path("issue92-results")
+          for mode in ("native","no_avx512","no_avx2_fma3","no_advanced"):
+              def read(suffix):
+                  p=root/f"{mode}.{suffix}"
+                  return p.read_text(encoding="utf-8") if p.exists() else ""
+              codes={name:read(f"{name}.exit").strip() for name in ("environment","variation","trajectory")}
+              try:
+                  var=json.loads(read("variation.json"))
+                  first=var["events"][0]
+                  sbx=var["sbx_replay"]
+                  summary={"mode":mode, "mask":read("mask").strip(),
+                           "exit_codes":codes,
+                           "sbx_input":first["input"]["sha256"],
+                           "sbx_output":first["output"]["sha256"],
+                           "sbx_rng_before":first["rng_before"],
+                           "sbx_rng_after":first["rng_after"],
+                           "sbx_replay":sbx,
+                           "run_final":var["final"]}
+                  try:
+                      results=[json.loads(line[7:]) for line in read("trajectory.txt").splitlines()
+                               if line.startswith("RESULT ")]
+                      summary["full_modes"]={v["mode"]:v["final"] for v in results}
+                  except Exception as e: summary["trajectory_parse_error"]=str(e)
+                  try:
+                      runtime=json.loads(read("environment.json"))
+                      summary["cpu_features"]={k:v for k,v in runtime["cpu_features"].items()
+                          if k in {"AVX","AVX2","FMA3","AVX512F","AVX512_SKX","AVX512_SPR"}}
+                      summary["power_dispatch"]=runtime["power_dispatch"]
+                  except Exception as e: summary["runtime_parse_error"]=str(e)
+                  print("ISSUE92_SUMMARY "+json.dumps(summary,sort_keys=True))
+              except Exception as e:
+                  print("ISSUE92_ERROR "+json.dumps({"mode":mode,"exit_codes":codes,
+                    "error":str(e),"stderr":read("variation.err")[-1800:]}))
+          PY
+      - name: Preserve all numerical evidence without changing any baseline
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: issue92-simd-${{ matrix.os }}
+          path: issue92-results/
+          if-no-files-found: warn
