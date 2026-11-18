@@ -41,6 +41,19 @@ def verification_status(exp=None):
     return environment_report(exp)
 
 
+
+def certification_history():
+    """Read immutable numeric certification records supplied with this release."""
+    from .certification import certification_history as _history
+    return _history()
+
+
+def matching_certified_environments():
+    """List exact environment version matches; not proof of numerical identity."""
+    from .certification import matching_certified_environments as _matching
+    return _matching()
+
+
 def check_dependencies():
     """Prints a report of installed optional dependencies."""
     deps = ["numpy", "matplotlib", "pandas", "plotly", "IPython", "joblib"]
