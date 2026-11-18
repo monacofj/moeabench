@@ -3219,7 +3219,7 @@
     "DPF1": {
       "points": [
         [
-          0.0,
+          0,
           0.5,
           0.42756839999999996
         ],
@@ -5775,7 +5775,7 @@
         ],
         [
           0.5,
-          0.0,
+          0,
           0.171
         ]
       ],
@@ -5788,19 +5788,19 @@
     "DTLZ2": {
       "points": [
         [
-          1.0,
-          0.0,
-          0.0
+          1,
+          0,
+          0
         ],
         [
           6.123233995736766e-17,
-          1.0,
-          0.0
+          1,
+          0
         ],
         [
           6.123233995736766e-17,
-          0.0,
-          1.0
+          0,
+          1
         ],
         [
           0.6367516175402982,
@@ -10927,5 +10927,13 @@
   "schema": "moeabench-performance-reference",
   "source_revision": "0d3e66804351e23b93fb483ff25e178e06ef6e12",
   "source_version": "0.18.0",
-  "status": "CANDIDATE_REQUIRES_REVIEW"
+  "status": "APPROVED",
+  "approval": {
+    "reviewed_by": "Independent GitHub Actions reproducibility and provenance audit (issue #108)",
+    "review_type": "automated_technical_review",
+    "evidence_url": "https://github.com/monacofj/moeabench/actions/runs/44409693329",
+    "candidate_sha256": "8e635a027520b22fc14aa703ba85d105207b708cf05c885407b69ecb22212730",
+    "review_scope": "full checksum/protocol/64-seed integrity and 18 deterministic independent replays across all 6 configurations",
+    "review_date": "2026-11-18"
+  }
 }
