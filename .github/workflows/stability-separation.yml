@@ -56,10 +56,29 @@ jobs:
       - name: Diagnose pre-existing NSGA3 x DPF1 front divergence
         if: failure()
         run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
-      - name: Preserve divergence diagnostic as artifact
+      - name: Compare failing solver case against main and old-fair in same runtime
+        if: failure()
+        shell: bash
+        run: |
+          set +e
+          git fetch --no-tags --depth=1 origin refs/heads/main:refs/remotes/origin/main refs/heads/old-fair:refs/remotes/origin/old-fair
+          for branch in main old-fair; do
+            tmpdir="$(mktemp -d)"
+            git worktree add --detach "$tmpdir" "refs/remotes/origin/$branch"
+            echo "revision=$(git -C "$tmpdir" rev-parse HEAD)" > "comparison-$branch.log"
+            python -m pip install -e "$tmpdir" -q >> "comparison-$branch.log" 2>&1
+            ( cd "$tmpdir" && python -m pytest tests/test_stability_basic.py -k 'NSGA3xDPF1' -q ) >> "$GITHUB_WORKSPACE/comparison-$branch.log" 2>&1
+            echo "test_exit_code=$?" >> "comparison-$branch.log"
+            git worktree remove --force "$tmpdir"
+          done
+          exit 0
+      - name: Preserve failure and historical-control evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: nsga3-dpf1-diagnostic
-          path: nsga3-dpf1-diagnostic.log
+          name: nsga3-dpf1-diagnostic-and-controls
+          path: |
+            nsga3-dpf1-diagnostic.log
+            comparison-main.log
+            comparison-old-fair.log
           if-no-files-found: warn
