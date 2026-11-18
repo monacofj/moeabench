@@ -17,12 +17,12 @@ from scipy.spatial.distance import cdist
 import moeabench as mb
 
 
-DATA_JSON_PATH = os.path.join(os.path.dirname(__file__), "calibration_reference_audit_v0.13.2.json")
+GT_GEOMETRY_PATH = os.path.join(os.path.dirname(__file__), "stability_gt_geometry_reference.json")
 FRONTS_JSON_PATH = os.path.join(os.path.dirname(__file__), "stability_reference_fronts.json")
 GT_JSON_PATH = os.path.join(os.path.dirname(__file__), "stability_reference_gt.json")
 
-with open(DATA_JSON_PATH, "r") as f:
-    CALIBRATION_REF_DATA = json.load(f)
+with open(GT_GEOMETRY_PATH, "r") as f:
+    STABILITY_GT_GEOMETRY = json.load(f)
 
 with open(FRONTS_JSON_PATH, "r") as f:
     STABILITY_FRONTS = json.load(f)
@@ -54,7 +54,7 @@ def _sort_rows(arr: np.ndarray) -> np.ndarray:
 
 
 def _gt_geometry_signature(problem_name: str) -> tuple[float, float]:
-    p_data = CALIBRATION_REF_DATA["problems"][problem_name]
+    p_data = STABILITY_GT_GEOMETRY["problems"][problem_name]
     expected = np.asarray(p_data["gt_points"], dtype=float)
     mop = _build_problem(problem_name)
     observed = np.asarray(mop.pf(n_points=len(expected)), dtype=float)
