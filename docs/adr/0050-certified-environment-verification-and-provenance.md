@@ -140,3 +140,40 @@ complete `--deep` suite as a prerequisite for `--certify`. The original
 historical wording is retained for traceability; the CLI/documentation
 transition is part of the next implementation stage. No change to a regression
 test or frozen baseline is authorized by this amendment.
+
+## Implementation record — draft PR #91 (2026-11-18)
+
+The code implements the 2026-11-17 separation as two explicitly selected
+paths:
+
+- `python test.py --numeric-stability --smoke|--basic` uses the existing
+  deterministic `scope_stability` pytest regressions. `--stability` remains an
+  alias. The historical `--stability --deep` and no-scope `--deep` fail
+  explicitly because the required old statistical artifact is missing.
+- `python test.py --performance-stability --performance-reference PATH` and
+  `mb.system.verify_performance_stability(PATH)` use an externally supplied
+  versioned reference. No default statistical run count or reference is
+  fabricated, and a numerical failure never triggers performance testing.
+- `python test.py --certify` uses the complete `basic` development suite
+  before any change to the manifest. This retains the requirement to review
+  a new environment fingerprint before committing it.
+
+The initial **candidate** performance-reference protocol records source
+revision, reference origin, reviewer, fixed objective-space front, explicit
+MOP/MOEA parameters, selected seeds and seed-paired previous values. The
+runner compares minimized metrics with a one-sided paired t-test and requires
+both statistical significance and a predeclared practical effect. Case
+selection, minimum useful replication count, external source credibility,
+multiplicity treatment, and statistical power still require scientific review
+before this protocol becomes a release certification gate. The protocol's
+`PASSED` status means only that its specified regression rule did not fire.
+
+PR #91's CI reproduced the previously documented `NSGA3 x DPF1` two-versus-
+three point discrepancy even with Python 3.14.4 and the pinned NumPy/SciPy/
+pymoo/DEAP/moocore/pandas versions. This is an unresolved numerical stability
+failure, **not** a justification to regenerate the frozen front or alter the
+existing regression test. The repository's manifest still identifies MoeaBench
+0.16.1 and must not be refreshed until the full currently required suite passes.
+
+No accepted numerical tolerance, reference front, seed contract, existing
+regression test, or scientific baseline was changed in this stage.
