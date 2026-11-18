@@ -615,11 +615,11 @@ the new CI checks passed.
 
 ### 9.1 Certification before 1.0.0
 
-The project's package metadata is currently **0.17.0**, and the
-verified fixes have accumulated after that release. An intermediate
-release candidate such as **0.18.0** can be prepared and certified
-before moving to 1.0.0, subject to normal version/release review.
-Its certification should record **0.18.0**, not 1.0.0.
+The project is preparing an intermediate **0.18.0 release candidate**, with
+the changes accumulated after 0.17.0. The candidate is to be validated
+and certified before proceeding to 1.0.0; it is not described as a
+published release solely because its version metadata was updated.
+Its certification records **0.18.0**, not 1.0.0.
 
 When 1.0.0 is prepared, the package version should be changed
 first and the appropriate suites and environment certification
