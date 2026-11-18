@@ -580,13 +580,19 @@ For a developer-prepared candidate version:
 1. Finalize the code and the candidate version number.
 2. Establish the designated numerical reference runtime and execute
    the **preflight** from Section 7.
-3. Run `python test.py --basic`, including all unit, integration-basic
+3. Prepare the repository's **integration-example archives**. The integration
+   suite reads `examples/example_full_exp1.zip` and
+   `examples/example_full_exp2.zip`; a fresh checkout does not necessarily
+   contain them. The regular unit-contract CI workflow creates them before
+   integration, so a clean developer reference environment must do the
+   same, with the matching MOP/MOEA construction shown below.
+4. Run `python test.py --basic`, including all unit, integration-basic
    and numerical-basic checks.
-4. Run `python test.py --certify`. It **repeats** the complete basic
+5. Run `python test.py --certify`. It **repeats** the complete basic
    battery with inherited `PYTEST_ADDOPTS` removed, to prevent external
    `-k`, `--ignore` and `--deselect` options from silently
    shrinking the suite.
-5. If any batch fails, the manifest is **not updated**. On success,
+6. If any batch fails, the manifest is **not updated**. On success,
    the runner writes a version snapshot to
    `moeabench/resources/certified_environment.json` via an
    intermediate `.pending` file. Review and commit that change
@@ -597,9 +603,39 @@ Commands in the prepared reference environment:
 
 ```bash
 python scripts/check_numerical_reference_runtime.py
+
+# Prepare the same two integration archives as the regular CI job:
+python - <<'PY'
+from pathlib import Path
+import moeabench as mb
+
+for algorithm, filename in (
+    (mb.moeas.NSGA2, "example_full_exp1.zip"),
+    (mb.moeas.NSGA3, "example_full_exp2.zip"),
+):
+    path = Path("examples") / filename
+    if path.exists():
+        continue
+    exp = mb.experiment(
+        mop=mb.mops.DTLZ2(M=3),
+        moea=algorithm(population=32, generations=8, seed=17),
+    )
+    exp.run(repeat=3, silent=True)
+    exp.save(str(path))
+PY
+
 python test.py --basic
 python test.py --certify
 ```
+
+The integration archives are **test prerequisites**, not mathematical or
+statistical baseline values. They are generated locally from a fixed,
+reviewed small example configuration; they are not replacements for
+frozen numerical fronts. A missing archive makes integration tests
+fail and correctly blocks `--certify`. The first controlled 0.18.0
+certification attempt exposed this difference between a bare checkout
+and the regular CI preparation; it was resolved by preparing the same
+archives, without modifying any historical test.
 
 The standalone `--certify` implementation currently enforces
 the full basic result but does **not** itself inspect actual CPU/BLAS
