@@ -9,6 +9,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 ## Status
 
 Accepted — approved by the maintainer on 2026-11-18 (issue #108).
+
+**Current normative implementation:** read the dated refinement and
+completion records at the **end of this ADR**. The earlier 24-run, 10%
+degradation, 5% familywise, and three-way *release verdict* proposals are
+superseded; they remain in the file only as architectural decision
+history. The operative study is 64 reference seeds, eight independent
+pilot pairs, up to 56 confirmatory pairs, 0.1% materiality, familywise
+1%, and a binary certification gate.
+
 This decision specifies the **target architecture and frozen experimental
 design**. Acceptance of the protocol does **not** imply that the new CLI,
 certification archive or performance baseline have already been generated.
@@ -309,3 +318,127 @@ the DPF1 case has a markedly different raw IGD+ scale, supporting
 the predetermined combined absolute/relative materiality rule.
 No MOP/MOEA source, numerical regression test, GT or historical
 fixture was modified during this probe.
+
+
+## Maintainer-directed refinement — 2026-11-18, implementation of issue #108
+
+This dated amendment **supersedes**, for implementation, the numerical
+archive duplication, 24-seed fixed-budget design, 10% mean-degradation
+margin, 0.01 absolute floor, and 5% familywise alpha stated earlier in
+this ADR. The earlier text is retained as decision history.
+
+**No new numerical-front archive per release.** Retain the current
+canonical frozen numerical regression fixtures once. A numerical
+certificate stores a compact manifest: software versions, effective
+runtime profile, numerical fixture hashes, test counts, evidence URL,
+and source revision. Existing 0.18.0 formal certification remains valid.
+Historical Git versions provide earlier fixtures when explicitly
+needed for actual comparison. Geometric reference fronts for a
+*statistical performance experiment*, however, are kept as an
+integral, frozen input to that experiment so future code cannot
+regenerate different fronts while claiming a comparable score.
+
+**Statistical risk policy.** For six fixed IGD+ MOP/MOEA cases,
+use familywise two-sided Student-t simultaneous intervals at
+`alpha=0.01` and a conservatively small, scale-relative
+materiality margin of **0.1% of each case's historical mean IGD+**,
+with only `1e-12` as a numerical zero floor. The 0.1% threshold is
+an explicit, reviewable **engineering tolerance** for the release
+sentinel, not a universal claim of scientific equivalence. No 10%
+or 0.01 floor is permissible. A future scientific decision changing
+the threshold must be authorized *before* candidate results are seen.
+
+**Prospective design, no invented pilot variance.** Record **64
+prespecified distinct seeds** per case for the first reference (six
+cases, 384 total solver runs, at 48 individuals and 60 generations).
+When comparing a candidate, run the first **eight seed pairs as a
+pilot** to estimate the *paired difference* standard deviation;
+these eight outcomes are **excluded from confirmatory analysis**.
+Determine the smallest confirmatory sample size using a noncentral
+Student-t design for **95% planned probability of concluding
+noninferiority at true zero mean difference** with the declared margin,
+case family and alpha, requiring at least eight and at most **56**
+new pairs per case. Missing power within this ceiling means no
+certificate, with reason `INSUFFICIENT_POWER`, rather than inventing
+variance or silently increasing the budget. When 56 or fewer are
+enough, run exactly that many new prespecified pairs from the remaining
+56 seeds. A predeclared family of six hypotheses stays fixed; no
+adaptive margin and no optional stopping. The calculation's model
+assumptions and realized confidence interval are reported, not
+misrepresented as guarantees.
+
+**Binary operational gate.** A release certificate is
+`CERTIFIED` only when all six simultaneous upper confidence
+bounds lie strictly below their respective allowable margins;
+otherwise `NOT_CERTIFIED`. Record detailed reasons:
+`REGRESSION_DETECTED`, `INSUFFICIENT_EVIDENCE`,
+`INSUFFICIENT_POWER` or `INVALID_REFERENCE`.
+These reasons do not create a third publish/accept decision.
+A failing or insufficient study **never updates its reference**.
+
+**Legacy code/tests.** No regression test is authorized for
+modification by this amendment. Existing synthetic unit tests
+asserting old CLI/v1/v2 behavior are to be audited before their
+replacement; the maintainer must receive specific advance warning
+and authorize any regression-test modifications. New regression
+tests may be added. A branch may implement the new protocol
+without deleting the old tested interface until that approval.
+
+**Prior audit data.** `tests/calibration_reference_audit_v0.13.2.json`
+is unrelated to versioned performance benchmarks. Replacing its
+use in existing numerical regression tests is a separate,
+test-affecting change requiring prior authorization, and is not
+a prerequisite to the statistical baseline.
+
+**No automatic baseline renewal.** Completing a numeric
+certificate does not invoke baseline recording. The
+`--record-performance-baseline` operation is a separately
+approved one-time creation of the 0.18.0 historical sample;
+`--certify-performance` always consumes a previously frozen
+sample, never writes or replaces it.
+
+
+## Completion and audit record — issue #108, 2026-11-18
+
+- The exact preapproved 0.18.0 source revision
+  `0d3e66804351e23b93fb483ff25e178e06ef6e12` passed the
+  [compact numerical certification](https://github.com/monacofj/moeabench/actions/runs/44403553093),
+  independently of performance baseline production. It stores
+  package/dependency version and native runtime information, regression
+  hashes and source revision. Historical numerical front targets are
+  **not duplicated per version**.
+- The source revision generated all **384 empirical performance
+  observations** in
+  [run 44401850675](https://github.com/monacofj/moeabench/actions/runs/44401850675).
+  The original candidate artifact SHA-256 was
+  `8e635a027520b22fc14aa703ba85d105207b708cf05c885407b69ecb22212730`.
+  An independent
+  [technical audit](https://github.com/monacofj/moeabench/actions/runs/44409693329)
+  reproduced that exact digest, validated the 64-seed sets and frozen
+  objective-reference hashes and independently replayed **three
+  solver runs per case** (18 total), all matching their stored IGD+
+  values. The subsequent `APPROVED` record states **automated
+  technical review**; it does not represent human inspection of
+  every experiment.
+- The old standalone statistical reference protocols, old public
+  performance-certification names and source modules were retired
+  before 1.0.0, with equivalent or stronger regression guards in the
+  migrated tests. The three public commands are independently
+  dispatched; no action may automatically renew performance baselines.
+- The previously retired diagnostic GT-audit artifact was found
+  referenced by numerical-stability tests. The exact 1000-point
+  geometry reference for DTLZ8, DTLZ9 and DPF5, plus exact sample
+  counts for DTLZ2/3/4, were copied into the dedicated
+  `tests/stability_gt_geometry_reference.json` fixture. The
+  **mathematical regression comparisons and numerical tolerances were
+  preserved**; the unrelated audit dataset was removed from the
+  active branch. No MOP or MOEA implementation changed.
+- The definitive public release gate is `CERTIFIED` only if **all**
+  six hypotheses establish noninferiority under the accepted
+  simultaneous interval. Any observed material regression or
+  insufficient evidence/power yields `NOT_CERTIFIED` and a
+  specific diagnostic cause, without editing the frozen reference.
+- The 0.18.0 performance artifact is the inaugural historical
+  reference, **not** a claim that a future 1.0.0 (or changed
+  0.18.0 source revision) is already certified. The version must
+  advance before certifying materially changed source code.

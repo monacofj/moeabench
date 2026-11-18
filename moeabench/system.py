@@ -25,12 +25,6 @@ def verify_stability(show: bool = True, **kwargs):
     return _verify(show=show, **kwargs)
 
 
-def verify_performance_stability(reference_path, show: bool = True):
-    """Explicit performance comparison; requires an externally reviewed reference."""
-    from .performance_stability import verify_performance as _verify
-    return _verify(reference_path, show=show)
-
-
 def verify_experiment(exp, show: bool = True):
     from .environment_verification import verify_experiment as _verify
     return _verify(exp, show=show)
@@ -39,6 +33,19 @@ def verify_experiment(exp, show: bool = True):
 def verification_status(exp=None):
     from .environment_verification import environment_report
     return environment_report(exp)
+
+
+
+def certification_history():
+    """Read immutable numeric certification records supplied with this release."""
+    from .certification import certification_history as _history
+    return _history()
+
+
+def matching_certified_environments():
+    """List exact environment version matches; not proof of numerical identity."""
+    from .certification import matching_certified_environments as _matching
+    return _matching()
 
 
 def check_dependencies():
@@ -201,7 +208,8 @@ __all__ = [
     "version",
     "verify_version",
     "verify_stability",
-    "verify_performance_stability",
+    "certification_history",
+    "matching_certified_environments",
     "verify_experiment",
     "verification_status",
     "check_dependencies",

@@ -42,7 +42,7 @@ functional plotting compatibility is tested in the integration suite.
 
 ## Developer certification
 
-From the developer reference environment, run `python test.py --basic` (unit, integration and numerical stability test suites). Then run `python test.py --certify`, which reruns the complete basic suite and updates `moeabench/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines. The legacy `--deep` statistical test has no usable baseline and is not accepted as release evidence. For a separate, explicit performance assessment, use `python test.py --performance-stability --performance-reference PATH` with an independently reviewed historical reference; see [Performance stability](performance-stability.md). A numerical failure never triggers this statistical assessment automatically.
+From the developer reference environment, run `python test.py --basic` (unit, integration and numerical stability test suites). Then run `python test.py --certify-numeric`, which reruns the complete basic suite and updates `moeabench/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines. The legacy `--deep` statistical test has no usable baseline and is not accepted as release evidence. For a separate, explicit performance assessment, use `python test.py --certify-performance --reference PATH --output CERT.json` with an approved historical reference; see [Performance stability](performance-stability.md). A numerical failure never triggers this statistical assessment automatically.
 
 Certified versions are not inferred from package dependency lower bounds or a random user's installation. If no developer-certified manifest has been committed, the status is UNCONFIGURED and certification is pending.
 
@@ -107,7 +107,7 @@ certification reproduced that prerequisite exactly. See the
 [complete testing manual](test.md) for the necessary archive-generation
 commands, scopes, and release safeguards.
 
-The standalone `--certify` command replays the full basic suite but
+The current `--certify-numeric` command replays the full basic suite and checks the effective native profile; the original historical `--certify` command
 does not itself inspect CPU/BLAS dispatch; the explicit preflight is
 required for the designated profile. For the future 1.0.0 version,
 the software version must be updated and the complete certification

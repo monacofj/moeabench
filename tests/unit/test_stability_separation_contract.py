@@ -1,152 +1,146 @@
 # SPDX-FileCopyrightText: 2026 Monaco F. J.
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""New contracts for explicit numerical/statistical test separation.
+"""Issue #108: guard independent numeric and performance certification dispatch.
 
-Historical regression tests, fixtures and benchmark targets are not altered.
+Migrates the superseded CLI contract without weakening its original safety
+requirements: no implicit cross-trigger, no missing references, and fail closed.
 """
 from __future__ import annotations
 
 import importlib.util
-import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
 
 import pytest
 
-from moeabench import performance_stability as ps
+from moeabench import certification as cert
 
 
 @pytest.fixture
 def runner():
-    script = Path(__file__).resolve().parents[2] / "test.py"
-    spec = importlib.util.spec_from_file_location("_moeabench_test_runner", script)
+    path = Path(__file__).resolve().parents[2] / "test.py"
+    spec = importlib.util.spec_from_file_location("_certification_dispatch", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
 
-@pytest.fixture
-def reference(tmp_path):
-    case = {
-        "id": "paired-igd",
-        "mop": {"name": "DTLZ2", "kwargs": {"M": 2}},
-        "moea": {"name": "NSGA2", "kwargs": {"population": 12, "generations": 2}},
-        "metric": "igd",
-        "reference_front": [[0.0, 1.0], [1.0, 0.0]],
-        "seeds": [11, 12, 13],
-        "baseline_values": [0.1, 0.11, 0.12],
-        "max_relative_degradation": 0.1,
-        "max_absolute_degradation": 0.02,
-        "alpha": 0.05,
-    }
-    document = {
-        "schema": ps.SCHEMA,
-        "provenance": {
-            "source_revision": "prior-release-sha",
-            "reference_origin": "separate, reviewed historical result",
-            "reviewed_by": "scientific-maintainer",
-        },
-        "cases": [case],
-    }
-    path = tmp_path / "performance.json"
-    path.write_text(json.dumps(document), encoding="utf-8")
-    return path, document
-
-
-def test_performance_reference_missing_or_unreviewed_fails_closed(tmp_path, reference):
-    with pytest.raises(FileNotFoundError):
-        ps.load_reference(tmp_path / "missing.json")
-    path, document = reference
-    document["provenance"]["reviewed_by"] = ""
-    path.write_text(json.dumps(document), encoding="utf-8")
-    with pytest.raises(ValueError, match="provenance"):
-        ps.load_reference(path)
-
-
-def test_performance_reference_rejects_seed_mismatch_and_duplicate_ids(reference):
-    path, document = reference
-    document["cases"][0]["seeds"] = [11, 11, 12]
-    path.write_text(json.dumps(document), encoding="utf-8")
-    with pytest.raises(ValueError, match="seeds"):
-        ps.load_reference(path)
-    document["cases"][0]["seeds"] = [11, 12, 13]
-    document["cases"].append(document["cases"][0].copy())
-    path.write_text(json.dumps(document), encoding="utf-8")
-    with pytest.raises(ValueError, match="Duplicate"):
-        ps.load_reference(path)
-
-
-def test_independent_paired_statistical_decision(reference):
-    case = reference[1]["cases"][0]
-    assert ps.assess_case(case, [0.1, 0.11, 0.12])["status"] == "PASSED"
-    regression = ps.assess_case(case, [0.2, 0.21, 0.22])
-    assert regression["status"] == "FAILED"
-    assert regression["runs"] == 3
-    assert regression["mean_delta"] == pytest.approx(0.1)
-    assert ps.assess_case(case, [0.1, 0.13, 0.12])["status"] == "PASSED"
-
-
-def test_performance_runs_only_explicit_cases_and_seeds(monkeypatch, reference):
-    path, _ = reference
-    called = []
-    def fake_measure(case, seed):
-        called.append((case["id"], seed))
-        return 0.1 + 0.01 * (seed - 11)
-
-    monkeypatch.setattr(ps, "_measure_case", fake_measure)
-    result = ps.verify_performance(path, show=False)
-    assert result["status"] == "PASSED"
-    assert called == [("paired-igd", 11), ("paired-igd", 12), ("paired-igd", 13)]
-
-
 def test_numeric_dispatch_never_calls_performance(monkeypatch, runner):
-    called = []
+    calls = []
     monkeypatch.setattr(sys, "argv", ["test.py", "--numeric-stability", "--basic"])
     monkeypatch.setattr(runner, "_run_pytest", lambda label, args, marker: (
-        called.append((label, marker)) or True,
-        {"collected": 1, "passed": 1, "failed": 0, "errors": 0, "skipped": 0, "warnings": 0},
+        calls.append((label, marker)) or True,
+        {"collected": 1, "passed": 1, "failed": 0, "errors": 0,
+         "skipped": 0, "warnings": 0},
         0.0,
     ))
     monkeypatch.setattr(runner, "_print_final_summary", lambda rows: None)
-    monkeypatch.setattr(ps, "verify_performance", lambda *a, **k: pytest.fail(
-        "Performance verification was called implicitly"
+    monkeypatch.setattr(cert, "_measure", lambda *a, **k: pytest.fail(
+        "Performance measurement invoked implicitly by numerical stability"
     ))
-    with pytest.raises(SystemExit) as exc:
+    with pytest.raises(SystemExit) as e:
         runner.main()
-    assert exc.value.code == 0
-    assert called == [("STABILITY (BASIC)", "scope_stability and (level_smoke or level_basic)")]
+    assert e.value.code == 0
+    assert calls == [("STABILITY (BASIC)", "scope_stability and (level_smoke or level_basic)")]
 
 
-def test_obsolete_deep_is_not_reported_as_success(monkeypatch, runner):
-    monkeypatch.setattr(sys, "argv", ["test.py", "--stability", "--deep"])
-    with pytest.raises(SystemExit) as exc:
+def test_old_public_aliases_are_not_silently_accepted(monkeypatch, runner):
+    for args in (["--certify"], ["--performance-stability"], ["--stability"],
+                 ["--performance-reference", "any.json"]):
+        monkeypatch.setattr(sys, "argv", ["test.py", *args])
+        with pytest.raises(SystemExit) as e:
+            runner.main()
+        assert e.value.code == 2
+
+
+def test_deep_without_statistical_reference_fails_closed(monkeypatch, runner):
+    monkeypatch.setattr(sys, "argv", ["test.py", "--numeric-stability", "--deep"])
+    with pytest.raises(SystemExit) as e:
         runner.main()
-    assert exc.value.code == 2
+    assert e.value.code == 2
 
 
-def test_performance_requires_explicit_reference(monkeypatch, runner):
-    monkeypatch.setattr(sys, "argv", ["test.py", "--performance-stability"])
-    with pytest.raises(SystemExit) as exc:
-        runner.main()
-    assert exc.value.code == 2
+def test_performance_certification_requires_explicit_reference_and_output(monkeypatch, runner):
+    for args in (["--certify-performance"], ["--certify-performance", "--output", "out.json"],
+                 ["--certify-performance", "--reference", "reference.json"]):
+        monkeypatch.setattr(sys, "argv", ["test.py", *args])
+        with pytest.raises(SystemExit) as e:
+            runner.main()
+        assert e.value.code == 2
 
 
-def test_performance_dispatch_does_not_start_pytest_or_numeric_suite(monkeypatch, runner, reference):
-    monkeypatch.setattr(sys, "argv", [
-        "test.py", "--performance-stability", "--performance-reference", str(reference[0])
-    ])
+def test_performance_dispatch_never_runs_numeric_suite(monkeypatch, runner, tmp_path):
+    out = tmp_path / "out.json"
+    calls = []
+    monkeypatch.setattr(sys, "argv", ["test.py", "--certify-performance",
+                                      "--reference", "approved.json", "--output", str(out)])
     monkeypatch.setattr(runner, "_run_pytest", lambda *a, **k: pytest.fail(
-        "Numerical stability invoked by performance check"
+        "Numerical stability suite invoked by performance certification"
     ))
-    monkeypatch.setattr(ps, "verify_performance", lambda path: {
-        "status": "PASSED", "source": path, "cases": []
-    })
-    with pytest.raises(SystemExit) as exc:
+    monkeypatch.setattr(runner, "_certify_environment", lambda: pytest.fail(
+        "Numeric certification invoked by performance certification"
+    ))
+    monkeypatch.setattr(cert, "certify_performance", lambda source, destination: (
+        calls.append((source, destination)) or
+        (out, {"status": "CERTIFIED"})
+    ))
+    with pytest.raises(SystemExit) as e:
         runner.main()
-    assert exc.value.code == 0
+    assert e.value.code == 0
+    assert calls == [("approved.json", str(out))]
 
 
-def test_certification_failure_never_writes_manifest(monkeypatch, runner):
-    monkeypatch.setattr(runner.subprocess, "run", lambda cmd, **kwargs: SimpleNamespace(returncode=1))
+def test_statistically_insufficient_evidence_blocks_release(monkeypatch, runner, tmp_path):
+    monkeypatch.setattr(sys, "argv", ["test.py", "--certify-performance",
+                                      "--reference", "approved.json",
+                                      "--output", str(tmp_path / "out.json")])
+    monkeypatch.setattr(cert, "certify_performance", lambda *a: (
+        tmp_path / "out.json", {"status": "NOT_CERTIFIED"}
+    ))
+    with pytest.raises(SystemExit) as e:
+        runner.main()
+    assert e.value.code == 1
+
+
+def test_baseline_record_does_not_certify_or_overwrite(monkeypatch, runner, tmp_path):
+    destination = tmp_path / "candidate.json"
+    calls = []
+    monkeypatch.setattr(sys, "argv", ["test.py", "--record-performance-baseline",
+                                      "--output", str(destination)])
+    monkeypatch.setattr(runner, "_certify_environment", lambda: pytest.fail(
+        "Baseline creation must not launch numeric certification"
+    ))
+    monkeypatch.setattr(cert, "create_performance_baseline", lambda path: (
+        calls.append(path) or destination
+    ))
+    with pytest.raises(SystemExit) as e:
+        runner.main()
+    assert e.value.code == 0
+    assert calls == [str(destination)]
+
+
+def test_numeric_certification_failure_never_writes_manifest(monkeypatch, runner):
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda cmd, **kw: SimpleNamespace(returncode=1))
     assert runner._certify_environment() == 1
+
+
+def test_numeric_certification_does_not_record_performance(monkeypatch, runner, tmp_path):
+    monkeypatch.setattr(sys, "argv", ["test.py", "--certify-numeric"])
+    calls = []
+    monkeypatch.setattr(runner.subprocess, "run",
+                        lambda *a, **k: SimpleNamespace(returncode=0))
+    monkeypatch.setattr(runner, "_certify_environment", lambda: 0)
+    monkeypatch.setattr(cert, "ensure_numeric_certification_slot", lambda: tmp_path)
+    monkeypatch.setattr(cert, "register_numeric_history", lambda **kw: (
+        calls.append(kw) or tmp_path / "numeric-certificate.json"
+    ))
+    monkeypatch.setattr(cert, "create_performance_baseline", lambda *a, **k: pytest.fail(
+        "Numeric certification unexpectedly recorded performance baseline"
+    ))
+    with pytest.raises(SystemExit) as e:
+        runner.main()
+    assert e.value.code == 0
+    assert len(calls) == 1
+    assert calls[0]["counts"]["status"] == "PASSED"

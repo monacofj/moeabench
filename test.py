@@ -233,7 +233,7 @@ def _list_tests(scope: str | None, level: str | None):
 
 
 def _selected_scope(args) -> str | None:
-    for scope in (*SCOPES, "numeric-stability", "performance-stability"):
+    for scope in ("unit", "integration", "numeric-stability"):
         if getattr(args, scope.replace("-", "_")):
             return scope
     return None
@@ -289,45 +289,83 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
-    parser.add_argument("--certify", action="store_true", help="Run complete basic suite; certify versions only on success")
+    certification_group = parser.add_mutually_exclusive_group()
+    certification_group.add_argument("--certify-numeric", action="store_true", help="Certify basic numeric suite and archive compact version evidence")
+    certification_group.add_argument("--record-performance-baseline", action="store_true", help="Generate an immutable performance reference for review")
+    certification_group.add_argument("--certify-performance", action="store_true", help="Evaluate an approved historical performance reference")
+    parser.add_argument("--reference", metavar="JSON", help="Approved historical reference for --certify-performance")
+    parser.add_argument("--output", metavar="JSON", help="Immutable reference/certificate output path")
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
-    scope_group.add_argument("--stability", action="store_true", help="Legacy alias for --numeric-stability")
     scope_group.add_argument("--numeric-stability", action="store_true", help="Check fixed numerical references and seeded solver fronts")
-    scope_group.add_argument("--performance-stability", action="store_true", help="Run opt-in statistical regression against an external reviewed baseline")
-    parser.add_argument("--performance-reference", metavar="JSON", help="Versioned, reviewed reference artifact for --performance-stability")
     level_group = parser.add_mutually_exclusive_group()
     level_group.add_argument("--smoke", action="store_true", help="Run or list the smoke level")
     level_group.add_argument("--basic", action="store_true", help="Run or list through the basic level")
     level_group.add_argument("--deep", action="store_true", help="Run or list through the deep level")
 
     args = parser.parse_args()
-    if args.certify:
-        if (args.list or args.unit or args.integration or args.stability or
-                args.numeric_stability or args.performance_stability or
-                args.performance_reference or args.smoke or args.basic or args.deep):
-            parser.error('--certify cannot be combined with test selectors')
-        sys.exit(_certify_environment())
-    if args.performance_stability:
-        if args.list or args.smoke or args.basic or args.deep:
-            parser.error('--performance-stability is separate; omit --list and level flags')
-        if not args.performance_reference:
-            parser.error('--performance-stability requires --performance-reference JSON; no default baseline exists')
-        from moeabench.performance_stability import verify_performance
+    new_actions = (args.certify_numeric, args.record_performance_baseline, args.certify_performance)
+    if any(new_actions):
+        if (args.list or args.unit or args.integration or
+                args.numeric_stability or args.smoke or args.basic or args.deep):
+            parser.error("Certification operations cannot be combined with other test selections")
+        if args.certify_numeric:
+            if args.output or args.reference:
+                parser.error("--certify-numeric does not take --output or --reference")
+            from moeabench.certification import ensure_numeric_certification_slot
+            try:
+                ensure_numeric_certification_slot()
+            except (OSError, ValueError, RuntimeError) as exc:
+                parser.exit(2, f"Numeric version already certified: {exc}\n")
+            # Require the approved numerical kernel dispatch; never silently bypass it.
+            subprocess.run([sys.executable, "scripts/check_numerical_reference_runtime.py"], check=True)
+            if _certify_environment() != 0:
+                sys.exit(1)
+            from moeabench.certification import register_numeric_history
+            try:
+                evidence = None
+                if os.getenv("GITHUB_REPOSITORY") and os.getenv("GITHUB_RUN_ID"):
+                    evidence = "https://github.com/{}/actions/runs/{}".format(
+                        os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_RUN_ID"]
+                    )
+                location = register_numeric_history(
+                    evidence_url=evidence,
+                    counts={"suite": "basic", "status": "PASSED"},
+                )
+            except (OSError, ValueError, RuntimeError) as exc:
+                parser.exit(2, f"Could not register numeric history: {exc}\\n")
+            print("Registered numerical certificate:", location)
+            sys.exit(0)
+        if not args.output:
+            parser.error("The selected certification operation requires --output JSON")
+        if args.record_performance_baseline:
+            if args.reference:
+                parser.error("--record-performance-baseline cannot take --reference")
+            from moeabench.certification import create_performance_baseline
+            try:
+                location = create_performance_baseline(args.output)
+            except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+                parser.exit(2, f"Could not create performance reference: {exc}\\n")
+            print("Candidate performance reference:", location)
+            sys.exit(0)
+        if not args.reference:
+            parser.error("--certify-performance requires --reference approved.json")
+        from moeabench.certification import certify_performance
         try:
-            result = verify_performance(args.performance_reference)
-        except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
-            parser.exit(2, f"Performance reference/verification error: {exc}\n")
-        sys.exit(0 if result["status"] == "PASSED" else 1)
-    if args.performance_reference:
-        parser.error('--performance-reference is valid only with --performance-stability')
+            location, result = certify_performance(args.reference, args.output)
+        except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+            parser.exit(2, f"Could not certify performance: {exc}\\n")
+        print("Performance certificate:", location, result["status"])
+        sys.exit(0 if result["status"] == "CERTIFIED" else 1)
+    if args.reference or args.output:
+        parser.error("--reference and --output require a new certification operation")
     scope = _selected_scope(args)
     if scope == "numeric-stability":
         scope = "stability"
     level = _selected_level(args)
     if level == "deep" and scope in (None, "stability"):
-        parser.error('Historical deep statistical test has no baseline. Use --numeric-stability --basic, or --performance-stability --performance-reference JSON.')
+        parser.error('Numerical deep level has no historical reference. Use --numeric-stability --basic; performance certification is an explicit separate command.')
 
     if scope == "integration" and level == "deep":
         parser.error("`--integration` only supports `--smoke` or `--basic`.")

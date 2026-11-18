@@ -25,7 +25,7 @@ jobs:
       - name: Run empirical GT calibration integration contract
         run: python -m pytest tests/integration/test_gt_empirical_search_contract.py -q
       - name: Check portable numerical smoke baselines
-        run: python test.py --stability --smoke
+        run: python test.py --numeric-stability --smoke
       - name: Generate integration example archives
         run: |
           python - <<'PY'
@@ -82,7 +82,7 @@ jobs:
       - name: Verify actual NumPy ufunc and OpenBLAS reference kernels
         run: python scripts/check_numerical_reference_runtime.py
       - name: Check complete numerical baselines in reference environment
-        run: python test.py --stability --basic
+        run: python test.py --numeric-stability --basic
       - name: Capture reference-direction diagnostic on numerical failure
         if: failure()
         run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
