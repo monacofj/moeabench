@@ -9,11 +9,14 @@ No baseline, production code, or regression test is changed.
 import hashlib
 import json
 import copy
+import math
 
 import numpy as np
 
 import moeabench as mb
 from pymoo.operators.crossover.sbx import SBX
+import pymoo.operators.crossover.sbx as sbx_module
+from pymoo.core.problem import Problem
 from pymoo.operators.mutation.pm import PolynomialMutation
 from unittest.mock import patch
 
@@ -91,10 +94,43 @@ def main():
         )
         exp.run(repeat=1, silent=True)
 
+    # Independent replay of the *first* SBX call from archived input
+    # and RNG state; no evolution and no production algorithm changes.
+    first = events[0]
+    first_input = np.asarray(first["first_input_values"], dtype=float)
+    before_rng = first["first_rng_state"]
+    replay_problem = Problem(
+        n_var=first_input.shape[2], n_obj=3,
+        xl=np.zeros(first_input.shape[2]), xu=np.ones(first_input.shape[2])
+    )
+
+    def replay(*, use_scalar_power=False):
+        rng = np.random.default_rng()
+        rng.bit_generator.state = copy.deepcopy(before_rng)
+        crossover = SBX(prob=1.0, eta=15)
+        if use_scalar_power:
+            def scalar_power(a, b):
+                # Diagnostic comparison with the process scalar libm.
+                return np.frompyfunc(math.pow, 2, 1)(a, b).astype(float)
+            with patch.object(sbx_module.np, "power", side_effect=scalar_power):
+                out = crossover._do(replay_problem, first_input.copy(), random_state=rng)
+        else:
+            out = crossover._do(replay_problem, first_input.copy(), random_state=rng)
+        return np.asarray(out)
+
+    numpy_replay = replay()
+    scalar_replay = replay(use_scalar_power=True)
+    measured = np.asarray(first["first_output_values"])
     result = {
         "final": signature(np.asarray(exp.front())),
         "event_count": len(events),
         "events": events,
+        "sbx_replay": {
+            "replays_recorded_input_and_rng": bool(np.array_equal(numpy_replay, measured)),
+            "numpy": signature(numpy_replay),
+            "scalar_math_pow": signature(scalar_replay),
+            "max_abs_delta_scalar_vs_numpy": float(np.max(np.abs(scalar_replay - numpy_replay))),
+        }
     }
     print(json.dumps(result, sort_keys=True))
 
