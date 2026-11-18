@@ -133,4 +133,4 @@ For each migrated `view` endpoint, the following must be true:
 
 ## Current Lineage Note
 
-ADR 0039 established the earlier canonical namespace surface and this ADR refined canonical result/view parity. [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) extends the same parity principle inside `mb.clinic`: individual physical/Q metrics and `audit()` are public analytical paths, and equivalent calls must resolve the same diagnostic context. This does not change the no-compatibility-shim or programmatic-view-parity decisions recorded here.
+ADR 0039 established the earlier canonical namespace surface and this ADR refined canonical result/view parity. [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) now records the temporary FAIR removal from the 0.x public API. This does not change the no-compatibility-shim or programmatic-view-parity decisions for the supported metrics, statistics and views recorded here.
