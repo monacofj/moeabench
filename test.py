@@ -233,7 +233,7 @@ def _list_tests(scope: str | None, level: str | None):
 
 
 def _selected_scope(args) -> str | None:
-    for scope in (*SCOPES, "numeric-stability"):
+    for scope in ("unit", "integration", "numeric-stability"):
         if getattr(args, scope.replace("-", "_")):
             return scope
     return None
