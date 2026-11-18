@@ -290,3 +290,22 @@ environment evidence.
 
 [Issue #108](https://github.com/monacofj/moeabench/issues/108) —
 implementation and acceptance tracking.
+
+
+## Initial executable compatibility evidence (2026-11-18)
+
+The controlled [six-case probe](https://github.com/monacofj/moeabench/actions/runs/44365881085)
+passed on Python 3.14.4 with the pinned reference numerical libraries
+and effective NumPy/OpenBLAS preflight. It verified each exact public
+MOP/MOEA constructor above, its deterministic 512×3 objective reference,
+and two distinct run seeds `424242` and `528971` using a **three-generation
+compatibility smoke**, with finite nonnegative IGD+ for all 12 runs.
+
+These checks **verify interface feasibility only**. They do not
+represent the eventual 60-generation/24-seed baseline, estimate
+its statistical precision, approve the geometric sampling for a
+new release or certify any candidate's performance. In particular,
+the DPF1 case has a markedly different raw IGD+ scale, supporting
+the predetermined combined absolute/relative materiality rule.
+No MOP/MOEA source, numerical regression test, GT or historical
+fixture was modified during this probe.
