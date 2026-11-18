@@ -98,7 +98,7 @@ def test_numeric_history_carries_only_hashes_not_copied_fronts(monkeypatch, tmp_
     )
     obj = json.loads(file.read_text())
     assert obj["version"] == "0.18.0"
-    assert len(obj["numerical_fixtures_sha256"]) == 3
+    assert len(obj["numerical_fixtures_sha256"]) == 4
     assert all(len(v) == 64 for v in obj["numerical_fixtures_sha256"].values())
     assert "front" not in json.dumps(obj).replace("stability_reference_fronts", "")
     with pytest.raises(FileExistsError):
