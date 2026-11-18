@@ -178,33 +178,7 @@ existing regression test. The repository's manifest still identifies MoeaBench
 No accepted numerical tolerance, reference front, seed contract, existing
 regression test, or scientific baseline was changed in this stage.
 
-### Controlled CI comparison, 2026-11-18
-
-The numerical-basic job in [workflow run 44306750837](https://github.com/monacofj/moeabench/actions/runs/44306750837)
-failed only at `NSGA3 x DPF1` (two final nondominated points versus
-three in the untouched frozen fixture). A same-run comparison used the
-same Python 3.14.4 and pinned numerical dependency versions to execute
-the **existing** targeted stability test on three separate revisions:
-
-| Revision | Result |
-|---|---|
-| `refactor/separate-stability-verification` (PR #91) | Failed, 2 vs 3 |
-| `main` | Failed, 2 vs 3 |
-| `old-fair` (pre-cleanup) | Failed, 2 vs 3 |
-
-Logs and the generation-by-generation reference-direction diagnosis are in
-the workflow artifact `nsga3-dpf1-diagnostic-and-controls`. This demonstrates
-that this specific failure is reproducible in the historical branches under
-that CI runtime and is not a new regression of the separation or FAIR-cleanup
-code paths. Another CI run, [44306597335](https://github.com/monacofj/moeabench/actions/runs/44306597335),
-passed all 18 numerical-basic tests on the then-current branch, demonstrating
-that pinned version identities alone do not guarantee the same result across
-CI executions.
-
-For the failing run, the diagnostic's production result and its
-diagnostic-only 13-decimal reference-direction rounding control **both**
-had two final points. Therefore the older observation that rounding
-reconciled tested environments is **not** a universal fix. The low-level
-cause remains unresolved, and the existing numerical regression gate is
-deliberately left red. No historical expected output, numerical tolerance,
-regression test, or source algorithm was modified to force a pass.
+The pre-existing NSGA-III/DPF1 cross-environment discrepancy and its exploratory
+investigation are tracked separately in [issue #92](https://github.com/monacofj/moeabench/issues/92).
+The test architecture retains the original regression as an active gate; no
+regression fixture, tolerance, test, or production solver was changed here.
