@@ -401,3 +401,25 @@ The operational setup and commands, including required generated
 integration archives, are in
 [docs/test.md](../test.md) and
 [environment verification](../environment-verification.md).
+
+
+## Supersession of provisional performance certification architecture — 2026-11-18
+
+The maintainer authorized the consolidated release-certificate and baseline
+lifecycle recorded in [ADR 0056](0056-versioned-certification-and-performance-reference-lifecycle.md).
+That decision **supersedes** earlier provisional v1/v2 statistical schemas,
+the proposed 80%-power pilot validation requirement, and temporary
+user-facing test command names for the forthcoming implementation.
+The completed 0.18.0 `--certify` run and its previously recorded
+environment/numerical evidence remain valid as historical facts.
+
+In the accepted **target** interface, `--certify-numeric`,
+`--record-performance-baseline`, and `--certify-performance`
+are separate operations, with no automatic chained baseline update.
+The new 24-seed six-case study, simultaneous confidence bounds,
+`INCONCLUSIVE` handling and per-version archival registry are
+specified in ADR 0056. This is a specification decision; the active
+`test.py` still exposes its existing command spelling until the
+implementation and its tests are reviewed. No regression assertion,
+historical numerical reference or MOP calibration contract is changed
+by this addendum.
