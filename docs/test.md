@@ -305,9 +305,11 @@ This is an identity record, **not** a list of expected indicator values,
 a solver-front baseline or a statistical performance sample. It also
 does not fully encode the effective native CPU/BLAS kernel selection.
 
-The existing manifest still identifies MoeaBench **0.16.1**. A new
-certification will replace the manifest in the working tree only after
-the complete basic suite succeeds. Git history can preserve earlier
+The previously certified manifest identified MoeaBench **0.16.1**; the
+0.18.0 candidate was subsequently certified through the full basic
+suite, and its new manifest is retained in version control. Future
+certifications replace the manifest only after the complete basic suite
+succeeds. Git history can preserve earlier
 manifest revisions. It would be misleading to discard frozen numerical
 regressions merely because a new manifest was certified.
 
@@ -645,17 +647,23 @@ writes **only the version manifest**. It never updates numerical
 fixtures, generates statistical performance results, launches the
 optional performance verifier, or recalibrates a MOP GT.
 
-The currently committed manifest identifies a developer-certified
-**0.16.1** environment. It has not been refreshed merely because
-the new CI checks passed.
+The currently committed manifest identifies the verified
+**0.18.0** development environment. It was updated by the actual
+`--certify` command after two separate **389/389 basic-suite passes**
+in the pinned reference runtime; earlier CI successes alone did not
+create this certification.
 
 ### 9.1 Certification before 1.0.0
 
-The project is preparing an intermediate **0.18.0 release candidate**, with
-the changes accumulated after 0.17.0. The candidate is to be validated
-and certified before proceeding to 1.0.0; it is not described as a
-published release solely because its version metadata was updated.
-Its certification records **0.18.0**, not 1.0.0.
+The intermediate **0.18.0 release candidate**, containing the changes
+after 0.17.0, has now been formally developer-certified in the controlled
+reference environment ([issue #106](https://github.com/monacofj/moeabench/issues/106),
+[certification run](https://github.com/monacofj/moeabench/actions/runs/44351880965)).
+The run executed `python test.py --basic` and then the actual
+`python test.py --certify`, each with **389/389 tests passing**.
+This approves the tested development environment and does **not** itself
+publish a release, Git tag or performance reference. The new manifest
+records **0.18.0**, not 1.0.0.
 
 When 1.0.0 is prepared, the package version should be changed
 first and the appropriate suites and environment certification
