@@ -132,6 +132,7 @@ def test_numeric_certification_does_not_record_performance(monkeypatch, runner, 
     monkeypatch.setattr(runner.subprocess, "run",
                         lambda *a, **k: SimpleNamespace(returncode=0))
     monkeypatch.setattr(runner, "_certify_environment", lambda: 0)
+    monkeypatch.setattr(cert, "ensure_numeric_certification_slot", lambda: tmp_path)
     monkeypatch.setattr(cert, "register_numeric_history", lambda **kw: (
         calls.append(kw) or tmp_path / "numeric-certificate.json"
     ))
