@@ -24,7 +24,7 @@ jobs:
         run: |
           python -m pip install -e . pytest
           python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
-      - name: Compare original basic suite under default and non-AVX512 NumPy
+      - name: Compare original basic suite under native X86_V4 and AVX512_ICL masks
         shell: bash
         env:
           PYTHONHASHSEED: "0"
@@ -36,16 +36,20 @@ jobs:
           set -u
           mkdir -p issue92-reference-results
           ldd --version > issue92-reference-results/libc-version.txt
-          for mode in native no_x86_v4; do
+          for mode in native no_x86_v4 no_avx512_icl no_x86_v4_icl; do
             case "$mode" in
               native) mask="" ;;
               no_x86_v4) mask="X86_V4" ;;
+              no_avx512_icl) mask="AVX512_ICL" ;;
+              no_x86_v4_icl) mask="X86_V4,AVX512_ICL" ;;
             esac
             printf '%s\n' "$mask" > "issue92-reference-results/$mode.mask"
             env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_ref_directions_issue92.py > "issue92-reference-results/$mode.directions.json" 2> "issue92-reference-results/$mode.directions.err"
             echo $? > "issue92-reference-results/$mode.directions.exit"
             env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_frozen_directions.py > "issue92-reference-results/$mode.frozen.txt" 2> "issue92-reference-results/$mode.frozen.err"
             echo $? > "issue92-reference-results/$mode.frozen.exit"
+            env NPY_DISABLE_CPU_FEATURES="$mask" python scripts/audit/probe_nsga3_variation.py > "issue92-reference-results/$mode.variation.json" 2> "issue92-reference-results/$mode.variation.err"
+            echo $? > "issue92-reference-results/$mode.variation.exit"
             env NPY_DISABLE_CPU_FEATURES="$mask" python test.py --numeric-stability --basic > "issue92-reference-results/$mode.basic.log" 2>&1
             result=$?
             echo "$result" > "issue92-reference-results/$mode.basic.exit"
@@ -58,7 +62,7 @@ jobs:
           python - <<'PY'
           import json, pathlib
           root=pathlib.Path("issue92-reference-results")
-          for mode in ("native","no_x86_v4"):
+          for mode in ("native","no_x86_v4","no_avx512_icl","no_x86_v4_icl"):
               p=root/f"{mode}.directions.json"
               try:
                   d=json.loads(p.read_text())
@@ -68,6 +72,7 @@ jobs:
                       "baseline_exit":(root/f"{mode}.basic.exit").read_text().strip(),
                       "directions_exit":(root/f"{mode}.directions.exit").read_text().strip(),
                       "frozen_exit":(root/f"{mode}.frozen.exit").read_text().strip(),
+                      "variation_exit":(root/f"{mode}.variation.exit").read_text().strip(),
                       "libc":(root/"libc-version.txt").read_text().splitlines()[0].strip()}
                   for line in (root/f"{mode}.frozen.txt").read_text().splitlines():
                       if line.startswith("RESULT "):
@@ -75,6 +80,14 @@ jobs:
                           print("ISSUE92_FROZEN_SUMMARY "+json.dumps({"mode":mode,
                               "ref_mode":d2["mode"],"directions":d2["directions"],
                               "final":d2["final"]},sort_keys=True))
+                  try:
+                      var=json.loads((root/f"{mode}.variation.json").read_text())
+                      info["front"] = var["final"]
+                      info["first_sbx"] = var["events"][0]["output"]["sha256"]
+                      info["first_mutation"] = var["events"][1]["output"]["sha256"]
+                      info["operator16_input"] = var["events"][16]["input"]["sha256"]
+                  except (OSError, ValueError, IndexError, KeyError) as exc:
+                      info["variation_error"] = str(exc)
                   print("ISSUE92_REFERENCE_SUMMARY "+json.dumps(info,sort_keys=True))
               except Exception as e:
                   print(f"ISSUE92_REFERENCE_ERROR mode={mode} error={e}")
@@ -89,6 +102,6 @@ jobs:
       - name: Report real regression status without altering tests
         shell: bash
         run: |
-          for mode in native no_x86_v4; do
+          for mode in native no_x86_v4 no_avx512_icl no_x86_v4_icl; do
             test "$(cat "issue92-reference-results/$mode.basic.exit")" -eq 0 || exit 1
           done
