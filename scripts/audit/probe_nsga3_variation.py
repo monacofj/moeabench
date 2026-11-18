@@ -8,6 +8,7 @@ No baseline, production code, or regression test is changed.
 """
 import hashlib
 import json
+import copy
 
 import numpy as np
 
@@ -45,6 +46,9 @@ def main():
     def crossover(self, problem, X, **kwargs):
         before = signature(X)
         rng_before = rng_signature(kwargs)
+        first_rng_state = (copy.deepcopy(kwargs["random_state"].bit_generator.state)
+                           if not events and kwargs.get("random_state") is not None
+                           else None)
         produced = original_crossover(self, problem, X, **kwargs)
         event = {
             "operator": "SBX", "step": len(events),
@@ -52,8 +56,16 @@ def main():
             "rng_before": rng_before, "rng_after": rng_signature(kwargs),
         }
         if not events:
-            # Capture only first operator output for bit-level cross-host diff.
+            # Preserve a standalone, replayable first SBX input and RNG state.
+            event["first_input_values"] = np.asarray(X).tolist()
+            event["first_rng_state"] = first_rng_state
             event["first_output_values"] = np.asarray(produced).tolist()
+            if kwargs.get("random_state") is not None:
+                # The original state is supplied separately by the outer caller
+                # below; this post-call state is only supplementary evidence.
+                event["rng_state_after_full"] = copy.deepcopy(
+                    kwargs["random_state"].bit_generator.state
+                )
         events.append(event)
         return produced
 
