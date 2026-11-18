@@ -153,6 +153,8 @@ def create_performance_baseline(output_path):
     from .system import version
     if version(show=False) != "0.18.0":
         raise ValueError("The inaugural baseline must use certified MoeaBench 0.18.0")
+    if _revision() != "0d3e66804351e23b93fb483ff25e178e06ef6e12":
+        raise ValueError("The inaugural baseline must run on the exact certified 0.18.0 source revision")
     output = Path(output_path)
     if output.exists():
         raise FileExistsError("Historical baseline already exists: " + str(output))
@@ -208,8 +210,26 @@ def load_performance_reference(path, *, require_approved=True):
         raise ValueError("Performance reference requires explicit approval")
     if reference.get("source_version") != "0.18.0":
         raise ValueError("Unexpected historical reference version")
+    if reference.get("source_revision") != "0d3e66804351e23b93fb483ff25e178e06ef6e12":
+        raise ValueError("Unexpected historical reference revision")
+    if require_approved and (not isinstance(reference.get("approval"), dict) or
+            not reference["approval"].get("evidence_url") or
+            not reference["approval"].get("reviewed_by")):
+        raise ValueError("Missing independent review provenance")
     if not isinstance(reference.get("source_revision"), str) or not reference["source_revision"]:
         raise ValueError("Missing historical source revision")
+    if reference.get("protocol") != {
+        "family_alpha": FAMILY_ALPHA,
+        "target_power": TARGET_POWER,
+        "margin_fraction": MARGIN_FRACTION,
+        "numeric_floor": NUMERIC_FLOOR,
+        "pilot": PILOT_SEEDS,
+        "max_seeds": MAX_SEEDS,
+        "front_points": FRONT_POINTS,
+        "decision_metric": "igdplus",
+        "diagnostics": ["gdplus", "emd"],
+    }:
+        raise ValueError("Unapproved statistical protocol change")
     _validate_fronts(reference["reference_fronts"])
     expected = _default_cases()
     got = reference.get("cases")
@@ -223,6 +243,8 @@ def load_performance_reference(path, *, require_approved=True):
         if not isinstance(obs, list) or len(obs) != MAX_SEEDS:
             raise ValueError("Reference must contain 64 observations per case")
         for seed, item in zip(_SEEDS, obs):
+            if not isinstance(item, dict):
+                raise ValueError("Invalid performance observation")
             if item.get("seed") != seed:
                 raise ValueError("Performance reference seed mismatch")
             for metric in ("igdplus", "gdplus", "emd"):
@@ -253,6 +275,8 @@ def assess_paired(case, pilot_scores, confirmatory_scores, baseline):
     pilot = np.asarray(pilot_scores, dtype=float)
     if len(values) != MAX_SEEDS or len(pilot) != PILOT_SEEDS:
         raise ValueError("Expected 64 reference and eight pilot observations")
+    if (values < 0).any() or (pilot < 0).any():
+        raise ValueError("Measurements must be nonnegative")
     if not np.isfinite(values).all() or not np.isfinite(pilot).all():
         raise ValueError("Nonfinite observations")
     margin = max(NUMERIC_FLOOR, MARGIN_FRACTION * float(np.mean(values)))
@@ -263,8 +287,8 @@ def assess_paired(case, pilot_scores, confirmatory_scores, baseline):
                 "reason": "INSUFFICIENT_POWER", "pilot_sd": sd,
                 "margin": margin, "required_confirmatory": None}
     observed = np.asarray(confirmatory_scores, dtype=float)
-    if len(observed) != n or not np.isfinite(observed).all():
-        raise ValueError("Confirmatory observations do not match required sample")
+    if len(observed) != n or not np.isfinite(observed).all() or (observed < 0).any():
+        raise ValueError("Confirmatory observations do not match required sample and must be nonnegative")
     diff = observed - values[PILOT_SEEDS:PILOT_SEEDS + n]
     mean = float(np.mean(diff))
     stderr = float(np.std(diff, ddof=1) / np.sqrt(n))
