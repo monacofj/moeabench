@@ -108,3 +108,35 @@ cross-platform reference directions require a separate design decision.
 - [Environment verification](../environment-verification.md): user/developer commands.
 - [Test architecture](../test.md): testing scope and levels.
 - [Reproducibility](../reproducibility.md): research interpretation.
+
+## Maintainer-authorized testing-policy amendment — 2026-11-17
+
+The release validation plan separates two kinds of stability assessment:
+
+- **Numerical stability** verifies deterministic reference signatures, fixed
+  input-to-output indicator values, and representative seeded solver fronts.
+  One execution per frozen seeded configuration suffices for replay comparison;
+  it does not establish a statistical performance distribution.
+- **Performance stability** evaluates repeated stochastic experiments to
+  detect changes in solver performance distributions. It is a separately
+  invoked, explicitly scoped diagnostic and must not be triggered implicitly
+  when numerical stability fails. Its repetition count and statistical
+  reference policy are selected for the particular study, rather than
+  automatically multiplying a fixed 30-run battery across every MOP/MOEA.
+
+For the FAIR-free recovery and release workflow, `basic` numerical
+stability in the designated certified environment is the required numerical
+validation tier. The historical `deep` statistical test is not a
+certification prerequisite while its missing legacy baseline makes it
+non-operative. A successful but skipped `deep` test must never be reported as
+evidence of performance stability. The `--certify` mechanism must be brought
+into conformity with this amendment **before it is used to update** the
+environment manifest. It may neither regenerate numerical fixtures nor
+accept failing checks. The reference environment and provenance separation
+specified above remain intact.
+
+This amendment supersedes the earlier requirement in this ADR to execute a
+complete `--deep` suite as a prerequisite for `--certify`. The original
+historical wording is retained for traceability; the CLI/documentation
+transition is part of the next implementation stage. No change to a regression
+test or frozen baseline is authorized by this amendment.

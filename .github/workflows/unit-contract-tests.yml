@@ -1,0 +1,84 @@
+name: Unit contract regression checks
+
+on:
+  pull_request:
+    branches:
+      - main
+      - hotfix/0.17.0-contract-recovery
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install package and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Compile all source and test modules
+        run: python -m compileall -q moeabench tests
+      - name: Run complete unit suite
+        run: python test.py --unit
+      - name: Run empirical GT calibration integration contract
+        run: python -m pytest tests/integration/test_gt_empirical_search_contract.py -q
+      - name: Check portable numerical smoke baselines
+        run: python test.py --stability --smoke
+      - name: Generate integration example archives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import moeabench as mb
+          for algorithm, filename in (
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ):
+              path = Path("examples") / filename
+              if path.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(path))
+          PY
+      - name: Execute full integration suite
+        run: python test.py --integration --basic
+
+  reference-numeric-stability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install project and reference numerical dependencies
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+      - name: Verify numerical dependency versions against reference manifest
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys
+          import importlib.metadata as im
+          versions = json.loads(pathlib.Path("moeabench/resources/certified_environment.json").read_text())["versions"]
+          assert sys.version.split()[0] == versions["python"]
+          for name in ("numpy", "scipy", "pymoo", "deap", "moocore", "pandas"):
+              assert im.version(name) == versions[name], (name, im.version(name), versions[name])
+          PY
+      - name: Check complete numerical baselines in reference environment
+        run: python test.py --stability --basic
+      - name: Capture reference-direction diagnostic on numerical failure
+        if: failure()
+        run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
+      - name: Preserve numerical divergence evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nsga3-dpf1-diagnostic
+          path: nsga3-dpf1-diagnostic.log
+          if-no-files-found: warn
