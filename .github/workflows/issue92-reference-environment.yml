@@ -32,6 +32,7 @@ jobs:
           OMP_NUM_THREADS: "1"
           MKL_NUM_THREADS: "1"
         run: |
+          set +e
           set -u
           mkdir -p issue92-reference-results
           ldd --version > issue92-reference-results/libc-version.txt
