@@ -77,8 +77,13 @@ and exact HV), SciPy (marginal Wasserstein) and moocore (approximate HV).
 Versions for release certification are governed by ADR 0050, not inferred
 from these algebraic references.
 
-**Review status:** mathematically derived, added as candidate baseline for
-review. An independent maintainer sign-off is still required to claim an
-independently *reviewed* certified numerical reference. No existing frozen
-reference, calibration sidecar, performance baseline or historical regression
-assertion is overwritten.
+**Verification status:** mathematically derived, and independently
+cross-checked by the pure-standard-library implementation
+`python scripts/audit/verify_conventional_metric_references.py`, which uses
+inclusion-exclusion, explicit Euclidean/positive-part distances and empirical
+quantile integration, with no MoeaBench/pymoo/NumPy/SciPy imports. The CI
+executes this audit independently of the production metric tests. Maintainer
+peer review of the accepted frozen values remains possible; this arithmetic
+verification does not purport to be an external review of the research model.
+No existing frozen reference, calibration sidecar, performance baseline or
+historical regression assertion is overwritten.
