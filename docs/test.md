@@ -189,7 +189,9 @@ python test.py --certify
 
 `--certify` independently executes the complete basic battery (all unit,
 basic integration, and basic numerical stability checks) before updating the shipped
-`moeabench/resources/certified_environment.json`. If any test
+`moeabench/resources/certified_environment.json`. The certification subprocess
+ignores inherited `PYTEST_ADDOPTS` to prevent environment-supplied selection flags
+(such as `-k`, `--ignore`, or `--deselect`) from silently reducing that battery. If any test
 fails, the manifest is **not** updated. Review and commit changes to the
 manifest; do not revise numerical fixtures simply to make a failing
 environment pass. An explicitly skipped test remains recorded as skipped,
