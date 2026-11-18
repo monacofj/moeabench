@@ -53,8 +53,8 @@ jobs:
           PY
       - name: Run numeric basic only (no statistical performance test)
         run: python test.py --numeric-stability --basic
-      - name: Diagnose pre-existing NSGA3 x DPF1 front divergence
-        if: failure()
+      - name: Capture NSGA3 x DPF1 reference-direction fingerprint
+        if: always()
         run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
       - name: Compare failing solver case against main and old-fair in same runtime
         if: failure()
@@ -72,8 +72,8 @@ jobs:
             git worktree remove --force "$tmpdir"
           done
           exit 0
-      - name: Preserve failure and historical-control evidence
-        if: failure()
+      - name: Preserve reference-direction fingerprint and control evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nsga3-dpf1-diagnostic-and-controls
