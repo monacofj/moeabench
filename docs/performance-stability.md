@@ -85,3 +85,102 @@ regression a release gate, maintainers must review provenance, selected
 quality metrics, paired seed design, practical effect thresholds and
 statistical power. Reference renewal is a separate audited decision;
 failed tests must not be made green by changing the target values.
+
+
+## Reference artifact v2 — three-way statistical decision (issue #98)
+
+The original `moeabench_performance_reference_v1` interface remains available
+for compatibility, but its `PASSED` status merely means that a particular
+regression rule did not fire. It is **not** a noninferiority result.
+
+The opt-in `moeabench_performance_reference_v2` schema is an additive,
+more conservative protocol for externally approved reference artifacts.
+It is **not** a mandatory release gate in the FAIR-free 1.0.0 preparation:
+no previous-release numerical performance baseline has yet been independently
+approved and no baseline values are distributed. The explicit issue #98
+release decision is therefore to **defer statistical performance certification**
+until provenance, paired pilot data and a case shortlist receive review.
+The same command and system API accept either version, but report the schema.
+
+### V2 reference requirements
+
+A v2 JSON document contains top-level `schema`, `provenance`,
+`family_alpha`, `target_power` and a nonempty `cases` list.
+`provenance` requires `source_revision`, `reference_origin`,
+`reviewed_by`, `environment_fingerprint`, `measurement_protocol` and
+`pilot_origin`: these are audit metadata, **not** cryptographic proof
+of independent review. Cases retain v1's explicit `mop`/`moea` constructor
+specifications, minimized `metric`, fixed `reference_front`, distinct
+`seeds`, `baseline_values` indexed by seed, and preregistered
+`max_absolute_degradation`/`max_relative_degradation`.
+Every case additionally supplies `pilot_standard_deviation` (of
+**paired** quality differences, computed externally) and a nonempty
+`sample_size_rationale`. The overall reference supplies the familywise
+significance bound `family_alpha` and desired `target_power`
+(0.80–0.99). Per-case `alpha` is rejected in v2.
+
+Run counts are fixed by the provided seed lists; there is no automatic
+30-run matrix, early stop, adaptive repetition or baseline renewal.
+The runner requires at least eight seeds and validates that the number
+meets an **a priori** normal-difference, noncentral Student-t power calculation.
+Its planned effect is distance `δ` from the practical degradation boundary:
+under unchanged mean quality, `μ_delta=0`, and under material deterioration,
+`μ_delta=2δ`. The power is the chance to classify those respective
+situations, given the externally obtained pilot paired standard deviation.
+If the required runs exceed 5,000, the reference is refused; the experiment
+must be redesigned rather than implicitly expanded. A pilot standard
+deviation of zero is allowed for exactly deterministic comparisons, with the
+same minimum eight paired seeds.
+
+### Familywise evidence and outcomes
+
+For each case, define `d_i = candidate(seed_i) − baseline(seed_i)`,
+where a **larger** minimized score is worse, and preregister the positive
+margin
+
+`δ = max(max_absolute_degradation, baseline_mean × max_relative_degradation)`.
+
+With `m` cases in the single reference, v2 uses a simultaneous
+two-sided Student-t confidence interval for `mean(d_i)` with tail level
+`family_alpha/(2m)`. This conservative Bonferroni adjustment bounds
+the familywise probability of at least one false directional conclusion
+under the Student-t model. No reclassification is allowed after inspecting
+outcomes.
+
+- `PASSED`: the **upper** simultaneous confidence bound is strictly below
+  `δ`, providing evidence against meaningful mean performance degradation.
+- `FAILED`: the **lower** bound is strictly above `δ`, providing evidence
+  of material mean performance degradation.
+- `INCONCLUSIVE`: the bounds overlap or touch `δ`; the available
+  replications do not justify either claim.
+
+The overall result is `FAILED` if any case fails; otherwise
+`INCONCLUSIVE` if any case is inconclusive; otherwise `PASSED`.
+The CLI exits **0** only on `PASSED`, **1** on `FAILED` or
+`INCONCLUSIVE`, and **2** on an invalid or unavailable reference.
+Numerical stability is never started automatically.
+
+**Scientific limits:** these statements concern *mean paired score change*,
+not equality of complete distributions or behavior in all MOP/MOEA settings.
+The paired t interval assumes the seed-wise differences are independent and
+approximately normal, with comparable environments and an honest external
+pilot variance estimate. Pairing by seed may be useful, but variance reduction
+is not guaranteed merely by sharing seed integers; it must be checked in
+the pilot. Skewed/heavy-tailed outcomes, multiplicity across separate
+reference files and exploratory case selection require a separate method
+review. CI's noninference state is explicit rather than interpreted as a pass.
+
+### Acceptance and cost before using a v2 reference
+
+The maintainer/reviewer must select representative cases, verify the
+reference revision and numerical environment, examine seed-wise paired
+pilot variability, set practical margins based on scientific consequences,
+check the required run count and approve the reference artifact **before**
+running comparisons. A fixed budget may motivate a smaller case shortlist
+or remaining with optional diagnostics; the test must not silently reduce
+sample sizes to obtain a favorable result.
+
+The test suite includes synthetic deterministic **unit tests of the
+decision procedure**, not certified performance observations. Producing an
+official baseline from a historical release is a separate reviewed artifact
+and is intentionally **not performed** by this PR.

@@ -182,3 +182,32 @@ The pre-existing NSGA-III/DPF1 cross-environment discrepancy and its exploratory
 investigation are tracked separately in [issue #92](https://github.com/monacofj/moeabench/issues/92).
 The test architecture retains the original regression as an active gate; no
 regression fixture, tolerance, test, or production solver was changed here.
+
+
+## Performance-protocol scientific review — issue #98 (2026-11-18)
+
+The previous v1 statistical performance reference remains an explicitly
+requested **diagnostic** whose `PASSED` status is limited to its old
+p-value/effect threshold rule. It is not used for release certification.
+An additive v2 reference protocol is available for future independently
+approved benchmark artifacts: it reports `PASSED` for an upper simultaneous
+mean-change confidence bound below a prespecified practical margin,
+`FAILED` for a lower bound above that margin, and `INCONCLUSIVE` otherwise.
+The familywise adjustment is Bonferroni over the specified case family, and
+a preregistered paired-variance pilot determines the minimum seed count
+under a Student-t power model. No automatic 30-run matrix is introduced;
+no reference is regenerated from the candidate execution.
+
+**Release decision:** an externally reviewed, versioned prior-release
+statistical reference and pilot currently do not exist. Accordingly,
+statistical performance remains **opt-in, outside `--basic` and
+`--certify`**, until a reference and its scientific sampling assumptions
+are approved in a separate decision. Matching the current release's
+measurements to self-generated data would not constitute independent
+certification. This is consistent with, and does not replace, the 2026-11-17
+maintainer-authorized separation of numerical and performance stability.
+The existing certified numerical manifest, reference fronts, tests and
+historical provenance semantics remain unmodified.
+
+Protocol details and limits are described in
+[Performance stability](../performance-stability.md).
