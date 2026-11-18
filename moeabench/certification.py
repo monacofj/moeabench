@@ -306,12 +306,57 @@ def assess_paired(case, pilot_scores, confirmatory_scores, baseline):
             "family_alpha": FAMILY_ALPHA}
 
 
+def require_current_numeric_certificate(root=None):
+    """Require a passed numerical certificate for this *exact* candidate source.
+
+    A version/dependency fingerprint or successful generic CI is insufficient
+    evidence for the current revision. Validate the archived mathematical
+    fixtures and environmental identity before launching expensive MOEA runs.
+    """
+    from .environment_verification import snapshot
+    from .system import version
+
+    current_version = version(show=False)
+    base = Path(root) if root is not None else _RESOURCE_ROOT
+    path = base / current_version / "numeric-certificate.json"
+    if not path.is_file():
+        raise RuntimeError("Missing numerical certificate for candidate version " + current_version)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    if (record.get("schema") != "moeabench-numeric-certificate"
+            or record.get("version") != current_version
+            or record.get("source_revision") != _revision()):
+        raise RuntimeError("Numerical certificate does not identify the current source revision")
+    counts = record.get("counts")
+    if not isinstance(counts, dict) or counts.get("status") != "PASSED" or counts.get("suite") != "basic":
+        raise RuntimeError("Numerical certificate does not record a passed basic suite")
+    if record.get("environment") != snapshot():
+        raise RuntimeError("Numerical certificate environment does not match the candidate")
+    profile_keys = (
+        "NPY_DISABLE_CPU_FEATURES", "OPENBLAS_CORETYPE",
+        "OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+    )
+    profile = {name: os.environ.get(name) for name in profile_keys}
+    if record.get("numerical_profile") != profile:
+        raise RuntimeError("Numerical certificate runtime profile does not match the candidate")
+    repo_root = Path(__file__).resolve().parents[1]
+    expected_hashes = {}
+    for relative in _NUMERICAL_FILES:
+        target = repo_root / relative
+        if not target.is_file():
+            raise RuntimeError("Missing canonical numerical fixture: " + relative)
+        expected_hashes[relative] = _hash_file(target)
+    if record.get("numerical_fixtures_sha256") != expected_hashes:
+        raise RuntimeError("Numerical certificate fixture hashes do not match the candidate")
+    return record
+
+
 def certify_performance(reference_path, output_path):
     """Compare with a frozen approved historical reference; never change it."""
     reference = load_performance_reference(reference_path)
     from .system import version
     if version(show=False) == reference["source_version"]:
         raise ValueError("Performance certification requires a candidate version distinct from the historical baseline")
+    require_current_numeric_certificate()
     current_environment = _reference_runtime()
     output = Path(output_path)
     if output.exists():
