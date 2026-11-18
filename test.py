@@ -256,7 +256,13 @@ def _certify_environment():
     import pathlib
 
     print("Running full basic suite before certifying dependency versions...", flush=True)
-    completed = subprocess.run([sys.executable, __file__, "--basic"])
+    # Do not permit PYTEST_ADDOPTS (e.g. -k, --ignore, --deselect)
+    # to silently reduce the verification suite during certification.
+    certification_env = dict(os.environ)
+    certification_env.pop("PYTEST_ADDOPTS", None)
+    completed = subprocess.run(
+        [sys.executable, __file__, "--basic"], env=certification_env
+    )
     if completed.returncode != 0:
         print("Certification denied: the full basic suite did not pass.", file=sys.stderr)
         return 1
