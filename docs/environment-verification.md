@@ -27,13 +27,15 @@ mb.system.verify_experiment(exp)  # after execution or loading
 ```
 
 A different environment may pass numerical checks, and matching dependency
-versions can still yield diverging optimization trajectories. In a documented
-NSGA-III/DPF1 investigation, differences in energy reference directions of
-about `1e-15` were amplified into different evolutionary trajectories.
-Rounding the directions in an isolated diagnostic removed the divergence;
-the production wrapper does **not** round them. The exact source of the
-low-level perturbation remains unresolved. See
-[ADR 0050](adr/0050-certified-environment-verification-and-provenance.md).
+versions can still yield diverging optimization trajectories. Earlier
+NSGA-III/DPF1 experiments detected `1e-15`-scale drift in reference directions,
+and an isolated rounding experiment produced matching trajectories. The
+production wrapper still does **not** round directions. Follow-up controlled
+tests identified differences in NumPy SBX `power` dispatch and in OpenBLAS
+selection/normalization kernels as causes of the **observed regression**;
+the controlled reference profile described below reproduced the original
+front. This result does not establish bitwise portability of all problems.
+See [ADR 0050](adr/0050-certified-environment-verification-and-provenance.md).
 
 Matplotlib remains outside the certified numerical dependency manifest;
 functional plotting compatibility is tested in the integration suite.
