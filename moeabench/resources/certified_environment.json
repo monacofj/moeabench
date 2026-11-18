@@ -1,9 +1,9 @@
 {
-  "description": "Developer-certified dependency versions after a complete deep suite.",
+  "description": "Developer-certified dependency versions after a complete basic suite.",
   "schema": 1,
   "versions": {
     "deap": "1.4.4",
-    "moeabench": "0.16.1",
+    "moeabench": "0.18.0",
     "moocore": "0.3.2",
     "numpy": "2.5.4",
     "pandas": "3.0.6",
