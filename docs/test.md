@@ -216,6 +216,32 @@ fixed seed, environment and reference front with a frozen deterministic
 output. That does not justify a claim that the algorithm's *performance
 distribution* is unchanged.
 
+### 2.4 Adding a test without changing coverage semantics
+
+Test classification is enforced by `_resolve_scope` and `_resolve_level`
+in `tests/conftest.py`. A new file in `tests/unit/` is automatically
+a **basic-classified unit test** (but will run with **every** unit command);
+a file in `tests/integration/` is automatically basic integration.
+Adding a new smoke-classified unit or integration file requires adding its
+path to `SMOKE_UNIT_FILES` or `SMOKE_INTEGRATION_FILES`.
+
+Numerical stability is intentionally an **explicit allowlist**:
+`STABILITY_SMOKE_FILES`, `STABILITY_BASIC_FILES` and the retained
+`STABILITY_DEEP_FILES`. A new root-level stability file must be added
+to the appropriate active list; otherwise collection raises
+`Unclassified test scope` rather than silently omitting the test.
+`BASIC_UNIT_ROOT_FILES` is the existing explicit exception for
+`tests/test_light_tier.py`. These sets specify file-level collection,
+not a permission to alter historical test assertions.
+
+A contributor should inspect the markers with `python test.py --list`,
+check the intended scope with the corresponding explicit selector and
+then run the relevant inclusive `--basic` battery. Record why a new
+stability case is smoke or basic, the independent provenance of its
+reference, the expected compute cost and which accepted ADR it protects.
+For a changed numerical policy, follow the prior-authorization and
+regression-preservation requirements in Section 3.
+
 ## 3. Test isolation and regression safeguards
 
 The autouse fixture `_deterministic_test_rng` in `tests/conftest.py`
