@@ -59,6 +59,9 @@ jobs:
       - name: Probe captured and frozen NSGA3 directions (diagnostic only)
         if: always()
         run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-frozen-probe.log
+      - name: Evaluate fixed DPF1 decision vectors (diagnostic only)
+        if: always()
+        run: python scripts/audit/probe_dpf1_fixed_population.py > dpf1-fixed-evaluation.log
       - name: Compare failing solver case against main and old-fair in same runtime
         if: failure()
         shell: bash
@@ -83,6 +86,7 @@ jobs:
           path: |
             nsga3-dpf1-diagnostic.log
             nsga3-frozen-probe.log
+            dpf1-fixed-evaluation.log
             comparison-main.log
             comparison-old-fair.log
           if-no-files-found: warn
@@ -105,10 +109,14 @@ jobs:
           python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
       - name: Probe generated and frozen directions under single-thread BLAS
         run: python scripts/audit/probe_nsga3_frozen_directions.py > nsga3-single-thread-probe.log
+      - name: Evaluate fixed DPF1 decision vectors under single-thread BLAS
+        run: python scripts/audit/probe_dpf1_fixed_population.py > dpf1-fixed-single-thread.log
       - name: Save diagnostic evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nsga3-single-thread-diagnostic
-          path: nsga3-single-thread-probe.log
+          path: |
+            nsga3-single-thread-probe.log
+            dpf1-fixed-single-thread.log
           if-no-files-found: warn
