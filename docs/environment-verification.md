@@ -91,15 +91,26 @@ hardware, BLAS builds and operating systems. A user running outside this
 profile may still run experiments, but matching package versions alone
 must not be interpreted as numerical equivalence (ADR 0050).
 
-The existing frozen fronts and `moeabench/resources/certified_environment.json`
-are **unchanged**. That manifest still records the previously approved
-MoeaBench **0.16.1** version fingerprint; CI success is not a new developer
-release certification. Before a new release, first establish and validate
-the profile above, then run `python test.py --basic` and
-`python test.py --certify` from that same environment. The standalone
-`--certify` command replays the full basic suite but does not itself
-inspect CPU/BLAS dispatch, hence the explicit preflight is required for
-the designated profile. Only after a successful run should the
-maintainer review and commit the new manifest. See the
-[complete testing manual](test.md) for scopes, sample-size policy and
-release safeguards.
+The existing **numerical regression fronts remain unchanged**. The
+developer-certified environment manifest has now been updated for the
+intermediate **0.18.0 candidate** by executing both the complete
+`--basic` suite and the actual `--certify` rerun successfully in the
+designated reference profile: **389/389** tests passed in each run.
+See [certification evidence #106](https://github.com/monacofj/moeabench/actions/runs/44351880965).
+The previous 0.16.1 manifest remains recoverable in Git history.
+
+The original certification attempt failed on **missing integration
+example archives**, correctly blocking a manifest update. The ordinary
+unit-contract CI generates `example_full_exp1.zip` and
+`example_full_exp2.zip` before integration; the successful
+certification reproduced that prerequisite exactly. See the
+[complete testing manual](test.md) for the necessary archive-generation
+commands, scopes, and release safeguards.
+
+The standalone `--certify` command replays the full basic suite but
+does not itself inspect CPU/BLAS dispatch; the explicit preflight is
+required for the designated profile. For the future 1.0.0 version,
+the software version must be updated and the complete certification
+rerun rather than editing the version label in the manifest. Neither
+the 0.18.0 certification nor this version record constitutes an
+independently reviewed statistical performance baseline.

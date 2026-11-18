@@ -305,9 +305,11 @@ This is an identity record, **not** a list of expected indicator values,
 a solver-front baseline or a statistical performance sample. It also
 does not fully encode the effective native CPU/BLAS kernel selection.
 
-The existing manifest still identifies MoeaBench **0.16.1**. A new
-certification will replace the manifest in the working tree only after
-the complete basic suite succeeds. Git history can preserve earlier
+The previously certified manifest identified MoeaBench **0.16.1**; the
+0.18.0 candidate was subsequently certified through the full basic
+suite, and its new manifest is retained in version control. Future
+certifications replace the manifest only after the complete basic suite
+succeeds. Git history can preserve earlier
 manifest revisions. It would be misleading to discard frozen numerical
 regressions merely because a new manifest was certified.
 
@@ -580,13 +582,19 @@ For a developer-prepared candidate version:
 1. Finalize the code and the candidate version number.
 2. Establish the designated numerical reference runtime and execute
    the **preflight** from Section 7.
-3. Run `python test.py --basic`, including all unit, integration-basic
+3. Prepare the repository's **integration-example archives**. The integration
+   suite reads `examples/example_full_exp1.zip` and
+   `examples/example_full_exp2.zip`; a fresh checkout does not necessarily
+   contain them. The regular unit-contract CI workflow creates them before
+   integration, so a clean developer reference environment must do the
+   same, with the matching MOP/MOEA construction shown below.
+4. Run `python test.py --basic`, including all unit, integration-basic
    and numerical-basic checks.
-4. Run `python test.py --certify`. It **repeats** the complete basic
+5. Run `python test.py --certify`. It **repeats** the complete basic
    battery with inherited `PYTEST_ADDOPTS` removed, to prevent external
    `-k`, `--ignore` and `--deselect` options from silently
    shrinking the suite.
-5. If any batch fails, the manifest is **not updated**. On success,
+6. If any batch fails, the manifest is **not updated**. On success,
    the runner writes a version snapshot to
    `moeabench/resources/certified_environment.json` via an
    intermediate `.pending` file. Review and commit that change
@@ -597,9 +605,39 @@ Commands in the prepared reference environment:
 
 ```bash
 python scripts/check_numerical_reference_runtime.py
+
+# Prepare the same two integration archives as the regular CI job:
+python - <<'PY'
+from pathlib import Path
+import moeabench as mb
+
+for algorithm, filename in (
+    (mb.moeas.NSGA2, "example_full_exp1.zip"),
+    (mb.moeas.NSGA3, "example_full_exp2.zip"),
+):
+    path = Path("examples") / filename
+    if path.exists():
+        continue
+    exp = mb.experiment(
+        mop=mb.mops.DTLZ2(M=3),
+        moea=algorithm(population=32, generations=8, seed=17),
+    )
+    exp.run(repeat=3, silent=True)
+    exp.save(str(path))
+PY
+
 python test.py --basic
 python test.py --certify
 ```
+
+The integration archives are **test prerequisites**, not mathematical or
+statistical baseline values. They are generated locally from a fixed,
+reviewed small example configuration; they are not replacements for
+frozen numerical fronts. A missing archive makes integration tests
+fail and correctly blocks `--certify`. The first controlled 0.18.0
+certification attempt exposed this difference between a bare checkout
+and the regular CI preparation; it was resolved by preparing the same
+archives, without modifying any historical test.
 
 The standalone `--certify` implementation currently enforces
 the full basic result but does **not** itself inspect actual CPU/BLAS
@@ -609,17 +647,23 @@ writes **only the version manifest**. It never updates numerical
 fixtures, generates statistical performance results, launches the
 optional performance verifier, or recalibrates a MOP GT.
 
-The currently committed manifest identifies a developer-certified
-**0.16.1** environment. It has not been refreshed merely because
-the new CI checks passed.
+The currently committed manifest identifies the verified
+**0.18.0** development environment. It was updated by the actual
+`--certify` command after two separate **389/389 basic-suite passes**
+in the pinned reference runtime; earlier CI successes alone did not
+create this certification.
 
 ### 9.1 Certification before 1.0.0
 
-The project's package metadata is currently **0.17.0**, and the
-verified fixes have accumulated after that release. An intermediate
-release candidate such as **0.18.0** can be prepared and certified
-before moving to 1.0.0, subject to normal version/release review.
-Its certification should record **0.18.0**, not 1.0.0.
+The intermediate **0.18.0 release candidate**, containing the changes
+after 0.17.0, has now been formally developer-certified in the controlled
+reference environment ([issue #106](https://github.com/monacofj/moeabench/issues/106),
+[certification run](https://github.com/monacofj/moeabench/actions/runs/44351880965)).
+The run executed `python test.py --basic` and then the actual
+`python test.py --certify`, each with **389/389 tests passing**.
+This approves the tested development environment and does **not** itself
+publish a release, Git tag or performance reference. The new manifest
+records **0.18.0**, not 1.0.0.
 
 When 1.0.0 is prepared, the package version should be changed
 first and the appropriate suites and environment certification
