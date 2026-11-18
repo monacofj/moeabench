@@ -14,6 +14,8 @@ from typing import Any
 import numpy as np
 from scipy import stats
 
+from . import performance_stability_v2 as protocol_v2
+
 SCHEMA = "moeabench_performance_reference_v1"
 METRICS = frozenset({"igd", "igdplus", "gd", "gdplus", "emd"})
 
@@ -29,8 +31,10 @@ def load_reference(path: str | Path) -> dict:
     """Validate a *preexisting* reference before executing any algorithm."""
     with Path(path).open(encoding="utf-8") as fh:
         document = json.load(fh)
+    if document.get("schema") == protocol_v2.SCHEMA_V2:
+        return protocol_v2.validate_v2(document)
     if document.get("schema") != SCHEMA:
-        raise ValueError(f"Unsupported performance reference schema; expected {SCHEMA}")
+        raise ValueError(f"Unsupported performance reference schema; expected {SCHEMA} or {protocol_v2.SCHEMA_V2}")
     provenance = document.get("provenance")
     if not isinstance(provenance, dict) or not all(
         isinstance(provenance.get(k), str) and provenance[k].strip()
@@ -147,16 +151,39 @@ def verify_performance(reference_path: str | Path, show: bool = True) -> dict:
     """Run only the explicitly listed scenarios; never create baselines."""
     reference = load_reference(reference_path)
     reports = []
+    is_v2 = reference["schema"] == protocol_v2.SCHEMA_V2
     for case in reference["cases"]:
         observed = [_measure_case(case, seed) for seed in case["seeds"]]
-        reports.append(assess_case(case, observed))
-    status = "FAILED" if any(r["status"] == "FAILED" for r in reports) else "PASSED"
-    result = {"status": status, "cases": reports, "source": str(reference_path)}
+        if is_v2:
+            reports.append(protocol_v2.assess_case_v2(
+                case, observed,
+                family_alpha=float(reference["family_alpha"]),
+                family_cases=len(reference["cases"]),
+                target_power=float(reference["target_power"]),
+            ))
+        else:
+            reports.append(assess_case(case, observed))
+    status = (
+        protocol_v2.aggregate_v2(reports) if is_v2
+        else ("FAILED" if any(r["status"] == "FAILED" for r in reports) else "PASSED")
+    )
+    result = {"status": status, "cases": reports,
+              "schema": reference["schema"], "source": str(reference_path)}
     if show:
         print("MoeaBench statistical performance stability:", status)
         for report in reports:
-            print("  %s: %s (n=%d, p=%.4g, mean_delta=%.6g)" % (
-                report["id"], report["status"], report["runs"],
-                report["pvalue"], report["mean_delta"]
-            ))
+            if is_v2:
+                print(
+                    "  %s: %s (n=%d, paired mean delta=%.6g, "
+                    "confidence interval=[%.6g, %.6g], margin=%.6g)" % (
+                        report["id"], report["status"], report["runs"],
+                        report["mean_delta"], report["ci_lower"],
+                        report["ci_upper"], report["practical_floor"],
+                    )
+                )
+            else:
+                print("  %s: %s (n=%d, p=%.4g, mean_delta=%.6g)" % (
+                    report["id"], report["status"], report["runs"],
+                    report["pvalue"], report["mean_delta"]
+                ))
     return result
