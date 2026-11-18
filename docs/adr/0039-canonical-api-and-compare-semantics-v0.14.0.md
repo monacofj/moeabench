@@ -215,4 +215,4 @@ This ADR is enforced by:
 
 ## Current Status Note
 
-The namespace grammar, comparison semantics, semantic aliases, canonical view names, and removal of `summary()` remain historical decisions of this ADR. Section 2.2 and the corresponding audit-only migration note are no longer the complete public diagnostics contract: [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) makes the individual `mb.clinic` physical metrics and `q_*` scores public while retaining `audit()` as the high-level orchestrator. Equivalent direct and audited calls must share the same canonical diagnostic context.
+The namespace grammar, comparison semantics, semantic aliases, canonical view names, and removal of `summary()` remain historical decisions of this ADR. The historical `mb.clinic` migration note does not describe the FAIR-free 0.x public API. [ADR 0048](0048-public-clinical-metrics-and-audit-context-parity.md) records the temporary removal of FAIR clinical metrics, Q-scores and `audit()`. Conventional metric, statistics and view contracts in this ADR continue to apply.
