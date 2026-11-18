@@ -58,10 +58,10 @@ This directory contains records of the key architectural decisions made during t
 | [0045](0045-component-seed-allocation.md) | Deterministic Component Seed Allocation | Accepted | 2026-08-21 |
 | [0046](0046-relative-ordinal-hypervolume.md) | Relative Scaling for Ordinal Hypervolume | Accepted | 2026-08-21 |
 | [0047](0047-conventional-hypervolume-relative-scaling.md) | Conventional Hypervolume Relative Scaling | Accepted | 2026-08-27 |
-| [0048](0048-public-clinical-metrics-and-audit-context-parity.md) | Temporary Removal of FAIR from the 0.x Release Line | Accepted (release exception) | 2026-11-17 |
+| [0048](0048-public-clinical-metrics-and-audit-context-parity.md) | Public Clinical Metrics and Audit Context Parity | Accepted | 2026-08-27 |
 | [0049](0049-longitudinal-headway-definition.md) | Longitudinal Headway Definition | Accepted | 2026-08-27 |
 
-| [0050](0050-certified-environment-verification-and-provenance.md) | Certified Environment Verification and Experiment Provenance | Accepted (amended 2026-11-17) | 2026-10-15 |
+| [0050](0050-certified-environment-verification-and-provenance.md) | Certified Environment Verification and Experiment Provenance | Accepted | 2026-10-15 |
 | [0051](0051-fair-conformance-audit.md) | FAIR Conformance Audit, Scientific Oracles, and Validation Log | Proposed (investigation in progress) | 2026-10-21 |
 | [0052](0052-dpf2-dtlz7-exact-pareto-regions.md) | Exact Pareto-region sampling for DPF2 and DTLZ7 (issue #78) | Proposed | 2026-11-11 |
 | [0053](0053-dpf5-mixed-dimensional-reference-measure.md) | DPF5: mixed-dimensional ideal reference and negative ECDF law (scientific research, issue #81) | Proposed / noncertified | 2026-11-12 |
@@ -82,7 +82,7 @@ The status column records whether a historical ADR remains wholly normative or h
 
 - Metrology and physical/quality layers: [0026](0026-clinical-metrology.md) → [0028](0028-refined-clinical-diagnostics-v0.9.1.md) → [0029](0029-headway-nomenclature.md) / [0036](0036-half-normal-closeness-v0.12.0.md) → [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) → [0049](0049-longitudinal-headway-definition.md) for the current HEADWAY definition.
 - FAIR implementation and pending calibration science: [0051](0051-fair-conformance-audit.md) records the completed issue #75 implementation audit; [0052](0052-dpf2-dtlz7-exact-pareto-regions.md) records source PF corrections; [0053](0053-dpf5-mixed-dimensional-reference-measure.md) records the DPF5 probability-measure and negative-ECDF experiments, **proposed only**, with scientific calibration release in [issue #81](https://github.com/monacofj/moeabench/issues/81).
-- The FAIR/clinical public API described by historical decisions is unavailable for the FAIR-free 0.x release under [0048](0048-public-clinical-metrics-and-audit-context-parity.md). Core canonical analysis/view contracts in [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) and [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) remain applicable without FAIR.
+- Public API and result/view contract: [0030](0030-clinical-instrument-architecture.md) → [0039](0039-canonical-api-and-compare-semantics-v0.14.0.md) → [0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) → [0048](0048-public-clinical-metrics-and-audit-context-parity.md).
 
 ---
 *For more information on the ADR process, see [Architecture Decision Records](https://adr.github.io/).*
