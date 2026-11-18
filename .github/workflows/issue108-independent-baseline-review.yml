@@ -1,0 +1,83 @@
+name: "Issue 108 - independent validation of inaugural statistical reference"
+on:
+  push:
+    branches: [feat/108-certification-lifecycle]
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      NPY_DISABLE_CPU_FEATURES: X86_V4
+      OPENBLAS_CORETYPE: HASWELL
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with: {path: tooling}
+      - uses: actions/checkout@v4
+        with:
+          ref: 0d3e66804351e23b93fb483ff25e178e06ef6e12
+          path: original
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.14.4'}
+      - name: Install original 0.18.0 certified numerical dependencies
+        working-directory: original
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6" threadpoolctl
+      - name: Check native reference profile
+        working-directory: original
+        run: python scripts/check_numerical_reference_runtime.py
+      - name: Independently validate exact historical artifact and replay 18 observations
+        working-directory: original
+        run: |
+          python - <<'PY'
+          import hashlib, json, math, pathlib, sys
+          import numpy as np
+          import moeabench as mb
+          from pymoo.indicators.igd_plus import IGDPlus
+          path=pathlib.Path("../tooling/moeabench/resources/certifications/0.18.0/performance-reference.json")
+          raw=path.read_bytes()
+          sha=hashlib.sha256(raw).hexdigest()
+          assert sha=="8e635a027520b22fc14aa703ba85d105207b708cf05c885407b69ecb22212730",(sha,"archived reference != original published artifact")
+          data=json.loads(raw)
+          assert data["status"]=="CANDIDATE_REQUIRES_REVIEW"
+          assert data["source_version"]=="0.18.0"
+          assert data["source_revision"]=="0d3e66804351e23b93fb483ff25e178e06ef6e12"
+          assert data["protocol"]=={
+              "decision_metric":"igdplus","diagnostics":["gdplus","emd"],"family_alpha":0.01,
+              "front_points":512,"margin_fraction":0.001,"max_seeds":64,"numeric_floor":1e-12,
+              "pilot":8,"target_power":0.95
+          }
+          cases=data["cases"]
+          assert len(cases)==6
+          for problem_id,reference in data["reference_fronts"].items():
+              f=np.ascontiguousarray(np.asarray(reference["points"],dtype=np.float64))
+              assert f.shape==(512,3) and np.isfinite(f).all()
+              assert hashlib.sha256(f.tobytes()).hexdigest()==reference["sha256_float64"]
+          for case in cases:
+              seeds=case["seeds"]
+              assert seeds==[424242+104729*i for i in range(64)]
+              observed=case["observations"]
+              assert len(observed)==64
+              assert [item["seed"] for item in observed]==seeds
+              assert all(item["front_size"]>0 and all(
+                  math.isfinite(item[metric]) and item[metric]>=0 for metric in ("igdplus","gdplus","emd")
+              ) for item in observed)
+              mop=getattr(mb.mops,case["mop"])(**case["mop_kwargs"])
+              ref=np.asarray(data["reference_fronts"][case["reference_id"]]["points"],dtype=float)
+              for i in (0,17,63):
+                  seed=seeds[i]
+                  moea=getattr(mb.moeas,case["moea"])(**case["moea_kwargs"],seed=seed)
+                  exp=mb.experiment(mop=mop,moea=moea)
+                  exp.run(repeat=1,silent=True)
+                  front=np.asarray(exp.front(),dtype=float)
+                  assert front.shape[0]==observed[i]["front_size"]
+                  actual=float(mb.metrics.igdplus(front,ref=ref,progress=False))
+                  assert np.isclose(actual,observed[i]["igdplus"],atol=1e-12,rtol=1e-9), (case["id"],seed,actual,observed[i]["igdplus"])
+                  independent=float(IGDPlus(ref,zero_to_one=True).do(front))
+                  assert np.isclose(actual,independent,atol=1e-12,rtol=1e-9)
+              print("ISSUE108_REVIEW_CASE",case["id"],"n=64", "3 independent replays PASS",flush=True)
+          print("ISSUE108_REVIEW_APPROVED_SHA256",sha,flush=True)
+          PY
