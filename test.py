@@ -289,7 +289,13 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
-    parser.add_argument("--certify", action="store_true", help="Run complete basic suite; certify versions only on success")
+    parser.add_argument("--certify", action="store_true", help="Previous certification command; to be removed after regression-test migration")
+    certification_group = parser.add_mutually_exclusive_group()
+    certification_group.add_argument("--certify-numeric", action="store_true", help="Certify basic numeric suite and archive compact version evidence")
+    certification_group.add_argument("--record-performance-baseline", action="store_true", help="Generate an immutable performance reference for review")
+    certification_group.add_argument("--certify-performance", action="store_true", help="Evaluate an approved historical performance reference")
+    parser.add_argument("--reference", metavar="JSON", help="Approved historical reference for --certify-performance")
+    parser.add_argument("--output", metavar="JSON", help="Immutable reference/certificate output path")
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
@@ -303,6 +309,49 @@ def main():
     level_group.add_argument("--deep", action="store_true", help="Run or list through the deep level")
 
     args = parser.parse_args()
+    new_actions = (args.certify_numeric, args.record_performance_baseline, args.certify_performance)
+    if any(new_actions):
+        if (args.certify or args.list or args.unit or args.integration or args.stability or
+                args.numeric_stability or args.performance_stability or
+                args.performance_reference or args.smoke or args.basic or args.deep):
+            parser.error("Certification operations cannot be combined with other test selections")
+        if args.certify_numeric:
+            if args.output or args.reference:
+                parser.error("--certify-numeric does not take --output or --reference")
+            # Require the approved numerical kernel dispatch; never silently bypass it.
+            subprocess.run([sys.executable, "scripts/check_numerical_reference_runtime.py"], check=True)
+            if _certify_environment() != 0:
+                sys.exit(1)
+            from moeabench.certification import register_numeric_history
+            try:
+                location = register_numeric_history()
+            except (OSError, ValueError, RuntimeError) as exc:
+                parser.exit(2, f"Could not register numeric history: {exc}\\n")
+            print("Registered numerical certificate:", location)
+            sys.exit(0)
+        if not args.output:
+            parser.error("The selected certification operation requires --output JSON")
+        if args.record_performance_baseline:
+            if args.reference:
+                parser.error("--record-performance-baseline cannot take --reference")
+            from moeabench.certification import create_performance_baseline
+            try:
+                location = create_performance_baseline(args.output)
+            except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+                parser.exit(2, f"Could not create performance reference: {exc}\\n")
+            print("Candidate performance reference:", location)
+            sys.exit(0)
+        if not args.reference:
+            parser.error("--certify-performance requires --reference approved.json")
+        from moeabench.certification import certify_performance
+        try:
+            location, result = certify_performance(args.reference, args.output)
+        except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as exc:
+            parser.exit(2, f"Could not certify performance: {exc}\\n")
+        print("Performance certificate:", location, result["status"])
+        sys.exit(0 if result["status"] == "CERTIFIED" else 1)
+    if args.reference or args.output:
+        parser.error("--reference and --output require a new certification operation")
     if args.certify:
         if (args.list or args.unit or args.integration or args.stability or
                 args.numeric_stability or args.performance_stability or
