@@ -44,6 +44,7 @@ _RESOURCE_ROOT = Path(__file__).parent / "resources" / "certifications"
 _NUMERICAL_FILES = (
     "tests/stability_reference_fronts.json",
     "tests/stability_reference_gt.json",
+    "tests/stability_gt_geometry_reference.json",
     "tests/conventional_metric_reference_v1.json",
 )
 
