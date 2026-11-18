@@ -718,3 +718,30 @@ stability; stochastic degradation checked by an externally
 referenced statistical experiment; dependency versions registered
 by formal certification. Completing one does not silently
 complete or substitute for the others.
+
+
+## 11. Approved next-generation certificate lifecycle (not yet CLI-implemented)
+
+The maintainer has approved a consolidated **target architecture** in
+[ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md),
+tracked by [issue #108](https://github.com/monacofj/moeabench/issues/108).
+It fixes a bounded, six-case, 24-seed IGD+ regression study, simultaneous
+statistical decisions, and an immutable archive of version-specific
+numerical and performance verification evidence.
+
+Its three **future command names** are `--certify-numeric`,
+`--record-performance-baseline`, and `--certify-performance`.
+They have independent effects; *certifying a numerical environment
+never automatically creates, updates or renews a performance reference*.
+A reference can be recorded only by an explicit, approved operation;
+a future performance check consumes and cites that historical reference,
+and never edits it.
+
+**Implementation status:** the current `test.py` still uses
+`--certify` for the already performed 0.18.0 environment certification
+and `--performance-stability --performance-reference` for the
+existing explicit statistical comparison. The approved names and
+single-schema replacement in ADR 0056 must not be represented as
+already available until the corresponding code and contract tests
+have been audited and integrated. The 0.18.0 numerical certification
+and frozen numerical fixtures remain valid and unchanged.

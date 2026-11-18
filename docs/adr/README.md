@@ -91,6 +91,12 @@ The status column records whether a historical ADR remains wholly normative or h
 - The current operational classification, commands and reference safeguards
   are in the [testing manual](../test.md); historical decisions remain
   preserved in their original ADR sections.
+- **New target architecture (maintainer-approved, implementation pending):**
+  [ADR 0056](0056-versioned-certification-and-performance-reference-lifecycle.md)
+  fixes the three independent certification/baseline operations, six
+  prespecified statistical scenarios, 24 seeds, decision rule and immutable
+  historical registry. Active CLI commands remain as described in the
+  testing manual until the migration is implemented and checked.
 
 ### Clinical diagnostics
 
