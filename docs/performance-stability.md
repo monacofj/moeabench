@@ -156,6 +156,11 @@ or investigate the study's precision and variability. A
 reference. A genuinely new scientific baseline requires a
 separate explicitly authorized and reviewed decision.
 
-The historical implementation and provisional statistical interfaces
-remain documented in Git history; this document specifies the
-approved unified protocol for issue #108.
+The inaugural 0.18.0 performance reference is now **technically approved**
+after the [independent provenance and 18-replay audit](https://github.com/monacofj/moeabench/actions/runs/44409693329).
+The audit verified all 384 observations, exact reference artifact SHA,
+objective-reference hashes, source/runtime profile and independent solver
+replays. The approval record states its automated technical scope; it
+makes no claim that the maintainer personally inspected every result.
+The historical experimental implementations remain recoverable in Git
+history; the public interface now has a single certification protocol.
