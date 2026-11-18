@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - tests/unit-contract-consolidation
-  push:
-    branches:
-      - refactor/separate-stability-verification
   workflow_dispatch:
 
 jobs:
@@ -54,3 +51,13 @@ jobs:
           PY
       - name: Run numeric basic only (no statistical performance test)
         run: python test.py --numeric-stability --basic
+      - name: Diagnose pre-existing NSGA3 x DPF1 front divergence
+        if: failure()
+        run: python tests/diagnose_nsga3_dpf1.py > nsga3-dpf1-diagnostic.log
+      - name: Preserve divergence diagnostic as artifact
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nsga3-dpf1-diagnostic
+          path: nsga3-dpf1-diagnostic.log
+          if-no-files-found: warn
