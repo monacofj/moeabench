@@ -100,3 +100,23 @@ uses the supplied snapshot.
   the canonical namespace and former audit-only public surface.
 - [ADR 0040](0040-canonical-view-inputs-and-no-compatibility-shims.md) requires
   programmatic parity between canonical analytical results and views.
+
+## Temporary release exception — 2026-11-17 (maintainer-authorized)
+
+**Scope: FAIR-free 0.17.x/1.0.0 preparation.** The maintainer authorized
+the architectural exception while FAIR physical metrics, Q-scores, and the
+clinical audit remain research in progress. The public `mb.clinic` namespace
+and its endpoints specified above are **temporarily unavailable** in the
+FAIR-free release. Public absence checks are therefore intentional during
+this release; they do not redefine the semantics of any conventional
+`mb.metrics` indicator or the MOP calibration API.
+
+The original parity contract above remains the historical requirement for
+reintroduction: direct clinical metric calls and the corresponding aggregate
+audit must use equivalent diagnostic contexts and numerical semantics.
+Reintroducing FAIR requires a separate ADR/review and independent test
+evidence. In particular, `mop.calibrate()` and Ground Truth are
+FAIR-independent, and cannot be removed or reinterpreted under this exception.
+
+This exception supersedes only the availability requirement of this ADR
+during the FAIR-free release. The historical decision is preserved verbatim.
