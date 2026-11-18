@@ -208,6 +208,8 @@ __all__ = [
     "version",
     "verify_version",
     "verify_stability",
+    "certification_history",
+    "matching_certified_environments",
     "verify_experiment",
     "verification_status",
     "check_dependencies",
