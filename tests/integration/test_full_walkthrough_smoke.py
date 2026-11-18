@@ -13,7 +13,7 @@ def test_full_walkthrough_smoke(paired_experiments, canonical_gt):
     assert mb.view.topology(exp1, exp2, mode="static", show=False) is not None
 
     metric_pairs = [
-        (mb.metrics.hv(exp1, ref=canonical_gt, scale="abs"), mb.metrics.hv(exp2, ref=canonical_gt, scale="abs")),
+        (mb.metrics.hv(exp1, scale="abs"), mb.metrics.hv(exp2, scale="abs")),
         (mb.metrics.gd(exp1, ref=canonical_gt), mb.metrics.gd(exp2, ref=canonical_gt)),
         (mb.metrics.gdplus(exp1, ref=canonical_gt), mb.metrics.gdplus(exp2, ref=canonical_gt)),
         (mb.metrics.igd(exp1, ref=canonical_gt), mb.metrics.igd(exp2, ref=canonical_gt)),

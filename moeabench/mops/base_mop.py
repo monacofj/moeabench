@@ -93,3 +93,32 @@ class BaseMop(ABC):
         """
         raise NotImplementedError(f"ps() sampling (analytical) not implemented for {self.__class__.__name__}")
 
+    def calibrate(
+        self,
+        source_baseline: Optional[str] = None,
+        source_gt: Optional[Union[str, np.ndarray]] = None,
+        source_search: Optional[Any] = None,
+        force: bool = False,
+        **kwargs,
+    ) -> bool:
+        """Calibrate this MOP's Ground Truth independently of FAIR.
+
+        Historical arguments for the three GT sources, portable sidecar and
+        reload/force behavior are preserved. Experimental ECDF-only parameters
+        are unsupported in the GT-only implementation.
+        """
+        from .calibration import calibrate_mop
+        return calibrate_mop(
+            self,
+            source_baseline=source_baseline,
+            source_gt=source_gt,
+            source_search=source_search,
+            force=force,
+            **kwargs,
+        )
+
+    @property
+    def calibrated_gt(self) -> np.ndarray:
+        """Return a copy of this MOP's calibrated objective-space truth."""
+        from .calibration import calibrated_gt
+        return calibrated_gt(self)
