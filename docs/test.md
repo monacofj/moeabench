@@ -78,7 +78,7 @@ These two contracts are independent:
 - metrics may drift while the produced front stays unchanged
 - the produced front may drift while the metrics remain internally correct
 
-In the current FAIR-free recovery, `--numeric-stability` directly exercises frozen PRNG signatures, GT geometry and seeded solver fronts. Small independent conventional-indicator oracles run in the `unit` scope; a full `python test.py --basic` includes both. Broader permanent frozen outputs for conventional metrics remain a separately audited coverage gap, and a passing standalone `--numeric-stability` call must not be described as exhaustive metric certification.
+In the current FAIR-free recovery, `--numeric-stability` directly exercises frozen PRNG signatures, GT geometry and seeded solver fronts. Small independent conventional-indicator oracles run in the `unit` scope. Fixed-input, 2D/3D analytical values for GD, IGD, GD+, IGD+, EMD, and exact/estimated HV (including relative and calibrated absolute normalization) are also verified in numerical stability `basic` against the reviewed-at-merge fixture `tests/conventional_metric_reference_v1.json` (derivations in `docs/audits/conventional-metric-reference-v1.md`). A full `python test.py --basic` includes both. These representative cases do not establish exhaustive behavior or certify stochastic MOEA trajectories.
 
 ## Levels By Scope
 
