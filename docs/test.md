@@ -23,7 +23,8 @@ The level axis is intentionally not perfectly symmetric across scopes:
 
 - `unit` has a single effective reach: total
 - `integration` has two effective reaches: `smoke` and `basic`
-- `stability` has three effective reaches: `smoke`, `basic`, and `deep`
+- numerical `stability` has two active reaches: `smoke` and `basic`
+- statistical `performance-stability` uses an explicit external reference rather than a level flag
 
 The runner still uses a common marker vocabulary for implementation convenience, but the semantic meaning of the levels depends on the selected scope.
 
@@ -63,9 +64,9 @@ Integration has two meaningful reaches:
 - `smoke`: central pipelines, typically one representative pipeline per major domain
 - `basic`: all integration pipelines and their richer variations; this is the total integration reach
 
-### `stability`
+### `stability` / `numeric-stability`
 
-Numerical and deterministic stability tests.
+Numerical and deterministic stability tests. `--stability` is retained as an alias of `--numeric-stability`.
 
 Stability protects two distinct scientific contracts:
 
@@ -77,10 +78,7 @@ These two contracts are independent:
 - metrics may drift while the produced front stays unchanged
 - the produced front may drift while the metrics remain internally correct
 
-For that reason, `stability` always concerns both:
-
-- whether the measurements still match
-- whether the produced front still matches
+In the current FAIR-free recovery, `--numeric-stability` directly exercises frozen PRNG signatures, GT geometry and seeded solver fronts. Small independent conventional-indicator oracles run in the `unit` scope; a full `python test.py --basic` includes both. Broader permanent frozen outputs for conventional metrics remain a separately audited coverage gap, and a passing standalone `--numeric-stability` call must not be described as exhaustive metric certification.
 
 ## Levels By Scope
 
@@ -116,21 +114,11 @@ Meaning by scope:
 - `integration`: all integration pipelines and richer variations beyond the central smoke set
 - `stability`: everything in smoke, plus full analytical stability checks and comparisons against high-resolution analytical ground truth when such truth is available in closed or directly sampled analytical form
 
-### `deep`
+### Statistical `performance-stability`
 
-Expensive, high-rigor coverage.
+This opt-in assessment runs only the MOP/MOEA/seed cases specified by a separately reviewed, versioned JSON reference. It compares paired performance observations against externally recorded results and uses both statistical significance and a predefined practical degradation threshold. The reference supplies the fixed objective-space front used for quality measurement. It never creates or refreshes its own baselines. Its check does not run automatically after a numerical failure.
 
-Expected usage:
-
-- release preparation
-- calibration renewal
-- statistically rigorous revalidation
-
-Meaning by scope:
-
-- `unit`: equivalent to total unit coverage
-- `integration`: not applicable
-- `stability`: everything in `basic`, plus empirically determined reference regimes where the reference truth is itself calibration-derived rather than analytically available
+The historical `deep` statistical test has a missing baseline and is excluded from the active execution path. The runner rejects `--stability --deep` and all-scopes `--deep` rather than implying that a skipped test passed. `--unit --deep` remains a synonym for the full unit scope.
 
 ## Commands
 
@@ -151,7 +139,8 @@ Examples:
 ```bash
 python3 test.py --unit --smoke
 python3 test.py --integration --basic
-python3 test.py --stability --deep
+python3 test.py --numeric-stability --basic
+python3 test.py --performance-stability --performance-reference /path/to/reviewed-performance.json
 ```
 
 For `unit`, all of the following are equivalent and run the complete unit suite. In runner output, this batch is shown simply as `UNIT`:
@@ -175,7 +164,7 @@ To inspect the current suite classification:
 ```bash
 python3 test.py --list
 python3 test.py --list --integration
-python3 test.py --list --stability --smoke
+python3 test.py --list --numeric-stability --smoke
 ```
 
 The listing uses pytest node ids such as:
@@ -194,13 +183,15 @@ For release preparation, run the entire suite and then certify the developer
 reference environment:
 
 ```bash
-python test.py --deep
+python test.py --basic
 python test.py --certify
 ```
 
-`--certify` independently executes the complete deep battery (all unit,
-basic integration, and deep stability checks) before updating the shipped
-`moeabench/resources/certified_environment.json`. If any test
+`--certify` independently executes the complete basic battery (all unit,
+basic integration, and basic numerical stability checks) before updating the shipped
+`moeabench/resources/certified_environment.json`. The certification subprocess
+ignores inherited `PYTEST_ADDOPTS` to prevent environment-supplied selection flags
+(such as `-k`, `--ignore`, or `--deselect`) from silently reducing that battery. If any test
 fails, the manifest is **not** updated. Review and commit changes to the
 manifest; do not revise numerical fixtures simply to make a failing
 environment pass. An explicitly skipped test remains recorded as skipped,
@@ -243,7 +234,8 @@ Implementation note:
 
 - `unit` tests are encoded with level markers for tooling uniformity, but semantically the unit scope is total-only
 - `integration` uses `level_smoke` and `level_basic`
-- `stability` is the scope where the full `smoke/basic/deep` distinction carries scientific meaning
+- numerical stability uses `scope_stability` with `level_smoke` and `level_basic`; the old `level_deep` file is retained for historical investigation but is not an active certification path
+- performance stability uses an explicit reference-backed runner, not the numerical pytest marker tiers
 
 ## Stability Data
 
@@ -254,13 +246,14 @@ In particular:
 - analytical stability uses frozen reference inputs and frozen expected outputs
 - algorithmic stability uses frozen final fronts produced by canonical `(MOP, MOEA, seed, budget)` configurations
 - `basic` stability may additionally compare produced fronts against high-resolution analytical ground truth when the problem admits such a truth
-- `deep` stability may extend the contract to empirically determined reference regimes built from calibration artifacts or MOEA-derived reference procedures
+- performance stability uses a reviewed independent reference and paired stochastic measurements from selected MOP/MOEA/seed configurations
 - agreement down to 6 decimal places is the default certification floor unless a stricter pathway contract applies
 
 ## Notes
 
 - `smoke` should remain fast enough for default local use.
 - `basic` should provide broad confidence without becoming prohibitive.
-- `deep` may require explicit opt-in or extra artifacts and is not intended for routine execution.
+- the historical `deep` statistical case currently lacks its baseline and is non-operative; it is not a release-certification gate. Performance stability requires a separately reviewed reference and explicit invocation (ADR 0050).
+- `--performance-stability` is explicitly opt-in; a missing or unreviewed reference is an error, not a pass.
 - the key scientific distinction inside `stability` is always twofold: numerical stability of the measurements and numerical stability of the produced fronts.
-- when no scope is provided, the runner executes `unit`, `integration`, and `stability` at the requested level; in this all-scopes mode, `integration` participates up to `basic`, so `python3 test.py --deep` still runs integration with its full `basic` reach.
+- when no scope is provided, the runner executes `unit`, `integration`, and numerical `stability` at smoke or basic level; `--deep` is rejected for the numerical/all-scopes path.

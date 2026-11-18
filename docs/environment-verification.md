@@ -40,7 +40,7 @@ functional plotting compatibility is tested in the integration suite.
 
 ## Developer certification
 
-From the developer reference environment, run `python test.py --deep` (unit, integration and stability test suites). Then run `python test.py --certify`, which reruns the complete deep suite and updates `moeabench/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines.
+From the developer reference environment, run `python test.py --basic` (unit, integration and numerical stability test suites). Then run `python test.py --certify`, which reruns the complete basic suite and updates `moeabench/resources/certified_environment.json` **only on success**. Review and commit this manifest with the appropriate release; it does not overwrite numerical baselines. The legacy `--deep` statistical test has no usable baseline and is not accepted as release evidence. For a separate, explicit performance assessment, use `python test.py --performance-stability --performance-reference PATH` with an independently reviewed historical reference; see [Performance stability](performance-stability.md). A numerical failure never triggers this statistical assessment automatically.
 
 Certified versions are not inferred from package dependency lower bounds or a random user's installation. If no developer-certified manifest has been committed, the status is UNCONFIGURED and certification is pending.
 

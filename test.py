@@ -233,8 +233,8 @@ def _list_tests(scope: str | None, level: str | None):
 
 
 def _selected_scope(args) -> str | None:
-    for scope in SCOPES:
-        if getattr(args, scope):
+    for scope in (*SCOPES, "numeric-stability", "performance-stability"):
+        if getattr(args, scope.replace("-", "_")):
             return scope
     return None
 
@@ -247,7 +247,7 @@ def _selected_level(args) -> str | None:
 
 
 def _certify_environment():
-    """Certify only after a fresh, complete deep test run passes.
+    """Certify only after a fresh, complete basic test run passes.
 
     Never modify numerical reference fixtures here: acceptance of a new
     dependency combination must be based on existing canonical baselines.
@@ -255,10 +255,16 @@ def _certify_environment():
     import json
     import pathlib
 
-    print("Running full deep suite before certifying dependency versions...", flush=True)
-    completed = subprocess.run([sys.executable, __file__, "--deep"])
+    print("Running full basic suite before certifying dependency versions...", flush=True)
+    # Do not permit PYTEST_ADDOPTS (e.g. -k, --ignore, --deselect)
+    # to silently reduce the verification suite during certification.
+    certification_env = dict(os.environ)
+    certification_env.pop("PYTEST_ADDOPTS", None)
+    completed = subprocess.run(
+        [sys.executable, __file__, "--basic"], env=certification_env
+    )
     if completed.returncode != 0:
-        print("Certification denied: the full deep suite did not pass.", file=sys.stderr)
+        print("Certification denied: the full basic suite did not pass.", file=sys.stderr)
         return 1
 
     from moeabench.environment_verification import snapshot, _MANIFEST_PATH
@@ -266,7 +272,7 @@ def _certify_environment():
     target = pathlib.Path(_MANIFEST_PATH)
     payload = {
         "schema": 1,
-        "description": "Developer-certified dependency versions after a complete deep suite.",
+        "description": "Developer-certified dependency versions after a complete basic suite.",
         "versions": versions,
     }
     pending = target.with_suffix(".pending")
@@ -283,11 +289,14 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
-    parser.add_argument("--certify", action="store_true", help="Run complete deep suite; certify versions only on success")
+    parser.add_argument("--certify", action="store_true", help="Run complete basic suite; certify versions only on success")
     scope_group = parser.add_mutually_exclusive_group()
     scope_group.add_argument("--unit", action="store_true", help="Run or list the unit scope")
     scope_group.add_argument("--integration", action="store_true", help="Run or list through the integration scope")
-    scope_group.add_argument("--stability", action="store_true", help="Run or list through the stability scope")
+    scope_group.add_argument("--stability", action="store_true", help="Legacy alias for --numeric-stability")
+    scope_group.add_argument("--numeric-stability", action="store_true", help="Check fixed numerical references and seeded solver fronts")
+    scope_group.add_argument("--performance-stability", action="store_true", help="Run opt-in statistical regression against an external reviewed baseline")
+    parser.add_argument("--performance-reference", metavar="JSON", help="Versioned, reviewed reference artifact for --performance-stability")
     level_group = parser.add_mutually_exclusive_group()
     level_group.add_argument("--smoke", action="store_true", help="Run or list the smoke level")
     level_group.add_argument("--basic", action="store_true", help="Run or list through the basic level")
@@ -295,11 +304,30 @@ def main():
 
     args = parser.parse_args()
     if args.certify:
-        if args.list or args.unit or args.integration or args.stability or args.smoke or args.basic or args.deep:
+        if (args.list or args.unit or args.integration or args.stability or
+                args.numeric_stability or args.performance_stability or
+                args.performance_reference or args.smoke or args.basic or args.deep):
             parser.error('--certify cannot be combined with test selectors')
         sys.exit(_certify_environment())
+    if args.performance_stability:
+        if args.list or args.smoke or args.basic or args.deep:
+            parser.error('--performance-stability is separate; omit --list and level flags')
+        if not args.performance_reference:
+            parser.error('--performance-stability requires --performance-reference JSON; no default baseline exists')
+        from moeabench.performance_stability import verify_performance
+        try:
+            result = verify_performance(args.performance_reference)
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            parser.exit(2, f"Performance reference/verification error: {exc}\n")
+        sys.exit(0 if result["status"] == "PASSED" else 1)
+    if args.performance_reference:
+        parser.error('--performance-reference is valid only with --performance-stability')
     scope = _selected_scope(args)
+    if scope == "numeric-stability":
+        scope = "stability"
     level = _selected_level(args)
+    if level == "deep" and scope in (None, "stability"):
+        parser.error('Historical deep statistical test has no baseline. Use --numeric-stability --basic, or --performance-stability --performance-reference JSON.')
 
     if scope == "integration" and level == "deep":
         parser.error("`--integration` only supports `--smoke` or `--basic`.")
