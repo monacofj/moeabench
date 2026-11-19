@@ -98,6 +98,39 @@ nearest distances, finite-sample neighbor spacing, geometric residuals,
 uniqueness and extrema coverage. No diagnostic threshold is
 misrepresented as a mathematical theorem or CI acceptance gate.
 
+## Controlled farthest-point candidate experiment
+
+A second **read-only** diagnostic compares the current actual MOP
+`pf(n_points)` with an independent objective-space greedy
+farthest-point selection (FPS) candidate. It uses the same finite-budget
+quality diagnostics and a third, independently seeded diagnostic
+reference; no candidate is chosen from that diagnostic reference.
+
+```bash
+python scripts/audit/gt_fps_comparison.py --objectives 3 5 --budget 256 1024
+python -m pytest tests/unit/test_gt_fps_comparison_issue119.py -q
+```
+
+FPS initializes at all analytical objective-axis extrema, then
+selects the candidate with the largest current nearest-sample
+distance. Its `--candidate-pool`, `--reference-size` and seed
+are explicit and its output is reproducible. The candidate is
+constructed in objective space *only*: this study does not propose a
+replacement for MOP `ps()`, which must return decision vectors
+mapping to the chosen front. Constructing valid decision-space
+preimages remains a separate correctness obligation.
+
+Importantly, the classical 2-approximation guarantee for finite
+metric k-center applies relative to **the supplied finite candidate
+pool**, with the algorithm's seed-center constraints accounted for;
+it is **not** a certified bound on covering an entire continuous
+Pareto front. Runtime measurements are exploratory and system
+dependent. The independent finite reference's worst nearest distance
+is only a lower bound on the continuous covering radius; no pass/fail
+claim may be derived from it alone. The experiment must be repeated
+with candidate pool/reference sizes and dimensions varied before
+selecting a production generator.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
