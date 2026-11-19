@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Refined GT covering net bounds (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-refined-net-119.yml"
+      - "scripts/audit/gt_refined_net_issue119.py"
+      - "tests/unit/test_gt_refined_net_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  refiner:
+    name: "Dependent rounding and tightened continuous-cover certificates"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and independent research tests
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Test mathematical proof construction and MOP bounds
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_refined_net_issue119.py -q
+      - name: Compute tightened bounds for actual unchanged MOPs
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_refined_net_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --resolutions 8 16 24 \
+            --seeds 101 202 303 --pool 4096 > gt-refined-net.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-refined-net.json"))
+          print("Paired cases:",len(d["records"]))
+          for row in d["records"]:
+              if row["seed"]!=101:continue
+              print(row["problem"],"M",row["M"],"n",row["budget"])
+              for name,cases in row["methods"].items():
+                  q=cases["24"]
+                  print(f" {name}: LOWER={q['observed_net_max_lower']:.6f} "
+                        f"UPPER={q['continuous_radius_upper']:.6f} "
+                        f"width={q['interval_width']:.6f} "
+                        f"old_width={q['previous_interval_width']:.6f}")
+          PY
+      - name: Archive raw nonproduction observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-dependent-rounding-continuous-cover
+          path: gt-refined-net.json
+          retention-days: 30
