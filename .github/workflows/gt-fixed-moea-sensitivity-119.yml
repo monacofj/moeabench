@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: GT indicator sensitivity on fixed MOEAs (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-fixed-moea-sensitivity-119.yml"
+      - "scripts/audit/gt_metric_sensitivity_issue119.py"
+      - "tests/unit/test_gt_metric_sensitivity_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  metric-sensitivity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    name: "IGD / IGD+ / HV with fixed real NSGA-II populations"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and test dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify new tests (do not alter existing regressions)
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_metric_sensitivity_issue119.py -q
+      - name: Run real NSGA-II once per seed, vary GT discretization only
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_metric_sensitivity_issue119 \
+            --objectives 3 \
+            --budgets 128 512 1024 \
+            --seeds 101 202 \
+            --pool 4096 --iterations 10 \
+            --pop-size 64 --generations 35 > gt-indicator-sensitivity.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-indicator-sensitivity.json"))
+          print("Fixed real NSGA-II populations:",len(d["records"]))
+          for x in d["records"]:
+              print(x["problem"],"M",x["M"],"MOEA seed",x["moea_seed"],
+                    "population fingerprint",x["final_population_sha256"][:16])
+              for budget in x["gt_budgets"]:
+                  for method,values in x["metrics"][str(budget)].items():
+                      print(f" budget {budget:4} method {method:12} "
+                            f"IGD {values['igd']:.6f} IGD+ {values['igdplus']:.6f} "
+                            f"H_GT {values['hv_gt_fixed_bounds']:.6f} "
+                            f"H_abs {values['hv_absolute_ratio_fixed_bounds']:.6f}")
+          for row in d["summary"]:
+              print("Sensitivity summary",row["problem"],row["M"])
+              for method,groups in row["methods"].items():
+                  for budget,metrics in groups.items():
+                      print(method,budget,"median abs change vs largest:",
+                            {k:round(v["median_abs_change_vs_largest"],7)
+                             for k,v in metrics.items()})
+          PY
+      - name: Upload raw research-only observations
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-fixed-moea-indicator-sensitivity
+          path: gt-indicator-sensitivity.json
+          retention-days: 30
