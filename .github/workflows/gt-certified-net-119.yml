@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Continuous multidimensional PF covering bounds (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-certified-net-119.yml"
+      - "scripts/audit/gt_certified_net_issue119.py"
+      - "tests/unit/test_gt_certified_net_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounds:
+    name: "DTLZ1 simplex / DTLZ2 sphere certified intervals"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and research tests
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify independent proof-based unit checks
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_certified_net_issue119.py -q
+      - name: Compute certified analytic intervals for actual MOP samplers
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_certified_net_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --resolutions 8 16 24 --pool 4096 --seed 101 \
+            --max-points 100000 > gt-certified-net.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-certified-net.json"))
+          print("Case count:",len(d["records"]))
+          for row in d["records"]:
+              print(row["problem"],"M",row["M"],"GT n",row["GT_budget"])
+              for method,metrics in row["methods"].items():
+                  for q,x in metrics.items():
+                      print(f" {method:12} q={q:2} net={x['net_points']:6} "
+                            f"LOWER={x['observed_net_max_lower']:.6f} "
+                            f"UPPER={x['continuous_radius_upper']:.6f} "
+                            f"interval_width={x['interval_width']:.6f}")
+          PY
+      - name: Preserve raw certified-bound experiment
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-analytic-multidimensional-covering
+          path: gt-certified-net.json
+          retention-days: 30
