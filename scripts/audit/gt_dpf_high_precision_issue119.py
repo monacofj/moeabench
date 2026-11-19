@@ -11,7 +11,6 @@ from __future__ import annotations
 import argparse
 import json
 import numpy as np
-import mpmath as mp
 from moeabench.mops.DPF3 import DPF3
 from moeabench.mops.DPF5 import DPF5
 from scripts.audit.gt_dpf_numerics_kernel_issue119 import canonical_dpf5_pf_from_ps
@@ -20,6 +19,7 @@ from scripts.audit.gt_dpf_numerics_kernel_issue119 import canonical_dpf5_pf_from
 def precision_probe(n=512, digits=100):
     if n < 2 or digits < 60:
         raise ValueError("Require n>=2 and >=60 decimal digits")
+    import mpmath as mp  # optional research dependency; lazy import
     mop=DPF3(M=3,D=2)
     ps=np.asarray(mop.ps(n_points=n),dtype=float)
     theta=np.pi/2*np.power(ps[:,0],100)
