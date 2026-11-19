@@ -12,6 +12,8 @@ on:
       - "tests/unit/test_gt_dpf_equation_probes_issue119.py"
       - "scripts/audit/gt_dpf_numerics_kernel_issue119.py"
       - "tests/unit/test_gt_dpf_numerics_kernel_issue119.py"
+      - "scripts/audit/gt_dpf_high_precision_issue119.py"
+      - "tests/unit/test_gt_dpf_high_precision_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -28,12 +30,12 @@ jobs:
           python-version: "3.12"
       - run: |
           python -m pip install -e .
-          python -m pip install pytest
+          python -m pip install pytest mpmath
       - name: Independent new diagnostics tests
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -64,6 +66,20 @@ jobs:
           for p in r["dpf5"]:
               print("SPHERE",p["M"],p["requested"],"P",p["branch_P"],"D",p["branch_D"],"dominated actual/canonical",p["actual_union_dominated"],p["canonical_union_dominated"])
           PY
+      - name: Run high-precision and DPF5 dimension audit
+        run: |
+          python -m scripts.audit.gt_dpf_high_precision_issue119 > gt119-high-precision.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-high-precision.json"))
+          for p in r["dpf3"]:
+              print("MP",p["requested"],"positive",p["mp_positive_count"],
+                    "naive lost",p["naive_zero_but_mp_positive"],
+                    "stable lost",p["stable_zero_but_mp_positive"],
+                    "float64 underflow",p["mp_to_float64_zero_count"])
+          for p in r["dpf5"]:
+              print("M",p["M"],"n",p["requested"],"P",p["P"],"D",p["D"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -71,4 +87,5 @@ jobs:
             gt119-dpf-branch.json
             gt119-equation-probes.json
             gt119-numerics-kernel.json
+            gt119-high-precision.json
           retention-days: 30
