@@ -779,6 +779,79 @@ the next mathematical research should exploit local
 norms/angles or adaptive geometric nets rather than
 unboundedly increasing the combinatorial q-lattice.
 
+
+## Adaptive angular certification for positive hyperspheres (2026-11-19)
+
+Research [PR #136](https://github.com/monacofj/moeabench/pull/136)
+([Actions run 44606943654](https://github.com/monacofj/moeabench/actions/runs/44606943654))
+investigates a second mathematical enclosure for the *same* actual
+DTLZ2 GT sets already assessed by the q=24 dependent-rounding
+barycentric lattice of PR #135.
+
+The positive unit hypersphere with M objectives is parameterized
+by M−1 angles in [0,π/2]. The Euclidean norm of each angular
+partial derivative is at most one and those tangent vectors are
+orthogonal. The coordinate map from angle space to the actual
+unit hypersphere is therefore **1-Lipschitz**. For any rectangular
+angular cell C with midpoint c and half-diagonal r,
+`max_{theta in C} dist(f(theta),S) <= dist(f(c),S)+r`.
+The distance at any evaluated midpoint is a valid **lower**
+bound on the global worst continuous-front distance. An adaptive
+priority queue repeatedly bisects the angular rectangle with
+the largest upper bound, preserving the parent's upper bound
+as a cap for its children. Stopping occurs at the requested
+interval-width target or maximum active-cell budget.
+
+The independent q=24 barycentric bounds and adaptive angular
+bounds remain mathematically valid even if either method is
+loose. Their **interval intersection** is valid and never
+wider than either component interval. The code uses
+floating-point nearest-neighbor queries, not formally verified
+interval-arithmetic bounds, and the optional 1e-12 allowance
+is not a formal proof of machine-rounding containment.
+
+Real-MOP measurements used DTLZ2 M=3/5, GT budgets 128/512,
+two FPS seeds 101/202, 4096-point FPS candidate pool,
+4000 maximum active angular cells and target width 0.01.
+The q=24 barycentric net contains 325 points for M=3 and
+20,475 for M=5. The results below represent seed 101:
+
+| M | GT n | Method | Barycentric radius [lower, upper] | Angular radius [lower, upper] | Angular cells |
+|---|---:|---|---|---|---:|
+| 3 | 128 | Incumbent | [0.153799, 0.216299] | **[0.176407, 0.186231]** | 158 |
+| 3 | 128 | FPS | [0.088589, 0.151089] | **[0.102749, 0.112706]** | 567 |
+| 3 | 512 | Incumbent | [0.100794, 0.163294] | **[0.102010, 0.111090]** | 334 |
+| 3 | 512 | FPS | [0.044448, 0.106948] | **[0.054836, 0.064819]** | 1,254 |
+| 5 | 128 | Incumbent | [0.476373, 0.580540] | **[0.481130, 0.490018]** | 3,381 |
+| 5 | 128 | FPS | [0.338942, 0.443109] | [0.322715, 0.426362] | 4,000 |
+| 5 | 512 | Incumbent | [0.310623, 0.414790] | [0.306369, 0.382807] | 4,000 |
+| 5 | 512 | FPS | [0.245180, 0.349346] | [0.227010, 0.357881] | 4,000 |
+
+For **M=3, n=512**, the angular interval proves
+`R(FPS) < R(incumbent)` by nonoverlapping upper/lower bounds,
+whereas the original barycentric intervals overlapped.
+For M=5 the method is **not uniformly tighter**: the
+fixed active-cell budget can bind before reaching target
+width, especially on a higher-dimensional FPS configuration.
+The combined intersection automatically adopts whichever
+method provides the stronger lower and upper bounds.
+
+At M=3 the adaptive certificates reached width below 0.01
+with roughly 158–1562 active cells. At M=5, some cases
+reached width below 0.01 while others remained above 0.1
+after 4,000 cells. This is a clear dimensional limitation,
+not a failure of the underlying mathematical inequality.
+The reported timings are exploratory and depend on the CI runner.
+
+The method certifies only Euclidean **continuous worst
+covering distance**, not surface-weighted mean error,
+IGD, HV convergence, an arbitrary DTLZ/DPF manifold, or a
+default `calibrate()` point budget. The positive hypersphere
+geometry also applies mathematically to DTLZ3/4, but only
+DTLZ2 was executed in this measured matrix. No production
+generator, accepted ADR, baseline, regression test or saved
+GT was changed.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
