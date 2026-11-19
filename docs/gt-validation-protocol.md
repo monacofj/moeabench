@@ -852,6 +852,83 @@ DTLZ2 was executed in this measured matrix. No production
 generator, accepted ADR, baseline, regression test or saved
 GT was changed.
 
+
+## Local-Jacobian angular bounds for higher-dimensional positive spheres (2026-11-19)
+
+Independent research [PR #137](https://github.com/monacofj/moeabench/pull/137),
+[Actions run 44608758755](https://github.com/monacofj/moeabench/actions/runs/44608758755),
+tested a local improvement to the adaptive angular certificate of PR #136.
+The original routine, its tests, and the barycentric certificate remain
+**unaltered**. The new read-only script evaluates **the same GT point sets**
+and intersects three independently valid intervals: original angular,
+locally weighted angular, and barycentric.
+
+**Mathematical derivation:** the M-objective positive hypersphere has
+orthogonal angular tangent vectors whose norm for coordinate j is
+`prod(cos(theta_i), i<j)`. On angular hyperrectangle [lo,hi],
+their norm is everywhere at most
+`w_j = prod(cos(lo_i), i<j)`, because the cosines are decreasing
+through [0,π/2]. Along the straight parameter-space segment
+joining cell center c and any theta in the cell, its instantaneous
+objective-space speed is bounded by
+`sqrt(sum_j (w_j * (theta_j-c_j))**2)`.
+By integration the Euclidean chord between f(c) and f(theta)
+is therefore at most
+`r_local = sqrt(sum_j (w_j*(hi_j-lo_j)/2)**2)`.
+This replaces the previous unweighted angular half-diagonal and
+is **never greater** than that previous per-cell bound.
+The cell with the largest admissible continuous covering upper
+bound is split along the coordinate with largest weighted width;
+parent upper bounds are inherited by child cells.
+
+Every cell center supplies a lower bound. Intersecting the
+real-arithmetic enclosing intervals from the old and new angular
+methods and the barycentric net yields a valid combined interval,
+never wider than any constituent interval. A different adaptive
+split ordering may mean the locally weighted method is not
+uniformly better *by itself* at the same active-cell limit. These
+statements concern ideal real arithmetic; the floating-point
+implementation adds 1e-12 but is **not interval-verified**.
+
+The CI experiment used actual unmodified DTLZ2 MOPs with M=3/5,
+GT budgets n=128/512, FPS pool 4096, seeds 101/202, q=24,
+target width 0.01 and max 4000 active angular cells.
+Selected seed-101 observations:
+
+| M | GT n | Method | Old angular width | Local angular width | Combined width | Old/local cells |
+|---|---:|---|---:|---:|---:|---|
+| 3 | 128 | Incumbent | 0.009824 | 0.009568 | **0.007486** | 158 / 113 |
+| 3 | 128 | FPS | 0.009958 | 0.009492 | 0.009492 | 567 / 371 |
+| 3 | 512 | Incumbent | 0.009080 | 0.008325 | 0.008325 | 334 / 219 |
+| 3 | 512 | FPS | 0.009982 | 0.009981 | 0.009500 | 1254 / 813 |
+| 5 | 128 | Incumbent | 0.008888 | 0.009087 | **0.008863** | 3381 / 550 |
+| 5 | 128 | FPS | 0.103647 | **0.016915** | **0.015898** | 4000 / 4000 |
+| 5 | 512 | Incumbent | 0.076438 | **0.009415** | 0.009415 | 4000 / 2029 |
+| 5 | 512 | FPS | 0.130871 | **0.055481** | **0.037966** | 4000 / 4000 |
+
+The second seed yielded similar qualitative improvements for M=5,
+with remaining combined interval widths 0.022276 (FPS n=128)
+and 0.027451 (FPS n=512). The locally weighted certificate
+therefore improves practical high-dimensional covering guarantees
+without raising the 4000-cell budget. The FPS case can still
+exhaust that budget, so this is not proof of convergence at
+arbitrary M or point cardinality.
+
+Independent *new* tests check upper Jacobian norm bounds, chords
+inside randomly generated angle cells, exact M=2 continuous-radius
+enclosure, monotonic adaptive refinement and intersection with
+the original spherical and barycentric intervals. These experiments
+certify worst-case continuous **geometric coverage only**, not
+mean integration error, IGD/HV stability or a universally suitable
+scientific GT density. Costs are runner dependent and are not
+production performance contracts.
+
+The accepted ADR 0018 runtime GT defaults remain intact, as
+do all production MOP generators, archived GTs, original
+regression tests, and numerical baselines. Choosing
+`mop.calibrate()` adaptive budgets still requires explicit
+review and approval under ADR 0057.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
