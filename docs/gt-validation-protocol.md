@@ -170,6 +170,51 @@ creates a ceiling on resolution; repeat with larger pool sizes and
 objective dimensions before drawing conclusions. No FAIR metrics,
 calibrated GT or historical regression/baseline data are touched.
 
+
+## Repeated real-MOP measurements — 2026-11-19 (research only)
+
+The repository-native CI experiment in
+[PR #127](https://github.com/monacofj/moeabench/pull/127)
+([Actions run 44583456192](https://github.com/monacofj/moeabench/actions/runs/44583456192))
+executed `gt_fps_preimage_study.py` using the **actual MOP implementations**
+with Python 3.12, DTLZ1–4, M=3/5, n=128/512/1024, candidate and reference
+seeds 101/202/303, independent reference size 8192, and FPS candidate
+pools 4096 and 8192. Each pool ran 72 comparisons (144 total); raw JSON
+was uploaded as workflow artifacts with 30-day retention.
+
+Representative **median of three paired seeds** for M=5, n=1024, pool=8192
+(lower means better in all listed indicators):
+
+| Geometry | Metric | Incumbent | FPS candidate |
+|---|---|---:|---:|
+| DTLZ1 simplex | Reference-to-front mean | 0.04533 | 0.02990 |
+| DTLZ1 simplex | Finite-reference maximum | 0.17064 | 0.05463 |
+| DTLZ1 simplex | Nearest-neighbor CV | 0.753 | 0.084 |
+| DTLZ2/3/4 sphere | Reference-to-front mean | 0.10782 | 0.10055 |
+| DTLZ2/3/4 sphere | Finite-reference maximum | 0.24306 | 0.18427 |
+| DTLZ2/3/4 sphere | Nearest-neighbor CV | 0.306 | 0.069 |
+
+The FPS candidate gave smaller *reference-to-front mean* distances
+in all 72/72 paired pool=8192 comparisons and 72/72 paired pool=4096
+comparisons. DTLZ2,3,4 share the same Pareto-objective geometry; their
+identical reference statistics are **not independent physical geometries**.
+Maximum observed objective-space preimage replay error: 1.07e-14
+(pool=8192). Median wall times across all settings: incumbent `pf()`
+0.0003 s, FPS including decision-space preimage and evaluation 0.077 s
+(pool=8192); for pool=4096 the median was 0.034 s. These are approximate
+runner-dependent diagnostics, not production performance guarantees.
+
+**Interpretation and open questions:** the finite reference estimates
+average and worst *observed* gaps; it cannot certify a continuous-front
+worst-case covering radius. FPS dramatically reduces nearest-neighbor
+variation, but its higher CPU cost and candidate-pool resolution ceiling
+must be characterized before choosing a production sampler. Results
+do not authorize changing MOP `ps()`/`pf()`, ADR 0018's runtime
+budgets, `mop.calibrate()`, frozen regression tests or numeric baselines.
+Future tests should include M>5 scaling, candidate-pool convergence,
+nonparametric cost-quality tradeoff, independent geometric bounds and
+indicator sensitivity on fixed MOEA output.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
