@@ -11,10 +11,131 @@ measurement** and the **reproducibility of an optimization result** matter.
 The testing system exists to tell these questions apart, expose a failure at
 the appropriate level, and retain the evidence needed to understand it.
 
-This manual explains the reasoning behind the tests, what we learn from a
-pass or failure, how references are established and reviewed, and how a
-release environment is certified. The command reference and current
-implementation details follow the scientific explanation.
+This manual starts with task-oriented commands, then explains what each
+test establishes, how to interpret failures, and how references and release
+certificates are managed.
+
+## Quick start: what do you want to do?
+
+Run the commands from the repository root, in a Python environment with the
+project and test dependencies installed. **Choose the action that matches your
+goal**; ordinary testing does not create or modify certification records.
+
+**To see which tests are available**, run:
+
+```bash
+python test.py --list
+```
+
+To list only numerical basic tests, run
+`python test.py --list --numeric-stability --basic`.
+
+**To check routine changes before committing**, run:
+
+```bash
+python test.py
+```
+
+This runs every unit test, plus the integration and numerical `smoke`
+checks. **To run only all unit tests**, use `python test.py --unit`.
+
+**To verify that components work together**, run:
+
+```bash
+python test.py --integration --basic
+```
+
+For a shorter integration check, use
+`python test.py --integration --smoke`. On a clean checkout, the complete
+integration suite requires the example archives prepared in
+[Section 9](#9-numerical-certification-of-a-candidate-version).
+
+**To detect deterministic numerical regressions**, run:
+
+```bash
+python test.py --numeric-stability --smoke
+```
+
+For the **full frozen numerical reference**, use the approved Linux/x86_64
+runtime profile and then run:
+
+```bash
+export NPY_DISABLE_CPU_FEATURES=X86_V4
+export OPENBLAS_CORETYPE=HASWELL
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+
+python scripts/check_numerical_reference_runtime.py
+python test.py --numeric-stability --basic
+```
+
+The preflight must pass; matching dependency versions alone is not enough.
+See [Section 7](#7-preflight-establishing-the-numerical-reference-runtime).
+
+**To run the complete development test suite**, first prepare the integration
+example archives as described in [Section 9](#9-numerical-certification-of-a-candidate-version),
+then run:
+
+```bash
+python test.py --basic
+```
+
+**To numerically certify a new release candidate**, first give it its
+proper new package version, prepare the integration archives and establish the
+reference runtime above. Then run:
+
+```bash
+python test.py --certify-numeric
+```
+
+This reruns the complete `basic` suite and, only if all checks pass, records
+the numerical certificate for the **exact source revision**. It refuses to
+recertify a different revision under an already certified version number.
+It does not record a new performance baseline. See
+[Section 9](#9-numerical-certification-of-a-candidate-version).
+
+**To certify that a later version has not materially degraded in
+stochastic performance**, first numerically certify that **exact candidate
+revision**; then run (the output path below illustrates a future 1.0.0
+candidate):
+
+```bash
+python test.py --certify-performance \
+  --reference moeabench/resources/certifications/0.18.0/performance-reference.json \
+  --output moeabench/resources/certifications/1.0.0/performance-vs-0.18.0.json
+```
+
+The command compares paired experiments against the **already approved,
+immutable 0.18.0 reference**. It writes a `CERTIFIED` or `NOT_CERTIFIED`
+result and never refreshes the reference. A negative decision or
+insufficient evidence blocks certification. See
+[Section 8](#8-scientific-performance-certification).
+
+**To record a new historical performance baseline**, use the separate,
+explicitly approved operation:
+
+```bash
+python test.py --record-performance-baseline --output NEW_REFERENCE.json
+```
+
+This is **not a routine release step**. The current implementation permits
+creation of the inaugural baseline only from the exact numerically certified
+0.18.0 source revision; that reference has **already been recorded and
+approved**. Do not rerun it or replace the existing reference. The procedure
+and scientific safeguards are in
+[Section 8](#8-scientific-performance-certification).
+
+**To inspect archived certification history**, run:
+
+```bash
+python -c "import moeabench as mb; print(mb.system.certification_history())"
+```
+
+A matching dependency fingerprint is not proof of numerical or performance
+equivalence. See [Section 11](#11-versioned-historical-evidence).
+
+---
 
 ## 1. Why the tests have several layers
 
