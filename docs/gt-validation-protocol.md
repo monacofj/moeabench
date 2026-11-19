@@ -481,6 +481,76 @@ simplex/hypersphere where feasible), sensitivity across more
 MOPs/seeds and explicit numerical error tolerance approval
 before selecting automatic GT budgets.
 
+
+## Exact continuous M=2 oracle: simplex segment and spherical arc (2026-11-19)
+
+Research [PR #132](https://github.com/monacofj/moeabench/pull/132),
+[Actions run 44599007083](https://github.com/monacofj/moeabench/actions/runs/44599007083),
+introduces an **exact independent continuous-geometry reference** for
+DTLZ1 and DTLZ2 at M=2 (and the shared DTLZ3/DTLZ4 positive-circle
+geometry). With exactly two objectives:
+
+- DTLZ1: `f1+f2=0.5` over a line segment of length
+  `L = sqrt(2)/2`. Sort points along the line, integrate
+  Euclidean nearest-point distance over each 1-D Voronoi cell
+  exactly, with uniform arclength; the maximum distance occurs
+  at an endpoint or a gap midpoint.
+- DTLZ2/3/4: `f1²+f2²=1` on the positive quarter circle with
+  angle 0..π/2. Voronoi cells are angular intervals. The
+  chord distance `2 sin(|theta-theta_i|/2)` admits a closed-form
+  cell integral. The maximum again occurs at one of the endpoints
+  or at the midpoint between neighboring angular samples.
+- The exact average distance and exact global *continuous*
+  covering radius are computed from the actual sampled points
+  with no dependence on the size or random realization of an
+  evaluation reference.
+
+The research script audits the actual `MOP.pf()` against FPS and
+FPS+projected MC-CVT, using n=64/256/1024, independent seeds
+101/202/303 and candidate pool 4096. The results below are
+**medians over three seeds**, not certified general method rankings;
+the continuous-geometry metrics themselves are exact up to
+floating-point error.
+
+| Geometry | n | Method | Exact continuous mean nearest distance | Exact continuous covering radius |
+|---|---:|---|---:|---:|
+| DTLZ1 line | 64 | incumbent | 0.0047588 | 0.0212769 |
+| DTLZ1 line | 64 | FPS | 0.0028480 | 0.0109974 |
+| DTLZ1 line | 64 | FPS+MC-CVT | **0.0028263** | **0.0068117** |
+| DTLZ1 line | 256 | incumbent | 0.0012903 | 0.0092723 |
+| DTLZ1 line | 256 | FPS | **0.0006975** | 0.0027336 |
+| DTLZ1 line | 256 | FPS+MC-CVT | 0.0007074 | **0.0022324** |
+| DTLZ2 arc | 64 | incumbent | **0.0062333** | **0.0124666** |
+| DTLZ2 arc | 64 | FPS | 0.0063291 | 0.0246054 |
+| DTLZ2 arc | 64 | FPS+MC-CVT | 0.0062815 | 0.0156567 |
+| DTLZ2 arc | 256 | incumbent | **0.0015400** | **0.0030800** |
+| DTLZ2 arc | 256 | FPS | 0.0015478 | 0.0057831 |
+| DTLZ2 arc | 256 | FPS+MC-CVT | 0.0015718 | 0.0044910 |
+
+**A crucial distinction:** the existing DTLZ2 M=2 generator
+already uses deterministic equal-angle (uniform-arclength) spacing,
+including the exact endpoints. On a 1D circular arc, that is
+an excellent geometric design and FPS should **not** replace it.
+The DTLZ1 M=2 generator instead samples uniform random decision
+parameters, which yields uneven arc spacing despite a uniform
+distribution in expectation; FPS can improve its finite-size
+spacing. A future deterministic equal-arclength line grid is
+also a natural independent candidate, to be compared before
+selecting any replacement.
+
+For these *specific* continuous curves, the finite-reference
+observed maximum is mathematically a **lower bound** on the exact
+covering radius. The study also measured how closely finite
+random reference means approach the exact surface mean.
+No analogous exact bound is claimed for arbitrary M>=3,
+disconnected, constrained or mixed-dimensional Pareto fronts.
+These analytical errors do not by themselves select a numeric
+calibration tolerance; that choice is a scientific policy
+requiring a separate explicit decision.
+
+No production GT generation, accepted ADR, calibration default,
+regression test, saved GT, or baseline was altered.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto

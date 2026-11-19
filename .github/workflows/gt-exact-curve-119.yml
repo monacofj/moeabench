@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Exact M2 continuous GT oracle (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-exact-curve-119.yml"
+      - "scripts/audit/gt_exact_curve_issue119.py"
+      - "tests/unit/test_gt_exact_curve_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-m2:
+    name: "Exact continuous M=2 GT mean and covering"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and test dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Run only new analytic-oracle tests
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_exact_curve_issue119.py -q
+      - name: Evaluate actual MOP samples and exact continuous curve error
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_exact_curve_issue119 \
+            --budgets 64 256 1024 --seeds 101 202 303 \
+            --pool 4096 --ref-sizes 2048 8192 > gt-exact-m2.json
+          python - <<'PY'
+          import json,statistics
+          d=json.load(open("gt-exact-m2.json"))
+          print("Cases:",len(d["records"]),"exact continuous curve geometries")
+          for name in ("DTLZ1","DTLZ2"):
+              for n in (64,256,1024):
+                  rs=[r for r in d["records"] if r["name"]==name and r["n"]==n]
+                  print(name,"budget",n)
+                  for method in ("incumbent","fps","fps_mc_cvt"):
+                      ex=[r["methods"][method]["exact"] for r in rs]
+                      means=[v["continuous_mean_euclidean_nearest_distance"] for v in ex]
+                      maxes=[v["exact_continuous_covering_radius"] for v in ex]
+                      errs=[r["methods"][method]["reference_estimates"]["8192"]["mean_absolute_error"] for r in rs]
+                      misses=[r["methods"][method]["reference_estimates"]["8192"]["max_gap_to_exact"] for r in rs]
+                      print(method,"exact_mean",round(statistics.median(means),7),
+                            "exact_radius",round(statistics.median(maxes),7),
+                            "MC_mean_error",round(statistics.median(errs),7),
+                            "MC_worst_underestimate",round(statistics.median(misses),7))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-exact-continuous-curve
+          path: gt-exact-m2.json
+          retention-days: 30
