@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: GT geometry research matrix (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-geometry-research-119.yml"
+      - "scripts/audit/gt_fps_preimage_study.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fps-gt-study:
+    name: "DTLZ1-4 FPS repeated geometry study"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate_pool: [4096, 8192]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install exact project and study dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install scipy
+      - name: Run read-only study using real MOP implementations
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python scripts/audit/gt_fps_preimage_study.py \
+            --problems DTLZ1 DTLZ2 DTLZ3 DTLZ4 \
+            --objectives 3 5 \
+            --budgets 128 512 1024 \
+            --seeds 101 202 303 \
+            --candidate-pool ${{ matrix.candidate_pool }} \
+            --reference-size 8192 > gt-study.json
+          python - <<'PY'
+          import json, statistics
+          data = json.load(open("gt-study.json"))
+          records = data["records"]
+          print(f"GT119 study: {len(records)} real-MOP comparisons")
+          print("problem M budget: mean ref->front old/FPS; max ref->front old/FPS; NN CV old/FPS; FPS improved mean count")
+          for group in data["summary"]:
+              p, m, n = group["problem"], group["M"], group["budget"]
+              fields = {x["measure"]: x for x in group["measures"]}
+              q=fields["reference_to_front_mean"]
+              worst=fields["reference_to_front_max"]
+              cv=fields["nearest_neighbor_cv"]
+              print(f"{p:5} {m:2} {n:4}: mean {q['incumbent_median']:.5f}/{q['fps_median']:.5f}; "
+                    f"max {worst['incumbent_median']:.5f}/{worst['fps_median']:.5f}; "
+                    f"CV {cv['incumbent_median']:.3f}/{cv['fps_median']:.3f}; "
+                    f"better {q['fps_lower_count']}/{q['pairs']}")
+          print("max PS -> PF reconstruction error:",
+                max(x["preimage_max_evaluation_error"] for x in records))
+          for method in ("incumbent_pf", "fps_plus_preimage_plus_evaluation"):
+              print(f"median {method} seconds: ",
+                    round(statistics.median(x["elapsed_seconds_diagnostic"][method] for x in records), 4))
+          PY
+      - name: Upload raw JSON observations (not a certified GT)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-fps-candidates-${{ matrix.candidate_pool }}
+          path: gt-study.json
+          retention-days: 30
