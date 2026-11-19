@@ -9,16 +9,16 @@ from scripts.audit.gt_dpf5_general_d_issue119 import spherical, reference, check
 @pytest.mark.parametrize("d,m",[(2,3),(2,5),(3,4),(3,5),(3,6),(3,8),(4,5),(4,6),(4,8)])
 def test_independent_formula_satisfies_scaled_sphere_for_general_d(d,m):
     r=check(m,d,64,0.2)
-    assert r["P"]["independent_scaled_sphere_residual"] < 1e-12
-    assert r["D"]["independent_scaled_sphere_residual"] < 1e-12
+    assert r["branch_P"]["independent_scaled_sphere_residual"] < 1e-12
+    assert r["branch_D"]["independent_scaled_sphere_residual"] < 1e-12
     assert not r["global_pareto_completeness_certified"]
 
 
 @pytest.mark.parametrize("m,d",[(3,2),(4,3)])
 def test_nearest_dimension_beta_and_gamma_agree_with_current_interior(m,d):
     r=check(m,d,64,0.0)
-    assert r["P"]["max_objective_difference"] < 1e-12
-    assert r["D"]["max_objective_difference"] < 1e-12
+    assert r["branch_P"]["max_objective_difference"] < 1e-12
+    assert r["branch_D"]["max_objective_difference"] < 1e-12
 
 
 def test_general_d_gamma_is_replicated_first_essential_coordinate():
@@ -34,5 +34,11 @@ def test_general_d_gamma_is_replicated_first_essential_coordinate():
 
 def test_high_m_general_d_current_p_diverges():
     r=check(8,3,64,0.0)
-    assert r["P"]["max_objective_difference"] > 1e-5
-    assert r["P"]["actual_scaled_sphere_residual"] > 1e-5
+    assert r["branch_P"]["max_objective_difference"] > 1e-5
+    assert r["branch_P"]["actual_scaled_sphere_residual"] > 1e-5
+
+def test_d4_gamma_source_disagrees_with_published_equations():
+    r=check(6,4,64,0.0)
+    assert r["intrinsic_D"] == 4
+    assert r["branch_D"]["max_objective_difference"] > 1e-5
+    assert r["branch_D"]["actual_scaled_sphere_residual"] > 1e-5
