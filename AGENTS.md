@@ -67,7 +67,7 @@ This map is a navigation aid, **not** a substitute for reading the ADRs:
 - MOPs and analytical PS/PF: ADR 0006; ADR 0016 (supersedes 0015);
   ADR 0017; ADR 0018; current GT investigation #119 and DTLZ5/6 #65.
 - GT calibration and scientific provenance: ADR 0017/0018 and current
-  `moeabench/mops/calibration.py`; proposed change #119 is not adopted.
+  `moeabench/mops/calibration.py`; ADR 0057 direction is accepted; numerical changes under #119 are pending.
 - Experiment save/load: ADR 0011, ADR 0032 and current
   `moeabench/core/save.py`; inspect all persistence modes.
 - Views: ADR 0014, ADR 0040, applicable API decisions and
