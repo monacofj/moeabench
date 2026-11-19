@@ -117,10 +117,14 @@ def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2) -> dict:
         row["record_domain"]=record_components(position)
     if name in ("DTLZ8","DTLZ9"):
         ev=mop.evaluation(decision,n_ieq_constr=mop.get_n_ieq_constr())
+        violations=np.maximum(np.asarray(ev["G"],dtype=float),0)
+        max_violation=np.max(violations,axis=1)
         row["constraints"]={
             "constraint_count":int(ev["G"].shape[1]),
-            "infeasible_generated_PS":int((~ev["feasible"]).sum()),
-            "max_positive_G":float(np.max(ev["G"])),
+            "infeasible_generated_PS_strict_float":int((~ev["feasible"]).sum()),
+            "max_positive_G":float(np.max(violations)),
+            "infeasible_generated_PS_tol_1e_12":int(np.sum(max_violation>1e-12)),
+            "infeasible_generated_PS_tol_1e_8":int(np.sum(max_violation>1e-8)),
             "feasibility_is_not_pareto_optimality":True,
         }
     if name in ("DPF3","DPF4","DPF5"):
