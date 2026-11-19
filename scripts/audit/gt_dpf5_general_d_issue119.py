@@ -63,8 +63,8 @@ def check(m: int,d: int,n: int=128,g_offset:float=0.0) -> dict:
     actual=np.asarray(mop.evaluation(x)["F"],dtype=float)
     reconstructed=reference(x,m,d)
     g=(x[:,m-1]-x[:,0])**2
-    results={"M":m,"D":d,"n":n,"g_offset":g_offset,"max_g":float(g.max())}
-    for name,mask in (("P",x[:,0]<1/3),("D",x[:,0]>1/3)):
+    results={"M":m,"intrinsic_D":d,"n":n,"g_offset":g_offset,"max_g":float(g.max())}
+    for name,mask in (("branch_P",x[:,0]<1/3),("branch_D",x[:,0]>1/3)):
         a=actual[mask]
         b=reconstructed[mask]
         results[name]={
