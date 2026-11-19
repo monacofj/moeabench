@@ -631,6 +631,82 @@ is established by these M2 results. No production generator,
 existing regression tests, GT sidecars, baseline or accepted
 ADR was changed.
 
+
+## Analytically bounded continuous covering for M>=3 (2026-11-19)
+
+Research [PR #134](https://github.com/monacofj/moeabench/pull/134),
+[Actions run 44603135864](https://github.com/monacofj/moeabench/actions/runs/44603135864)
+establishes a **provable, potentially conservative interval** for the
+maximum Euclidean distance from the *continuous* DTLZ1 simplex or
+DTLZ2/3/4 positive hypersphere to any fixed valid finite GT.
+The method is independent of reference-front random sampling and
+does not modify production samplers or calibration.
+
+Construct all integer compositions of q into M coordinates, divide by q,
+and map to the unit simplex. This grid has
+`binomial(q+M-1,M-1)` points. Nearest integer rounding with largest
+fractional remainder yields a covering net whose Euclidean radius
+is at most `sqrt(M)/q` on the *unit* simplex. On the
+DTLZ1 half-scale simplex, the bound becomes
+`epsilon = sqrt(M)/(2q)`. For the positive unit hypersphere,
+normalize nonnegative simplex vectors to unit norm.
+Because simplex-vector norms are >= `1/sqrt(M)` and
+normalization satisfies
+`||u/||u|| - v/||v|||| <= ||u-v|| / sqrt(||u|| ||v||)`,
+the spherical net radius is bounded by
+`epsilon = M/q`. These are deliberately conservative
+real-arithmetic bounds.
+
+For any fixed sampled GT S, its objective-space nearest-set distance
+`d(x,S)` is 1-Lipschitz on the continuous manifold. Therefore:
+`D_q = max_{v in net} d(v,S) <= R(S) <= D_q + epsilon`,
+where `R(S)` is the *true continuous covering radius*. The code
+reports both ends and a small 1e-12 numerical roundoff allowance.
+This is a mathematical inequality for ideal real arithmetic;
+the implementation does **not** use interval arithmetic or
+provide a formal machine-checked floating-point enclosure.
+The net is **not** surface-uniform on the sphere, and the method
+does **not** certify mean distance or IGD.
+
+The isolated CI study used the **actual unchanged**
+DTLZ1/2 MOP implementations (the DTLZ3/4 front geometries are
+covered by the same mathematical spherical model),
+M=3/5, GT budget=128/512, q=8/16/24, and independent FPS
+candidate pool 4096 with seed 101. Selected bounds for
+q=24 (lower/upper, continuous worst-distance units):
+
+| MOP | M | GT points | Current PF interval | FPS interval | Separation certified? |
+|---|---:|---:|---:|---:|---|
+| DTLZ1 | 3 | 128 | [0.119892, 0.155976] | [0.040923, 0.077007] | **Yes, FPS smaller** |
+| DTLZ1 | 3 | 512 | [0.057432, 0.093517] | [0.021293, 0.057377] | Yes, very narrow margin |
+| DTLZ1 | 5 | 128 | [0.290215, 0.336800] | [0.109357, 0.155942] | **Yes, FPS smaller** |
+| DTLZ1 | 5 | 512 | [0.231298, 0.277883] | [0.078527, 0.125112] | **Yes, FPS smaller** |
+| DTLZ2 | 3 | 512 | [0.100794, 0.225794] | [0.044448, 0.169448] | No, intervals overlap |
+| DTLZ2 | 5 | 512 | [0.310623, 0.518956] | [0.245180, 0.453513] | No, intervals overlap |
+
+The DTLZ1 superiority at these tested configurations follows
+from nonoverlapping *mathematical* intervals, not inferred from
+Monte Carlo observations. It says nothing about other
+budgets/seeds and does not prove FPS globally optimal. The
+DTLZ2 empirical coverage improvements remain unproven as an
+ordering of *continuous* worst-case coverage because the
+conservative spherical bound is too loose.
+
+A crucial cost limitation is combinatorial growth of net size,
+particularly at high objective counts: 20,475 net points for
+M=5 and q=24, and larger counts require more work. The
+`max_points` guard stops unacceptable enumeration. A tighter
+geometry-specific net or optimization with certified bounds
+will be needed to scale these certificates to M>5 and to
+establish quality-driven automatic calibration budgets.
+
+Independent new research tests validate composition counts,
+analytical geometry, randomized net distances, the rigorous
+enclosure of previously derived *exact M=2* continuous
+covering radii, and original-MOP FPS decision-space inversion.
+No historical regression tests, calibrated GTs, current ADR 0018
+runtime budgets or production code were modified.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
