@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Complex MOP GT structural audit (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-complex-mop-invariants-119.yml"
+      - "scripts/audit/gt_complex_mop_invariants_issue119.py"
+      - "tests/unit/test_gt_complex_mop_invariants_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  complex-gt:
+    name: "Actual DTLZ5-9 and DPF2-5 GT necessary invariants"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and independent test dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Run new read-only invariants tests
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_complex_mop_invariants_issue119.py -q
+      - name: Execute real MOP structural matrix
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_complex_mop_invariants_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --dpf-intrinsic 2 > gt-complex-invariants.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-complex-invariants.json"))
+          print("Cases:",len(d["records"]))
+          print("name M n | PS/PF counts | PF duplicate/dominated | feasibility | observed disconnected components | status")
+          for r in d["records"]:
+              if r["requested_points"]!=128: continue
+              cons=r.get("constraints",{})
+              reg=r.get("record_domain",{})
+              status="INCOMPLETE KNOWN" if r.get("known_incomplete_subfront_for_M_ge_4") else "NO GLOBAL COMPLETENESS CERTIFICATION"
+              print(r["name"],r["M"],r["requested_points"],
+                    r["ps_returned"],r["pf_returned"],r["pf_duplicates"],
+                    r["pf_internal_dominated"],
+                    cons.get("infeasible_generated_PS","—"),
+                    f"{reg.get('observed_component_count','—')}/{reg.get('expected_component_count','—')}",
+                    status)
+          print("Cases with returned PF count differing from request:",
+                [(r["name"],r["M"],r["requested_points"],r["pf_returned"])
+                 for r in d["records"] if r["pf_returned"]!=r["requested_points"]])
+          print("Cases generating infeasible PS:",
+                [(r["name"],r["M"],r["requested_points"],
+                  r["constraints"]["infeasible_generated_PS"])
+                 for r in d["records"] if r.get("constraints",{}).get("infeasible_generated_PS",0)>0])
+          PY
+      - name: Upload raw structural audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-complex-mop-structural
+          path: gt-complex-invariants.json
+          retention-days: 30
