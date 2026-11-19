@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: GT anchored and Voronoi research controls (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-voronoi-controls-119.yml"
+      - "scripts/audit/gt_voronoi_controls_issue119.py"
+      - "tests/unit/test_gt_voronoi_controls_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        pool: [2048, 8192]
+    name: "Analytical extrema + MC-CVT controls (pool ${{ matrix.pool }})"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and research test dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify new independent unit tests
+        run: python -m pytest tests/unit/test_gt_voronoi_controls_issue119.py -q
+      - name: Compare unchanged actual MOPs to anchored and Voronoi alternatives
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_voronoi_controls_issue119 \
+            --objectives 3 5 10 \
+            --budgets 128 512 \
+            --seeds 101 202 303 \
+            --pool ${{ matrix.pool }} \
+            --reference-size 8192 \
+            --iterations 12 > gt-controls.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-controls.json"))
+          print("GT119:",len(d["records"]),"real-MOP cases; five controls each")
+          print("problem M n | method mean ref distance; observed max; NN CV; median seconds")
+          for g in d["summary"]:
+              print(g["name"],g["M"],g["budget"],"candidate pool",g["pool"])
+              for method,x in g["methods"].items():
+                  print(f'  {method:16}: {x["reference_to_front_mean"]:.5f}; '
+                        f'{x["reference_to_front_max"]:.5f}; '
+                        f'{x["nearest_neighbor_cv"]:.3f}; '
+                        f'{x["seconds_median"]:.4f}')
+          print("Max analytic PS->PF inversion error:",
+                max(max(r["inverse_errors"].values()) for r in d["records"]))
+          PY
+      - name: Upload raw research measurements
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-voronoi-controls-${{ matrix.pool }}
+          path: gt-controls.json
+          retention-days: 30

@@ -268,6 +268,81 @@ rule out treating FPS as a universally superior default, and support
 geometry-specific selection and evaluation of Riesz/CVT or hybrid
 alternatives. No production change is authorized by this study.
 
+
+## Anchored-incumbent control and approximate Voronoi relaxation (2026-11-19)
+
+Research PR [#129](https://github.com/monacofj/moeabench/pull/129)
+([Actions run 44587298913](https://github.com/monacofj/moeabench/actions/runs/44587298913))
+compared five equally-sized objective-space GT sets generated or
+inverse-validated against **unchanged actual DTLZ1/2 MOP evaluation**:
+(i) existing `mop.pf()` sample, (ii) same with exact analytical
+coordinate-axis extrema replacing the first M points, (iii) FPS from
+a finite surface-uniform candidate pool seeded at the same axes,
+(iv) projected Monte Carlo centroidal Voronoi relaxation initialized
+from the anchored incumbent, and (v) FPS followed by the same
+relaxation. Other controls: 12 fixed Lloyd-like iterations, independent
+candidate and evaluation reference seeds, M=3/5/10, n=128/512,
+seeds 101/202/303, candidate pool 2048/8192 and independent
+8192-point evaluation reference. Each pool ran 36 MOP×M×budget×seed
+comparisons, 72 total. Both new experimental jobs passed.
+
+The approximate Voronoi operation assigns independent candidate
+points to their closest current center, updates each center to
+the assigned-cell arithmetic mean, then projects that mean to
+the known simplex or positive hypersphere. Exact objective axes
+remain anchored. These are **finite-sample, projected Lloyd
+updates**, not a continuous-manifold CVT optimality theorem.
+
+**Representative medians across three seeds**, M=5, n=512,
+pool=8192 (smaller is better):
+
+| Method | DTLZ1 ref→GT mean | DTLZ1 max observed | DTLZ2 ref→GT mean | DTLZ2 max observed |
+|---|---:|---:|---:|---:|
+| Incumbent | 0.05608 | 0.17816 | 0.12838 | 0.28459 |
+| Incumbent with axes | 0.05592 | 0.16456 | 0.12838 | 0.28459 |
+| FPS | 0.03627 | **0.06765** | 0.12110 | 0.22229 |
+| Axes + projected MC-CVT | 0.04283 | 0.10841 | 0.11622 | 0.23066 |
+| FPS + projected MC-CVT | **0.03401** | 0.06821 | **0.11581** | **0.21928** |
+
+**M=10, n=512**, pool=8192: DTLZ1 incumbent 0.14976,
+axes-only 0.14947, FPS 0.07400, axes+MC-CVT 0.07532,
+FPS+MC-CVT **0.06358** for reference→GT mean. DTLZ2
+incumbent **0.31720** versus pure FPS **0.32431**
+(mean regresses), whereas axes+MC-CVT 0.29492 and
+FPS+MC-CVT 0.29495. The latter is still accompanied by
+a larger observed maximum gap than pure FPS, illustrating the
+worst-gap / mean quantization tradeoff.
+
+**Inference:** forcing exact axes in an otherwise unchanged DTLZ1
+random sampler gives little improvement in mean distance; FPS
+benefits arise primarily from distribution over the simplex.
+Projected Voronoi refinement can improve mean quantization while
+sometimes reducing worst-gap performance or spacing evenness.
+High-dimensional DTLZ1 unbalanced/empty Voronoi cells and local
+minima remain possible; the CV and exact point uniqueness must
+be reviewed, especially in other component geometries.
+
+**Cost caveat:** measured `fps` time is separate from
+`fps_mc_cvt` *relaxation-only* time. End-to-end hybrid cost
+is their sum **plus** decision-space inversion and evaluation
+(which are performed subsequently and not included in these
+wall-time fields). The reported `anchored=0` timing is merely
+a placeholder for the near-zero axis replacement operation and
+**excludes the incumbent generation cost**. Thus the current
+timings are exploratory operation measurements, not apples-to-apples
+complete runtime guarantees.
+
+The independent evaluation sample is finite; none of these distances
+certify the full continuous-front covering radius. Monte Carlo
+candidate and evaluation measures are independent but based on
+the same known analytical front geometry. The comparison is
+**not** an acceptance test, and changes no accepted GT sampler,
+calibration budget, historical regression test, baseline or ADR.
+Next: optimize/review production-suitable variants separately,
+measure complete end-to-end costs and seek mathematical coverage
+bounds or robust reference-size convergence before selecting a
+calibration default.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
