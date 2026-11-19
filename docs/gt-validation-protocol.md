@@ -707,6 +707,78 @@ covering radii, and original-MOP FPS decision-space inversion.
 No historical regression tests, calibrated GTs, current ADR 0018
 runtime budgets or production code were modified.
 
+
+## Tighter continuous covering certificate via dependent rounding (2026-11-19)
+
+Research [PR #135](https://github.com/monacofj/moeabench/pull/135)
+and [Actions run 44605082042](https://github.com/monacofj/moeabench/actions/runs/44605082042)
+refine the original complete barycentric lattice proof from PR #134.
+They make **no change** to net points, original MOPs, the accepted GT
+budget defaults, original tests or the reference sets.
+
+For any nonnegative simplex vector `u` of coordinate sum 1,
+write `q*u = floor(q*u)+r` with fractional coordinates
+`0 <= r_i < 1`. Their sum is an integer `k`.
+Systematic *dependent rounding* supplies a `k`-hot binary
+random vector `B` such that `sum(B)=k` and `E(B_i)=r_i`:
+take an offset T uniformly over [0,1), apply the difference of
+successive floors of the cumulative fractional sums plus T.
+Consequently,
+
+`E[||B-r||²] = sum_i r_i(1-r_i) <= M/4`.
+
+Therefore at least one q-level integer simplex lattice point
+lies within `sqrt(M)/(2q)` of every unit simplex point.
+This improves the previous `sqrt(M)/q` bound **by 2×**.
+For DTLZ1 half-scale simplex, the epsilon-net bound is now
+`sqrt(M)/(4q)`. For DTLZ2/3/4 positive hypersphere, using
+the same previously proved normalization inequality, epsilon
+is now `M/(2q)` instead of `M/q`.
+
+At any q, both methods use precisely the same net.
+The observed net maximum, a lower bound on the full
+continuous covering radius, remains unchanged.
+The mathematically valid upper bound is tightened by half
+the previous epsilon; each interval width is exactly half
+its former mathematical width. This is a **real-arithmetic
+theorem**; the computational implementation adds 1e-12 for
+numerical roundoff and does not constitute formally verified
+floating-point interval arithmetic.
+
+The experiment used actual unchanged DTLZ1/2 MOPs, M=3/5,
+GT budgets 128/512, three candidate seeds 101/202/303,
+q=8/16/24, FPS candidate pool 4096 (24 total comparison
+cases, each with two candidate samplers). The table below
+shows seed 101 at q=24; distances are in objective-space
+Euclidean units:
+
+| MOP | M | GT n | Current continuous radius [lower, upper] | FPS continuous radius [lower, upper] | Ordering established? |
+|---|---:|---:|---|---|---|
+| DTLZ1 | 3 | 128 | [0.119892, 0.137934] | [0.040923, 0.058965] | FPS lower |
+| DTLZ1 | 3 | 512 | [0.057432, 0.075475] | [0.021293, 0.039335] | FPS lower |
+| DTLZ1 | 5 | 128 | [0.290215, 0.313507] | [0.109357, 0.132650] | FPS lower |
+| DTLZ1 | 5 | 512 | [0.231298, 0.254591] | [0.078527, 0.101820] | FPS lower |
+| DTLZ2 | 3 | 128 | [0.153799, 0.216299] | [0.088589, 0.151089] | **FPS lower; new certified separation** |
+| DTLZ2 | 3 | 512 | [0.100794, 0.163294] | [0.044448, 0.106948] | Undecided (overlap) |
+| DTLZ2 | 5 | 128 | [0.476373, 0.580540] | [0.338942, 0.443109] | **FPS lower; new certified separation** |
+| DTLZ2 | 5 | 512 | [0.310623, 0.414790] | [0.245180, 0.349346] | Undecided (overlap) |
+
+These results are geometry-/budget-/seed-specific. They
+establish **continuous worst-gap ordering**, not a mean-distance
+ordering, IGD improvement, universal FPS superiority, or
+a production GT replacement. In particular, the M=2
+deterministic DTLZ2 generator remains preferable to FPS.
+
+A separate new test verifies the systematic rounding
+construction with fixed-sum fractions, empirical marginals
+against deterministic offset integration, exact M=2
+continuous-reference enclosure, lattice bounds and actual
+MOP inverse/forward consistency. No existing regression
+test is modified. To improve these certificates further,
+the next mathematical research should exploit local
+norms/angles or adaptive geometric nets rather than
+unboundedly increasing the combinatorial q-lattice.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
