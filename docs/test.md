@@ -73,9 +73,10 @@ python test.py --numeric-stability --basic
 The preflight must pass; matching dependency versions alone is not enough.
 See [Section 7](#7-preflight-establishing-the-numerical-reference-runtime).
 
-**To run the complete development test suite**, first prepare the integration
-example archives as described in [Section 9](#9-numerical-certification-of-a-candidate-version),
-then run:
+**To run the complete development test suite**, establish the controlled
+numerical reference runtime above and prepare the integration example
+archives as described in [Section 9](#9-numerical-certification-of-a-candidate-version).
+Then run:
 
 ```bash
 python test.py --basic
