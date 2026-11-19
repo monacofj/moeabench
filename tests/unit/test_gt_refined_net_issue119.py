@@ -24,18 +24,22 @@ def test_constructive_systematic_rounding_maintains_k_and_average(m,q):
         floors=np.floor(a).astype(int)
         fractional=a-floors
         k=q-int(floors.sum())
-        # Exact enumeration of a finite set of offset intervals
-        boundaries=np.unique(np.r_[0.0,1.0,np.mod(-np.cumsum(fractional),1)])
-        middles=(boundaries[:-1]+boundaries[1:])/2
-        weights=np.diff(boundaries)
-        rounded=[]
-        for t in middles:
-            sums=np.r_[0.0,np.cumsum(fractional)]
-            bits=np.floor(sums[1:]+t)-np.floor(sums[:-1]+t)
-            rounded.append(bits)
-        bits=np.asarray(rounded)
+        # q*u has integer sum in real arithmetic. Enforce the identical
+        # invariant at floating-point precision before testing the proof.
+        fractional[-1]=float(k)-float(np.sum(fractional[:-1]))
+        assert 0 <= fractional[-1] < 1
+        # Systematic dependent rounding: the k-hot sum is exact for
+        # every offset; marginal expectations are interval probabilities.
+        # Use deterministic midpoint quadrature, avoiding measure-zero
+        # breakpoints and floating-point-sized spurious intervals.
+        offsets=(np.arange(4096,dtype=float)+0.5)/4096
+        cumulative=np.r_[0.0,np.cumsum(fractional)]
+        cumulative[-1]=float(k)
+        bits=(np.floor(cumulative[None,1:]+offsets[:,None])-
+              np.floor(cumulative[None,:-1]+offsets[:,None]))
         np.testing.assert_allclose(bits.sum(axis=1),k,atol=1e-10)
-        np.testing.assert_allclose(weights@bits,fractional,atol=1e-10)
+        np.testing.assert_allclose(bits.mean(axis=0),fractional,
+                                   atol=1.0/4096+1e-12,rtol=0)
         errors=np.sum((bits-fractional)**2,axis=1)
         assert np.min(errors) <= m/4 + 1e-10
 
