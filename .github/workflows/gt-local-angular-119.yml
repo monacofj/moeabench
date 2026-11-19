@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Local spherical GT angular covering audit (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-local-angular-119.yml"
+      - "scripts/audit/gt_local_angular_issue119.py"
+      - "tests/unit/test_gt_local_angular_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-angular:
+    name: "Local Jacobian angular bounds vs original and barycentric"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and independent test dependency
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify new proof-oriented tests
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_local_angular_issue119.py -q
+      - name: Reuse actual MOP GTs and compare both interval methods
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_local_angular_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --seeds 101 202 --q 24 --cells 4000 \
+            --candidate-pool 4096 --target 0.01 > gt-local-angular.json
+          python - <<'PY'
+          import json
+          data=json.load(open("gt-local-angular.json"))
+          print("Paired study cases:",len(data["records"]))
+          for row in data["records"]:
+              print("M",row["M"],"n",row["GT_budget"],"seed",row["seed"])
+              for name,x in row["methods"].items():
+                  o=x["original_angular"]; new=x["local_angular"]; c=x["combined"]
+                  print(f" {name:10} old width={o['interval_width']:.6f} "
+                        f"local width={new['interval_width']:.6f} "
+                        f"combined width={c['width']:.6f} "
+                        f"old cells={o['angular_cells']} "
+                        f"local cells={new['angular_cells']} "
+                        f"local elapsed={new['elapsed_seconds_diagnostic']:.4f}s")
+          PY
+      - name: Upload raw reproducible study
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-local-angular-audit
+          path: gt-local-angular.json
+          retention-days: 30
