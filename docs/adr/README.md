@@ -91,12 +91,16 @@ The status column records whether a historical ADR remains wholly normative or h
 - The current operational classification, commands and reference safeguards
   are in the [testing manual](../test.md); historical decisions remain
   preserved in their original ADR sections.
-- **New target architecture (maintainer-approved, implementation pending):**
+- **Implemented versioned certification architecture:**
   [ADR 0056](0056-versioned-certification-and-performance-reference-lifecycle.md)
-  fixes the three independent certification/baseline operations, six
-  prespecified statistical scenarios, 24 seeds, decision rule and immutable
-  historical registry. Active CLI commands remain as described in the
-  testing manual until the migration is implemented and checked.
+  governs three independent commands (`--certify-numeric`,
+  `--record-performance-baseline`, `--certify-performance`), a compact
+  immutable numerical certificate, and the approved 0.18.0 performance
+  reference with six prespecified MOP–MOEA cases and 64 seeds per case.
+  A future candidate must pass its own numerical certification before
+  statistical performance certification; the reference is never
+  automatically regenerated. See the [testing tutorial](../test.md)
+  for the implemented CLI and the latest operational rules.
 
 ### Clinical diagnostics
 
