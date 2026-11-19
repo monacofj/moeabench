@@ -18,6 +18,8 @@ on:
       - "tests/unit/test_gt_dpf5_offpareto_issue119.py"
       - "scripts/audit/gt_dpf5_general_d_issue119.py"
       - "tests/unit/test_gt_dpf5_general_d_issue119.py"
+      - "scripts/audit/gt_dpf5_fixed_impact_issue119.py"
+      - "tests/unit/test_gt_dpf5_fixed_impact_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -39,7 +41,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -101,6 +103,17 @@ jobs:
           for r in json.load(open("gt119-general-d.json"))["cases"]:
               print("DIMS",r["M"],r["intrinsic_D"],r["g_offset"],"P",r["branch_P"],"D",r["branch_D"])
           PY
+      - name: Fixed-decision and fixed-objective DPF5 paired indicator study
+        run: |
+          python -m scripts.audit.gt_dpf5_fixed_impact_issue119 > gt119-dpf5-paired-impact.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-paired-impact.json"))["cases"]:
+              print("PAIRED",r["M"],r["D"],r["seed"],
+                    "gt objective delta",r["gt_max_component_change"],
+                    "pop objective delta",r["population_max_component_change_at_fixed_X"],
+                    "metric deltas",r["metric_delta_counterfactual_minus_current"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -111,4 +124,5 @@ jobs:
             gt119-high-precision.json
             gt119-dpf5-offpareto.json
             gt119-general-d.json
+            gt119-dpf5-paired-impact.json
           retention-days: 30
