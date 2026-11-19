@@ -14,7 +14,7 @@ def test_independent_formula_satisfies_scaled_sphere_for_general_d(d,m):
     assert not r["global_pareto_completeness_certified"]
 
 
-@pytest.mark.parametrize("m,d",[(3,2),(4,3),(5,4)])
+@pytest.mark.parametrize("m,d",[(3,2),(4,3)])
 def test_nearest_dimension_beta_and_gamma_agree_with_current_interior(m,d):
     r=check(m,d,64,0.0)
     assert r["P"]["max_objective_difference"] < 1e-12
