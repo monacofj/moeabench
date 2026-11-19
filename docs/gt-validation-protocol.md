@@ -343,6 +343,68 @@ measure complete end-to-end costs and seek mathematical coverage
 bounds or robust reference-size convergence before selecting a
 calibration default.
 
+
+## Complete GT generation cost and reference-size sensitivity — 2026-11-19
+
+Research-only PR [#130](https://github.com/monacofj/moeabench/pull/130),
+[Actions run 44592287682](https://github.com/monacofj/moeabench/actions/runs/44592287682),
+ran the actual DTLZ1/2 MOP implementation with M=3,5,10,
+GT budgets n=128/512, candidate pool=4096, and paired seeds
+101/202/303: 36 configuration/seed cases. For each case the **same
+five generated GT arrays** were compared against independent
+objective-space uniform validation references of sizes
+2048, 8192 and 32768. Raw per-seed JSON data are uploaded to
+the Action run as a 30-day research artifact.
+
+For all alternative generation methods, wall times were measured
+around full candidate generation (including objective-space pool),
+inversion to decision-space Pareto-set points, and forward evaluation
+with the unchanged original MOP function. Diagnostic reference
+generation, cKDTree queries and output summarization were **not**
+included in generation times. Unlike PR #129, the hybrid method's
+timer includes *both* FPS and subsequent Voronoi relaxation.
+
+**M=5, n=512, pool=4096; medians over three candidate/reference seeds**
+(mean reference-to-GT distance uses an 8192-point reference):
+
+| Method | DTLZ1 mean | DTLZ1 complete s | DTLZ2 mean | DTLZ2 complete s |
+|---|---:|---:|---:|---:|
+| Incumbent | 0.05608 | 0.00038 | 0.12838 | 0.00059 |
+| Exact axes + incumbent | 0.05592 | 0.00071 | 0.12838 | 0.00093 |
+| FPS | 0.03617 | 0.04218 | 0.12148 | 0.04277 |
+| Anchored incumbent + MC-CVT | 0.04417 | 0.03366 | **0.11794** | **0.03292** |
+| FPS + MC-CVT | **0.03460** | 0.07249 | 0.11811 | 0.07551 |
+
+For the *same generated GTs*, increasing the independent
+validation-reference size typically changed **mean** reference-to-GT
+distance by a small amount (e.g. DTLZ2 M=10 n=512 incumbent:
+0.31762 at R=2048, 0.31720 at R=8192 and 0.31713 at R=32768).
+Finite-reference *observed maxima*, in contrast, often increased:
+the same DTLZ2 example had maxima 0.50377, 0.52220, 0.54728,
+respectively. An increased maximum is consistent with discovering
+previously unobserved gaps, not deterioration of the fixed GT.
+The diagnostic reference-size convergence is empirical; none of
+these maxima is a certified upper bound on continuous-front
+covering radius.
+
+**Interpretation.** Improved geometrical quality comes with a
+one-to-three-order-of-magnitude higher per-call generation cost
+on this runner. For typical studied budgets even the hybrid cost
+was below 0.2 seconds, but this observation is **not** a general
+runtime limit for larger n, M, candidate pools or MOPs. The
+choice of scientific-calibration budget cannot safely be inferred
+from finite sampled reference distance alone: need a
+geometrically justified absolute/relative resolution criterion,
+a conservative time/memory bound and tests of sensitivity
+of GT-dependent indicators on fixed MOEA outputs.
+
+The experimental methods do not change any production MOP,
+GT sidecar, ADR 0018 runtime point defaults, historical
+regression or certification baseline. Their measured speed
+is subject to GitHub Actions runner, cold-cache and numerical
+library variability; there is no independent performance
+certification claim.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
