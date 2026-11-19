@@ -131,6 +131,45 @@ claim may be derived from it alone. The experiment must be repeated
 with candidate pool/reference sizes and dimensions varied before
 selecting a production generator.
 
+## Analytical PS preimages and repeated evaluation
+
+The first FPS candidate study only selects **objective-space** positions,
+whereas ADR 0006 requires a native `ps()` in **decision space**. The
+read-only follow-up verifies exact analytical preimages for
+DTLZ1–4 (including positive simplex/hypersphere axes):
+
+- DTLZ1: invert the cumulative objective-product mapping; on a
+  degenerate boundary where the denominator vanishes choose zero for
+  the non-identifiable position parameter. Set all distance variables
+  to 0.5.
+- DTLZ2/3: invert positive hypersphere directions to the angular
+  coordinates of the standard DTLZ mapping. Set distance variables
+  to 0.5. DTLZ3 shares its analytical front geometry with DTLZ2.
+- DTLZ4: the same angular inverse with the additional 100th-root
+  transformation. Boundary cases must be evaluated, not only
+  checked by their norm.
+- Verify each candidate by the **unmodified actual MOP evaluation**,
+  requiring the computed objectives to match the proposed samples,
+  while also checking decision-variable bounds and different M/K.
+
+Run the multi-seed comparison:
+
+```bash
+python scripts/audit/gt_fps_preimage_study.py --objectives 3 5 \
+    --budgets 128 512 --seeds 101 202 303 \
+    --candidate-pool 4096 --reference-size 8192
+python -m pytest tests/unit/test_gt_fps_preimage_study_issue119.py -q
+```
+
+The summary reports paired seeds for incumbent `mop.pf()` and the
+validated FPS preimages, observed geometry, per-seed reference distances,
+nearest-neighbor dispersion and elapsed generation times. Candidate
+pool/reference seeds are independent. Reference distances are not
+certified continuous-front worst-case errors. A fixed candidate pool
+creates a ceiling on resolution; repeat with larger pool sizes and
+objective dimensions before drawing conclusions. No FAIR metrics,
+calibrated GT or historical regression/baseline data are touched.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
