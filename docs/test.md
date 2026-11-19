@@ -14,96 +14,153 @@ interpret and certify the results.
 
 ## 1. Why four types of tests?
 
-Imagine an experiment that runs NSGA-III on DTLZ2 and evaluates its final
-population using IGD+. Before trusting the reported quality, we need to
-answer four questions.
+Imagine that we want to compare an optimization algorithm, such as
+NSGA-III, on a problem like DTLZ2. We run the algorithm, obtain a set of
+solutions and use IGD+ to measure how close they are to a reference
+Pareto front. The program finishes without errors and prints a number.
+Can we trust it?
 
-### 1.1 Unit tests — is each component correct?
+There are several ways this result could be misleading. IGD+ might
+have been calculated incorrectly; the experiment might have connected
+otherwise correct components incorrectly; a software update might have
+changed the solutions produced for a fixed seed; or the algorithm might
+still reproduce that seed while becoming worse on other seeds.
 
-**Purpose.** Verify an isolated mathematical or software contract: for
-example, the IGD+ formula, a MOP's evaluation function, the allocation of
-random seeds, or how a population is stored.
+Each possibility calls for a different kind of test. MoeaBench therefore
+uses **unit tests, integration tests, numerical stability tests and
+performance stability tests**. They answer related questions, but one
+cannot stand in for another.
 
-**How.** Supply small, controlled inputs and check results against an
-independent calculation or an explicit invariant. A test of IGD+ might use
-two hand-constructed objective fronts whose distance can be derived without
-running a MOEA.
+### 1.1 Unit tests — can we trust each piece?
 
-**Why it matters.** A complete optimization experiment can execute
-successfully while an indicator silently reports the wrong number. Unit
-tests detect that kind of error at its source. They do not establish that
-all components cooperate correctly.
+Start with IGD+. Before involving an evolutionary algorithm, we can
+construct two tiny sets of objective vectors and calculate their
+expected distance by hand. A unit test supplies those inputs to the
+indicator and checks its answer against our independent calculation.
 
-### 1.2 Integration tests — do the components work together?
+The same principle applies to other components: a unit test can check
+the evaluation of a MOP, how seeds are allocated, or how a population
+is stored. These tests are usually inexpensive, so they run frequently.
 
-**Purpose.** Verify realistic workflows across component boundaries.
+If the IGD+ implementation is wrong, even an excellent MOEA will
+receive a misleading score. Verifying the pieces first makes later
+experimental results easier to trust and failures easier to diagnose.
 
-**How.** Construct a MOP and MOEA, execute a small experiment, inspect the
-result, calculate an indicator, and, where applicable, save and reload it.
-The test checks that data, configuration and provenance pass correctly
-between APIs.
+### 1.2 Integration tests — can the pieces work together?
 
-**Why it matters.** Correct individual components can still interact
-incorrectly—for example, a saved experiment might lose its seed or
-normalization configuration.
+Next, we put the pieces together. We construct a MOP, configure an
+MOEA, run a small experiment and compute an indicator from its output.
+We may then save the experiment and load it again.
 
-### 1.3 Numerical stability tests — can we reproduce a known result?
+An integration test checks the entire path, including whether the seed,
+configuration, objective values and provenance are passed correctly.
+An indicator and a persistence module can each pass their own unit
+tests while the experiment still loses essential information between
+them. Integration tests detect problems at these boundaries.
 
-**Purpose.** Detect changes in an already validated numerical result.
+### 1.3 Numerical stability tests — does the same experiment still give the same result?
 
-**How.** Replay a prescribed MOP–MOEA configuration with a fixed seed,
-population size, generation budget and numerical environment; compare its
-final front with a **frozen reference**. Separate numerical tests feed
-fixed fronts to indicators and check their values against independently
-justified expected numbers. Each comparison has a declared tolerance;
-some also require the exact shape of the front.
+Now imagine that a previous version of MoeaBench produced a final
+front that we inspected and accepted. We record the experiment's
+configuration, seed and expected output. Later, after changing the
+software or its dependencies, we repeat **that same experiment**.
 
-**Why it matters.** Changes in the solver, random-number handling, library
-versions or CPU/BLAS kernels can alter a trajectory even when unit and
-integration tests pass. **One run is sufficient to check one fixed-seed
-replay** in the specified environment; repeating the same seed does not
-characterize performance across random seeds.
+A numerical stability test compares the new result with the recorded
+one, using the test's explicit numerical tolerance. We also protect
+indicator calculations on fixed objective fronts with independently
+derived reference values. Thus we can detect a changed optimization
+trajectory separately from a changed metric calculation.
 
-### 1.4 Performance stability tests — is stochastic quality still acceptable?
+Why does this matter if the seed is fixed? A seed controls the random
+choices, but numerical calculations also depend on algorithm code and
+libraries. Small floating-point differences may alter selection and
+produce different populations after several generations. With an
+otherwise controlled environment, one execution is enough to check
+this specific fixed-seed replay.
 
-**Purpose.** Determine whether a new version has materially worsened the
-quality typically obtained by an algorithm.
+**A mismatch is a signal to investigate.** It might expose a genuine
+regression, or it might come from a legitimate, reviewed change in the
+numerical environment. The example below shows how to distinguish
+these possibilities.
 
-**How.** Execute the **same preselected MOP–MOEA cases with paired seeds**
-on a candidate version, compare their IGD+ scores with an approved
-historical sample, and use a prespecified statistical decision rule.
-These tests use several seeds because different runs can have different
-qualities.
+### 1.4 Performance stability tests — is the algorithm still as good in general?
 
-**Why it matters.** A solver can reproduce its one frozen trajectory and
-nevertheless perform worse on other seeds. Performance testing detects a
-distribution-level degradation that deterministic replay alone cannot
-establish. It is computationally more expensive and is invoked explicitly,
-not after every code change.
+One successful fixed-seed replay says little about the algorithm's
+usual quality. Evolutionary algorithms use randomness: two seeds can
+lead to different solutions, and a change may improve some runs while
+worsening others.
 
-### 1.5 Example: numerical replay fails, but performance may be unchanged
+To investigate typical performance, we compare a carefully chosen
+set of MOP–MOEA experiments across **several paired seeds**. For each
+seed we measure the same quality indicator, such as IGD+, in the
+historical version and in the candidate. Statistical analysis then
+determines whether the evidence supports an acceptably small
+degradation.
 
-Suppose an earlier version produces a particular three-point final front
-for `NSGA3 × DPF1` with seed `12345`. A later execution, using a different
-native floating-point kernel, produces a two-point front. The **numerical
-stability test fails**, since that frozen output was not reproduced.
+This test is more expensive because it repeats actual optimization
+runs. We use it explicitly for performance certification rather than
+after every edit. Its interpretation depends on a reviewed historical
+sample, a declared margin and enough statistical evidence.
 
-Now consider a *separate, hypothetical* experiment across many paired
-seeds: the new fronts differ, but their mean IGD+ degradation remains
-below the predeclared tolerance, with enough statistical evidence. In
-that case, **performance stability can pass despite a different
-deterministic trajectory**. The opposite is also possible: one frozen
-seed reproduces exactly, while many other seeds perform worse, causing
-the performance test to fail.
+### 1.5 What should we do when a numerical test fails?
 
-The distinction is scientific, not permission to ignore a failing test.
-The historical NSGA-III/DPF1 discrepancy was actually traced to NumPy and
-OpenBLAS dispatch and resolved for the controlled reference environment
-without rewriting the frozen front. The *performance-pass scenario above
-is illustrative*, not a claim that a historical performance comparison
-was run for that discrepancy. **For release certification, MoeaBench
-requires numerical certification of the exact candidate revision before
-it permits performance certification.**
+Consider a simple story. Yesterday, a fixed-seed experiment produced
+a particular set of solutions. Today, after updating MoeaBench or a
+numerical library, we repeat exactly the same experiment and obtain
+a different set. The numerical stability test fails because it can
+no longer reproduce its historical reference.
+
+**The failure tells us that the output changed, but not why.**
+There are two important possibilities.
+
+**A regression bug.** Perhaps a refactoring introduced an error in
+the solver, changed a seed unexpectedly or corrupted an intermediate
+result. In this case we find the defect, fix it and rerun the test.
+The previously accepted result remains the correct expectation.
+Replacing the reference with the new, incorrect result would only
+hide the bug.
+
+**A legitimate numerical change.** Perhaps a newer version of NumPy,
+pymoo or the underlying math libraries calculates a few intermediate
+values differently. Even tiny rounding differences can send an
+evolutionary search along a different trajectory. The new result may
+be perfectly valid under the new environment, but we must establish
+that through investigation—by comparing environments, checking
+independent mathematical contracts and understanding where the
+trajectories first diverge. A library upgrade is not, by itself,
+proof that the difference is harmless.
+
+If the difference is understood and **explicitly accepted**, we can
+establish a **new, reviewed and versioned numerical reference for
+future tests**. We preserve the original reference and the evidence
+behind it in the project's Git history and audit records. The old
+result remains meaningful for the environment in which it was
+validated; the new reference describes the newly accepted environment
+or implementation. This is a deliberate change of the verification
+contract, never an automatic response to a failing test. Under the
+current MoeaBench policy, any modification to historical regression
+tests or reference values requires advance maintainer approval and
+must respect the applicable ADRs. The existing certification commands
+do not automatically generate replacement numerical baselines.
+
+There is a further subtlety: **a changed result need not mean worse
+performance**. The solutions could differ while their IGD+ scores
+over many seeds remain statistically acceptable. Conversely, one
+seed could replay exactly while the algorithm performs worse on
+other seeds. This is why numerical and performance stability are
+tested separately. A good performance comparison does not excuse an
+unresolved numerical failure: formal performance certification
+requires a successful numerical certificate for the exact candidate
+revision.
+
+We encountered a real example with **NSGA-III × DPF1**. Matching
+package versions did not always reproduce the historical front.
+Investigation identified differences in NumPy and OpenBLAS execution
+kernels. By controlling the reference runtime, the original
+historical front was reproduced **without changing the algorithm or
+its baseline**. A future, scientifically justified baseline revision
+is possible under the review policy above, but this particular
+incident did not require one.
 
 ## 2. Which command should I run?
 
@@ -314,13 +371,22 @@ For example, absolute HV uses calibrated MOP GT as its denominator,
 while an explicit `ref` specifies normalization geometry
 ([ADRs 0019, 0035 and 0047](adr/README.md)).
 
-When a numerical replay fails, preserve the fixture and investigate
-the first differing operation: source change, MOP/MOEA behavior,
-component seed, dependency version or native CPU/BLAS dispatch.
-The documented NSGA-III/DPF1 case illustrates why matching software
-version numbers was insufficient. **Changing a historical reference
-or regression test requires prior explicit approval**, and any
-ADR-incompatible change must be authorized first.
+When a numerical replay fails, **first investigate the difference**:
+compare the source code, MOP/MOEA behavior, seeds, dependency versions
+and native CPU/BLAS dispatch. A coding regression calls for a fix while
+retaining the old reference. A legitimate numerical change can instead
+justify a **new, reviewed versioned reference for future verification**,
+provided its scientific contracts remain sound. The historical result
+and its provenance must remain recoverable; our repository retains
+earlier fixtures in Git history and the audit trail.
+
+Current certification does **not** automatically rewrite a frozen
+numerical fixture or generate a new version's reference fronts. A
+deliberate reference revision needs independent justification,
+maintainer approval before changing regression tests or expected
+values, and an ADR review if it changes an architectural contract.
+The historical NSGA-III/DPF1 case required only a controlled
+numerical runtime to reproduce the original reference.
 
 ### 3.3 Historical performance reference and statistical decision
 
@@ -372,19 +438,31 @@ GT. Performance references, by contrast, store the actual frozen
 historical experimental sample. These records live in
 `moeabench/resources/certifications/<version>/`.
 
-Recording a baseline is an **exceptional, independently approved**
-operation. Its command is:
+The word *baseline* is used for two related but distinct things.
+A **numerical regression reference** describes an accepted output
+for fixed inputs and a controlled numerical environment; an approved
+scientific or environmental change can motivate a new versioned
+reference for future tests, while preserving the previous one in
+Git history. A **statistical performance baseline** is a historical
+sample of results over many seeds, against which later releases
+are compared. Creating either kind of new reference requires a
+separate review; passing or failing a test cannot create one.
+
+The command below concerns **only the historical statistical
+performance sample**:
 
 ~~~bash
 python test.py --record-performance-baseline --output NEW_REFERENCE.json
 ~~~
 
-The present implementation restricts inaugural reference creation to
-the exact certified historical **0.18.0 source revision**; that
-reference has already been created and approved. Do not rerun the
-operation against the existing file. Future baseline policy changes
-require review. Neither `--certify-numeric` nor
-`--certify-performance` creates or renews a baseline.
+Today it is restricted to the exact certified historical **0.18.0**
+source revision; that reference has already been generated and
+approved. It is not a general-purpose command for updating numerical
+regression expectations or recording arbitrary future performance
+baselines. Supporting a new historical performance reference will
+require an explicitly approved protocol and implementation change.
+Neither `--certify-numeric` nor `--certify-performance`
+creates or renews one.
 
 ### 3.5 What to do when a check fails
 
@@ -397,10 +475,13 @@ require review. Neither `--certify-numeric` nor
 | Performance certification: `INSUFFICIENT_EVIDENCE` or `INSUFFICIENT_POWER` | Keep the negative release decision; review variability and study adequacy without selecting favorable seeds or changing the margin after seeing results. |
 | Numeric certification | Fix any failing basic check before recording a certificate. |
 
-**No failed check authorizes rebaselining.** The numerical and
-performance gates are independently assessed and preserve their
-historical references. A failed numerical certification prevents
-starting the formal performance certification of that candidate.
+**A failed test starts an investigation, not an automatic
+rebaseline.** Fix regressions against the accepted reference.
+If a numerical difference is legitimate and a new baseline is
+scientifically justified, obtain approval first, record the
+new reference and retain the historical one. The numerical and
+performance gates remain separate; a failed numerical certification
+prevents formal performance certification of that candidate.
 
 For complete implementation-level details, see
 [environment verification](environment-verification.md),
