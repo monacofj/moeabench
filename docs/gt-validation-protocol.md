@@ -929,6 +929,84 @@ regression tests, and numerical baselines. Choosing
 `mop.calibrate()` adaptive budgets still requires explicit
 review and approval under ADR 0057.
 
+
+## Complex and constrained MOP structural audit (2026-11-19)
+
+Research [PR #138](https://github.com/monacofj/moeabench/pull/138),
+[Actions run 44612110016](https://github.com/monacofj/moeabench/actions/runs/44612110016),
+evaluated **36 actual, unchanged MOP PS/PF configurations**:
+DTLZ5–9 and DPF2–5; M=3/5; requests n=128/512;
+DPF intrinsic dimension D=2. The audit uses the original
+`ps()`, `pf()`, forward evaluation, constraint functions and
+published analytical DTLZ7-like Pareto-record intervals.
+It records requested versus actual PS/PF cardinality,
+exact duplicates, internal nondominance, valid decision
+variable bounds, constraint residuals, warnings and observed
+disconnected-component occupancy.
+
+**Scientific scope:** feasibility and internal nondominance
+are only *necessary* diagnostics; they cannot establish
+global Pareto-optimality or completeness. The script
+explicitly marks global completeness **uncertified**
+for every audited configuration. DTLZ5/6 already declare
+their `g=0` subset incomplete for M>=4; this limitation
+is tracked independently by issue #65 and must not be
+misinterpreted as a newly discovered defect.
+
+Findings for n=128:
+
+| MOP | M | Requested | Actual PF | Duplicates | Internally dominated | Relevant note |
+|---|---:|---:|---:|---:|---:|---|
+| DTLZ5/6 | 5 | 128 | 128 | 0 | 0 | Known incomplete g=0 subset |
+| DTLZ7 | 3 | 128 | 128 | 0 | 0 | 4 of 4 record-region combinations observed |
+| DTLZ7 | 5 | 128 | 128 | 0 | 0 | 16 of 16 combinations observed |
+| DPF2 | 3 or 5 | 128 | 128 | 0 | 0 | Both record intervals observed, D=2 |
+| DTLZ8 | 3 or 5 | 128 | 128 | 0 | 0 | All sampled decision vectors satisfy constraints |
+| DTLZ9 | 3 or 5 | 128 | 128 | 0 | 0 | Numerical boundary residuals only |
+| DPF3 | 3 or 5 | 128 | **23** | 0 | 0 | `pf()` removes internally dominated candidates |
+| DPF5 | 3 | 128 | **121** | **70** | 0 | Square-grid truncation and duplicate objective rows |
+| DPF5 | 5 | 128 | 128 | 0 | **38** | Generated PF includes internally dominated rows |
+
+At requested n=512, DPF3 returned only **88** rows for
+M=3/5; DPF5 at M=3 returned **484** rows instead of 512.
+The consequences for scientific resolution are potentially
+substantial: the effective count of distinct, mutually
+nondominated objective vectors can be much smaller than
+the nominal requested budget.
+
+The numerical DTLZ9 constraint issue was examined
+separately. The strict float comparison flags 42/128
+and 185/512 rows for both M=3 and M=5, but the
+maximum positive residual is only
+`4.44e-16` at n=128 and `5.55e-16` at n=512.
+With an explicit `1e-12` feasibility tolerance,
+**zero** sampled rows are infeasible. This is
+floating-point boundary noise rather than evidence
+of a substantively infeasible analytical front;
+the existing feasibility implementation was not
+modified. The tolerance here is a research diagnostic,
+**not** a proposed change to the public constraint
+semantics or regression acceptance criteria.
+
+**Priority of next scientific investigation:**
+(1) DPF3 effective-cardinality loss and whether the
+post-filtering results represent the intended global
+Pareto set; (2) DPF5 duplicates and internally
+dominated fronts including the conditional projection
+region; (3) independently verify Pareto membership and
+component coverage for DTLZ8/9 and DTLZ7/DPF2, beyond
+mere observed occupancy; (4) DTLZ5/6 M>=4 completeness
+as already tracked by #65. The actual target point budget
+must not be silently treated as returned, unique and
+nondominated GT cardinality.
+
+No MOP implementation, archived GT, regression test,
+numerical baseline, accepted ADR, or calibration
+default was modified by this audit. Further corrections
+must be proposed separately and checked against
+accepted ADR 0006/0016/0017/0018/0057 contracts
+before implementation.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
