@@ -10,6 +10,8 @@ on:
       - "tests/unit/test_gt_dpf_branch_diagnostics_issue119.py"
       - "scripts/audit/gt_dpf_equation_probes_issue119.py"
       - "tests/unit/test_gt_dpf_equation_probes_issue119.py"
+      - "scripts/audit/gt_dpf_numerics_kernel_issue119.py"
+      - "tests/unit/test_gt_dpf_numerics_kernel_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -31,7 +33,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -51,10 +53,13 @@ jobs:
           PY
       - name: Probe published-equation discrepancies without mutation
         run: python -m scripts.audit.gt_dpf_equation_probes_issue119 > gt119-equation-probes.json
+      - name: Probe numerical precision and published sphere identities
+        run: python -m scripts.audit.gt_dpf_numerics_kernel_issue119 > gt119-numerics-kernel.json
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
           path: |
             gt119-dpf-branch.json
             gt119-equation-probes.json
+            gt119-numerics-kernel.json
           retention-days: 30
