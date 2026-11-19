@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Exact optimal M2 grid controls (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-exact-grids-119.yml"
+      - "scripts/audit/gt_exact_grids_issue119.py"
+      - "tests/unit/test_gt_exact_grids_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-grids:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    name: "Continuous M2 optimal arclength grid controls"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and new test dependency
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify analytic minimum proofs against continuous oracle
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_exact_grids_issue119.py -q
+      - name: Compare real MOP outputs to analytic closed-form grids
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_exact_grids_issue119 \
+            --budgets 64 256 1024 --seeds 101 202 303 --pool 4096 > gt-m2-optimal-grids.json
+          python - <<'PY'
+          import json,statistics
+          d=json.load(open("gt-m2-optimal-grids.json"))
+          print("Real MOP M2 cases:",len(d["records"]))
+          for name in ("DTLZ1","DTLZ2"):
+              for n in (64,256,1024):
+                  rows=[r for r in d["records"] if r["problem"]==name and r["budget"]==n]
+                  print(name,"n",n)
+                  for method in ("incumbent","fps","equal_arclength_with_axes","equal_arclength_midpoints"):
+                      v=[r["methods"][method] for r in rows]
+                      med=lambda k:round(statistics.median(x["observed"][k] for x in v),9)
+                      cost=statistics.median(x["complete_generation_seconds"] for x in v)
+                      print(method,"exact_mean",med("continuous_mean_euclidean_nearest_distance"),
+                            "exact_radius",med("exact_continuous_covering_radius"),
+                            "complete_seconds",round(cost,6))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-analytical-m2-grids
+          path: gt-m2-optimal-grids.json
+          retention-days: 30
