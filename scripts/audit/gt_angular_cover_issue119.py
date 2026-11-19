@@ -136,7 +136,22 @@ def compare(m: int, n: int, *, q: int, cell_budget: int, seed: int,
         bary=improved_coverage_interval(gt,"DTLZ2",q=q)
         angular=angular_coverage_interval(gt,max_cells=cell_budget,
                                           width_target=target)
+        # Intersection of independently valid real-arithmetic intervals is
+        # itself valid and can only improve their tightness. This is especially
+        # useful when angular refinement stalls at higher intrinsic dimension.
+        intersection_lower = max(bary["observed_net_max_lower"],
+                                 angular["continuous_radius_lower"])
+        intersection_upper = min(bary["continuous_radius_upper"],
+                                 angular["continuous_radius_upper"])
+        if intersection_lower > intersection_upper + 1e-10:
+            raise ValueError("Independent bounds disagree: check numerical geometry")
         results[label]={
+            "combined":{
+                "lower":float(intersection_lower),
+                "upper":float(max(intersection_lower, intersection_upper)),
+                "width":float(max(0.0,intersection_upper-intersection_lower)),
+                "construction":"intersection of independent valid bounds",
+            },
             "barycentric":{
                 "lower":bary["observed_net_max_lower"],
                 "upper":bary["continuous_radius_upper"],
