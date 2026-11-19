@@ -12,10 +12,20 @@ class DPF5(BaseDPF):
     Conditional evaluation based on x1 > 1/3.
     Use distinct function sets "P" and "D".
     """
+    def _require_supported_dimensions(self):
+        """DPF5's g term explicitly uses x_M, unlike other DPF projections."""
+        if self.N < self.M:
+            raise ValueError(
+                f"DPF5 requires N >= M because its distance function uses x_M "
+                f"(got M={self.M}, N={self.N}). Pass N >= {self.M} explicitly. "
+                "Other DPF benchmarks can allow M > N."
+            )
+
     def _calc_theta(self, X):
         return X * (np.pi / 2) # Linear mapping assumed from legacy calc_TH(X)
 
     def evaluation(self, X, n_ieq_constr=0):
+        self._require_supported_dimensions()
         X = np.atleast_2d(X)
         D, K, M = self.D, self.K, self.M
         
@@ -116,6 +126,7 @@ class DPF5(BaseDPF):
         Analytical sampling of DPF5 Pareto Set (Requires xM = x1).
         Uses grid sampling for M=3 to ensure a sharp, dense surface.
         """
+        self._require_supported_dimensions()
         M = self.M
         N = self.N
         res = np.zeros((n_points, N))
