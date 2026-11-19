@@ -4,10 +4,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import warnings
 from .DTLZ2 import DTLZ2
 
 
-class DTLZ5(BaseMop if False else DTLZ2): # Inherit helper from DTLZ2
+class DTLZ5(DTLZ2):
     """
     DTLZ5 benchmark problem.
     Degenerate spherical problem.
@@ -29,12 +30,24 @@ class DTLZ5(BaseMop if False else DTLZ2): # Inherit helper from DTLZ2
         """
         Analytical sampling of the degenerate DTLZ5 Pareto Set.
 
-        Keep the historical sampling explicitly here instead of inheriting
-        DTLZ2.ps(): DTLZ5 has a different, one-dimensional Pareto-front
-        geometry for M > 2, so DTLZ2's hypersphere sampling is not applicable.
+        The historical g=0 sampling is valid as a parametrized degenerate
+        Pareto subset, but it is not the *complete* front when M >= 4:
+        nonzero-g points can also be Pareto optimal. Preserve the historical
+        sequence for regression reproducibility and warn callers explicitly.
+        Until a complete front is mathematically validated, do not treat
+        these samples as exhaustive Ground Truth for IGD/IGD+ or HV.
         """
         M = self.M
         N = self.N
+        if M >= 4:
+            warnings.warn(
+                "DTLZ5(M>=4): ps()/pf() samples only the g=0 subset; "
+                "the true Pareto front also contains nonzero-g points. "
+                "This sample is not a complete Ground Truth for "
+                "IGD/IGD+ or absolute HV.",
+                UserWarning,
+                stacklevel=2,
+            )
         res = np.zeros((n_points, N))
 
         if M == 2:
