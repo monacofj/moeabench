@@ -53,7 +53,7 @@ jobs:
               print(r["name"],r["M"],r["requested_points"],
                     r["ps_returned"],r["pf_returned"],r["pf_duplicates"],
                     r["pf_internal_dominated"],
-                    cons.get("infeasible_generated_PS","—"),
+                    (cons.get("infeasible_generated_PS_strict_float","—"),\n                     cons.get("infeasible_generated_PS_tol_1e_12","—")),
                     f"{reg.get('observed_component_count','—')}/{reg.get('expected_component_count','—')}",
                     status)
           print("Cases with returned PF count differing from request:",
@@ -61,8 +61,8 @@ jobs:
                  for r in d["records"] if r["pf_returned"]!=r["requested_points"]])
           print("Cases generating infeasible PS:",
                 [(r["name"],r["M"],r["requested_points"],
-                  r["constraints"]["infeasible_generated_PS"])
-                 for r in d["records"] if r.get("constraints",{}).get("infeasible_generated_PS",0)>0])
+                  r["constraints"]["infeasible_generated_PS_strict_float"],\n                  r["constraints"]["infeasible_generated_PS_tol_1e_12"],\n                  r["constraints"]["max_positive_G"])
+                 for r in d["records"] if r.get("constraints",{}).get("infeasible_generated_PS_strict_float",0)>0])
           PY
       - name: Upload raw structural audit
         uses: actions/upload-artifact@v4
