@@ -40,7 +40,7 @@ def test_record_domain_of_actual_mop_is_checked(name):
 @pytest.mark.parametrize("name",["DTLZ8","DTLZ9"])
 def test_true_constraints_are_evaluated_independently(name):
     r=audit(name,3,48)
-    assert r["constraints"]["constraint_count"]==3 if name=="DTLZ8" else 2
+    assert r["constraints"]["constraint_count"] == (3 if name=="DTLZ8" else 2)
     assert r["constraints"]["feasibility_is_not_pareto_optimality"] is True
     assert r["pf_returned"] > 0
 
