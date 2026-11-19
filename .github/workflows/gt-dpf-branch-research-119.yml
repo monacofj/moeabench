@@ -99,7 +99,7 @@ jobs:
           python - <<'PY'
           import json
           for r in json.load(open("gt119-general-d.json"))["cases"]:
-              print("DIMS",r["M"],r["D"],r["g_offset"],"P",r["P"],"D",r["D"])
+              print("DIMS",r["M"],r["intrinsic_D"],r["g_offset"],"P",r["branch_P"],"D",r["branch_D"])
           PY
       - uses: actions/upload-artifact@v4
         with:
