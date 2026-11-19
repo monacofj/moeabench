@@ -13,7 +13,7 @@ from scripts.audit.gt_metric_sensitivity_issue119 import (
 def test_fixed_real_moea_data_and_gt_sensitive_metrics(name):
     result = run_case(
         name, 3, moea_seed=41, budgets=(12, 24),
-        pool_size=60, iterations=2, pop_size=12, generations=3,
+        pool_size=60, iterations=2, pop_size=32, generations=150,
     )
     assert len(result["final_population_sha256"]) == 64
     assert result["gt_budgets"] == [12, 24]
