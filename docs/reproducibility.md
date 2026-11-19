@@ -49,9 +49,12 @@ See [Environment verification](environment-verification.md),
 the [complete testing manual](test.md), and
 [ADR 0050](adr/0050-certified-environment-verification-and-provenance.md)
 for the active deterministic/opt-in statistical test separation,
-reference-runtime preflight, and formal `--certify` policy.
-The shipped developer manifest still identifies a historically certified
-0.16.1 environment; a successful CI job does not update that manifest.
+reference-runtime preflight, and formal `--certify-numeric` policy.
+The shipped current developer manifest records the certified 0.18.0
+environment from its original source revision, while earlier 0.16.1
+evidence remains in Git history. The 0.18.0 certificate is not proof
+that later source revisions are certified; a successful ordinary CI job
+does not automatically update the manifest or archived certificate.
 
 **Important limitation.** The earlier wording in this document about
 universal "exactly reproducible" and "100% blindagem" is an *aspiration*,
