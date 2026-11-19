@@ -30,22 +30,33 @@ def test_dtlz56_valid_legacy_front_has_no_incompleteness_warning(mop_cls, M):
     np.testing.assert_allclose(np.sum(front**2, axis=1), 1.0, atol=1e-12, rtol=0)
 
 
-@pytest.mark.parametrize("M,N", [(7,6), (10,6), (12,8)])
-def test_dpf5_rejects_underspecified_position_variables_before_math(M, N):
-    mop = DPF5(M=M, N=N, D=2, K=5)
-    assert mop.N == N  # Keep existing BaseDPF construction contract.
+@pytest.mark.parametrize("M,N", [(7, 6), (10, 6), (12, 8)])
+def test_dpf5_rejects_explicit_insufficient_dimensions_at_construction(M, N):
     with pytest.raises(ValueError, match=r"DPF5 requires N >= M"):
-        mop.evaluation(np.full((2, N), 0.5))
-    with pytest.raises(ValueError, match=r"Pass N >="):
-        mop.ps(n_points=16)
+        DPF5(M=M, N=N, D=2, K=5)
+
+
+@pytest.mark.parametrize("M,D,K", [(3, 2, 5), (6, 2, 5), (7, 2, 5), (10, 2, 5), (10, 3, 5)])
+def test_dpf5_default_dimensions_include_x_m(M, D, K):
+    mop = DPF5(M=M, D=D, K=K)
+    expected_n = max(D + K - 1, M)
+    assert mop.N == expected_n
+    ps = mop.ps(n_points=16)
+    front = mop.evaluation(ps)["F"]
+    assert ps.shape == (16, expected_n)
+    assert front.shape == (16, M)
+    assert np.isfinite(front).all()
+    np.testing.assert_array_equal(ps[:, M - 1], ps[:, 0])
+    if expected_n > M:
+        np.testing.assert_array_equal(ps[:, M:], np.full((16, expected_n - M), 0.5))
 
 
 @pytest.mark.parametrize("M", [7, 10])
 def test_dpf5_works_with_explicit_sufficient_decision_variables(M):
-    mop = DPF5(M=M, N=M+2, D=2, K=5)
+    mop = DPF5(M=M, N=M + 2, D=2, K=5)
     ps = mop.ps(n_points=16)
     front = mop.evaluation(ps)["F"]
-    assert ps.shape == (16, M+2)
+    assert ps.shape == (16, M + 2)
     assert front.shape == (16, M)
     assert np.isfinite(front).all()
 
