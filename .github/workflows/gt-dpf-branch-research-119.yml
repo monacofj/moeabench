@@ -54,7 +54,16 @@ jobs:
       - name: Probe published-equation discrepancies without mutation
         run: python -m scripts.audit.gt_dpf_equation_probes_issue119 > gt119-equation-probes.json
       - name: Probe numerical precision and published sphere identities
-        run: python -m scripts.audit.gt_dpf_numerics_kernel_issue119 > gt119-numerics-kernel.json
+        run: |
+          python -m scripts.audit.gt_dpf_numerics_kernel_issue119 > gt119-numerics-kernel.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-numerics-kernel.json"))
+          for p in r["dpf3"]:
+              print("PRECISION",p["M"],p["requested"],"raw/stable ND",p["raw_nondominated"],p["stable_first_component_nondominated"],"zero direct/stable",p["direct_zero_count"],p["stable_zero_count"],"rescued",p["direct_zero_but_stable_positive"])
+          for p in r["dpf5"]:
+              print("SPHERE",p["M"],p["requested"],"P",p["branch_P"],"D",p["branch_D"],"dominated actual/canonical",p["actual_union_dominated"],p["canonical_union_dominated"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
