@@ -405,6 +405,82 @@ is subject to GitHub Actions runner, cold-cache and numerical
 library variability; there is no independent performance
 certification claim.
 
+
+## Sensitivity of actual indicators to GT discretization on fixed MOEA outputs
+
+Research-only [PR #131](https://github.com/monacofj/moeabench/pull/131),
+[Actions run 44595886190](https://github.com/monacofj/moeabench/actions/runs/44595886190)
+runs **actual NSGA-II** once per MOP/seed on DTLZ1 and DTLZ2, M=3,
+seeds 101 and 202, 80 individuals, 350 generations. Each final
+objective-space population is fingerprinted with SHA256 and reused
+**without regeneration or modification** for the three GT budgets
+n=128/512/1024 and three generator methods: current `mop.pf()`,
+objective-space FPS with verified PS inverse, and FPS followed by
+projected MC-CVT. All GTs were generated in memory without
+calling `calibrate()` or writing any sidecar.
+
+This study calls MoeaBench's existing `GEN_igd`, `GEN_igdplus`
+and `GEN_hypervolume` classes (no metric implementation changes).
+For HV, it holds the analytical normalization bounds **fixed**
+(ideal=0, nadir=0.5 for DTLZ1 or 1 for DTLZ2; reference=1.1 in
+normalized space) and reports:
+- `H_sol`: HV of the fixed MOEA front; **must not depend on GT**;
+- `H_GT`: HV of the candidate discretized reference;
+- `H_abs = H_sol / H_GT`: the same *ratio rule* as the public absolute
+  HV mode, tested here in fixed analytical bounds, not by mutating
+  MOP calibration. A preliminary 35-generation experiment produced
+  `H_sol=0` on DTLZ1; the non-informative run was rejected and the
+  instrument now requires positive solution HV. Do not use it as a
+  scientific result.
+
+For each fixed MOEA seed, differences between n=128 or 512 and the
+**same method's n=1024** are recorded. Those are *finite-budget
+comparisons*, not errors against continuous mathematical truth.
+Selected medians of two fixed-MOEA seeds at n=512:
+
+| MOP | GT generator | absolute change in IGD vs 1024 | absolute change in H_abs vs 1024 |
+|---|---|---:|---:|
+| DTLZ1 | incumbent | 0.00045 | 0.01092 |
+| DTLZ1 | FPS | 0.00087 | 0.00417 |
+| DTLZ1 | FPS + MC-CVT | 0.00065 | 0.00772 |
+| DTLZ2 | incumbent | 0.00077 | 0.01497 |
+| DTLZ2 | FPS | 0.00080 | 0.00872 |
+| DTLZ2 | FPS + MC-CVT | 0.00061 | 0.01221 |
+
+At n=128, absolute H_abs changes versus 1024 were substantially
+larger (DTLZ1 incumbent 0.05733 vs FPS 0.02096; DTLZ2 incumbent
+0.06678 vs FPS 0.04115). The paired sample is only two MOEA seeds;
+these are descriptive results, not release acceptance thresholds or
+statistical performance certification.
+
+**Scientific caution:** IGD and IGD+ average distances over the
+reference points, so changing the spatial distribution of GT points
+also changes their *implicit reference measure*. MoeaBench's IGD
+metric class currently uses `zero_to_one=True`, whose normalization
+bounds can themselves depend on the finite reference. Therefore
+neither absolute IGD change nor convergence to a higher-n sampled
+GT alone proves accuracy to a continuous geometric target.
+A defensible target must specify the intended surface measure,
+normalization convention and independently validated reference.
+Furthermore, improvements in geometrical spacing need not produce
+smaller IGD for a particular fixed MOEA approximation: the
+estimand is affected by reference weighting.
+
+The dependence of `H_abs` on `H_GT` is direct and important:
+a fixed `H_sol` and fixed normalization still give a changing ratio
+as discretized GT hypervolume changes. The GT's full continuous
+dominated volume and the numerical approximation error remain to
+be bounded or characterized independently. HV in `scale='raw'`
+with unchanged normalization bounds does not change when GT changes;
+only the calibrated denominator in absolute mode does.
+
+No production indicator, historical regression test, stored
+MOP GT, accepted ADR, or calibration default was changed. Next:
+geometry-derived reference measures and bounds (continuous
+simplex/hypersphere where feasible), sensitivity across more
+MOPs/seeds and explicit numerical error tolerance approval
+before selecting automatic GT budgets.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
