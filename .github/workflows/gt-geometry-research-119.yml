@@ -35,7 +35,7 @@ jobs:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
         run: |
-          python scripts/audit/gt_fps_preimage_study.py \
+          python -m scripts.audit.gt_fps_preimage_study \
             --problems DTLZ1 DTLZ2 DTLZ3 DTLZ4 \
             --objectives 3 5 \
             --budgets 128 512 1024 \
