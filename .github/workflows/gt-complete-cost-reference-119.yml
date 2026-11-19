@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: GT complete cost and reference sensitivity (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-complete-cost-reference-119.yml"
+      - "scripts/audit/gt_complete_cost_reference_issue119.py"
+      - "tests/unit/test_gt_complete_cost_reference_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  geometry-cost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    name: "GT full-cost and independent reference scaling"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and test dependencies
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Run new tests only
+        run: python -m pytest tests/unit/test_gt_complete_cost_reference_issue119.py -q
+      - name: Run paired study on real MOP implementations
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_complete_cost_reference_issue119 \
+            --objectives 3 5 10 \
+            --budgets 128 512 \
+            --pool 4096 \
+            --reference-sizes 2048 8192 32768 \
+            --seeds 101 202 303 \
+            --iterations 12 > gt-complete-cost.json
+          python - <<'PY'
+          import json
+          data=json.load(open("gt-complete-cost.json"))
+          print("GT119 paired cases:",len(data["records"]))
+          for g in data["summary"]:
+              print(g["name"],"M",g["M"],"n",g["budget"],"pool",g["candidate_pool"])
+              for name,x in g["methods"].items():
+                  ref=x["reference_sizes"]
+                  mids=[ref[k]["reference_to_front_mean"] for k in ("2048","8192","32768")]
+                  maxima=[ref[k]["reference_to_front_max"] for k in ("2048","8192","32768")]
+                  print(f" {name:16s} complete s={x['complete_generation_median_seconds']:.5f} mean={mids} max={maxima}")
+          print("Maximum evaluated preimage mismatch:",
+                max(max(r["inverse_error"].values()) for r in data["records"]))
+          PY
+      - name: Preserve raw observations for scientific review
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-complete-cost-ref-sensitivity
+          path: gt-complete-cost.json
+          retention-days: 30
