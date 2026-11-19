@@ -13,15 +13,12 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 import moeabench as mb
 
 def test_dpf_unlimited_dimensions():
-    """Verify 'DPF Unlimited' (v0.7.2+): M > N should now be permitted."""
-    # M=10, K=5, D=2 => N = 2+5-1 = 6.
-    try:
-        mop = mb.mops.DPF5(M=10, K=5, D=2)
-        assert mop.M == 10
-        assert mop.N == 6
-    except ValueError as e:
-        pytest.fail(f"DPF Unlimited failed: M > N raised ValueError: {e}")
-    print("\n[PASS] DPF Unlimited allows M > N as intended.")
+    """DPF projection can have more objectives than decision variables."""
+    # DPF1 does not use x_M and retains the generic M > N contract.
+    mop = mb.mops.DPF1(M=10, K=5, D=2)
+    assert mop.M == 10
+    assert mop.N == 6
+    assert mop.evaluation(np.full((2, mop.N), 0.5))["F"].shape == (2, 10)
 
 def test_optimal_synchronization():
     """Verify that experiment.optimal() maintains row-by-row correspondence (v0.7.3)."""

@@ -50,6 +50,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### Fixed
+- **DPF5 dimensional consistency (#65)**:
+  - Default `N` now includes the `x_M` variable required by the DPF5
+    distance function: `max(D + K - 1, M)`.
+  - Explicit `N < M` fails at construction with an informative error;
+    other DPF variants retain support for `M > N`.
+  - Updated the old DPF-unlimited regression to use DPF1, which actually
+    supports `M > N`, and extended focused DPF5 dimension checks.
+
 - **Restored FAIR-Independent Core Contracts (#94; PR #88)**:
   - Restored `mop.calibrate()` and MOP-owned `calibrated_gt` as
     foundational Ground Truth functionality independent of FAIR.

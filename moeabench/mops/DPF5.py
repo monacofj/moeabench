@@ -11,13 +11,32 @@ class DPF5(BaseDPF):
     DPF5 benchmark problem.
     Conditional evaluation based on x1 > 1/3.
     Use distinct function sets "P" and "D".
+
+    Unlike other DPFs, DPF5's distance function explicitly uses x_M:
+    this problem therefore requires N >= M.
     """
+    def __init__(self, **kwargs):
+        # Match BaseDPF's effective D/K defaults and validation fallback.
+        # Only DPF5 must increase its default N to include x_M.
+        if 'N' not in kwargs:
+            M = kwargs.get('M', 3)
+            D = kwargs.get('D', 2)
+            if D < 2 or D >= M:
+                D = 2
+            K = kwargs.get('K', 5)
+            kwargs['N'] = max(D + K - 1, M)
+        super().__init__(**kwargs)
+
+    def validate(self):
+        super().validate()
+        self._require_supported_dimensions()
+
     def _require_supported_dimensions(self):
         """DPF5's g term explicitly uses x_M, unlike other DPF projections."""
         if self.N < self.M:
             raise ValueError(
                 f"DPF5 requires N >= M because its distance function uses x_M "
-                f"(got M={self.M}, N={self.N}). Pass N >= {self.M} explicitly. "
+                f"(got M={self.M}, N={self.N}). Provide N >= {self.M}. "
                 "Other DPF benchmarks can allow M > N."
             )
 
