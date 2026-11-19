@@ -5,15 +5,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Global Pareto membership and full attainable support of the published DPF5 — issue #119
 
-**Scope:** exact mathematical characterization of the **published reconstructed DPF5**, not certification of the current implementation nor of a finite sample. The derivation assumes minimization of all M objectives; standard box decision constraints 0<=x_i<=1; M>D>=2; N>=M; and the paper's (g=(x_M-x_1)^2+\sum_{i=M+1}^{N}(x_i-0.5)^2). It also assumes published beta/P for x1<1/3 and gamma/D for x1>=1/3, with the hyperspherical coordinates implemented independently by `scripts/audit/gt_dpf5_general_d_issue119.py`.
+**Scope:** exact mathematical characterization of the **published reconstructed DPF5**, not certification of the current implementation nor of a finite sample. The derivation assumes minimization of all M objectives; standard box decision constraints 0<=x_i<=1; M>D>=2; N>=M; and the paper's distance function `g=(x_M-x_1)^2 + sum_{i=M+1}^N (x_i-0.5)^2`. It also assumes published beta/P for x1<1/3 and gamma/D for x1>=1/3, with the hyperspherical coordinates implemented independently by `scripts/audit/gt_dpf5_general_d_issue119.py`.
 
 ## Analytic characterization
 
-Let (H_q:\,[0,\pi/2]^{q-1}\to S^{q-1}_+\) denote the standard positive orthant unit-hyperspherical parameterization. With θ_i=(π/2)x_i, the published P branch is (u_P=H_M(\theta_1,\dots,\theta_{M-1})), while D uses (u_D=(h_1/\sqrt{M-D+1},\dots,h_1/\sqrt{M-D+1},h_2,\dots,h_D)), with (h=H_D(\theta_1,\dots,\theta_{D-1})). The first D coordinate is repeated M−D+1 times **only in the first component block**. In either case (u(x)\in\mathbb R^M_{\geq0}\) and (||u(x)||_2=1), and published objectives have form
+Let `H_q` be the standard nonnegative unit-hyperspherical map in q objectives, with q−1 angles. For θ_i=(π/2)x_i, the published P branch uses the complete M-dimensional hyperspherical image `u_P=H_M(theta_1,...,theta_{M-1})`. For the degenerate D branch, let `h=H_D(theta_1,...,theta_{D-1})`; the first coordinate `h_1` is replicated M−D+1 times with weight `1/sqrt(M−D+1)`, followed by `h_2,...,h_D`. Hence both vectors `u(x)` have nonnegative components and unit Euclidean norm. The published objective equations are exactly
 
-[
-F(x)=(1+g(x))u(x),\quad g(x)\geq0.
-]
+```text
+F(x) = (1 + g(x)) u(x),   g(x) >= 0,   ||u(x)||_2 = 1.
+```
 
 **Proof — all g=0 points are globally nondominated.** If y has g(y)=0, ||F(y)||=1. Any feasible x with F(x) componentwise <= F(y), with one strict, must satisfy ||F(x)||<||F(y)||=1 because every component is nonnegative. But the published equations guarantee ||F(x)||=1+g(x)>=1. Contradiction. This includes any cross-branch candidate; thus there is **no cross-branch dominance among points of either P/D at g=0**, even when objective vectors coincide on region intersections.
 
