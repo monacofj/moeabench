@@ -14,6 +14,8 @@ on:
       - "tests/unit/test_gt_dpf_numerics_kernel_issue119.py"
       - "scripts/audit/gt_dpf_high_precision_issue119.py"
       - "tests/unit/test_gt_dpf_high_precision_issue119.py"
+      - "scripts/audit/gt_dpf5_offpareto_issue119.py"
+      - "tests/unit/test_gt_dpf5_offpareto_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -35,7 +37,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -80,6 +82,15 @@ jobs:
           for p in r["dpf5"]:
               print("M",p["M"],"n",p["requested"],"P",p["P"],"D",p["D"])
           PY
+      - name: Evaluate DPF5 off-front nonzero-g source agreement
+        run: |
+          python -m scripts.audit.gt_dpf5_offpareto_issue119 > gt119-dpf5-offpareto.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-offpareto.json"))["cases"]:
+              print("OFFPARETO M",r["M"],"n",r["n"],"g",r["g_min"],
+                    "P",r["P"],"D",r["D"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -88,4 +99,5 @@ jobs:
             gt119-equation-probes.json
             gt119-numerics-kernel.json
             gt119-high-precision.json
+            gt119-dpf5-offpareto.json
           retention-days: 30
