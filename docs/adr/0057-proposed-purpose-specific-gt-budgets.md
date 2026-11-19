@@ -3,15 +3,25 @@ SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# ADR 0057 (Proposed): Purpose-Specific Budgets for On-Demand Ground Truth
+# ADR 0057: Purpose-Specific Budgets for On-Demand Ground Truth
 
 ## Status
 
-**Proposed — NOT ACCEPTED.** Discussion in issue
-[#119](https://github.com/monacofj/moeabench/issues/119) under umbrella
-[#122](https://github.com/monacofj/moeabench/issues/122).
-Do not implement this proposal or treat it as a supersession before
-explicit maintainer approval of the final contract.
+**Accepted in principle — 2026-11-19; operational budget contract pending.**
+The maintainer approved on-demand MOP-specific GT generation, the separation
+between `pf()` and `calibrate()`, and automatic budget selection for
+`calibrate()` when `n_points` is omitted. The numerical budget policy,
+quality bounds, migration details and any code changes **are not yet
+approved**. Tracked in [#119](https://github.com/monacofj/moeabench/issues/119)
+under umbrella [#122](https://github.com/monacofj/moeabench/issues/122).
+
+**Scope of ADR 0018 supersession:** its fixed 2,000-DTLZ / 10,000-DPF
+budgets are no longer the intended universal policy. Until the new
+numerical default algorithm is reviewed and implemented, these remain
+the *actual runtime defaults* and accepted historical calibration
+reference values. The other decisions in ADR 0018 are untouched.
+No change to existing data, tests or certification follows merely
+from accepting this direction.
 
 ## Existing accepted decisions and behavior
 
@@ -48,7 +58,7 @@ case*, but are not a universal theorem of GT sufficiency. Altering
 that policy requires a **reviewed partial supersession** of ADR 0018;
 its other approved historical decisions must not be silently erased.
 
-## Proposed direction (decision pending)
+## Accepted architectural direction (implementation pending)
 
 1. **On-demand by MOP/configuration:** preserve MOP-owned analytical
    evaluation and generation; prefer deterministic, scientifically
@@ -64,10 +74,11 @@ its other approved historical decisions must not be silently erased.
    claim exact cardinality. No universal fixed DTLZ/DPF count.
 3. **Purpose-specific defaults:** keep lightweight, bounded
    visualization sampling; allow more rigorous calibration/reference
-   generation at a user-chosen budget. Whether scientific calibration
-   with no supplied budget (a) requires explicit `n_points` or
-   (b) computes a geometry-dependent default is **undecided**.
-   Also undecided: numerical defaults and maximum work budget.
+   generation at a user-chosen budget. Scientific calibration with no explicit `n_points` **selects an
+   appropriate budget automatically** using MOP geometry, desired
+   accuracy and bounded computational cost. The exact selection rule,
+   budget values and maximum work budget remain to be defined and
+   validated before implementation.
 4. **Scientific quality:** certify complete Pareto membership,
    front-region coverage, point spacing/regularity and convergence
    independently of any FAIR metrics. Keep geometry correctness
@@ -85,11 +96,13 @@ its other approved historical decisions must not be silently erased.
    points into interactive plots or substitute a display decimation
    as the metric's scientific reference.
 
-## Questions requiring approval before implementation
+## Details requiring review before implementation
 
-- Exact behavior of `mop.calibrate()` without `n_points`:
-  required explicit budget, geometry-dependent default, or another
-  defined policy? What is the migration behavior?
+- Which geometry-/quality-aware automatic budget rule will be used by
+  `mop.calibrate()` when `n_points` is omitted? What are its cost bound,
+  convergence/coverage tolerance, documented limitations and migration
+  behavior? Determining the rule, not choosing between required or
+  automatic budget, is the remaining research question.
 - Are `ps()` and `pf()` public defaults to remain backward-compatible
   initially? How will cardinality and supported configurations be
   reported?
@@ -102,18 +115,19 @@ its other approved historical decisions must not be silently erased.
 - Which geometric error bounds, cost limits, and reproducibility
   requirements are sufficient to promote individual samplers?
 
-## Consequences if accepted
+## Consequences and transition
 
-The default DTLZ/DPF calibration densities in ADR 0018 would be
-**partially superseded only as specified by an approved concrete
-budget policy**. Its original observations and other decisions remain
-historical/normative as applicable. Validation results and explicit
-sign-off precede any code, regression, baseline, certification or
-API changes.
+The adopted *direction* replaces ADR 0018's assumption that a single
+fixed DTLZ/DPF density is appropriate for every scientific use. The
+existing 2,000/10,000 numerical defaults and frozen references remain
+unaltered **until a separately reviewed, concrete policy is implemented**.
+ADR 0018's other historical observations and decisions remain intact.
+Validation results and explicit sign-off precede any code, regression,
+baseline, certification or API changes.
 
 ## Implementation
 
-**None.** This is a proposal for review, not a merged architecture
-change. No changes to sampling defaults, calibrated GT storage,
-visualization, existing regression tests or certification references
-are authorized here.
+**None to the runtime yet.** This ADR records accepted architecture
+principles, not an implemented sampling change. No modifications to
+sampling defaults, calibrated GT storage, visualization, existing
+regression tests or certification references are authorized here.

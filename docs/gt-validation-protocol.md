@@ -10,6 +10,38 @@ approved by this document. Original MOP evaluation equations are immutable
 unless separately reviewed. Issues: [#119](https://github.com/monacofj/moeabench/issues/119)
 and [#65](https://github.com/monacofj/moeabench/issues/65).
 
+## Approved GT interface and budget direction (ADR 0057)
+
+ADR 0057 now records the accepted architectural direction (not yet a
+runtime implementation):
+
+- `mop.ps(n_points)` and `mop.pf(n_points)` remain generators of
+  mathematical Pareto-set/front samples, with the existing public roles.
+  Do not add calibration side effects or a `mode="calibrate"` switch.
+- `mop.calibrate()` retains the MOP-owned reference, external/search
+  source, load/reload, persisted sidecar and `calibrated_gt` contracts.
+  If no budget is explicitly requested **and new generation is needed**,
+  a future geometry-/quality-/cost-aware policy will select it.
+  Calibrate should not regenerate when an existing source is loaded.
+- A visualization budget is independent of scientific GT resolution.
+  Persisting the *actual GT used* in `exp.save()` is separate integration
+  work subject to existing selective persistence contracts.
+- No general implicit on-disk cache for every `pf()` call; no fixed
+  precomputed catalog for arbitrary M/K/D.
+- The existing 2,000 DTLZ / 10,000 DPF runtime calibration defaults
+  remain **unchanged** until the numerical replacement and migration
+  policy are independently verified and authorized.
+- Do not change archived GTs, frozen numerical references or regression
+  tests without prior maintainer warning/approval.
+
+**Research next:** derive a defensible default budget rule from
+intrinsic geometry, coverage-error convergence and bounded runtime;
+test MOP-specific deterministic samplers and distinguish exact
+geometric checks from finite dense-reference diagnostics. Report
+actual returned cardinality, duplicates, extremes and relative
+errors as `M`/intrinsic dimension and budgets vary. Changes to
+`calibrate()` occur only after approval of the concrete algorithm.
+
 ## Distinct validity questions
 
 1. **Pareto membership and completeness.** Establish the true feasible
