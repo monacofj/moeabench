@@ -1,0 +1,65 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Adaptive angular spherical GT audit (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-angular-cover-119.yml"
+      - "scripts/audit/gt_angular_cover_issue119.py"
+      - "tests/unit/test_gt_angular_cover_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  angular:
+    name: "DTLZ2 angular branch-and-bound vs refined barycentric net"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and independent tests
+        run: |
+          python -m pip install -e .
+          python -m pip install pytest
+      - name: Verify new mathematical / independent checks
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_angular_cover_issue119.py -q
+      - name: Run fixed-GT spherical continuous covering comparison
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_angular_cover_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --seeds 101 202 --q 24 --cells 4000 \
+            --candidate-pool 4096 --target 0.01 > gt-angular-cover.json
+          python - <<'PY'
+          import json
+          d=json.load(open("gt-angular-cover.json"))
+          print("Paired experiment cases:",len(d["records"]))
+          for row in d["records"]:
+              print("M",row["M"],"n",row["budget"],"seed",row["seed"])
+              for name,z in row["methods"].items():
+                  b=z["barycentric"]; a=z["angular"]
+                  print(f" {name} bary=[{b['lower']:.6f},{b['upper']:.6f}] "
+                        f"width={b['width']:.6f} net={b['net_points']}; "
+                        f"angular=[{a['continuous_radius_lower']:.6f},"
+                        f"{a['continuous_radius_upper']:.6f}] "
+                        f"width={a['interval_width']:.6f}, "
+                        f"cells={a['angular_cells']} "
+                        f"seconds={a['elapsed_seconds_diagnostic']:.4f}")
+          PY
+      - name: Archive unmodified real-MOP evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-adaptive-angular-certificate
+          path: gt-angular-cover.json
+          retention-days: 30
