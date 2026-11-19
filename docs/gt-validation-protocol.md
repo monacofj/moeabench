@@ -551,6 +551,86 @@ requiring a separate explicit decision.
 No production GT generation, accepted ADR, calibration default,
 regression test, saved GT, or baseline was altered.
 
+
+## Analytical optimal M=2 grids versus FPS (2026-11-19)
+
+Research [PR #133](https://github.com/monacofj/moeabench/pull/133),
+[Actions run 44600707914](https://github.com/monacofj/moeabench/actions/runs/44600707914)
+compares the actual, unchanged `mop.pf()` for DTLZ1/2 M=2
+against objective-space FPS and two deterministic analytical
+arclength grids. The old exact continuous nearest-distance oracle
+from PR #132 evaluates all methods; independent research tests
+check the closed-form expressions and the numerical inversion
+to genuine MOP decision vectors. Conditions: n=64/256/1024,
+three FPS seeds, pool=4096. The same mathematical front is
+sampled and no calibration sidecar is touched.
+
+**Analytical optimization on a 1-D curve.** Restrict to
+Euclidean nearest-point distances averaged uniformly in arclength,
+and the maximum Euclidean nearest-point distance over the full
+continuous segment or positive quarter-circle. With n sampled
+points **constrained to contain both objective-axis endpoints**,
+equal arclength spacing minimizes both criteria: the gaps are
+equal because the sum of integrated nearest-distance
+contributions is convex in gap length, and the maximum
+distance is governed by the largest gap. With endpoint inclusion
+relaxed, a midpoint-centered partition into n equal-arclength
+cells gives the corresponding unconstrained optimum. This
+latter design omits exact objective-axis extremes, potentially
+undermining ideal/nadir provenance and other GT roles.
+It is reported solely as a separate mathematical control.
+
+For the DTLZ1 segment of length L=sqrt(2)/2, the exact
+continuous mean and covering radius are L/(4k) and L/(2k),
+where k=n-1 if both endpoints are prescribed, or k=n for
+the equally spaced midpoint design. For the quarter-circle,
+with total arclength A=pi/2 and cell/gap arclength g=A/k,
+the exact mean chord distance is
+`8 * (1 - cos(g/4)) / g` and exact radius is
+`2 * sin(g/4)`. The formulas are **M=2 only**.
+
+Representative results below use the exact continuous oracle
+(median over the three FPS seeds, equal-grid values are fixed):
+
+| MOP | n | Method | Exact mean distance | Exact covering radius | Median generation cost (s) |
+|---|---:|---|---:|---:|---:|
+| DTLZ1 | 256 | Current `pf()` | 0.00129034 | 0.00927234 | 0.000180 |
+| DTLZ1 | 256 | FPS | 0.00069747 | 0.00273359 | 0.019000 |
+| DTLZ1 | 256 | Equal arclength, **axes included** | **0.00069324** | **0.00138648** | 0.000220 |
+| DTLZ1 | 256 | Equal arclength, midpoints | 0.00069053 | 0.00138107 | 0.000218 |
+| DTLZ2 | 256 | Current `pf()` | **0.00154000** | **0.00307999** | 0.000052 |
+| DTLZ2 | 256 | FPS | 0.00154785 | 0.00578306 | 0.017326 |
+| DTLZ2 | 256 | Equal arclength, **axes included** | **0.00154000** | **0.00307999** | 0.000204 |
+| DTLZ2 | 256 | Equal arclength, midpoints | 0.00153398 | 0.00306796 | 0.000184 |
+
+For DTLZ1 n=1024, exact-axis equal spacing gave
+mean 0.000172802 and radius 0.000345604 in ~0.000394 s,
+whereas FPS gave mean 0.000182508 and radius 0.000836382
+in ~0.074403 s. These execution times include candidate
+generation, decision-space inversion and forward objective
+evaluation where applicable, but are runner-dependent.
+
+**Scientific implication:** For one-dimensional fronts whose
+arclength parametrization is known, a small deterministic
+analytical method is preferable to a costly finite-candidate
+FPS or projected CVT algorithm. The existing DTLZ2 M=2
+generator already implements the axes-preserving solution;
+DTLZ1 M=2 could eventually receive the analogous simple
+generator **only after explicit production-change review**.
+The midpoint design makes a modest further improvement to
+mean/radius but omits both axes and is not recommended as
+the default scientific GT where exact objective extremes
+must be retained.
+
+This exact-grid result says nothing about global optimization
+of discretization for M>=3 or disconnected/constrained fronts.
+Uniform surface measure, objective-space normalization and
+how GT discretization affects scientific indicators remain
+separate obligations; no default budget or numerical tolerance
+is established by these M2 results. No production generator,
+existing regression tests, GT sidecars, baseline or accepted
+ADR was changed.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
