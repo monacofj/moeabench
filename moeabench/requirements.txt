@@ -3,13 +3,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-numpy
-pandas
-matplotlib
-plotly
-ipywidgets
-ipython
-joblib
-tqdm
-pymoo
-deap
+# Runtime dependencies are maintained in pyproject.toml. This packaged
+# list mirrors those versioned lower bounds for legacy consumers.
+pymoo>=0.6.2
+moocore>=0.3.2
+ipywidgets>=8.1.9
+plotly>=5.22.0
+ipython>=9.18.1
+pandas>=3.0.6
+ordered_set>=4.1.0
+deap>=1.4.4
+deepdiff>=9.1.0
+PyGithub>=2.10.0
+joblib>=1.6.0
+numpy>=2.5.4
+tqdm>=4.70.1
+scipy>=1.18.1
+matplotlib>=3.11.2
