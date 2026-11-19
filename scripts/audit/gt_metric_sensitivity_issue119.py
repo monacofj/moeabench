@@ -93,6 +93,8 @@ def compute_metrics(front: np.ndarray, gt: np.ndarray, *,
     igdplus = float(GEN_igdplus([front], gt).evaluate()[0])
     hv_sol = float(GEN_hypervolume(
         [front], m, bounds_min, bounds_max).evaluate()[0])
+    if hv_sol <= 0 or not np.isfinite(hv_sol):
+        raise ValueError("MOEA has zero HV under fixed analytical bounds; increase MOEA generations or reconsider study conditions")
     hv_gt = float(GEN_hypervolume(
         [gt], m, bounds_min, bounds_max).evaluate()[0])
     if hv_gt <= 0 or not np.isfinite(hv_gt):
