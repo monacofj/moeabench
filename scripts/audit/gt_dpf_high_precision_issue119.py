@@ -28,7 +28,7 @@ def precision_probe(n=512, digits=100):
     with mp.workdps(digits):
         halfpi=mp.pi/2
         # mp.mpf(float) preserves the exact binary input decision coordinate.
-        exact=[1-mp.cos(halfpi*mp.mpf(float(x))**100) for x in ps[:,0]]
+        exact=[2*mp.sin(halfpi*mp.mpf(float(x))**100/2)**2 for x in ps[:,0]]
         exact_positive=np.asarray([z>0 for z in exact],dtype=bool)
         rounded=np.asarray([float(z) for z in exact],dtype=float)
         reference_max=float(max(exact))
@@ -42,7 +42,7 @@ def precision_probe(n=512, digits=100):
         "mp_to_float64_zero_count":int(np.sum(rounded==0)),
         "stable_vs_mp_float64_max_abs":float(np.max(np.abs(stable-rounded))),
         "reference_max":reference_max,
-        "warning":"finite mp digits may still round 1-cos(tiny theta) to zero; check convergence",
+        "warning":"high precision uses the stable trigonometric identity; zero after float64 conversion is representability loss",
     }
 
 
