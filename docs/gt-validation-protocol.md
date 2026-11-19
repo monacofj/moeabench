@@ -215,6 +215,59 @@ Future tests should include M>5 scaling, candidate-pool convergence,
 nonparametric cost-quality tradeoff, independent geometric bounds and
 indicator sensitivity on fixed MOEA output.
 
+
+## Higher-dimensional stress test — 2026-11-19 (research only)
+
+The independently rerunnable workflow
+[PR #128](https://github.com/monacofj/moeabench/pull/128),
+[Actions run 44585779672](https://github.com/monacofj/moeabench/actions/runs/44585779672),
+tested the real, unmodified MOP `pf()` generator against FPS plus verified
+decision-space preimages for **M=10/15**, budgets **128/512**, DTLZ1,
+DTLZ2 and DTLZ4, three paired seeds (101/202/303), candidate pools
+**2048 and 8192**, and an independent 16384-point finite reference.
+Each pool produced 36 measured comparisons (72 in total). Raw JSON
+artifacts were retained by the Actions workflow for 30 days.
+
+Representative **medians of three seed pairs**, pool=8192 and
+GT budget=512; smaller values are better:
+
+| Problem | M | Reference→GT mean: current/FPS | Max finite-reference gap: current/FPS | NN-CV: current/FPS |
+|---|---:|---:|---:|---:|
+| DTLZ1 | 10 | 0.14987 / **0.07403** | 0.38256 / **0.11972** | 0.730 / **0.147** |
+| DTLZ1 | 15 | 0.16409 / **0.08479** | 0.33747 / **0.13587** | 0.792 / **0.249** |
+| DTLZ2 | 10 | **0.31697** / 0.32461 | 0.54728 / **0.46619** | 0.203 / **0.050** |
+| DTLZ2 | 15 | **0.41751** / 0.43651 | 0.60722 / **0.59242** | 0.181 / **0.049** |
+| DTLZ4 | 10 | **0.31697** / 0.32461 | 0.54728 / **0.46619** | 0.203 / **0.050** |
+| DTLZ4 | 15 | **0.41751** / 0.43651 | 0.60722 / **0.59242** | 0.181 / **0.049** |
+
+For both pool sizes, DTLZ1 improved mean distance in all paired seed
+comparisons, whereas the positive hypersphere of DTLZ2/4 worsened its
+mean distance in nearly all comparisons at M=10/15 (pool=8192: zero
+improvements in the twelve spherical M×budget×seed configurations for
+each of DTLZ2 and DTLZ4). FPS nevertheless reduced the *observed
+maximum* and nearest-neighbor CV in these representative cases.
+The geometry labels DTLZ2 and DTLZ4 are not independent front shapes;
+DTLZ4 tests the additional objective-to-decision inverse.
+
+Maximum forward-replay mismatch on the actual MOPs was
+7.87e-15. Overall median exploratory generation times: 0.00041 sec
+for the incumbent versus 0.04592 sec for FPS+inverse+evaluation
+(pool=8192); with pool=2048, 0.00065 vs 0.02171 sec. Shared GitHub
+runner timings are not a rigorous runtime benchmark.
+
+**Interpretation.** The strong DTLZ1 gain may partially reflect the
+candidate's mandatory inclusion of exact axes, unlike the incumbent's
+random simplex sampling; a separate *axis-preserving incumbent*
+control is needed before attributing every gain to FPS itself.
+A larger FPS candidate pool does not necessarily decrease *mean*
+reference-to-GT distance: FPS greedily targets maximum gaps, not
+mean-square/mean-distance quantization. In high intrinsic dimensions,
+a finite uniformly random reference also becomes sparse, so observed
+maximum distances **are not** certified covering radii. These findings
+rule out treating FPS as a universally superior default, and support
+geometry-specific selection and evaluation of Riesz/CVT or hybrid
+alternatives. No production change is authorized by this study.
+
 ## Extension and acceptance criteria
 
 For DTLZ7/DPF2 use the *independently derived exact admissible Pareto
