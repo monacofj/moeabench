@@ -20,6 +20,8 @@ on:
       - "tests/unit/test_gt_dpf5_general_d_issue119.py"
       - "scripts/audit/gt_dpf5_fixed_impact_issue119.py"
       - "tests/unit/test_gt_dpf5_fixed_impact_issue119.py"
+      - "scripts/audit/gt_dpf5_global_membership_issue119.py"
+      - "tests/unit/test_gt_dpf5_global_membership_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -41,7 +43,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -114,6 +116,18 @@ jobs:
                     "pop objective delta",r["population_max_component_change_at_fixed_X"],
                     "metric deltas",r["metric_delta_counterfactual_minus_current"])
           PY
+      - name: Check global Pareto membership witness for published DPF5
+        run: |
+          python -m scripts.audit.gt_dpf5_global_membership_issue119 > gt119-dpf5-global-membership.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-dpf5-global-membership.json"))
+          for row in r["cases"]:
+              print("GLOBAL_WITNESS",row["M"],row["intrinsic_D"],row["seed"],
+                    "g-positive",row["positive_g_count"],
+                    "witness",row["all_g_positive_strictly_dominated"],
+                    "norm",row["max_unit_norm_error"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -125,4 +139,5 @@ jobs:
             gt119-dpf5-offpareto.json
             gt119-general-d.json
             gt119-dpf5-paired-impact.json
+            gt119-dpf5-global-membership.json
           retention-days: 30
