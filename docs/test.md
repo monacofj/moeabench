@@ -110,8 +110,8 @@ numerical library, we repeat exactly the same experiment and obtain
 a different set. The numerical stability test fails because it can
 no longer reproduce its historical reference.
 
-**The failure tells us *what changed*, not yet *why*.** There are two
-important possibilities.
+**The failure tells us that the output changed, but not why.**
+There are two important possibilities.
 
 **A regression bug.** Perhaps a refactoring introduced an error in
 the solver, changed a seed unexpectedly or corrupted an intermediate
