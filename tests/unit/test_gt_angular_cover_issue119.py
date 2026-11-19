@@ -73,6 +73,10 @@ def test_actual_mop_against_existing_barycentric_certificate():
         a=report["methods"][key]["angular"]
         assert b["lower"] <= a["continuous_radius_upper"]+1e-12
         assert a["continuous_radius_lower"] <= b["upper"]+1e-12
+        combined=report["methods"][key]["combined"]
+        assert combined["lower"] >= max(b["lower"],a["continuous_radius_lower"])-1e-12
+        assert combined["upper"] <= min(b["upper"],a["continuous_radius_upper"])+1e-12
+        assert combined["width"] <= min(b["width"],a["interval_width"])+1e-12
 
 
 def test_invalid_surface_and_angles_rejected():
