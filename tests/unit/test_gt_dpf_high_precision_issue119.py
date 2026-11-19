@@ -6,6 +6,7 @@ from scripts.audit.gt_dpf_high_precision_issue119 import precision_probe,dpf5_di
 
 
 def test_mp_reference_recovers_values_lost_by_naive_subtraction():
+    pytest.importorskip('mpmath')
     r=precision_probe(128,160)
     assert r["naive_zero_but_mp_positive"] > 0
     assert r["mp_positive_count"] >= r["naive_zero_but_mp_positive"]
@@ -13,6 +14,7 @@ def test_mp_reference_recovers_values_lost_by_naive_subtraction():
 
 
 def test_precision_reference_stabilizes_with_more_digits():
+    pytest.importorskip('mpmath')
     a=precision_probe(64,120)
     b=precision_probe(64,200)
     assert a["mp_positive_count"] == b["mp_positive_count"]
