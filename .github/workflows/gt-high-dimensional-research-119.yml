@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: GT high-dimensional geometric study (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-high-dimensional-research-119.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  high-dimension:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        candidate_pool: [2048, 8192]
+    name: "GT exploratory M10-15 (candidate pool ${{ matrix.candidate_pool }})"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project with current dependencies
+        run: python -m pip install -e .
+      - name: Run independent multi-seed high-dimensional GT study
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_fps_preimage_study \
+            --problems DTLZ1 DTLZ2 DTLZ4 \
+            --objectives 10 15 \
+            --budgets 128 512 \
+            --seeds 101 202 303 \
+            --candidate-pool ${{ matrix.candidate_pool }} \
+            --reference-size 16384 > highdim-study.json
+          python - <<'PY'
+          import json, statistics
+          x = json.load(open("highdim-study.json"))
+          print("Number of records:",len(x["records"]))
+          print("problem M n | ref->GT mean incumbent/FPS | ref->GT observed max incumbent/FPS | NN CV incumbent/FPS | FPS improvements")
+          for group in x["summary"]:
+              measures={v["measure"]:v for v in group["measures"]}
+              av=measures["reference_to_front_mean"]
+              hi=measures["reference_to_front_max"]
+              cv=measures["nearest_neighbor_cv"]
+              print(f'{group["problem"]:5} {group["M"]:2} {group["budget"]:4} | '
+                    f'{av["incumbent_median"]:.5f}/{av["fps_median"]:.5f} | '
+                    f'{hi["incumbent_median"]:.5f}/{hi["fps_median"]:.5f} | '
+                    f'{cv["incumbent_median"]:.3f}/{cv["fps_median"]:.3f} | '
+                    f'{av["fps_lower_count"]}/{av["pairs"]}')
+          print("Maximum FPS decision->objective reconstruction error:",
+                max(v["preimage_max_evaluation_error"] for v in x["records"]))
+          for key in ("incumbent_pf","fps_plus_preimage_plus_evaluation"):
+              times=[v["elapsed_seconds_diagnostic"][key] for v in x["records"]]
+              print(f'Median {key} wall-time (s):',round(statistics.median(times),5))
+          PY
+      - name: Archive raw diagnostic data (30 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gt119-highdim-pool-${{ matrix.candidate_pool }}
+          path: highdim-study.json
+          retention-days: 30
