@@ -69,17 +69,17 @@ This directory contains records of the key architectural decisions made during t
 | [0055](0055-dpf5-closeness-reference-protocol.md) | DPF5 Closeness ideal and unfavorable reference laws; multi-seed validation contract (issue #81) | Proposed / noncertified | 2026-11-12 |
 
 | [0056](0056-versioned-certification-and-performance-reference-lifecycle.md) | Versioned Numerical and Performance Certification | Accepted (read final addenda) | 2026-11-18 |
-| [0057](0057-proposed-purpose-specific-gt-budgets.md) | Purpose-Specific On-Demand GT Budgets | **Proposed; ADR 0018 remains binding** | 2026-11-19 |
+| [0057](0057-proposed-purpose-specific-gt-budgets.md) | Purpose-Specific On-Demand GT Budgets | Accepted in principle; numerical implementation pending | 2026-11-19 |
 
 ### Quick component lookup (check lineage and final dated addenda)
 
 This list is a navigation shortcut, **not a replacement** for reading each
-applicable ADR and its later supersessions. Proposed ADRs are not binding.
+applicable ADR and its later supersessions. Accepted-in-principle ADRs govern direction; unimplemented details are not runtime contracts. Proposed ADRs are not binding.
 
 | Work area | Start with accepted decisions | Current pending research |
 |---|---|---|
-| MOP formulas, Pareto set/front | 0006, 0016 (supersedes 0015), 0017 | #65 and #119; proposed 0057 addresses budgets only |
-| GT calibration and point budgets | 0017, **0018 (currently normative)**, 0021 | Proposed 0057, #119; #54 empirical GT |
+| MOP formulas, Pareto set/front | 0006, 0016 (supersedes 0015), 0017 | #65 and #119; 0057 governs agreed direction; numeric policy pending |
+| GT calibration and point budgets | 0017, **0018 (currently normative)**, 0021 | 0057 accepted direction (runtime ADR 0018 defaults remain), #119; #54 empirical GT |
 | View and topology | 0014, 0040; follow API lineage 0039 → 0048 | #119 only for GT source/visual decimation considerations |
 | Save/load, provenance | 0011, 0032, 0050 | proposed GT archive integration, undecided |
 | Conventional Hypervolume | 0019 → 0035 → **0047**, plus 0020, 0042–0043 | #89 |
