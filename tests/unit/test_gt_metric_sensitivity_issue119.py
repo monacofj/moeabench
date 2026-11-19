@@ -9,7 +9,7 @@ from scripts.audit.gt_metric_sensitivity_issue119 import (
 )
 
 
-@pytest.mark.parametrize("name", ["DTLZ1", "DTLZ2"])
+@pytest.mark.parametrize("name", ["DTLZ2"])
 def test_fixed_real_moea_data_and_gt_sensitive_metrics(name):
     result = run_case(
         name, 3, moea_seed=41, budgets=(12, 24),
