@@ -22,6 +22,8 @@ on:
       - "tests/unit/test_gt_dpf5_fixed_impact_issue119.py"
       - "scripts/audit/gt_dpf5_global_membership_issue119.py"
       - "tests/unit/test_gt_dpf5_global_membership_issue119.py"
+      - "scripts/audit/gt_dpf5_finite_sampler_issue119.py"
+      - "tests/unit/test_gt_dpf5_finite_sampler_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -43,7 +45,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -128,6 +130,17 @@ jobs:
                     "witness",row["all_g_positive_strictly_dominated"],
                     "norm",row["max_unit_norm_error"])
           PY
+      - name: Finite DPF5 P and D strata sampling audit
+        run: |
+          python -m scripts.audit.gt_dpf5_finite_sampler_issue119 > gt119-dpf5-finite-sampler.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-finite-sampler.json"))["cases"]:
+              print("FINITE",r["M"],r["intrinsic_D"],r["requested"],
+                    "returned/unique",r["returned_ps"],r["published_objective_unique_exact"],
+                    "branches",r["branch_counts"],
+                    "coverage",r["conditional_branch_coverage"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -140,4 +153,5 @@ jobs:
             gt119-general-d.json
             gt119-dpf5-paired-impact.json
             gt119-dpf5-global-membership.json
+            gt119-dpf5-finite-sampler.json
           retention-days: 30
