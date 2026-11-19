@@ -42,7 +42,7 @@ jobs:
             --budgets 128 512 1024 \
             --seeds 101 202 \
             --pool 4096 --iterations 10 \
-            --pop-size 64 --generations 35 > gt-indicator-sensitivity.json
+            --pop-size 80 --generations 350 > gt-indicator-sensitivity.json
           python - <<'PY'
           import json
           d=json.load(open("gt-indicator-sensitivity.json"))
