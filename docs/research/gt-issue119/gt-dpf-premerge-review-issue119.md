@@ -9,7 +9,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Repository diff inventory
 
-The complete comparison `main...research/119-dpf3-dpf5-branch-diagnostics` was reviewed on 2026-11-20. All changed paths were **new** files under `scripts/audit/`, `tests/unit/test_gt_*_issue119.py`, `docs/gt-*issue119.md`, or the new isolated workflow `.github/workflows/gt-dpf-branch-research-119.yml`. No production `moeabench/` file, existing regression, accepted ADR, existing CI workflow, frozen numerical reference, GT archive or baseline is modified.
+The complete comparison `main...research/119-dpf3-dpf5-branch-diagnostics` was reviewed on 2026-11-20. The scientific audit initially added only new research scripts, issue-specific tests, reports, and an isolated workflow. Subsequent documentation work added the fully English **`docs/gt.md`** and **`docs/index.md`**, moved the 17 specialized reports (without altering their contents) into **`docs/research/gt-issue119/`**, and made a small **documentation-navigation-only change to the repository-root `README.md`**. No production `moeabench/` file, existing regression test, accepted ADR, existing CI workflow, frozen numerical reference, GT archive, or baseline is modified.
 
 One pre-merge integration defect was caught: new DPF3 D>2 high-precision script imported optional `mpmath` during pytest collection, breaking the *otherwise unchanged* general unit/numerical workflows. It was corrected by moving the import inside the research precision function; the two research tests involving the previously isolated precision module and the seven new higher-D tests skip locally when mpmath is absent. The isolated research CI explicitly installs mpmath. **The final complete CI on the new head must be green before the PR can be merged.**
 
@@ -30,7 +30,7 @@ One pre-merge integration defect was caught: new DPF3 D>2 high-precision script 
 
 ## Pre-merge checklist
 
-- [x] Diff inventory: all changes are research additions, with no production or existing-test edits.
+- [x] Diff inventory: new research evidence and permanent English documents, 17 report moves, and a root README documentation link; no production or existing-test edits.
 - [x] Mathematical hypotheses separated from the actual current evaluator.
 - [x] Analytic proofs and explicit real-arithmetic/float64 qualifications documented.
 - [x] Research reproducibility scripts and independently introduced tests present.
@@ -41,4 +41,4 @@ One pre-merge integration defect was caught: new DPF3 D>2 high-precision script 
 - [x] Complete numerical stability CI successful on audited commit `89235a1c`.
 - [ ] Maintainer authorizes the **research-only** merge; a separate approval is required for any later production correction.
 
-**Merge posture:** all three CI workflows passed for audited commit `89235a1c`; PR #139 is now **Ready for review** (GitHub `mergeable=true`), and remains **OPEN and unmerged**. The subsequent checklist-only commit must pass its own CI before final sign-off. Keep the PR unmerged until the user expressly authorizes the merge. Issue #119's future production migration and calibration decisions remain open even after a research-only merge.
+**Merge posture:** the original research-only audit passed all three CI workflows at commit `89235a1c`. The subsequent translation and documentation reorganization must also pass all three checks on their final head before sign-off. PR #139 remains **OPEN and unmerged**; explicit user approval is required for its integration. The separate evaluator correction is in Draft PR #140. Issue #119's future production migration and calibration decisions remain open even after a research-only merge.
