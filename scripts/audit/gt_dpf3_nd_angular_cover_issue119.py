@@ -19,7 +19,6 @@ import itertools
 import json
 import math
 import numpy as np
-import mpmath as mp
 from scipy.spatial import cKDTree
 from moeabench.mops.DPF3 import DPF3
 from scripts.audit.gt_dpf3_global_membership_issue119 import published_equations
@@ -71,6 +70,7 @@ def audit(m=5,d=3,k=7,probes=2048,seed=311):
     objective_error=float(np.linalg.norm(evaluated_at_rounded_ps-exact_model_float,axis=1).max())
     theta_round=(np.pi/2)*np.power(x[:,:d-1],100)
     angular_error=float(np.linalg.norm(theta_round-theta,axis=1).max())
+    import mpmath as mp  # Optional research dependency; lazy import.
     with mp.workdps(100):
         half=mp.pi/2
         highprecision_angle_error=max(
