@@ -36,9 +36,9 @@ One pre-merge integration defect was caught: new DPF3 D>2 high-precision script 
 - [x] Research reproducibility scripts and independently introduced tests present.
 - [x] Optional high-precision dependency isolated from normal test collection.
 - [x] Original frozen references, accepted ADRs, and historical regression tests preserved.
-- [ ] **Final head's** isolated research CI is successful.
-- [ ] **Final head's** full unit-contract regression CI is successful.
-- [ ] **Final head's** complete numerical stability CI is successful.
+- [x] Isolated research CI successful on audited commit `89235a1c` (94 tests).
+- [x] Complete unit-contract regression CI successful on audited commit `89235a1c`.
+- [x] Complete numerical stability CI successful on audited commit `89235a1c`.
 - [ ] Maintainer authorizes the **research-only** merge; a separate approval is required for any later production correction.
 
-**Merge posture:** once the CI items are verified, PR #139 may be marked ready for maintainer review strictly as a research-evidence merge. Keep it unmerged until the user expressly authorizes the merge. Issue #119's future production migration and calibration decisions remain open even after a research-only merge.
+**Merge posture:** all three CI workflows passed for audited commit `89235a1c`; PR #139 is now **Ready for review** (GitHub `mergeable=true`), and remains **OPEN and unmerged**. The subsequent checklist-only commit must pass its own CI before final sign-off. Keep the PR unmerged until the user expressly authorizes the merge. Issue #119's future production migration and calibration decisions remain open even after a research-only merge.
