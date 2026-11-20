@@ -28,6 +28,8 @@ on:
       - "tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py"
       - "scripts/audit/gt_dpf5_allocation_issue119.py"
       - "tests/unit/test_gt_dpf5_allocation_issue119.py"
+      - "scripts/audit/gt_dpf3_global_membership_issue119.py"
+      - "tests/unit/test_gt_dpf3_global_membership_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -49,7 +51,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py tests/unit/test_gt_dpf5_allocation_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py tests/unit/test_gt_dpf5_allocation_issue119.py tests/unit/test_gt_dpf3_global_membership_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -170,6 +172,17 @@ jobs:
                         "conditional-worst", [r["max_conditional_probe_distance"] for r in rows],
                         "global unique", [r["global_exact_unique"] for r in rows])
           PY
+      - name: Verify published DPF3 sorted projection order embedding
+        run: |
+          python -m scripts.audit.gt_dpf3_global_membership_issue119 > gt119-dpf3-membership.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf3-membership.json"))["cases"]:
+              print("DPF3_PARETO",r["M"],r["D"],"g-positive dominance",r["all_positive_g_witness_strict"],
+                    "projection",r["max_projection_telescope_error"],
+                    "sphere",r["max_essential_unit_sphere_error"],
+                    "current mismatch",r["max_g0_evaluator_delta_to_published_sorted"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -185,4 +198,5 @@ jobs:
             gt119-dpf5-finite-sampler.json
             gt119-dpf5-branch-comparison.json
             gt119-dpf5-allocation.json
+            gt119-dpf3-membership.json
           retention-days: 30
