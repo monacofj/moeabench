@@ -39,7 +39,6 @@ def published_equations(x,m,d,eta):
     # for gamma1; other gamma components still have rounding at extremes.
     h=unit_sphere(theta)
     gamma=(1-h)*(1+g[:,None])
-    gamma[:,0]=(np.prod(1-h[:,:0],axis=1) if False else gamma[:,0])
     t=gamma[:,-1]
     proj=[np.minimum(t,eta[0])]
     for lo,hi in zip(eta[:-1],eta[1:]):
@@ -69,7 +68,7 @@ def audit(m=5,d=2,n=128):
     telescoping=np.max(np.abs(np.sum(proj,axis=1)-(gamma[:,-1]+np.sum(eta))))
     gpos=g>1e-12
     delta=f[gpos]-f0[gpos]
-    sphere=h0=1-gamma0
+    h0=1-gamma0
     return {
         "M":m,"D":d,"n":n,"eta":eta.tolist(),
         "max_projection_telescope_error":float(telescoping),
