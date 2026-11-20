@@ -3,110 +3,92 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""Published DPF3 objective evaluation (Zhen et al., equations 15–16).
+
+The chaotic projection thresholds are *sorted for DPF3 only*. Other DPF
+benchmarks retain their own BaseDPF chaotic-sequence conventions.
+
+This change corrects objective evaluation; angular PS sampling, PF
+discretization and persisted GT migration are separate review steps.
+"""
+
 import numpy as np
+
 from .base_dpf import BaseDPF
 
+
 class DPF3(BaseDPF):
-    """
-    DPF3 benchmark problem.
-    High-dimensional problem with chaos-based min/max projection (non-linear).
-    Base problem is an inverted DTLZ-like form.
-    """
+    """DPF3: inverted hyperspherical essentials and ordered projections."""
+
     def eval_base_functions(self, X, g, D):
-        # Legacy K_DPF3 Uses calc_TH(X, 100) typical of DTLZ4
-        # Assumed calc_TH(X, 100) -> X**100 * pi/2
-        theta = (X[:, :D-1]**100) * (np.pi / 2)
-        
+        """Evaluate (1 + g) * (1 - h(theta)) without 1-cos cancellation."""
+        theta = np.power(X[:, :D-1], 100) * (np.pi / 2)
         cos_theta = np.cos(theta)
         sin_theta = np.sin(theta)
-        
-        # Y1..Yd1 (first D-1 objectives)
-        # Y1 = (1 - prod(cos(all))) * (1+g)
-        # Y2 = (1 - prod(cos(all except last)) * sin(last)) * (1+g)
-        # ...
-        # Yd1 = (1 - cos(0)*sin(1)) * (1+g)  <-- Wait, legacy Yd1 checks indices carefully
-        
-        # Replicating logic from K_DPF3
-        # Y1: 1 - prod(cos(theta[:D-1]))
-        # Y2: 1 - prod(cos(theta[:D-2])) * sin(theta[D-2])
-        # Yd1: 1 - cos(theta[0]) * sin(theta[1])  (if D > 2?)
-        
-        # Actually, let's generalize:
-        # Base functions are 1 - (Standard DTLZ2 normalized functions) ?
-        # Standard DTLZ2 normalized: f = prod(cos..) * sin..
-        # DPF3: 1 - f
-        
-        Y = np.zeros((X.shape[0], D))
-        
+
+        # 1 - prod(cos(theta_j)) =
+        #   sum_j (prod_{k<j} cos(theta_k)) * 2*sin(theta_j/2)^2.
+        # Every term is nonnegative for feasible theta in [0, pi/2].
+        def one_minus_cos_product(end):
+            complement = np.zeros(X.shape[0], dtype=float)
+            prefix = np.ones(X.shape[0], dtype=float)
+            for j in range(end):
+                complement += prefix * (2 * np.sin(theta[:, j] / 2)**2)
+                prefix *= cos_theta[:, j]
+            return complement
+
+        Y = np.empty((X.shape[0], D), dtype=float)
+        scale = np.asarray(g).reshape(-1) + 1.0
         for i in range(D):
-            f_norm = 1.0
-            if i < D - 1:
-                f_norm *= np.prod(cos_theta[:, :D-i-1], axis=1)
-            
+            # Standard D-dimensional spherical coordinate h_i.
+            cos_count = D - i - 1
+            complement = one_minus_cos_product(cos_count)
             if i > 0:
-                f_norm *= sin_theta[:, D-i-1]
-                
-            Y[:, i] = (1 - f_norm) * (1 + g).flatten()
-            
+                last = theta[:, cos_count]
+                # 1 - sin(last), stable when last approaches pi/2.
+                one_minus_sin = 2 * np.sin((np.pi / 2 - last) / 2)**2
+                complement = one_minus_sin + sin_theta[:, cos_count] * complement
+            Y[:, i] = complement * scale
         return Y
 
     def evaluation(self, X, n_ieq_constr=0):
         X = np.atleast_2d(X)
-        D, K, M = self.D, self.K, self.M
-        
-        # g = sum(xi - 0.5)^2 for variables D-1 onwards
+        D, M = self.D, self.M
         g = np.sum((X[:, D-1:] - 0.5)**2, axis=1).reshape(-1, 1)
-        
-        # Calculate base objectives Y (D objectives)
         Y = self.eval_base_functions(X, g, D)
-        
-        Yd = Y[:, D-1:D] # The last base objective
-        
+
         if M == D:
-            return {'F': Y}
-            
-        # Use static chaos pool from BaseDPF
+            return {"F": Y}
+
+        # The published DPF3 min/max projections require *ascending* eta.
+        # Sorting is deliberately confined to DPF3, not shared BaseDPF.
         U = M - D
-        chaos = self._chaos_pool[:U]
-        
-        redundant = []
-        # FD (first projection): min(Yd, chaos[0])
-        redundant.append(np.minimum(Yd, chaos[0]))
-        
-        # FD1 (intermediates): min(max(Yd, chaos[i]), chaos[i+1])
+        eta = np.sort(self._chaos_pool[:U])
+        Yd = Y[:, D-1:D]
+
+        redundant = [np.minimum(Yd, eta[0])]
         for i in range(U - 1):
-            val = np.minimum(np.maximum(Yd, chaos[i]), chaos[i+1])
-            redundant.append(val)
-            
-        # FM (last projection): max(Yd, chaos[U-1])
-        redundant.append(np.maximum(Yd, chaos[U-1]))
-            
-        F_redundant = np.column_stack(redundant)
-        
-        # Build final objective matrix: D-1 base columns + M-D+1 projections = M columns
-        F = np.concatenate((Y[:, :D-1], F_redundant), axis=1)
-        
-        return {'F': F}
+            redundant.append(np.minimum(np.maximum(Yd, eta[i]), eta[i+1]))
+        redundant.append(np.maximum(Yd, eta[-1]))
+
+        return {"F": np.concatenate((Y[:, :D-1], np.column_stack(redundant)), axis=1)}
 
     def get_K(self):
         return self.K
 
     def pf(self, n_points: int = 100):
+        """Legacy finite PS sampling/filtering retained for separate migration.
+
+        Correcting the published evaluator does not itself certify the
+        existing finite-reference algorithm. The historical method is
+        preserved temporarily in this draft until its MOP-specific angular
+        sampler and any affected regression contracts are reviewed.
         """
-        Overrides BaseMop.pf to ensure only non-dominated points are returned.
-        DPF3's chaotic projection inherently produces many dominated points 
-        in the analytical sampling.
-        """
-        # 1. Generate candidate points using standard logic
         F = super().pf(n_points)
-        
-        # 2. Filter using Non-Dominated Sorting
         try:
             from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
-            nds = NonDominatedSorting()
-            fronts = nds.do(F)
-            # Return only the first front (Rank 0)
+
+            fronts = NonDominatedSorting().do(F)
             return F[fronts[0]]
         except ImportError:
-            # Fallback (should not happen in standard env)
             return F
