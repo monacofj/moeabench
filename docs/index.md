@@ -3,86 +3,86 @@ SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# Índice da documentação do MoeaBench
+# MoeaBench Documentation Index
 
-Este índice apresenta a função dos principais documentos do projeto e oferece um percurso de leitura. Para compreender uma funcionalidade, comece pelo documento técnico ou guia correspondente; para conhecer **por que** uma arquitetura foi escolhida, consulte as decisões (ADRs); para conferir dados, provas, hipóteses e resultados de uma investigação, consulte os relatórios especializados.
+This index explains the purpose of MoeaBench's main documents and suggests where to start reading. For a feature, consult the appropriate guide or technical reference; for **why** a particular architecture was chosen, consult the Architecture Decision Records (ADRs); for scientific evidence, hypotheses, mathematical proofs, and experimental results, consult the specialized research reports.
 
-A documentação **de referência** explica conceitos e contratos e deve permanecer útil independentemente do andamento de uma issue. Os **relatórios de pesquisa** preservam evidências e reproduções de experimentos. As **ADRs** registram decisões, seu status e suas eventuais substituições; não se deve tratar uma proposta como decisão aprovada.
+**Reference documentation** explains concepts and contracts that should remain useful independently of any issue's progress. **Research reports** preserve reproducible evidence and experimental reasoning. **ADRs** record decisions, their status, and subsequent supersession; a proposed ADR must never be treated as an approved contract.
 
-## Uso e referência geral
+## General Documentation and API
 
-| Documento | O que contém | Quando consultar |
+| Document | Contents | When to read |
 |---|---|---|
-| [Guia do usuário](userguide.md) | Instalação, primeiros experimentos e utilização das operações do MoeaBench | Para aprender a usar o software |
-| [Referência da API](reference.md) | Interfaces, classes, métodos e parâmetros documentados | Para consultar contratos de programação |
-| [Resumo da API](api_sheet.md) | Mapa conciso de operações e fluxos usuais | Para localizar rapidamente uma chamada |
-| [Ground Truth](gt.md) | Fundamentos de PS/PF/GT, responsabilidade de cada MOP, geração de referências, matemática do DPF3/DPF5, qualidade de amostragem, precisão, indicadores e preservação histórica | Para compreender como definir e avaliar cientificamente uma referência |
-| [Contribuição](CONTRIBUTING.md) | Orientações para alterações e colaboração | Para desenvolver ou revisar contribuições |
-| [Índice das ADRs](adr/README.md) | Todas as decisões arquiteturais, status e relações de substituição | Para identificar normas vigentes antes de alterar contratos |
+| [User Guide](userguide.md) | Installation, first experiments, and MoeaBench workflows | Learning how to use the software |
+| [API Reference](reference.md) | Interfaces, classes, methods, and documented parameters | Checking programming contracts |
+| [API Sheet](api_sheet.md) | Concise map of common operations and workflows | Finding an API entry point quickly |
+| [Ground Truth](gt.md) | PS/PF/GT concepts, MOP-owned reference generation, DPF3/DPF5 mathematics, sampling quality, numerical precision, indicators, and historical references | Understanding how to define and validate a scientific reference |
+| [Contributing](CONTRIBUTING.md) | Development and contribution guidelines | Making or reviewing code contributions |
+| [ADR Index](adr/README.md) | Architectural decisions, accepted/proposed status, and supersession lineage | Checking architectural rules before changing contracts |
 
-A [página inicial do repositório](../README.md) apresenta a visão geral do MoeaBench, exemplos, citação e referências bibliográficas. O presente **index.md** é um índice de documentação, não uma lista bibliográfica e não substitui o README da raiz.
+The repository's [main README](../README.md) contains an overview, examples, citation guidance, and bibliographical information. This **index.md** organizes technical documentation; it is neither a bibliography nor a replacement for the repository README.
 
-## Ground Truth: da teoria à evidência reproduzível
+## Ground Truth: From Theory to Reproducible Evidence
 
-O documento principal é **[gt.md](gt.md)**, que contém a explicação permanente e completa dos conceitos e das conclusões científicas. Os documentos abaixo são **relatórios especializados da investigação [#119](https://github.com/monacofj/moeabench/issues/119), reunida na [PR #139](https://github.com/monacofj/moeabench/pull/139)**. Eles fornecem provas detalhadas, condições experimentais, números, resultados negativos, comparação com a implementação auditada e rastreabilidade.
+The permanent, self-contained technical reference is **[gt.md](gt.md)**. The files below are **specialized reports from [issue #119](https://github.com/monacofj/moeabench/issues/119) and [PR #139](https://github.com/monacofj/moeabench/pull/139)**. They preserve detailed proofs, experimental designs, data, negative results, comparisons against the audited implementation, and traceability. They are grouped under **[research/gt-issue119](research/gt-issue119/README.md)**, rather than scattered at the top level of \`docs/\`.
 
-### Fundamentos matemáticos e provas
+### Mathematical Foundations and Proofs
 
-| Documento | Conteúdo e contribuição |
+| Document | Scope |
 |---|---|
-| [Prova global da PS/PF do DPF3](gt-dpf3-global-pareto-proof-issue119.md) | Limiares caóticos ordenados, conservação da ordem das projeções e demonstração de que a PS publicada é exatamente o conjunto onde g=0 |
-| [Prova global da PS/PF do DPF5](gt-dpf5-global-pareto-proof-issue119.md) | Parametrizações hiperesféricas dos ramos P e D, prova de pertinência e completude da frente publicada e análise da dominância entre componentes |
-| [Cobertura angular do DPF3 com D=2](gt-dpf3-d2-angular-cover-proof-issue119.md) | Construção finita por ângulos, limite de Hausdorff em aritmética exata e distinção da fidelidade em float64 |
-| [Cobertura angular do DPF3 com dimensão geral](gt-dpf3-nd-cover-and-acceptance-issue119.md) | Extensão do limite matemático para D maior, singularidades de cardinalidade, custo tensorial, estimativas de arredondamento e critérios científicos |
+| [DPF3 global Pareto set/front proof](research/gt-issue119/gt-dpf3-global-pareto-proof-issue119.md) | Ordered chaotic thresholds, projection-order preservation, and proof that published PS equals the set where g=0 |
+| [DPF5 global Pareto set/front proof](research/gt-issue119/gt-dpf5-global-pareto-proof-issue119.md) | Hyperspherical P/D branches, global membership, completeness, and cross-branch nondominance |
+| [DPF3 angular covering at D=2](research/gt-issue119/gt-dpf3-d2-angular-cover-proof-issue119.md) | Finite angular construction, exact-real-arithmetic Hausdorff bound, and float64 distinctions |
+| [DPF3 general-dimensional angular covering](research/gt-issue119/gt-dpf3-nd-cover-and-acceptance-issue119.md) | Higher-D proof, sample degeneracies, tensor cost, roundoff measurements, and scientific quality criteria |
 
-### Auditoria das equações e precisão numérica
+### Equation and Numerical Audits
 
-| Documento | Conteúdo e contribuição |
+| Document | Scope |
 |---|---|
-| [Diagnóstico inicial de PS/PF](gt-dpf3-dpf5-audit-issue119.md) | Contagens pedidas e devolvidas, duplicatas e dominância interna observada nos avaliadores auditados |
-| [Confronto com as fórmulas publicadas](gt-dpf-published-formula-triage-issue119.md) | Primeira identificação da ordenação dos limiares DPF3 e da diferença de condição na fronteira dos ramos DPF5 |
-| [Reconstrução DPF5 para D geral](gt-dpf-general-d-evidence-issue119.md) | Equações independentes dos ramos beta/P e gamma/D em dimensões essenciais superiores, com g=0 e g>0 |
-| [Núcleos numéricos DPF3/DPF5](gt-dpf-numeric-kernel-evidence-issue119.md) | Cancelamento em 1−cos, identidades trigonométricas estáveis, invariantes esféricos e discrepâncias entre funções de avaliação |
-| [Varredura em alta precisão](gt-dpf-high-precision-sweep-issue119.md) | Valores de referência em precisão elevada, underflow, limites de representabilidade e verificações por dimensão |
-| [Verificação fora da PF do DPF5](gt-dpf5-offpareto-issue119.md) | Comparações com g>0, equações escaladas e isolamento de dependências opcionais nos testes de pesquisa |
+| [Initial PS/PF diagnostic](research/gt-issue119/gt-dpf3-dpf5-audit-issue119.md) | Requested/actual counts, duplicates, and sample-relative dominance in audited evaluators |
+| [Published-formula triage](research/gt-issue119/gt-dpf-published-formula-triage-issue119.md) | Initial identification of DPF3 threshold ordering and the DPF5 P/D equality-boundary discrepancy |
+| [General-D DPF5 reconstruction](research/gt-issue119/gt-dpf-general-d-evidence-issue119.md) | Independent P/beta and D/gamma reconstruction for higher intrinsic dimensions, g=0 and g>0 |
+| [DPF3/DPF5 numerical kernels](research/gt-issue119/gt-dpf-numeric-kernel-evidence-issue119.md) | 1−cos cancellation, stable trigonometric expressions, spherical invariants, and evaluator differences |
+| [High-precision numerical sweep](research/gt-issue119/gt-dpf-high-precision-sweep-issue119.md) | High-precision reference values, underflow, representability limits, and dimensional checks |
+| [DPF5 off-front audit](research/gt-issue119/gt-dpf5-offpareto-issue119.md) | g>0 evaluations, scaled published equations, and optional research dependency isolation |
 
-### Discretização, comparação de amostradores e impacto nos indicadores
+### Finite Sampling, Sampler Comparisons, and Metrics
 
-| Documento | Conteúdo e contribuição |
+| Document | Scope |
 |---|---|
-| [Cobertura finita do DPF5 por ramo](gt-dpf5-finite-sampler-coverage-issue119.md) | Medidas independentes da cobertura de P e D, cardinalidade efetiva e diferença entre a fronteira implementada e a publicada |
-| [Amostragem Sobol com orçamento efetivo igual](gt-dpf5-branch-sobol-comparison-issue119.md) | Experimento controlado por ramo; melhoras e pioras conforme orçamento e geometria |
-| [Alocação do orçamento entre P e D](gt-dpf5-branch-allocation-issue119.md) | Estudo de 50%, aproximadamente 67% e distribuição existente, com múltiplas sementes e orçamento total efetivo constante |
-| [Efeito da referência nos indicadores](gt-dpf5-paired-indicator-impact-issue119.md) | Isolamento dos efeitos de correção do avaliador e substituição do GT sobre IGD, IGD+ e HV relativo, mantendo populações fixas |
+| [DPF5 branchwise finite coverage](research/gt-issue119/gt-dpf5-finite-sampler-coverage-issue119.md) | Independent P/D coverage probes, effective counts, and differences between implemented and published boundaries |
+| [Fixed-unique-budget Sobol comparison](research/gt-issue119/gt-dpf5-branch-sobol-comparison-issue119.md) | Controlled branchwise experiment, showing both improvements and degradations |
+| [P/D point-budget allocation](research/gt-issue119/gt-dpf5-branch-allocation-issue119.md) | Incumbent versus 50%/approximately 67% P allocation, across seeds with equal total effective budgets |
+| [Impact on IGD, IGD+, and HV](research/gt-issue119/gt-dpf5-paired-indicator-impact-issue119.md) | Isolation of evaluator and GT-reference effects on indicators with fixed populations |
 
-### Integração, governança e rastreabilidade
+### Change Management and Reproducibility
 
-| Documento | Conteúdo e contribuição |
+| Document | Scope |
 |---|---|
-| [Inventário de impacto de produção](gt-dpf-production-impact-inventory-issue119.md) | Componentes, arquivos históricos, referências, consumidores e testes potencialmente afetados por mudanças matemáticas |
-| [Proposta de correção e migração](gt-dpf-correction-migration-proposal-issue119.md) | Sequenciamento e requisitos de aprovação para correções no avaliador, amostradores, referências versionadas e orçamento de calibração |
-| [Revisão pré-merge da PR #139](gt-dpf-premerge-review-issue119.md) | Escopo da PR de pesquisa, salvaguardas, comparação de alterações e verificações de CI realizadas |
+| [Production impact inventory](research/gt-issue119/gt-dpf-production-impact-inventory-issue119.md) | Source files, consumers, tests, historical references, and potential correction impact |
+| [Correction and versioned migration proposal](research/gt-issue119/gt-dpf-correction-migration-proposal-issue119.md) | Proposed sequence and approval requirements for evaluator fixes, samplers, frozen references, and calibration budgets |
+| [PR #139 pre-merge review](research/gt-issue119/gt-dpf-premerge-review-issue119.md) | Research-only scope, safeguards, changed-file inventory, and CI verification |
 
-Os relatórios históricos podem conter enunciados como “a pertinência global ainda não foi demonstrada” em um estágio inicial. **O resultado matemático consolidado está em [gt.md](gt.md) e nas provas globais posteriores.** A documentação histórica deve ser lida com essa distinção; não é apropriado interpretar observações provisórias como conclusões finais.
+Earlier reports may contain a historical statement such as "global membership has not yet been established." **The consolidated results are given in [gt.md](gt.md) and the subsequent mathematical proofs.** Preliminary observations must not be mistaken for the final conclusions.
 
-## Decisões arquiteturais relevantes para GT
+## Architecture Decision Records Relevant to GT
 
-O [índice completo de ADRs](adr/README.md) inclui os registros aceitos, propostos, substituídos e parcialmente substituídos. Para alterações relacionadas a Ground Truth, os pontos de entrada mais diretamente relevantes são:
+The [full ADR index](adr/README.md) provides each decision's status, history, and supersession lineage. The following are the most relevant entry points for GT work:
 
-| ADR | Tema | Relação com GT |
+| ADR | Subject | Relevance |
 |---|---|---|
-| [0006](adr/0006-benchmarks-reimplementation.md) | Reimplementação dos benchmarks | Avaliação e PS/PF analíticos como responsabilidade do MOP |
-| [0016](adr/0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Soluções geométricas orientadas por conhecimento | Evolução da construção analítica de referências |
-| [0017](adr/0017-comprehensive-calibration-and-testing-framework.md) | Calibração e testes científicos | Referências analíticas e papel dos baselines |
-| [0018](adr/0018-consolidated-scientific-report-and-gt-density-refinement.md) | Densidade histórica de GT | Orçamentos e decisões históricas, com a revisão parcial descrita na 0057 |
-| [0021](adr/0021-numerical-integrity-and-validation-pipeline-float64-policy.md) | Integridade numérica | Política de representação e validação em float64 |
-| [0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md) | Certificações versionadas | Preservação de referências históricas e separação de certificados |
-| [0057](adr/0057-proposed-purpose-specific-gt-budgets.md) | Orçamentos de GT por finalidade | Geração por MOP e calibração sob demanda, com detalhes numéricos distintos das decisões em princípio |
+| [0006](adr/0006-benchmarks-reimplementation.md) | Benchmark reimplementation | MOP ownership of mathematical evaluation and analytical PS/PF |
+| [0016](adr/0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Guided geometrical solvers | Analytical and geometry-aware reference construction |
+| [0017](adr/0017-comprehensive-calibration-and-testing-framework.md) | Scientific calibration and testing | Analytical references and historical baseline roles |
+| [0018](adr/0018-consolidated-scientific-report-and-gt-density-refinement.md) | Historical GT density | Legacy budgets, partially superseded in principle by 0057 |
+| [0021](adr/0021-numerical-integrity-and-validation-pipeline-float64-policy.md) | Numerical integrity | float64 representation and validation rules |
+| [0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md) | Versioned certifications | Historical preservation and separate certification lifecycles |
+| [0057](adr/0057-proposed-purpose-specific-gt-budgets.md) | Purpose-specific GT budgets | MOP-owned on-demand generation and calibration; numerical implementation distinct from in-principle decisions |
 
-A [ADR 0053](adr/0053-dpf5-mixed-dimensional-reference-measure.md) documenta **pesquisa proposta/não certificada** relacionada a medidas sobre componentes de dimensões diferentes e a estudos FAIR históricos. Não a confundir com uma política de GT aprovada para produção.
+[ADR 0053](adr/0053-dpf5-mixed-dimensional-reference-measure.md) records **proposed, noncertified research** concerning mixed-dimensional distributions and historical FAIR studies. It is **not** an adopted production GT policy.
 
-## Como usar este índice
+## How to Navigate
 
-Para **compreender** a ciência do Ground Truth, leia [gt.md](gt.md). Para **implementar** métodos ou alterar APIs, compare os contratos das [ADRs](adr/README.md) com a documentação de [API](reference.md). Para **conferir uma demonstração ou reproduzir números**, vá ao relatório especializado correspondente e aos scripts/testes da PR #139. Para **entender por que uma decisão de arquitetura foi tomada**, consulte o histórico e o status da ADR, incluindo os adendos mais recentes.
+To **understand** Ground Truth science, read [gt.md](gt.md). To **implement** algorithms or change APIs, inspect the applicable [ADRs](adr/README.md) and [API reference](reference.md). To **verify a proof or reproduce an experiment**, follow the specialized report and its research script/tests in PR #139. To understand **why** an architectural choice was made, consult the ADR's full history and current status, including later amendments.
 
-O índice organiza o conhecimento; não confere status de decisão aprovada a experimentos e não transforma registros históricos em contratos operacionais.
+This index organizes knowledge; it neither turns an experimental finding into an accepted architectural decision nor turns a historical record into a current runtime contract.
