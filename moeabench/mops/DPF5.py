@@ -3,21 +3,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+"""Published DPF5 evaluation with the full P and degenerate D branches.
+
+This corrects the mathematical objective evaluator without changing the
+finite PS sampler or historical GT/calibration policy. Those require
+separate geometry-specific validation before a production merge.
+"""
+
 import numpy as np
+
 from .base_dpf import BaseDPF
 
-class DPF5(BaseDPF):
-    """
-    DPF5 benchmark problem.
-    Conditional evaluation based on x1 > 1/3.
-    Use distinct function sets "P" and "D".
 
-    Unlike other DPFs, DPF5's distance function explicitly uses x_M:
-    this problem therefore requires N >= M.
-    """
+class DPF5(BaseDPF):
+    """DPF5: P=(M-1)-dimensional, D=(D-1)-dimensional angular fronts."""
+
     def __init__(self, **kwargs):
-        # Match BaseDPF's effective D/K defaults and validation fallback.
-        # Only DPF5 must increase its default N to include x_M.
         if 'N' not in kwargs:
             M = kwargs.get('M', 3)
             D = kwargs.get('D', 2)
@@ -32,7 +33,7 @@ class DPF5(BaseDPF):
         self._require_supported_dimensions()
 
     def _require_supported_dimensions(self):
-        """DPF5's g term explicitly uses x_M, unlike other DPF projections."""
+        """The published distance function uses x_M explicitly."""
         if self.N < self.M:
             raise ValueError(
                 f"DPF5 requires N >= M because its distance function uses x_M "
@@ -40,136 +41,79 @@ class DPF5(BaseDPF):
                 "Other DPF benchmarks can allow M > N."
             )
 
-    def _calc_theta(self, X):
-        return X * (np.pi / 2) # Linear mapping assumed from legacy calc_TH(X)
+    @staticmethod
+    def _unit_hypersphere(theta):
+        """Nonnegative, unit-norm direction with theta.shape[1]+1 objectives.
+
+        Coordinates follow the standard DTLZ2 hyperspherical convention.
+        The implementation is vectorized over individuals and loops only
+        over the number of objective coordinates.
+        """
+        n, q = theta.shape
+        cos_theta = np.cos(theta)
+        sin_theta = np.sin(theta)
+        direction = np.empty((n, q + 1), dtype=float)
+
+        for j in range(q + 1):
+            cos_count = q - j
+            coordinate = np.prod(cos_theta[:, :cos_count], axis=1)
+            if j > 0:
+                coordinate = coordinate * sin_theta[:, cos_count]
+            direction[:, j] = coordinate
+        return direction
 
     def evaluation(self, X, n_ieq_constr=0):
         self._require_supported_dimensions()
         X = np.atleast_2d(X)
-        D, K, M = self.D, self.K, self.M
-        
-        # g = (x_M - x_1)^2 + sum((x_i - 0.5)^2) for i=M to N
-        # Note: indices in legacy are 1-based logic?
-        # Legacy K_DPF5 calc_g:
-        # ((X[:,M-1:M]-X[:,0:1])**2) + sum(...)
-        # X[:, M-1] is x_M? No, x_{M-1}? (0-based M-1 is Mth variable)
-        # Yes, Mth variable minus First variable.
-        g = ((X[:, M-1:M] - X[:, 0:1])**2) + np.sum((X[:, M:] - 0.5)**2, axis=1).reshape(-1, 1)
-        
-        theta = self._calc_theta(X) # All theta
-        # Helper aliases for theta slices used in definitions
-        # NOTE: Legacy defines specific ranges [0:M-2] etc.
-        
-        # Helper to compute prod(cos)
-        def prod_cos(start, end):
-            if end <= start: return 1.0
-            return np.prod(np.cos(theta[:, start:end]), axis=1).reshape(-1, 1)
+        M, D = self.M, self.D
 
-        def sin_th(idx):
-            return np.sin(theta[:, idx:idx+1])
-            
-        def cos_th(idx):
-            return np.cos(theta[:, idx:idx+1])
+        g = (X[:, M-1] - X[:, 0])**2
+        g += np.sum((X[:, M:] - 0.5)**2, axis=1)
 
-        # Define 7 kernels (B1..Yd)
-        # B1: prod(cos(0:M-2)) * cos(M-2)
-        k_B1 = prod_cos(0, M-2) * cos_th(M-2)
-        
-        # B2: prod(cos(0:M-2)) * sin(M-2)
-        k_B2 = prod_cos(0, M-2) * sin_th(M-2)
-        
-        # Bmd1: prod(cos(0:D-1)) * sin(D-1)
-        k_Bmd1 = prod_cos(0, D-1) * sin_th(D-1)
-        
-        # Y1: sqrt(1/(M-D+1)) * prod(cos(0:D-1))
-        # Wait, sqrt factor? Legacy Y1 line 33: np.sqrt(1/(M-D+1))*...
-        k_Y1 = np.sqrt(1/(M-D+1)) * prod_cos(0, D-1)
-        
-        # Y2: prod(cos(0:D-2)) * sin(D-1)
-        # Wait, legacy Y2 line 37: prod(cos(X[0:D-2]))*np.sin(X[D-1:D])
-        k_Y2 = prod_cos(0, D-2) * sin_th(D-1)
-        
-        # Yd1: cos(0) * sin(1)
-        k_Yd1 = cos_th(0) * sin_th(1)
-        
-        # Yd: sin(0)
-        k_Yd = sin_th(0)
-        
-        # Prepare Objective Matrices
-        F_P = np.zeros((X.shape[0], M))
-        F_D = np.zeros((X.shape[0], M))
+        theta = X[:, :M-1] * (np.pi / 2)
+        P = self._unit_hypersphere(theta)
 
-        # Replicate Legacy logic (calc_F_P) for Set P
-        # Fi goes from 1 to M
-        for Fi in range(1, M + 1):
-            idx = Fi - 1
-            if Fi == 1:
-                F_P[:, idx:idx+1] = k_B1
-            elif Fi >= 2 and Fi < M-D+1:
-                F_P[:, idx:idx+1] = k_B2
-            elif Fi == M-D+1:
-                F_P[:, idx:idx+1] = k_Bmd1
-            elif Fi >= M-D+1 and Fi < M-1:
-                F_P[:, idx:idx+1] = k_Y2
-            elif Fi > M-D+1 and Fi == M-1:
-                F_P[:, idx:idx+1] = k_Yd1
-            elif Fi == M:
-                F_P[:, idx:idx+1] = k_Yd
+        # The D direction repeats its first essential spherical component
+        # M-D+1 times, scaled so the resulting M-vector retains unit norm.
+        essential = self._unit_hypersphere(theta[:, :D-1])
+        repeats = M - D + 1
+        D_front = np.concatenate(
+            (np.repeat(essential[:, :1] / np.sqrt(repeats), repeats, axis=1),
+             essential[:, 1:]),
+            axis=1,
+        )
 
-        # Replicate Legacy logic (calc_F_D) for Set D
-        for Fi in range(1, M + 1):
-            idx = Fi - 1
-            if Fi <= M-D+1:
-                F_D[:, idx:idx+1] = k_Y1
-            elif Fi > M-D+1 and Fi <= M-2:
-                F_D[:, idx:idx+1] = k_Y2
-            elif Fi > M-D+1 and Fi == M-1:
-                F_D[:, idx:idx+1] = k_Yd1
-            elif Fi == M:
-                F_D[:, idx:idx+1] = k_Yd
-
-        # Combine based on X[:, 0] > 1/3
-        condition = (X[:, 0:1] > 1/3)
-        F = np.where(condition, F_D, F_P)
-        
-        # Apply (1+g) scaling to ALL
-        F = F * (1 + g)
-        
-        return {'F': F}
+        # Per the publication: x1 == 1/3 belongs to D, NOT P.
+        choose_D = X[:, 0] >= (1 / 3)
+        direction = np.where(choose_D[:, None], D_front, P)
+        return {"F": direction * (1 + g[:, None])}
 
     def get_K(self):
         return self.K
 
     def ps(self, n_points: int = 100):
-        """
-        Analytical sampling of DPF5 Pareto Set (Requires xM = x1).
-        Uses grid sampling for M=3 to ensure a sharp, dense surface.
+        """Legacy finite PS sampling, retained pending branchwise GT review.
+
+        Correct objective evaluation does not certify this sampler's point
+        budget or coverage of the mixed-dimensional continuous PF.
         """
         self._require_supported_dimensions()
-        M = self.M
-        N = self.N
+        M, N = self.M, self.N
         res = np.zeros((n_points, N))
         rng = np.random.RandomState(42)
-        
-        # 1. Structure the position variables (M-1 degrees of freedom)
+
         if M == 3:
-            # Create a 2D grid for the manifold variables (x1, x2)
             side = int(np.sqrt(n_points))
             grid_val = np.linspace(0, 1, side)
             xv, yv = np.meshgrid(grid_val, grid_val)
             X_pos = np.column_stack([xv.ravel(), yv.ravel()])
-            # Adjust res size if points don't match exactly
-            actual_n = X_pos.shape[0]
-            if actual_n != n_points:
-                res = np.zeros((actual_n, N))
+            if len(X_pos) != n_points:
+                res = np.zeros((len(X_pos), N))
         else:
             X_pos = rng.random((n_points, M - 1))
-            
+
         res[:, :M-1] = X_pos
-        res[:, M-1] = res[:, 0] # constraint x_M = x_1
-        
-        # 2. Optimal trailing variables (xi = 0.5 for i > M)
+        res[:, M-1] = res[:, 0]
         if N > M:
             res[:, M:] = 0.5
-            
         return res
