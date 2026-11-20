@@ -30,6 +30,8 @@ on:
       - "tests/unit/test_gt_dpf5_allocation_issue119.py"
       - "scripts/audit/gt_dpf3_global_membership_issue119.py"
       - "tests/unit/test_gt_dpf3_global_membership_issue119.py"
+      - "scripts/audit/gt_dpf3_d2_angular_cover_issue119.py"
+      - "tests/unit/test_gt_dpf3_d2_angular_cover_issue119.py"
   workflow_dispatch:
 
 permissions:
@@ -51,7 +53,7 @@ jobs:
         env:
           OPENBLAS_NUM_THREADS: "1"
           OMP_NUM_THREADS: "1"
-        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py tests/unit/test_gt_dpf5_allocation_issue119.py tests/unit/test_gt_dpf3_global_membership_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py tests/unit/test_gt_dpf5_allocation_issue119.py tests/unit/test_gt_dpf3_global_membership_issue119.py tests/unit/test_gt_dpf3_d2_angular_cover_issue119.py -q
       - name: Actual MOP branch matrix
         env:
           OPENBLAS_NUM_THREADS: "1"
@@ -183,6 +185,19 @@ jobs:
                     "sphere",r["max_essential_unit_sphere_error"],
                     "current mismatch",r["max_g0_evaluator_delta_to_published_sorted"])
           PY
+      - name: Verify rigorous DPF3 D2 angular covering bound
+        run: |
+          python -m scripts.audit.gt_dpf3_d2_angular_cover_issue119 > gt119-dpf3-d2-angular-cover.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf3-d2-angular-cover.json"))["cases"]:
+              print("COVER",r["M"],r["n"],
+                    "certified bound",r["certified_real_arithmetic_upper_bound"],
+                    "probe max",r["measured_probe_max"],
+                    "distinct",r["published_sample_unique_exact"],
+                    "incumbent PF count",r["incumbent_pf_count"],
+                    "source delta",r["actual_evaluator_vs_published_max_abs"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-dpf-branch-diagnostics
@@ -199,4 +214,5 @@ jobs:
             gt119-dpf5-branch-comparison.json
             gt119-dpf5-allocation.json
             gt119-dpf3-membership.json
+            gt119-dpf3-d2-angular-cover.json
           retention-days: 30
