@@ -74,7 +74,9 @@ jobs:
                   print("DTLZ8_MEMBERSHIP", record["M"], record["requested"],
                         name, "rows", values["count"], "unique", values["unique"],
                         "outside_tol", values["outside_tol"],
-                        "max_residual", values["max_residual"])
+                        "max_residual", values["max_residual"],
+                        "infeasible", values["constraint_violations_above_tol"],
+                        "max_constraint_violation", values["max_constraint_violation"])
           PY
       - uses: actions/upload-artifact@v4
         with:
