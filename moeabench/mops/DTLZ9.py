@@ -75,9 +75,12 @@ class DTLZ9(BaseMop):
         # This implies F1 = F2 = ... = F_{M-1} = sqrt(1 - FM^2).
         res = np.zeros((n_points, N))
         
-        # Sample f_M from 0 to 1
-        f_M = np.linspace(0, 1, n_points)
-        f_others = np.sqrt(1 - f_M**2)
+        # Equal increments of objective-space arc length, rather than
+        # uniform f_M increments (which crowd the higher-curvature end).
+        from ._dtlz9_arc import dtlz9_equal_arc_objectives
+        front = dtlz9_equal_arc_objectives(M, n_points)
+        f_M = front[:, -1]
+        f_others = front[:, 0]
         
         for i in range(n_points):
             # Map objectives back to decision variables (x = f^10)
