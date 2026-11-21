@@ -280,6 +280,36 @@ noncertified until its independent empirical comparisons pass.
 As with every candidate, no canonical line/patch relative weight
 is inferred.
 
+## Hybrid validation at the historical DTLZ8 budget
+
+The 2026-11-21 read-only research run passed **95 scientific tests**.
+With three independent probe offsets, M=2,3,5,10 and budgets
+128, 512, 2,000, the hybrid had a **non-increasing observed
+maximum gap relative to Halton on every component/offset**
+(12 tested M/budget settings). At M=2 it is exactly the same line.
+
+At n=2,000 the worst (over the three offsets) maximum observed
+Euclidean gaps were:
+
+| M | Component | Halton | Lattice | Hybrid |
+|---|---|---:|---:|---:|
+| 3 | line | 0.000530 | 0.000708 | 0.000530 |
+| 3 | patch 0 | 0.017451 | 0.010993 | 0.011949 |
+| 5 | line | 0.000933 | 0.001122 | 0.000933 |
+| 5 | patch 0 | 0.030823 | 0.021399 | 0.021196 |
+| 10 | line | 0.002093 | 0.002315 | 0.002093 |
+| 10 | patch 0 | 0.047652 | 0.040226 | 0.041583 |
+
+The hybrid thus retains Halton's line resolution while replacing
+its sparse patch interiors with structured patch sampling. It
+does **not** universally dominate the lattice: for example,
+M=3 patch 0 is better covered by the pure lattice in these
+probes. These are finite-probe, research-only comparisons, not
+proofs of optimal continuous front covering. They identify a
+credible default candidate to subject to further quantitative
+source and indicator qualification, rather than authorize
+immediate production migration.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
