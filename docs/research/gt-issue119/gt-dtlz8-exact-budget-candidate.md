@@ -130,9 +130,11 @@ probe construction and diagnostic invariants.
 Because the dynamic M=4 sampler is independently verified to produce
 valid analytical Pareto objectives (but truncates and duplicates them),
 `m4_preserving_completion()` provides a **research-only** comparison:
-it retains every exact-unique objective in original order and appends
-different lattice candidate objectives until the requested size is
-reached. Any off-front incumbent point causes refusal rather than reuse.
+it retains every exact-unique objective in original order and greedily
+selects the next **objective-space farthest** point from a deterministic
+lattice candidate pool until the requested size is reached. The original
+row-order append was rejected because it predominantly added line points
+instead of improving the sparser two-dimensional patches. Any off-front incumbent point causes refusal rather than reuse.
 
 Provided the incumbent contains at most `n` distinct valid points,
 the completed point set contains the incumbent unique set as a subset.
@@ -144,7 +146,9 @@ points and normalization are fixed. New tests directly assert this
 superset property and numerical nonworsening at n=128,512.
 
 This is *not* a proof of improved spatial regularity, and retains some
-incumbent clustering. It also **cannot** be used for the faulty
+incumbent clustering. Farthest-first addition targets the largest gaps
+of the finite candidate pool but does not certify continuous covering
+or guarantee a lower component-specific nearest-neighbor CV. It also **cannot** be used for the faulty
 M=2,3,5,10 sources: off-front points are scientifically ineligible
 for preservation. Treat this as a controlled feasibility and coverage
 baseline, not the finally chosen sampler.
