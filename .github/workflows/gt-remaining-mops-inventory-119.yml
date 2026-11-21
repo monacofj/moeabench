@@ -64,8 +64,36 @@ jobs:
           print("SUMMARY",len(report["records"]),"rows",len(flagged),
                 "diagnostic flags; none by itself proves the GT invalid")
           PY
+      - name: Inspect DTLZ8 static and dynamic constrained-PS branches
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --names DTLZ8 DTLZ9 --objectives 3 4 5 10 \
+            --budgets 64 128 512 --probes 512 > gt119-constrained-mops-details.json
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          r=json.load(open("gt119-constrained-mops-details.json"))
+          for case in r["records"]:
+              g=case["constraints"]
+              print("CONSTRAINED",case["name"],"M",case["M"],
+                    "requested",case["requested"],
+                    "PS/PF/unique",case["PS_rows"],case["PF_rows"],
+                    case["PF_float64_exact_unique"],
+                    "internal-dominated",case["PF_unique_internal_dominated"],
+                    "infeasible-strict",g["infeasible_strict_float"],
+                    "infeasible-tol",g["infeasible_above_1e-12"],
+                    "max-constraint-residual",g["positive_G_max"])
+          flags=[c for c in r["records"] if
+                 c["PS_rows"]!=c["requested"] or
+                 c["PF_float64_exact_unique"]!=c["requested"] or
+                 c["PF_unique_internal_dominated"]>0 or
+                 c["constraints"]["infeasible_above_1e-12"]>0]
+          print("CONSTRAINED_FLAGS",len(flags),"of",len(r["records"]))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-remaining-mop-inventory
-          path: gt119-remaining-mops-inventory.json
+          path: |
+            gt119-remaining-mops-inventory.json
+            gt119-constrained-mops-details.json
           retention-days: 30
