@@ -72,6 +72,83 @@ The dedicated CI records machine-readable JSON as
 `gt119-remaining-mops.json`; reports must cite measurements from that
 artifact before declaring numerical failures.
 
+## DTLZ8: independent global Pareto-front characterization (M >= 3)
+
+The DTLZ8 objective-space constraints are, for all earlier objectives
+(i<M) and all distinct (i,j<M),
+
+[
+t+4f_ige1,qquad
+2t+f_i+f_jge1,qquad t=f_Min[0,1].
+]
+
+The second family is equivalent to the published
+`2*f_M + min_{i<j}(f_i+f_j) - 1 >= 0` constraint, evaluated by
+`DTLZ8._calc_constraints`. Write
+(alpha(t)=(1-t)/4) and (eta(t)=1-2t).
+
+**When (tge1/3)**, the coordinatewise minimal feasible point
+with that last objective is the **central curve**
+
+[
+(f_1,ldots,f_{M-1},t)
+=(alpha(t),ldots,alpha(t),t).
+]
+
+Indeed (2alpha(t)geeta(t)) in this regime.
+Every other feasible point at the same (t) is dominated by that
+central point.
+
+**When (t<1/3)**, the minimal feasible points form
+(M-1) **arms** (with a shared inner endpoint). Choose a distinguished
+index (k<M), and any (ain[alpha(t),eta(t)/2]).
+The resulting objective point has
+
+[
+f_k=a,qquad
+f_i=eta(t)-aquad(i
+e k, i<M),qquad
+f_M=t.
+]
+
+This is feasible because each earlier coordinate is at least
+(alpha(t)) and every pair sum is at least (eta(t)).
+For any feasible row with the same (t), let (a) denote its
+smallest earlier coordinate. If (aleeta(t)/2), preserve
+that coordinate and reduce all other earlier coordinates to
+(eta(t)-a); otherwise reduce all earlier coordinates to
+(eta(t)/2). This constructs a **feasible, componentwise
+no-worse witness** on the stated arms. Whenever any coordinate is
+strictly improved, the original row is **not Pareto-optimal**.
+
+**Global nondominance and completeness:** an arm point has a
+pair of earlier coordinates summing to exactly (eta(t)).
+A candidate with (t'<t) must have that pair sum at least
+(eta(t')>eta(t)), hence cannot dominate the arm point.
+At the same (t), decreasing any arm coordinate violates
+at least one tight pair constraint. A point with (t'>t)
+cannot dominate because its last objective is worse.
+For central points with (tge1/3), smaller (t') implies
+(alpha(t')>alpha(t)), and same-(t) feasibility fixes their
+minimal earlier coordinates. Thus **all stated central/arm points
+are globally Pareto-optimal**, and the constructive same-(t)
+witness proves that every feasible point outside their union is
+dominated.
+
+Since each objective is a block mean of decision variables in
+([0,1]), any such feasible objective vector has a valid
+decision-space preimage obtained by assigning its objective value
+as a constant to all variables in its corresponding block, provided
+(N) is divisible by (M) as in the standard DTLZ8 setting.
+
+Consequently, this gives an **exact analytical PF construction for
+the published constrained model** at (Mge3), independent of
+the incumbent CSV or fallback sampling algorithm. It does **not**
+on its own certify **finite coverage, cardinality, float64 equality
+constraints or surface-area regularity** of any existing CSV reference.
+The source audit tests a constructive domination witness for those
+independently generated objective samples.
+
 ## Existing established evidence (not new measurements)
 
 The project's earlier, much broader
