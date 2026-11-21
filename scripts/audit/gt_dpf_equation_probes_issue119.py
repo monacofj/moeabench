@@ -54,13 +54,21 @@ def dpf5_threshold_probe(m=5, d=2, epsilon=1e-8):
         x[0, 0] = x1
         x[0, m-1] = x1  # preserve g=0
         results[key] = mop.evaluation(x)["F"][0].tolist()
+    # Derive actual branch semantics from the independently reconstructed
+    # published gamma/D value at equality, not from the historical code.
+    from scripts.audit.gt_dpf5_general_d_issue119 import reference
+    eq = center.copy()
+    eq[0,0] = 1/3
+    eq[0,m-1] = eq[0,0]
+    expected_D = reference(eq,m,d)[0]
+    matches_D = bool(np.allclose(results["equality"], expected_D, atol=1e-12, rtol=0))
     return {
         "M": m, "D": d, "epsilon": epsilon,
         "values": results,
         "equality_minus_left_max_abs": float(np.max(np.abs(np.asarray(results["equality"])-results["left"]))),
         "equality_minus_right_max_abs": float(np.max(np.abs(np.asarray(results["equality"])-results["right"]))),
         "published_at_equality": "gamma/D",
-        "current_at_equality": "beta/P",
+        "current_at_equality": "gamma/D" if matches_D else "nonpublished/P",
         "global_pareto_membership_certified": False,
     }
 

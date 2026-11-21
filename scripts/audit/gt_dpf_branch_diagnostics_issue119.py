@@ -49,14 +49,13 @@ def inspect(name: str, m: int, budget: int, d: int = 2) -> dict:
         "globally_complete_certified": False,
     }
     if name == "DPF3":
-        # The override filters objective vectors. Matching is by
-        # distance, never by row index, since order/count may change.
+        # PS/PF objective equality is checked by distance independently.
         result["pf_subset_of_evaluated_within_1e_10"] = bool(np.all(dist <= 1e-10))
         result["raw_internally_nondominated_count"] = _nd_count(evaluated)
         result["pf_is_a_filtered_sample"] = len(pf) < len(evaluated)
     else:
-        # The original branch condition is strict at x_1 = 1/3.
-        branch_d = ps[:, 0] > (1.0 / 3.0)
+        # The published DPF5 D-branch includes x1 == 1/3.
+        branch_d = ps[:, 0] >= (1.0 / 3.0)
         parts = {}
         for key, mask in (("P", ~branch_d), ("D", branch_d)):
             f = evaluated[mask]
@@ -67,7 +66,7 @@ def inspect(name: str, m: int, budget: int, d: int = 2) -> dict:
                 "objective_duplicates_within_branch": int(len(f) - len(np.unique(f, axis=0))),
             }
         result["branches"] = parts
-        result["grid_side_if_M3"] = int(np.sqrt(budget)) if m == 3 else None
+        result["branch_boundary"] = 1.0 / 3.0
         result["raw_vs_returned_count_equal"] = len(evaluated) == len(pf)
     return result
 
