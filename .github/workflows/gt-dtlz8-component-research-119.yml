@@ -9,9 +9,11 @@ on:
       - "scripts/audit/gt_dtlz8_candidate_issue119.py"
       - "scripts/audit/gt_dtlz8_component_comparison_issue119.py"
       - "scripts/audit/gt_dtlz8_membership_issue119.py"
+      - "scripts/audit/gt_dtlz8_spacing_sensitivity_issue119.py"
       - "tests/unit/test_gt_dtlz8_candidate_issue119.py"
       - "tests/unit/test_gt_dtlz8_component_comparison_issue119.py"
       - "tests/unit/test_gt_dtlz8_membership_issue119.py"
+      - "tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py"
       - "docs/research/gt-issue119/gt-dtlz8-exact-budget-candidate.md"
   workflow_dispatch:
 
@@ -38,7 +40,8 @@ jobs:
           python -m pytest -q \
             tests/unit/test_gt_dtlz8_candidate_issue119.py \
             tests/unit/test_gt_dtlz8_component_comparison_issue119.py \
-            tests/unit/test_gt_dtlz8_membership_issue119.py
+            tests/unit/test_gt_dtlz8_membership_issue119.py \
+            tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py
       - name: Compare reference geometry component by component
         run: |
           python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
@@ -81,10 +84,30 @@ jobs:
                         "infeasible", values["constraint_violations_above_tol"],
                         "max_constraint_violation", values["max_constraint_violation"])
           PY
+      - name: Audit per-component spatial regularity and indicator sensitivity
+        run: |
+          python -m scripts.audit.gt_dtlz8_spacing_sensitivity_issue119 \
+            --objectives 2 3 4 5 10 \
+            --budgets 128 512 \
+            --seeds 11941 11942 11943 \
+            --population-per-region 32 > dtlz8-spacing-igd-sensitivity.json
+          python - <<'PY'
+          import json
+          records = json.load(open("dtlz8-spacing-igd-sensitivity.json"))["records"]
+          for record in records:
+              print("REFERENCE_SENSITIVITY",
+                    "M", record["M"], "n", record["budget"],
+                    "seed", record["probe_seed"])
+              for ref, stats in record["reference_spacing"].items():
+                  print("SPACING", ref, stats)
+              for ref, scores in record["igd_plus_by_finite_reference_and_population"].items():
+                  print("IGD_PLUS", ref, scores)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: dtlz8-component-research-119
           path: |
             dtlz8-component-comparison.json
             dtlz8-membership.json
+            dtlz8-spacing-igd-sensitivity.json
           retention-days: 30
