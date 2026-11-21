@@ -9,9 +9,11 @@ on:
       - "scripts/audit/gt_postfix_quantitative_issue119.py"
       - "scripts/audit/gt_independent_probes_issue119.py"
       - "scripts/audit/gt_reference_sensitivity_issue119.py"
+      - "scripts/audit/gt_independent_geometry_issue119.py"
       - "tests/unit/test_gt_postfix_quantitative_issue119.py"
       - "tests/unit/test_gt_independent_probes_issue119.py"
       - "tests/unit/test_gt_reference_sensitivity_issue119.py"
+      - "tests/unit/test_gt_independent_geometry_issue119.py"
       - "docs/research/gt-issue119/**"
   workflow_dispatch:
 
@@ -37,7 +39,8 @@ jobs:
         run: |
           python -m pytest -q tests/unit/test_gt_postfix_quantitative_issue119.py \
             tests/unit/test_gt_independent_probes_issue119.py \
-            tests/unit/test_gt_reference_sensitivity_issue119.py
+            tests/unit/test_gt_reference_sensitivity_issue119.py \
+            tests/unit/test_gt_independent_geometry_issue119.py
       - name: Collect all 12 MOPs at 128, 512 and historical GT budgets
         run: |
           python -m scripts.audit.gt_postfix_quantitative_issue119 \
@@ -104,6 +107,27 @@ jobs:
                     "IGDPLUS_128", round(first["raw_igd_plus"], 6),
                     "IGDPLUS_largest", round(last["raw_igd_plus"], 6))
           PY
+      - name: Independent DTLZ8 and DPF3-5 geometry and component coverage
+        run: |
+          python -m scripts.audit.gt_independent_geometry_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --seeds 11941 11942 11943 --probes 128 \
+            > gt-independent-geometry.json
+          python - <<'PY'
+          import json
+          records=json.load(open("gt-independent-geometry.json"))["records"]
+          assert len(records)==48, len(records)
+          for r in records:
+              assert all(v["maximum_gap"] >= v["mean_gap"] >= 0
+                         for v in r["components"].values())
+              if r["evaluator_residual"] is not None:
+                  assert r["evaluator_residual"] < 1e-12, r
+              for component,values in r["components"].items():
+                  print("INDEPENDENT_GEOMETRY", r["problem"], "M",r["M"],
+                        "n",r["budget"],"seed",r["seed"], component,
+                        "max", round(values["maximum_gap"],6),
+                        "mean",round(values["mean_gap"],6))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt-postfix-quantitative-issue119
@@ -111,4 +135,5 @@ jobs:
             gt-postfix-quantitative.json
             gt-postfix-finite-probes.json
             gt-reference-sensitivity.json
+            gt-independent-geometry.json
           retention-days: 30
