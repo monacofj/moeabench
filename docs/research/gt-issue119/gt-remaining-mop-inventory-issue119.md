@@ -279,6 +279,87 @@ replay and requested/returned counts passed the newly introduced
 tests. Their success is a necessary mathematical consistency check,
 **not** certification of continuous objective-space coverage.
 
+## Published DPF4: independent Pareto proof and angular covering
+
+The original DPF paper's Section IV-F requires the same **ascending
+chaotic projection thresholds** in DPF4 as in DPF3. A sorted-threshold
+published DPF4 reference can therefore be characterized independently
+of the current source.
+
+Let (H_D(	heta)) be the nonnegative unit hyperspherical direction,
+let (	heta_j=pi x_j/2), and define the essential vector
+
+[
+gamma(x)=(1+g(x))(mathbf1-H_D(	heta(x))),
+]
+
+where
+
+[
+g(x)=100sum_{j=D}^{N}
+ left(1+(x_j-0.5)^2-cos(20pi(x_j-0.5))ight)ge0 .
+]
+
+Equality holds exactly when all distance variables equal 0.5. With
+the **ascending** (eta) thresholds, the DPF4 objective map is
+the DPF3-style componentwise min/max projection followed by a
+**square of every objective coordinate**:
+
+[
+F(x)=left(gamma_1^2,ldots,gamma_{D-1}^2,
+             p_0(gamma_D)^2,ldots,p_U(gamma_D)^2ight).
+]
+
+**Global Pareto membership and completeness:** all projection values
+and essential objectives are nonnegative, so squaring is strictly
+order-preserving. The sorted projection obeys the order-reflecting
+identity
+
+[
+sum_{i=0}^{U}p_i(t)=t+sum_{j=1}^{U}eta_j.
+]
+
+If another feasible point dominated a point with (g=0), the
+componentwise order in squared objectives would imply dominance
+of its essential (gamma) vector. But ((1+g)(mathbf1-H_D))
+cannot strictly dominate a nonnegative unit-hyperspherical
+(g=0) vector: this would require a nonnegative unit vector
+componentwise greater than another, with strict improvement,
+contradicting unit norm. Conversely, any point with (g>0)
+is dominated by retaining its angles and setting its distance
+variables to 0.5. Thus **under the published sorted-threshold
+model**, (PS_{DPF4}={x:g(x)=0}) and (PF=F(PS)).
+
+**Continuous finite covering:** each angular derivative of
+(H_D) has norm at most one, so the hyperspherical map is
+1-Lipschitz. The ordered projection on (gamma_D) is also
+1-Lipschitz in the Euclidean norm; on (g=0), each unsquared
+objective belongs to ([0,1]), where (|a^2-b^2|le2|a-b|).
+Therefore the complete published DPF4 angular mapping is at
+most **2-Lipschitz**. A `k`-point-per-angle complete tensor
+grid, with (k^{D-1}) nominal rows and no need for samplewise
+nondominated filtering, obeys the **ideal real-arithmetic**
+continuous Hausdorff bound
+
+[
+oxed{
+d_H(PF,GT_k)
+lerac{sqrt{D-1},pi}{2(k-1)}
+}
+]
+
+in **unnormalized Euclidean objective space**. The proof does
+not supply a rigorous float64 error bound, nor guarantee that
+the tensor grid fits a fixed operational budget at high
+intrinsic D. Numerical objective duplicates near hyperspherical
+singularities must be counted independently.
+
+This identifies **two independent DPF4 correction requirements**:
+restore the published evaluation's sorted thresholds and
+use an appropriate MOP-specific finite GT sampler. The
+original random/structured BaseDPF parameter generator is
+not automatically certified by the above angular-grid theorem.
+
 ## Exact-real DTLZ8 finite reference candidate (research only)
 
 With the mathematical central curve and M-1 two-dimensional Pareto
