@@ -7,12 +7,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Status
 
-**Accepted in principle — 2026-11-19; operational budget contract pending.**
+**Accepted in principle — 2026-11-19; targeted DPF3/DPF5 equation and
+sampler corrections authorized by 2026-11-20 addendum below; automatic
+calibration budget and historical-reference migration still pending.**
 The maintainer approved on-demand MOP-specific GT generation, the separation
 between `pf()` and `calibrate()`, and automatic budget selection for
-`calibrate()` when `n_points` is omitted. The numerical budget policy,
-quality bounds, migration details and any code changes **are not yet
-approved**. Tracked in [#119](https://github.com/monacofj/moeabench/issues/119)
+`calibrate()` when `n_points` is omitted. The original decision did not
+authorize implementation; the dated addendum below now authorizes **only**
+the listed DPF3/DPF5 equation and sampler work. The general numerical budget
+policy, universal quality tolerance, automatic calibration defaults,
+historical baseline replacements and preexisting regression-test edits remain
+**unapproved**. Tracked in [#119](https://github.com/monacofj/moeabench/issues/119)
 under umbrella [#122](https://github.com/monacofj/moeabench/issues/122).
 
 **Scope of ADR 0018 supersession:** its fixed 2,000-DTLZ / 10,000-DPF
@@ -127,10 +132,11 @@ baseline, certification or API changes.
 
 ## Implementation
 
-**None to the runtime yet.** This ADR records accepted architecture
-principles, not an implemented sampling change. No modifications to
-sampling defaults, calibrated GT storage, visualization, existing
-regression tests or certification references are authorized here.
+**Originally none to the runtime.** This section records the initial
+2026-11-19 accepted direction. The **2026-11-20 authorization addendum
+below** now permits narrowly scoped DPF3/DPF5 corrections in Draft PR
+#140, without authorizing a new `calibrate()` default, persisted GT
+replacement, existing regression modification or certification rewrite.
 
 
 ## Implementation Authorization Addendum — 2026-11-20 (issue #119, PR #140)
