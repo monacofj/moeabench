@@ -9,9 +9,9 @@ performance. It never writes GT baselines, cache or certificates.
 import argparse
 import hashlib
 import json
+import os
 import platform
 import time
-from dataclasses import asdict, dataclass
 
 import numpy as np
 from scipy.spatial import cKDTree
@@ -111,6 +111,28 @@ def _spacing(f):
     }
 
 
+
+def component_spacing(name, f, x, d):
+    """Label individual sampled components; never pool their spacing."""
+    m = f.shape[1]
+    labels = None
+    if name in ("DTLZ7", "DPF2"):
+        dim = m-1 if name == "DTLZ7" else d-1
+        low2 = dtlz7_record_intervals()[1][0]
+        labels = np.sum((x[:, :dim] >= low2).astype(np.int64) *
+                        (1 << np.arange(dim, dtype=np.int64)), axis=1)
+    elif name == "DTLZ8":
+        t = f[:, -1]
+        labels = np.zeros(len(f), dtype=np.int64)
+        if m >= 3:
+            patch = t < 1/3
+            labels[patch] = 1 + np.argmin(f[patch, :-1], axis=1)
+    if labels is None:
+        return None
+    return {str(int(k)): {"count": int(np.count_nonzero(labels == k)),
+                           **_spacing(f[labels == k])}
+            for k in np.unique(labels)}
+
 def sample(name, budget, m=3, d=2):
     mop = make_problem(name, m=m, d=d)
     tic = time.perf_counter()
@@ -132,6 +154,7 @@ def sample(name, budget, m=3, d=2):
         "geometry_residual": geometry_residual(name, f),
         "region_occupancy": region_counts(name, f, x, d),
         "overall_spacing": _spacing(f),
+        "component_spacing": component_spacing(name, f, x, d),
     }
     # An overall NN CV is a diagnostic only and cannot be interpreted
     # as regularity across disconnected or mixed-dimensional components.
@@ -163,6 +186,7 @@ def main():
                 records.append(record)
     print(json.dumps({
         "schema": "moeabench_issue119_postfix_finite_gt_v1",
+        "source_revision": os.environ.get("GITHUB_SHA"),
         "python": platform.python_version(),
         "numpy": np.__version__,
         "records": records,
