@@ -38,7 +38,7 @@ def test_dtlz1_retains_vertex_coverage_and_unchanged_random_tail(dimension, budg
     random_original = np.random.RandomState(42).random((budget, dimension - 1))
     np.testing.assert_array_equal(decisions[first:, :dimension-1],
                                   random_original[first:])
-    np.testing.assert_array_equal(decisions[:, dimension-1:], 0.5)
+    assert np.all(decisions[:, dimension-1:] == 0.5)
 
 
 @pytest.mark.parametrize("m,d,budget", [(5, 2, 128), (5, 3, 128),
