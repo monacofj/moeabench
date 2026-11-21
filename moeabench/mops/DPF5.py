@@ -97,15 +97,18 @@ class DPF5(BaseDPF):
         Branch P has M-1 independent angular parameters; degenerate D has
         only D-1. We sample each intrinsic parameter space separately,
         preserve a small set of deterministic boundary/axis landmarks,
-        and replenish duplicates in *objective space* using scrambled
-        Sobol candidates. A fixed holdout probe set then chooses among
-        candidate P/D allocations at the user's requested total budget.
+        and retain nested full angular tensor grids (when affordable).
+        Duplicates are replenished with deterministic Sobol candidates.
+        At the requested total budget, branch allocation prioritizes
+        the conservative *real-arithmetic* componentwise angular covering
+        bound, breaking ties with independent finite-probe distances.
 
-        The allocation minimizes a finite, branch-conditional nearest
-        neighbor diagnostic. It is NOT a certified Hausdorff guarantee or
-        a universal mixed-dimensional probability law. Calibration's
+        The tensor-grid bound does not include floating-point rounding;
+        the holdout-probe diagnostic is NOT a certified Hausdorff bound
+        or a universal mixed-dimensional probability law. Calibration's
         automatic *default budget* remains governed by ADR 0057.
         """
+        from itertools import product
         from scipy.spatial import cKDTree
         from scipy.stats import qmc
 
@@ -156,7 +159,7 @@ class DPF5(BaseDPF):
             q = qP if label == "P" else qD
             lo, hi = branch_bounds(label)
             seen = set()
-            decisions, objectives = [], []
+            decisions, objectives, completed_grids = [], [], []
 
             def ingest(angles):
                 if len(decisions) >= target:
@@ -172,6 +175,20 @@ class DPF5(BaseDPF):
                         if len(decisions) >= target:
                             break
 
+            # Full nested tensor grids provide a rigorous exact-arithmetic
+            # covering certificate when a completed level fits the budget.
+            # k=2,3,5,9,... preserves every coarser angular grid.
+            k = 2
+            while k ** q <= target:
+                grid = np.asarray(
+                    list(product(np.linspace(0.0, 1.0, k), repeat=q)),
+                    dtype=float,
+                ).reshape(-1, q)
+                grid[:, 0] = lo + (hi-lo)*grid[:, 0]
+                ingest(grid)
+                completed_grids.append((len(decisions), k))
+                k = 2*k - 1
+
             ingest(angular_anchors(label))
             for attempt in range(4):
                 if len(decisions) >= target:
@@ -185,7 +202,7 @@ class DPF5(BaseDPF):
                 ingest(angles)
             if len(decisions) != target:
                 raise ValueError("Unable to generate enough distinct DPF5 objectives")
-            return np.asarray(decisions), np.asarray(objectives)
+            return np.asarray(decisions), np.asarray(objectives), completed_grids
 
         # For very small budgets both components may not be fully
         # represented. Prefer explicit samples rather than implicit
@@ -206,8 +223,8 @@ class DPF5(BaseDPF):
         else:
             minP, minD = max(1, n // 2), max(1, n-n//2)
         maxP, maxD = n-minD, n-minP
-        p_dec, p_obj = candidate_pool("P", maxP)
-        d_dec, d_obj = candidate_pool("D", maxD)
+        p_dec, p_obj, p_grids = candidate_pool("P", maxP)
+        d_dec, d_obj, d_grids = candidate_pool("D", maxD)
 
         # Low-cost, independent deterministic probes; this estimates the
         # worse of the two conditional gaps without assigning a
@@ -224,14 +241,37 @@ class DPF5(BaseDPF):
         probesP, probesD = branch_probes("P"), branch_probes("D")
         possible = sorted(set(int(z) for z in
                               np.linspace(minP, maxP, min(17, maxP-minP+1))))
-        best_score, best_p = float("inf"), possible[0]
+        def certified_real_bound(label, prefix, completed):
+            # Each completed k-grid is a full ideal published-model cover,
+            # including all its mathematically unique boundary images.
+            # A prefix may include an incomplete finer grid; the last
+            # completed level remains a certificate.
+            levels = [k for size, k in completed if size <= prefix]
+            if not levels:
+                return float("inf")
+            k = levels[-1]
+            q = qP if label == "P" else qD
+            lo, hi = branch_bounds(label)
+            angular_width = np.sqrt((hi-lo)**2 + (q-1))
+            # The P patch is half-open; its omitted exact x1=1/3
+            # boundary lies within a float64 nextafter gap of the grid.
+            missing_P_edge = ((1 / 3)-hi) * (np.pi / 2) if label == "P" else 0.0
+            return angular_width * np.pi / (4 * (k-1)) + missing_P_edge
+
+        best_score, best_p = (float("inf"), float("inf")), possible[0]
         for p_count in possible:
             d_count = n-p_count
             p_distance = cKDTree(p_obj[:p_count]).query(probesP, k=1)[0]
             d_distance = cKDTree(d_obj[:d_count]).query(probesD, k=1)[0]
-            # The maximum branchwise diagnostic is a finite *estimate*,
-            # never presented as a continuous-front certificate.
-            score = max(float(np.max(p_distance)), float(np.max(d_distance)))
+            # Compare the mathematical covering guarantee first when
+            # both branches have completed grids. If a component lacks
+            # a full grid, retain the finite-probe diagnostic only.
+            certified = max(
+                certified_real_bound("P", p_count, p_grids),
+                certified_real_bound("D", d_count, d_grids),
+            )
+            observed = max(float(np.max(p_distance)), float(np.max(d_distance)))
+            score = (certified, observed)
             if score < best_score:
                 best_score, best_p = score, p_count
 
