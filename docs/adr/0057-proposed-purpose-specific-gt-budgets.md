@@ -131,3 +131,62 @@ baseline, certification or API changes.
 principles, not an implemented sampling change. No modifications to
 sampling defaults, calibrated GT storage, visualization, existing
 regression tests or certification references are authorized here.
+
+
+## Implementation Authorization Addendum — 2026-11-20 (issue #119, PR #140)
+
+The maintainer has now **explicitly authorized work on the DPF3/DPF5
+corrections and updating ADRs to reflect the decisions made in this
+conversation**. This dated addendum records that decision without
+retroactively rewriting the original status or the unapproved numerical
+calibration policy.
+
+**Authorized implementation work in Draft PR #140:**
+
+- Correct the DPF3 evaluator to the published **increasingly sorted**
+  projection thresholds, using numerically stable essential-objective
+  calculations. Sorting is **DPF3-specific**; it must not silently change
+  the chaotic sequence used by DPF1/DPF2/DPF4.
+- Correct the DPF5 published P and D spherical evaluation equations for
+  supported dimensions, including the strict P condition `x1 < 1/3`
+  and D ownership of `x1 = 1/3`.
+- Implement **separate, geometry-aware PS/PF finite sampling for each
+  MOP**. Shared kernels, random sequence engines, storage and validation
+  infrastructure are permitted only where their scientific applicability
+  is demonstrated. Neither a universal MOP sampler nor a fixed
+  mixed-dimensional P/D probability law is adopted.
+- Preserve the explicit `n_points` argument as a **requested sample
+  budget**, transparently reporting and testing returned/effective
+  cardinalities. Verify Pareto membership, component/extreme coverage,
+  deterministic behavior and numerical quality independently.
+- Add new independent tests and auditable numerical comparisons. Keep
+  objective-evaluator changes and finite GT/reference migration
+  separately attributable.
+
+**Not authorized by this addendum:**
+
+- A replacement for the historical automatic `calibrate()` default
+  budgets (the existing 2,000/10,000 runtime rules remain in effect),
+  a particular target epsilon, a universal P/D allocation law or
+  a new unattended persistence/cache contract.
+- Replacing any frozen GT, performance reference, certificate or
+  baseline merely to accommodate changed outputs. ADR 0056's
+  versioned-reference lifecycle remains binding.
+- Editing an **existing** regression test or fixture without advance
+  warning and a further explicit maintainer approval. An old reference
+  mismatch is a migration decision, not a test failure to suppress.
+
+**Scientific evidence and staged implementation:** the proofs and
+negative experiments are documented in
+[docs/gt.md](../gt.md) and
+[research/gt-issue119/](../research/gt-issue119/README.md).
+Draft PR #140 may implement and validate the above corrections, but it
+must not be merged with failing historical stability gates or promote
+a sampler to a fully certified GT merely on the basis of finite-probe
+statistics. A separately accepted, versioned migration resolves any
+incompatibility with the historical DPF5 numerical baseline.
+
+The original "implementation pending" wording above records the
+decision's status *before this addendum*. The explicit authorization
+here is limited to the described DPF3/DPF5 corrections; automatic
+calibration budgeting remains pending.
