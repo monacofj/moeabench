@@ -1,0 +1,338 @@
+> **Historical research record (2026-11-21).** This analysis evaluates the pre-correction DTLZ8 implementation and experimental samplers. The production correction was subsequently merged in [PR #146](https://github.com/monacofj/moeabench/pull/146). Claims about the *incumbent* below refer to the former implementation, not current `main`. The original executable research scripts and 115-test workflow remain inspectable in [PR #144](https://github.com/monacofj/moeabench/pull/144).\n\n# DTLZ8 geometric reference candidate — issue #119
+
+Status: **research only; no production, ADR, regression fixture or baseline changes**.
+
+## Source and objective-space characterization
+
+Deb, Thiele, Laumanns, Zitzler, *Scalable Test Problems for Evolutionary Multiobjective Optimization*, Section 8.8, equation (28), gives for minimization (M >= 3):
+
+- `f_M + 4 f_i >= 1` for each `i < M`;
+- `2 f_M + min_{i<j<M}(f_i+f_j) >= 1`;
+- `0 <= f_i <= 1`.
+
+For **M=2**, the published pairwise constraint is absent. The sole
+constraint gives a complete one-dimensional front
+`f_1=(1-t)/4`, `f_2=t`, `0<=t<=1`, sampled independently with
+both endpoints. For **M>=3** the geometry below applies.
+
+Set `t=f_M`, `a(t)=(1-t)/4`, `b(t)=1-2t`.
+For `1/3 <= t <= 1`, the nondominated central line has
+`f_1=...=f_{M-1}=a(t)`.
+For `0 <= t < 1/3`, the second inequality is active. The first
+`M-1` coordinates, sorted increasingly, must have two smallest
+coordinates totaling `b(t)`. An efficient point with a unique
+smallest index `k` has `f_k=low`, all `f_j=high=b(t)-low`
+for `j!=k`, and `a(t)<=low<=b(t)/2`. These are M-1 patches,
+which meet along their common equal-coordinate edge. For M=3
+they form two triangular halves; the original publication calls
+the objective-space component a line plus a hyper-plane.
+
+The existing `DTLZ8.ps()` has a 1,000-row static-data ceiling for
+M=3/5/10, and its dynamic square-grid truncation can return too
+few and duplicated objective vectors. Those are **finite-sampling
+defects**, independent of the original objective evaluator.
+
+## Candidate policy
+
+The isolated module `scripts/audit/gt_dtlz8_candidate_issue119.py`
+constructs the exact intended objective-space components and
+inverts the block means into constant-block decision vectors.
+
+For M=2 and `n>=2`, the candidate samples the single line directly.
+For M>=3 and a requested budget `n >= M+1`, it allocates
+`max(2, floor(n/M))` rows to the central line and distributes the
+remainder as evenly as possible across the M-1 patches.
+Line points include both endpoints. Every patch includes its t=0
+low/high extremum, and the common t=0 equal-coordinate seam is
+included once when budget permits. Remaining patch points use
+deterministic base-2 and base-3 radical inverses strictly inside
+the parameter rectangle, avoiding interface duplicates. It yields exactly n
+distinct objective vectors and deterministic replay for supported M.
+As a second research candidate, `patch_strategy="lattice"` uses a
+deterministic, approximately square, parameter-space lattice for the
+remaining patch interiors, retaining the same anchors and budgets.
+This may have better small-budget covering properties, but is not
+assumed to be uniform in objective geometry. Both variants are
+compared independently with the incumbent.
+
+This allocation is **only an explicit component-presence policy**.
+It is *not* a canonical measure, uniform objective-surface density,
+or proof of optimal finite-sample spacing.
+
+The accompanying new independent test module checks the requested
+cardinality, objective-to-decision inversion, published constraints,
+presence of every patch, central-line endpoints and deterministic
+replay for M=2,3,4,5,10 and budgets up to 2,000.
+
+## Independent analytical Pareto membership
+
+The module `scripts/audit/gt_dtlz8_membership_issue119.py`
+checks each incumbent static/dynamic GT objective vector against
+the published piecewise Pareto equations, with a documented 1e-10
+float64 diagnostic tolerance. This is stronger than checking only
+nondominance within a finite sample. The audit independently checks
+published constraint feasibility, distinguishing infeasible rows from
+feasible rows that lie above the actual Pareto front. It separately reports counts,
+unique points, residual magnitudes and violations for M=2,3,4,5,10
+at n=128,512,2000, alongside the candidate variants. It does not
+modify the meaning of the public `feasible` flag.
+
+An initial reproducible run at n=128,512,2000 found **all** examined
+static reference objectives (M=3,5,10) outside the published analytical
+Pareto geometry by more than 1e-10. The dynamic M=4 objectives were
+on-geometry within float64 rounding, but lacked the requested unique
+count. For M=2 the legacy fallback also returned non-Pareto rows.
+This evidence **disqualifies blindly augmenting or preserving the static
+files** as canonical GT; individual feasibility checks and the source
+provenance must be examined before a production replacement. These
+negative results are retained in the research record.
+
+A concrete first static M=3 example evaluates to approximately
+`(0.09595176, 0.19891921, 0.62134608)`. It is feasible, but at
+the same final objective its analytical line counterpart is
+`(0.09466348, 0.09466348, 0.62134608)`, which strictly dominates it.
+
+## Independent finite-probe comparison
+
+The standalone script
+`scripts/audit/gt_dtlz8_component_comparison_issue119.py`
+compares the incumbent against this candidate at identical requested
+budgets. It generates **separate** objective-space probes for the line
+and each patch using radical-inverse bases 5 and 7 (independent of
+the candidate's bases 2 and 3), with separate deterministic
+irrational rotations for each probe seed and records per-component maximum and
+mean nearest-neighbor distances plus positive-part IGD+ distances
+for the incumbent, Halton candidate and structured lattice candidate.
+Suggested run:
+
+```sh
+python -m scripts.audit.gt_dtlz8_component_comparison_issue119 --objectives 2 3 4 5 10 --budgets 128 512 --seeds 11941 11942 11943 --probes 256 > dtlz8-component-comparison.json
+```
+
+The first trial (before decorrelating probe seeds) revealed a **negative
+result** that must not be suppressed: at M=4, n=512, the incumbent
+largest observed gap on each patch was about 0.0324 whereas the
+candidate was about 0.0473. At M=4, n=128, corresponding figures
+were about 0.0692 and 0.0938. Therefore the current proposed
+sampler cannot be promoted to production as a general replacement.
+The revised three-rotation experiment must be reviewed separately,
+and candidates should retain or improve the incumbent's within-patch
+coverage before scientific acceptance.
+
+These are explicitly **finite-probe** diagnostics, not continuous
+Hausdorff certificates. No line/patch aggregate or canonical
+mixed-dimensional probability weighting is imposed; the report
+must be reviewed component by component. New smoke tests check
+probe construction and diagnostic invariants.
+
+## M=4 completion control: guaranteed nonworsening finite-set covering
+
+Because the dynamic M=4 sampler is independently verified to produce
+valid analytical Pareto objectives (but truncates and duplicates them),
+`m4_preserving_completion()` provides a **research-only** comparison:
+it retains every exact-unique objective in original order and greedily
+selects the next **objective-space farthest** point from a deterministic
+lattice candidate pool until the requested size is reached. The original
+row-order append was rejected because it predominantly added line points
+instead of improving the sparser two-dimensional patches. Any off-front incumbent point causes refusal rather than reuse.
+
+Provided the incumbent contains at most `n` distinct valid points,
+the completed point set contains the incumbent unique set as a subset.
+Consequently **for every independently chosen query point** the
+nearest Euclidean distance to the completed set cannot exceed the
+distance to the incumbent set. The same monotonic property applies
+to the positive-part nearest distance used in IGD+ when the reference
+points and normalization are fixed. New tests directly assert this
+superset property and numerical nonworsening at n=128,512.
+
+This is *not* a proof of improved spatial regularity, and retains some
+incumbent clustering. Farthest-first addition targets the largest gaps
+of the finite candidate pool but does not certify continuous covering
+or guarantee a lower component-specific nearest-neighbor CV. It also **cannot** be used for the faulty
+M=2,3,5,10 sources: off-front points are scientifically ineligible
+for preservation. Treat this as a controlled feasibility and coverage
+baseline, not the finally chosen sampler.
+
+## Spatial regularity and reference-sensitive indicator audit
+
+A further independent script,
+`scripts/audit/gt_dtlz8_spacing_sensitivity_issue119.py`,
+now reports component-specific nearest-neighbor mean, maximum and
+coefficient of variation for **distinct on-front points**. Off-front
+points are counted separately, rather than distorting geometric
+regularity on a false Pareto reference. Components with fewer than
+two unique points are explicitly marked as undefined.
+
+For each finite reference (native, Halton, lattice and the M=4
+incumbent-preserving completion), it measures **conventional
+positive-part IGD+** for three fixed, independently generated
+analytical probe populations: line-only, one-patch-only, and a
+population with equal point counts per component. The latter is
+an explicitly declared *finite-record sampling policy*, not a
+canonical measure of a mixed-dimensional Pareto front. Every
+number is indexed by reference, population, objective dimension,
+budget and independent probe seed. No intercomponent summary
+regularity or probability measure is inferred.
+
+Use the deterministic research workflow artifact
+`dtlz8-spacing-igd-sensitivity.json` to inspect whether a better
+finite-reference covering gap also preserves local spacing and
+whether changing the reference alters numerical scores or relative
+rankings of the fixed analytical populations. Improvements in
+reference sampling need not preserve numerical IGD+ values; that
+is a scientifically meaningful migration impact, not grounds
+to silently rewrite a frozen baseline.
+
+## Experimental checkpoint: component spacing and indicator dependence
+
+The reproducible 2026-11-21 research workflow compared three fixed
+independent probe offsets and budgets 128/512. All 71 isolated
+scientific tests passed after switching M=4 completion from lattice
+row-order append to greedy farthest-first addition in objective space.
+
+For M=4, n=512 and the first probe offset, the incumbent's line
+has 128 points and nearest-neighbor CV approximately zero. The
+greedy completion **retains those same 128 points**; it places the
+43 additional points in surface patches (rather than the line).
+Patch 0 has 121 -> 136 points and nearest-neighbor CV
+0.5270 -> 0.4509; the other patches similarly decrease from
+about 0.5270 to 0.4498. At n=128, patch CV likewise decreases
+for all three patches while preserving the original line.
+This is observed finite-sample regularity improvement, not a
+global optimality theorem or a proof of monotone CV improvement
+at arbitrary n/M. The superset-based nonworsening guarantee for
+probe covering distance continues to apply.
+
+Changing the **reference itself** changes IGD+: at M=4,
+n=512, seed=11941, the same analytical equal-per-component
+population scores about 0.014013 with the incumbent finite
+reference, 0.012925 with the Halton candidate, 0.013354
+with the lattice, and 0.014189 with the greedy-preserving
+completion. Reference changes can improve or worsen indicator
+values; a covering guarantee about a superset used as an
+**approximation** does not imply monotonicity when that
+superset is used as a new **IGD+ reference**. Existing
+numeric baselines therefore cannot be migrated by assumption.
+
+These experiments are intended to inform source selection, not
+to establish a canonical relative weight between the 1-D line and
+2-D patches. A final production policy must explicitly define
+the allocation semantics and validate indicator sensitivity
+with independent target populations.
+
+## Historical calibration budget (n=2,000) verification
+
+The read-only 2026-11-21 CI also tested the **actual historical DTLZ
+calibration budget** for M=4. The native generator returned 1,952
+rows / 1,908 distinct front objectives when asked for 2,000.
+The farthest-first completion returned **exactly 2,000 distinct
+analytically on-front objectives**, retaining all 1,908 incumbent
+unique points. For independent probe offset 11941, each surface
+patch's largest observed nearest-reference distance decreased
+from about 0.016202 to 0.015706; in offsets 11942 and 11943
+the maxima were unchanged (approximately 0.015345 and
+0.015784, respectively). The line's observed max gap stayed
+at approximately 0.000728. These are finite-probe tests, not
+certified continuous bounds.
+
+At this checkpoint 72 new scientific tests passed. Calibration
+defaults and persisted references remain unchanged.
+
+## Corrected-source candidate policy for M=2,3,5,10
+
+The standalone `scripts/audit/gt_dtlz8_policy_issue119.py`
+compares the fully analytical Halton and structured-lattice
+alternatives for M=2,3,5,10 at 128, 512 and the actual 2,000-point
+historical DTLZ calibration budget. Neither candidate inherits any
+off-front points from the incumbent CSVs or dynamic M=2 fallback.
+
+A deterministic three-offset, separately component-scoped experiment
+checks cardinality, analytical Pareto membership, constraint
+feasibility, per-component spacing and worst finite-probe nearest
+distance. It reports whether either candidate is nonworse than
+the other for *every* component and offset. Mixed trade-offs are
+recorded as `mixed_no_proven_winner`, never hidden by averaging
+the one-dimensional line with two-dimensional patches.
+
+This is **research evidence**, not a declaration that a source
+is scientifically certified, an approved line/patch probability
+measure, or authorization to alter frozen GT artifacts. The
+archived JSON (`dtlz8-policy-candidates.json`) is intended for
+review before choosing a versioned production policy.
+
+## Comparison at 2,000 points and third hybrid candidate
+
+The read-only policy comparison of M=2,3,5,10 at budgets 128,
+512 and 2,000 passed 79 scientific checks. At M=2 the two
+parameterizations coincide (they both sample the same line).
+At M=3,5,10, neither the Halton or the structured-lattice
+candidate was componentwise nonworse at all three predefined
+probe offsets: Halton allocated more points to the line,
+while the lattice generally covered the patches better.
+
+This is a genuine trade-off and does not authorize choosing
+a source merely by an aggregate gap. The experiment has therefore
+added a third research design, `patch_strategy="hybrid"`, which
+retains the Halton line allocation but samples patch interiors
+on a structured lattice. The same fixed budgets, offsets and
+per-component diagnostic checks apply. The hybrid remains
+noncertified until its independent empirical comparisons pass.
+As with every candidate, no canonical line/patch relative weight
+is inferred.
+
+## Hybrid validation at the historical DTLZ8 budget
+
+The 2026-11-21 read-only research run passed **95 scientific tests**.
+With three independent probe offsets, M=2,3,5,10 and budgets
+128, 512, 2,000, the hybrid had a **non-increasing observed
+maximum gap relative to Halton on every component/offset**
+(12 tested M/budget settings). At M=2 it is exactly the same line.
+
+At n=2,000 the worst (over the three offsets) maximum observed
+Euclidean gaps were:
+
+| M | Component | Halton | Lattice | Hybrid |
+|---|---|---:|---:|---:|
+| 3 | line | 0.000530 | 0.000708 | 0.000530 |
+| 3 | patch 0 | 0.017451 | 0.010993 | 0.011949 |
+| 5 | line | 0.000933 | 0.001122 | 0.000933 |
+| 5 | patch 0 | 0.030823 | 0.021399 | 0.021196 |
+| 10 | line | 0.002093 | 0.002315 | 0.002093 |
+| 10 | patch 0 | 0.047652 | 0.040226 | 0.041583 |
+
+The hybrid thus retains Halton's line resolution while replacing
+its sparse patch interiors with structured patch sampling. It
+does **not** universally dominate the lattice: for example,
+M=3 patch 0 is better covered by the pure lattice in these
+probes. These are finite-probe, research-only comparisons, not
+proofs of optimal continuous front covering. They identify a
+credible default candidate to subject to further quantitative
+source and indicator qualification, rather than authorize
+immediate production migration.
+
+## Remaining scientific checks before production
+
+1. Independently prove the exact nondominated characterization,
+   including the equality edges and M=3 symmetry, against the
+   published constraint geometry.
+2. Run and review independent component-wise covering gaps,
+   nearest-neighbor spacing and discrepancies at higher resolutions;
+   examine the three predetermined probe offsets for M=2,3,4,5,10
+   and ensure any claimed improvement holds for each relevant region.
+3. Study how line-versus-patch allocation affects IGD and IGD+,
+   recognizing their finite-reference weights; do not silently
+   equate a one-dimensional line with an area measure.
+4. Record actual 2,000-point calibration behavior, computational
+   cost and any downstream numerical-reference differences.
+5. Review ADR 0006, 0018, 0057 and 0056 before changing production
+   or replacing historical reference artifacts. Explicit maintainer
+   authorization is required for an ADR-incompatible change or
+   edits to existing regression tests, fixtures and baselines.
+
+The M=2 boundary is separately covered: its single-constraint
+Pareto front is f_1=(1-f_2)/4 for 0<=f_2<=1, without the M>=3
+pairwise inequality. Its incumbent dynamic generator contains
+feasible off-front rows, so it must not be reused as certified GT.
+
+**Source:** Deb et al., original report:
+https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2001a.pdf
