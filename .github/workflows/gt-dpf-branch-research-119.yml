@@ -1,0 +1,234 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DPF3/DPF5 branch GT research (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-dpf-branch-research-119.yml"
+      - "scripts/audit/gt_dpf_branch_diagnostics_issue119.py"
+      - "tests/unit/test_gt_dpf_branch_diagnostics_issue119.py"
+      - "scripts/audit/gt_dpf_equation_probes_issue119.py"
+      - "tests/unit/test_gt_dpf_equation_probes_issue119.py"
+      - "scripts/audit/gt_dpf_numerics_kernel_issue119.py"
+      - "tests/unit/test_gt_dpf_numerics_kernel_issue119.py"
+      - "scripts/audit/gt_dpf_high_precision_issue119.py"
+      - "tests/unit/test_gt_dpf_high_precision_issue119.py"
+      - "scripts/audit/gt_dpf5_offpareto_issue119.py"
+      - "tests/unit/test_gt_dpf5_offpareto_issue119.py"
+      - "scripts/audit/gt_dpf5_general_d_issue119.py"
+      - "tests/unit/test_gt_dpf5_general_d_issue119.py"
+      - "scripts/audit/gt_dpf5_fixed_impact_issue119.py"
+      - "tests/unit/test_gt_dpf5_fixed_impact_issue119.py"
+      - "scripts/audit/gt_dpf5_global_membership_issue119.py"
+      - "tests/unit/test_gt_dpf5_global_membership_issue119.py"
+      - "scripts/audit/gt_dpf5_finite_sampler_issue119.py"
+      - "tests/unit/test_gt_dpf5_finite_sampler_issue119.py"
+      - "scripts/audit/gt_dpf5_branch_sampler_compare_issue119.py"
+      - "tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py"
+      - "scripts/audit/gt_dpf5_allocation_issue119.py"
+      - "tests/unit/test_gt_dpf5_allocation_issue119.py"
+      - "scripts/audit/gt_dpf3_global_membership_issue119.py"
+      - "tests/unit/test_gt_dpf3_global_membership_issue119.py"
+      - "scripts/audit/gt_dpf3_d2_angular_cover_issue119.py"
+      - "tests/unit/test_gt_dpf3_d2_angular_cover_issue119.py"
+      - "scripts/audit/gt_dpf3_nd_angular_cover_issue119.py"
+      - "tests/unit/test_gt_dpf3_nd_angular_cover_issue119.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dpf-branch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          python -m pip install -e .
+          python -m pip install pytest mpmath
+      - name: Independent new diagnostics tests
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: python -m pytest tests/unit/test_gt_dpf_branch_diagnostics_issue119.py tests/unit/test_gt_dpf_equation_probes_issue119.py tests/unit/test_gt_dpf_numerics_kernel_issue119.py tests/unit/test_gt_dpf_high_precision_issue119.py tests/unit/test_gt_dpf5_offpareto_issue119.py tests/unit/test_gt_dpf5_general_d_issue119.py tests/unit/test_gt_dpf5_fixed_impact_issue119.py tests/unit/test_gt_dpf5_global_membership_issue119.py tests/unit/test_gt_dpf5_finite_sampler_issue119.py tests/unit/test_gt_dpf5_branch_sampler_compare_issue119.py tests/unit/test_gt_dpf5_allocation_issue119.py tests/unit/test_gt_dpf3_global_membership_issue119.py tests/unit/test_gt_dpf3_d2_angular_cover_issue119.py tests/unit/test_gt_dpf3_nd_angular_cover_issue119.py -q
+      - name: Actual MOP branch matrix
+        env:
+          OPENBLAS_NUM_THREADS: "1"
+          OMP_NUM_THREADS: "1"
+        run: |
+          python -m scripts.audit.gt_dpf_branch_diagnostics_issue119 \
+            --objectives 3 5 --budgets 128 512 > gt119-dpf-branch.json
+          python - <<'PY'
+          import json
+          data=json.load(open("gt119-dpf-branch.json"))
+          for r in data["records"]:
+              print(r["name"], "M",r["M"],"requested",r["requested"],
+                    "PS/PF/uniquePF",r["ps_count"],r["pf_count"],r["pf_unique_count"],
+                    "raw dominated",r["raw_evaluated_internally_dominated"],
+                    "PF dominated",r["returned_pf_internally_dominated"],
+                    "branches",r.get("branches","—"))
+          PY
+      - name: Probe published-equation discrepancies without mutation
+        run: python -m scripts.audit.gt_dpf_equation_probes_issue119 > gt119-equation-probes.json
+      - name: Probe numerical precision and published sphere identities
+        run: |
+          python -m scripts.audit.gt_dpf_numerics_kernel_issue119 > gt119-numerics-kernel.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-numerics-kernel.json"))
+          for p in r["dpf3"]:
+              print("PRECISION",p["M"],p["requested"],"raw/stable ND",p["raw_nondominated"],p["stable_first_component_nondominated"],"zero direct/stable",p["direct_zero_count"],p["stable_zero_count"],"rescued",p["direct_zero_but_stable_positive"])
+          for p in r["dpf5"]:
+              print("SPHERE",p["M"],p["requested"],"P",p["branch_P"],"D",p["branch_D"],"dominated actual/canonical",p["actual_union_dominated"],p["canonical_union_dominated"])
+          PY
+      - name: Run high-precision and DPF5 dimension audit
+        run: |
+          python -m scripts.audit.gt_dpf_high_precision_issue119 > gt119-high-precision.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-high-precision.json"))
+          for p in r["dpf3"]:
+              print("MP",p["requested"],"positive",p["mp_positive_count"],
+                    "naive lost",p["naive_zero_but_mp_positive"],
+                    "stable lost",p["stable_zero_but_mp_positive"],
+                    "float64 underflow",p["mp_to_float64_zero_count"])
+          for p in r["dpf5"]:
+              print("M",p["M"],"n",p["requested"],"P",p["P"],"D",p["D"])
+          PY
+      - name: Evaluate DPF5 off-front nonzero-g source agreement
+        run: |
+          python -m scripts.audit.gt_dpf5_offpareto_issue119 > gt119-dpf5-offpareto.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-offpareto.json"))["cases"]:
+              print("OFFPARETO M",r["M"],"n",r["n"],"g",r["g_min"],
+                    "P",r["P"],"D",r["D"])
+          PY
+      - name: Evaluate independent published DPF5 equations for D greater than two
+        run: |
+          python -m scripts.audit.gt_dpf5_general_d_issue119 > gt119-general-d.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-general-d.json"))["cases"]:
+              print("DIMS",r["M"],r["intrinsic_D"],r["g_offset"],"P",r["branch_P"],"D",r["branch_D"])
+          PY
+      - name: Fixed-decision and fixed-objective DPF5 paired indicator study
+        run: |
+          python -m scripts.audit.gt_dpf5_fixed_impact_issue119 > gt119-dpf5-paired-impact.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-paired-impact.json"))["cases"]:
+              print("PAIRED",r["M"],r["D"],r["seed"],
+                    "gt objective delta",r["gt_max_component_change"],
+                    "pop objective delta",r["population_max_component_change_at_fixed_X"],
+                    "metric deltas",r["metric_delta_counterfactual_minus_current"])
+          PY
+      - name: Check global Pareto membership witness for published DPF5
+        run: |
+          python -m scripts.audit.gt_dpf5_global_membership_issue119 > gt119-dpf5-global-membership.json
+          python - <<'PY'
+          import json
+          r=json.load(open("gt119-dpf5-global-membership.json"))
+          for row in r["cases"]:
+              print("GLOBAL_WITNESS",row["M"],row["intrinsic_D"],row["seed"],
+                    "g-positive",row["positive_g_count"],
+                    "witness",row["all_g_positive_strictly_dominated"],
+                    "norm",row["max_unit_norm_error"])
+          PY
+      - name: Finite DPF5 P and D strata sampling audit
+        run: |
+          python -m scripts.audit.gt_dpf5_finite_sampler_issue119 > gt119-dpf5-finite-sampler.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-finite-sampler.json"))["cases"]:
+              print("FINITE",r["M"],r["intrinsic_D"],r["requested"],
+                    "returned/unique",r["returned_ps"],r["published_objective_unique_exact"],
+                    "branches",r["branch_counts"],
+                    "coverage",r["conditional_branch_coverage"])
+          PY
+      - name: Compare incumbent versus stratified Sobol at fixed branch budgets
+        run: |
+          python -m scripts.audit.gt_dpf5_branch_sampler_compare_issue119 > gt119-dpf5-branch-comparison.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-branch-comparison.json"))["cases"]:
+              for branch, x in r["branches"].items():
+                  print("COMPARE",r["M"],r["intrinsic_D"],r["requested"],branch,
+                        "unique",x["effective_unique_budget"],
+                        "median gains",x["median_improvement_per_seed"],
+                        "seconds",x["candidate_generation_seconds_observed"])
+          PY
+      - name: Compare DPF5 P/D budget allocations across seeds
+        run: |
+          python -m scripts.audit.gt_dpf5_allocation_issue119 > gt119-dpf5-allocation.json
+          python - <<'PY'
+          import json
+          for case in json.load(open("gt119-dpf5-allocation.json"))["cases"]:
+              for label in ("incumbent", "half_P", "two_thirds_P"):
+                  rows=[r for r in case["records"] if r["allocation"]==label]
+                  print("ALLOC",case["M"],case["intrinsic_D"],case["requested"],label,
+                        "P/D",case["allocations"][label],
+                        "conditional-worst", [r["max_conditional_probe_distance"] for r in rows],
+                        "global unique", [r["global_exact_unique"] for r in rows])
+          PY
+      - name: Verify published DPF3 sorted projection order embedding
+        run: |
+          python -m scripts.audit.gt_dpf3_global_membership_issue119 > gt119-dpf3-membership.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf3-membership.json"))["cases"]:
+              print("DPF3_PARETO",r["M"],r["D"],"g-positive dominance",r["all_positive_g_witness_strict"],
+                    "projection",r["max_projection_telescope_error"],
+                    "sphere",r["max_essential_unit_sphere_error"],
+                    "current mismatch",r["max_g0_evaluator_delta_to_published_sorted"])
+          PY
+      - name: Verify rigorous DPF3 D2 angular covering bound
+        run: |
+          python -m scripts.audit.gt_dpf3_d2_angular_cover_issue119 > gt119-dpf3-d2-angular-cover.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf3-d2-angular-cover.json"))["cases"]:
+              print("COVER",r["M"],r["n"],
+                    "certified bound",r["certified_real_arithmetic_upper_bound"],
+                    "probe max",r["measured_probe_max"],
+                    "distinct",r["published_sample_unique_exact"],
+                    "incumbent PF count",r["incumbent_pf_count"],
+                    "source delta",r["actual_evaluator_vs_published_max_abs"])
+          PY
+      - name: Check higher-D DPF3 tensor angular covering and rounding
+        run: |
+          python -m scripts.audit.gt_dpf3_nd_angular_cover_issue119 > gt119-dpf3-nd-cover.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf3-nd-cover.json"))["cases"]:
+              print("ND_COVER",r["M"],r["D"],"grid",r["grid_per_angle"],
+                    "total/unique",r["requested_tensor_points"],r["float_exact_unique_objectives"],
+                    "bound",r["analytic_real_Hausdorff_upper_bound"],
+                    "observed",r["observed_probe_max"],
+                    "highprec_angle",r["high_precision_angle_roundtrip_max_norm_estimate"],
+                    "rounded_obj",r["float_published_objective_roundtrip_max_norm"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-dpf-branch-diagnostics
+          path: |
+            gt119-dpf-branch.json
+            gt119-equation-probes.json
+            gt119-numerics-kernel.json
+            gt119-high-precision.json
+            gt119-dpf5-offpareto.json
+            gt119-general-d.json
+            gt119-dpf5-paired-impact.json
+            gt119-dpf5-global-membership.json
+            gt119-dpf5-finite-sampler.json
+            gt119-dpf5-branch-comparison.json
+            gt119-dpf5-allocation.json
+            gt119-dpf3-membership.json
+            gt119-dpf3-d2-angular-cover.json
+            gt119-dpf3-nd-cover.json
+          retention-days: 30

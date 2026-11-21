@@ -60,6 +60,9 @@ mb.view.history(exp)                           # Plot Hypervolume convergence
 
 ## Documentation
 
+*   **[Documentation Index](docs/index.md)**: A navigable catalog of guides, API references, scientific documentation, ADRs, and research reports.
+*   **[Ground Truth](docs/gt.md)**: Mathematical foundations, MOP-specific Pareto reference generation, numerical fidelity, and validated DPF3/DPF5 findings.
+
 *   **[User Guide](docs/userguide.md)**: A comprehensive "How-to" guide covering installation, basic usage, advanced configuration, and custom extensions.
 *   **[API Reference](docs/reference.md)**: Exhaustive technical specification of the Data Model, Classes, and Functions.
 *   **[API Sheet](docs/api_sheet.md)**: A concise thematic map of the canonical API and common workflows.
