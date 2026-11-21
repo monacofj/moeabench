@@ -42,7 +42,8 @@ def test_dtlz8_candidate_covers_line_and_every_patch(m):
     t = f[:, -1]
     line = t >= 1 / 3
     assert np.count_nonzero(line) >= 2
-    np.testing.assert_allclose(f[line, :-1], ((1-t[line])/4)[:, None],
+    expected_line = np.repeat(((1-t[line])/4)[:, None], m-1, axis=1)
+    np.testing.assert_allclose(f[line, :-1], expected_line,
                                rtol=0, atol=2e-15)
     assert np.any(np.isclose(f[line, -1], 1.0, atol=0, rtol=0))
     for j in range(m-1):
