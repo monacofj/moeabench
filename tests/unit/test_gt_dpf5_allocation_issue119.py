@@ -19,8 +19,11 @@ def test_all_allocations_keep_fixed_branchwise_unique_budget(m,d):
         assert item["max_conditional_probe_distance"]>=0
 
 
-def test_allocations_use_actual_incumbent_branch_counts():
+def test_allocations_use_corrected_effective_branch_counts():
     r=summarize(3,2,128,sampler_seeds=(71,),probe_seeds=(201,),probe_count=64)
-    assert r["incumbent_returned_decisions"]==121
-    assert r["allocations"]["incumbent"]=={"P":44,"D":7}
-    assert len(r["records"])==3
+    assert r["incumbent_returned_decisions"] == 128
+    assert r["allocations"]["incumbent"]["P"] > 0
+    assert r["allocations"]["incumbent"]["D"] > 0
+    assert sum(r["allocations"]["incumbent"].values()) == 128
+    assert r["fixed_branchwise_total"] == 128
+    assert len(r["records"]) == 3

@@ -16,11 +16,14 @@ def test_conditional_coverages_are_reproducible_and_not_claimed_certified(m,d):
     assert not a["sampling_measure_selected"]
 
 
-def test_m3_actual_grid_cardinality_and_degenerate_objective_multiplicity():
+def test_m3_corrected_sampler_preserves_effective_cardinality_on_both_branches():
     a=stats(3,2,128,64)
-    assert a["returned_ps"]==121
-    assert a["branch_counts"]["D"]["published_objective_duplicates_exact"]>0
-    assert a["published_objective_unique_exact"]<a["returned_ps"]
+    assert a["returned_ps"] == 128
+    assert a["published_objective_unique_exact"] == 128
+    assert a["current_evaluator_objective_unique_exact"] == 128
+    for key in ("P","D"):
+        assert a["branch_counts"][key]["decision_count"] > 0
+        assert a["branch_counts"][key]["published_objective_duplicates_exact"] == 0
 
 
 def test_branch_specific_probe_distances_are_nonnegative_and_finite():

@@ -15,10 +15,12 @@ def test_fixed_x_and_fixed_population_isolation(m,d):
 
 
 @pytest.mark.parametrize("m,d",[(5,2),(6,3),(6,4)])
-def test_mismatched_published_source_changes_some_objectives(m,d):
+def test_corrected_source_agrees_with_published_model_at_fixed_decisions(m,d):
     row=audit(m,d,48,12,101)
-    assert row["gt_max_component_change"] > 1e-5
-    assert row["population_max_component_change_at_fixed_X"] > 1e-5
+    assert row["gt_max_component_change"] < 5e-13
+    assert row["population_max_component_change_at_fixed_X"] < 5e-13
+    assert abs(row["metric_delta_counterfactual_minus_current"]["igd"]) < 1e-11
+    assert abs(row["metric_delta_counterfactual_minus_current"]["igdplus"]) < 1e-11
 
 
 def test_m3_d2_interior_control_agrees():
