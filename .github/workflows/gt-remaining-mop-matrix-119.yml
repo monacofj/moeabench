@@ -1,0 +1,60 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Remaining MOP Ground Truth audit (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-remaining-mop-matrix-119.yml"
+      - "scripts/audit/gt_remaining_mop_matrix_issue119.py"
+      - "tests/unit/test_gt_remaining_mop_matrix_issue119.py"
+      - "docs/research/gt-issue119/gt-remaining-mop-inventory-issue119.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remaining-mop-gt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install scientific and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Independent remaining-MOP tests
+        run: python -m pytest tests/unit/test_gt_remaining_mop_matrix_issue119.py -q
+      - name: Produce complete MOP audit matrix
+        run: |
+          python -m scripts.audit.gt_remaining_mop_matrix_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --include-intrinsic-three --probe-dtlz8-cap \
+            > gt119-remaining-mops.json
+          python - <<'PY'
+          import json
+          data=json.load(open("gt119-remaining-mops.json"))
+          for x in data["records"]:
+              gap=x["requested"]-x["unique_objective_rows"]
+              flags=[]
+              if gap: flags.append(f"effective_shortfall={gap}")
+              if x["unique_objectives_internally_dominated"]:
+                  flags.append(f"dominated={x['unique_objectives_internally_dominated']}")
+              if x.get("feasibility",{}).get("infeasible_above_1e-12"):
+                  flags.append("infeasible")
+              if x.get("projection_ordering_publication_check_required"):
+                  flags.append("DPF4_publish_check")
+              print("MOP",x["name"],"M",x["M"],"D",x["D"],
+                    "requested",x["requested"],"PS",x["PS_rows"],
+                    "PF",x["PF_rows"],"unique",x["unique_objective_rows"],
+                    "source",x["source"]," ".join(flags))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-remaining-mop-matrix
+          path: gt119-remaining-mops.json
