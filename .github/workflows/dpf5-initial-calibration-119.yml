@@ -37,3 +37,24 @@ jobs:
         run: python scripts/check_numerical_reference_runtime.py
       - name: Emit inaugural DPF5 GT candidate and independent oracle validation
         run: python -m scripts.audit.record_dpf5_initial_calibration_issue119
+
+      - name: Verify pinned inaugural fixture bytes and strict geometry tolerance
+        run: |
+          python - <<'PY'
+          import json
+          import numpy as np
+          from scripts.audit.record_dpf5_initial_calibration_issue119 import produce
+
+          expected = json.load(open("tests/stability_gt_geometry_reference.json"))["problems"]["DPF5"]
+          actual = produce(expected["n_points"])
+          matrix = np.asarray(expected["gt_points"], dtype=np.float64)
+          replay = np.asarray(actual["gt_points"], dtype=np.float64)
+          assert np.array_equal(matrix, replay), "Inaugural reference changed in pinned environment"
+          assert expected["calibration"]["sha256_float64_le_C"] == actual["sha256_float64_le_C"]
+          assert expected["calibration"]["branch_P"] == actual["branch_P"]
+          assert expected["calibration"]["branch_D"] == actual["branch_D"]
+          tolerances = json.load(open("tests/stability_reference_gt.json"))["basic"]["DPF5"]
+          assert tolerances == {"forward_max": 0.0, "backward_max": 0.0}
+          print("DPF5_INITIAL_CALIBRATION_VERIFIED",actual["sha256_float64_le_C"],
+                "n",actual["n_points"],"P",actual["branch_P"],"D",actual["branch_D"])
+          PY
