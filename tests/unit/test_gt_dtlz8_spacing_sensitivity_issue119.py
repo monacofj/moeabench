@@ -15,7 +15,7 @@ def test_igd_plus_direction_and_exact_reference():
     np.testing.assert_allclose(finite_igd_plus(reference, reference), 0.0)
     # Approximations are worse in both objectives: strictly positive IGD+.
     bad = reference + 0.1
-    np.testing.assert_allclose(finite_igd_plus(reference, bad), 0.1)
+    np.testing.assert_allclose(finite_igd_plus(reference, bad), np.sqrt(2) * 0.1)
     # A better approximation cannot increase positive-part IGD+.
     assert finite_igd_plus(reference, reference - 0.05) == 0.0
 
