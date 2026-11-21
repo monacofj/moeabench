@@ -6,6 +6,7 @@ import pytest
 
 from scripts.audit.gt_dtlz8_component_comparison_issue119 import (
     _distance_statistics, compare, independent_probes,
+    m4_preserving_completion,
 )
 
 
@@ -48,3 +49,37 @@ def test_dtlz8_probe_seeds_are_distinct_and_reproducible():
     for component in first:
         np.testing.assert_array_equal(first[component], replay[component])
         assert not np.array_equal(first[component], other[component])
+
+
+def test_dtlz8_m4_completion_preserves_all_incumbent_points():
+    from moeabench.mops.DTLZ8 import DTLZ8
+    from scripts.audit.gt_dtlz8_candidate_issue119 import candidate_objectives
+
+    budget = 128
+    incumbent = DTLZ8(M=4).pf(n_points=budget)
+    lattice = candidate_objectives(4, budget, patch_strategy="lattice")
+    completed = m4_preserving_completion(incumbent, lattice, budget)
+    assert completed.shape == (budget, 4)
+    assert len(np.unique(completed, axis=0)) == budget
+    for point in np.unique(incumbent, axis=0):
+        assert np.any(np.all(completed == point, axis=1))
+
+
+@pytest.mark.parametrize("budget", [128, 512])
+def test_dtlz8_m4_completion_never_worsens_independent_probe_gaps(budget):
+    result = compare(4, budget, probes_per_component=64, offset=11942)
+    assert result["m4_completion_count"] == budget
+    assert result["m4_completion_unique"] == budget
+    for component in result["components"].values():
+        for metric in ("max_euclidean_gap", "mean_euclidean_gap",
+                       "mean_igd_plus_positive_part"):
+            assert component["m4_completion"][metric] <= (
+                component["incumbent"][metric] + 1e-13)
+
+
+def test_dtlz8_m4_completion_rejects_off_front_data():
+    from scripts.audit.gt_dtlz8_candidate_issue119 import candidate_objectives
+    invalid = np.array([[0.2, 0.2, 0.2, 0.5]])
+    lattice = candidate_objectives(4, 32, patch_strategy="lattice")
+    with pytest.raises(ValueError, match="off-Pareto"):
+        m4_preserving_completion(invalid, lattice, 32)
