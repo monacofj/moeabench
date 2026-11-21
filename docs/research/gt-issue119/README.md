@@ -15,6 +15,7 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 
 - `gt-dpf3-global-pareto-proof-issue119.md` — complete published DPF3 PS/PF proof.
 - `gt-dpf5-global-pareto-proof-issue119.md` — complete published DPF5 P/D PS/PF proof.
+- `gt-dpf5-angular-cover-candidate-issue119.md` — complete-grid conditional covering bound for both P/D components.
 - `gt-dpf3-d2-angular-cover-proof-issue119.md` — DPF3 angular coverage at D=2.
 - `gt-dpf3-nd-cover-and-acceptance-issue119.md` — DPF3 general-D covering certificate and precision limits.
 
