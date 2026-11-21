@@ -13,6 +13,7 @@ on:
 permissions:
   contents: read
   actions: read
+  issues: write
 
 jobs:
   performance:
@@ -158,3 +159,36 @@ jobs:
           path: |
             performance-certification.log
             moeabench/resources/certifications/1.0.0/performance-vs-0.18.0.json
+      - name: Record main-source performance verdict on issue 119
+        if: always() && github.event_name == 'issue_comment'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          evidence = Path("moeabench/resources/certifications/1.0.0/performance-vs-0.18.0.json")
+          if evidence.is_file():
+              result = json.loads(evidence.read_text())
+              assert result["candidate_source_revision"] == os.environ["GITHUB_SHA"]
+              status = result["status"]
+              decisions = ", ".join(
+                  f"{case['id']}: {case['decision']} ({case['reason']})"
+                  for case in result["cases"]
+              )
+          else:
+              status = "FAILED_BEFORE_STATISTICAL_VERDICT"
+              decisions = "No valid performance certificate was produced; inspect workflow logs."
+          source=os.environ["GITHUB_SHA"]
+          url=(os.environ["GITHUB_SERVER_URL"] + "/" +
+               os.environ["GITHUB_REPOSITORY"] + "/actions/runs/" +
+               os.environ["GITHUB_RUN_ID"])
+          message=(f"Formal performance certification versus immutable 0.18.0: "
+                   f"**{status}** for final main source SHA \`{source}\`. "
+                   f"Six prespecified tests: {decisions}. "
+                   f"Execution/evidence: {url}. "
+                   f"No baseline was updated and no release tag was created.")
+          Path("performance-issue-summary.md").write_text(message)
+          PY
+          gh issue comment 119 --repo "$GITHUB_REPOSITORY" --body-file performance-issue-summary.md
