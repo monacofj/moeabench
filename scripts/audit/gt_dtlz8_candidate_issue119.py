@@ -26,7 +26,7 @@ def candidate_objectives(m, n_points, *, patch_strategy="halton"):
     The allocation is explicitly a coverage policy (one component
     per region), not a probability measure on the mixed-dimensional PF.
     """
-    if patch_strategy not in ("halton", "lattice"):
+    if patch_strategy not in ("halton", "lattice", "hybrid"):
         raise ValueError("Unknown patch strategy.")
     if m == 2:
         if n_points < 2:
