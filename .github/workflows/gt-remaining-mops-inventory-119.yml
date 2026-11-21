@@ -1,0 +1,195 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Remaining MOP Ground Truth inventory (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-remaining-mops-inventory-119.yml"
+      - "scripts/audit/gt_remaining_mops_issue119.py"
+      - "tests/unit/test_gt_remaining_mops_inventory_issue119.py"
+      - "scripts/audit/gt_dpf4_published_equations_issue119.py"
+      - "tests/unit/test_gt_dpf4_published_oracle_issue119.py"
+      - "scripts/audit/gt_simplex_candidates_issue119.py"
+      - "tests/unit/test_gt_simplex_candidates_issue119.py"
+      - "scripts/audit/gt_disconnected_components_candidate_issue119.py"
+      - "tests/unit/test_gt_disconnected_components_candidate_issue119.py"
+      - "docs/research/gt-issue119/gt-remaining-mops-inventory-issue119.md"
+      - "docs/index.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remaining-mop-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Run new independent inventory controls
+        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py tests/unit/test_gt_dpf4_published_oracle_issue119.py tests/unit/test_gt_simplex_candidates_issue119.py tests/unit/test_gt_disconnected_components_candidate_issue119.py -q
+      - name: Measure incumbent reference geometry across MOP configurations
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --objectives 3 5 --budgets 128 512 --intrinsic 2 3 \
+            --probes 2048 > gt119-remaining-mops-inventory.json
+          python - <<'PY'
+          import json
+          report=json.load(open("gt119-remaining-mops-inventory.json"))
+          for row in report["records"]:
+              extra=""
+              if "simplex_extreme_max_gap" in row:
+                  extra=f" simplex-extreme-gap={row['simplex_extreme_max_gap']:.5f}"
+              if "essential_simplex_extreme_max_gap" in row:
+                  extra=f" essential-extreme-gap={row['essential_simplex_extreme_max_gap']:.5f}"
+              if "constraints" in row:
+                  extra=f" infeasible(strict/tol)={row['constraints']['infeasible_strict_float']}/{row['constraints']['infeasible_above_1e-12']}"
+              if "record_domain" in row:
+                  rec=row["record_domain"]
+                  extra=f" components={rec['sampled_components']}/{rec['possible_components']}"
+              print(row["name"],"M",row["M"],"D",row["D"],
+                    "budget",row["requested"],"PS/PF/unique",
+                    row["PS_rows"],row["PF_rows"],row["PF_float64_exact_unique"],
+                    "dominated",row["PF_unique_internal_dominated"],
+                    "replay",row["repeat_exact"],extra)
+          flagged=[r for r in report["records"] if
+                   (r["PS_rows"]!=r["requested"] or
+                    r["PF_float64_exact_unique"]!=r["requested"] or
+                    r["PF_unique_internal_dominated"]!=0 or
+                    r.get("constraints",{}).get("infeasible_above_1e-12",0)>0)]
+          print("SUMMARY",len(report["records"]),"rows",len(flagged),
+                "diagnostic flags; none by itself proves the GT invalid")
+          PY
+      - name: Inspect DTLZ8 static and dynamic constrained-PS branches
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --names DTLZ8 DTLZ9 --objectives 3 4 5 10 \
+            --budgets 64 128 512 --probes 512 > gt119-constrained-mops-details.json
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          r=json.load(open("gt119-constrained-mops-details.json"))
+          for case in r["records"]:
+              g=case["constraints"]
+              print("CONSTRAINED",case["name"],"M",case["M"],
+                    "requested",case["requested"],
+                    "PS/PF/unique",case["PS_rows"],case["PF_rows"],
+                    case["PF_float64_exact_unique"],
+                    "internal-dominated",case["PF_unique_internal_dominated"],
+                    "infeasible-strict",g["infeasible_strict_float"],
+                    "infeasible-tol",g["infeasible_above_1e-12"],
+                    "max-constraint-residual",g["positive_G_max"])
+          flags=[c for c in r["records"] if
+                 c["PS_rows"]!=c["requested"] or
+                 c["PF_float64_exact_unique"]!=c["requested"] or
+                 c["PF_unique_internal_dominated"]>0 or
+                 c["constraints"]["infeasible_above_1e-12"]>0]
+          print("CONSTRAINED_FLAGS",len(flags),"of",len(r["records"]))
+          PY
+      - name: Compare essential-simplex coverage candidates at fixed budgets
+        run: |
+          python -m scripts.audit.gt_simplex_candidates_issue119 \
+            --budgets 128 512 --probes 2048 \
+            --seeds 11923 11924 11925 > gt119-simplex-candidate-comparison.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-simplex-candidate-comparison.json"))["records"]:
+              p=r["incumbent"]
+              q=r["objective_greedy_candidate"]
+              print("SIMPLEX",r["name"],r["M"],r["D"],"budget",r["n"],"seed",r["sampling_seed"],
+                    "reference-max old/new",round(p["reference_probe_max"],6),
+                    round(q["reference_probe_max"],6),
+                    "NN_CV old/new",round(p["nearest_neighbor_cv"],6),
+                    round(q["nearest_neighbor_cv"],6),
+                    "extreme-gap old/new",round(p["extreme_max_distance"],6),
+                    round(q["extreme_max_distance"],6),
+                    "candidate seconds",round(r["candidate_elapsed_seconds_observed"],4))
+          PY
+      - name: Compare deterministic disconnected component stratification at fixed budgets
+        run: |
+          python -m scripts.audit.gt_disconnected_components_candidate_issue119 \
+            --budgets 128 512 --probes 2048 \
+            --seeds 11930 11931 11932 \
+            > gt119-disconnected-component-candidates.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-disconnected-component-candidates.json"))["records"]:
+              print("STRATIFY",r["name"],"M",r["M"],"D",r["D"],"seed",r["sampling_seed"],
+                    "budget",r["requested"],"components",
+                    r["incumbent_component_count"],"to",
+                    r["candidate_component_count"],"/",r["components_total"],
+                    "probe-max old/new",
+                    round(r["incumbent"]["max_observed"],6),
+                    round(r["candidate"]["max_observed"],6),
+                    "budget sufficient",r["budget_can_touch_all_components"])
+          PY
+      - name: Quantify disconnected component deficits at high objective counts
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --names DTLZ7 DPF2 --objectives 5 10 --intrinsic 2 3 5 9 \
+            --budgets 128 512 --probes 512 \
+            > gt119-disconnected-component-occupancy.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-disconnected-component-occupancy.json"))["records"]:
+              p=r["record_domain"]
+              print("COMPONENTS",r["name"],"M",r["M"],"D",r["D"],
+                    "requested",r["requested"],
+                    "touched",p["sampled_components"],"/",p["possible_components"],
+                    "full_component_presence",p["all_components_touched_by_sample"])
+          PY
+      - name: Check static DTLZ8 reference ceiling against calibration budgets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from moeabench.mops.DTLZ8 import DTLZ8
+          import numpy as np
+
+          for m in (3,5,10):
+              path=Path(f"moeabench/mops/data/DTLZ8_{m}_optimal_x.csv")
+              count=sum(1 for _ in path.open(encoding="utf-8"))
+              mop=DTLZ8(M=m)
+              for n in (2000,10000):
+                  ps=mop.ps(n_points=n)
+                  F=mop.evaluation(ps)["F"]
+                  unique=len(np.unique(F,axis=0))
+                  print("DTLZ8_STATIC",m,"static_rows",count,
+                        "requested",n,"actual",len(ps),"unique",unique,
+                        "static_ceiling",len(ps)<n)
+          PY
+      - name: Compare DPF4 with the independently reconstructed original publication
+        run: |
+          python -m scripts.audit.gt_dpf4_published_equations_issue119 \
+            > gt119-dpf4-published-equations.json
+          python - <<'PY'
+          import json
+          for x in json.load(open("gt119-dpf4-published-equations.json"))["cases"]:
+              print("DPF4_PUBLISHED",x["M"],x["D"],
+                    "eta_ordered",x["raw_eta_strictly_increasing"],
+                    "objective_max_difference",
+                    x["max_objective_difference_to_independent_published"],
+                    "projection_telescope_error",
+                    x["source_projection_telescope_error"],
+                    "tiny_angle",x["small_angle_numerical_probe"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-remaining-mop-inventory
+          path: |
+            gt119-remaining-mops-inventory.json
+            gt119-constrained-mops-details.json
+            gt119-dpf4-published-equations.json
+            gt119-disconnected-component-occupancy.json
+            gt119-simplex-candidate-comparison.json
+            gt119-disconnected-component-candidates.json
+          retention-days: 30
