@@ -55,7 +55,9 @@ class DPF4(BaseDPF):
             
         # Use static chaos pool from BaseDPF
         U = M - D
-        # DPF4's published piecewise projection requires ordered thresholds.\n        # Do not change BaseDPF: DPF1/DPF2 use the same pool differently.\n        chaos = np.sort(self._chaos_pool[:U])
+        # DPF4's published piecewise projection requires ordered thresholds.
+        # Do not change BaseDPF: DPF1/DPF2 use the same pool differently.
+        chaos = np.sort(self._chaos_pool[:U])
         
         redundant = []
         # FD (first redundant): min(Yd, chaos[0])
