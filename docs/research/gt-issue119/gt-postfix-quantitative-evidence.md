@@ -60,16 +60,35 @@ generators. No continuous covering radius is certified.
 
 ## Indicator-reference sensitivity
 
-The third experiment (added later in PR #152) holds synthetic
-**analytically correct** approximation populations fixed and varies
-finite GT budgets. It computes raw Euclidean IGD and positive-part
-IGD+, explicitly without the public indicator's reference
-normalization. It is meant to show reference-resolution sensitivity
-and is **not** a MOEA performance-certification surrogate. Its
-completed execution and findings must be reviewed before claiming
-that this part of issue #119 is finished. GT-dependent HV and
-fixed-stochastic-MOEA-front sensitivity are separate tasks;
-neither is treated as complete here.
+The third experiment holds synthetic **analytically correct**
+approximation populations fixed and varies GT budgets. It computes
+raw Euclidean IGD and positive-part IGD+, without the public
+indicator's reference normalization. All **48 fixed-population
+comparisons** (eight MOPs, M=3/5, three seeds) showed a nonzero
+IGD+ change between n=128 and the current full calibration budget,
+with **36 new research tests passing**. This is a measurable
+reference-resolution effect, not necessarily deterioration or
+an algorithmic regression.
+
+For example, for the *same* synthetic population with M=5,
+seed=11941, raw IGD+ at 128 points versus the full budget was:
+
+| Problem | GT n=128 | GT full |
+|---|---:|---:|
+| DTLZ1 | 0.034999 | 0.033085 |
+| DTLZ2 | 0.210979 | 0.219204 |
+| DTLZ4 | 0.519218 | 0.482486 |
+| DTLZ7 | 0.128167 | 0.127164 |
+| DTLZ9 | 0.007244 | 0.006793 |
+| DPF2 | 0.045382 | 0.042228 |
+
+The direction can change with the benchmark: comparing
+indicator scores across versions requires *the same explicitly
+identified GT*. The probe experiment is **not** a stochastic MOEA
+performance-certification surrogate and does not demonstrate
+MOEA rank inversions. GT-dependent HV and fixed-stochastic-MOEA-
+front sensitivity remain separate tasks; neither is considered
+complete here.
 
 ## Reproduction
 
