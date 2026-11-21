@@ -89,3 +89,13 @@ def test_dtlz8_candidate_includes_patch_extremes_and_shared_seam(m):
     seam[-1] = 0
     assert np.count_nonzero(np.all(np.isclose(f, seam, rtol=0, atol=1e-15),
                                    axis=1)) == 1
+
+
+@pytest.mark.parametrize("m", [2, 3, 4, 10])
+def test_dtlz8_candidate_no_sample_relative_dominance(m):
+    f = candidate_objectives(m, 128)
+    for i, point in enumerate(f):
+        weakly_better = np.all(f <= point + 1e-13, axis=1)
+        strictly_better = np.any(f < point - 1e-13, axis=1)
+        assert not np.any(weakly_better & strictly_better), (
+            m, i, "Candidate contains a sample-dominated objective vector")
