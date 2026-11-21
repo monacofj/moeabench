@@ -12,6 +12,8 @@ on:
       - "tests/unit/test_gt_dpf4_published_oracle_issue119.py"
       - "scripts/audit/gt_simplex_candidates_issue119.py"
       - "tests/unit/test_gt_simplex_candidates_issue119.py"
+      - "scripts/audit/gt_disconnected_components_candidate_issue119.py"
+      - "tests/unit/test_gt_disconnected_components_candidate_issue119.py"
       - "docs/research/gt-issue119/gt-remaining-mops-inventory-issue119.md"
       - "docs/index.md"
   workflow_dispatch:
@@ -35,7 +37,7 @@ jobs:
       - name: Install MoeaBench and test dependencies
         run: python -m pip install -e . pytest
       - name: Run new independent inventory controls
-        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py tests/unit/test_gt_dpf4_published_oracle_issue119.py tests/unit/test_gt_simplex_candidates_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py tests/unit/test_gt_dpf4_published_oracle_issue119.py tests/unit/test_gt_simplex_candidates_issue119.py tests/unit/test_gt_disconnected_components_candidate_issue119.py -q
       - name: Measure incumbent reference geometry across MOP configurations
         run: |
           python -m scripts.audit.gt_remaining_mops_issue119 \
@@ -112,6 +114,23 @@ jobs:
                     round(q["extreme_max_distance"],6),
                     "candidate seconds",round(r["candidate_elapsed_seconds_observed"],4))
           PY
+      - name: Compare deterministic disconnected component stratification at fixed budgets
+        run: |
+          python -m scripts.audit.gt_disconnected_components_candidate_issue119 \
+            --budgets 128 512 --probes 2048 \
+            > gt119-disconnected-component-candidates.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-disconnected-component-candidates.json"))["records"]:
+              print("STRATIFY",r["name"],"M",r["M"],"D",r["D"],
+                    "budget",r["requested"],"components",
+                    r["incumbent_component_count"],"to",
+                    r["candidate_component_count"],"/",r["components_total"],
+                    "probe-max old/new",
+                    round(r["incumbent"]["max_observed"],6),
+                    round(r["candidate"]["max_observed"],6),
+                    "budget sufficient",r["budget_can_touch_all_components"])
+          PY
       - name: Quantify disconnected component deficits at high objective counts
         run: |
           python -m scripts.audit.gt_remaining_mops_issue119 \
@@ -170,4 +189,5 @@ jobs:
             gt119-dpf4-published-equations.json
             gt119-disconnected-component-occupancy.json
             gt119-simplex-candidate-comparison.json
+            gt119-disconnected-component-candidates.json
           retention-days: 30
