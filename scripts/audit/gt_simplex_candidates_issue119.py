@@ -124,7 +124,7 @@ def compare(name,m,d,n,seed=11923,probes=2048):
     proposed_time=time.perf_counter()-start
     return {
         "name":name,"M":m,"D":d if name=="DPF1" else None,
-        "n":n,"independent_reference_seed":seed+101,"probe_count":probes,
+        "n":n,"sampling_seed":seed,"independent_reference_seed":seed+101,"probe_count":probes,
         "incumbent":metrics(mop,incumbent,ref,axis),
         "objective_greedy_candidate":metrics(mop,proposed,ref,axis),
         "candidate_source_vs_analytic_max_abs":error,
@@ -139,14 +139,16 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--budgets",type=int,nargs="+",default=[128,512])
     ap.add_argument("--probes",type=int,default=2048)
+    ap.add_argument("--seeds",type=int,nargs="+",default=[11923])
     opts=ap.parse_args()
     config=[
         ("DTLZ1",3,None),("DTLZ1",5,None),("DTLZ1",10,None),
         ("DPF1",3,2),("DPF1",5,2),("DPF1",5,3),
         ("DPF1",10,3),("DPF1",10,5),
     ]
-    records=[compare(name,m,d,n,probes=opts.probes)
-             for name,m,d in config for n in opts.budgets]
+    records=[compare(name,m,d,n,seed=seed,probes=opts.probes)
+             for name,m,d in config for n in opts.budgets
+             for seed in opts.seeds]
     print(json.dumps({
         "schema":"gt119_simplex_candidate_v1",
         "purpose":"fixed-budget independent coverage experiment, not a GT migration",
