@@ -92,6 +92,21 @@ jobs:
                  c["constraints"]["infeasible_above_1e-12"]>0]
           print("CONSTRAINED_FLAGS",len(flags),"of",len(r["records"]))
           PY
+      - name: Quantify disconnected component deficits at high objective counts
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --names DTLZ7 DPF2 --objectives 5 10 --intrinsic 2 3 5 9 \
+            --budgets 128 512 --probes 512 \
+            > gt119-disconnected-component-occupancy.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-disconnected-component-occupancy.json"))["records"]:
+              p=r["record_domain"]
+              print("COMPONENTS",r["name"],"M",r["M"],"D",r["D"],
+                    "requested",r["requested"],
+                    "touched",p["sampled_components"],"/",p["possible_components"],
+                    "full_component_presence",p["all_components_touched_by_sample"])
+          PY
       - name: Check static DTLZ8 reference ceiling against calibration budgets
         run: |
           python - <<'PY'
@@ -133,4 +148,5 @@ jobs:
             gt119-remaining-mops-inventory.json
             gt119-constrained-mops-details.json
             gt119-dpf4-published-equations.json
+            gt119-disconnected-component-occupancy.json
           retention-days: 30
