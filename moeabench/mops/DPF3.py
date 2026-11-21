@@ -76,19 +76,83 @@ class DPF3(BaseDPF):
     def get_K(self):
         return self.K
 
-    def pf(self, n_points: int = 100):
-        """Legacy finite PS sampling/filtering retained for separate migration.
+    def ps(self, n_points: int = 100):
+        """Generate the published g=0 Pareto set in *angular* coordinates.
 
-        Correcting the published evaluator does not itself certify the
-        existing finite-reference algorithm. The historical method is
-        preserved temporarily in this draft until its MOP-specific angular
-        sampler and any affected regression contracts are reviewed.
+        A maximal k^(D-1) endpoint-inclusive tensor grid fitting the
+        requested budget is retained first. Its mathematical covering
+        bound is sqrt(D-1)*pi/[4*(k-1)] for k >= 2 (real arithmetic).
+        Degenerate boundary images are deduplicated in objective space and
+        replaced with deterministic scrambled Sobol interior points.
+        The returned PS thus has n_points *distinct float64 objectives*
+        under the current published evaluator; a rigorous float64 error
+        enclosure is a separate certification requirement.
+
+        This DPF3-specific policy avoids decision-uniform x**100 bias and
+        does not prescribe sampling for other MOPs.
         """
-        F = super().pf(n_points)
-        try:
-            from pymoo.util.nds.non_dominated_sorting import NonDominatedSorting
+        from itertools import product
+        from scipy.stats import qmc
 
-            fronts = NonDominatedSorting().do(F)
-            return F[fronts[0]]
-        except ImportError:
-            return F
+        if not isinstance(n_points, (int, np.integer)) or n_points < 1:
+            raise ValueError("n_points must be a positive integer")
+
+        q = self.D - 1
+        n = int(n_points)
+        k = max(1, int(n ** (1 / q)))
+        while (k + 1) ** q <= n:
+            k += 1
+        while k ** q > n:
+            k -= 1
+
+        # Tensor grid in ANGLES, not in decision-space x. Every exact
+        # tensor-grid objective lies on the published global Pareto front.
+        initial = np.asarray(list(product(np.linspace(0.0, 1.0, k), repeat=q)),
+                             dtype=float).reshape(-1, q)
+
+        chosen = []
+        seen = set()
+
+        def append_unique(normalized_angles):
+            if len(chosen) >= n or len(normalized_angles) == 0:
+                return
+            decision = np.full((len(normalized_angles), self.N), 0.5)
+            # x=(2*theta/pi)**(1/100); theta normalized by pi/2.
+            decision[:, :q] = np.power(normalized_angles, 1.0 / 100.0)
+            values = self.evaluation(decision)["F"]
+            for row, obj in zip(decision, values):
+                signature = tuple(float(v) for v in obj)
+                if signature not in seen:
+                    seen.add(signature)
+                    chosen.append(row)
+                    if len(chosen) == n:
+                        break
+
+        append_unique(initial)
+        if len(chosen) < n:
+            engine = qmc.Sobol(d=q, scramble=True, seed=11903)
+            # Interior samples replenish numerical/analytical duplicates
+            # without removing the support of the proven tensor grid.
+            attempts = 0
+            while len(chosen) < n and attempts < 5:
+                needed = n - len(chosen)
+                power = int(np.ceil(np.log2(max(2, needed * 2))))
+                # Each attempt uses a fresh independent deterministic
+                # subsequence. No global RNG state is affected.
+                engine = qmc.Sobol(d=q, scramble=True, seed=11903 + attempts)
+                append_unique(engine.random_base2(power))
+                attempts += 1
+            if len(chosen) != n:
+                raise ValueError("Could not produce n_points distinct DPF3 objectives")
+
+        return np.asarray(chosen, dtype=float)
+
+    def pf(self, n_points: int = 100):
+        """Evaluate the globally Pareto-optimal DPF3 angular PS sample.
+
+        Nondominated sorting is unnecessary: mathematical membership was
+        proved for every g=0 decision with correctly sorted thresholds.
+        Sorting a finite sample cannot establish global membership and
+        can silently shrink its requested cardinality.
+        """
+        return super().pf(n_points)
