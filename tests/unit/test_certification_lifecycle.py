@@ -58,7 +58,10 @@ def test_baseline_artifact_is_single_write_and_requires_external_approval(
         monkeypatch, tmp_path):
     # A fake measurement engine allows exercising the artifact contract without
     # launching the real 384-run study in routine CI.
-    # The inaugural historical baseline is strictly tied to 0.18.0,\n    # even when this regression runs in the later 1.0.0 candidate.\n    monkeypatch.setattr("moeabench.system.version", lambda show=False: "0.18.0")\n    monkeypatch.setattr(cert, "_reference_runtime", lambda: {"moeabench": "0.18.0"})
+    # The inaugural historical baseline is strictly tied to 0.18.0,
+    # even when this regression runs in the later 1.0.0 candidate.
+    monkeypatch.setattr("moeabench.system.version", lambda show=False: "0.18.0")
+    monkeypatch.setattr(cert, "_reference_runtime", lambda: {"moeabench": "0.18.0"})
     monkeypatch.setattr(cert, "_revision", lambda: "0d3e66804351e23b93fb483ff25e178e06ef6e12")
     monkeypatch.setattr(cert, "_measure", lambda case, seed, front: {
         "seed": seed, "front_size": 24, "igdplus": 0.5,
