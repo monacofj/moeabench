@@ -11,6 +11,8 @@ on:
       - "tests/unit/test_dpf3_dpf5_published_equations_issue119.py"
       - "tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py"
       - "tests/unit/test_dpf5_componentwise_cover_issue119.py"
+      - "scripts/audit/gt_dpf5_corrected_cover_issue119.py"
+      - "tests/unit/test_gt_dpf5_corrected_cover_issue119.py"
       - "docs/adr/0057-proposed-purpose-specific-gt-budgets.md"
   workflow_dispatch:
 
@@ -33,7 +35,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Independent published-equation and geometry-specific sampler tests
         run: |
-          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py -q
+          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py tests/unit/test_gt_dpf5_corrected_cover_issue119.py -q
       - name: Summarize corrected finite reference cardinality
         run: |
           python - <<'PY'
@@ -58,6 +60,24 @@ jobs:
                             f" returned={len(ps)} unique={unique}{branches}")
           PY
 
+      - name: Audit independent DPF5 published equations and real-arithmetic branch covers
+        run: |
+          python -m scripts.audit.gt_dpf5_corrected_cover_issue119 > gt119-dpf5-corrected-cover.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-corrected-cover.json"))["cases"]:
+              print("COVER",r["M"],r["D"],r["requested"],
+                    "P",r["branches"]["P"]["objective_count"],
+                    "D",r["branches"]["D"]["objective_count"],
+                    "k_P",r["branches"]["P"]["largest_completed_tensor_grid_k"],
+                    "k_D",r["branches"]["D"]["largest_completed_tensor_grid_k"],
+                    "real_bound",r["conditional_exact_real_cover_bound"],
+                    "published_eq_delta",r["max_production_vs_independent_published"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-corrected-dpf5-cover
+          path: gt119-dpf5-corrected-cover.json
       - name: Measure reference generation cost at historical DPF calibration budget
         run: |
           python - <<'PY'
