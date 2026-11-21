@@ -239,8 +239,15 @@ class DPF5(BaseDPF):
             return self.evaluation(angular_decisions(unit, label))["F"]
 
         probesP, probesD = branch_probes("P"), branch_probes("D")
-        possible = sorted(set(int(z) for z in
-                              np.linspace(minP, maxP, min(17, maxP-minP+1))))
+        # Include every grid-level completion threshold. These exact
+        # integer splits matter because a certified covering bound
+        # improves only after a *whole* angular grid is represented.
+        possible = set(int(z) for z in
+                       np.linspace(minP, maxP, min(17, maxP-minP+1)))
+        possible.update(size for size, _ in p_grids if minP <= size <= maxP)
+        possible.update(n-size for size, _ in d_grids
+                        if minP <= n-size <= maxP)
+        possible = sorted(possible)
         def certified_real_bound(label, prefix, completed):
             # Each completed k-grid is a full ideal published-model cover,
             # including all its mathematically unique boundary images.
