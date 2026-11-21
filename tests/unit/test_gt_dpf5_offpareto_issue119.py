@@ -22,8 +22,8 @@ def test_offpareto_beta_matches_published_d2_equations_for_small_m(m):
 
 
 @pytest.mark.parametrize("m",[5,6,10])
-def test_offpareto_beta_disagrees_for_higher_m(m):
+def test_offpareto_beta_matches_published_equations_for_higher_m(m):
     r=audit(m,64)
-    assert r["P"]["max_abs_objective_difference"] > 1e-5
-    assert r["P"]["actual_scaled_norm2_residual"] > 1e-5
+    assert r["P"]["max_abs_objective_difference"] < 1e-10
+    assert r["P"]["actual_scaled_norm2_residual"] < 1e-10
     assert r["P"]["reference_scaled_norm2_residual"] < 1e-10

@@ -7,12 +7,17 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Status
 
-**Accepted in principle — 2026-11-19; operational budget contract pending.**
+**Accepted in principle — 2026-11-19; targeted DPF3/DPF5 equation and
+sampler corrections authorized by 2026-11-20 addendum below; automatic
+calibration budget and historical-reference migration still pending.**
 The maintainer approved on-demand MOP-specific GT generation, the separation
 between `pf()` and `calibrate()`, and automatic budget selection for
-`calibrate()` when `n_points` is omitted. The numerical budget policy,
-quality bounds, migration details and any code changes **are not yet
-approved**. Tracked in [#119](https://github.com/monacofj/moeabench/issues/119)
+`calibrate()` when `n_points` is omitted. The original decision did not
+authorize implementation; the dated addendum below now authorizes **only**
+the listed DPF3/DPF5 equation and sampler work. The general numerical budget
+policy, universal quality tolerance, automatic calibration defaults,
+historical baseline replacements and preexisting regression-test edits remain
+**unapproved**. Tracked in [#119](https://github.com/monacofj/moeabench/issues/119)
 under umbrella [#122](https://github.com/monacofj/moeabench/issues/122).
 
 **Scope of ADR 0018 supersession:** its fixed 2,000-DTLZ / 10,000-DPF
@@ -127,7 +132,87 @@ baseline, certification or API changes.
 
 ## Implementation
 
-**None to the runtime yet.** This ADR records accepted architecture
-principles, not an implemented sampling change. No modifications to
-sampling defaults, calibrated GT storage, visualization, existing
-regression tests or certification references are authorized here.
+**Originally none to the runtime.** This section records the initial
+2026-11-19 accepted direction. The **2026-11-20 authorization addendum
+below** now permits narrowly scoped DPF3/DPF5 corrections in Draft PR
+#140, without authorizing a new `calibrate()` default, persisted GT
+replacement, existing regression modification or certification rewrite.
+
+
+## Implementation Authorization Addendum — 2026-11-20 (issue #119, PR #140)
+
+The maintainer has now **explicitly authorized work on the DPF3/DPF5
+corrections and updating ADRs to reflect the decisions made in this
+conversation**. This dated addendum records that decision without
+retroactively rewriting the original status or the unapproved numerical
+calibration policy.
+
+**Authorized implementation work in Draft PR #140:**
+
+- Correct the DPF3 evaluator to the published **increasingly sorted**
+  projection thresholds, using numerically stable essential-objective
+  calculations. Sorting is **DPF3-specific**; it must not silently change
+  the chaotic sequence used by DPF1/DPF2/DPF4.
+- Correct the DPF5 published P and D spherical evaluation equations for
+  supported dimensions, including the strict P condition `x1 < 1/3`
+  and D ownership of `x1 = 1/3`.
+- Implement **separate, geometry-aware PS/PF finite sampling for each
+  MOP**. Shared kernels, random sequence engines, storage and validation
+  infrastructure are permitted only where their scientific applicability
+  is demonstrated. Neither a universal MOP sampler nor a fixed
+  mixed-dimensional P/D probability law is adopted.
+- Preserve the explicit `n_points` argument as a **requested sample
+  budget**, transparently reporting and testing returned/effective
+  cardinalities. Verify Pareto membership, component/extreme coverage,
+  deterministic behavior and numerical quality independently.
+- Add new independent tests and auditable numerical comparisons. Keep
+  objective-evaluator changes and finite GT/reference migration
+  separately attributable.
+
+**Not authorized by this addendum:**
+
+- A replacement for the historical automatic `calibrate()` default
+  budgets (the existing 2,000/10,000 runtime rules remain in effect),
+  a particular target epsilon, a universal P/D allocation law or
+  a new unattended persistence/cache contract.
+- Replacing any frozen GT, performance reference, certificate or
+  baseline merely to accommodate changed outputs. ADR 0056's
+  versioned-reference lifecycle remains binding.
+- Editing an **existing** regression test or fixture without advance
+  warning and a further explicit maintainer approval. An old reference
+  mismatch is a migration decision, not a test failure to suppress.
+
+**Scientific evidence and staged implementation:** the proofs and
+negative experiments are documented in
+[docs/gt.md](../gt.md) and
+[research/gt-issue119/](../research/gt-issue119/README.md).
+Draft PR #140 may implement and validate the above corrections, but it
+must not be merged with failing historical stability gates or promote
+a sampler to a fully certified GT merely on the basis of finite-probe
+statistics. A separately accepted, versioned migration resolves any
+incompatibility with the historical DPF5 numerical baseline.
+
+The original "implementation pending" wording above records the
+decision's status *before this addendum*. The explicit authorization
+here is limited to the described DPF3/DPF5 corrections; automatic
+calibration budgeting remains pending.
+
+## Inaugural DPF5 reference and test migration authorization — 2026-11-20
+
+Following the explicit maintainer request to finish PR #140, it is now
+authorized to **update the fifteen pre-existing DPF3/DPF5 tests that
+assert defects in the old implementation**, replacing them with
+independent positive scientific assertions. In the same authorized
+correction, the provisional DPF5 numerical stability geometry fixture
+may be recalibrated as the **first valid corrected DPF5 GT**; there is
+no requirement to maintain that previous defective fixture as an
+earlier scientific calibration version. Previous bytes remain accessible
+through ordinary Git history.
+
+This is a **limited exception** to the test/fixture restrictions in the
+2026-11-20 authorization addendum above, and is recorded together with
+the corresponding dated clarification of [ADR 0056](0056-versioned-certification-and-performance-reference-lifecycle.md).
+It does **not** authorize editing unrelated baselines, weakening checks,
+changing automatic `calibrate()` defaults, or bypassing scientific
+calibration evidence. Upon adoption, the new inaugural numerical reference
+becomes frozen under ADR 0056 as usual.

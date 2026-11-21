@@ -1,0 +1,127 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DPF3/DPF5 published GT corrections (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/dpf-gt-corrections-119.yml"
+      - "moeabench/mops/DPF3.py"
+      - "moeabench/mops/DPF5.py"
+      - "tests/unit/test_dpf3_dpf5_published_equations_issue119.py"
+      - "tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py"
+      - "tests/unit/test_dpf5_componentwise_cover_issue119.py"
+      - "scripts/audit/gt_dpf5_corrected_cover_issue119.py"
+      - "tests/unit/test_gt_dpf5_corrected_cover_issue119.py"
+      - "tests/unit/test_dpf_gt_calibration_integration_issue119.py"
+      - "docs/adr/0057-proposed-purpose-specific-gt-budgets.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install base scientific and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Independent published-equation and geometry-specific sampler tests
+        run: |
+          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py tests/unit/test_gt_dpf5_corrected_cover_issue119.py tests/unit/test_dpf_gt_calibration_integration_issue119.py -q
+      - name: Prepare canonical integration example archives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import moeabench as mb
+
+          for algorithm, filename in (
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ):
+              path = Path("examples") / filename
+              if path.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(path))
+          PY
+      - name: Run full integration scope with corrected MOPs
+        run: python test.py --integration --basic
+      - name: Summarize corrected finite reference cardinality
+        run: |
+          python - <<'PY'
+          import numpy as np
+          from moeabench.mops.DPF3 import DPF3
+          from moeabench.mops.DPF5 import DPF5
+
+          for cls, params in ((DPF3, [(3,2),(5,3),(6,4)]),
+                              (DPF5, [(3,2),(5,2),(6,3),(6,4)])):
+              for m, d in params:
+                  mop=cls(M=m, D=d)
+                  for n in (128,512):
+                      ps=mop.ps(n_points=n)
+                      f=mop.evaluation(ps)["F"]
+                      unique=len(np.unique(f, axis=0))
+                      if len(ps) != n or unique != n:
+                          raise AssertionError(f"{cls.__name__} M={m} D={d}: {len(ps)}/{unique} != {n}")
+                      branches = "" if cls is DPF3 else (
+                          f" P={int(np.sum(ps[:,0] < 1/3))}"
+                          f" D={int(np.sum(ps[:,0] >= 1/3))}")
+                      print(f"GT {cls.__name__} M={m} D={d} requested={n}"
+                            f" returned={len(ps)} unique={unique}{branches}")
+          PY
+
+      - name: Audit independent DPF5 published equations and real-arithmetic branch covers
+        run: |
+          python -m scripts.audit.gt_dpf5_corrected_cover_issue119 > gt119-dpf5-corrected-cover.json
+          python - <<'PY'
+          import json
+          for r in json.load(open("gt119-dpf5-corrected-cover.json"))["cases"]:
+              print("COVER",r["M"],r["D"],r["requested"],
+                    "P",r["branches"]["P"]["objective_count"],
+                    "D",r["branches"]["D"]["objective_count"],
+                    "k_P",r["branches"]["P"]["largest_completed_tensor_grid_k"],
+                    "k_D",r["branches"]["D"]["largest_completed_tensor_grid_k"],
+                    "real_bound",r["conditional_exact_real_cover_bound"],
+                    "published_eq_delta",r["max_production_vs_independent_published"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-corrected-dpf5-cover
+          path: gt119-dpf5-corrected-cover.json
+      - name: Measure reference generation cost at historical DPF calibration budget
+        run: |
+          python - <<'PY'
+          import time
+          import numpy as np
+          from moeabench.mops.DPF3 import DPF3
+          from moeabench.mops.DPF5 import DPF5
+          for cls, m, d, n in (
+              (DPF3, 5, 3, 2000),
+              (DPF5, 5, 2, 2000),
+              (DPF5, 6, 4, 2000),
+              (DPF5, 5, 2, 10000),
+          ):
+              mop=cls(M=m, D=d)
+              start=time.perf_counter()
+              ps=mop.ps(n_points=n)
+              F=mop.evaluation(ps)["F"]
+              duration=time.perf_counter()-start
+              unique=len(np.unique(F,axis=0))
+              print("COST",cls.__name__,m,d,n,"actual",len(ps),
+                    "unique",unique,"elapsed_seconds",round(duration,4))
+              if unique != n:
+                  raise AssertionError("Incorrect effective objective budget")
+          PY

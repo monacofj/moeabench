@@ -510,6 +510,36 @@ At \(M=3,D=2\), the incumbent's **unique-objective** allocation already put appr
 
 This establishes **geometry- and budget-sensitive empirical behavior**, not a universally optimal ratio or a certified worst-case distance on the full continuous PF. It is not a statistically exhaustive comparison of all sampling methods.
 
+### 8.5. An analytic conditional covering bound for DPF5 tensor samples
+
+The two DPF5 components also admit **mathematically certified finite covering constructions**, provided each component contains a **complete angular tensor grid**. This follows from the same hyperspherical 1-Lipschitz argument used for DPF3, applied independently to P and D. The replicated-coordinate mapping defining D is a Euclidean isometry: duplicating its first essential coordinate after division by \(\sqrt{M-D+1}\) preserves Euclidean distances.
+
+For P, use \(k_P\ge2\) angular positions per independent coordinate, with first decision coordinate ranging from \(0\) to the closest representable number **strictly below** \(1/3\). Write \(\delta_P=(\pi/2)(1/3-\operatorname{nextafter}(1/3,0))\). The ideal continuous directed-covering bound is
+
+\[
+\varepsilon_P(k_P)
+\le \frac{\pi}{4(k_P-1)}\sqrt{\frac19+(M-2)}+\delta_P.
+\]
+
+For D, use \(k_D\ge2\) angles along each essential coordinate; the first parameter belongs to \([1/3,1]\) and the others to \([0,1]\):
+
+\[
+\varepsilon_D(k_D)
+\le \frac{\pi}{4(k_D-1)}\sqrt{\frac49+(D-2)}.
+\]
+
+If a finite sample retains a complete grid in **both** branches, then every point on the published two-component PF is within
+
+\[
+\boxed{d_H(PF,GT)\le\max\{\varepsilon_P(k_P),\varepsilon_D(k_D)\}}
+\]
+
+of a sample point in unnormalized Euclidean objective space, under **exact mathematical arithmetic**. In particular, the proof needs **no** probability measure combining manifolds of different intrinsic dimensions. For DPF5, a complete grid requires nominal budgets \(k_P^{M-1}\) and \(k_D^{D-1}\), respectively, so the cost can grow rapidly in high dimensions. Spherical singularities can produce duplicate objective images without invalidating the geometric support of a full grid.
+
+The proposed MOP-specific finite sampler in the DPF3/DPF5 correction work retains nested angular grids whenever its available branch budget permits them, fills objective duplicates with deterministic interior samples, and uses a **conditional** criterion to choose the total P/D allocation. **A returned sample receives this analytic support guarantee only when it contains a complete grid in each component.** Small budgets, high-dimensional cases without complete grids, and fully certified float64 rounding are separately qualified. A finite-probe statistic must never be confused with the real-arithmetic continuous-covering bound.
+
+The [full DPF5 angular covering proof and implementation conditions](research/gt-issue119/gt-dpf5-angular-cover-candidate-issue119.md) explain the assumptions, branch boundary, conditional guarantee and remaining numerical distinctions.
+
 ## 9. Consequences for IGD, IGD+, and Hypervolume
 
 The research isolated two effects that must not be confused.
@@ -550,6 +580,8 @@ Therefore, a GT produced by an evaluator that diverges from the paper **must not
 
 Historical preservation requires **identifying the old reference with its original mathematical definition and source version**. A scientifically corrected successor should be a **new versioned, verified artifact**. Never overwrite historical evidence merely to make the test suite pass.
 
+**An important inaugural-calibration distinction:** provisional numerical fixtures that were generated from a mathematically incorrect evaluator are not necessarily previously accepted *scientific* GT calibrations. With explicit maintainer approval and independent proof-based verification, such a fixture can be replaced by the **first accepted scientific calibration** of the corrected MOP, without pretending the defective provisional values constitute a preceding validated scientific version. Ordinary Git history remains available for technical audit. Once this first calibration is accepted, the usual frozen-reference safeguards apply. This narrowly scoped case is documented in [ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md) and [ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md).
+
 ### 10.2. Correcting objective evaluation and changing GT are separate interventions
 
 Correcting **\`evaluation()\`** changes the evaluated mathematical problem and can alter solver trajectories and final outcomes. Replacing **GT** changes the reference used by indicators and can alter results even if every solver-produced objective value is frozen. These interventions therefore need independent comparisons and provenance.
@@ -589,7 +621,7 @@ DPF3/DPF5 provide a useful hierarchy of scientific evidence:
 
 For **published DPF3**, global PF membership/completeness and an **exact-real-arithmetic angular grid coverage bound** have been demonstrated. High-precision numerical experiments measured errors of order \(10^{-14}\) in selected configurations, but they are **not** a general IEEE floating-point certificate. Tensor cost grows as \(k^{D-1}\), so this particular method may require prohibitive resources for large \(D\).
 
-For **published DPF5**, global PF membership and completeness of **both components** have been proved. Finite-sample diagnostics and allocation alternatives are **empirical** and geometry dependent. The mathematical definition alone does not prescribe a universal sample ratio between components of different intrinsic dimensions.
+For **published DPF5**, global PF membership and completeness of **both components** have been proved. A complete angular tensor grid on **each** component now also provides a conditional **exact-real-arithmetic continuous Hausdorff covering bound**; this is distinct from empirical diagnostics of non-grid samples and from a deployed float64 error certificate. The mathematical definition alone does not prescribe a universal sample ratio between components of different intrinsic dimensions.
 
 These distinctions delimit what can be claimed scientifically without elevating tentative hypotheses or finite-probe measurements to universal guarantees.
 
@@ -618,7 +650,7 @@ None of these requirements forces different MOPs to use one generator. On the co
 
 **Implementation and precision checks:** [initial sample-cardinality and sample-dominance audit](research/gt-issue119/gt-dpf3-dpf5-audit-issue119.md); [published-formula triage](research/gt-issue119/gt-dpf-published-formula-triage-issue119.md); [general-D formula reconstruction](research/gt-issue119/gt-dpf-general-d-evidence-issue119.md); [numerical kernels and spherical invariants](research/gt-issue119/gt-dpf-numeric-kernel-evidence-issue119.md); [high-precision sweep](research/gt-issue119/gt-dpf-high-precision-sweep-issue119.md); [off-front evaluation and optional dependency isolation](research/gt-issue119/gt-dpf5-offpareto-issue119.md).
 
-**Finite sampling and indicator impact:** [DPF5 branch-conditional coverage](research/gt-issue119/gt-dpf5-finite-sampler-coverage-issue119.md); [fixed-budget Sobol comparison](research/gt-issue119/gt-dpf5-branch-sobol-comparison-issue119.md); [P/D allocation study](research/gt-issue119/gt-dpf5-branch-allocation-issue119.md); [IGD, IGD+, and HV impact](research/gt-issue119/gt-dpf5-paired-indicator-impact-issue119.md).
+**Finite sampling and indicator impact:** [DPF5 analytical angular covering](research/gt-issue119/gt-dpf5-angular-cover-candidate-issue119.md); [DPF5 branch-conditional coverage](research/gt-issue119/gt-dpf5-finite-sampler-coverage-issue119.md); [fixed-budget Sobol comparison](research/gt-issue119/gt-dpf5-branch-sobol-comparison-issue119.md); [P/D allocation study](research/gt-issue119/gt-dpf5-branch-allocation-issue119.md); [IGD, IGD+, and HV impact](research/gt-issue119/gt-dpf5-paired-indicator-impact-issue119.md).
 
 **Change governance and historical research artifacts:** [production impact inventory](research/gt-issue119/gt-dpf-production-impact-inventory-issue119.md), [versioned correction/migration proposal](research/gt-issue119/gt-dpf-correction-migration-proposal-issue119.md), and [research PR pre-merge audit](research/gt-issue119/gt-dpf-premerge-review-issue119.md). These specialized documents contain experiments, historical hypotheses, negative results, and migration decisions. The present reference explains the enduring principles and consolidated findings without requiring readers to follow the investigation chronologically.
 

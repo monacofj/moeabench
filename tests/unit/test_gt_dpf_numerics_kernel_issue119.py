@@ -9,9 +9,17 @@ from scripts.audit.gt_dpf_numerics_kernel_issue119 import (
 )
 
 
-def test_dpf3_stable_trig_reveals_cancellation_without_changing_source():
+def test_dpf3_corrected_source_preserves_small_positive_complement():
+    from moeabench.mops.DPF3 import DPF3
+    mop = DPF3(M=3,D=2)
+    x = np.full((1,mop.N),0.5)
+    x[0,0] = 0.7
+    theta=(np.pi/2)*(0.7**100)
+    assert 1 - np.cos(theta) == 0
+    expected=2*np.sin(theta/2)**2
+    assert expected>0
+    np.testing.assert_allclose(mop.evaluation(x)["F"][0,0],expected,rtol=1e-12,atol=0)
     row=dpf3_precision(128,3)
-    assert row["direct_zero_but_stable_positive"] > 0
     assert row["stable_zero_count"] <= row["direct_zero_count"]
     assert row["raw_nondominated"] <= 128
 
@@ -32,10 +40,10 @@ def test_dpf5_m3_agrees_away_from_boundary():
     assert row["branch_D"]["actual_vs_canonical_max_abs_component"] < 1e-12
 
 
-def test_dpf5_m5_beta_formula_diverges_from_published_sphere():
+def test_dpf5_m5_beta_formula_matches_published_sphere():
     row=dpf5_kernel(128,5)
-    assert row["branch_P"]["actual_vs_canonical_max_abs_component"] > 1e-6
-    assert row["branch_P"]["actual_max_unit_sphere_residual"] > 1e-6
+    assert row["branch_P"]["actual_vs_canonical_max_abs_component"] < 1e-12
+    assert row["branch_P"]["actual_max_unit_sphere_residual"] < 1e-12
     assert row["branch_P"]["canonical_max_unit_sphere_residual"] < 1e-10
     assert row["branch_D"]["actual_vs_canonical_max_abs_component"] < 1e-12
     assert not row["global_pareto_completeness_certified"]

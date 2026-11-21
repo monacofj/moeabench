@@ -15,6 +15,7 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 
 - `gt-dpf3-global-pareto-proof-issue119.md` — complete published DPF3 PS/PF proof.
 - `gt-dpf5-global-pareto-proof-issue119.md` — complete published DPF5 P/D PS/PF proof.
+- `gt-dpf5-angular-cover-candidate-issue119.md` — complete-grid conditional covering bound for both P/D components.
 - `gt-dpf3-d2-angular-cover-proof-issue119.md` — DPF3 angular coverage at D=2.
 - `gt-dpf3-nd-cover-and-acceptance-issue119.md` — DPF3 general-D covering certificate and precision limits.
 
@@ -38,6 +39,7 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 
 - `gt-dpf-production-impact-inventory-issue119.md`
 - `gt-dpf-correction-migration-proposal-issue119.md`
+- `gt-correction-test-migration-issue119.md` — exact former defect assertions and versioned regression/baseline transition gate.
 - `gt-dpf-premerge-review-issue119.md`
 
 The independent research scripts are in `scripts/audit/`, with new tests under `tests/unit/`. The reports' relocation changes **no production source, accepted ADR, existing regression test, or historical reference**.

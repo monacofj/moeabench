@@ -32,6 +32,7 @@ The permanent, self-contained technical reference is **[gt.md](gt.md)**. The fil
 |---|---|
 | [DPF3 global Pareto set/front proof](research/gt-issue119/gt-dpf3-global-pareto-proof-issue119.md) | Ordered chaotic thresholds, projection-order preservation, and proof that published PS equals the set where g=0 |
 | [DPF5 global Pareto set/front proof](research/gt-issue119/gt-dpf5-global-pareto-proof-issue119.md) | Hyperspherical P/D branches, global membership, completeness, and cross-branch nondominance |
+| [DPF5 componentwise angular covering](research/gt-issue119/gt-dpf5-angular-cover-candidate-issue119.md) | Conditional real-arithmetic continuous covering bounds for complete P/D grids and explicit float64/cost limitations |
 | [DPF3 angular covering at D=2](research/gt-issue119/gt-dpf3-d2-angular-cover-proof-issue119.md) | Finite angular construction, exact-real-arithmetic Hausdorff bound, and float64 distinctions |
 | [DPF3 general-dimensional angular covering](research/gt-issue119/gt-dpf3-nd-cover-and-acceptance-issue119.md) | Higher-D proof, sample degeneracies, tensor cost, roundoff measurements, and scientific quality criteria |
 
@@ -61,6 +62,7 @@ The permanent, self-contained technical reference is **[gt.md](gt.md)**. The fil
 |---|---|
 | [Production impact inventory](research/gt-issue119/gt-dpf-production-impact-inventory-issue119.md) | Source files, consumers, tests, historical references, and potential correction impact |
 | [Correction and versioned migration proposal](research/gt-issue119/gt-dpf-correction-migration-proposal-issue119.md) | Proposed sequence and approval requirements for evaluator fixes, samplers, frozen references, and calibration budgets |
+| [DPF3/DPF5 historical regression migration review](research/gt-issue119/gt-correction-test-migration-issue119.md) | Exact pre-existing negative-diagnostic test failures, unchanged DPF5 frozen baseline, and explicit test-approval gates |
 | [PR #139 pre-merge review](research/gt-issue119/gt-dpf-premerge-review-issue119.md) | Research-only scope, safeguards, changed-file inventory, and CI verification |
 
 Earlier reports may contain a historical statement such as "global membership has not yet been established." **The consolidated results are given in [gt.md](gt.md) and the subsequent mathematical proofs.** Preliminary observations must not be mistaken for the final conclusions.
