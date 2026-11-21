@@ -24,7 +24,7 @@ The repository's [main README](../README.md) contains an overview, examples, cit
 
 ## Ground Truth: From Theory to Reproducible Evidence
 
-The permanent, self-contained technical reference is **[gt.md](gt.md)**. The files below are **specialized reports from [issue #119](https://github.com/monacofj/moeabench/issues/119) and [PR #139](https://github.com/monacofj/moeabench/pull/139)**. They preserve detailed proofs, experimental designs, data, negative results, comparisons against the audited implementation, and traceability. They are grouped under **[research/gt-issue119](research/gt-issue119/README.md)**, rather than scattered at the top level of \`docs/\`.
+The permanent, self-contained technical reference is **[gt.md](gt.md)**. The files below are **specialized reports from [issue #119](https://github.com/monacofj/moeabench/issues/119), including the mathematical investigation in [PR #139](https://github.com/monacofj/moeabench/pull/139) and the remaining-MOP audit in [PR #142](https://github.com/monacofj/moeabench/pull/142)**. They preserve detailed proofs, experimental designs, data, negative results, comparisons against the audited implementation, and traceability. They are grouped under **[research/gt-issue119](research/gt-issue119/README.md)**, rather than scattered at the top level of \`docs/\`.
 
 ### Mathematical Foundations and Proofs
 
@@ -40,6 +40,7 @@ The permanent, self-contained technical reference is **[gt.md](gt.md)**. The fil
 
 | Document | Scope |
 |---|---|
+| [Remaining DTLZ/DPF GT audit](research/gt-issue119/gt-remaining-mops-inventory-issue119.md) | Ten-MOP scientific inventory: extrema, disconnected components, DTLZ8 cardinality, DTLZ9 precision and DPF4 published-equation differences |
 | [Initial PS/PF diagnostic](research/gt-issue119/gt-dpf3-dpf5-audit-issue119.md) | Requested/actual counts, duplicates, and sample-relative dominance in audited evaluators |
 | [Published-formula triage](research/gt-issue119/gt-dpf-published-formula-triage-issue119.md) | Initial identification of DPF3 threshold ordering and the DPF5 P/D equality-boundary discrepancy |
 | [General-D DPF5 reconstruction](research/gt-issue119/gt-dpf-general-d-evidence-issue119.md) | Independent P/beta and D/gamma reconstruction for higher intrinsic dimensions, g=0 and g>0 |
@@ -85,6 +86,6 @@ The [full ADR index](adr/README.md) provides each decision's status, history, an
 
 ## How to Navigate
 
-To **understand** Ground Truth science, read [gt.md](gt.md). To **implement** algorithms or change APIs, inspect the applicable [ADRs](adr/README.md) and [API reference](reference.md). To **verify a proof or reproduce an experiment**, follow the specialized report and its research script/tests in PR #139. To understand **why** an architectural choice was made, consult the ADR's full history and current status, including later amendments.
+To **understand** Ground Truth science, read [gt.md](gt.md). To **implement** algorithms or change APIs, inspect the applicable [ADRs](adr/README.md) and [API reference](reference.md). To **verify a proof or reproduce an experiment**, follow the specialized report and its research scripts/tests in the corresponding linked PR (including #139 and #142). To understand **why** an architectural choice was made, consult the ADR's full history and current status, including later amendments.
 
 This index organizes knowledge; it neither turns an experimental finding into an accepted architectural decision nor turns a historical record into a current runtime contract.
