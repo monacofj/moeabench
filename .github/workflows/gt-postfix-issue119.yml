@@ -110,13 +110,13 @@ jobs:
       - name: Independent DTLZ8 and DPF3-5 geometry and component coverage
         run: |
           python -m scripts.audit.gt_independent_geometry_issue119 \
-            --objectives 3 5 --budgets 128 512 \
+            --objectives 3 4 5 10 --budgets 128 512 \
             --seeds 11941 11942 11943 --probes 128 \
             > gt-independent-geometry.json
           python - <<'PY'
           import json
           records=json.load(open("gt-independent-geometry.json"))["records"]
-          assert len(records)==48, len(records)
+          assert len(records)==96, len(records)
           for r in records:
               assert all(v["maximum_gap"] >= v["mean_gap"] >= 0
                          for v in r["components"].values())
