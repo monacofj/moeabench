@@ -103,6 +103,28 @@ jobs:
               for ref, scores in record["igd_plus_by_finite_reference_and_population"].items():
                   print("IGD_PLUS", ref, scores)
           PY
+      - name: Verify historical 2000-point DTLZ8 M4 calibration budget
+        run: |
+          python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
+            --objectives 4 --budgets 2000 \
+            --seeds 11941 11942 11943 --probes 512 \
+            > dtlz8-m4-canonical-2000.json
+          python - <<'PY'
+          import json
+          records = json.load(open("dtlz8-m4-canonical-2000.json"))["results"]
+          for r in records:
+              assert r["m4_completion_count"] == 2000
+              assert r["m4_completion_unique"] == 2000
+              for region, comparisons in r["components"].items():
+                  original = comparisons["incumbent"]["max_euclidean_gap"]
+                  completed = comparisons["m4_completion"]["max_euclidean_gap"]
+                  assert completed <= original + 1e-12, (region, original, completed)
+                  print("M4_CANONICAL", r["probe_offset"], region,
+                        "incumbent_unique", r["incumbent_unique"],
+                        "final_unique", r["m4_completion_unique"],
+                        "max_gap_old", round(original, 6),
+                        "max_gap_new", round(completed, 6))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: dtlz8-component-research-119
@@ -110,4 +132,5 @@ jobs:
             dtlz8-component-comparison.json
             dtlz8-membership.json
             dtlz8-spacing-igd-sensitivity.json
+            dtlz8-m4-canonical-2000.json
           retention-days: 30
