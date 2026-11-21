@@ -7,6 +7,14 @@ import numpy as np
 from .base_dpf import BaseDPF
 
 class DPF1(BaseDPF):
+    def ps(self, n_points: int = 100):
+        """Preserve native D=2 grid; anchor all essential simplex vertices for D>2."""
+        points = super().ps(n_points=n_points)
+        if self.D > 2:
+            from ._simplex_anchors import anchor_simplex_positions
+            anchor_simplex_positions(points[:, :self.D-1], self.D)
+        return points
+
     """
     DPF1 benchmark problem. 
     Flat high-dimensional problem projected from D-dimensional DTLZ1-like base.

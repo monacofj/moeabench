@@ -70,6 +70,8 @@ class DTLZ1(BaseMop):
         res = np.zeros((n_points, N))
         rng = np.random.RandomState(42)
         res[:, :M-1] = rng.random((n_points, M - 1))
+        from ._simplex_anchors import anchor_simplex_positions
+        anchor_simplex_positions(res[:, :M-1], M)
         res[:, M-1:] = 0.5
         return res
 
