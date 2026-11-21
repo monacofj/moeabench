@@ -35,8 +35,7 @@ def test_dpf4_matches_published_sorted_projection(m, d):
     mop = DPF4(M=m, D=d)
     rng = np.random.default_rng(11942)
     x = rng.uniform(0.05, 0.95, size=(256, mop.N))
-    x[:, d - 1:] = 0.5
-    np.testing.assert_allclose(
+    # Include both Pareto-set points (g=0) and off-front decisions (g>0).\n    x[:128, d - 1:] = 0.5\n    np.testing.assert_allclose(
         mop.evaluation(x)["F"], published_objectives(x, mop),
         rtol=2e-12, atol=2e-13)
 
