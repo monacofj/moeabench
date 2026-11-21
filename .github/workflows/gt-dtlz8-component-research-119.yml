@@ -10,10 +10,12 @@ on:
       - "scripts/audit/gt_dtlz8_component_comparison_issue119.py"
       - "scripts/audit/gt_dtlz8_membership_issue119.py"
       - "scripts/audit/gt_dtlz8_spacing_sensitivity_issue119.py"
+      - "scripts/audit/gt_dtlz8_policy_issue119.py"
       - "tests/unit/test_gt_dtlz8_candidate_issue119.py"
       - "tests/unit/test_gt_dtlz8_component_comparison_issue119.py"
       - "tests/unit/test_gt_dtlz8_membership_issue119.py"
       - "tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py"
+      - "tests/unit/test_gt_dtlz8_policy_issue119.py"
       - "docs/research/gt-issue119/gt-dtlz8-exact-budget-candidate.md"
   workflow_dispatch:
 
@@ -41,7 +43,8 @@ jobs:
             tests/unit/test_gt_dtlz8_candidate_issue119.py \
             tests/unit/test_gt_dtlz8_component_comparison_issue119.py \
             tests/unit/test_gt_dtlz8_membership_issue119.py \
-            tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py
+            tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py \
+            tests/unit/test_gt_dtlz8_policy_issue119.py
       - name: Compare reference geometry component by component
         run: |
           python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
@@ -125,6 +128,28 @@ jobs:
                         "max_gap_old", round(original, 6),
                         "max_gap_new", round(completed, 6))
           PY
+      - name: Audit all corrected DTLZ8 reference candidates at 2000 points
+        run: |
+          python -m scripts.audit.gt_dtlz8_policy_issue119 \
+            --objectives 2 3 5 10 \
+            --budgets 128 512 2000 \
+            --offsets 11941 11942 11943 \
+            --probes 512 > dtlz8-policy-candidates.json
+          python - <<'PY'
+          import json
+          evidence = json.load(open("dtlz8-policy-candidates.json"))["results"]
+          assert len(evidence) == 12
+          for record in evidence:
+              print("DTLZ8_POLICY", record["M"], record["requested"],
+                    "incumbent_unique", record["incumbent_unique"],
+                    "preference", record["finite_probe_max_gap_preference"])
+              for name, metrics in record["per_component"].items():
+                  print("POLICY_COMPONENT", record["M"], record["requested"],
+                        name, "halton_worst_gap",
+                        round(metrics["candidate"]["worst_max_gap"], 6),
+                        "lattice_worst_gap",
+                        round(metrics["lattice"]["worst_max_gap"], 6))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: dtlz8-component-research-119
@@ -133,4 +158,5 @@ jobs:
             dtlz8-membership.json
             dtlz8-spacing-igd-sensitivity.json
             dtlz8-m4-canonical-2000.json
+            dtlz8-policy-candidates.json
           retention-days: 30
