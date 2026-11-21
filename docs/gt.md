@@ -580,6 +580,8 @@ Therefore, a GT produced by an evaluator that diverges from the paper **must not
 
 Historical preservation requires **identifying the old reference with its original mathematical definition and source version**. A scientifically corrected successor should be a **new versioned, verified artifact**. Never overwrite historical evidence merely to make the test suite pass.
 
+**An important inaugural-calibration distinction:** provisional numerical fixtures that were generated from a mathematically incorrect evaluator are not necessarily previously accepted *scientific* GT calibrations. With explicit maintainer approval and independent proof-based verification, such a fixture can be replaced by the **first accepted scientific calibration** of the corrected MOP, without pretending the defective provisional values constitute a preceding validated scientific version. Ordinary Git history remains available for technical audit. Once this first calibration is accepted, the usual frozen-reference safeguards apply. This narrowly scoped case is documented in [ADR 0056](adr/0056-versioned-certification-and-performance-reference-lifecycle.md) and [ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md).
+
 ### 10.2. Correcting objective evaluation and changing GT are separate interventions
 
 Correcting **\`evaluation()\`** changes the evaluated mathematical problem and can alter solver trajectories and final outcomes. Replacing **GT** changes the reference used by indicators and can alter results even if every solver-produced objective value is frozen. These interventions therefore need independent comparisons and provenance.
