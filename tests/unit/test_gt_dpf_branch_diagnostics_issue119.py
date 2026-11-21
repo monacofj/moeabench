@@ -28,11 +28,13 @@ def test_dpf5_explicit_branch_accounting_and_finite_replay(m, budget):
     assert not row["globally_complete_certified"]
 
 
-def test_dpf5_m3_nonsquare_budget_is_recorded_not_normalized_away():
+def test_dpf5_m3_nonsquare_budget_preserves_published_objective_count():
     row = inspect("DPF5", 3, 48)
-    assert row["ps_count"] == 36
-    assert row["pf_count"] == 36
-    assert row["grid_side_if_M3"] == 6
+    assert row["ps_count"] == 48
+    assert row["pf_count"] == 48
+    assert row["pf_unique_count"] == 48
+    assert row["branch_boundary"] == 1 / 3
+    assert row["raw_evaluated_internally_dominated"] == 0
 
 
 def test_bad_parameters_rejected():
