@@ -32,6 +32,7 @@ The permanent, self-contained technical reference is **[gt.md](gt.md)**. The fil
 |---|---|
 | [DPF3 global Pareto set/front proof](research/gt-issue119/gt-dpf3-global-pareto-proof-issue119.md) | Ordered chaotic thresholds, projection-order preservation, and proof that published PS equals the set where g=0 |
 | [DPF5 global Pareto set/front proof](research/gt-issue119/gt-dpf5-global-pareto-proof-issue119.md) | Hyperspherical P/D branches, global membership, completeness, and cross-branch nondominance |
+| [DPF5 componentwise angular covering](research/gt-issue119/gt-dpf5-angular-cover-candidate-issue119.md) | Conditional real-arithmetic continuous covering bounds for complete P/D grids and explicit float64/cost limitations |
 | [DPF3 angular covering at D=2](research/gt-issue119/gt-dpf3-d2-angular-cover-proof-issue119.md) | Finite angular construction, exact-real-arithmetic Hausdorff bound, and float64 distinctions |
 | [DPF3 general-dimensional angular covering](research/gt-issue119/gt-dpf3-nd-cover-and-acceptance-issue119.md) | Higher-D proof, sample degeneracies, tensor cost, roundoff measurements, and scientific quality criteria |
 
