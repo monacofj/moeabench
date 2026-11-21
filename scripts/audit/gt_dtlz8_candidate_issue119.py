@@ -26,8 +26,13 @@ def candidate_objectives(m, n_points):
     The allocation is explicitly a coverage policy (one component
     per region), not a probability measure on the mixed-dimensional PF.
     """
-    if m < 3:
-        raise ValueError("Original DTLZ8 pairwise geometry requires M>=3.")
+    if m == 2:
+        if n_points < 2:
+            raise ValueError("M=2 requires at least two line endpoints.")
+        t = np.linspace(0.0, 1.0, n_points)
+        return np.column_stack(((1.0 - t) / 4, t))
+    if m < 2:
+        raise ValueError("DTLZ8 requires M>=2.")
     if n_points < m + 1:
         raise ValueError("Need at least M+1 points to sample all regions and line endpoints.")
 
