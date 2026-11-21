@@ -18,20 +18,21 @@ class DPF4(BaseDPF):
         # Assuming default behavior is linear: x * pi/2
         theta = X[:, :D-1] * (np.pi / 2)
         
-        cos_theta = np.cos(theta)
-        sin_theta = np.sin(theta)
-        
         Y = np.zeros((X.shape[0], D))
         
         for i in range(D):
-            f_norm = 1.0
-            if i < D - 1:
-                f_norm *= np.prod(cos_theta[:, :D-i-1], axis=1)
-            
+            # Evaluate 1 - product(trigonometric factors) without cancellation.
+            # For angles in [0, pi/2], compute complements accurately and
+            # accumulate 1 - product via c <- c + (1-c) * (1-factor).
+            complement = np.zeros(X.shape[0])
+            for j in range(D - i - 1):
+                delta = 2 * np.sin(theta[:, j] / 2)**2
+                complement += (1 - complement) * delta
             if i > 0:
-                f_norm *= sin_theta[:, D-i-1]
-                
-            Y[:, i] = (1 - f_norm) * (1 + g).flatten()
+                angle = theta[:, D - i - 1]
+                delta = 2 * np.sin((np.pi / 2 - angle) / 2)**2
+                complement += (1 - complement) * delta
+            Y[:, i] = complement * (1 + g).flatten()
             
         return Y
 
@@ -54,7 +55,9 @@ class DPF4(BaseDPF):
             
         # Use static chaos pool from BaseDPF
         U = M - D
-        chaos = self._chaos_pool[:U]
+        # DPF4's published piecewise projection requires ordered thresholds.
+        # Do not change BaseDPF: DPF1/DPF2 use the same pool differently.
+        chaos = np.sort(self._chaos_pool[:U])
         
         redundant = []
         # FD (first redundant): min(Yd, chaos[0])
