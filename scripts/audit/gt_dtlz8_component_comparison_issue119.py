@@ -23,7 +23,11 @@ def independent_probes(m, n_per_component=256, offset=11941):
     if m < 2 or n_per_component < 2:
         raise ValueError("Invalid objective count or probe resolution.")
     k = np.arange(1 + offset, 1 + offset + n_per_component)
-    t = np.array([_radical_inverse(int(i), 5) for i in k])
+    # A seed-specific irrational rotation avoids almost-identical probe
+    # sets from adjacent integer starting indices.
+    t_shift = (offset * ((np.sqrt(5.0) - 1) / 2)) % 1
+    u_shift = (offset * ((np.sqrt(3.0) - 1) / 2)) % 1
+    t = (np.array([_radical_inverse(int(i), 5) for i in k]) + t_shift) % 1
     if m == 2:
         return {"line": np.column_stack(((1-t)/4, t))}
     line_t = 1/3 + t * (2/3)
@@ -31,7 +35,7 @@ def independent_probes(m, n_per_component=256, offset=11941):
     line[:, :-1] = ((1-line_t)/4)[:, None]
     line[:, -1] = line_t
     out = {"line": line}
-    u = np.array([_radical_inverse(int(i), 7) for i in k])
+    u = (np.array([_radical_inverse(int(i), 7) for i in k]) + u_shift) % 1
     patch_t = t/3
     a = (1-patch_t)/4
     b = 1-2*patch_t
