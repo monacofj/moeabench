@@ -122,6 +122,7 @@ def compare(m, budget, probes_per_component=256, offset=11941):
     incumbent = np.asarray(mop.pf(n_points=budget), dtype=float)
     candidate = candidate_objectives(m, budget)
     lattice = candidate_objectives(m, budget, patch_strategy="lattice")
+    hybrid = candidate_objectives(m, budget, patch_strategy="hybrid")
     completed_m4 = (m4_preserving_completion(incumbent, lattice, budget)
                     if m == 4 else None)
     probes = independent_probes(m, probes_per_component, offset)
@@ -131,6 +132,7 @@ def compare(m, budget, probes_per_component=256, offset=11941):
             "incumbent": _distance_statistics(reference, incumbent),
             "candidate": _distance_statistics(reference, candidate),
             "lattice": _distance_statistics(reference, lattice),
+            "hybrid": _distance_statistics(reference, hybrid),
         }
         if completed_m4 is not None:
             records[name]["m4_completion"] = _distance_statistics(
@@ -143,6 +145,8 @@ def compare(m, budget, probes_per_component=256, offset=11941):
         "candidate_unique": len(np.unique(candidate, axis=0)),
         "lattice_count": len(lattice),
         "lattice_unique": len(np.unique(lattice, axis=0)),
+        "hybrid_count": len(hybrid),
+        "hybrid_unique": len(np.unique(hybrid, axis=0)),
         "m4_completion_count": len(completed_m4) if completed_m4 is not None else None,
         "m4_completion_unique": (len(np.unique(completed_m4, axis=0))
                                  if completed_m4 is not None else None),
