@@ -122,6 +122,44 @@ def dtlz8_same_t_pareto_witness(objectives):
     return witness
 
 
+
+def _published_dpf4_at_ps(decisions, m, d, eta):
+    """Independent published DPF4 projection with *sorted* thresholds.
+
+    The positive hypersphere is independently reconstructed at g=0;
+    the squared min/max projections use the increasingly ordered
+    logistic-map thresholds required by Zhen et al. (2022), Sec. IV-F.
+    This is not a replacement production evaluator.
+    """
+    x = np.atleast_2d(np.asarray(decisions, dtype=float))
+    q = d - 1
+    theta = x[:, :q] * (np.pi / 2)
+    c = np.cos(theta)
+    sn = np.sin(theta)
+    h = np.ones((len(x), d), dtype=float)
+    for i in range(d):
+        length = d - i - 1
+        if length:
+            h[:, i] *= np.prod(c[:, :length], axis=1)
+        if i:
+            h[:, i] *= sn[:, length]
+    gdata = x[:, d-1:]
+    g = 100 * (
+        gdata.shape[1] +
+        np.sum((gdata - .5)**2 - np.cos(20*np.pi*(gdata-.5)), axis=1)
+    )
+    y = (1 + g[:, None]) * (1 - h)
+    thresholds = np.sort(np.asarray(eta, dtype=float))
+    if m == d:
+        return y**2
+    t = y[:, -1]
+    projections = [np.minimum(t, thresholds[0])]
+    for a, b in zip(thresholds[:-1], thresholds[1:]):
+        projections.append(np.minimum(np.maximum(t, a), b))
+    projections.append(np.maximum(t, thresholds[-1]))
+    return np.column_stack((y[:, :-1], np.column_stack(projections)))**2
+
+
 def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2):
     if name not in CLASSES:
         raise ValueError(f"Unsupported audited MOP {name}")
@@ -195,8 +233,16 @@ def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2):
             report["projection_thresholds_in_ascending_order"] = bool(
                 np.all(np.diff(thresholds) >= 0)
             )
-            report["projection_ordering_publication_check_required"] = (
-                len(thresholds) >= 2
+            report["published_ascending_thresholds_required"] = True
+            published = _published_dpf4_at_ps(
+                ps, m, intrinsic_d, thresholds
+            )
+            mismatch = np.abs(replay - published)
+            report["published_sorted_DPF4_max_component_delta"] = float(
+                np.max(mismatch)
+            )
+            report["published_sorted_DPF4_disagreeing_rows_tol_1e_12"] = int(
+                np.sum(np.any(mismatch > 1e-12, axis=1))
             )
         if name == "DPF2":
             report["record_patches"] = _record_component_count(
