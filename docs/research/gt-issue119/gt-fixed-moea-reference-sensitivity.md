@@ -72,6 +72,43 @@ It cannot certify the 64-seed/ADR-0056 release performance design,
 continuous-front covering, or a canonical mixed-dimensional
 reference measure.
 
-**Execution results must be appended after successful final-head
-CI.** The existence of this document or workflow alone is
-not a completed scientific check.
+## Executed pilot results (2026-11-21)
+
+The dedicated workflow succeeded on commit `ff16bb6`, after fixing
+a *new synthetic test fixture* whose HV external reference had
+zero extent along one objective. The public HV contract was
+preserved; the test reference now spans every objective.
+
+All 16 MOEA runs completed, and all **24** algorithm/seed/metric
+pairwise comparisons were evaluated under both GT resolutions.
+There were **zero strict sign reversals** in this small pilot.
+For all eight problem/seed pairs, the reported NSGA-II minus SPEA2
+IGD and IGD+ differences changed numerically when the reference
+budget increased from 128 to 512, even though the same frozen
+algorithm fronts were evaluated. Examples:
+
+| Problem | Seed | Metric | Difference at 128 | Difference at 512 |
+| --- | --- | --- | ---: | ---: |
+| DTLZ2 | 11941 | public IGD+ | 0.076640 | 0.093021 |
+| DTLZ7 | 11941 | public IGD+ | -0.125893 | -0.116249 |
+| DTLZ8 | 11942 | public IGD | 0.012135 | 0.009009 |
+| DPF5 | 11942 | public IGD+ | 0.018595 | 0.020807 |
+
+For this selection, HV *pairwise differences* were unchanged
+at both resolutions, because the evaluated fronts were frozen and
+the external reference extrema of each tested finite GT
+coincided. In DTLZ7 both evaluated HVs were zero in these short
+runs, so a zero pairwise difference cannot establish that HV
+distinguishes the algorithms reliably.
+
+The small budgets (32 individuals, 12 generations, two seeds),
+three-objective cases and absence of older-finite-reference
+comparison limit the scope. The findings do **not** constitute
+statistical performance stability or ADR 0056 release
+certification. Extending seeds, evaluation budgets and dimensions
+requires a separate plan; no automatic reference migration is
+authorized.
+
+The complete JSON artifact and job logs, including objective
+hashes and every individual indicator value, remain attached to
+the dedicated GitHub Actions run.
