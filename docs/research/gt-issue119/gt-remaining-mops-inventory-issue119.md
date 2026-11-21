@@ -278,7 +278,124 @@ A corrected finite reference can therefore sample those angular
 parameters directly, rather than relying on arbitrary decision-space
 random samples.
 
-## 4. Engineering implications without silent policy changes
+## 4. Independently evaluated fixed-budget sampling candidates
+
+Identifying missing extrema or Pareto components does **not** by itself
+establish that a particular replacement sampler gives better overall
+objective-space quality. To avoid this inference, we compared explicit
+candidates against the unchanged incumbent samples at the **same point
+budget**, using independent objective-space probes. All candidate
+constructions are deterministic for a fixed local seed and have their
+own **new positive tests**, without modifying the existing MOPs.
+
+### 4.1. DTLZ1 and DPF1: simplex-geometry farthest-point candidate
+
+Both MOPs use the same **essential DTLZ1 simplex map**. DTLZ1 has
+\(q=M\) essential objectives, and DPF1 has \(q=D\) essential objectives,
+followed by a nonnegative linear map into redundant objective
+coordinates. A pure shared inverse of this mathematically identical
+essential parameterization is justified, while the **MOPs remain
+responsible for the complete objective reference**.
+
+For normalized essential simplex weights
+\(w_i\ge0,\sum_iw_i=1\), let
+\(S_j=\sum_{i=1}^jw_i\). The DTLZ1 position variables are recovered
+by consecutive cumulative ratios
+\(x_j=S_{q-j}/S_{q-j+1}\), with explicit endpoint conventions for
+zero denominators. Evaluation then reconstructs
+\((0.5w_1,\ldots,0.5w_q)\), and the DPF1 linear redundant projection
+is applied only for DPF1.
+
+The experimental candidate constructs a pool of **independent
+Dirichlet(1) simplex samples**, explicitly inserts **all \(q\) axis
+extrema**, and selects the requested number of objective vectors by
+deterministic **greedy farthest-point selection**. The candidate's
+actual source evaluation was compared with independently calculated
+essential-simplex and projected objectives. The method makes no claim
+of minimum global continuous Hausdorff distance.
+
+The following table shows the **largest nearest-reference gap among
+2,048 independent probes**, using three paired but independently seeded
+candidate/reference sets, **at the exact same budget**. Values are
+unnormalized objective-space Euclidean distances:
+
+| Problem | Requested | Old observed maxima (3 seeds) | Candidate observed maxima (3 seeds) |
+|---|---:|---|---|
+| DTLZ1 M=5 | 512 | 0.173464; 0.152285; 0.155271 | **0.062883; 0.065796; 0.063808** |
+| DPF1 M=5,D=3 | 128 | 0.108353; 0.132345; 0.133553 | **0.038266; 0.042725; 0.043443** |
+| DPF1 M=5,D=2 | 128 | **0.003201; 0.003203; 0.003201** | 0.005579; 0.006413; 0.006224 |
+
+For the reported DTLZ1 and higher-D DPF1 cases, the candidate also
+reduced nearest-neighbor spacing variation and put every essential
+simplex vertex **exactly** on the finite reference. For instance, in
+DTLZ1 M=5 at 512 points, the original nearest-neighbor coefficient of
+variation was \(\approx0.734\) while the candidates gave
+\(\approx0.091\)–\(0.099\).
+
+The **negative control** DPF1 D=2 is essential: its existing
+equally spaced 1D grid is **better** than greedy selection over a
+random finite pool, despite the latter including the same endpoints.
+Consequently, **do not replace DPF1's D=2 structured method**. An
+appropriate prospective MOP-specific rule must distinguish D=2 from
+higher-dimensional simplex cases.
+
+Observed candidate computation at 512 points took roughly
+0.04–0.07 seconds on the audit runner in the reported configurations;
+these are **single CI measurements**, not a performance certificate.
+
+### 4.2. DTLZ7 and DPF2: explicit disconnected-component stratification
+
+Given \(q=M-1\) for DTLZ7 and \(q=D-1\) for DPF2, their accepted
+analytical record intervals define exactly \(2^q\) possible Cartesian
+components. The experimental candidate draws **distinct component
+identities** until every possible component has been selected; when
+the budget is sufficiently large, it guarantees **at least one sample
+in every component**. For budgets smaller than \(2^q\), it occupies
+the maximum possible \(\min(n,2^q)\) distinct components.
+
+Within the selected components, an independently scrambled local
+Sobol sequence provides the decision parameters. The candidate
+preserves \(g\)'s optimal decisions, exact requested cardinality,
+deterministic replay, the analytically valid Pareto-record domain and
+numerical objective uniqueness. **Guaranteeing component presence
+does not certify coverage within those components.**
+
+In the difficult high-dimensional cases:
+
+| MOP | Budget | Components: incumbent → candidate | Independent probe maxima (incumbent → candidate), three seeds |
+|---|---:|---|---|
+| DTLZ7 M=10 (512 total) | 512 | 319 → **512** | 1.4667→1.2466; **1.2669→1.5316**; 1.4974→1.1774 |
+| DPF2 M=10,D=9 (256 total) | 512 | 216 → **256** | 9.2363→8.1125; **7.6465→11.4008**; **8.0701→11.1772** |
+
+Thus the component-presence guarantee is **strictly improved**, but
+the worst **finite-probe geometric distance is not consistently
+better**. This is the reason the candidate is **not proposed for
+wholesale production adoption**. Cases that already touch all
+components can also lose within-component coverage when the point
+allocation is changed.
+
+The scientific design requirement is a combined constrained
+allocation problem: guarantee representation of all mathematically
+possible components **when the budget permits**, while optimizing
+objective-space coverage **within** each region. When the budget is
+smaller than the component count, record the unavoidable support
+shortfall explicitly. Fixing a component-count lower bound does not
+by itself select an automatic default for \`mop.calibrate()\`.
+
+### 4.3. Scope of the empirical comparison
+
+Both candidate studies used **three explicit independent seeds** and
+the exact same per-case budget for incumbent and candidate samples.
+The independent reference probes are finite and themselves
+seed-dependent. The results constitute quantitative, reproducible
+**diagnostics**, not a statistical universal ordering between
+samplers or a proof of continuous coverage. Their JSON data, runtime
+observations, full configuration grid and negative outcomes are
+generated by
+\`gt_simplex_candidates_issue119.py\` and
+\`gt_disconnected_components_candidate_issue119.py\`.
+
+## 5. Engineering implications without silent policy changes
 
 The audit distinguishes:
 
@@ -307,7 +424,7 @@ they affect an accepted architectural decision. Any future changes to
 existing regression tests or numerical references must be explained
 and approved **before** editing them.
 
-## 5. Reproducibility and exact evidence locations
+## 6. Reproducibility and exact evidence locations
 
 Run the independent inventory from repository root:
 
@@ -320,11 +437,18 @@ python -m scripts.audit.gt_remaining_mops_issue119 \
   --budgets 64 128 512 --probes 512
 
 python -m scripts.audit.gt_dpf4_published_equations_issue119
+
+python -m scripts.audit.gt_simplex_candidates_issue119 \
+  --budgets 128 512 --probes 2048 --seeds 11923 11924 11925
+
+python -m scripts.audit.gt_disconnected_components_candidate_issue119 \
+  --budgets 128 512 --probes 2048 --seeds 11930 11931 11932
 \`\`\`
 
-The isolated PR workflow runs **39 new independent tests** and exports
+The isolated PR workflow runs **64 new independent tests** and exports
 structured JSON for the MOP audit, constrained dimensions, DPF4
-published equation comparison, and high-dimensional disconnected-component occupancy. Its
+published equation comparison, high-dimensional disconnected-component occupancy, fixed-budget simplex
+and component-stratified comparisons. Its
 diagnostic metrics are measurements, never automatic permission to
 rewrite a frozen scientific reference.
 
