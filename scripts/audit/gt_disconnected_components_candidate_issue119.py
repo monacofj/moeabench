@@ -108,7 +108,7 @@ def compare(name,m,d,n,seed=11930,probes=2048):
     old_labels=np.sum(old_bits*(1<<np.arange(q)),axis=1)
     return {
         "name":name,"M":m,"D":d if name=="DPF2" else None,
-        "requested":n,"components_total":total,
+        "sampling_seed":seed,"requested":n,"components_total":total,
         "budget_can_touch_all_components":bool(n>=total),
         "incumbent_component_count":int(len(np.unique(old_labels))),
         "candidate_component_count":int(len(np.unique(labels))),
@@ -126,14 +126,16 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument("--budgets",type=int,nargs="+",default=[128,512])
     p.add_argument("--probes",type=int,default=2048)
+    p.add_argument("--seeds",type=int,nargs="+",default=[11930])
     a=p.parse_args()
     configs=[
         ("DTLZ7",3,None),("DTLZ7",5,None),("DTLZ7",10,None),
         ("DPF2",5,2),("DPF2",5,3),
         ("DPF2",10,5),("DPF2",10,9),
     ]
-    records=[compare(name,m,d,n,probes=a.probes)
-             for name,m,d in configs for n in a.budgets]
+    records=[compare(name,m,d,n,seed=seed,probes=a.probes)
+             for name,m,d in configs for n in a.budgets
+             for seed in a.seeds]
     print(json.dumps({"schema":"gt119_record_component_stratification_candidate_v1",
                       "purpose":"fixed-budget component presence experiment, no baseline replacement",
                       "records":records},indent=2,sort_keys=True))
