@@ -7,6 +7,8 @@ name: Issue 119 explicitly authorized performance certification
 on:
   pull_request:
     types: [labeled]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -14,7 +16,15 @@ permissions:
 
 jobs:
   performance:
-    if: github.event.label.name == 'certify-performance-119'
+    if: >-
+      (github.event_name == 'pull_request' &&
+       github.event.label.name == 'certify-performance-119') ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.number == 119 &&
+       (github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR') &&
+       startsWith(github.event.comment.body, '/certify-performance-119 '))
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     env:
@@ -33,10 +43,27 @@ jobs:
         run: |
           python -m pip install -e . pytest
           python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6" threadpoolctl
+      - name: Verify the explicit source revision in the maintainer command
+        if: github.event_name == 'issue_comment'
+        env:
+          CERTIFY_COMMAND: ${{ github.event.comment.body }}
+        run: |
+          python - <<'PY'
+          import os
+          import subprocess
+          words=os.environ["CERTIFY_COMMAND"].strip().split()
+          source=subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                         text=True).strip()
+          assert len(words)==2, "Expected command and exact source SHA"
+          assert words[0]=="/certify-performance-119"
+          assert words[1]==source==os.environ["GITHUB_SHA"], "Source SHA mismatch"
+          print("Maintainer authorized performance certification for", source)
+          PY
       - name: Locate a separately completed matching numeric run
         id: evidence
         env:
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          NUMERIC_EVENT: ${{ github.event_name == 'issue_comment' && 'push' || 'pull_request' }}
         run: |
           python - <<'PY'
           import json
@@ -56,7 +83,7 @@ jobs:
               if run["name"] == "Issue 119 release candidate numeric certification"
               and run["conclusion"] == "success"
               and run["head_sha"] == sha
-              and run["event"] == "pull_request"
+              and run["event"] == os.environ["NUMERIC_EVENT"]
           ]
           for run in sorted(matching, key=lambda r: r["id"], reverse=True):
               a = subprocess.check_output([
