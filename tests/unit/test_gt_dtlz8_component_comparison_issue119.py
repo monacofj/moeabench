@@ -37,3 +37,12 @@ def test_dtlz8_component_comparison_schema(m):
     for scores in report["components"].values():
         for method in ("incumbent", "candidate"):
             assert all(np.isfinite(list(scores[method].values())))
+
+
+def test_dtlz8_probe_seeds_are_distinct_and_reproducible():
+    first = independent_probes(4, n_per_component=128, offset=11941)
+    replay = independent_probes(4, n_per_component=128, offset=11941)
+    other = independent_probes(4, n_per_component=128, offset=11942)
+    for component in first:
+        np.testing.assert_array_equal(first[component], replay[component])
+        assert not np.array_equal(first[component], other[component])
