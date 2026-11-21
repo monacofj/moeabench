@@ -84,6 +84,44 @@ def _spacing(unique):
     }
 
 
+
+def dtlz8_same_t_pareto_witness(objectives):
+    """Independently construct a feasible dominating witness at unchanged f_M.
+
+    For t=f_M>=1/3, each earlier objective is minimized at
+    alpha=(1-t)/4. For t<1/3, all pair sums must exceed
+    beta=1-2*t and each coordinate must exceed alpha. Let a be the
+    smallest earlier objective. If a<=beta/2, all other coordinates
+    can be decreased to beta-a. Otherwise all can be reduced to
+    beta/2. This gives the complete Pareto-minimal slice for fixed t.
+
+    The construction is deterministic, operates in *objective* space,
+    and does not rely on the MOP's PS sampler. It cannot prove a
+    sampled objective belongs to the global PF without separately
+    establishing cross-t nondominance, but it can prove strict
+    domination whenever the witness improves a feasible sample.
+    """
+    f = np.atleast_2d(np.asarray(objectives, dtype=float))
+    if f.ndim != 2 or f.shape[1] < 3:
+        raise ValueError("DTLZ8 witness requires M>=3")
+    t = f[:, -1]
+    alpha = (1 - t) / 4
+    beta = 1 - 2 * t
+    witness = f.copy()
+    high = t >= (1 / 3)
+    witness[high, :-1] = alpha[high, None]
+    for i in np.flatnonzero(~high):
+        earlier = f[i, :-1]
+        j = int(np.argmin(earlier))
+        minimum = earlier[j]
+        if minimum <= beta[i] / 2:
+            witness[i, :-1] = beta[i] - minimum
+            witness[i, j] = minimum
+        else:
+            witness[i, :-1] = beta[i] / 2
+    return witness
+
+
 def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2):
     if name not in CLASSES:
         raise ValueError(f"Unsupported audited MOP {name}")
@@ -175,6 +213,27 @@ def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2):
             "infeasible_above_1e-12": int(np.sum(np.any(g > 1e-12, axis=1))),
             "max_positive_residual": float(np.max(np.maximum(g, 0))),
         }
+        if name == "DTLZ8":
+            witness = dtlz8_same_t_pareto_witness(pf)
+            improvement = pf - witness
+            # A constructive witness with the SAME last objective must
+            # satisfy every published DTLZ8 constraint. A strict
+            # improvement above 1e-10 proves dominated GT rows.
+            feasible = ~np.any(g > 1e-10, axis=1)
+            dominance = (
+                feasible & np.all(improvement >= -1e-10, axis=1) &
+                np.any(improvement > 1e-10, axis=1)
+            )
+            # Validate witness independently from the incumbent PS.
+            witness_g = mop._calc_constraints(witness)
+            report["same_fM_independent_pareto_witness"] = {
+                "strictly_dominated_returned_rows_tol_1e_10": int(np.sum(dominance)),
+                "max_coordinate_improvement": float(np.max(np.maximum(improvement, 0))),
+                "max_witness_constraint_violation": float(
+                    np.max(np.maximum(-witness_g, 0))
+                ),
+                "global_membership_proven_if_not_dominated": False,
+            }
     if name == "DTLZ9":
         square = pf[:, -1]**2 + pf[:, 0]**2
         report["circle_constraint_max_abs"] = float(
