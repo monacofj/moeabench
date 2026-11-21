@@ -49,6 +49,10 @@ jobs:
                   flags.append("infeasible")
               if x.get("projection_ordering_publication_check_required"):
                   flags.append("DPF4_publish_check")
+              witness=x.get("same_fM_independent_pareto_witness")
+              if witness:
+                  flags.append(f"constructive_dominated={witness[\'strictly_dominated_returned_rows_tol_1e_10\']}")
+                  flags.append(f"max_improvement={witness[\'max_coordinate_improvement\']:.6g}")
               print("MOP",x["name"],"M",x["M"],"D",x["D"],
                     "requested",x["requested"],"PS",x["PS_rows"],
                     "PF",x["PF_rows"],"unique",x["unique_objective_rows"],
