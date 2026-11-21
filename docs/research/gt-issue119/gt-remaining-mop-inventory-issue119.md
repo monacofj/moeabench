@@ -74,80 +74,84 @@ artifact before declaring numerical failures.
 
 ## DTLZ8: independent global Pareto-front characterization (M >= 3)
 
-The DTLZ8 objective-space constraints are, for all earlier objectives
-(i<M) and all distinct (i,j<M),
+For the published DTLZ8 model, write \(t=f_M\). Its objective-space
+constraints are, for all earlier objectives \(i<M\) and all distinct
+\(i,j<M\),
 
-[
-t+4f_ige1,qquad
-2t+f_i+f_jge1,qquad t=f_Min[0,1].
-]
+\[
+t+4f_i\ge 1,\qquad
+2t+f_i+f_j\ge 1,\qquad 0\le t\le1.
+\]
 
 The second family is equivalent to the published
-`2*f_M + min_{i<j}(f_i+f_j) - 1 >= 0` constraint, evaluated by
-`DTLZ8._calc_constraints`. Write
-(alpha(t)=(1-t)/4) and (eta(t)=1-2t).
+\`2*f_M + min_{i<j}(f_i+f_j) - 1 >= 0\` constraint, evaluated by
+\`DTLZ8._calc_constraints\`. Define
 
-**When (tge1/3)**, the coordinatewise minimal feasible point
-with that last objective is the **central curve**
+\[
+\alpha(t)=\frac{1-t}{4},\qquad
+\beta(t)=1-2t.
+\]
 
-[
-(f_1,ldots,f_{M-1},t)
-=(alpha(t),ldots,alpha(t),t).
-]
+**When \(t\ge1/3\)**, the coordinatewise minimal feasible point
+at that last-objective value belongs to the **central curve**,
 
-Indeed (2alpha(t)geeta(t)) in this regime.
-Every other feasible point at the same (t) is dominated by that
-central point.
+\[
+(f_1,\ldots,f_{M-1},t)
+=(\alpha(t),\ldots,\alpha(t),t).
+\]
 
-**When (t<1/3)**, the minimal feasible points form
-(M-1) **arms** (with a shared inner endpoint). Choose a distinguished
-index (k<M), and any (ain[alpha(t),eta(t)/2]).
-The resulting objective point has
+Because \(2\alpha(t)\ge\beta(t)\) in this regime, all constraints
+are satisfied. Every other feasible point with the same \(t\)
+is weakly dominated by the central point, and is strictly dominated
+unless equal to it.
 
-[
-f_k=a,qquad
-f_i=eta(t)-aquad(i
-e k, i<M),qquad
+**When \(t<1/3\)**, the Pareto-minimal feasible points at fixed \(t\)
+form \(M-1\) **two-parameter arms** with shared boundaries.
+Choose a distinguished earlier-objective index \(k<M\) and
+\(a\in[\alpha(t),\beta(t)/2]\). Set
+
+\[
+f_k=a,\qquad
+f_i=\beta(t)-a\quad(i\ne k,\ i<M),\qquad
 f_M=t.
-]
+\]
 
-This is feasible because each earlier coordinate is at least
-(alpha(t)) and every pair sum is at least (eta(t)).
-For any feasible row with the same (t), let (a) denote its
-smallest earlier coordinate. If (aleeta(t)/2), preserve
-that coordinate and reduce all other earlier coordinates to
-(eta(t)-a); otherwise reduce all earlier coordinates to
-(eta(t)/2). This constructs a **feasible, componentwise
-no-worse witness** on the stated arms. Whenever any coordinate is
-strictly improved, the original row is **not Pareto-optimal**.
+All coordinates satisfy \(f_i\ge\alpha(t)\); every pair sum is
+at least \(\beta(t)\). For any feasible row with the same \(t\),
+let \(a\) denote its smallest earlier coordinate. If
+\(a\le\beta(t)/2\), preserve that coordinate and decrease all
+others to \(\beta(t)-a\); otherwise decrease every earlier
+coordinate to \(\beta(t)/2\). This constructs a **feasible,
+componentwise no-worse witness** on an arm. Whenever at least
+one coordinate improves strictly, the original row is **dominated**.
 
-**Global nondominance and completeness:** an arm point has a
-pair of earlier coordinates summing to exactly (eta(t)).
-A candidate with (t'<t) must have that pair sum at least
-(eta(t')>eta(t)), hence cannot dominate the arm point.
-At the same (t), decreasing any arm coordinate violates
-at least one tight pair constraint. A point with (t'>t)
-cannot dominate because its last objective is worse.
-For central points with (tge1/3), smaller (t') implies
-(alpha(t')>alpha(t)), and same-(t) feasibility fixes their
-minimal earlier coordinates. Thus **all stated central/arm points
-are globally Pareto-optimal**, and the constructive same-(t)
-witness proves that every feasible point outside their union is
-dominated.
+**Global nondominance and completeness:** an arm point has
+at least one pair of earlier coordinates whose sum is
+exactly \(\beta(t)\). A putative dominating point with \(t'<t\)
+would have to satisfy a larger required sum,
+\(\beta(t')>\beta(t)\), which is impossible if it is no worse in
+both of those coordinates. At the same \(t\), every decrease
+from an arm point violates an active pair constraint or a lower
+coordinate bound. For central points with \(t\ge1/3\), any
+smaller \(t'\) has \(\alpha(t')>\alpha(t)\), so it cannot dominate;
+equal-\(t\) feasible points cannot improve on all central
+coordinate minima. A candidate with \(t'>t\) is worse in its
+last objective. Thus every stated point is **globally Pareto-optimal**,
+and the constructive same-\(t\) witness proves completeness: every
+other feasible objective point is dominated.
 
-Since each objective is a block mean of decision variables in
-([0,1]), any such feasible objective vector has a valid
-decision-space preimage obtained by assigning its objective value
-as a constant to all variables in its corresponding block, provided
-(N) is divisible by (M) as in the standard DTLZ8 setting.
+The original DTLZ8 objectives are averages of decision-variable
+blocks. For standard \(N\) divisible by \(M\), every mathematically
+feasible objective vector in \([0,1]^M\) can be implemented in
+decision space by assigning its corresponding objective value to
+all variables of the relevant block.
 
-Consequently, this gives an **exact analytical PF construction for
-the published constrained model** at (Mge3), independent of
-the incumbent CSV or fallback sampling algorithm. It does **not**
-on its own certify **finite coverage, cardinality, float64 equality
-constraints or surface-area regularity** of any existing CSV reference.
-The source audit tests a constructive domination witness for those
-independently generated objective samples.
+This is an **exact analytical PF characterization for the
+published constrained model**, independent of the current CSV
+or fallback sampler. It does not alone certify a particular
+finite reference's **coverage, numerical cardinality, IEEE
+roundoff or surface-area regularity**. The research audit
+constructs a domination witness for the actual CSV objectives.
 
 ## Existing established evidence (not new measurements)
 
@@ -281,149 +285,163 @@ tests. Their success is a necessary mathematical consistency check,
 
 ## Published DPF4: independent Pareto proof and angular covering
 
-The original DPF paper's Section IV-F requires the same **ascending
-chaotic projection thresholds** in DPF4 as in DPF3. A sorted-threshold
-published DPF4 reference can therefore be characterized independently
-of the current source.
+The original DPF publication (Zhen et al., Section IV-F) requires
+**increasingly sorted chaotic projection thresholds** for both
+DPF3 and DPF4. The DPF4 published model can therefore be
+characterized independently of its currently unsorted source.
 
-Let (H_D(	heta)) be the nonnegative unit hyperspherical direction,
-let (	heta_j=pi x_j/2), and define the essential vector
+Let \(H_D(\theta)\) denote the nonnegative unit hyperspherical
+direction, where \(\theta_j=\pi x_j/2\). Define the essential
+objectives as
 
-[
-gamma(x)=(1+g(x))(mathbf1-H_D(	heta(x))),
-]
+\[
+\gamma(x)=(1+g(x))(\mathbf 1-H_D(\theta(x))),
+\]
 
-where
+with the nonnegative distance function
 
-[
-g(x)=100sum_{j=D}^{N}
- left(1+(x_j-0.5)^2-cos(20pi(x_j-0.5))ight)ge0 .
-]
+\[
+g(x)=100\sum_{j=D}^{N}
+\left[1+(x_j-0.5)^2-\cos(20\pi(x_j-0.5))\right]\ge0.
+\]
 
-Equality holds exactly when all distance variables equal 0.5. With
-the **ascending** (eta) thresholds, the DPF4 objective map is
-the DPF3-style componentwise min/max projection followed by a
-**square of every objective coordinate**:
+The equality \(g=0\) holds precisely when all distance
+variables are \(0.5\). Using increasingly sorted \(\eta\)
+thresholds, the published DPF4 objective vector is the
+DPF3-style ordered min/max projection, followed by
+**squaring every resulting coordinate**:
 
-[
-F(x)=left(gamma_1^2,ldots,gamma_{D-1}^2,
-             p_0(gamma_D)^2,ldots,p_U(gamma_D)^2ight).
-]
+\[
+F(x)=\left(
+\gamma_1^2,\ldots,\gamma_{D-1}^2,
+p_0(\gamma_D)^2,\ldots,p_U(\gamma_D)^2
+\right).
+\]
 
-**Global Pareto membership and completeness:** all projection values
-and essential objectives are nonnegative, so squaring is strictly
-order-preserving. The sorted projection obeys the order-reflecting
-identity
+**Global Pareto membership and completeness:** every coordinate
+is nonnegative, so squaring preserves coordinate order and
+strict improvements. For ordered thresholds the unsquared
+projection obeys the order-reflecting identity
 
-[
-sum_{i=0}^{U}p_i(t)=t+sum_{j=1}^{U}eta_j.
-]
+\[
+\sum_{i=0}^{U}p_i(t)
+=t+\sum_{j=1}^{U}\eta_j.
+\]
 
-If another feasible point dominated a point with (g=0), the
-componentwise order in squared objectives would imply dominance
-of its essential (gamma) vector. But ((1+g)(mathbf1-H_D))
-cannot strictly dominate a nonnegative unit-hyperspherical
-(g=0) vector: this would require a nonnegative unit vector
-componentwise greater than another, with strict improvement,
-contradicting unit norm. Conversely, any point with (g>0)
-is dominated by retaining its angles and setting its distance
-variables to 0.5. Thus **under the published sorted-threshold
-model**, (PS_{DPF4}={x:g(x)=0}) and (PF=F(PS)).
+Dominance of a point with \(g=0\) would imply dominance
+of its essential \(\gamma\) vector. But two nonnegative
+unit hyperspherical directions cannot be strictly
+componentwise ordered: increasing a coordinate without
+decreasing others contradicts unit norm. Conversely, any
+point with \(g>0\) is dominated by keeping its angles
+and setting distance variables to \(0.5\).
+Thus, **for the published sorted-threshold model**,
 
-**Continuous finite covering:** each angular derivative of
-(H_D) has norm at most one, so the hyperspherical map is
-1-Lipschitz. The ordered projection on (gamma_D) is also
-1-Lipschitz in the Euclidean norm; on (g=0), each unsquared
-objective belongs to ([0,1]), where (|a^2-b^2|le2|a-b|).
-Therefore the complete published DPF4 angular mapping is at
-most **2-Lipschitz**. A `k`-point-per-angle complete tensor
-grid, with (k^{D-1}) nominal rows and no need for samplewise
-nondominated filtering, obeys the **ideal real-arithmetic**
-continuous Hausdorff bound
+\[
+\boxed{PS_{DPF4}=\{x:g(x)=0\},\qquad
+PF_{DPF4}=F(PS_{DPF4}).}
+\]
 
-[
-oxed{
-d_H(PF,GT_k)
-lerac{sqrt{D-1},pi}{2(k-1)}
+**Continuous finite covering:** each angular partial derivative
+of \(H_D\) has norm at most one, so the hyperspherical map
+is 1-Lipschitz. The ordered projection on \(\gamma_D\)
+is also 1-Lipschitz in Euclidean norm. On \(g=0\), its
+unsquared objective coordinates belong to \([0,1]\),
+where \(|a^2-b^2|\le2|a-b|\). Hence the final published
+DPF4 angular map is at most **2-Lipschitz**.
+
+An endpoint-inclusive, complete \(k\)-point-per-angle tensor
+grid, containing \(k^{D-1}\) nominal decision rows, gives
+an **ideal exact-real-arithmetic** Euclidean Hausdorff
+covering bound over the entire published PF:
+
+\[
+\boxed{
+d_H(PF,GT_k)\le
+\frac{\sqrt{D-1}\,\pi}{2(k-1)}.
 }
-]
+\]
 
-in **unnormalized Euclidean objective space**. The proof does
-not supply a rigorous float64 error bound, nor guarantee that
-the tensor grid fits a fixed operational budget at high
-intrinsic D. Numerical objective duplicates near hyperspherical
+This does **not** constitute a formally enclosed
+\`float64\` error bound or a fixed-cost guarantee in high
+intrinsic dimensions. Numerical duplicates near spherical
 singularities must be counted independently.
 
-This identifies **two independent DPF4 correction requirements**:
-restore the published evaluation's sorted thresholds and
-use an appropriate MOP-specific finite GT sampler. The
-original random/structured BaseDPF parameter generator is
-not automatically certified by the above angular-grid theorem.
+Therefore a production correction needs **both** a published
+sorted-threshold evaluator and a validated MOP-specific
+finite reference generator. The shared random/structured
+\`BaseDPF\` position sampler is not certified merely by
+establishing this angular tensor-grid theorem.
 
 ## Exact-real DTLZ8 finite reference candidate (research only)
 
-With the mathematical central curve and M-1 two-dimensional Pareto
-arms established above, complete componentwise parameter grids can
-provide an **analytical continuous objective-space covering bound**.
-A read-only candidate in
-[`scripts/audit/gt_dtlz8_analytic_candidate_issue119.py`](../../../scripts/audit/gt_dtlz8_analytic_candidate_issue119.py)
-constructs valid block-constant decision preimages, retains a complete
-grid on every component and refills duplicate arm endpoints
-deterministically to preserve the user-requested count of distinct
-objectives. **It is not installed in `DTLZ8.ps()`.**
+The analytically characterized central curve and \(M-1\)
+two-dimensional arms admit complete componentwise parameter
+grids with **continuous objective-space covering guarantees**.
+The read-only candidate
+[\`scripts/audit/gt_dtlz8_analytic_candidate_issue119.py\`](../../../scripts/audit/gt_dtlz8_analytic_candidate_issue119.py)
+generates decision-space preimages using block-constant
+variables, retains a complete grid on each component and
+fills duplicate arm endpoints with reproducible interior
+samples to preserve the requested count of distinct
+objective vectors. **This candidate is not installed
+in production \`DTLZ8.ps()\`.**
 
-Parameterize the central curve by `t in [1/3,1]`, and any arm
-by `t in [0,1/3]`, `s in [0,1]`:
+Parameterize the central curve by \(t\in[1/3,1]\), and
+each arm by \(t\in[0,1/3]\), \(s\in[0,1]\). For the arm,
 
-[
-a(t,s)=rac{1-t}{4}+
-       rac{s(1-3t)}4,qquad
+\[
+a(t,s)=\frac{1-t}{4}+\frac{s(1-3t)}4,\qquad
 b(t,s)=1-2t-a(t,s).
-]
+\]
 
-The arm has one objective equal to `a`, all other earlier
-objectives equal to `b`, and final objective equal to `t`.
+The distinguished earlier objective is \(a\), every other
+earlier objective is \(b\), and the final objective is \(t\).
 
-For a complete `k_c`-point central grid, the Euclidean
-derivative of the center has norm
-(sqrt{1+(M-1)/16}), and every continuous central point
-is at most
+On a complete \(k_c\)-point central grid, the Euclidean
+norm of the derivative of the central curve is
+\(\sqrt{1+(M-1)/16}\). Thus the continuous central
+covering error satisfies
 
-[
-R_c le rac{sqrt{1+(M-1)/16}}{3(k_c-1)}
-]
+\[
+R_c\le\frac{\sqrt{1+(M-1)/16}}{3(k_c-1)}.
+\]
 
-from a grid sample. The arm derivatives satisfy
+For each arm, the partial-derivative norms obey
 
-[
-sup_{t,s}|partial F/partial t|_2
- = sqrt{(49M-81)/16},quad
-sup_{t,s}|partial F/partial s|_2
- = sqrt{M-1}/4 .
-]
+\[
+\sup_{t,s}\left\|\frac{\partial F}{\partial t}\right\|_2
+=\sqrt{\frac{49M-81}{16}},\qquad
+\sup_{t,s}\left\|\frac{\partial F}{\partial s}\right\|_2
+=\frac{\sqrt{M-1}}4.
+\]
 
-The first equality follows from convexity of the squared derivative
-norm in `s` and comparison at its endpoints for `M>=3`.
-A complete `k_t` by `k_s` parameter grid in every arm then
-satisfies, by the triangle inequality along parameter coordinate
-directions,
+The first identity follows by convexity in \(s\) of the
+squared derivative norm and comparison at endpoints
+for \(M\ge3\). For a complete \(k_t\times k_s\) arm
+grid, the triangle inequality along parameter directions gives
 
-[
-R_a le
-rac{sqrt{(49M-81)/16}}{6(k_t-1)}
-+
-rac{sqrt{M-1}}{8(k_s-1)}.
-]
+\[
+R_a\le
+\frac{\sqrt{(49M-81)/16}}{6(k_t-1)}
++\frac{\sqrt{M-1}}{8(k_s-1)}.
+\]
 
-If **every** component grid is fully retained, the entire published
-PF has **exact-real-arithmetic** Hausdorff covering upper bound
-(max{R_c,R_a}), in unnormalized Euclidean objective space.
-There are nominally
-(k_c+(M-1)k_tk_s) grid rows before identifying shared
-component boundaries. The candidate searches feasible integer
-splits for the lowest analytic bound and replenishes duplicates.
-These results **do not certify float64 interval rounding** or
-a universal distribution law over mixed intrinsic dimensions.
+When **every** component grid is completely retained,
+the full published PF has exact-real-arithmetic Euclidean
+Hausdorff covering error at most
+
+\[
+\boxed{d_H(PF,GT)\le\max\{R_c,R_a\}.}
+\]
+
+There are nominally \(k_c+(M-1)k_tk_s\) grid rows
+before identifying shared component boundaries. The
+candidate searches feasible integer splits for the lowest
+analytical bound, then replenishes duplicates. These
+results do **not** formally enclose IEEE rounding
+or specify a universal measure over mixed-dimensional
+front components.
 
 ## Reproduced analytical DTLZ8 candidate results
 
