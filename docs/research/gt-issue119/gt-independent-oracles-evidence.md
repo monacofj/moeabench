@@ -55,10 +55,29 @@ Representative *worst over the three seeds* raw objective-space gaps:
 | DPF5 | 5 | P | 0.448826 | 0.286130 |
 | DPF5 | 5 | D | 0.194592 | 0.074074 |
 
-A subsequent expanded workflow includes the special native M=4
-DTLZ8 path and high-dimensional M=10. Its final results must be
-examined independently; the table above applies only to the
-first executed M=3/5 study.
+The expanded workflow now **passed 77 positive tests**, covering
+M=3/4/5/10 and 96 finite-probe scenarios. At the worst of three
+predeclared seeds, every one of **38 component groups** had a lower
+finite maximum gap at n=512 than n=128. This includes the native
+M=4 preservation strategy and higher-dimensional M=10:
+
+| Problem | M | Component | n=128 | n=512 |
+|---|---:|---|---:|---:|
+| DTLZ8 | 4 | line | 0.011698 | 0.002859 |
+| DTLZ8 | 4 | patch 0 | 0.073223 | 0.032387 |
+| DTLZ8 | 10 | patch 0 | 0.155688 | 0.074759 |
+| DPF3 | 10 | front | 0.103244 | 0.046471 |
+| DPF4 | 10 | front | 0.314782 | 0.091268 |
+| DPF5 | 10 | P | 0.715075 | 0.559252 |
+| DPF5 | 10 | D | 0.354670 | 0.048525 |
+
+The comparatively large remaining P-region distance of DPF5
+at M=10, n=512 is **not a mathematical PF-membership defect**;
+it documents sparse finite covering of an intrinsically
+nine-dimensional component. No arbitrary pass/fail gap threshold
+is introduced by this research. The results should inform
+purpose-specific sampling budgets and indicator sensitivity,
+rather than automatically raise the `calibrate()` default.
 
 ## Scientific limitations
 
