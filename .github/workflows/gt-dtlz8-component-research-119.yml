@@ -142,13 +142,17 @@ jobs:
           for record in evidence:
               print("DTLZ8_POLICY", record["M"], record["requested"],
                     "incumbent_unique", record["incumbent_unique"],
-                    "preference", record["finite_probe_max_gap_preference"])
+                    "preference", record["finite_probe_max_gap_preference"],
+                    "hybrid_vs_halton", record["hybrid_no_worse_than_halton"],
+                    "hybrid_vs_lattice", record["hybrid_no_worse_than_lattice"])
               for name, metrics in record["per_component"].items():
                   print("POLICY_COMPONENT", record["M"], record["requested"],
                         name, "halton_worst_gap",
                         round(metrics["candidate"]["worst_max_gap"], 6),
                         "lattice_worst_gap",
-                        round(metrics["lattice"]["worst_max_gap"], 6))
+                        round(metrics["lattice"]["worst_max_gap"], 6),
+                        "hybrid_worst_gap",
+                        round(metrics["hybrid"]["worst_max_gap"], 6))
           PY
       - uses: actions/upload-artifact@v4
         with:
