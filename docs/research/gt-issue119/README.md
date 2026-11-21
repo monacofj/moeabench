@@ -16,6 +16,9 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 - [gt-independent-oracles-evidence.md](gt-independent-oracles-evidence.md) —
   independent DTLZ8 and DPF3/4/5 analytical probes, component-wise
   finite covering and published-equation evaluator crosschecks.
+- [gt-fixed-moea-reference-sensitivity.md](gt-fixed-moea-reference-sensitivity.md) —
+  preregistered real NSGA-II/SPEA2 fixed-front IGD/IGD+/HV reference
+  resolution study, with JSON evidence and explicit scientific limits.
 - [gt-postfix-quantitative-evidence.md](gt-postfix-quantitative-evidence.md) —\n  executed finite-sample cardinality, independent covering gaps and\n  fixed-population raw IGD/IGD+ reference sensitivity for issue #119.\n- [gt-postfix-status-matrix.md](gt-postfix-status-matrix.md) — per-MOP
   scientific status after PRs #140/#143/#146/#148/#149/#150, with
   explicit remaining acceptance/certification gates.
