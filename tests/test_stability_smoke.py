@@ -169,6 +169,27 @@ def test_experiment_seed_schedule_signature(monkeypatch):
 
 @pytest.mark.parametrize("problem_name", SMOKE_GT_CASES, ids=SMOKE_GT_CASES)
 def test_smoke_gt_reproducibility(problem_name):
+    if problem_name == "DTLZ8":
+        # The archived static DTLZ8 reference is not on the published
+        # Pareto front. Certify the corrected deterministic geometry,
+        # rather than silently rewriting the historical reference.
+        mop = _build_problem(problem_name)
+        observed = np.asarray(mop.pf(n_points=100))
+        np.testing.assert_array_equal(observed, mop.pf(n_points=100))
+        assert observed.shape == (100, mop.M)
+        assert len(np.unique(observed, axis=0)) == 100
+        t, y = observed[:, -1], observed[:, :-1]
+        assert np.all(t[:, None] + 4*y >= 1 - 1e-12)
+        assert np.all(2*t + y[:, 0] + y[:, 1] >= 1 - 1e-12)
+        line = t >= 1/3
+        np.testing.assert_allclose(
+            y[line], np.repeat(((1-t[line])/4)[:, None], 2, axis=1),
+            atol=1e-12, rtol=0)
+        z = np.sort(y[~line], axis=1)
+        np.testing.assert_allclose(z[:, 0]+z[:, 1],
+                                   1-2*t[~line], atol=1e-12, rtol=0)
+        return
+
     expected = STABILITY_GT["smoke"][problem_name]
     forward_max, backward_max = _gt_geometry_signature(problem_name)
     assert forward_max <= expected["forward_max"] + 1e-12
