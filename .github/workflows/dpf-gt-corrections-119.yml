@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DPF3/DPF5 published GT corrections (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/dpf-gt-corrections-119.yml"
+      - "moeabench/mops/DPF3.py"
+      - "moeabench/mops/DPF5.py"
+      - "tests/unit/test_dpf3_dpf5_published_equations_issue119.py"
+      - "tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py"
+      - "docs/adr/0057-proposed-purpose-specific-gt-budgets.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published-reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install base scientific and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Independent published-equation and geometry-specific sampler tests
+        run: |
+          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py -q
+      - name: Summarize corrected finite reference cardinality
+        run: |
+          python - <<'PY'
+          import numpy as np
+          from moeabench.mops.DPF3 import DPF3
+          from moeabench.mops.DPF5 import DPF5
+
+          for cls, params in ((DPF3, [(3,2),(5,3),(6,4)]),
+                              (DPF5, [(3,2),(5,2),(6,3),(6,4)])):
+              for m, d in params:
+                  mop=cls(M=m, D=d)
+                  for n in (128,512):
+                      ps=mop.ps(n_points=n)
+                      f=mop.evaluation(ps)["F"]
+                      unique=len(np.unique(f, axis=0))
+                      if len(ps) != n or unique != n:
+                          raise AssertionError(f"{cls.__name__} M={m} D={d}: {len(ps)}/{unique} != {n}")
+                      branches = "" if cls is DPF3 else (
+                          f" P={int(np.sum(ps[:,0] < 1/3))}"
+                          f" D={int(np.sum(ps[:,0] >= 1/3))}")
+                      print(f"GT {cls.__name__} M={m} D={d} requested={n}"
+                            f" returned={len(ps)} unique={unique}{branches}")
+          PY
