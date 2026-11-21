@@ -48,6 +48,13 @@ included once when budget permits. Remaining patch points use
 deterministic base-2 and base-3 radical inverses strictly inside
 the parameter rectangle, avoiding interface duplicates. It yields exactly n
 distinct objective vectors and deterministic replay for supported M.
+As a second research candidate, `patch_strategy="lattice"` uses a
+deterministic, approximately square, parameter-space lattice for the
+remaining patch interiors, retaining the same anchors and budgets.
+This may have better small-budget covering properties, but is not
+assumed to be uniform in objective geometry. Both variants are
+compared independently with the incumbent.
+
 This allocation is **only an explicit component-presence policy**.
 It is *not* a canonical measure, uniform objective-surface density,
 or proof of optimal finite-sample spacing.
@@ -64,8 +71,10 @@ The standalone script
 compares the incumbent against this candidate at identical requested
 budgets. It generates **separate** objective-space probes for the line
 and each patch using radical-inverse bases 5 and 7 (independent of
-the candidate's bases 2 and 3), with separate deterministic\nirrational rotations for each probe seed and records per-component maximum and
-mean nearest-neighbor distances plus positive-part IGD+ distances.
+the candidate's bases 2 and 3), with separate deterministic
+irrational rotations for each probe seed and records per-component maximum and
+mean nearest-neighbor distances plus positive-part IGD+ distances
+for the incumbent, Halton candidate and structured lattice candidate.
 Suggested run:
 
 ```sh
