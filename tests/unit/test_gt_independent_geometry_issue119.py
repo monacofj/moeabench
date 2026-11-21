@@ -10,7 +10,7 @@ from scripts.audit.gt_independent_geometry_issue119 import (
 )
 
 
-@pytest.mark.parametrize("m,d", [(3,2), (5,2), (5,3)])
+@pytest.mark.parametrize("m,d", [(3,2), (4,2), (5,2), (5,3), (10,3)])
 @pytest.mark.parametrize("name", SUPPORTED)
 def test_independent_geometry_probes_have_all_components(name,m,d):
     groups = independent_probes(name,m,d,32,11941)
@@ -38,7 +38,7 @@ def test_independent_geometry_probes_have_all_components(name,m,d):
 
 
 @pytest.mark.parametrize("name", ["DPF3","DPF4","DPF5"])
-@pytest.mark.parametrize("m,d", [(3,2),(5,2),(5,3)])
+@pytest.mark.parametrize("m,d", [(3,2),(4,2),(5,2),(5,3),(10,3)])
 def test_independent_published_equations_match_evaluator(name,m,d):
     assert evaluator_independent_residual(name,m,d) < 1e-12
 
