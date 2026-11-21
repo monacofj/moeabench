@@ -66,6 +66,29 @@ def _gt_geometry_signature(problem_name: str) -> tuple[float, float]:
 
 @pytest.mark.parametrize("problem_name", GT_PROBLEMS, ids=GT_PROBLEMS)
 def test_gt_reference_reproducibility(problem_name):
+    if problem_name == "DTLZ9":
+        from scipy.special import ellipeinc
+
+        mop = _build_problem(problem_name)
+        n_points = STABILITY_GT_GEOMETRY["problems"][problem_name]["n_points"]
+        observed = np.asarray(mop.pf(n_points=n_points), dtype=float)
+        np.testing.assert_array_equal(observed, mop.pf(n_points=n_points))
+        assert observed.shape == (n_points, mop.M)
+        assert len(np.unique(observed, axis=0)) == n_points
+        np.testing.assert_allclose(
+            observed[:, :-1],
+            np.repeat(observed[:, :1], mop.M - 1, axis=1),
+            rtol=0, atol=1e-13)
+        np.testing.assert_allclose(
+            observed[:, 0]**2 + observed[:, -1]**2,
+            np.ones(n_points), rtol=0, atol=1e-13)
+        angles = np.arctan2(observed[:, -1], observed[:, 0])
+        lengths = ellipeinc(angles, 2 - mop.M)
+        np.testing.assert_allclose(
+            lengths, np.linspace(0, lengths[-1], n_points),
+            rtol=0, atol=1e-12)
+        return
+
     if problem_name == "DTLZ8":
         # The former static M=3 reference is feasible but mathematically
         # off Pareto; comparing against it would certify the old defect.
