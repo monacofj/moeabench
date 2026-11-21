@@ -10,6 +10,7 @@ on:
       - "tests/unit/test_gt_remaining_mop_matrix_issue119.py"
       - "scripts/audit/gt_dtlz8_analytic_candidate_issue119.py"
       - "tests/unit/test_gt_dtlz8_analytic_candidate_issue119.py"
+      - "tests/unit/test_gt_dpf4_published_angular_cover_issue119.py"
       - "docs/research/gt-issue119/gt-remaining-mop-inventory-issue119.md"
   workflow_dispatch:
 
@@ -31,7 +32,7 @@ jobs:
       - name: Install scientific and test dependencies
         run: python -m pip install -e . pytest
       - name: Independent remaining-MOP tests
-        run: python -m pytest tests/unit/test_gt_remaining_mop_matrix_issue119.py tests/unit/test_gt_dtlz8_analytic_candidate_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_remaining_mop_matrix_issue119.py tests/unit/test_gt_dtlz8_analytic_candidate_issue119.py tests/unit/test_gt_dpf4_published_angular_cover_issue119.py -q
       - name: Produce complete MOP audit matrix
         run: |
           python -m scripts.audit.gt_remaining_mop_matrix_issue119 \
