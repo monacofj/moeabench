@@ -72,12 +72,14 @@ def compare(m, budget, probes_per_component=256, offset=11941):
     mop = DTLZ8(M=m)
     incumbent = np.asarray(mop.pf(n_points=budget), dtype=float)
     candidate = candidate_objectives(m, budget)
+    lattice = candidate_objectives(m, budget, patch_strategy="lattice")
     probes = independent_probes(m, probes_per_component, offset)
     records = {}
     for name, reference in probes.items():
         records[name] = {
             "incumbent": _distance_statistics(reference, incumbent),
             "candidate": _distance_statistics(reference, candidate),
+            "lattice": _distance_statistics(reference, lattice),
         }
     return {
         "M": m, "requested": budget,
@@ -85,6 +87,8 @@ def compare(m, budget, probes_per_component=256, offset=11941):
         "incumbent_unique": len(np.unique(incumbent, axis=0)),
         "candidate_count": len(candidate),
         "candidate_unique": len(np.unique(candidate, axis=0)),
+        "lattice_count": len(lattice),
+        "lattice_unique": len(np.unique(lattice, axis=0)),
         "probe_offset": offset, "probe_count_per_component": probes_per_component,
         "components": records,
         "continuous_coverage_certified": False,
