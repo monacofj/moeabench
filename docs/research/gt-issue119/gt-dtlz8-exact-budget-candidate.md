@@ -57,15 +57,36 @@ cardinality, objective-to-decision inversion, published constraints,
 presence of every patch, central-line endpoints and deterministic
 replay for M=2,3,4,5,10 and budgets up to 2,000.
 
+## Independent finite-probe comparison
+
+The standalone script
+`scripts/audit/gt_dtlz8_component_comparison_issue119.py`
+compares the incumbent against this candidate at identical requested
+budgets. It generates **separate** objective-space probes for the line
+and each patch using radical-inverse bases 5 and 7 (independent of
+the candidate's bases 2 and 3) and records per-component maximum and
+mean nearest-neighbor distances plus positive-part IGD+ distances.
+Suggested run:
+
+```sh
+python -m scripts.audit.gt_dtlz8_component_comparison_issue119 --objectives 2 3 4 5 10 --budgets 128 512 --seeds 11941 11942 11943 --probes 256 > dtlz8-component-comparison.json
+```
+
+These are explicitly **finite-probe** diagnostics, not continuous
+Hausdorff certificates. No line/patch aggregate or canonical
+mixed-dimensional probability weighting is imposed; the report
+must be reviewed component by component. New smoke tests check
+probe construction and diagnostic invariants.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
    including the equality edges and M=3 symmetry, against the
    published constraint geometry.
-2. Measure objective-space covering gaps, nearest-neighbor spacing
-   and component-wise discrepancies against **independent**
-   high-resolution line and patch samples. Compare to the incumbent
-   at fixed budgets, 3+ predetermined seeds and M=3,4,5,10.
+2. Run and review independent component-wise covering gaps,
+   nearest-neighbor spacing and discrepancies at higher resolutions;
+   examine the three predetermined probe offsets for M=2,3,4,5,10
+   and ensure any claimed improvement holds for each relevant region.
 3. Study how line-versus-patch allocation affects IGD and IGD+,
    recognizing their finite-reference weights; do not silently
    equate a one-dimensional line with an area measure.
