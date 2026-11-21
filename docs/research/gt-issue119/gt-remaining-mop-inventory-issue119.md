@@ -84,8 +84,8 @@ t+4f_i\ge 1,\qquad
 \]
 
 The second family is equivalent to the published
-\`2*f_M + min_{i<j}(f_i+f_j) - 1 >= 0\` constraint, evaluated by
-\`DTLZ8._calc_constraints\`. Define
+`2*f_M + min_{i<j}(f_i+f_j) - 1 >= 0` constraint, evaluated by
+`DTLZ8._calc_constraints`. Define
 
 \[
 \alpha(t)=\frac{1-t}{4},\qquad
@@ -363,14 +363,14 @@ d_H(PF,GT_k)\le
 \]
 
 This does **not** constitute a formally enclosed
-\`float64\` error bound or a fixed-cost guarantee in high
+`float64` error bound or a fixed-cost guarantee in high
 intrinsic dimensions. Numerical duplicates near spherical
 singularities must be counted independently.
 
 Therefore a production correction needs **both** a published
 sorted-threshold evaluator and a validated MOP-specific
 finite reference generator. The shared random/structured
-\`BaseDPF\` position sampler is not certified merely by
+`BaseDPF` position sampler is not certified merely by
 establishing this angular tensor-grid theorem.
 
 ## Exact-real DTLZ8 finite reference candidate (research only)
@@ -379,13 +379,13 @@ The analytically characterized central curve and \(M-1\)
 two-dimensional arms admit complete componentwise parameter
 grids with **continuous objective-space covering guarantees**.
 The read-only candidate
-[\`scripts/audit/gt_dtlz8_analytic_candidate_issue119.py\`](../../../scripts/audit/gt_dtlz8_analytic_candidate_issue119.py)
+[`scripts/audit/gt_dtlz8_analytic_candidate_issue119.py`](../../../scripts/audit/gt_dtlz8_analytic_candidate_issue119.py)
 generates decision-space preimages using block-constant
 variables, retains a complete grid on each component and
 fills duplicate arm endpoints with reproducible interior
 samples to preserve the requested count of distinct
 objective vectors. **This candidate is not installed
-in production \`DTLZ8.ps()\`.**
+in production `DTLZ8.ps()`.**
 
 Parameterize the central curve by \(t\in[1/3,1]\), and
 each arm by \(t\in[0,1/3]\), \(s\in[0,1]\). For the arm,
