@@ -62,6 +62,7 @@ The permanent, self-contained technical reference is **[gt.md](gt.md)**. The fil
 |---|---|
 | [Production impact inventory](research/gt-issue119/gt-dpf-production-impact-inventory-issue119.md) | Source files, consumers, tests, historical references, and potential correction impact |
 | [Correction and versioned migration proposal](research/gt-issue119/gt-dpf-correction-migration-proposal-issue119.md) | Proposed sequence and approval requirements for evaluator fixes, samplers, frozen references, and calibration budgets |
+| [DPF3/DPF5 historical regression migration review](research/gt-issue119/gt-correction-test-migration-issue119.md) | Exact pre-existing negative-diagnostic test failures, unchanged DPF5 frozen baseline, and explicit test-approval gates |
 | [PR #139 pre-merge review](research/gt-issue119/gt-dpf-premerge-review-issue119.md) | Research-only scope, safeguards, changed-file inventory, and CI verification |
 
 Earlier reports may contain a historical statement such as "global membership has not yet been established." **The consolidated results are given in [gt.md](gt.md) and the subsequent mathematical proofs.** Preliminary observations must not be mistaken for the final conclusions.
