@@ -47,8 +47,9 @@ jobs:
                   flags.append(f"dominated={x['unique_objectives_internally_dominated']}")
               if x.get("feasibility",{}).get("infeasible_above_1e-12"):
                   flags.append("infeasible")
-              if x.get("projection_ordering_publication_check_required"):
-                  flags.append("DPF4_publish_check")
+              if x.get("published_ascending_thresholds_required"):
+                  flags.append("DPF4_published_disagreeing="+str(x["published_sorted_DPF4_disagreeing_rows_tol_1e_12"]))
+                  flags.append("DPF4_max_formula_delta="+format(x["published_sorted_DPF4_max_component_delta"],".6g"))
               witness=x.get("same_fM_independent_pareto_witness")
               if witness:
                   flags.append("constructive_dominated=" + str(witness["strictly_dominated_returned_rows_tol_1e_10"]))
