@@ -92,6 +92,25 @@ jobs:
                  c["constraints"]["infeasible_above_1e-12"]>0]
           print("CONSTRAINED_FLAGS",len(flags),"of",len(r["records"]))
           PY
+      - name: Check static DTLZ8 reference ceiling against calibration budgets
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from moeabench.mops.DTLZ8 import DTLZ8
+          import numpy as np
+
+          for m in (3,5,10):
+              path=Path(f"moeabench/mops/data/DTLZ8_{m}_optimal_x.csv")
+              count=sum(1 for _ in path.open(encoding="utf-8"))
+              mop=DTLZ8(M=m)
+              for n in (2000,10000):
+                  ps=mop.ps(n_points=n)
+                  F=mop.evaluation(ps)["F"]
+                  unique=len(np.unique(F,axis=0))
+                  print("DTLZ8_STATIC",m,"static_rows",count,
+                        "requested",n,"actual",len(ps),"unique",unique,
+                        "static_ceiling",len(ps)<n)
+          PY
       - name: Compare DPF4 with the independently reconstructed original publication
         run: |
           python -m scripts.audit.gt_dpf4_published_equations_issue119 \
