@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   numeric-candidate:
@@ -111,3 +112,10 @@ jobs:
           path: |
             moeabench/resources/certifications/1.0.0/numeric-certificate.json
             moeabench/resources/certified_environment.json
+      - name: Record verified main numerical certificate on issue 119
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 119 --repo "$GITHUB_REPOSITORY" --body \
+            "Numeric 1.0.0 certification **PASSED** for final main source SHA \`$GITHUB_SHA\`. The formal basic suite, approved numerical runtime and frozen fixture digest checks passed. Source-bound evidence: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID (artifact: release-100-numeric-candidate). This does not automatically launch performance certification or publish a release."
