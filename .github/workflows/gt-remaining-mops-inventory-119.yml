@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Remaining MOP Ground Truth inventory (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-remaining-mops-inventory-119.yml"
+      - "scripts/audit/gt_remaining_mops_issue119.py"
+      - "tests/unit/test_gt_remaining_mops_inventory_issue119.py"
+      - "docs/research/gt-issue119/gt-remaining-mops-inventory-issue119.md"
+      - "docs/index.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remaining-mop-inventory:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Run new independent inventory controls
+        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py -q
+      - name: Measure incumbent reference geometry across MOP configurations
+        run: |
+          python -m scripts.audit.gt_remaining_mops_issue119 \
+            --objectives 3 5 --budgets 128 512 --intrinsic 2 3 \
+            --probes 2048 > gt119-remaining-mops-inventory.json
+          python - <<'PY'
+          import json
+          report=json.load(open("gt119-remaining-mops-inventory.json"))
+          for row in report["records"]:
+              extra=""
+              if "simplex_extreme_max_gap" in row:
+                  extra=f" simplex-extreme-gap={row['simplex_extreme_max_gap']:.5f}"
+              if "essential_simplex_extreme_max_gap" in row:
+                  extra=f" essential-extreme-gap={row['essential_simplex_extreme_max_gap']:.5f}"
+              if "constraints" in row:
+                  extra=f" infeasible(strict/tol)={row['constraints']['infeasible_strict_float']}/{row['constraints']['infeasible_above_1e-12']}"
+              if "record_domain" in row:
+                  rec=row["record_domain"]
+                  extra=f" components={rec['sampled_components']}/{rec['possible_components']}"
+              print(row["name"],"M",row["M"],"D",row["D"],
+                    "budget",row["requested"],"PS/PF/unique",
+                    row["PS_rows"],row["PF_rows"],row["PF_float64_exact_unique"],
+                    "dominated",row["PF_unique_internal_dominated"],
+                    "replay",row["repeat_exact"],extra)
+          flagged=[r for r in report["records"] if
+                   (r["PS_rows"]!=r["requested"] or
+                    r["PF_float64_exact_unique"]!=r["requested"] or
+                    r["PF_unique_internal_dominated"]!=0 or
+                    r.get("constraints",{}).get("infeasible_above_1e-12",0)>0)]
+          print("SUMMARY",len(report["records"]),"rows",len(flagged),
+                "diagnostic flags; none by itself proves the GT invalid")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-remaining-mop-inventory
+          path: gt119-remaining-mops-inventory.json
+          retention-days: 30
