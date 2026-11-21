@@ -16,6 +16,7 @@ on:
       - "tests/unit/test_gt_dtlz8_membership_issue119.py"
       - "tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py"
       - "tests/unit/test_gt_dtlz8_policy_issue119.py"
+      - "tests/unit/test_gt_dtlz8_hybrid_issue119.py"
       - "docs/research/gt-issue119/gt-dtlz8-exact-budget-candidate.md"
   workflow_dispatch:
 
@@ -44,7 +45,8 @@ jobs:
             tests/unit/test_gt_dtlz8_component_comparison_issue119.py \
             tests/unit/test_gt_dtlz8_membership_issue119.py \
             tests/unit/test_gt_dtlz8_spacing_sensitivity_issue119.py \
-            tests/unit/test_gt_dtlz8_policy_issue119.py
+            tests/unit/test_gt_dtlz8_policy_issue119.py \
+            tests/unit/test_gt_dtlz8_hybrid_issue119.py
       - name: Compare reference geometry component by component
         run: |
           python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
