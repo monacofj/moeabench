@@ -92,11 +92,26 @@ def m4_preserving_completion(incumbent, lattice, budget, *, tolerance=1e-10):
     unique_incumbent = incumbent[np.sort(indices)]
     if len(unique_incumbent) > budget:
         raise ValueError("Incumbent already exceeds the requested budget.")
-    combined = np.concatenate((unique_incumbent, lattice), axis=0)
-    _, indices = np.unique(combined, axis=0, return_index=True)
-    completed = combined[np.sort(indices)][:budget]
-    if len(completed) != budget:
+    # Select additional points farthest from the preserved reference,
+    # rather than filling in lattice row order (which overfills the line).
+    # Greedy distances are measured in the native objective space.
+    candidates = np.unique(lattice, axis=0)
+    if len(candidates) + len(unique_incumbent) < budget:
         raise ValueError("Insufficient distinct candidates to fill budget.")
+    minimum = cKDTree(unique_incumbent).query(candidates, k=1)[0] ** 2
+    selected = []
+    for _ in range(budget - len(unique_incumbent)):
+        chosen = int(np.argmax(minimum))
+        if minimum[chosen] <= 0:
+            raise ValueError("Insufficient distinct candidates to fill budget.")
+        point = candidates[chosen]
+        selected.append(point)
+        new_distance = np.sum((candidates - point) ** 2, axis=1)
+        minimum = np.minimum(minimum, new_distance)
+        minimum[chosen] = -1.0  # disallow selecting this point again
+    completed = np.vstack((unique_incumbent, np.asarray(selected)))
+    if len(completed) != budget or len(np.unique(completed, axis=0)) != budget:
+        raise ValueError("Completion failed unique-budget contract.")
     return completed
 
 
