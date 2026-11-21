@@ -1,0 +1,39 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DPF5 inaugural numerical GT calibration (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/dpf5-initial-calibration-119.yml"
+      - "scripts/audit/record_dpf5_initial_calibration_issue119.py"
+      - "moeabench/mops/DPF5.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  inaugural-dpf5-gt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NPY_DISABLE_CPU_FEATURES: X86_V4
+      OPENBLAS_CORETYPE: HASWELL
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install exact reference numerical environment
+        run: |
+          python -m pip install -e . pytest
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+          python -m pip install threadpoolctl
+      - name: Confirm numerical reference stack
+        run: python scripts/check_numerical_reference_runtime.py
+      - name: Emit inaugural DPF5 GT candidate and independent oracle validation
+        run: python -m scripts.audit.record_dpf5_initial_calibration_issue119
