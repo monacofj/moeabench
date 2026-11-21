@@ -74,3 +74,18 @@ def test_dtlz8_m2_is_complete_single_constraint_line():
     np.testing.assert_allclose(f[:, 0], (1 - f[:, 1])/4, rtol=0, atol=0)
     np.testing.assert_array_equal(f[0], [0.25, 0.0])
     np.testing.assert_array_equal(f[-1], [0.0, 1.0])
+
+
+@pytest.mark.parametrize("m", [3, 4, 5, 10])
+def test_dtlz8_candidate_includes_patch_extremes_and_shared_seam(m):
+    f = candidate_objectives(m, 512)
+    for k in range(m-1):
+        extreme = np.full(m, 0.75)
+        extreme[k] = 0.25
+        extreme[-1] = 0
+        assert np.any(np.all(np.isclose(f, extreme, rtol=0, atol=1e-15),
+                             axis=1))
+    seam = np.full(m, 0.5)
+    seam[-1] = 0
+    assert np.count_nonzero(np.all(np.isclose(f, seam, rtol=0, atol=1e-15),
+                                   axis=1)) == 1
