@@ -25,7 +25,7 @@ def test_independent_geometry_probes_have_all_components(name,m,d):
         for key, f in groups.items():
             t,y = f[:,-1],f[:,:-1]
             if key=="line":
-                np.testing.assert_allclose(y,((1-t)/4)[:,None],
+                np.testing.assert_allclose(y,np.repeat(((1-t)/4)[:,None],m-1,axis=1),
                                            atol=1e-14,rtol=0)
             else:
                 z=np.sort(y,axis=1)
