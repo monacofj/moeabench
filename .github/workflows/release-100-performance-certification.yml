@@ -185,7 +185,7 @@ jobs:
                os.environ["GITHUB_REPOSITORY"] + "/actions/runs/" +
                os.environ["GITHUB_RUN_ID"])
           message=(f"Formal performance certification versus immutable 0.18.0: "
-                   f"**{status}** for final main source SHA \`{source}\`. "
+                   f"**{status}** for final main source SHA `{source}`. "
                    f"Six prespecified tests: {decisions}. "
                    f"Execution/evidence: {url}. "
                    f"No baseline was updated and no release tag was created.")
