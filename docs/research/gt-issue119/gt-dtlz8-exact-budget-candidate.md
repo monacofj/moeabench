@@ -220,6 +220,24 @@ to establish a canonical relative weight between the 1-D line and
 the allocation semantics and validate indicator sensitivity
 with independent target populations.
 
+## Historical calibration budget (n=2,000) verification
+
+The read-only 2026-11-21 CI also tested the **actual historical DTLZ
+calibration budget** for M=4. The native generator returned 1,952
+rows / 1,908 distinct front objectives when asked for 2,000.
+The farthest-first completion returned **exactly 2,000 distinct
+analytically on-front objectives**, retaining all 1,908 incumbent
+unique points. For independent probe offset 11941, each surface
+patch's largest observed nearest-reference distance decreased
+from about 0.016202 to 0.015706; in offsets 11942 and 11943
+the maxima were unchanged (approximately 0.015345 and
+0.015784, respectively). The line's observed max gap stayed
+at approximately 0.000728. These are finite-probe tests, not
+certified continuous bounds.
+
+At this checkpoint 72 new scientific tests passed. Calibration
+defaults and persisted references remain unchanged.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
