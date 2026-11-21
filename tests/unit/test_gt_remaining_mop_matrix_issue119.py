@@ -1,0 +1,85 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Independent read-only checks of remaining built-in GT generators (#119)."""
+
+import numpy as np
+import pytest
+
+from scripts.audit.gt_remaining_mop_matrix_issue119 import CLASSES, audit
+
+
+@pytest.mark.parametrize("name", sorted(CLASSES))
+def test_actual_mop_generates_deterministic_finite_replay(name):
+    row = audit(name, m=3, budget=64)
+    assert row["deterministic"] is True
+    assert row["PS_rows"] > 0 and row["PF_rows"] > 0
+    assert row["unique_objective_rows"] > 0
+    assert row["PS_PF_ordered_replay_max_abs"] == 0
+    assert row["global_Pareto_membership_proven_by_this_audit"] is False
+    assert row["continuous_PF_coverage_certified_by_this_audit"] is False
+
+
+@pytest.mark.parametrize("name", ("DTLZ1", "DPF1"))
+@pytest.mark.parametrize("m", [3, 5])
+def test_simplex_geometry_and_finite_cardinality(name, m):
+    row = audit(name, m=m, budget=128)
+    assert row["simplex_sum_half_max_abs"] < 2e-13
+    assert row["PS_rows"] == 128
+    assert row["PF_rows"] == 128
+    assert row["unique_objective_rows"] == 128
+    assert row["unique_objectives_internally_dominated"] == 0
+
+
+@pytest.mark.parametrize("name", ("DTLZ2", "DTLZ3", "DTLZ4"))
+@pytest.mark.parametrize("m", [3, 5])
+def test_sphere_geometry_includes_analytical_axis_extrema(name, m):
+    row = audit(name, m=m, budget=128)
+    assert row["positive_unit_sphere_max_abs"] < 2e-13
+    assert row["max_axis_to_reference_distance"] < 1e-12
+    assert row["unique_objective_rows"] == 128
+
+
+@pytest.mark.parametrize("name", ("DTLZ7", "DPF2"))
+def test_disconnected_pareto_record_region_sampling(name):
+    row = audit(name, m=3, budget=128)
+    assert row["record_patches"]["outside_record_domain"] == 0
+    assert row["record_patches"]["observed"] == row["record_patches"]["expected"]
+    assert row["unique_objectives_internally_dominated"] == 0
+
+
+@pytest.mark.parametrize("name", ("DTLZ8", "DTLZ9"))
+@pytest.mark.parametrize("m", [3, 5])
+def test_constrained_pareto_sources_are_feasible_to_numerical_tolerance(name, m):
+    row = audit(name, m=m, budget=128)
+    assert row["feasibility"]["infeasible_above_1e-12"] == 0
+    assert row["unique_objectives_internally_dominated"] == 0
+
+
+@pytest.mark.parametrize("m", [3, 5])
+def test_dtlz9_front_is_a_repeated_coordinate_quarter_circle(m):
+    row = audit("DTLZ9", m=m, budget=128)
+    assert row["circle_constraint_max_abs"] < 1e-12
+    assert row["first_M_minus_1_objectives_equal_max_abs"] < 1e-12
+
+
+def test_dpf4_records_current_projection_order_without_presuming_paper_fidelity():
+    row = audit("DPF4", m=5, budget=128, intrinsic_d=2)
+    assert row["projection_ordering_publication_check_required"] is True
+    assert row["projection_thresholds_in_ascending_order"] is False
+    # A diagnostic about thresholds is not proof that a replacement
+    # projected front would retain the same global Pareto set.
+    assert row["global_Pareto_membership_proven_by_this_audit"] is False
+
+
+@pytest.mark.parametrize("m", [3, 5, 10])
+def test_dtlz8_static_source_records_actual_rows_not_requested_rows(m):
+    row = audit("DTLZ8", m=m, budget=4096)
+    assert row["source"] == "bundled_static_csv"
+    assert row["PS_rows"] == row["PF_rows"]
+    assert row["PS_rows"] <= 4096
+    assert row["unique_objective_rows"] <= row["PF_rows"]
+
+
+def test_invalid_dpf_dimensions_are_rejected_without_modifying_the_mop():
+    with pytest.raises(ValueError, match="intrinsic dimension"):
+        audit("DPF1", 3, 32, intrinsic_d=3)
