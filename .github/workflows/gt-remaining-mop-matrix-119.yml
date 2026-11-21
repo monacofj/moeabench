@@ -82,7 +82,7 @@ jobs:
       - name: Independently construct continuous-front-certificate candidate
         run: |
           python -m scripts.audit.gt_dtlz8_analytic_candidate_issue119 \
-            --objectives 3 5 10 --budgets 128 512 --probe-count 512 \
+            --objectives 3 5 10 --budgets 128 512 4096 --probe-count 512 \
             > gt119-dtlz8-analytic-candidate.json
           python - <<'PY'
           import json
