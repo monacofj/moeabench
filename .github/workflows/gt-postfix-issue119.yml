@@ -7,7 +7,9 @@ on:
     paths:
       - ".github/workflows/gt-postfix-issue119.yml"
       - "scripts/audit/gt_postfix_quantitative_issue119.py"
+      - "scripts/audit/gt_independent_probes_issue119.py"
       - "tests/unit/test_gt_postfix_quantitative_issue119.py"
+      - "tests/unit/test_gt_independent_probes_issue119.py"
       - "docs/research/gt-issue119/**"
   workflow_dispatch:
 
@@ -30,7 +32,9 @@ jobs:
       - name: Install project and scientific test dependencies
         run: python -m pip install -e . pytest
       - name: Independently verify report invariants
-        run: python -m pytest -q tests/unit/test_gt_postfix_quantitative_issue119.py
+        run: |
+          python -m pytest -q tests/unit/test_gt_postfix_quantitative_issue119.py \
+            tests/unit/test_gt_independent_probes_issue119.py
       - name: Collect all 12 MOPs at 128, 512 and historical GT budgets
         run: |
           python -m scripts.audit.gt_postfix_quantitative_issue119 \
@@ -56,8 +60,28 @@ jobs:
                     "elapsed_s", round(r["elapsed_seconds"], 5),
                     "geometry_residual", r["geometry_residual"])
           PY
+      - name: Collect independent finite-probe covering diagnostics
+        run: |
+          python -m scripts.audit.gt_independent_probes_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --seeds 11941 11942 11943 \
+            --probes 512 > gt-postfix-finite-probes.json
+          python - <<'PY'
+          import json
+          records = json.load(open("gt-postfix-finite-probes.json"))["results"]
+          assert len(records) == 96, len(records)
+          assert all(not r["certified_continuous_bound"] for r in records)
+          for r in records:
+              assert r["finite_max_gap"] >= r["finite_mean_gap"] >= 0
+              print("INDEPENDENT_GT_GAP", r["problem"], "M", r["M"],
+                    "budget", r["budget"], "seed", r["seed"],
+                    "max", round(r["finite_max_gap"], 6),
+                    "mean", round(r["finite_mean_gap"], 6))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt-postfix-quantitative-issue119
-          path: gt-postfix-quantitative.json
+          path: |
+            gt-postfix-quantitative.json
+            gt-postfix-finite-probes.json
           retention-days: 30
