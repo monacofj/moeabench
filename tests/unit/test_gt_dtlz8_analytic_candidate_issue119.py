@@ -73,3 +73,11 @@ def test_small_budget_cannot_claim_complete_grid_guarantee():
     for m in (3,5,10):
         with pytest.raises(ValueError, match="Complete DTLZ8 component grids"):
             candidate(m,2+4*(m-1)-1)
+
+
+@pytest.mark.parametrize("m", [3, 5, 10])
+def test_analytical_candidate_not_limited_by_historical_csv_size(m):
+    data = candidate(m, 4096)
+    assert data["objectives"].shape == (4096, m)
+    assert len(np.unique(data["objectives"],axis=0)) == 4096
+    assert data["replay_max_abs"] < 1e-12
