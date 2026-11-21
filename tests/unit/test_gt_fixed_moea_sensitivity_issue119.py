@@ -9,9 +9,9 @@ from scripts.audit.gt_fixed_moea_sensitivity_issue119 import (
 
 
 def test_public_metrics_respond_to_fixed_reference_changes():
-    front = np.array([[0.4, 0.8, 0.6], [0.8, 0.4, 0.6]])
-    a = np.array([[0.3, 0.9, 0.6], [0.9, 0.3, 0.6]])
-    b = np.array([[0.2, 1.0, 0.7], [1.0, 0.2, 0.7]])
+    front = np.array([[0.4, 0.8, 0.55], [0.8, 0.4, 0.65]])
+    a = np.array([[0.3, 0.9, 0.5], [0.9, 0.3, 0.7]])
+    b = np.array([[0.2, 1.0, 0.45], [1.0, 0.2, 0.8]])
     left = metric_snapshot(front, a)
     right = metric_snapshot(front, b)
     assert set(left) == set(right)
