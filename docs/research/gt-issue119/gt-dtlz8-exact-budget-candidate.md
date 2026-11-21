@@ -10,6 +10,11 @@ Deb, Thiele, Laumanns, Zitzler, *Scalable Test Problems for Evolutionary Multiob
 - `2 f_M + min_{i<j<M}(f_i+f_j) >= 1`;
 - `0 <= f_i <= 1`.
 
+For **M=2**, the published pairwise constraint is absent. The sole
+constraint gives a complete one-dimensional front
+`f_1=(1-t)/4`, `f_2=t`, `0<=t<=1`, sampled independently with
+both endpoints. For **M>=3** the geometry below applies.
+
 Set `t=f_M`, `a(t)=(1-t)/4`, `b(t)=1-2t`.
 For `1/3 <= t <= 1`, the nondominated central line has
 `f_1=...=f_{M-1}=a(t)`.
@@ -33,7 +38,8 @@ The isolated module `scripts/audit/gt_dtlz8_candidate_issue119.py`
 constructs the exact intended objective-space components and
 inverts the block means into constant-block decision vectors.
 
-For a requested budget `n >= M+1`, it allocates
+For M=2 and `n>=2`, the candidate samples the single line directly.
+For M>=3 and a requested budget `n >= M+1`, it allocates
 `max(2, floor(n/M))` rows to the central line and distributes the
 remainder as evenly as possible across the M-1 patches.
 Line points include both endpoints; patch points use deterministic
@@ -47,7 +53,7 @@ or proof of optimal finite-sample spacing.
 The accompanying new independent test module checks the requested
 cardinality, objective-to-decision inversion, published constraints,
 presence of every patch, central-line endpoints and deterministic
-replay for M=3,4,5,10 and budgets up to 2,000.
+replay for M=2,3,4,5,10 and budgets up to 2,000.
 
 ## Remaining scientific checks before production
 
