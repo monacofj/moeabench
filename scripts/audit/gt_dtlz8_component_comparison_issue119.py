@@ -92,6 +92,8 @@ def m4_preserving_completion(incumbent, lattice, budget, *, tolerance=1e-10):
     unique_incumbent = incumbent[np.sort(indices)]
     if len(unique_incumbent) > budget:
         raise ValueError("Incumbent already exceeds the requested budget.")
+    if len(unique_incumbent) == budget:
+        return unique_incumbent.copy()
     # Select additional points farthest from the preserved reference,
     # rather than filling in lattice row order (which overfills the line).
     # Greedy distances are measured in the native objective space.
