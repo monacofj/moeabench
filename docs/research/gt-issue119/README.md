@@ -5,11 +5,15 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Ground Truth Scientific Audit: Issue #119
 
-This directory contains the specialized, reproducible scientific evidence produced by the DPF3/DPF5 Ground Truth investigation, [issue #119](https://github.com/monacofj/moeabench/issues/119), [PR #139](https://github.com/monacofj/moeabench/pull/139).
+This directory contains specialized, reproducible Ground Truth evidence for [issue #119](https://github.com/monacofj/moeabench/issues/119), including the DPF3/DPF5 investigation ([PR #139](https://github.com/monacofj/moeabench/pull/139)) and the subsequent remaining-MOP audit ([PR #141](https://github.com/monacofj/moeabench/pull/141)).
 
 For the **permanent, self-contained scientific reference**, consult [docs/gt.md](../../gt.md). For an annotated inventory of all reports and architectural decisions, consult [docs/index.md](../../index.md).
 
 These reports preserve independent mathematical proofs, numerical experiments, reproducibility artifacts, negative results, dated hypotheses, and migration planning. Early provisional observations are part of the research record, not competing final specifications.
+
+## Remaining MOP evidence
+
+- `gt-remaining-mop-inventory-issue119.md` — per-MOP audit matrix, global DTLZ8 central/arm proof, independent dominated-CSV witness, DPF4 published-threshold divergence, candidate continuous-covering construction, and ADR reconciliation gate.
 
 ## Mathematical proofs
 
