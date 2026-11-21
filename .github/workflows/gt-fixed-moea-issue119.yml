@@ -1,0 +1,59 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Issue 119 fixed MOEA reference sensitivity
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-fixed-moea-issue119.yml"
+      - "scripts/audit/gt_fixed_moea_sensitivity_issue119.py"
+      - "tests/unit/test_gt_fixed_moea_sensitivity_issue119.py"
+      - "docs/research/gt-issue119/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixed-front-research:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install MoeaBench and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Verify independent scientific controls
+        run: python -m pytest -q tests/unit/test_gt_fixed_moea_sensitivity_issue119.py
+      - name: Run 16 real fixed algorithm/problem/seed populations
+        run: |
+          python -m scripts.audit.gt_fixed_moea_sensitivity_issue119 \
+            --problems DTLZ2 DTLZ7 DTLZ8 DPF5 \
+            --seeds 11941 11942 \
+            --population 32 --generations 12 \
+            > gt-fixed-moea-sensitivity.json
+          python - <<'PY'
+          import json
+          a=json.load(open("gt-fixed-moea-sensitivity.json"))
+          assert len(a["records"])==16
+          assert len(a["pairwise_orderings"])==24
+          assert all(len(r["reference_evaluations"])==2 for r in a["records"])
+          assert all(not a[k] for k in (
+              "historical_reference_modified","software_performance_certified",
+              "absolute_hv_certified","statistical_rank_change_certified"))
+          for r in a["pairwise_orderings"]:
+              print("MOEA_GT_RANK",r["problem"],r["seed"],r["metric"],
+                    "differences",r["algorithm_difference"],
+                    "reversal",r["ordering_reversed"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt-fixed-moea-reference-issue119
+          path: gt-fixed-moea-sensitivity.json
+          retention-days: 30
