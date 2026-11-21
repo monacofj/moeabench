@@ -39,6 +39,7 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 
 - `gt-dpf-production-impact-inventory-issue119.md`
 - `gt-dpf-correction-migration-proposal-issue119.md`
+- `gt-correction-test-migration-issue119.md` — exact former defect assertions and versioned regression/baseline transition gate.
 - `gt-dpf-premerge-review-issue119.md`
 
 The independent research scripts are in `scripts/audit/`, with new tests under `tests/unit/`. The reports' relocation changes **no production source, accepted ADR, existing regression test, or historical reference**.
