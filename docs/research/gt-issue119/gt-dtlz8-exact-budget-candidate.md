@@ -42,9 +42,11 @@ For M=2 and `n>=2`, the candidate samples the single line directly.
 For M>=3 and a requested budget `n >= M+1`, it allocates
 `max(2, floor(n/M))` rows to the central line and distributes the
 remainder as evenly as possible across the M-1 patches.
-Line points include both endpoints; patch points use deterministic
-base-2 and base-3 radical inverses strictly inside the parameter
-rectangle, excluding interface duplicates. It yields exactly n
+Line points include both endpoints. Every patch includes its t=0
+low/high extremum, and the common t=0 equal-coordinate seam is
+included once when budget permits. Remaining patch points use
+deterministic base-2 and base-3 radical inverses strictly inside
+the parameter rectangle, avoiding interface duplicates. It yields exactly n
 distinct objective vectors and deterministic replay for supported M.
 This allocation is **only an explicit component-presence policy**.
 It is *not* a canonical measure, uniform objective-surface density,
