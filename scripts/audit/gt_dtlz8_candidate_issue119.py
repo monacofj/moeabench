@@ -20,12 +20,14 @@ def _radical_inverse(index, base):
     return result
 
 
-def candidate_objectives(m, n_points):
+def candidate_objectives(m, n_points, *, patch_strategy="halton"):
     """Produce exactly n distinct feasible PF objective vectors.
 
     The allocation is explicitly a coverage policy (one component
     per region), not a probability measure on the mixed-dimensional PF.
     """
+    if patch_strategy not in ("halton", "lattice"):
+        raise ValueError("Unknown patch strategy.")
     if m == 2:
         if n_points < 2:
             raise ValueError("M=2 requires at least two line endpoints.")
@@ -58,11 +60,20 @@ def candidate_objectives(m, n_points):
         anchors = [(0.0, 0.0)]
         if low_index == 0 and count >= 2:
             anchors.append((0.0, 1.0))
-        k = np.arange(1, count - len(anchors) + 1)
-        t = np.concatenate(([p[0] for p in anchors],
-                            [_radical_inverse(int(i), 2) / 3 for i in k]))
-        u = np.concatenate(([p[1] for p in anchors],
-                            [_radical_inverse(int(i), 3) for i in k]))
+        remaining = count - len(anchors)
+        k = np.arange(remaining)
+        if patch_strategy == "halton":
+            t_interior = np.array([_radical_inverse(int(i) + 1, 2)
+                                   for i in k]) / 3
+            u_interior = np.array([_radical_inverse(int(i) + 1, 3)
+                                   for i in k])
+        else:
+            columns = max(1, int(np.ceil(np.sqrt(remaining))))
+            rows = max(1, int(np.ceil(remaining / columns)))
+            t_interior = (k % columns + 0.5) / (3 * columns)
+            u_interior = (k // columns + 0.5) / rows
+        t = np.concatenate(([p[0] for p in anchors], t_interior))
+        u = np.concatenate(([p[1] for p in anchors], u_interior))
         floor = (1.0 - t) / 4
         threshold = 1.0 - 2.0 * t
         low = floor + u * (threshold / 2 - floor)
@@ -74,11 +85,11 @@ def candidate_objectives(m, n_points):
     return np.vstack(parts)
 
 
-def candidate_decisions(m, n_points, n_variables=None):
+def candidate_decisions(m, n_points, n_variables=None, *, patch_strategy="halton"):
     """Map objective vectors to constant-block feasible decisions."""
     if n_variables is None:
         n_variables = 10 * m
     if n_variables < m or n_variables % m:
         raise ValueError("N must be a positive multiple of M for this candidate.")
-    objectives = candidate_objectives(m, n_points)
+    objectives = candidate_objectives(m, n_points, patch_strategy=patch_strategy)
     return np.repeat(objectives, n_variables // m, axis=1)
