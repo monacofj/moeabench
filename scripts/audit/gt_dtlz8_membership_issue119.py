@@ -44,6 +44,20 @@ def membership_residual(objectives):
     return residual
 
 
+def feasibility_residual(objectives):
+    """Independent maximum violation of the published inequalities."""
+    f = np.atleast_2d(np.asarray(objectives, dtype=float))
+    m = f.shape[1]
+    t, y = f[:, -1], f[:, :-1]
+    violations = np.maximum(1 - t[:, None] - 4*y, 0).max(axis=1)
+    if m >= 3:
+        sorted_y = np.sort(y, axis=1)
+        pair_violation = np.maximum(1 - 2*t - sorted_y[:, 0]
+                                     - sorted_y[:, 1], 0)
+        violations = np.maximum(violations, pair_violation)
+    return violations
+
+
 def audit(m, budgets=(128, 512, 2000), tolerance=1e-10):
     mop = DTLZ8(M=m)
     cases = []
@@ -57,10 +71,13 @@ def audit(m, budgets=(128, 512, 2000), tolerance=1e-10):
             ("candidate_lattice", lattice),
         ]:
             r = membership_residual(f)
+            g = feasibility_residual(f)
             results[name] = {
                 "count": len(f),
                 "unique": len(np.unique(f, axis=0)),
                 "max_residual": float(np.max(r)),
+                "max_constraint_violation": float(np.max(g)),
+                "constraint_violations_above_tol": int(np.count_nonzero(g > tolerance)),
                 "outside_tol": int(np.count_nonzero(r > tolerance)),
                 "tolerance": tolerance,
             }
