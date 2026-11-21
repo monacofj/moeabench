@@ -37,6 +37,26 @@ jobs:
       - name: Independent published-equation and geometry-specific sampler tests
         run: |
           python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py tests/unit/test_gt_dpf5_corrected_cover_issue119.py tests/unit/test_dpf_gt_calibration_integration_issue119.py -q
+      - name: Prepare canonical integration example archives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import moeabench as mb
+
+          for algorithm, filename in (
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ):
+              path = Path("examples") / filename
+              if path.exists():
+                  continue
+              exp = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              exp.run(repeat=3, silent=True)
+              exp.save(str(path))
+          PY
       - name: Run full integration scope with corrected MOPs
         run: python test.py --integration --basic
       - name: Summarize corrected finite reference cardinality
