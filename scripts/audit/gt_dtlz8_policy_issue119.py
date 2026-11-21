@@ -17,7 +17,7 @@ from scripts.audit.gt_dtlz8_membership_issue119 import (
 )
 from scripts.audit.gt_dtlz8_spacing_sensitivity_issue119 import component_spacing
 
-METHODS = ("candidate", "lattice")
+METHODS = ("candidate", "lattice", "hybrid")
 
 
 def summarize(m, budget, offsets=(11941, 11942, 11943), probes=512):
@@ -31,7 +31,8 @@ def summarize(m, budget, offsets=(11941, 11942, 11943), probes=512):
     data = [compare(m, budget, probes_per_component=probes, offset=s)
             for s in offsets]
     checks = {}
-    for name, strategy in (("candidate", "halton"), ("lattice", "lattice")):
+    for name, strategy in (("candidate", "halton"), ("lattice", "lattice"),
+                           ("hybrid", "hybrid")):
         front = candidate_objectives(m, budget, patch_strategy=strategy)
         spacing = component_spacing(front)
         checks[name] = {
@@ -78,6 +79,16 @@ def summarize(m, budget, offsets=(11941, 11942, 11943), probes=512):
         <= comparison[c]["lattice"]["max_gap_by_offset"][i] + tolerance
         for c in comp_names for i in range(len(offsets))
     )
+    hybrid_nonworse_halton = all(
+        comparison[c]["hybrid"]["max_gap_by_offset"][i]
+        <= comparison[c]["candidate"]["max_gap_by_offset"][i] + tolerance
+        for c in comp_names for i in range(len(offsets))
+    )
+    hybrid_nonworse_lattice = all(
+        comparison[c]["hybrid"]["max_gap_by_offset"][i]
+        <= comparison[c]["lattice"]["max_gap_by_offset"][i] + tolerance
+        for c in comp_names for i in range(len(offsets))
+    )
     if lattice_nonworse and not halton_nonworse:
         probe_preference = "lattice"
     elif halton_nonworse and not lattice_nonworse:
@@ -95,6 +106,8 @@ def summarize(m, budget, offsets=(11941, 11942, 11943), probes=512):
         "admissibility": checks,
         "per_component": comparison,
         "finite_probe_max_gap_preference": probe_preference,
+        "hybrid_no_worse_than_halton": hybrid_nonworse_halton,
+        "hybrid_no_worse_than_lattice": hybrid_nonworse_lattice,
         "production_policy_approved": False,
         "canonical_mixed_dimensional_measure_defined": False,
         "continuous_coverage_certified": False,
