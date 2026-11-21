@@ -8,8 +8,10 @@ on:
       - ".github/workflows/gt-dtlz8-component-research-119.yml"
       - "scripts/audit/gt_dtlz8_candidate_issue119.py"
       - "scripts/audit/gt_dtlz8_component_comparison_issue119.py"
+      - "scripts/audit/gt_dtlz8_membership_issue119.py"
       - "tests/unit/test_gt_dtlz8_candidate_issue119.py"
       - "tests/unit/test_gt_dtlz8_component_comparison_issue119.py"
+      - "tests/unit/test_gt_dtlz8_membership_issue119.py"
       - "docs/research/gt-issue119/gt-dtlz8-exact-budget-candidate.md"
   workflow_dispatch:
 
@@ -35,7 +37,8 @@ jobs:
         run: |
           python -m pytest -q \
             tests/unit/test_gt_dtlz8_candidate_issue119.py \
-            tests/unit/test_gt_dtlz8_component_comparison_issue119.py
+            tests/unit/test_gt_dtlz8_component_comparison_issue119.py \
+            tests/unit/test_gt_dtlz8_membership_issue119.py
       - name: Compare reference geometry component by component
         run: |
           python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
@@ -59,8 +62,24 @@ jobs:
                         "observed_max_gap_after", round(after, 6),
                         "lattice_max_gap", round(lattice, 6))
           PY
+      - name: Independently audit actual Pareto-front membership
+        run: |
+          python -m scripts.audit.gt_dtlz8_membership_issue119 \
+            --objectives 2 3 4 5 10 \
+            --budgets 128 512 2000 > dtlz8-membership.json
+          python - <<'PY'
+          import json
+          for record in json.load(open("dtlz8-membership.json"))["records"]:
+              for name, values in record["results"].items():
+                  print("DTLZ8_MEMBERSHIP", record["M"], record["requested"],
+                        name, "rows", values["count"], "unique", values["unique"],
+                        "outside_tol", values["outside_tol"],
+                        "max_residual", values["max_residual"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: dtlz8-component-research-119
-          path: dtlz8-component-comparison.json
+          path: |
+            dtlz8-component-comparison.json
+            dtlz8-membership.json
           retention-days: 30
