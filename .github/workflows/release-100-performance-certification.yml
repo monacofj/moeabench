@@ -46,7 +46,7 @@ jobs:
           repo = os.environ["GITHUB_REPOSITORY"]
           sha = os.environ["PR_HEAD_SHA"]
           response = subprocess.check_output([
-              "gh", "api", f"repos/{repo}/actions/runs",
+              "gh", "api", "--method", "GET", f"repos/{repo}/actions/runs",
               "-f", f"head_sha={sha}", "-f", "status=success",
               "-f", "per_page=100"
           ], text=True)
