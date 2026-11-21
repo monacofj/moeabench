@@ -75,7 +75,28 @@ This policy is **MOP-specific** and keeps \`n_points\` as an explicit total targ
 
 **Qualification:** The bound applies to a returned **prefix that contains a complete grid for both components**. For exceptionally small budgets or very high intrinsic dimension (when even a 2-point-per-angle tensor grid cannot fit), that condition can fail, and only the empirical diagnostics remain available. A full grid's nominal point count can exceed its mathematically or numerically unique objective-image count at spherical singularities; deduplication preserves the geometric support but alters the effective unique count. The candidate refills rather than silently reducing the returned count.
 
-## 4. What is and is not certified
+## 4. Reproduced implementation evidence (research CI, 2026-11-20)
+
+The isolated [correction workflow #44851871732](https://github.com/monacofj/moeabench/actions/runs/44851871732) passed **43 independent new tests** and exported `gt119-dpf5-corrected-cover.json`. The objective values from the corrected production evaluator agreed with a separately reconstructed published DPF5 formula to the displayed precision (maximum component error 0 in the evaluated examples).
+
+The table reports **returned numerically distinct objectives**, the largest **fully retained** nested grid level in each branch, and the consequent **ideal exact-real-arithmetic** whole-front covering bound.
+
+| M,D | Requested = returned = unique | P / D objectives | Complete grid kP / kD | Ideal real covering upper bound |
+|---|---:|---:|---:|---:|
+| 3,2 | 128 | 111 / 17 | 9 / 17 | 0.103485 |
+| 3,2 | 512 | 447 / 65 | 17 / 65 | 0.051743 |
+| 5,2 | 128 | 125 / 3 | 3 / 3 | 0.692656 |
+| 5,2 | 512 | 326 / 186 | 3 / 129 | 0.692656 |
+| 6,3 | 128 | 86 / 42 | 2 / 5 | 1.592464 |
+| 6,3 | 512 | 416 / 96 | 3 / 9 | 0.796232 |
+| 6,4 | 128 | 85 / 43 | 2 / 3 | 1.592464 |
+| 6,4 | 512 | 437 / 75 | 3 / 3 | 0.796232 |
+
+The larger bounds for higher intrinsic dimensions are **conservative**. A bound that does not improve from 128 to 512 in one configuration indicates that the entire higher tensor-grid level still does not fit; finite-probe regularity can improve between such thresholds without improving this particular mathematical certificate. These are **not** bounds certified for floating-point evaluation.
+
+Cost observations on the same CI runner: DPF3 M5/D3 generated 2,000 unique objectives in approximately 0.014 s; DPF5 M5/D2 produced 2,000 in 0.063 s and 10,000 in 0.118 s; DPF5 M6/D4 produced 2,000 in 0.025 s. They are descriptive single-execution observations, not portable performance certifications.
+
+## 5. What is and is not certified
 
 - **Proved:** exact membership and completeness of published DPF5 PS/PF; 1-Lipschitz angular directions; branchwise and union continuous coverage upper bounds for **complete ideal tensor grids** in **unnormalized Euclidean objective space**.
 - **Measured:** finite sample cardinality and the deterministic holdout conditional distances used to compare candidate allocations.
