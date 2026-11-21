@@ -100,3 +100,17 @@ def test_dtlz8_candidate_no_sample_relative_dominance(m):
         strictly_better = np.any(f < point - 1e-13, axis=1)
         assert not np.any(weakly_better & strictly_better), (
             m, i, "Candidate contains a sample-dominated objective vector")
+
+
+@pytest.mark.parametrize("strategy", ["halton", "lattice"])
+@pytest.mark.parametrize("m", [2, 3, 4, 5, 10])
+def test_dtlz8_candidate_patch_strategies_preserve_budget_and_constraints(m, strategy):
+    n = 128
+    f = candidate_objectives(m, n, patch_strategy=strategy)
+    assert f.shape == (n, m)
+    assert len(np.unique(f, axis=0)) == n
+    t = f[:, -1]
+    assert np.all(t[:, None] + 4*f[:, :-1] - 1 >= -2e-14)
+    if m >= 3:
+        pairs = [f[:, i]+f[:, j] for i, j in combinations(range(m-1), 2)]
+        assert np.all(2*t + np.min(np.stack(pairs), axis=0) - 1 >= -2e-14)
