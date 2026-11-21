@@ -11,6 +11,18 @@ For the **permanent, self-contained scientific reference**, consult [docs/gt.md]
 
 These reports preserve independent mathematical proofs, numerical experiments, reproducibility artifacts, negative results, dated hypotheses, and migration planning. Early provisional observations are part of the research record, not competing final specifications.
 
+## Current post-correction status
+
+- [gt-postfix-status-matrix.md](gt-postfix-status-matrix.md) — per-MOP
+  scientific status after PRs #140/#143/#146/#148/#149/#150, with
+  explicit remaining acceptance/certification gates.
+- [gt-dtlz8-exact-budget-candidate.md](gt-dtlz8-exact-budget-candidate.md)
+  — historical independent DTLZ8 mathematical and sampling evidence.
+- [dtlz8-production-migration-proposal.md](dtlz8-production-migration-proposal.md)
+  — archived migration rationale and approval boundaries.
+- [adr-0057-historical-decisions.md](adr-0057-historical-decisions.md)
+  — superseded ADR history; the active ADR records current policy.
+
 ## Mathematical proofs
 
 - `gt-dpf3-global-pareto-proof-issue119.md` — complete published DPF3 PS/PF proof.
