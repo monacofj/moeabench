@@ -3,6 +3,12 @@
 name: Issue 119 release candidate numeric certification
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "pyproject.toml"
+      - "moeabench/system.py"
+      - ".github/workflows/release-100-numeric-certification.yml"
   pull_request:
     paths:
       - "pyproject.toml"
