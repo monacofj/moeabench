@@ -78,7 +78,16 @@ jobs:
           name: release-100-numeric-candidate
           run-id: ${{ steps.evidence.outputs.run_id }}
           github-token: ${{ github.token }}
-          path: .
+          path: downloaded-numeric
+      - name: Restore separately certified files to expected package paths
+        run: |
+          test -f downloaded-numeric/certifications/1.0.0/numeric-certificate.json
+          test -f downloaded-numeric/certified_environment.json
+          mkdir -p moeabench/resources/certifications/1.0.0
+          cp downloaded-numeric/certifications/1.0.0/numeric-certificate.json \
+            moeabench/resources/certifications/1.0.0/numeric-certificate.json
+          cp downloaded-numeric/certified_environment.json \
+            moeabench/resources/certified_environment.json
       - name: Enforce certificate revision/environment and frozen baseline
         run: |
           python - <<'PY'
