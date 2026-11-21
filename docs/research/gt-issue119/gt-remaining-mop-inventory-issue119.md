@@ -344,6 +344,36 @@ splits for the lowest analytic bound and replenishes duplicates.
 These results **do not certify float64 interval rounding** or
 a universal distribution law over mixed intrinsic dimensions.
 
+## Reproduced analytical DTLZ8 candidate results
+
+The independent [candidate CI workflow](https://github.com/monacofj/moeabench/actions/runs/44892943727)
+constructed complete component grids and evaluated their block-constant
+preimages through the **unchanged actual DTLZ8 evaluator**.
+The DTLZ8 research candidate generated the exact number of
+numerically distinct requested objectives for **M=3/5/10 and
+n=128/512/4096**. No DTLZ8 production code was modified.
+
+| M | Requested = returned = unique | Ideal real-arithmetic continuous cover upper | Largest gap among independent finite probes |
+|---|---:|---:|---:|
+| 3 | 128 | 0.072967 | 0.050505 |
+| 3 | 512 | 0.033537 | 0.020639 |
+| 3 | 4096 | **0.011138** | 0.010099 |
+| 5 | 128 | 0.169219 | 0.083167 |
+| 5 | 512 | 0.072296 | 0.053237 |
+| 5 | 4096 | **0.023762** | 0.012068 |
+| 10 | 128 | 0.468385 | 0.200989 |
+| 10 | 512 | 0.178016 | 0.087376 |
+| 10 | 4096 | **0.055843** | 0.027418 |
+
+The greatest objective reconstruction discrepancy observed in these
+cases is **2.23e-16**, attributable to float64 block averaging.
+The geometric upper bounds are **derived for exact real arithmetic**;
+the finite-probe maxima do not prove them and the numerical
+implementation does not have a rigorous directed IEEE interval
+enclosure. The candidate is a **technically tested replacement design**
+that can be reviewed before changing a production MOP or canonical
+reference under the accepted ADRs.
+
 ## Architectural contradiction and explicit approval gate
 
 The currently **accepted ADR 0016** describes DTLZ8 as migrated to
