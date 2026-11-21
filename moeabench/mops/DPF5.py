@@ -92,28 +92,147 @@ class DPF5(BaseDPF):
         return self.K
 
     def ps(self, n_points: int = 100):
-        """Legacy finite PS sampling, retained pending branchwise GT review.
+        """Geometry-specific, reproducible sampling of the *published* DPF5 PS.
 
-        Correct objective evaluation does not certify this sampler's point
-        budget or coverage of the mixed-dimensional continuous PF.
+        Branch P has M-1 independent angular parameters; degenerate D has
+        only D-1. We sample each intrinsic parameter space separately,
+        preserve a small set of deterministic boundary/axis landmarks,
+        and replenish duplicates in *objective space* using scrambled
+        Sobol candidates. A fixed holdout probe set then chooses among
+        candidate P/D allocations at the user's requested total budget.
+
+        The allocation minimizes a finite, branch-conditional nearest
+        neighbor diagnostic. It is NOT a certified Hausdorff guarantee or
+        a universal mixed-dimensional probability law. Calibration's
+        automatic *default budget* remains governed by ADR 0057.
         """
+        from scipy.spatial import cKDTree
+        from scipy.stats import qmc
+
         self._require_supported_dimensions()
-        M, N = self.M, self.N
-        res = np.zeros((n_points, N))
-        rng = np.random.RandomState(42)
+        if not isinstance(n_points, (int, np.integer)) or n_points < 1:
+            raise ValueError("n_points must be a positive integer")
 
-        if M == 3:
-            side = int(np.sqrt(n_points))
-            grid_val = np.linspace(0, 1, side)
-            xv, yv = np.meshgrid(grid_val, grid_val)
-            X_pos = np.column_stack([xv.ravel(), yv.ravel()])
-            if len(X_pos) != n_points:
-                res = np.zeros((len(X_pos), N))
+        n = int(n_points)
+        qP, qD = self.M - 1, self.D - 1
+
+        def angular_decisions(values, label):
+            q = qP if label == "P" else qD
+            decisions = np.full((len(values), self.N), 0.5)
+            decisions[:, :q] = values
+            decisions[:, self.M-1] = decisions[:, 0]
+            return decisions
+
+        def branch_bounds(label):
+            if label == "P":
+                return 0.0, np.nextafter(1.0 / 3.0, 0.0)
+            return 1.0 / 3.0, 1.0
+
+        def angular_anchors(label):
+            q = qP if label == "P" else qD
+            lo, hi = branch_bounds(label)
+            out = []
+            for first in (lo, hi):
+                for fill in (0.0, 0.5, 1.0):
+                    row = np.full(q, fill)
+                    row[0] = first
+                    out.append(row.copy())
+                for j in range(1, q):
+                    for val in (0.0, 1.0):
+                        row = np.full(q, 0.5)
+                        row[0], row[j] = first, val
+                        out.append(row)
+            # Angular coordinate-axis extremes that belong to this branch.
+            for axis in range(q+1):
+                row = np.zeros(q)
+                if axis > 0:
+                    row[q-axis] = 1.0
+                first = lo + (hi-lo)*row[0]
+                row[0] = first
+                out.append(row)
+            return np.asarray(out, dtype=float)
+
+        def candidate_pool(label, target):
+            q = qP if label == "P" else qD
+            lo, hi = branch_bounds(label)
+            seen = set()
+            decisions, objectives = [], []
+
+            def ingest(angles):
+                if len(decisions) >= target:
+                    return
+                current = angular_decisions(angles, label)
+                evaluated = self.evaluation(current)["F"]
+                for x, f in zip(current, evaluated):
+                    key = tuple(float(v) for v in f)
+                    if key not in seen:
+                        seen.add(key)
+                        decisions.append(x)
+                        objectives.append(f)
+                        if len(decisions) >= target:
+                            break
+
+            ingest(angular_anchors(label))
+            for attempt in range(4):
+                if len(decisions) >= target:
+                    break
+                remain = target-len(decisions)
+                engine = qmc.Sobol(d=q, scramble=True, seed=11950 +
+                                   (0 if label == "P" else 1000) + attempt)
+                power = int(np.ceil(np.log2(max(2, remain * 2))))
+                angles = engine.random_base2(power)
+                angles[:, 0] = lo + (hi-lo)*angles[:, 0]
+                ingest(angles)
+            if len(decisions) != target:
+                raise ValueError("Unable to generate enough distinct DPF5 objectives")
+            return np.asarray(decisions), np.asarray(objectives)
+
+        # For very small budgets both components may not be fully
+        # represented. Prefer explicit samples rather than implicit
+        # overproduction; for n>=2 always preserve both branches.
+        if n == 1:
+            return candidate_pool("P", 1)[0]
+
+        # Reserve at least two samples per branch when possible; retain
+        # all unique landmarks when the requested budget permits them.
+        P_anchor_count = len(np.unique(
+            self.evaluation(angular_decisions(angular_anchors("P"), "P"))["F"],
+            axis=0))
+        D_anchor_count = len(np.unique(
+            self.evaluation(angular_decisions(angular_anchors("D"), "D"))["F"],
+            axis=0))
+        if n >= P_anchor_count + D_anchor_count:
+            minP, minD = P_anchor_count, D_anchor_count
         else:
-            X_pos = rng.random((n_points, M - 1))
+            minP, minD = max(1, n // 2), max(1, n-n//2)
+        maxP, maxD = n-minD, n-minP
+        p_dec, p_obj = candidate_pool("P", maxP)
+        d_dec, d_obj = candidate_pool("D", maxD)
 
-        res[:, :M-1] = X_pos
-        res[:, M-1] = res[:, 0]
-        if N > M:
-            res[:, M:] = 0.5
-        return res
+        # Low-cost, independent deterministic probes; this estimates the
+        # worse of the two conditional gaps without assigning a
+        # probability mass to either component.
+        def branch_probes(label, count=128):
+            q = qP if label == "P" else qD
+            lo, hi = branch_bounds(label)
+            engine = qmc.Sobol(d=q, scramble=True,
+                               seed=23471 if label == "P" else 23497)
+            unit = engine.random_base2(int(np.log2(count)))
+            unit[:, 0] = lo + (hi-lo)*unit[:, 0]
+            return self.evaluation(angular_decisions(unit, label))["F"]
+
+        probesP, probesD = branch_probes("P"), branch_probes("D")
+        possible = sorted(set(int(z) for z in
+                              np.linspace(minP, maxP, min(17, maxP-minP+1))))
+        best_score, best_p = float("inf"), possible[0]
+        for p_count in possible:
+            d_count = n-p_count
+            p_distance = cKDTree(p_obj[:p_count]).query(probesP, k=1)[0]
+            d_distance = cKDTree(d_obj[:d_count]).query(probesD, k=1)[0]
+            # The maximum branchwise diagnostic is a finite *estimate*,
+            # never presented as a continuous-front certificate.
+            score = max(float(np.max(p_distance)), float(np.max(d_distance)))
+            if score < best_score:
+                best_score, best_p = score, p_count
+
+        return np.concatenate((p_dec[:best_p], d_dec[:n-best_p]), axis=0)
