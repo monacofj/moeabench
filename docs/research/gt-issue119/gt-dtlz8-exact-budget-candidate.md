@@ -149,6 +149,36 @@ M=2,3,5,10 sources: off-front points are scientifically ineligible
 for preservation. Treat this as a controlled feasibility and coverage
 baseline, not the finally chosen sampler.
 
+## Spatial regularity and reference-sensitive indicator audit
+
+A further independent script,
+`scripts/audit/gt_dtlz8_spacing_sensitivity_issue119.py`,
+now reports component-specific nearest-neighbor mean, maximum and
+coefficient of variation for **distinct on-front points**. Off-front
+points are counted separately, rather than distorting geometric
+regularity on a false Pareto reference. Components with fewer than
+two unique points are explicitly marked as undefined.
+
+For each finite reference (native, Halton, lattice and the M=4
+incumbent-preserving completion), it measures **conventional
+positive-part IGD+** for three fixed, independently generated
+analytical probe populations: line-only, one-patch-only, and a
+population with equal point counts per component. The latter is
+an explicitly declared *finite-record sampling policy*, not a
+canonical measure of a mixed-dimensional Pareto front. Every
+number is indexed by reference, population, objective dimension,
+budget and independent probe seed. No intercomponent summary
+regularity or probability measure is inferred.
+
+Use the deterministic research workflow artifact
+`dtlz8-spacing-igd-sensitivity.json` to inspect whether a better
+finite-reference covering gap also preserves local spacing and
+whether changing the reference alters numerical scores or relative
+rankings of the fixed analytical populations. Improvements in
+reference sampling need not preserve numerical IGD+ values; that
+is a scientifically meaningful migration impact, not grounds
+to silently rewrite a frozen baseline.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
