@@ -47,5 +47,6 @@ class DPF2(BaseDPF):
         points[:, :self.D-1] = sample_dtlz7_record_parameters(
             len(points), self.D-1,
             seed=42, structured=(self.D == 2),
+            stratified=(self.D > 2),
         )
         return points

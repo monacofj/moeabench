@@ -79,12 +79,14 @@ def map_uniform_to_record_intervals(uniform):
 
 
 def sample_dtlz7_record_parameters(n_points, n_dimensions, *,
-                                   seed=42, structured=False):
+                                   seed=42, structured=False, stratified=False):
     """Deterministic Pareto-set decision parameters.
 
     Structured, one-dimensional mode extends the existing DPF2 grid into
-    the true disconnected domain. Otherwise use the existing private
-    RandomState(42) policy, conditioned on membership in the record set.
+    the true disconnected domain. In stratified mode, each of the
+    2**n_dimensions record-region identities appears before any repeats;
+    within each region a private RandomState supplies local coordinates.
+    Otherwise retain the historical seeded parameter-uniform policy.
     """
     if (not isinstance(n_points, (int, np.integer)) or n_points < 1 or
             not isinstance(n_dimensions, (int, np.integer)) or n_dimensions < 1):
@@ -96,6 +98,33 @@ def sample_dtlz7_record_parameters(n_points, n_dimensions, *,
             samples = np.array([[0.5]])
         else:
             samples = np.linspace(0.0, 1.0, n_points).reshape(-1, 1)
+    elif stratified:
+        # Enumerate distinct Cartesian record-region identities before
+        # revisiting any component. The odd modular multiplier permutes
+        # all 2**n_dimensions bit masks without a huge lookup table.
+        # For budgets below that count, all sampled identities remain
+        # different, but full component coverage is impossible.
+        total = 1 << n_dimensions
+        multiplier = 6364136223846793005  # odd: permutation mod 2**d
+        component_ids = [
+            (i * multiplier + seed) % total for i in range(n_points)
+        ]
+        local = np.random.RandomState(seed).random(
+            (n_points, n_dimensions))
+        (lo1, hi1), (lo2, hi2) = dtlz7_record_intervals()
+        # Never sample exactly the dominated reentry boundary.
+        second_start = lo2 + 1e-9
+        out = np.empty_like(local)
+        for dim in range(n_dimensions):
+            branch = np.fromiter(
+                ((index >> dim) & 1 for index in component_ids),
+                dtype=np.int8, count=n_points)
+            out[:, dim] = np.where(
+                branch == 0,
+                lo1 + local[:, dim] * (hi1 - lo1),
+                second_start + local[:, dim] * (hi2 - second_start),
+            )
+        return out
     else:
         samples = np.random.RandomState(seed).random((n_points,n_dimensions))
     return map_uniform_to_record_intervals(samples)

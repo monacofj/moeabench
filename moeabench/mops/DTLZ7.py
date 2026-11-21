@@ -66,7 +66,7 @@ class DTLZ7(BaseMop):
         # Sample instead from the exact Pareto-record domain of
         # x*(1+sin(3*pi*x)), retaining the historical private RNG seed.
         res[:, :M-1] = sample_dtlz7_record_parameters(
-            n_points, M-1, seed=42
+            n_points, M-1, seed=42, stratified=True
         )
         # Optimal g=1 when xi=0 for i >= M
         res[:, M-1:] = 0.0
