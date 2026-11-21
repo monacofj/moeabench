@@ -57,3 +57,28 @@ jobs:
                       print(f"GT {cls.__name__} M={m} D={d} requested={n}"
                             f" returned={len(ps)} unique={unique}{branches}")
           PY
+
+      - name: Measure reference generation cost at historical DPF calibration budget
+        run: |
+          python - <<'PY'
+          import time
+          import numpy as np
+          from moeabench.mops.DPF3 import DPF3
+          from moeabench.mops.DPF5 import DPF5
+          for cls, m, d, n in (
+              (DPF3, 5, 3, 2000),
+              (DPF5, 5, 2, 2000),
+              (DPF5, 6, 4, 2000),
+              (DPF5, 5, 2, 10000),
+          ):
+              mop=cls(M=m, D=d)
+              start=time.perf_counter()
+              ps=mop.ps(n_points=n)
+              F=mop.evaluation(ps)["F"]
+              duration=time.perf_counter()-start
+              unique=len(np.unique(F,axis=0))
+              print("COST",cls.__name__,m,d,n,"actual",len(ps),
+                    "unique",unique,"elapsed_seconds",round(duration,4))
+              if unique != n:
+                  raise AssertionError("Incorrect effective objective budget")
+          PY
