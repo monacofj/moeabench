@@ -13,6 +13,9 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 
 ## Current post-correction status
 
+- [gt-independent-oracles-evidence.md](gt-independent-oracles-evidence.md) —
+  independent DTLZ8 and DPF3/4/5 analytical probes, component-wise
+  finite covering and published-equation evaluator crosschecks.
 - [gt-postfix-quantitative-evidence.md](gt-postfix-quantitative-evidence.md) —\n  executed finite-sample cardinality, independent covering gaps and\n  fixed-population raw IGD/IGD+ reference sensitivity for issue #119.\n- [gt-postfix-status-matrix.md](gt-postfix-status-matrix.md) — per-MOP
   scientific status after PRs #140/#143/#146/#148/#149/#150, with
   explicit remaining acceptance/certification gates.
