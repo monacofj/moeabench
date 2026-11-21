@@ -260,6 +260,26 @@ measure, or authorization to alter frozen GT artifacts. The
 archived JSON (`dtlz8-policy-candidates.json`) is intended for
 review before choosing a versioned production policy.
 
+## Comparison at 2,000 points and third hybrid candidate
+
+The read-only policy comparison of M=2,3,5,10 at budgets 128,
+512 and 2,000 passed 79 scientific checks. At M=2 the two
+parameterizations coincide (they both sample the same line).
+At M=3,5,10, neither the Halton or the structured-lattice
+candidate was componentwise nonworse at all three predefined
+probe offsets: Halton allocated more points to the line,
+while the lattice generally covered the patches better.
+
+This is a genuine trade-off and does not authorize choosing
+a source merely by an aggregate gap. The experiment has therefore
+added a third research design, `patch_strategy="hybrid"`, which
+retains the Halton line allocation but samples patch interiors
+on a structured lattice. The same fixed budgets, offsets and
+per-component diagnostic checks apply. The hybrid remains
+noncertified until its independent empirical comparisons pass.
+As with every candidate, no canonical line/patch relative weight
+is inferred.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
