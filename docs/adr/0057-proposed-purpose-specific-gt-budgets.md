@@ -196,3 +196,23 @@ The original "implementation pending" wording above records the
 decision's status *before this addendum*. The explicit authorization
 here is limited to the described DPF3/DPF5 corrections; automatic
 calibration budgeting remains pending.
+
+## Inaugural DPF5 reference and test migration authorization — 2026-11-20
+
+Following the explicit maintainer request to finish PR #140, it is now
+authorized to **update the fifteen pre-existing DPF3/DPF5 tests that
+assert defects in the old implementation**, replacing them with
+independent positive scientific assertions. In the same authorized
+correction, the provisional DPF5 numerical stability geometry fixture
+may be recalibrated as the **first valid corrected DPF5 GT**; there is
+no requirement to maintain that previous defective fixture as an
+earlier scientific calibration version. Previous bytes remain accessible
+through ordinary Git history.
+
+This is a **limited exception** to the test/fixture restrictions in the
+2026-11-20 authorization addendum above, and is recorded together with
+the corresponding dated clarification of [ADR 0056](0056-versioned-certification-and-performance-reference-lifecycle.md).
+It does **not** authorize editing unrelated baselines, weakening checks,
+changing automatic `calibrate()` defaults, or bypassing scientific
+calibration evidence. Upon adoption, the new inaugural numerical reference
+becomes frozen under ADR 0056 as usual.

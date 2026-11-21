@@ -442,3 +442,49 @@ sample, never writes or replaces it.
   reference, **not** a claim that a future 1.0.0 (or changed
   0.18.0 source revision) is already certified. The version must
   advance before certifying materially changed source code.
+
+
+## Maintainer-authorized inaugural DPF5 GT calibration — 2026-11-20 (#119/#140)
+
+The maintainer explicitly authorized correction of the pre-existing regression
+tests and **replacement of the provisional DPF5 geometric GT fixture as the
+first scientifically valid calibration** for the restored published DPF5
+equations. The existing `tests/stability_gt_geometry_reference.json` DPF5
+points and `tests/stability_reference_gt.json` DPF5 tolerance were generated
+for an evaluator/sampler subsequently shown to diverge from the DPF5 paper.
+They were *provisional implementation behavior*, not an accepted
+scientific calibration of the published model.
+
+**Narrow approved exception to the immutable-reference safeguard:**
+replace **only the DPF5 geometry and numerical-tolerance entries** with
+a first independently validated, reproducible corrected-model calibration,
+and update the fifteen preexisting defect-observation tests to assert
+correct published mathematical behavior. The former entries remain
+recoverable through Git history but are **not** a separate scientific GT
+version or a predecessor calibration artifact. This express approval
+supersedes the prior no-test-edit/no-baseline-rewrite restriction **solely
+for this initial correction**; it is not a general permission to rewrite
+accepted numerical references whenever software output changes.
+
+Inaugural DPF5 GT acceptance requirements:
+
+1. Use the corrected native `DPF5(M=3,D=2)` reference generator at the
+   same **1,000-point** stability-reference geometry budget.
+2. Independently reconstruct the published DPF5 equations, verify all
+   reference objectives against that oracle, verify both P/D branches,
+   `g=0`, sphere identity, effective cardinality and deterministic replay.
+3. Generate under the pinned reference numerical runtime, recording the
+   source identifier, calibration method and SHA-256 of the actual GT.
+   Numerical stability comparisons must remain **meaningfully strict**
+   against this reference; do not merely increase the old tolerance.
+4. Leave DTLZ references and the distinct release-performance reference,
+   statistical certification policy and other numerical baseline contracts
+   **untouched**.
+5. Rerun complete unit, reference numerical stability, and independent
+   DPF3/DPF5 GT workflows. Fix actual defects rather than weakening the
+   new verification.
+
+The immutable reference rule of this ADR remains fully applicable
+**after** accepting this inaugural DPF5 calibration. This amendment has
+no effect on automatic `mop.calibrate()` budget policy, FAIR research,
+or other MOPs.
