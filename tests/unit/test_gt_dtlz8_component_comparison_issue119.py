@@ -101,3 +101,21 @@ def test_dtlz8_m4_completion_targets_uncovered_patches():
     additions = completed[new_mask]
     assert len(additions) == budget - len(original)
     assert np.count_nonzero(additions[:, -1] < 1/3) >= len(additions) // 2
+
+
+def test_dtlz8_m4_completion_at_current_calibration_budget():
+    from moeabench.mops.DTLZ8 import DTLZ8
+    from scripts.audit.gt_dtlz8_candidate_issue119 import candidate_objectives
+    from scripts.audit.gt_dtlz8_membership_issue119 import membership_residual
+
+    budget = 2000
+    native = DTLZ8(M=4).pf(n_points=budget)
+    lattice = candidate_objectives(4, budget, patch_strategy="lattice")
+    completed = m4_preserving_completion(native, lattice, budget)
+    assert completed.shape == (budget, 4)
+    assert len(np.unique(completed, axis=0)) == budget
+    assert np.max(membership_residual(completed)) < 1e-10
+    # The requested canonical DTLZ budget must not hide truncation.
+    assert len(np.unique(native, axis=0)) < budget
+    for point in np.unique(native, axis=0):
+        assert np.any(np.all(completed == point, axis=1))
