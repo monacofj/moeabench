@@ -188,7 +188,46 @@ Uniform \(f_M\) spacing is thus not the same as uniform arc-length
 sampling, particularly for higher M. Reproducibility and correctness
 of membership do not by themselves certify spatial regularity.
 
-### 3.4. DPF4: independently demonstrated divergence from the paper
+### 3.4. DTLZ7 and DPF2: the component-count lower bound
+
+The published record-region constructions contain **two disconnected
+parameter intervals per independent position coordinate**, hence
+\(2^{M-1}\) possible Cartesian components in DTLZ7 and
+\(2^{D-1}\) in DPF2. Touching all components requires **at least that
+many distinct reference points**, irrespective of how good an
+individual point may be.
+
+The incumbent reproducible pseudo-random sampler independently samples
+record intervals and does not stratify **by component identity**.
+The high-dimensional audit measured:
+
+| MOP | Objectives / intrinsic D | Requested points | Components observed | Total components | Missing components |
+|---|---|---:|---:|---:|---:|
+| DTLZ7 | M=10 | 128 | 108 | 512 | 404 |
+| DTLZ7 | M=10 | 512 | 319 | 512 | 193 |
+| DPF2 | M=10, D=9 | 128 | 94 | 256 | 162 |
+| DPF2 | M=10, D=9 | 512 | 216 | 256 | 40 |
+
+At budget 128, covering all 512 DTLZ7 components is **mathematically
+impossible**. At budget 512, component presence is theoretically possible
+with exactly one point per component, yet the present sampler observed
+only 319: random selection **with component replacement** cannot
+guarantee full component occupancy. Similarly, DPF2 with 256 possible
+components failed to occupy all of them at a budget of 512.
+
+For a meaningful reference, the native MOP generator should explicitly
+control component occupancy whenever the budget permits it. A budget
+smaller than the component count must be **reported as incapable of
+complete component presence**, not represented as full-front coverage.
+Even after all components are touched, one point in each cannot
+establish good **within-component spatial coverage**.
+
+A geometry-based calibration default must ultimately account for the
+combinatorial growth of components and computational cost. The
+algorithm and numeric budget policy of \`mop.calibrate()\` remain a
+separate ADR 0057 decision; this audit does not adopt a default.
+
+### 3.5. DPF4: independently demonstrated divergence from the paper
 
 The original DPF paper requires \(\eta_1<\dots<\eta_{M-D}\) for
 **both DPF3 and DPF4** (Section IV-F), and DPF4 applies increasing
@@ -249,8 +288,8 @@ The audit distinguishes:
    oracle test are needed before accepting a new DPF4 reference.
 2. **Finite reference incompleteness:** DTLZ8's 1,000-row static ceiling
    and its fallback square-grid truncation; DTLZ1/DPF1 missing simplex
-   vertices; high-dimensional disconnected components may require
-   more points than a fixed budget can provide.
+   vertices; high-dimensional DTLZ7/DPF2 disconnected components require
+   explicit occupancy control and sometimes more points than the budget.
 3. **Numerical interface contract:** DTLZ9's tiny strict-feasibility
    violations require careful treatment of \`G\` and \`feasible\`
    semantics, separate from objective-space coverage.
@@ -285,7 +324,7 @@ python -m scripts.audit.gt_dpf4_published_equations_issue119
 
 The isolated PR workflow runs **39 new independent tests** and exports
 structured JSON for the MOP audit, constrained dimensions, DPF4
-published equation comparison, and disconnected component probes. Its
+published equation comparison, and high-dimensional disconnected-component occupancy. Its
 diagnostic metrics are measurements, never automatic permission to
 rewrite a frozen scientific reference.
 
