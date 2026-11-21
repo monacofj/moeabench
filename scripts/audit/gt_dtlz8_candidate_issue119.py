@@ -1,0 +1,72 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+"""Read-only DTLZ8 finite-sample candidate; not a production GT policy.
+
+For M>=3, the analytic nondominated front is the union of a central
+line (t in [1/3,1]) and M-1 two-dimensional patches (t in [0,1/3]).
+The patch parameterization is obtained by making the smallest pair
+sum equal 1-2t while respecting each individual constraint.
+This module does not claim a canonical mixed-dimensional measure.
+"""
+import numpy as np
+
+
+def _radical_inverse(index, base):
+    result, fraction = 0.0, 1.0 / base
+    while index:
+        index, digit = divmod(index, base)
+        result += digit * fraction
+        fraction /= base
+    return result
+
+
+def candidate_objectives(m, n_points):
+    """Produce exactly n distinct feasible PF objective vectors.
+
+    The allocation is explicitly a coverage policy (one component
+    per region), not a probability measure on the mixed-dimensional PF.
+    """
+    if m < 3:
+        raise ValueError("Original DTLZ8 pairwise geometry requires M>=3.")
+    if n_points < m + 1:
+        raise ValueError("Need at least M+1 points to sample all regions and line endpoints.")
+
+    n_line = max(2, n_points // m)
+    n_patch = n_points - n_line
+    q, r = divmod(n_patch, m - 1)
+    counts = [q + (i < r) for i in range(m - 1)]
+    if min(counts) < 1:
+        raise ValueError("Requested budget cannot cover all patches.")
+
+    # One-dimensional line: all first M-1 objectives equal (1-t)/4.
+    t = np.linspace(1.0 / 3, 1.0, n_line)
+    line = np.empty((n_line, m), dtype=float)
+    line[:, :-1] = ((1.0 - t) / 4)[:, None]
+    line[:, -1] = t
+    parts = [line]
+
+    # For t<1/3: the two smallest first objectives sum to 1-2t.
+    # Exactly one is the 'low' coordinate, and all others are 'high'.
+    for low_index, count in enumerate(counts):
+        k = np.arange(1, count + 1)
+        t = np.array([_radical_inverse(int(i), 2) for i in k]) / 3
+        u = np.array([_radical_inverse(int(i), 3) for i in k])
+        floor = (1.0 - t) / 4
+        threshold = 1.0 - 2.0 * t
+        low = floor + u * (threshold / 2 - floor)
+        high = threshold - low
+        patch = np.repeat(high[:, None], m, axis=1)
+        patch[:, low_index] = low
+        patch[:, -1] = t
+        parts.append(patch)
+    return np.vstack(parts)
+
+
+def candidate_decisions(m, n_points, n_variables=None):
+    """Map objective vectors to constant-block feasible decisions."""
+    if n_variables is None:
+        n_variables = 10 * m
+    if n_variables < m or n_variables % m:
+        raise ValueError("N must be a positive multiple of M for this candidate.")
+    objectives = candidate_objectives(m, n_points)
+    return np.repeat(objectives, n_variables // m, axis=1)
