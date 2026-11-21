@@ -97,3 +97,21 @@ def test_independent_reference_distribution_obeys_simplex_and_sphere_geometry():
 def test_reject_unsupported_requested_audit_budget(name):
     with pytest.raises(ValueError):
         audit(name,3,1)
+
+
+@pytest.mark.parametrize("name,m,d,expected_components",[
+    ("DTLZ7",10,2,512),
+    ("DPF2",10,9,256),
+])
+def test_high_dimensional_disconnected_front_reports_combinatorial_component_lower_bound(
+    name,m,d,expected_components
+):
+    r=audit(name,m,128,d=d,probe_count=128)
+    component=r["record_domain"]
+    assert component["possible_components"]==expected_components
+    assert component["minimum_samples_to_touch_every_component"]==expected_components
+    assert component["sampled_components"]<=128
+    assert not component["all_components_touched_by_sample"]
+    assert component["valid_record_decisions"]==128
+    assert component["outside_record_domain"]==0
+    assert component["component_occupancy_is_not_a_coverage_certificate"]
