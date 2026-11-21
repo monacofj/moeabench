@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ8 independent component research (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-dtlz8-component-research-119.yml"
+      - "scripts/audit/gt_dtlz8_candidate_issue119.py"
+      - "scripts/audit/gt_dtlz8_component_comparison_issue119.py"
+      - "tests/unit/test_gt_dtlz8_candidate_issue119.py"
+      - "tests/unit/test_gt_dtlz8_component_comparison_issue119.py"
+      - "docs/research/gt-issue119/gt-dtlz8-exact-budget-candidate.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dtlz8-component-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install project and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Validate new independent component checks
+        run: |
+          python -m pytest -q \
+            tests/unit/test_gt_dtlz8_candidate_issue119.py \
+            tests/unit/test_gt_dtlz8_component_comparison_issue119.py
+      - name: Compare reference geometry component by component
+        run: |
+          python -m scripts.audit.gt_dtlz8_component_comparison_issue119 \
+            --objectives 2 3 4 5 10 \
+            --budgets 128 512 \
+            --seeds 11941 11942 11943 \
+            --probes 256 > dtlz8-component-comparison.json
+          python - <<'PY'
+          import json
+          records = json.load(open("dtlz8-component-comparison.json"))["results"]
+          for r in records:
+              for component, pair in r["components"].items():
+                  before = pair["incumbent"]["max_euclidean_gap"]
+                  after = pair["candidate"]["max_euclidean_gap"]
+                  print("DTLZ8", r["M"], "budget", r["requested"],
+                        "seed", r["probe_offset"], "component", component,
+                        "incumbent_count", r["incumbent_count"],
+                        "candidate_count", r["candidate_count"],
+                        "observed_max_gap_before", round(before, 6),
+                        "observed_max_gap_after", round(after, 6))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dtlz8-component-research-119
+          path: dtlz8-component-comparison.json
+          retention-days: 30
