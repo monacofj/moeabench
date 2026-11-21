@@ -53,9 +53,16 @@ def candidate_objectives(m, n_points):
     # For t<1/3: the two smallest first objectives sum to 1-2t.
     # Exactly one is the 'low' coordinate, and all others are 'high'.
     for low_index, count in enumerate(counts):
-        k = np.arange(1, count + 1)
-        t = np.array([_radical_inverse(int(i), 2) for i in k]) / 3
-        u = np.array([_radical_inverse(int(i), 3) for i in k])
+        # Include the t=0 low/high extreme for each patch. The common
+        # t=0 equal-coordinate edge is inserted once, on patch zero.
+        anchors = [(0.0, 0.0)]
+        if low_index == 0 and count >= 2:
+            anchors.append((0.0, 1.0))
+        k = np.arange(1, count - len(anchors) + 1)
+        t = np.concatenate(([p[0] for p in anchors],
+                            [_radical_inverse(int(i), 2) / 3 for i in k]))
+        u = np.concatenate(([p[1] for p in anchors],
+                            [_radical_inverse(int(i), 3) for i in k]))
         floor = (1.0 - t) / 4
         threshold = 1.0 - 2.0 * t
         low = floor + u * (threshold / 2 - floor)
