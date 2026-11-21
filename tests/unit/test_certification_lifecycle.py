@@ -58,7 +58,7 @@ def test_baseline_artifact_is_single_write_and_requires_external_approval(
         monkeypatch, tmp_path):
     # A fake measurement engine allows exercising the artifact contract without
     # launching the real 384-run study in routine CI.
-    monkeypatch.setattr(cert, "_reference_runtime", lambda: {"moeabench": "0.18.0"})
+    # The inaugural historical baseline is strictly tied to 0.18.0,\n    # even when this regression runs in the later 1.0.0 candidate.\n    monkeypatch.setattr("moeabench.system.version", lambda show=False: "0.18.0")\n    monkeypatch.setattr(cert, "_reference_runtime", lambda: {"moeabench": "0.18.0"})
     monkeypatch.setattr(cert, "_revision", lambda: "0d3e66804351e23b93fb483ff25e178e06ef6e12")
     monkeypatch.setattr(cert, "_measure", lambda case, seed, front: {
         "seed": seed, "front_size": 24, "igdplus": 0.5,
@@ -88,16 +88,19 @@ def test_baseline_artifact_is_single_write_and_requires_external_approval(
 
 def test_numeric_history_carries_only_hashes_not_copied_fronts(monkeypatch, tmp_path):
     from moeabench import environment_verification as ev
-    monkeypatch.setattr(ev, "snapshot", lambda: {"moeabench": "0.18.0"})
+    from moeabench.system import version
+    current_version = version(show=False)
+    monkeypatch.setattr(ev, "snapshot", lambda: {"moeabench": current_version})
     monkeypatch.setattr(
-        ev, "certified_manifest", lambda: {"versions": {"moeabench": "0.18.0"}}
+        ev, "certified_manifest",
+        lambda: {"versions": {"moeabench": current_version}}
     )
     file = cert.register_numeric_history(
         tmp_path, evidence_url="https://github.com/example/run/123",
         counts={"unit": 332, "integration": 16, "stability": 41}
     )
     obj = json.loads(file.read_text())
-    assert obj["version"] == "0.18.0"
+    assert obj["version"] == current_version
     assert len(obj["numerical_fixtures_sha256"]) == 4
     assert all(len(v) == 64 for v in obj["numerical_fixtures_sha256"].values())
     assert "front" not in json.dumps(obj).replace("stability_reference_fronts", "")
