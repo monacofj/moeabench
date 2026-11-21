@@ -8,6 +8,8 @@ on:
       - ".github/workflows/gt-remaining-mops-inventory-119.yml"
       - "scripts/audit/gt_remaining_mops_issue119.py"
       - "tests/unit/test_gt_remaining_mops_inventory_issue119.py"
+      - "scripts/audit/gt_dpf4_published_equations_issue119.py"
+      - "tests/unit/test_gt_dpf4_published_oracle_issue119.py"
       - "docs/research/gt-issue119/gt-remaining-mops-inventory-issue119.md"
       - "docs/index.md"
   workflow_dispatch:
@@ -31,7 +33,7 @@ jobs:
       - name: Install MoeaBench and test dependencies
         run: python -m pip install -e . pytest
       - name: Run new independent inventory controls
-        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py -q
+        run: python -m pytest tests/unit/test_gt_remaining_mops_inventory_issue119.py tests/unit/test_gt_dpf4_published_oracle_issue119.py -q
       - name: Measure incumbent reference geometry across MOP configurations
         run: |
           python -m scripts.audit.gt_remaining_mops_issue119 \
@@ -90,10 +92,26 @@ jobs:
                  c["constraints"]["infeasible_above_1e-12"]>0]
           print("CONSTRAINED_FLAGS",len(flags),"of",len(r["records"]))
           PY
+      - name: Compare DPF4 with the independently reconstructed original publication
+        run: |
+          python -m scripts.audit.gt_dpf4_published_equations_issue119 \
+            > gt119-dpf4-published-equations.json
+          python - <<'PY'
+          import json
+          for x in json.load(open("gt119-dpf4-published-equations.json"))["cases"]:
+              print("DPF4_PUBLISHED",x["M"],x["D"],
+                    "eta_ordered",x["raw_eta_strictly_increasing"],
+                    "objective_max_difference",
+                    x["max_objective_difference_to_independent_published"],
+                    "projection_telescope_error",
+                    x["source_projection_telescope_error"],
+                    "tiny_angle",x["small_angle_numerical_probe"])
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt119-remaining-mop-inventory
           path: |
             gt119-remaining-mops-inventory.json
             gt119-constrained-mops-details.json
+            gt119-dpf4-published-equations.json
           retention-days: 30
