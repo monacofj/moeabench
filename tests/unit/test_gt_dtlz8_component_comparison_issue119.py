@@ -83,3 +83,21 @@ def test_dtlz8_m4_completion_rejects_off_front_data():
     lattice = candidate_objectives(4, 32, patch_strategy="lattice")
     with pytest.raises(ValueError, match="off-Pareto"):
         m4_preserving_completion(invalid, lattice, 32)
+
+
+def test_dtlz8_m4_completion_targets_uncovered_patches():
+    from moeabench.mops.DTLZ8 import DTLZ8
+    from scripts.audit.gt_dtlz8_candidate_issue119 import candidate_objectives
+
+    budget = 512
+    original = np.unique(DTLZ8(M=4).pf(n_points=budget), axis=0)
+    lattice = candidate_objectives(4, budget, patch_strategy="lattice")
+    completed = m4_preserving_completion(original, lattice, budget)
+    # The incumbent line already has a fine geometric spacing. The
+    # farthest-point selection should target the two-dimensional patches,
+    # unlike the former row-order append which filled line points first.
+    new_mask = ~np.any(np.all(completed[:, None, :] == original[None, :, :],
+                              axis=2), axis=1)
+    additions = completed[new_mask]
+    assert len(additions) == budget - len(original)
+    assert np.count_nonzero(additions[:, -1] < 1/3) >= len(additions) // 2
