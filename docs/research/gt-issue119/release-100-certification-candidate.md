@@ -58,6 +58,26 @@ for the ADR 0056 performance protocol.
 
 ## Required release decision
 
+The release-candidate workflow runs on a qualifying push to
+`main` after the PR is integrated, so its new numeric certificate
+identifies the **actual main merge commit**. The independent
+performance workflow has no numeric-workflow dependency or
+automatic completion trigger. It is opt-in through an exact,
+maintainer-authored issue #119 comment:
+
+```text
+/certify-performance-119 <full 40-character main source SHA>
+```
+
+The workflow refuses commands for any other checked-out revision,
+looks up a separate completed numeric-certification workflow for the
+same source SHA, downloads its certificate/manifest, and requires
+the full source, environment, CPU-profile and original regression
+fixture digest checks. It then executes the existing six-case ADR
+0056 certification CLI against the frozen historical 0.18.0
+performance artifact. A failed or underpowered study uploads its
+diagnostics but cannot publish a `CERTIFIED` verdict.
+
 The project owner must review the exact final candidate SHA,
 version name, experimental environment and certification outputs
 before a public 1.0.0 release or registration of the first
