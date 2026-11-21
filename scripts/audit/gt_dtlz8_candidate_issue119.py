@@ -92,7 +92,14 @@ def candidate_decisions(m, n_points, n_variables=None, *, patch_strategy="halton
     """Map objective vectors to constant-block feasible decisions."""
     if n_variables is None:
         n_variables = 10 * m
-    if n_variables < m or n_variables % m:
-        raise ValueError("N must be a positive multiple of M for this candidate.")
+    if n_variables < m:
+        raise ValueError("N must be at least M for DTLZ8.")
     objectives = candidate_objectives(m, n_points, patch_strategy=patch_strategy)
-    return np.repeat(objectives, n_variables // m, axis=1)
+    active = np.repeat(objectives, n_variables // m, axis=1)
+    # Production DTLZ8 currently ignores N % M trailing variables.
+    # Keep that public contract for an explicit non-multiple N.
+    ignored = n_variables % m
+    if ignored:
+        active = np.pad(active, ((0, 0), (0, ignored)),
+                        mode="constant", constant_values=0.5)
+    return active
