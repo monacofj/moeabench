@@ -66,6 +66,30 @@ def _gt_geometry_signature(problem_name: str) -> tuple[float, float]:
 
 @pytest.mark.parametrize("problem_name", GT_PROBLEMS, ids=GT_PROBLEMS)
 def test_gt_reference_reproducibility(problem_name):
+    if problem_name == "DTLZ8":
+        # The former static M=3 reference is feasible but mathematically
+        # off Pareto; comparing against it would certify the old defect.
+        # Preserve the frozen file and verify independent equations instead.
+        mop = _build_problem(problem_name)
+        n_points = STABILITY_GT_GEOMETRY["problems"][problem_name]["n_points"]
+        observed = np.asarray(mop.pf(n_points=n_points))
+        np.testing.assert_array_equal(observed, mop.pf(n_points=n_points))
+        assert observed.shape == (n_points, mop.M)
+        assert len(np.unique(observed, axis=0)) == n_points
+        t = observed[:, -1]
+        y = observed[:, :-1]
+        assert np.all(t[:, None] + 4*y >= 1 - 1e-12)
+        assert np.all(2*t + y[:, 0] + y[:, 1] >= 1 - 1e-12)
+        line = t >= 1/3
+        np.testing.assert_allclose(y[line],
+                                   np.repeat(((1-t[line])/4)[:, None],
+                                             2, axis=1), rtol=0, atol=1e-12)
+        if np.any(~line):
+            z = np.sort(y[~line], axis=1)
+            np.testing.assert_allclose(z[:, 0]+z[:, 1],
+                                       1-2*t[~line], rtol=0, atol=1e-12)
+        return
+
     # DTLZ2/3/4 have an analytical, continuous hyperspherical front.
     # Historical calibration points are samples from that surface, NOT
     # the canonical coordinates of the surface itself. A nearest-neighbor
@@ -90,7 +114,7 @@ def test_gt_reference_reproducibility(problem_name):
                                    atol=1e-12, rtol=0)
         return
 
-    # For other MOPs, retain the existing developer-certified geometric
+    # For unaffected MOPs, retain developer-certified geometric
     # sample baselines and thresholds unchanged.
     expected = STABILITY_GT["basic"][problem_name]
     forward_max, backward_max = _gt_geometry_signature(problem_name)
