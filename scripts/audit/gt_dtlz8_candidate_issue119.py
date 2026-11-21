@@ -38,7 +38,10 @@ def candidate_objectives(m, n_points, *, patch_strategy="halton"):
     if n_points < m + 1:
         raise ValueError("Need at least M+1 points to sample all regions and line endpoints.")
 
-    n_line = max(2, n_points // m)
+    # A lattice variant assigns slightly more rows to two-dimensional
+    # patches; the line remains explicitly anchored at both endpoints.
+    line_divisor = m + 1 if patch_strategy == "lattice" else m
+    n_line = max(2, n_points // line_divisor)
     n_patch = n_points - n_line
     q, r = divmod(n_patch, m - 1)
     counts = [q + (i < r) for i in range(m - 1)]
