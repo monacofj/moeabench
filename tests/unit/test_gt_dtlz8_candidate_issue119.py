@@ -13,7 +13,7 @@ from scripts.audit.gt_dtlz8_candidate_issue119 import (
 
 
 @pytest.mark.parametrize("m,budget", [
-    (3, 128), (4, 128), (5, 512), (10, 512),
+    (2, 128), (3, 128), (4, 128), (5, 512), (10, 512),
     (3, 2000), (10, 2000),
 ])
 def test_dtlz8_candidate_exact_count_and_objective_mapping(m, budget):
@@ -30,9 +30,10 @@ def test_dtlz8_candidate_exact_count_and_objective_mapping(m, budget):
     # objective constraints, without calling mop._calc_constraints().
     t = f[:, -1]
     assert np.min(t[:, None] + 4 * f[:, :-1] - 1) >= -2e-14
-    pairs = np.array([f[:, i] + f[:, j]
-                     for i, j in combinations(range(m - 1), 2)])
-    assert np.min(2 * t + pairs.min(axis=0) - 1) >= -2e-14
+    if m >= 3:
+        pairs = np.array([f[:, i] + f[:, j]
+                         for i, j in combinations(range(m - 1), 2)])
+        assert np.min(2 * t + pairs.min(axis=0) - 1) >= -2e-14
 
 
 @pytest.mark.parametrize("m", [3, 4, 5, 10])
@@ -60,7 +61,16 @@ def test_dtlz8_candidate_covers_line_and_every_patch(m):
 def test_dtlz8_candidate_deterministic_and_rejects_unsupported_geometry():
     np.testing.assert_array_equal(candidate_objectives(4, 128),
                                   candidate_objectives(4, 128))
-    with pytest.raises(ValueError, match="M>=3"):
-        candidate_objectives(2, 128)
+    with pytest.raises(ValueError, match="M>=2"):
+        candidate_objectives(1, 128)
+    with pytest.raises(ValueError, match="two line endpoints"):
+        candidate_objectives(2, 1)
     with pytest.raises(ValueError, match="M\\+1"):
         candidate_objectives(5, 5)
+
+
+def test_dtlz8_m2_is_complete_single_constraint_line():
+    f = candidate_objectives(2, 128)
+    np.testing.assert_allclose(f[:, 0], (1 - f[:, 1])/4, rtol=0, atol=0)
+    np.testing.assert_array_equal(f[0], [0.25, 0.0])
+    np.testing.assert_array_equal(f[-1], [0.0, 1.0])
