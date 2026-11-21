@@ -50,12 +50,14 @@ jobs:
               for component, pair in r["components"].items():
                   before = pair["incumbent"]["max_euclidean_gap"]
                   after = pair["candidate"]["max_euclidean_gap"]
+                  lattice = pair["lattice"]["max_euclidean_gap"]
                   print("DTLZ8", r["M"], "budget", r["requested"],
                         "seed", r["probe_offset"], "component", component,
                         "incumbent_count", r["incumbent_count"],
                         "candidate_count", r["candidate_count"],
                         "observed_max_gap_before", round(before, 6),
-                        "observed_max_gap_after", round(after, 6))
+                        "observed_max_gap_after", round(after, 6),
+                        "lattice_max_gap", round(lattice, 6))
           PY
       - uses: actions/upload-artifact@v4
         with:
