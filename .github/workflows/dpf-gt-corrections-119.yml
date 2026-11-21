@@ -13,6 +13,7 @@ on:
       - "tests/unit/test_dpf5_componentwise_cover_issue119.py"
       - "scripts/audit/gt_dpf5_corrected_cover_issue119.py"
       - "tests/unit/test_gt_dpf5_corrected_cover_issue119.py"
+      - "tests/unit/test_dpf_gt_calibration_integration_issue119.py"
       - "docs/adr/0057-proposed-purpose-specific-gt-budgets.md"
   workflow_dispatch:
 
@@ -35,7 +36,9 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Independent published-equation and geometry-specific sampler tests
         run: |
-          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py tests/unit/test_gt_dpf5_corrected_cover_issue119.py -q
+          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py tests/unit/test_gt_dpf5_corrected_cover_issue119.py tests/unit/test_dpf_gt_calibration_integration_issue119.py -q
+      - name: Run full integration scope with corrected MOPs
+        run: python test.py --integration --basic
       - name: Summarize corrected finite reference cardinality
         run: |
           python - <<'PY'
