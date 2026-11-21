@@ -26,6 +26,12 @@ The repository's [main README](../README.md) contains an overview, examples, cit
 
 The permanent, self-contained technical reference is **[gt.md](gt.md)**. The files below are **specialized reports from [issue #119](https://github.com/monacofj/moeabench/issues/119) and [PR #139](https://github.com/monacofj/moeabench/pull/139)**. They preserve detailed proofs, experimental designs, data, negative results, comparisons against the audited implementation, and traceability. They are grouped under **[research/gt-issue119](research/gt-issue119/README.md)**, rather than scattered at the top level of \`docs/\`.
 
+### Remaining MOP Scientific Audit
+
+| Document | Scope |
+|---|---|
+| [Remaining DTLZ/DPF GT inventory and DTLZ8 proof](research/gt-issue119/gt-remaining-mop-inventory-issue119.md) | Independent per-MOP structural matrix, exact DTLZ8 central/arm PF characterization, dominated CSV evidence, DPF4 published-threshold discrepancy, candidate continuous covering and ADR approval gates |
+
 ### Mathematical Foundations and Proofs
 
 | Document | Scope |
@@ -85,6 +91,6 @@ The [full ADR index](adr/README.md) provides each decision's status, history, an
 
 ## How to Navigate
 
-To **understand** Ground Truth science, read [gt.md](gt.md). To **implement** algorithms or change APIs, inspect the applicable [ADRs](adr/README.md) and [API reference](reference.md). To **verify a proof or reproduce an experiment**, follow the specialized report and its research script/tests in PR #139. To understand **why** an architectural choice was made, consult the ADR's full history and current status, including later amendments.
+To **understand** Ground Truth science, read [gt.md](gt.md). To **implement** algorithms or change APIs, inspect the applicable [ADRs](adr/README.md) and [API reference](reference.md). To **verify a proof or reproduce an experiment**, follow the specialized report and its research script/tests, including PRs #139 and #141. To understand **why** an architectural choice was made, consult the ADR's full history and current status, including later amendments.
 
 This index organizes knowledge; it neither turns an experimental finding into an accepted architectural decision nor turns a historical record into a current runtime contract.

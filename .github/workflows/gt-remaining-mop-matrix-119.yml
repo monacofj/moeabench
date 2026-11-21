@@ -1,0 +1,102 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J. <monaco@usp.br>
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Remaining MOP Ground Truth audit (issue 119)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-remaining-mop-matrix-119.yml"
+      - "scripts/audit/gt_remaining_mop_matrix_issue119.py"
+      - "tests/unit/test_gt_remaining_mop_matrix_issue119.py"
+      - "scripts/audit/gt_dtlz8_analytic_candidate_issue119.py"
+      - "tests/unit/test_gt_dtlz8_analytic_candidate_issue119.py"
+      - "tests/unit/test_gt_dpf4_published_angular_cover_issue119.py"
+      - "docs/research/gt-issue119/gt-remaining-mop-inventory-issue119.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  remaining-mop-gt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install scientific and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Independent remaining-MOP tests
+        run: python -m pytest tests/unit/test_gt_remaining_mop_matrix_issue119.py tests/unit/test_gt_dtlz8_analytic_candidate_issue119.py tests/unit/test_gt_dpf4_published_angular_cover_issue119.py -q
+      - name: Produce complete MOP audit matrix
+        run: |
+          python -m scripts.audit.gt_remaining_mop_matrix_issue119 \
+            --objectives 3 5 --budgets 128 512 \
+            --include-intrinsic-three --probe-dtlz8-cap \
+            > gt119-remaining-mops.json
+          python - <<'PY'
+          import json
+          data=json.load(open("gt119-remaining-mops.json"))
+          for x in data["records"]:
+              gap=x["requested"]-x["unique_objective_rows"]
+              flags=[]
+              if gap: flags.append(f"effective_shortfall={gap}")
+              if x["unique_objectives_internally_dominated"]:
+                  flags.append(f"dominated={x['unique_objectives_internally_dominated']}")
+              if x.get("feasibility",{}).get("infeasible_above_1e-12"):
+                  flags.append("infeasible")
+              if x.get("published_ascending_thresholds_required"):
+                  flags.append("DPF4_published_disagreeing="+str(x["published_sorted_DPF4_disagreeing_rows_tol_1e_12"]))
+                  flags.append("DPF4_max_formula_delta="+format(x["published_sorted_DPF4_max_component_delta"],".6g"))
+              witness=x.get("same_fM_independent_pareto_witness")
+              if witness:
+                  flags.append("constructive_dominated=" + str(witness["strictly_dominated_returned_rows_tol_1e_10"]))
+                  flags.append("max_improvement=" + format(witness["max_coordinate_improvement"], ".6g"))
+              print("MOP",x["name"],"M",x["M"],"D",x["D"],
+                    "requested",x["requested"],"PS",x["PS_rows"],
+                    "PF",x["PF_rows"],"unique",x["unique_objective_rows"],
+                    "source",x["source"]," ".join(flags))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-remaining-mop-matrix
+          path: gt119-remaining-mops.json
+
+  dtlz8-analytic-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install scientific dependencies
+        run: python -m pip install -e . pytest
+      - name: Independently construct continuous-front-certificate candidate
+        run: |
+          python -m scripts.audit.gt_dtlz8_analytic_candidate_issue119 \
+            --objectives 3 5 10 --budgets 128 512 4096 --probe-count 512 \
+            > gt119-dtlz8-analytic-candidate.json
+          python - <<'PY'
+          import json
+          x=json.load(open("gt119-dtlz8-analytic-candidate.json"))
+          for v in x["cases"]:
+              print("DTLZ8_ANALYTIC",v["M"],v["requested"],
+                    "unique",v["numerical_unique"],
+                    "grid",v["complete_grid_counts"],
+                    "ideal_bound",v["mathematical_real_cover_upper"]["union"],
+                    "finite_probe_max",v["independent_probe_global_max"],
+                    "replay_delta",v["objective_replay_max_abs"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gt119-dtlz8-analytic-candidate
+          path: gt119-dtlz8-analytic-candidate.json
