@@ -60,7 +60,10 @@ jobs:
                         "candidate_count", r["candidate_count"],
                         "observed_max_gap_before", round(before, 6),
                         "observed_max_gap_after", round(after, 6),
-                        "lattice_max_gap", round(lattice, 6))
+                        "lattice_max_gap", round(lattice, 6),
+                        "m4_completion_max_gap",
+                        (round(pair["m4_completion"]["max_euclidean_gap"], 6)
+                         if "m4_completion" in pair else None))
           PY
       - name: Independently audit actual Pareto-front membership
         run: |
