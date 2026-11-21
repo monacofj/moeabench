@@ -25,7 +25,7 @@ def test_nonmultiple_n_preserves_current_evaluation_contract(m, n, strategy):
     )
     truth = candidate_objectives(m, 128, patch_strategy=strategy)
     assert decisions.shape == (128, n)
-    np.testing.assert_array_equal(decisions[:, (n // m) * m:], 0.5)
+    assert np.all(decisions[:, (n // m) * m:] == 0.5)
     np.testing.assert_allclose(
         mop.evaluation(decisions)["F"], truth, rtol=0, atol=2e-15
     )
