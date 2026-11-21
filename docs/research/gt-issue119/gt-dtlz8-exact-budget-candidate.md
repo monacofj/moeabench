@@ -70,10 +70,27 @@ The module `scripts/audit/gt_dtlz8_membership_issue119.py`
 checks each incumbent static/dynamic GT objective vector against
 the published piecewise Pareto equations, with a documented 1e-10
 float64 diagnostic tolerance. This is stronger than checking only
-nondominance within a finite sample. It separately reports counts,
+nondominance within a finite sample. The audit independently checks
+published constraint feasibility, distinguishing infeasible rows from
+feasible rows that lie above the actual Pareto front. It separately reports counts,
 unique points, residual magnitudes and violations for M=2,3,4,5,10
 at n=128,512,2000, alongside the candidate variants. It does not
 modify the meaning of the public `feasible` flag.
+
+An initial reproducible run at n=128,512,2000 found **all** examined
+static reference objectives (M=3,5,10) outside the published analytical
+Pareto geometry by more than 1e-10. The dynamic M=4 objectives were
+on-geometry within float64 rounding, but lacked the requested unique
+count. For M=2 the legacy fallback also returned non-Pareto rows.
+This evidence **disqualifies blindly augmenting or preserving the static
+files** as canonical GT; individual feasibility checks and the source
+provenance must be examined before a production replacement. These
+negative results are retained in the research record.
+
+A concrete first static M=3 example evaluates to approximately
+`(0.09595176, 0.19891921, 0.62134608)`. It is feasible, but at
+the same final objective its analytical line counterpart is
+`(0.09466348, 0.09466348, 0.62134608)`, which strictly dominates it.
 
 ## Independent finite-probe comparison
 
