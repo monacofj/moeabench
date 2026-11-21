@@ -6,6 +6,8 @@ on:
   pull_request:
     paths:
       - "pyproject.toml"
+      - "moeabench/system.py"
+      - "tests/unit/test_release_version_consistency_issue119.py"
       - ".github/workflows/release-100-numeric-certification.yml"
       - "docs/research/gt-issue119/release-100-certification-candidate.md"
   workflow_dispatch:
@@ -38,8 +40,10 @@ jobs:
           import importlib.metadata as im
           import json
           from pathlib import Path
+          import moeabench as mb
           import moeabench.certification as cert
           assert im.version("moeabench") == "1.0.0"
+          assert mb.system.version(show=False) == "1.0.0"
           path=Path("moeabench/resources/certifications/0.18.0/performance-reference.json")
           old=cert.load_performance_reference(path)
           assert old["status"] == "APPROVED"
