@@ -183,6 +183,43 @@ reference sampling need not preserve numerical IGD+ values; that
 is a scientifically meaningful migration impact, not grounds
 to silently rewrite a frozen baseline.
 
+## Experimental checkpoint: component spacing and indicator dependence
+
+The reproducible 2026-11-21 research workflow compared three fixed
+independent probe offsets and budgets 128/512. All 71 isolated
+scientific tests passed after switching M=4 completion from lattice
+row-order append to greedy farthest-first addition in objective space.
+
+For M=4, n=512 and the first probe offset, the incumbent's line
+has 128 points and nearest-neighbor CV approximately zero. The
+greedy completion **retains those same 128 points**; it places the
+43 additional points in surface patches (rather than the line).
+Patch 0 has 121 -> 136 points and nearest-neighbor CV
+0.5270 -> 0.4509; the other patches similarly decrease from
+about 0.5270 to 0.4498. At n=128, patch CV likewise decreases
+for all three patches while preserving the original line.
+This is observed finite-sample regularity improvement, not a
+global optimality theorem or a proof of monotone CV improvement
+at arbitrary n/M. The superset-based nonworsening guarantee for
+probe covering distance continues to apply.
+
+Changing the **reference itself** changes IGD+: at M=4,
+n=512, seed=11941, the same analytical equal-per-component
+population scores about 0.014013 with the incumbent finite
+reference, 0.012925 with the Halton candidate, 0.013354
+with the lattice, and 0.014189 with the greedy-preserving
+completion. Reference changes can improve or worsen indicator
+values; a covering guarantee about a superset used as an
+**approximation** does not imply monotonicity when that
+superset is used as a new **IGD+ reference**. Existing
+numeric baselines therefore cannot be migrated by assumption.
+
+These experiments are intended to inform source selection, not
+to establish a canonical relative weight between the 1-D line and
+2-D patches. A final production policy must explicitly define
+the allocation semantics and validate indicator sensitivity
+with independent target populations.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
