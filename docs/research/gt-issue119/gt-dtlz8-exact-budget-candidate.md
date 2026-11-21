@@ -238,6 +238,28 @@ certified continuous bounds.
 At this checkpoint 72 new scientific tests passed. Calibration
 defaults and persisted references remain unchanged.
 
+## Corrected-source candidate policy for M=2,3,5,10
+
+The standalone `scripts/audit/gt_dtlz8_policy_issue119.py`
+compares the fully analytical Halton and structured-lattice
+alternatives for M=2,3,5,10 at 128, 512 and the actual 2,000-point
+historical DTLZ calibration budget. Neither candidate inherits any
+off-front points from the incumbent CSVs or dynamic M=2 fallback.
+
+A deterministic three-offset, separately component-scoped experiment
+checks cardinality, analytical Pareto membership, constraint
+feasibility, per-component spacing and worst finite-probe nearest
+distance. It reports whether either candidate is nonworse than
+the other for *every* component and offset. Mixed trade-offs are
+recorded as `mixed_no_proven_winner`, never hidden by averaging
+the one-dimensional line with two-dimensional patches.
+
+This is **research evidence**, not a declaration that a source
+is scientifically certified, an approved line/patch probability
+measure, or authorization to alter frozen GT artifacts. The
+archived JSON (`dtlz8-policy-candidates.json`) is intended for
+review before choosing a versioned production policy.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
@@ -257,9 +279,10 @@ defaults and persisted references remain unchanged.
    authorization is required for an ADR-incompatible change or
    edits to existing regression tests, fixtures and baselines.
 
-The M=2 boundary is deliberately unsupported by this candidate:
-the production special-case constraint implementation does not have
-the published M>=3 pairwise expression. It needs a separate audit.
+The M=2 boundary is separately covered: its single-constraint
+Pareto front is f_1=(1-f_2)/4 for 0<=f_2<=1, without the M>=3
+pairwise inequality. Its incumbent dynamic generator contains
+feasible off-front rows, so it must not be reused as certified GT.
 
 **Source:** Deb et al., original report:
 https://sop.tik.ee.ethz.ch/publicationListFiles/dtlz2001a.pdf
