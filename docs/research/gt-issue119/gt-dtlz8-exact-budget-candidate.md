@@ -125,6 +125,30 @@ mixed-dimensional probability weighting is imposed; the report
 must be reviewed component by component. New smoke tests check
 probe construction and diagnostic invariants.
 
+## M=4 completion control: guaranteed nonworsening finite-set covering
+
+Because the dynamic M=4 sampler is independently verified to produce
+valid analytical Pareto objectives (but truncates and duplicates them),
+`m4_preserving_completion()` provides a **research-only** comparison:
+it retains every exact-unique objective in original order and appends
+different lattice candidate objectives until the requested size is
+reached. Any off-front incumbent point causes refusal rather than reuse.
+
+Provided the incumbent contains at most `n` distinct valid points,
+the completed point set contains the incumbent unique set as a subset.
+Consequently **for every independently chosen query point** the
+nearest Euclidean distance to the completed set cannot exceed the
+distance to the incumbent set. The same monotonic property applies
+to the positive-part nearest distance used in IGD+ when the reference
+points and normalization are fixed. New tests directly assert this
+superset property and numerical nonworsening at n=128,512.
+
+This is *not* a proof of improved spatial regularity, and retains some
+incumbent clustering. It also **cannot** be used for the faulty
+M=2,3,5,10 sources: off-front points are scientifically ineligible
+for preservation. Treat this as a controlled feasibility and coverage
+baseline, not the finally chosen sampler.
+
 ## Remaining scientific checks before production
 
 1. Independently prove the exact nondominated characterization,
