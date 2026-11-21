@@ -64,10 +64,12 @@ def test_dtlz9_front_is_a_repeated_coordinate_quarter_circle(m):
 
 def test_dpf4_records_current_projection_order_without_presuming_paper_fidelity():
     row = audit("DPF4", m=5, budget=128, intrinsic_d=2)
-    assert row["projection_ordering_publication_check_required"] is True
+    assert row["published_ascending_thresholds_required"] is True
     assert row["projection_thresholds_in_ascending_order"] is False
-    # A diagnostic about thresholds is not proof that a replacement
-    # projected front would retain the same global Pareto set.
+    assert row["published_sorted_DPF4_disagreeing_rows_tol_1e_12"] > 0
+    assert row["published_sorted_DPF4_max_component_delta"] > 1e-4
+    # A published formula mismatch is real evidence, but independently
+    # validating the new global PF and reference geometry comes next.
     assert row["global_Pareto_membership_proven_by_this_audit"] is False
 
 
@@ -115,3 +117,10 @@ def test_dtlz8_independent_pareto_witness_is_feasible(m):
     assert check["max_witness_constraint_violation"] < 2e-12
     assert check["strictly_dominated_returned_rows_tol_1e_10"] >= 0
     assert check["global_membership_proven_if_not_dominated"] is False
+
+
+def test_dpf4_one_threshold_does_not_change_published_projection():
+    row = audit("DPF4", m=3, budget=128, intrinsic_d=2)
+    assert row["published_ascending_thresholds_required"] is True
+    assert row["projection_thresholds_in_ascending_order"] is True
+    assert row["published_sorted_DPF4_max_component_delta"] < 1e-12
