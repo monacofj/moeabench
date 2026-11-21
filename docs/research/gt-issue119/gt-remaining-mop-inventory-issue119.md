@@ -177,11 +177,15 @@ For **DTLZ8**, the current implementation checks for bundled static
 CSV decision matrices when M is 3, 5 or 10 and returns the **entire
 available file** if the requested point count is at least its row
 count. Consequently, a sufficiently large nominal `n_points`
-request can return **fewer rows than requested**. For other M, a
-guided fallback constructs central-curve and branching-arm samples;
-its complete continuous Pareto membership and coverage have **not**
-been established by simply checking the inequality constraints.
-This audit separately labels source policy and actual returned count.
+request can return **fewer rows than requested**. Independently of
+that cardinality defect, the **constructive global-Pareto witness**
+above verifies whether the static CSV objectives are **actually
+Pareto-optimal**: feasible points that are strictly improved by the
+witness are mathematically dominated. For other M, a guided fallback
+constructs central-curve and branching-arm samples; this audit
+separately labels source policy, actual cardinality and correctness.
+The complete mathematical characterization above is independent of
+both existing implementations.
 
 For **DTLZ9**, the current PS inverse maps a quarter-circle objective
 locus to constant decision blocks through the tenth power.
@@ -197,9 +201,174 @@ objective maps (simplex-plus-weighted projections versus
 squared/min-max projections on inverted hyperspherical objectives).
 Using the same code to sample their position parameters **does not**
 establish equal objective-space regularity or coverage, particularly
-when intrinsic D increases. This audit examines the returned
-objective geometry independently and records DPF4 threshold ordering
-without assuming the DPF3 publication's rule also holds for DPF4.
+when intrinsic D increases.
+
+Importantly, the **primary DPF publication** explicitly states that
+chaotic threshold values `eta` for **both DPF3 and DPF4** are the
+**increasingly sorted** logistic sequence (Zhen et al., *Multiobjective
+Test Problems with Degenerate Pareto Fronts*, arXiv:1806.02706v2,
+Section IV-F, printed page 7). The audited DPF4 source uses its
+unsorted `BaseDPF._chaos_pool` when M-D>=2. An independent published
+DPF4 reference therefore constructs the same essential inverse-
+hyperspherical objectives, but applies the **sorted** published
+min/max projections before the specified squaring. Any observed
+difference is an equation error, not merely a subjective preference
+about finite GT spacing. [Primary paper](https://arxiv.org/pdf/1806.02706).
+
+## Reproduced source findings: independent CI runs (2026-11-21)
+
+The read-only investigation recorded **49 MOP configurations**:
+46 rows from the M=3/5 and n=128/512 matrix (including applicable
+DPF D=3 at M=5) plus DTLZ8 n=4096 at M=3,5,10.
+The first 33 independent invariant tests passed in
+[CI #44891878592](https://github.com/monacofj/moeabench/actions/runs/44891878592).
+The independent same-t DTLZ8 dominance checks subsequently passed
+37 tests in [CI #44892213828](https://github.com/monacofj/moeabench/actions/runs/44892213828).
+The published DPF4 equation comparison passed 38 tests in
+[CI #44892537935](https://github.com/monacofj/moeabench/actions/runs/44892537935).
+
+**Effective cardinality.** In the M=3/5, n=128/512 cases, every
+audited MOP returned the requested number of numerically distinct
+objectives, with no exact duplicate vectors. **DTLZ8 is an exception
+at larger budgets** because its static CSVs have only 1,000 rows:
+
+| DTLZ8 objectives | Requested | Returned | Distinct float64 objectives | Constructively dominated |
+|---|---:|---:|---:|---:|
+| M=3 | 128 | 128 | 128 | **128** |
+| M=3 | 512 | 512 | 512 | **512** |
+| M=3 | 4096 | 1000 | 1000 | **1000** |
+| M=5 | 128 | 128 | 128 | **128** |
+| M=5 | 512 | 512 | 512 | **512** |
+| M=5 | 4096 | 1000 | 1000 | **1000** |
+| M=10 | 4096 | 1000 | 1000 | **1000** |
+
+The strict improvements are **macroscopic**, not float
+rounding artifacts. The largest observed improvement in an
+individual objective over the dominated CSV rows was approximately
+**0.585595 (M=3), 0.856042 (M=5), and 0.747456 (M=10)**.
+Each witness preserves the final objective, satisfies the original
+DTLZ8 constraints, and is no worse in every other objective.
+These data demonstrate a **global Pareto-membership defect in the
+CSV references**, even when their *within-file* nondominance and
+cardinality checks pass. The former frozen CSV must **not** be
+treated as an accepted scientific GT of the published DTLZ8 front.
+
+**DPF4 equation fidelity.** Comparing identical sampled
+decisions under the current evaluator and an independently
+reconstructed **published sorted-threshold projection** produced:
+
+| DPF4 | Evaluated decisions | Disagreements above 1e-12 | Largest absolute component difference |
+|---|---:|---:|---:|
+| M=3, D=2 | 128 | 0 | 0 |
+| M=5, D=2 | 128 | **128** | **0.509667** |
+| M=5, D=2 | 512 | **512** | **0.509667** |
+| M=5, D=3 | 128 | 0 | 0 |
+
+The M=3,D=2 instance has only one threshold; the M=5,D=3
+instance has two thresholds that happen to be generated in
+increasing order, so neither exhibits an ordering discrepancy.
+When `eta` is not ordered, **the implemented objectives differ
+from the published DPF4 equations**. This is separate from any
+question about the quality of the finite PS sampling.
+
+**Other structural results:** the audited DTLZ1/DPF1 simplex,
+DTLZ2/3/4 spherical invariants, DTLZ7/DPF2 record-region membership,
+DTLZ8/9 feasibility within a 1e-12 diagnostic tolerance, DTLZ9
+quarter-circle and repeated-coordinate structure, deterministic
+replay and requested/returned counts passed the newly introduced
+tests. Their success is a necessary mathematical consistency check,
+**not** certification of continuous objective-space coverage.
+
+## Exact-real DTLZ8 finite reference candidate (research only)
+
+With the mathematical central curve and M-1 two-dimensional Pareto
+arms established above, complete componentwise parameter grids can
+provide an **analytical continuous objective-space covering bound**.
+A read-only candidate in
+[`scripts/audit/gt_dtlz8_analytic_candidate_issue119.py`](../../../scripts/audit/gt_dtlz8_analytic_candidate_issue119.py)
+constructs valid block-constant decision preimages, retains a complete
+grid on every component and refills duplicate arm endpoints
+deterministically to preserve the user-requested count of distinct
+objectives. **It is not installed in `DTLZ8.ps()`.**
+
+Parameterize the central curve by `t in [1/3,1]`, and any arm
+by `t in [0,1/3]`, `s in [0,1]`:
+
+[
+a(t,s)=rac{1-t}{4}+
+       rac{s(1-3t)}4,qquad
+b(t,s)=1-2t-a(t,s).
+]
+
+The arm has one objective equal to `a`, all other earlier
+objectives equal to `b`, and final objective equal to `t`.
+
+For a complete `k_c`-point central grid, the Euclidean
+derivative of the center has norm
+(sqrt{1+(M-1)/16}), and every continuous central point
+is at most
+
+[
+R_c le rac{sqrt{1+(M-1)/16}}{3(k_c-1)}
+]
+
+from a grid sample. The arm derivatives satisfy
+
+[
+sup_{t,s}|partial F/partial t|_2
+ = sqrt{(49M-81)/16},quad
+sup_{t,s}|partial F/partial s|_2
+ = sqrt{M-1}/4 .
+]
+
+The first equality follows from convexity of the squared derivative
+norm in `s` and comparison at its endpoints for `M>=3`.
+A complete `k_t` by `k_s` parameter grid in every arm then
+satisfies, by the triangle inequality along parameter coordinate
+directions,
+
+[
+R_a le
+rac{sqrt{(49M-81)/16}}{6(k_t-1)}
++
+rac{sqrt{M-1}}{8(k_s-1)}.
+]
+
+If **every** component grid is fully retained, the entire published
+PF has **exact-real-arithmetic** Hausdorff covering upper bound
+(max{R_c,R_a}), in unnormalized Euclidean objective space.
+There are nominally
+(k_c+(M-1)k_tk_s) grid rows before identifying shared
+component boundaries. The candidate searches feasible integer
+splits for the lowest analytic bound and replenishes duplicates.
+These results **do not certify float64 interval rounding** or
+a universal distribution law over mixed intrinsic dimensions.
+
+## Architectural contradiction and explicit approval gate
+
+The currently **accepted ADR 0016** describes DTLZ8 as migrated to
+a *guided analytical manifold reconstruction* and expressly
+contrasts it with frozen heuristic reference data. The also
+**accepted ADR 0017**, written subsequently, describes
+*NSGA-III-based frozen high-fidelity numerical reference CSVs* for
+DTLZ8/9. The current DTLZ8 implementation prioritizes bundled
+static CSV references for M=3/5/10. The two historical
+architectural descriptions are inconsistent, and now the static
+DTLZ8 references have been **independently shown to be dominated**.
+
+**A production change replacing the frozen DTLZ8 data with the
+proved analytical generator requires an explicit maintainer
+decision reconciling ADRs 0016 and 0017**, including the scientific
+status of the previous CSVs and any historical regression impact.
+The DPF4 correction also requires review of accepted historical
+DTLZ/DPF GT calibration and performance reports (e.g. ADR 0018)
+before changing the objective evaluator, sample generator,
+or references.
+
+This PR performs **only research and documentation**, with new
+independent tests. It neither supersedes an accepted ADR nor
+changes production, canonical GT, old regression fixtures,
+calibration sidecars, or the default `calibrate()` budget.
 
 ## Scientific acceptance matrix and interpretation
 
