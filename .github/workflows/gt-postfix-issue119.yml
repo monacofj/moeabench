@@ -8,8 +8,10 @@ on:
       - ".github/workflows/gt-postfix-issue119.yml"
       - "scripts/audit/gt_postfix_quantitative_issue119.py"
       - "scripts/audit/gt_independent_probes_issue119.py"
+      - "scripts/audit/gt_reference_sensitivity_issue119.py"
       - "tests/unit/test_gt_postfix_quantitative_issue119.py"
       - "tests/unit/test_gt_independent_probes_issue119.py"
+      - "tests/unit/test_gt_reference_sensitivity_issue119.py"
       - "docs/research/gt-issue119/**"
   workflow_dispatch:
 
@@ -34,7 +36,8 @@ jobs:
       - name: Independently verify report invariants
         run: |
           python -m pytest -q tests/unit/test_gt_postfix_quantitative_issue119.py \
-            tests/unit/test_gt_independent_probes_issue119.py
+            tests/unit/test_gt_independent_probes_issue119.py \
+            tests/unit/test_gt_reference_sensitivity_issue119.py
       - name: Collect all 12 MOPs at 128, 512 and historical GT budgets
         run: |
           python -m scripts.audit.gt_postfix_quantitative_issue119 \
@@ -78,10 +81,34 @@ jobs:
                     "max", round(r["finite_max_gap"], 6),
                     "mean", round(r["finite_mean_gap"], 6))
           PY
+      - name: Measure finite-reference IGD and IGD+ sensitivity
+        run: |
+          python -m scripts.audit.gt_reference_sensitivity_issue119 \
+            --objectives 3 5 --budgets 128 512 2000 \
+            --seeds 11941 11942 11943 \
+            --population 64 > gt-reference-sensitivity.json
+          python - <<'PY'
+          import json
+          records = json.load(open("gt-reference-sensitivity.json"))["records"]
+          assert len(records) == 48, len(records)
+          for record in records:
+              scores = record["reference_scores"]
+              assert len(scores) == 3
+              assert all(s["raw_igd"] >= s["raw_igd_plus"] >= 0
+                         for s in scores)
+              first, last = scores[0], scores[-1]
+              print("GT_REFERENCE_SENSITIVITY", record["problem"],
+                    "M", record["M"], "seed", record["population_seed"],
+                    "IGD_128", round(first["raw_igd"], 6),
+                    "IGD_largest", round(last["raw_igd"], 6),
+                    "IGDPLUS_128", round(first["raw_igd_plus"], 6),
+                    "IGDPLUS_largest", round(last["raw_igd_plus"], 6))
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: gt-postfix-quantitative-issue119
           path: |
             gt-postfix-quantitative.json
             gt-postfix-finite-probes.json
+            gt-reference-sensitivity.json
           retention-days: 30
