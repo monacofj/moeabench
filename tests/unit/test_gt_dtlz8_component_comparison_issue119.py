@@ -32,10 +32,12 @@ def test_dtlz8_component_comparison_schema(m):
     report = compare(m, 32, probes_per_component=16, offset=143)
     assert report["candidate_count"] == 32
     assert report["candidate_unique"] == 32
+    assert report["lattice_count"] == 32
+    assert report["lattice_unique"] == 32
     assert not report["continuous_coverage_certified"]
     assert not report["canonical_mixed_dimensional_measure_chosen"]
     for scores in report["components"].values():
-        for method in ("incumbent", "candidate"):
+        for method in ("incumbent", "candidate", "lattice"):
             assert all(np.isfinite(list(scores[method].values())))
 
 
