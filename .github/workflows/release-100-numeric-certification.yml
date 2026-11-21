@@ -17,6 +17,8 @@ on:
       - ".github/workflows/release-100-numeric-certification.yml"
       - "docs/research/gt-issue119/release-100-certification-candidate.md"
   workflow_dispatch:
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -24,6 +26,13 @@ permissions:
 
 jobs:
   numeric-candidate:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.number == 119 &&
+       (github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR') &&
+       startsWith(github.event.comment.body, '/certify-numeric-119 '))
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -37,6 +46,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.14.4'
+      - name: Verify explicit main-SHA numeric certification request
+        if: github.event_name == 'issue_comment'
+        env:
+          CERTIFY_COMMAND: ${{ github.event.comment.body }}
+        run: |
+          python - <<'PY'
+          import os
+          import subprocess
+          tokens=os.environ["CERTIFY_COMMAND"].strip().split()
+          actual=subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                         text=True).strip()
+          assert len(tokens)==2 and tokens[0]=="/certify-numeric-119"
+          assert tokens[1]==actual==os.environ["GITHUB_SHA"], "Source SHA mismatch"
+          print("Explicit numeric certification authorized for", actual)
+          PY
       - name: Install the approved numerical dependency versions
         run: |
           python -m pip install -e . pytest
@@ -113,7 +137,7 @@ jobs:
             moeabench/resources/certifications/1.0.0/numeric-certificate.json
             moeabench/resources/certified_environment.json
       - name: Record verified main numerical certificate on issue 119
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'issue_comment'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
