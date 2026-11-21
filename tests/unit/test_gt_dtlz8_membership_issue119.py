@@ -5,7 +5,8 @@ import numpy as np
 import pytest
 
 from scripts.audit.gt_dtlz8_candidate_issue119 import candidate_objectives
-from scripts.audit.gt_dtlz8_membership_issue119 import membership_residual
+from scripts.audit.gt_dtlz8_membership_issue119 import (feasibility_residual,
+                                                        membership_residual)
 
 
 @pytest.mark.parametrize("m", [2, 3, 4, 5, 10])
@@ -26,3 +27,14 @@ def test_dtlz8_membership_rejects_feasible_but_dominated_objectives():
 def test_dtlz8_membership_rejects_unsupported_dimension():
     with pytest.raises(ValueError, match="M>=2"):
         membership_residual(np.zeros((4, 1)))
+
+
+def test_dtlz8_feasible_nonpareto_example_is_distinguished_from_infeasibility():
+    f = np.array([[0.20, 0.125, 0.5]])
+    assert feasibility_residual(f)[0] == 0
+    assert membership_residual(f)[0] > 0.07
+
+
+def test_dtlz8_infeasible_objective_is_flagged_independently():
+    f = np.array([[0.0, 0.0, 0.0]])
+    assert feasibility_residual(f)[0] >= 1
