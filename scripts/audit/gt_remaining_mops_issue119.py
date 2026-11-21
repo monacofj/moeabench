@@ -64,6 +64,8 @@ def _record_occupancy(parameters: np.ndarray):
         "outside_record_domain": int(np.sum(~valid)),
         "possible_components": 2 ** parameters.shape[1],
         "sampled_components": len(values),
+        "minimum_samples_to_touch_every_component": 2 ** parameters.shape[1],
+        "all_components_touched_by_sample": bool(len(values)==2**parameters.shape[1]),
         "component_counts": {str(int(k)): int(v) for k, v in zip(values, counts)},
         "component_occupancy_is_not_a_coverage_certificate": True,
     }
