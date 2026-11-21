@@ -10,6 +10,7 @@ on:
       - "moeabench/mops/DPF5.py"
       - "tests/unit/test_dpf3_dpf5_published_equations_issue119.py"
       - "tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py"
+      - "tests/unit/test_dpf5_componentwise_cover_issue119.py"
       - "docs/adr/0057-proposed-purpose-specific-gt-budgets.md"
   workflow_dispatch:
 
@@ -32,7 +33,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Independent published-equation and geometry-specific sampler tests
         run: |
-          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py -q
+          python -m pytest             tests/unit/test_dpf3_dpf5_published_equations_issue119.py             tests/unit/test_dpf3_dpf5_geometry_samplers_issue119.py tests/unit/test_dpf5_componentwise_cover_issue119.py -q
       - name: Summarize corrected finite reference cardinality
         run: |
           python - <<'PY'
