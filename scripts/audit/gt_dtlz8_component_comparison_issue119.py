@@ -16,6 +16,7 @@ from moeabench.mops.DTLZ8 import DTLZ8
 from scripts.audit.gt_dtlz8_candidate_issue119 import (
     _radical_inverse, candidate_objectives,
 )
+from scripts.audit.gt_dtlz8_membership_issue119 import membership_residual
 
 
 def independent_probes(m, n_per_component=256, offset=11941):
@@ -68,11 +69,44 @@ def _distance_statistics(reference, approximation):
     }
 
 
+
+def m4_preserving_completion(incumbent, lattice, budget, *, tolerance=1e-10):
+    """Research control: retain every distinct valid incumbent point for M=4.
+
+    A fixed-budget superset of all incumbent unique objectives cannot
+    worsen the nearest-approximation distance for any reference point.
+    This is a covering guarantee, not a regularity/measure guarantee.
+    """
+    incumbent = np.asarray(incumbent, dtype=float)
+    lattice = np.asarray(lattice, dtype=float)
+    if incumbent.ndim != 2 or incumbent.shape[1] != 4:
+        raise ValueError("Completion is currently validated only for M=4.")
+    if lattice.shape != (budget, 4):
+        raise ValueError("Lattice must contain exactly the requested budget.")
+    if not np.isfinite(incumbent).all():
+        raise ValueError("Incumbent contains nonfinite values.")
+    if np.max(membership_residual(incumbent)) > tolerance:
+        raise ValueError("Incumbent contains off-Pareto objective rows.")
+    # Retain the original ordering for the first occurrence of each row.
+    _, indices = np.unique(incumbent, axis=0, return_index=True)
+    unique_incumbent = incumbent[np.sort(indices)]
+    if len(unique_incumbent) > budget:
+        raise ValueError("Incumbent already exceeds the requested budget.")
+    combined = np.concatenate((unique_incumbent, lattice), axis=0)
+    _, indices = np.unique(combined, axis=0, return_index=True)
+    completed = combined[np.sort(indices)][:budget]
+    if len(completed) != budget:
+        raise ValueError("Insufficient distinct candidates to fill budget.")
+    return completed
+
+
 def compare(m, budget, probes_per_component=256, offset=11941):
     mop = DTLZ8(M=m)
     incumbent = np.asarray(mop.pf(n_points=budget), dtype=float)
     candidate = candidate_objectives(m, budget)
     lattice = candidate_objectives(m, budget, patch_strategy="lattice")
+    completed_m4 = (m4_preserving_completion(incumbent, lattice, budget)
+                    if m == 4 else None)
     probes = independent_probes(m, probes_per_component, offset)
     records = {}
     for name, reference in probes.items():
@@ -81,6 +115,9 @@ def compare(m, budget, probes_per_component=256, offset=11941):
             "candidate": _distance_statistics(reference, candidate),
             "lattice": _distance_statistics(reference, lattice),
         }
+        if completed_m4 is not None:
+            records[name]["m4_completion"] = _distance_statistics(
+                reference, completed_m4)
     return {
         "M": m, "requested": budget,
         "incumbent_count": len(incumbent),
@@ -89,6 +126,9 @@ def compare(m, budget, probes_per_component=256, offset=11941):
         "candidate_unique": len(np.unique(candidate, axis=0)),
         "lattice_count": len(lattice),
         "lattice_unique": len(np.unique(lattice, axis=0)),
+        "m4_completion_count": len(completed_m4) if completed_m4 is not None else None,
+        "m4_completion_unique": (len(np.unique(completed_m4, axis=0))
+                                 if completed_m4 is not None else None),
         "probe_offset": offset, "probe_count_per_component": probes_per_component,
         "components": records,
         "continuous_coverage_certified": False,
