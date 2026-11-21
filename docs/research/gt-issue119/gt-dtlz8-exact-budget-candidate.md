@@ -64,6 +64,17 @@ cardinality, objective-to-decision inversion, published constraints,
 presence of every patch, central-line endpoints and deterministic
 replay for M=2,3,4,5,10 and budgets up to 2,000.
 
+## Independent analytical Pareto membership
+
+The module `scripts/audit/gt_dtlz8_membership_issue119.py`
+checks each incumbent static/dynamic GT objective vector against
+the published piecewise Pareto equations, with a documented 1e-10
+float64 diagnostic tolerance. This is stronger than checking only
+nondominance within a finite sample. It separately reports counts,
+unique points, residual magnitudes and violations for M=2,3,4,5,10
+at n=128,512,2000, alongside the candidate variants. It does not
+modify the meaning of the public `feasible` flag.
+
 ## Independent finite-probe comparison
 
 The standalone script
