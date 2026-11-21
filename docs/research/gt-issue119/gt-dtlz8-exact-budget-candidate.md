@@ -64,13 +64,23 @@ The standalone script
 compares the incumbent against this candidate at identical requested
 budgets. It generates **separate** objective-space probes for the line
 and each patch using radical-inverse bases 5 and 7 (independent of
-the candidate's bases 2 and 3) and records per-component maximum and
+the candidate's bases 2 and 3), with separate deterministic\nirrational rotations for each probe seed and records per-component maximum and
 mean nearest-neighbor distances plus positive-part IGD+ distances.
 Suggested run:
 
 ```sh
 python -m scripts.audit.gt_dtlz8_component_comparison_issue119 --objectives 2 3 4 5 10 --budgets 128 512 --seeds 11941 11942 11943 --probes 256 > dtlz8-component-comparison.json
 ```
+
+The first trial (before decorrelating probe seeds) revealed a **negative
+result** that must not be suppressed: at M=4, n=512, the incumbent
+largest observed gap on each patch was about 0.0324 whereas the
+candidate was about 0.0473. At M=4, n=128, corresponding figures
+were about 0.0692 and 0.0938. Therefore the current proposed
+sampler cannot be promoted to production as a general replacement.
+The revised three-rotation experiment must be reviewed separately,
+and candidates should retain or improve the incumbent's within-patch
+coverage before scientific acceptance.
 
 These are explicitly **finite-probe** diagnostics, not continuous
 Hausdorff certificates. No line/patch aggregate or canonical
