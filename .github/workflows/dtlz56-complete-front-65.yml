@@ -49,6 +49,7 @@ jobs:
           tests/unit/test_issue65_fixed_g_dominance.py
           tests/unit/test_issue65_scalarized_front_research.py
           tests/unit/test_issue65_complete_original_front.py
+          tests/unit/test_issue65_independent_continuous_nondominance.py
           tests/unit/test_dtlz_hypersphere_sampling.py
           -q
       - name: Full unit suite
