@@ -221,6 +221,36 @@ python test.py --list --numeric-stability --basic
 execution includes the smoke and basic levels. For integration and
 numerical stability, `--deep` is not an active reference level.
 
+### 2.2 Manual dependency-behavior verification (issue #63)
+
+A version satisfying the package requirement is **not automatically behaviorally
+validated**. MoeaBench records the reference dependency versions in
+`moeabench/resources/certified_environment.json` and checks environment
+provenance at experiment execution, separately from deterministic numerical
+and statistical performance certification (ADRs 0050 and 0056).
+
+After installing MoeaBench and its test dependencies, run this **independent,
+manual** battery when evaluating changes to sensitive upstream APIs:
+
+~~~bash
+python test.py --dependency-verify
+~~~
+
+This reuses the existing pymoo mutation-configuration and deterministic
+solver-front regression tests **without editing them**, plus an independent
+observed-rate test that exercises the actual polynomial mutation operator.
+The battery deliberately selects only these scientifically sensitive pymoo
+contracts; it is not a new test scope and does not pretend to verify all
+third-party dependencies. Unit/stability classifications remain unchanged.
+
+The command prints the installed pymoo version alongside the historical
+reference version and **exits nonzero on behavioral failure**. Passing
+provides targeted behavioral evidence for that environment; it does not
+create or change a certified environment manifest, numerical certificate,
+performance reference, or approved release. Frozen solver-front cases require
+the controlled reference runtime described below; a mismatch must be
+investigated, not made to pass by rewriting historical fixtures.
+
 ### 2.2 Before full numerical verification: select the reference runtime
 
 The complete frozen numerical suite is sensitive to native NumPy and
