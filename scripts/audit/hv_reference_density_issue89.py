@@ -66,6 +66,21 @@ def insert_true_front_midpoint(name, gt):
     return midpoint
 
 
+def exact_continuous_hv2(name):
+    """True two-dimensional PF dominated area with exact axis bounds.
+
+    DTLZ1: the simplex f1+f2=.5 normalizes to x+y=1.
+    DTLZ2: the positive unit-circle quadrant is x**2+y**2=1.
+    The non-dominated complement has respectively area 1/2 or pi/4
+    inside the reference square [0,1.1]**2.
+    """
+    if name == "DTLZ1":
+        return 1.1**2 - 0.5
+    if name == "DTLZ2":
+        return 1.1**2 - np.pi / 4
+    raise ValueError("Continuous HV currently proved only for these two cases")
+
+
 def evaluate_case(name, n, *, check_public=True):
     """Return independent-area and public-API comparisons for one budget."""
     mop = getattr(mb.mops, name)(M=2)
@@ -88,6 +103,9 @@ def evaluate_case(name, n, *, check_public=True):
     denominator = independent_hv2(gt, ideal, nadir)
     numerator = independent_hv2(evaluated, ideal, nadir)
     expected = numerator / denominator
+    continuous_hv = exact_continuous_hv2(name)
+    if not numerator <= continuous_hv + 1e-12:
+        raise AssertionError("A true-front sample exceeded exact continuous HV")
     if not numerator > denominator:
         raise AssertionError("The inserted Pareto point must add some HV")
 
@@ -96,6 +114,9 @@ def evaluate_case(name, n, *, check_public=True):
         "independent_hv_gt": denominator,
         "independent_hv_evaluated": numerator,
         "independent_h_abs": expected,
+        "true_continuous_hv": float(continuous_hv),
+        "continuous_bound_ratio": float(numerator / continuous_hv),
+        "finite_gt_missing_hv": float(continuous_hv - denominator),
         "increment": numerator - denominator,
         "point_on_true_pf": midpoint.tolist(),
     }
