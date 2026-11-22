@@ -788,6 +788,8 @@ NSGA-II on DTLZ2 |     3 |   0.9412
     *   `metric` (*callable*): Target performance metric.
     *   `gen` (*int*): Specific generation to snapshot.
 *   **Returns**: `PerfCompareResult`.
+*   **Interpretation of KS vs Mann–Whitney (issue #58)**: These are not interchangeable tests. Two-sample KS tests equality of the full distributions and can detect changes in shape/spread; Mann–Whitney U primarily measures probabilistic ordering/rank separation and is often interpreted as a location-shift test only under additional shape assumptions. It is statistically valid for one test to reject while the other does not. For example, with 20 zeros and 20 tens in sample A and 40 fours in sample B, the two-sided KS test rejects strongly while two-sided Mann–Whitney does not reject (equal rank-win probabilities).
+*   **Non-rejection is not equivalence**: The current `method='ks'` decision label `match` means only `p >= alpha` (failure to reject equality), **not** evidence establishing equal or equivalent distributions. Likewise `no-significant-difference` for Mann–Whitney does not certify equality. The numeric p-values/statistics should be reported with this qualification. An equivalence claim needs its own prespecified margin and appropriate procedure.
 *   **Semantic aliases**:
     *   `mb.stats.perf_shift(...)` == `mb.stats.perf_compare(..., method='mannwhitney')`
     *   `mb.stats.perf_match(...)` == `mb.stats.perf_compare(..., method='ks')`
