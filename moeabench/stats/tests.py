@@ -47,6 +47,8 @@ class PerfCompareResult(StatsResult):
                 parts.append(f"- **p-value**: {self.p_value:.6f}")
             if self.effect_size is not None:
                 parts.append(f"- **effect**: {self.effect_size:.4f}")
+            if self.method == "ks" and self.decision == "match":
+                parts.append("- **Interpretation**: KS did not reject distribution equality; this does not establish equivalence.")
             content = "\n".join(parts)
             return self._render_report(content, show, **kwargs)
 
@@ -59,6 +61,8 @@ class PerfCompareResult(StatsResult):
             lines.append(f"**P-Value**: {self.p_value:.6f}")
         if self.effect_size is not None:
             lines.append(f"**Effect Size**: {self.effect_size:.6f}")
+        if self.method == "ks" and self.decision == "match":
+            lines.append("**Interpretation**: KS did not reject distribution equality; this does not establish equivalence.")
         return self._render_report("\n".join(lines), show, **kwargs)
 
 class HypothesisTestResult(StatsResult):
