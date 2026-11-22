@@ -29,8 +29,8 @@ class DTLZ6(DTLZ5):
     def ps(self, n_points=100):
         """Sample DTLZ6's historical g=0 Pareto subset.
 
-        For M>=4, nonzero-g Pareto optima are omitted. The output is
-        not a complete GT; retain its deterministic legacy coordinates.
+        For M>=4, the historical g=0 subset omits nonzero-g Pareto
+        optima. Fail closed instead of returning incomplete Ground Truth.
         """
         M = self.M
         N = self.N
