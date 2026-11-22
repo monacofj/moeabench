@@ -43,10 +43,11 @@ def test_g_positive_witness_is_not_dominated_by_any_point_on_g_zero_curve(proble
 
 
 @pytest.mark.parametrize("problem_cls", [DTLZ5, DTLZ6])
-def test_original_evaluator_stays_available_when_incomplete_gt_is_blocked(problem_cls):
+def test_original_evaluator_and_complete_reference_remain_available(problem_cls):
     mop = problem_cls(M=4)
-    with pytest.raises(NotImplementedError, match="full Ground Truth"):
-        mop.pf(n_points=32)
+    sampled = mop.ps(n_points=32)
+    gt = mop.pf(n_points=32)
+    np.testing.assert_allclose(gt, mop.evaluation(sampled)["F"], atol=1e-10)
     evaluated = mop.evaluation(np.full((2, mop.N), 0.5))["F"]
     assert evaluated.shape == (2, mop.M)
     assert np.isfinite(evaluated).all()

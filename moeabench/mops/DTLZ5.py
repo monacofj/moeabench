@@ -29,21 +29,15 @@ class DTLZ5(DTLZ2):
         """
         Analytical sampling of the degenerate DTLZ5 Pareto Set.
 
-        The historical g=0 subset is incomplete for M >= 4:
-        nonzero-g points may also be Pareto optimal. Fail closed rather
-        than serving an incorrect Ground Truth. The original evaluator
-        remains available; full-front construction is tracked in #65.
+        For M>=4, sample the original full-front geometry by globally
+        bounded scalarization, including g>0 Pareto regions. M<=3 retains
+        the analytically valid historical degenerate sampler.
         """
         M = self.M
         N = self.N
         if M >= 4:
-            raise NotImplementedError(
-                "DTLZ5(M>=4): the original Pareto front includes "
-                "Pareto-optimal solutions with g>0. The historical g=0 "
-                "sampler is incomplete; ps()/pf() cannot provide a "
-                "scientifically valid full Ground Truth until issue #65 "
-                "is resolved."
-            )
+            from ._dtlz56_front import sample_original_dtlz56_ps
+            return sample_original_dtlz56_ps(self, n_points)
         res = np.zeros((n_points, N))
 
         if M == 2:

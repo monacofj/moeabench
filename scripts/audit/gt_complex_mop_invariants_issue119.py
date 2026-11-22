@@ -107,7 +107,10 @@ def audit(name: str, m: int, budget: int, *, intrinsic_d: int = 2) -> dict:
         "globally_pareto_complete_certified":False,
     }
     if name in ("DTLZ5","DTLZ6"):
-        row["known_incomplete_subfront_for_M_ge_4"]=(m >= 4)
+        # #65 replaces the historical incomplete g=0-only sampler for M>=4.
+        # This finite audit still cannot *prove* continuous Pareto coverage.
+        row["known_incomplete_subfront_for_M_ge_4"]=False
+        row["numerically_bounded_full_front_sampler"]=(m >= 4)
         row["distance_g_from_generated_decision_variables"]={
             "DTLZ5":float(np.max(np.sum((decision[:,m-1:]-0.5)**2,axis=1))),
             "DTLZ6":float(np.max(np.sum(decision[:,m-1:]**0.1,axis=1))),
