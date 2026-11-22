@@ -387,6 +387,9 @@ maintainer approval before changing regression tests or expected
 values, and an ADR review if it changes an architectural contract.
 The historical NSGA-III/DPF1 case required only a controlled
 numerical runtime to reproduce the original reference.
+The read-only investigation report and replay scripts are archived in
+[the NSGA-III/DPF1 numerical audit](audits/2026-11-18-nsga3-dpf1-environment-divergence.md)
+and `scripts/audit/probe_*` for issue #92.
 
 ### 3.3 Historical performance reference and statistical decision
 
