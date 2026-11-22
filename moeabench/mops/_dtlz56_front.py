@@ -110,12 +110,17 @@ def scalarized_candidate(
 
     Original benchmark limits: DTLZ5 max_g=K/4, DTLZ6 max_g=K.
     """
-    # Chebyshev weights are homogeneous. Normalize their maximum to one,
-    # and resolve near-zero preference directions at a documented finite
-    # floor. This avoids unresolvable absolute scaling and reconstruction
-    # near machine precision, while retaining the positive-weight domain.
+    # Scalarization weights are homogeneous; normalize to a canonical
+    # scale, but never silently change the user's preference direction.
+    # Extreme ratios cannot be certified to an absolute gap in finite
+    # precision. The finite GT sampler explicitly conditions its rays.
     raw = _check_weights(weights)
-    w = np.maximum(raw / float(np.max(raw)), 1e-7)
+    w = raw / float(np.max(raw))
+    if np.min(w) < 1e-7:
+        raise ValueError(
+            "Ill-conditioned positive Chebyshev weights: minimum relative "
+            "weight must be >= 1e-7; explicitly condition the weights first"
+        )
     if not np.isfinite(max_g) or max_g <= 0:
         raise ValueError("max_g must be positive and finite")
     if not np.isfinite(abs_tol) or abs_tol <= 0:
@@ -309,6 +314,12 @@ def sample_original_dtlz56_ps(mop, n_points, *, scalar_tol=1e-7):
     gaussian_rays = np.abs(rng.standard_normal((pool_size // 2, m))) + 1e-10
     sparse_rays = rng.gamma(shape=0.35, scale=1.0, size=(pool_size // 4, m))
     weights = np.vstack((boundary_rays, gaussian_rays, sparse_rays))
+    # The finite sample approaches zero-valued boundary rays through a
+    # stated positive weight floor, rather than changing the scalarization
+    # weights invisibly. Exact g=0 endpoints are separately anchored.
+    weights = np.maximum(
+        weights, 1e-7 * np.max(weights, axis=1, keepdims=True)
+    )
     candidates = [
         scalarized_candidate(w, g_max, abs_tol=scalar_tol)
         for w in weights
