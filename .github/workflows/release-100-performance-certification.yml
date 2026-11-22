@@ -64,7 +64,7 @@ jobs:
         id: evidence
         env:
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          NUMERIC_EVENT: ${{ github.event_name == 'issue_comment' && 'push' || 'pull_request' }}
+          NUMERIC_EVENTS: ${{ github.event_name == 'issue_comment' && 'issue_comment,push' || 'pull_request' }}
         run: |
           python - <<'PY'
           import json
@@ -84,7 +84,7 @@ jobs:
               if run["name"] == "Issue 119 release candidate numeric certification"
               and run["conclusion"] == "success"
               and run["head_sha"] == sha
-              and run["event"] == os.environ["NUMERIC_EVENT"]
+              and run["event"] in set(os.environ["NUMERIC_EVENTS"].split(","))
           ]
           for run in sorted(matching, key=lambda r: r["id"], reverse=True):
               a = subprocess.check_output([
