@@ -221,7 +221,7 @@ python test.py --list --numeric-stability --basic
 execution includes the smoke and basic levels. For integration and
 numerical stability, `--deep` is not an active reference level.
 
-### 2.2 Manual dependency-behavior verification (issue #63)
+### Manual dependency-behavior verification (issue #63)
 
 A version satisfying the package requirement is **not automatically behaviorally
 validated**. MoeaBench records the reference dependency versions in
