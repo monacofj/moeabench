@@ -35,6 +35,10 @@ Unlike its siblings, DTLZ8 is a constrained problem where the Pareto optimal sol
 **Reference:**
 *   K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
 
+### Known limitation: original DTLZ5 and DTLZ6 reference fronts
+
+For **M >= 4**, the current `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` samplers return the deterministic historical **g=0 Pareto-optimal subset**, not the full Pareto front of the original problems: additional Pareto optima exist for nonzero g. These APIs emit a `UserWarning` for such configurations. The subset is not a complete ground-truth reference for indicators whose interpretation depends on full-front coverage, including IGD, IGD+ and absolute hypervolume. See [issue #65](https://github.com/monacofj/moeabench/issues/65) for the unresolved complete-front construction and validation. A complete reference must be independently justified before the issue can be closed.
+
 ---
 
 ## 2. The DPF Family: Conquering Degeneracy
@@ -67,7 +71,7 @@ moeabench was born from the need to move away from fragmented script-based bench
 
 We consolidated everything into a clean, object-oriented structure:
 1.  **Base Classes**: All problems now inherit from `BaseMop`, ensuring consistent metadata handling.
-2.  **Analytical Optimals**: We implemented `.optimal()`, `.optimal_front()`, and `.optimal_set()` for all DTLZ and DPF problems. This allows you to visualize your results against the theoretical truth with a single command: `mb.view.spaceplot(exp.optimal(), exp)`.
+2.  **Analytical Optimals**: We implemented `.optimal()`, `.optimal_front()`, and `.optimal_set()` across DTLZ and DPF problems. These methods expose reference samples subject to each problem's documented mathematical and sampling limitations; they should not automatically be interpreted as complete analytical ground truth. For example, you can visualize a reference beside an experiment with: `mb.view.spaceplot(exp.optimal(), exp)`.
 3.  **Independence & Seeds**: We ensured that every run is mathematically unique by tying the problem's random states to the Experiment's seed logic.
 
 This documentation serves not just as a manual, but as a record of our commitment to technical rigor and high-performance analysis.
