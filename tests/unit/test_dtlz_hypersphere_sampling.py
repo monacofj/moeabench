@@ -65,10 +65,17 @@ def test_dtlz2_and_dtlz4_sample_the_same_objective_geometry(M):
     )
 
 
-def test_dtlz5_rejects_incomplete_legacy_pareto_front():
-    """Do not publish the old g=0-only sample as complete DTLZ5 GT."""
+def test_dtlz5_preserves_degenerate_curve_and_adds_original_front_components():
+    """Original M=5 PS must include both the degenerate and g>0 regions."""
     mop = DTLZ5(M=5)
-    with pytest.raises(NotImplementedError, match="g>0"):
-        mop.ps(n_points=64)
-    with pytest.raises(NotImplementedError, match="g>0"):
-        mop.pf(n_points=64)
+    ps = mop.ps(n_points=64)
+    np.testing.assert_array_equal(ps, mop.ps(n_points=64))
+    assert ps.shape == (64, mop.N)
+    g = np.sum((ps[:, mop.M-1:] - 0.5)**2, axis=1)
+    assert np.count_nonzero(g == 0) >= 2
+    assert np.count_nonzero(g > 1e-6) > 0
+    pf = mop.pf(n_points=64)
+    assert pf.shape == (64, mop.M)
+    np.testing.assert_allclose(
+        np.linalg.norm(pf, axis=1), 1.0 + g, rtol=0, atol=2e-10
+    )
