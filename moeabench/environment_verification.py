@@ -203,7 +203,19 @@ def warn_on_unverified():
     fingerprint = tuple(sorted(result["current"].items()))
     if result["status"] != "MATCH" and stability_status() != "PASSED" and fingerprint not in _warned_fingerprints:
         _warned_fingerprints.add(fingerprint)
-        warnings.warn("MoeaBench environment %s relative to certified versions; "
-                      "run mb.system.verify_stability() to check numerical behavior."
-                      % result["status"], EnvironmentWarning, stacklevel=3)
+        # A scientifically sensitive upstream API change merits a specific
+        # behavioral check, independent of frozen numerical replay.
+        differences = result.get("differences", {})
+        dependency_advice = (
+            " pymoo differs from its recorded behavioral reference; "
+            "run 'python test.py --dependency-verify' to check sensitive "
+            "upstream behavior."
+            if "pymoo" in differences else ""
+        )
+        warnings.warn(
+            "MoeaBench environment %s relative to certified versions; "
+            "run mb.system.verify_stability() to check numerical behavior.%s"
+            % (result["status"], dependency_advice),
+            EnvironmentWarning, stacklevel=3,
+        )
     return result
