@@ -97,7 +97,12 @@ def test_ill_conditioned_positive_weights_reconstruct_feasible_original_vector()
         6.27287250e-14,
     ])
     mop = DTLZ6(M=10)
-    candidate = scalarized_candidate(w, max_g=mop.K, abs_tol=1e-7)
+    # The scalarization contract rejects silently modified preferences;
+    # the finite GT procedure conditions these rays explicitly.
+    with pytest.raises(ValueError, match="Ill-conditioned"):
+        scalarized_candidate(w, max_g=mop.K, abs_tol=1e-7)
+    conditioned = np.maximum(w, 1e-7 * np.max(w))
+    candidate = scalarized_candidate(conditioned, max_g=mop.K, abs_tol=1e-7)
     assert np.isfinite(candidate.objectives).all()
     assert candidate.abs_gap < 1.01e-7
     x = decision_vector(candidate, M=mop.M, K=mop.K, problem="DTLZ6")
