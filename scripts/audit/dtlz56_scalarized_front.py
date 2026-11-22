@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from heapq import heappop, heappush
-from math import pi, sin, sqrt
+from math import atan2, cos, hypot, pi, sin, sqrt
 
 import numpy as np
 
@@ -73,18 +73,33 @@ def _relaxed_feasible(caps, radius, angular_g, *, return_objectives=False):
     return f if return_objectives else True
 
 
-def _bounded_scale(w, g_radius, g_angle, binary_steps=49):
-    """Lower/upper bounds for the smallest t satisfying f <= t*w."""
-    r = 1.0 + g_radius
-    lower = r / float(np.linalg.norm(w))
-    upper = r / float(w[-1])
-    for _ in range(binary_steps):
-        mid = (lower + upper) / 2.0
-        if _relaxed_feasible(mid * w, r, g_angle):
-            upper = mid
+def _bounded_scale(w, g_radius, g_angle):
+    """Closed-form O(M) scale for the entire angular patch.
+
+    For the first two objectives, the largest reachable 2D radius under
+    caps (w0,w1) is obtained by clamping atan2(w1,w0) into [a,b]. Recursively
+    combine that radius with each further objective cap w_j using the same
+    pair operation. The final theta_1 is unrestricted, hence the last step
+    is hypot(capacity, w[-1]). This gives t=(1+g_radius)/capacity exactly,
+    up to FP rounding, without binary search over t.
+
+    The small symmetric enclosure allows the interval B&B to retain its
+    conservative global lower-bound behavior in floating-point arithmetic.
+    """
+    a = pi / (4.0 * (1.0 + g_angle))
+    b = pi * (1.0 + 2.0 * g_angle) / (4.0 * (1.0 + g_angle))
+    capacity = float(w[0])
+    for j in range(1, len(w) - 1):
+        cap = float(w[j])
+        ideal_angle = atan2(cap, capacity)
+        if ideal_angle < a:
+            capacity = cap / sin(a)
+        elif ideal_angle > b:
+            capacity = capacity / cos(b)
         else:
-            lower = mid
-    return lower, upper
+            capacity = hypot(capacity, cap)
+    exact_scale = (1.0 + g_radius) / hypot(capacity, float(w[-1]))
+    return max(0.0, exact_scale - 1e-12), exact_scale + 1e-12
 
 
 def scalarized_candidate(
