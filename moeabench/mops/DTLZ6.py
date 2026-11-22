@@ -29,19 +29,15 @@ class DTLZ6(DTLZ5):
     def ps(self, n_points=100):
         """Sample DTLZ6's historical g=0 Pareto subset.
 
-        For M>=4, the historical g=0 subset omits nonzero-g Pareto
-        optima. Fail closed instead of returning incomplete Ground Truth.
+        For M>=4, sample the original full-front geometry with globally
+        bounded scalarization, including g>0 Pareto regions. M<=3 retains
+        the analytically valid historical degenerate sampler.
         """
         M = self.M
         N = self.N
         if M >= 4:
-            raise NotImplementedError(
-                "DTLZ6(M>=4): the original Pareto front includes "
-                "Pareto-optimal solutions with g>0. The historical g=0 "
-                "sampler is incomplete; ps()/pf() cannot provide a "
-                "scientifically valid full Ground Truth until issue #65 "
-                "is resolved."
-            )
+            from ._dtlz56_front import sample_original_dtlz56_ps
+            return sample_original_dtlz56_ps(self, n_points)
         res = np.zeros((n_points, N))
         rng = np.random.RandomState(42)
         res[:, :M-1] = rng.random((n_points, M - 1))
