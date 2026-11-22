@@ -10,15 +10,13 @@ from moeabench.mops import DTLZ2, DTLZ5, DTLZ6, DPF1, DPF5
 
 @pytest.mark.parametrize("mop_cls", [DTLZ5, DTLZ6])
 @pytest.mark.parametrize("M", [4, 5, 10])
-def test_dtlz56_warns_that_g_zero_is_an_incomplete_front(mop_cls, M):
+def test_dtlz56_reject_incomplete_original_gt(mop_cls, M):
+    """Do not serve a known incomplete g=0 subset as the original Pareto front."""
     mop = mop_cls(M=M)
-    with pytest.warns(UserWarning, match="not a complete Ground Truth"):
-        ps = mop.ps(n_points=32)
-    assert ps.shape == (32, mop.N)
-    with pytest.warns(UserWarning, match="not a complete Ground Truth"):
-        front = mop.pf(n_points=32)
-    assert front.shape == (32, M)
-    np.testing.assert_allclose(np.sum(front**2, axis=1), 1.0, atol=1e-12, rtol=0)
+    with pytest.raises(NotImplementedError, match="g>0"):
+        mop.ps(n_points=32)
+    with pytest.raises(NotImplementedError, match="g>0"):
+        mop.pf(n_points=32)
 
 
 @pytest.mark.parametrize("mop_cls", [DTLZ5, DTLZ6])
