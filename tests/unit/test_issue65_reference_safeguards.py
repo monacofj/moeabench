@@ -10,13 +10,29 @@ from moeabench.mops import DTLZ2, DTLZ5, DTLZ6, DPF1, DPF5
 
 @pytest.mark.parametrize("mop_cls", [DTLZ5, DTLZ6])
 @pytest.mark.parametrize("M", [4, 5, 10])
-def test_dtlz56_reject_incomplete_original_gt(mop_cls, M):
-    """Do not serve a known incomplete g=0 subset as the original Pareto front."""
+def test_dtlz56_canonical_full_reference_includes_nonzero_g(mop_cls, M):
+    """Cover original nondegenerate g>0 regions and the historical g=0 curve."""
     mop = mop_cls(M=M)
-    with pytest.raises(NotImplementedError, match="g>0"):
-        mop.ps(n_points=32)
-    with pytest.raises(NotImplementedError, match="g>0"):
-        mop.pf(n_points=32)
+    ps = mop.ps(n_points=32)
+    ps_again = mop.ps(n_points=32)
+    np.testing.assert_array_equal(ps, ps_again)
+    front = mop.pf(n_points=32)
+    np.testing.assert_allclose(front, mop.evaluation(ps)["F"], atol=1e-10, rtol=0)
+    assert ps.shape == (32, mop.N)
+    assert front.shape == (32, M)
+    assert np.isfinite(front).all()
+    assert np.unique(np.round(front, 10), axis=0).shape[0] == 32
+    distance = ps[:, M-1:]
+    g = (
+        np.sum((distance - 0.5)**2, axis=1)
+        if mop_cls is DTLZ5
+        else np.sum(distance**0.1, axis=1)
+    )
+    assert np.any(g == 0)
+    assert np.count_nonzero(g > 1e-6) >= 1
+    np.testing.assert_allclose(
+        np.linalg.norm(front, axis=1), 1.0 + g, atol=2e-10, rtol=0
+    )
 
 
 @pytest.mark.parametrize("mop_cls", [DTLZ5, DTLZ6])
