@@ -8,6 +8,7 @@ import pytest
 from scripts.audit.hv_reference_density_issue89 import (
     evaluate_case,
     independent_hv2,
+    exact_continuous_hv2,
 )
 
 
@@ -35,3 +36,12 @@ def test_actual_sampler_gt_density_underestimates_true_pf_hv(name, n):
         evidence["independent_h_abs"], rel=2e-10, abs=1e-12
     )
     assert evidence["increment"] > 0.0
+    assert evidence["independent_hv_gt"] < exact_continuous_hv2(name)
+    assert evidence["independent_hv_evaluated"] < exact_continuous_hv2(name)
+    assert 0.0 < evidence["continuous_bound_ratio"] < 1.0
+
+def test_exact_continuous_denominators_follow_proved_2d_front_geometry():
+    assert exact_continuous_hv2("DTLZ1") == pytest.approx(.71)
+    assert exact_continuous_hv2("DTLZ2") == pytest.approx(
+        1.21 - np.pi / 4
+    )
