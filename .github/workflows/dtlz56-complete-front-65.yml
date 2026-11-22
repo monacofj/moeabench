@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5/6 original complete-front verification (#65)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "moeabench/mops/DTLZ5.py"
+      - "moeabench/mops/DTLZ6.py"
+      - "moeabench/mops/_dtlz56_front.py"
+      - "tests/unit/test_issue65*.py"
+      - "tests/unit/test_dtlz_hypersphere_sampling.py"
+      - ".github/workflows/dtlz56-complete-front-65.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  scientific-contracts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      NPY_DISABLE_CPU_FEATURES: X86_V4
+      OPENBLAS_CORETYPE: HASWELL
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      TEST_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14.4"
+      - name: Install project with scientific test dependencies
+        run: python -m pip install -e . pytest
+      - name: Compile production and independent test modules
+        run: python -m compileall -q moeabench tests scripts/audit
+      - name: Independent original front, dominance and scalarization verification
+        run: >-
+          python -m pytest
+          tests/unit/test_issue65_reference_safeguards.py
+          tests/unit/test_issue65_continuous_curve_oracle.py
+          tests/unit/test_issue65_minimal_radius_oracle.py
+          tests/unit/test_issue65_fixed_g_dominance.py
+          tests/unit/test_issue65_scalarized_front_research.py
+          tests/unit/test_issue65_complete_original_front.py
+          tests/unit/test_dtlz_hypersphere_sampling.py
+          -q
+      - name: Full unit suite
+        run: python test.py --unit
+      - name: Basic integration suite
+        run: python test.py --integration --basic
+      - name: Record source-bound issue 65 verification success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 65 --repo "$GITHUB_REPOSITORY" --body \
+            "Focused original DTLZ5/6 scientific checks, full unit suite and basic integration **PASSED** for source SHA \u0060$TEST_SHA\u0060. CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. This validates the indicated PR source, not later main source revisions or numerical/performance certification."
+      - name: Record source-bound issue 65 verification failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment 65 --repo "$GITHUB_REPOSITORY" --body \
+            "DTLZ5/6 #65 verification **FAILED** or was interrupted for source SHA \u0060$TEST_SHA\u0060. Review CI logs: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Do not merge the correction until the failure is resolved."
