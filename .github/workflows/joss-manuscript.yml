@@ -1,0 +1,32 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: JOSS source manuscript compilation
+
+on:
+  pull_request:
+    paths:
+      - "paper/**"
+      - ".github/workflows/joss-manuscript.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paper:
+    name: Compile JOSS paper in software repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Compile using the JOSS official draft action
+        uses: openjournals/openjournals-draft-action@master
+        with:
+          journal: joss
+          paper-path: paper/paper.md
+      - name: Preserve draft PDF for editorial review
+        uses: actions/upload-artifact@v7
+        with:
+          name: joss-paper-preview
+          path: paper/paper.pdf
+          if-no-files-found: error
+          archive: false
