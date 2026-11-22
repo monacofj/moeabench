@@ -109,6 +109,16 @@ For the earlier illustrative witness `(u_1,u_2,u_3)=(0.173406,0.976618,0.066887)
 
 This result is a **necessary condition**, not a sufficient condition. Points on the minimal-radius boundary may still dominate one another; a complete certified sample must establish that remaining dominance relation and coverage.
 
+## Exact feasibility oracle at fixed g
+
+We can now decide without discretizing the angular variables whether **any** original DTLZ5/6 point with a *specified* feasible `g` weakly dominates a given objective vector `y`. At fixed `g`, the normalized objective geometry is a positive spherical patch of radius `r=1+g`, with `theta_1 in [0,pi/2]` and all other angles in the closed interval `[a(g),b(g)]`.
+
+Writing the usual spherical recurrence from last to first objective, a necessary-and-sufficient greedy feasibility test allocates the **largest allowed contribution** to `f_M` not exceeding `y_M`, minimizing the remaining radius `R`. For each successive coordinate `j=M-1,...,2`, feasibility requires `R*sin(a(g))<=y_j`; allocate `min(y_j,R*sin(b(g)))` and update `R = sqrt(R^2-allocation^2)`. At the end, the point exists if and only if `R<=y_1`. The greedy choice is optimal because decreasing the residual norm can only relax the remaining nonnegative upper bounds. This test is exact at fixed `g` apart from ordinary floating-point tolerance and requires **O(M)** scalar work.
+
+Implemented as a **research-only diagnostic** at `scripts/audit/dtlz56_fixed_g_dominance_oracle.py`, with independent tests in `tests/unit/test_issue65_fixed_g_dominance.py`. It recovers continuous `g=0` curve dominance as a special case and accepts known feasible original evaluations at their actual `g`.
+
+**Remaining global problem:** a candidate is Pareto-optimal only if no **smaller feasible g** admits a dominating objective vector. This reduces the full global dominance problem to **one scalar variable g**, but proving the absence of a dominating g over a continuous interval still needs a justified global method (e.g. analytic interval decomposition or verified interval bounds). A grid over g would not be sufficient to certify completeness.
+
 ## Safety contract now active
 
 As an immediate correctness measure, original `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` for `M>=4` **raise `NotImplementedError`** instead of returning a known-incomplete GT. `evaluation()` remains unchanged and callable. The explicitly obsolete regression asserting legacy g=0 output and the historical warn-only safeguard were replaced with fail-closed tests under the maintainer's authorization. ADR 0006 documents this scientific exception. This is not completion of the full-front implementation.
