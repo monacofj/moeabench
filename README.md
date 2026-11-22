@@ -26,7 +26,7 @@ To support this workflow, the package offers high-level facilities for programma
 
 ## Key Features
 
-*   **Built-in Benchmark Suite**: Provides native **DTLZ** and **DPF** benchmark implementations, together with documented analytical-reference sampling and scientific audits. Reference completeness is problem-dependent: for original **DTLZ5/DTLZ6 with M >= 4**, the current `ps()`/`pf()` methods sample only the `g=0` Pareto subset, not the full front (see [issue #65](https://github.com/monacofj/moeabench/issues/65) and the [MOP guide](docs/mops.md)). Do not treat that subset as exhaustive GT for IGD/IGD+ or absolute HV.
+*   **Built-in Benchmark Suite**: Provides native **DTLZ** and **DPF** benchmark implementations, together with documented analytical-reference sampling and scientific audits. Reference completeness is problem-dependent: for original **DTLZ5/DTLZ6 with M >= 4**, the historical `g=0`-only subset is incomplete, and `ps()`/`pf()` now raise `NotImplementedError` rather than returning an invalid full-front reference (see [issue #65](https://github.com/monacofj/moeabench/issues/65) and the [MOP guide](docs/mops.md)). The original `evaluation()` equations remain available; complete-front GT generation is tracked in #65.
 *   **Built-in Algorithms**: Provides built-in implementations of well-known, literature-referenced MOEAs (e.g., **NSGA-III**, **MOEA/D**, **SPEA2**).
 *   **Plugin Architecture**: Seamlessly plug in your own algorithms (MOEAs) and problems (MOPs) without modifying the core library. Your custom code is the guest, MoeaBench is the host.
 *   **Many-Objective Readiness**: Full support for Many-Objective Optimization (MaOO) with no artificial limits on the number of objectives ($M$) or variables ($N$).
