@@ -35,9 +35,11 @@ Unlike its siblings, DTLZ8 is a constrained problem where the Pareto optimal sol
 **Reference:**
 *   K. Deb, L. Thiele, M. Laumanns, and E. Zitzler. "[Scalable multi-objective optimization test problems](https://doi.org/10.1109/CEC.2002.1007032)." *Proc. IEEE Congress on Evolutionary Computation (CEC)*, 2002.
 
-### Known limitation: original DTLZ5 and DTLZ6 reference fronts
+### Original DTLZ5/DTLZ6 complete-front reference sampling
 
-For **M >= 4**, the current `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` samplers return the deterministic historical **g=0 Pareto-optimal subset**, not the full Pareto front of the original problems: additional Pareto optima exist for nonzero g. These APIs now raise `NotImplementedError` for these configurations rather than supplying misleading reference points. The historical subset is not a complete ground-truth reference for indicators whose interpretation depends on full-front coverage, including IGD, IGD+ and absolute hypervolume. See [issue #65](https://github.com/monacofj/moeabench/issues/65) for the unresolved complete-front construction and validation. A complete reference must be independently justified before the issue can be closed.
+For **M >= 4**, the original DTLZ5/DTLZ6 fronts include Pareto-optimal regions with **g > 0**. The former deterministic **g=0-only** sampler was incomplete. The current `ps()/pf()` implementation uses bounded positive-weight Chebyshev scalarization, including globally explored `g>0` regions, while anchoring the exact original `g=0` curve. For strictly positive objective vectors, the full continuum of positive Chebyshev weights parameterizes the original Pareto front; each individual scalarization is globally bounded by one-dimensional interval branch-and-bound over `g` with an exact angular-patch capacity formula.
+
+The output has the requested finite cardinality, deterministic seeds and objective-space maximin selection. Finite sampling is **not** a proof of exact uniformity or zero geometric covering error, and scalarization tolerance bounds numerical approximation. The original `evaluation()` equations remain unchanged. The independent validation protocol and results are tracked in [issue #65](https://github.com/monacofj/moeabench/issues/65).
 
 ---
 
