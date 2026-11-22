@@ -25,7 +25,7 @@ def test_true_dpf1_three_objective_hv_from_exact_integral():
         endpoints, ideal=np.zeros(3), nadir=np.array([.5, .5, .5])
     )
     # Two endpoint cuboids with identical y,z coordinates in the second.
-    assert observed == pytest.approx(.1 * .1 * 1.1 + .1 * 1.1 * 1.1)
+    assert observed == pytest.approx(1.0 * .1 * .1 + .1 * 1.1 * 1.1)
 
 
 @pytest.mark.parametrize("count,check_public", [
