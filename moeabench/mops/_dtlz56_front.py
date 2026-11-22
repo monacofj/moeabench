@@ -116,7 +116,7 @@ def scalarized_candidate(
     # precision. The finite GT sampler explicitly conditions its rays.
     raw = _check_weights(weights)
     w = raw / float(np.max(raw))
-    if np.min(w) < 1e-7:
+    if np.min(w) < 1e-7 * (1.0 - 1e-12):
         raise ValueError(
             "Ill-conditioned positive Chebyshev weights: minimum relative "
             "weight must be >= 1e-7; explicitly condition the weights first"
@@ -318,7 +318,7 @@ def sample_original_dtlz56_ps(mop, n_points, *, scalar_tol=1e-7):
     # stated positive weight floor, rather than changing the scalarization
     # weights invisibly. Exact g=0 endpoints are separately anchored.
     weights = np.maximum(
-        weights, 1e-7 * np.max(weights, axis=1, keepdims=True)
+        weights, 1.01e-7 * np.max(weights, axis=1, keepdims=True)
     )
     candidates = [
         scalarized_candidate(w, g_max, abs_tol=scalar_tol)
