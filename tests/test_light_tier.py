@@ -66,9 +66,27 @@ def test_mop_invariants(mop_name, invariant_type, expected_val, M):
     elif invariant_type == "sos":
         vals = np.sum(F**2, axis=1)
     
-    # Check invariant with numerical tolerance
-    np.testing.assert_allclose(vals, expected_val, atol=1e-8, 
-                               err_msg=f"MOP {mop_name} (M={M}) failed {invariant_type} invariant!")
+    # Original DTLZ5/6 M>=4 fronts include Pareto-optimal g>0 regions:
+    # ||F|| = 1+g, so assuming ||F||=1 would incorrectly reject the
+    # scientifically complete front. Preserve the unit-radius regression
+    # for M=3 and for all DTLZ2/3/4 configurations.
+    if mop_name in ("DTLZ5", "DTLZ6") and M >= 4:
+        tail = X_ps[:, M-1:]
+        g = (
+            np.sum((tail - 0.5)**2, axis=1)
+            if mop_name == "DTLZ5" else np.sum(tail**0.1, axis=1)
+        )
+        expected = (1.0 + g)**2
+        assert np.any(g == 0.0), "Missing original degenerate g=0 curve"
+        assert np.any(g > 1e-6), "Missing original nonzero-g front regions"
+    else:
+        expected = expected_val
+
+    # Check the exact spherical identity against the original evaluator.
+    np.testing.assert_allclose(
+        vals, expected, atol=1e-8, rtol=0,
+        err_msg=f"MOP {mop_name} (M={M}) failed {invariant_type} invariant!",
+    )
 
 def test_dominance_operator():
     """
