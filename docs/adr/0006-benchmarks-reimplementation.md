@@ -36,6 +36,14 @@ We identified that researchers spend a disproportionate amount of time seeking a
 
 In our reimbursement, every DTLZ and DPF class implements its own `.ps()` and `.pf()` sampling logic based on the original publications. This means that comparison is no longer an external task; it is a native method. You can now execute `mb.view.spaceplot(exp.optimal(), exp)` and see your performance against the theoretical limit instantly.
 
+### Scientific validity of analytical references (issue #65)
+
+A `ps()`/`pf()` output must not silently masquerade as complete analytical Ground Truth when the original problem has additional Pareto-optimal components. In particular, the original DTLZ5/DTLZ6 formulations with `M >= 4` have Pareto-optimal solutions with `g > 0`, whereas their archived `g=0` samples represent only one subset.
+
+**Approved interim correction:** until a mathematically complete sampler with independent membership and coverage validation is implemented, calling `DTLZ5.ps()/pf()` or `DTLZ6.ps()/pf()` for `M >= 4` raises `NotImplementedError`. The original `evaluation()` equations remain available and unchanged. Cases with `M <= 3` retain the existing reference behavior. The historical coordinate regression was replaced with a fail-closed safety contract; the old reference remains recoverable from Git history. This is an explicit scientific exception to the broad native-reference statement above, not a claim that the missing complete front has been implemented.
+
+Completing the original full-front generator remains tracked by [#65](https://github.com/monacofj/moeabench/issues/65). Validation and any resulting changes to numerical references require a separate review.
+
 ### 4. Deterministic Reproducibility
 Finally, we addressed the "Ghost in the Machine": non-deterministic randomness. In legacy moeabench, problems shared global random states with the solvers, leading to "leaky" seeds. Our reimplementation decoupling these states. Every benchmark instance now manages its internal state in coordination with the `Experiment` seed logic. If you run the same experiment twice, the vectorized mathematical engine will produce bit-identical results, ensuring absolute scientific rigor.
 
