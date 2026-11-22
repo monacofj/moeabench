@@ -29,6 +29,11 @@ These reports preserve independent mathematical proofs, numerical experiments, r
 - [adr-0057-historical-decisions.md](adr-0057-historical-decisions.md)
   — superseded ADR history; the active ADR records current policy.
 
+## Archived pre-correction inventories
+
+- [gt-remaining-mop-inventory-issue119.md](gt-remaining-mop-inventory-issue119.md) — pre-correction independent proof and audit matrix from closed PR #141.
+- [gt-remaining-mops-inventory-issue119.md](gt-remaining-mops-inventory-issue119.md) — pre-correction ten-MOP sampling diagnostics and candidate comparisons from closed PR #142.
+
 ## Mathematical proofs
 
 - `gt-dpf3-global-pareto-proof-issue119.md` — complete published DPF3 PS/PF proof.
