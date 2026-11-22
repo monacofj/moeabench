@@ -110,7 +110,12 @@ def scalarized_candidate(
 
     Original benchmark limits: DTLZ5 max_g=K/4, DTLZ6 max_g=K.
     """
-    w = _check_weights(weights)
+    # Chebyshev weights are homogeneous. Normalize their maximum to one,
+    # and resolve near-zero preference directions at a documented finite
+    # floor. This avoids unresolvable absolute scaling and reconstruction
+    # near machine precision, while retaining the positive-weight domain.
+    raw = _check_weights(weights)
+    w = np.maximum(raw / float(np.max(raw)), 1e-7)
     if not np.isfinite(max_g) or max_g <= 0:
         raise ValueError("max_g must be positive and finite")
     if not np.isfinite(abs_tol) or abs_tol <= 0:
@@ -157,14 +162,36 @@ def scalarized_candidate(
             if lb < best - abs_tol:
                 heappush(heap, (lb, left, right))
 
-    radius = 1.0 + best_g
-    # Use a negligible upward slack solely to reconstruct angles reliably;
-    # the returned achieved scalarization is always recomputed from f.
-    objectives = _relaxed_feasible(
-        (best + 2e-12) * w, radius, best_g, return_objectives=True
-    )
-    if objectives is None:
-        raise ArithmeticError("Could not reconstruct feasible scalarized vector")
+    # Reconstruct the optimum directly from the exact angular-capacity
+    # recurrence. Avoid adding an absolute epsilon to a potentially large
+    # Chebyshev scale: that fails for highly nonuniform positive weights.
+    a = pi / (4.0 * (1.0 + best_g))
+    b = pi * (1.0 + 2.0 * best_g) / (4.0 * (1.0 + best_g))
+    capacity = float(w[0])
+    inner_angles = []
+    for j in range(1, len(w) - 1):
+        cap = float(w[j])
+        raw_angle = atan2(cap, capacity)
+        angle = max(a, min(b, raw_angle))
+        if raw_angle < a:
+            capacity = cap / sin(a)
+        elif raw_angle > b:
+            capacity = capacity / cos(b)
+        else:
+            capacity = hypot(capacity, cap)
+        inner_angles.append(angle)
+
+    angles = np.r_[atan2(w[-1], capacity), inner_angles[::-1]]
+    cosines, sines = np.cos(angles), np.sin(angles)
+    objectives = np.zeros(len(w))
+    for i in range(len(w)):
+        val = 1.0 + best_g
+        if i < len(w) - 1:
+            val *= np.prod(cosines[:len(w) - i - 1])
+        if i > 0:
+            val *= sines[len(w) - i - 1]
+        objectives[i] = val
+
     actual = float(np.max(objectives / w))
     return ScalarizedCandidate(
         g=best_g,
@@ -263,7 +290,14 @@ def sample_original_dtlz56_ps(mop, n_points, *, scalar_tol=1e-7):
     x[np.arange(pool_size), 1 + face_indices] = (
         np.arange(pool_size) % 2
     )
-    g = np.minimum(g_max, 1.5) * sobol_points[:, 1]**2
+    # Include the *full* original feasible g range; otherwise extreme
+    # nondegenerate Pareto components could be systematically omitted.
+    g_limit = np.where(
+        (np.arange(pool_size) % 4) == 0,
+        g_max,
+        np.minimum(g_max, 1.5),
+    )
+    g = g_limit * sobol_points[:, 1]**2
     x[:, m-1:] = (
         (0.5 + np.sqrt(g / k))[:, None]
         if name == "DTLZ5"
@@ -273,7 +307,8 @@ def sample_original_dtlz56_ps(mop, n_points, *, scalar_tol=1e-7):
 
     rng = np.random.default_rng(42 + m)
     gaussian_rays = np.abs(rng.standard_normal((pool_size // 2, m))) + 1e-10
-    weights = np.vstack((boundary_rays, gaussian_rays))
+    sparse_rays = rng.gamma(shape=0.35, scale=1.0, size=(pool_size // 4, m))
+    weights = np.vstack((boundary_rays, gaussian_rays, sparse_rays))
     candidates = [
         scalarized_candidate(w, g_max, abs_tol=scalar_tol)
         for w in weights
