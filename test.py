@@ -27,6 +27,14 @@ ANSI_YELLOW = "\033[33m"
 SCOPES = ("unit", "integration", "stability")
 LEVELS = ("smoke", "basic", "deep")
 
+# Selected existing regressions are reused *without changing them*.
+# Dependency verification is an orthogonal manual battery, not a new scope.
+DEPENDENCY_VERIFY_CASES = (
+    "tests/unit/test_pymoo_behavioral_oracle_issue63.py",
+    "tests/unit/test_pymoo_mutation_policy.py",
+    "tests/test_stability_smoke.py::test_smoke_front_reproducibility",
+)
+
 
 def _color(text: str, code: str) -> str:
     return f"{code}{text}{ANSI_RESET}"
@@ -289,6 +297,7 @@ def main():
 
     parser = argparse.ArgumentParser(description="MoeaBench test orchestrator")
     parser.add_argument("--list", action="store_true", help="List collected tests by scope and level")
+    parser.add_argument("--dependency-verify", action="store_true", help="Manually verify sensitive external-library behavior")
     certification_group = parser.add_mutually_exclusive_group()
     certification_group.add_argument("--certify-numeric", action="store_true", help="Certify basic numeric suite and archive compact version evidence")
     certification_group.add_argument("--record-performance-baseline", action="store_true", help="Generate an immutable performance reference for review")
@@ -308,7 +317,8 @@ def main():
     new_actions = (args.certify_numeric, args.record_performance_baseline, args.certify_performance)
     if any(new_actions):
         if (args.list or args.unit or args.integration or
-                args.numeric_stability or args.smoke or args.basic or args.deep):
+                args.numeric_stability or args.smoke or args.basic or args.deep or
+                args.dependency_verify):
             parser.error("Certification operations cannot be combined with other test selections")
         if args.certify_numeric:
             if args.output or args.reference:
@@ -360,6 +370,31 @@ def main():
         sys.exit(0 if result["status"] == "CERTIFIED" else 1)
     if args.reference or args.output:
         parser.error("--reference and --output require a new certification operation")
+    if args.dependency_verify:
+        if (args.list or args.unit or args.integration or
+                args.numeric_stability or args.smoke or args.basic or args.deep):
+            parser.error("--dependency-verify is a standalone manual battery")
+        from moeabench.environment_verification import snapshot, certified_manifest
+        current = snapshot()
+        certified = certified_manifest().get("versions", {})
+        print("Dependency behavior verification (manual, no baseline updates)")
+        print("pymoo: installed={}, historical reference={}".format(
+            current.get("pymoo"), certified.get("pymoo")))
+        print("Note: version identity is provenance, not proof of behavior.")
+        if current.get("pymoo") is None:
+            parser.exit(1, "Cannot verify pymoo: dependency is not installed.\\n")
+        ok, summary, elapsed = _run_pytest(
+            "DEPENDENCY VERIFY", list(DEPENDENCY_VERIFY_CASES),
+            "scope_unit or scope_stability",
+        )
+        _print_final_summary([{
+            "name": "DEPENDENCY VERIFY",
+            "status": "PASS" if ok else "FAIL",
+            "summary": summary,
+            "elapsed": elapsed,
+        }])
+        sys.exit(0 if ok else 1)
+
     scope = _selected_scope(args)
     if scope == "numeric-stability":
         scope = "stability"
