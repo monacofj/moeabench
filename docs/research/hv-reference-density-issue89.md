@@ -54,6 +54,38 @@ the true front. On any DTLZ1 gap of normalized horizontal width
 This gives a constructive explanation of the finite-GT gap,
 including the effect at realistic adopted point budgets.
 
+## Exact continuous-front denominator for these two special cases
+
+In the *same* normalized 2D geometry, the continuous DTLZ1 front
+is `x+y=1`, and DTLZ2 is the first-quadrant circle
+`x²+y²=1`. For minimization with reference point `(1.1,1.1)`,
+the complement of each dominated region inside the full
+`1.1×1.1` square is respectively a right triangle of area
+`1/2` and a quarter disk of area `π/4`. Thus the **exact**
+mathematical continuous-front denominators are
+
+- `HV_true(DTLZ1,M=2) = 1.21 - 0.5 = 0.71`
+- `HV_true(DTLZ2,M=2) = 1.21 - π/4 ≈ 0.4246018366`
+
+For any **feasible** evaluated front in these two problems,
+its exact dominated HV cannot exceed the continuous-front HV.
+Consequently `HV(P)/HV_true ≤ 1` is a mathematically defensible
+bounded score in these special cases. This is different from simply
+clipping `HV(P)/HV(GT_sample)` or projecting onto a finite GT:
+it uses a proved, geometry-matched denominator instead of an
+approximation. The script now computes both the unchanged public
+finite-GT ratio and this **separate exploratory continuous-bound
+ratio**, and verifies `HV(GT) ≤ HV(GT∪{p}) ≤ HV_true`.
+These formulas assume the exact true front, minimization and the
+specified explicit bounds; they are **not** valid general formulas
+for a different normalization context, more objectives, constrained
+fronts, nonoptimal or infeasible points, or an unproved sampler.
+
+A production change to use a mathematical true-front denominator
+would redefine the `abs` scale and require a maintainer-approved
+ADR, consistent handling of the remaining MOPs, and tests protecting
+comparability and persistence. None is introduced here.
+
 ## Scientific scope and next gates
 
 The current evidence distinguishes mathematical undercoverage from
