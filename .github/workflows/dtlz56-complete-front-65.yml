@@ -53,6 +53,25 @@ jobs:
           -q
       - name: Full unit suite
         run: python test.py --unit
+      - name: Prepare integration experiment archives
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import moeabench as mb
+          for algorithm, filename in (
+              (mb.moeas.NSGA2, "example_full_exp1.zip"),
+              (mb.moeas.NSGA3, "example_full_exp2.zip"),
+          ):
+              path = Path("examples") / filename
+              if path.exists():
+                  continue
+              experiment = mb.experiment(
+                  mop=mb.mops.DTLZ2(M=3),
+                  moea=algorithm(population=32, generations=8, seed=17),
+              )
+              experiment.run(repeat=3, silent=True)
+              experiment.save(str(path))
+          PY
       - name: Basic integration suite
         run: python test.py --integration --basic
       - name: Record source-bound issue 65 verification success
@@ -61,11 +80,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue comment 65 --repo "$GITHUB_REPOSITORY" --body \
-            "Focused original DTLZ5/6 scientific checks, full unit suite and basic integration **PASSED** for source SHA \u0060$TEST_SHA\u0060. CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. This validates the indicated PR source, not later main source revisions or numerical/performance certification."
+            "Focused original DTLZ5/6 scientific checks, full unit suite and basic integration **PASSED** for source SHA $TEST_SHA. CI run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. This validates the indicated PR source, not later main source revisions or numerical/performance certification."
       - name: Record source-bound issue 65 verification failure
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh issue comment 65 --repo "$GITHUB_REPOSITORY" --body \
-            "DTLZ5/6 #65 verification **FAILED** or was interrupted for source SHA \u0060$TEST_SHA\u0060. Review CI logs: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Do not merge the correction until the failure is resolved."
+            "DTLZ5/6 #65 verification **FAILED** or was interrupted for source SHA $TEST_SHA. Review CI logs: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID. Do not merge the correction until the failure is resolved."
