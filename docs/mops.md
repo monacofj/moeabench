@@ -37,7 +37,7 @@ Unlike its siblings, DTLZ8 is a constrained problem where the Pareto optimal sol
 
 ### Known limitation: original DTLZ5 and DTLZ6 reference fronts
 
-For **M >= 4**, the current `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` samplers return the deterministic historical **g=0 Pareto-optimal subset**, not the full Pareto front of the original problems: additional Pareto optima exist for nonzero g. These APIs emit a `UserWarning` for such configurations. The subset is not a complete ground-truth reference for indicators whose interpretation depends on full-front coverage, including IGD, IGD+ and absolute hypervolume. See [issue #65](https://github.com/monacofj/moeabench/issues/65) for the unresolved complete-front construction and validation. A complete reference must be independently justified before the issue can be closed.
+For **M >= 4**, the current `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` samplers return the deterministic historical **g=0 Pareto-optimal subset**, not the full Pareto front of the original problems: additional Pareto optima exist for nonzero g. These APIs now raise `NotImplementedError` for these configurations rather than supplying misleading reference points. The historical subset is not a complete ground-truth reference for indicators whose interpretation depends on full-front coverage, including IGD, IGD+ and absolute hypervolume. See [issue #65](https://github.com/monacofj/moeabench/issues/65) for the unresolved complete-front construction and validation. A complete reference must be independently justified before the issue can be closed.
 
 ---
 
