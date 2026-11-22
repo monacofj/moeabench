@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Issue 63 dependency behavioral verification
+
+on:
+  pull_request:
+    paths:
+      - "test.py"
+      - "tests/unit/test_pymoo_behavioral_oracle_issue63.py"
+      - "tests/unit/test_pymoo_mutation_policy.py"
+      - "moeabench/moeas/_operators_pymoo.py"
+      - ".github/workflows/dependency-behavior-verification-63.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-behavior:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NPY_DISABLE_CPU_FEATURES: X86_V4
+      OPENBLAS_CORETYPE: HASWELL
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14.4'
+      - name: Install MoeaBench and pinned reference numerical dependencies
+        run: |
+          python -m pip install -e . pytest threadpoolctl
+          python -m pip install "numpy==2.5.4" "scipy==1.18.1" "pymoo==0.6.2" "deap==1.4.4" "moocore==0.3.2" "pandas==3.0.6"
+      - name: Verify native numerical reference runtime
+        run: python scripts/check_numerical_reference_runtime.py
+      - name: Verify sensitive pymoo behavior without changing references
+        run: python test.py --dependency-verify
