@@ -29,12 +29,10 @@ class DTLZ5(DTLZ2):
         """
         Analytical sampling of the degenerate DTLZ5 Pareto Set.
 
-        The historical g=0 sampling is valid as a parametrized degenerate
-        Pareto subset, but it is not the *complete* front when M >= 4:
-        nonzero-g points can also be Pareto optimal. Preserve the historical
-        sequence for regression reproducibility and warn callers explicitly.
-        Until a complete front is mathematically validated, do not treat
-        these samples as exhaustive Ground Truth for IGD/IGD+ or HV.
+        The historical g=0 subset is incomplete for M >= 4:
+        nonzero-g points may also be Pareto optimal. Fail closed rather
+        than serving an incorrect Ground Truth. The original evaluator
+        remains available; full-front construction is tracked in #65.
         """
         M = self.M
         N = self.N
