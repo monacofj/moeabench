@@ -86,3 +86,22 @@ def test_original_three_objective_curve_is_unchanged(cls):
     ps = mop.ps(n_points=64)
     front = mop.evaluation(ps)["F"]
     assert np.allclose(np.linalg.norm(front, axis=1), 1.0)
+
+
+def test_ill_conditioned_positive_weights_reconstruct_feasible_original_vector():
+    """Regression for a sparse high-dimensional preference direction."""
+    w = np.array([
+        1.58310251e-4, 6.24477665e-9, 7.45064597e-5,
+        1.30502082e-5, 1.21715514e-1, 5.18506217e-4,
+        1.80935861e-9, 2.16811697e-6, 5.04378037e-4,
+        6.27287250e-14,
+    ])
+    mop = DTLZ6(M=10)
+    candidate = scalarized_candidate(w, max_g=mop.K, abs_tol=1e-7)
+    assert np.isfinite(candidate.objectives).all()
+    assert candidate.abs_gap < 1.01e-7
+    x = decision_vector(candidate, M=mop.M, K=mop.K, problem="DTLZ6")
+    np.testing.assert_allclose(
+        mop.evaluation(x[None, :])["F"][0],
+        candidate.objectives, atol=3e-10, rtol=0,
+    )
