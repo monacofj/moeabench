@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-import warnings
 from .DTLZ5 import DTLZ5
 
 class DTLZ6(DTLZ5):
@@ -36,13 +35,12 @@ class DTLZ6(DTLZ5):
         M = self.M
         N = self.N
         if M >= 4:
-            warnings.warn(
-                "DTLZ6(M>=4): ps()/pf() samples only the g=0 subset; "
-                "the true Pareto front also contains nonzero-g points. "
-                "This sample is not a complete Ground Truth for "
-                "IGD/IGD+ or absolute HV.",
-                UserWarning,
-                stacklevel=2,
+            raise NotImplementedError(
+                "DTLZ6(M>=4): the original Pareto front includes "
+                "Pareto-optimal solutions with g>0. The historical g=0 "
+                "sampler is incomplete; ps()/pf() cannot provide a "
+                "scientifically valid full Ground Truth until issue #65 "
+                "is resolved."
             )
         res = np.zeros((n_points, N))
         rng = np.random.RandomState(42)
