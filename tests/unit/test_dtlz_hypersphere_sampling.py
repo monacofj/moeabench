@@ -65,14 +65,10 @@ def test_dtlz2_and_dtlz4_sample_the_same_objective_geometry(M):
     )
 
 
-def test_dtlz5_preserves_legacy_degenerate_pareto_set_sampling():
-    """Changing DTLZ2.ps() must not silently alter inherited DTLZ5 sampling."""
+def test_dtlz5_rejects_incomplete_legacy_pareto_front():
+    """Do not publish the old g=0-only sample as complete DTLZ5 GT."""
     mop = DTLZ5(M=5)
-    n_points = 64
-
-    expected = np.zeros((n_points, mop.N))
-    rng = np.random.RandomState(42)
-    expected[:, :mop.M-1] = rng.random((n_points, mop.M - 1))
-    expected[:, mop.M-1:] = 0.5
-
-    np.testing.assert_array_equal(mop.ps(n_points=n_points), expected)
+    with pytest.raises(NotImplementedError, match="g>0"):
+        mop.ps(n_points=64)
+    with pytest.raises(NotImplementedError, match="g>0"):
+        mop.pf(n_points=64)
