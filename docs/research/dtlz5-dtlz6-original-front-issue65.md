@@ -86,6 +86,29 @@ Applying this criterion to the same fixed-seed 6,000-sample M=4 DTLZ5 diagnostic
 
 **Crucial qualification:** non-domination by the g=0 curve is **not** proof of global Pareto optimality against all feasible `g>0` points. A necessary/sufficient global characterization remains outstanding.
 
+## Proven reduction: only minimal-g radial-boundary points can be Pareto optimal
+
+For any feasible candidate, write `theta=(theta_1,...,theta_{M-1})`. For `i>=2`, the original formula permits angles in
+
+```
+pi/[4(1+g)] <= theta_i <= pi*(1+2*g)/[4(1+g)]
+```
+
+(the interval centered on `pi/4`). Define
+
+```
+q(theta) = max_{i=2,...,M-1} abs(4*theta_i/pi - 1)
+g_min(theta) = q(theta)/(1-q(theta)).
+```
+
+Within the original DTLZ5/DTLZ6 feasible ranges, **`g_min(theta)` is exactly the least feasible g for that angular direction**. Its value is at most the original candidate's g, and every angle remains realizable at that lower value. A point with `g > g_min(theta)` is *strictly dominated* by the feasible point at the same angular direction and `g_min(theta)`, because its objectives are a positive multiple of `1+g`.
+
+**Consequences:** every Pareto-optimal point lies on the minimal radial boundary `g=g_min(theta)`. In particular, if `g>0`, **at least one** `x_i` with `2<=i<=M-1` is exactly `0` or `1`. This eliminates all interior-angle nonminimal-g candidates from the true Pareto-front search. The full-front membership question is reduced to checking global dominance *among the minimal-radius boundary points*, not the original full decision-variable hypercube.
+
+For the earlier illustrative witness `(u_1,u_2,u_3)=(0.173406,0.976618,0.066887)`, `g=0.328135`, we obtain `g_min≈0.3080628989`, `(u'_2,u'_3)≈(1,0.04563928)`. The smaller-g feasible point has **all objectives reduced by approximately 1.5113%**. Thus this witness, although not dominated by *any* point of the continuous `g=0` curve, **is not Pareto-optimal**. This demonstrates why comparing only with the degenerate curve cannot certify a complete front. A focused independent test implements this construction in `tests/unit/test_issue65_minimal_radius_oracle.py`.
+
+This result is a **necessary condition**, not a sufficient condition. Points on the minimal-radius boundary may still dominate one another; a complete certified sample must establish that remaining dominance relation and coverage.
+
 ## Safety contract now active
 
 As an immediate correctness measure, original `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` for `M>=4` **raise `NotImplementedError`** instead of returning a known-incomplete GT. `evaluation()` remains unchanged and callable. The explicitly obsolete regression asserting legacy g=0 output and the historical warn-only safeguard were replaced with fail-closed tests under the maintainer's authorization. ADR 0006 documents this scientific exception. This is not completion of the full-front implementation.
