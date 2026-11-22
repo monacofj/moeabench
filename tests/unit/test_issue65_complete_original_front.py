@@ -110,3 +110,16 @@ def test_ill_conditioned_positive_weights_reconstruct_feasible_original_vector()
         mop.evaluation(x[None, :])["F"][0],
         candidate.objectives, atol=3e-10, rtol=0,
     )
+
+
+@pytest.mark.parametrize("cls", [DTLZ5, DTLZ6])
+def test_public_sampler_100_points_handles_exact_weight_floor(cls):
+    """The former 1e-7 normalization roundoff must not abort public ps()."""
+    mop = cls(M=5)
+    x = mop.ps(n_points=100)
+    assert x.shape == (100, mop.N)
+    assert np.isfinite(x).all()
+    np.testing.assert_array_equal(x, mop.ps(n_points=100))
+    f = mop.evaluation(x)["F"]
+    assert np.isfinite(f).all()
+    assert np.unique(np.round(f, 9), axis=0).shape[0] == 100
