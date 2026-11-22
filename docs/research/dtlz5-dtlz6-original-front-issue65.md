@@ -10,7 +10,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Why the existing reference is incomplete
 
-The original implementations in `moeabench/mops/DTLZ5.py` and `DTLZ6.py` return a deterministic Pareto-set sample with `g=0`. This subset has the intended degenerate curve geometry but is not the complete Pareto front for M >= 4. The issue is known in the scientific literature, notably H. Ishibuchi et al., *Pareto Fronts of Many-Objective Degenerate Test Problems*, IEEE Transactions on Evolutionary Computation 20(5), 2016. The original equations and subsequent published analyses identify Pareto-optimal regions away from `g=0`. The current warning in both `ps()` implementations is necessary but does not make these samples complete GT.
+The original implementations in `moeabench/mops/DTLZ5.py` and `DTLZ6.py` return a deterministic Pareto-set sample with `g=0`. This subset has the intended degenerate curve geometry but is not the complete Pareto front for M >= 4. The issue is known in the scientific literature, notably H. Ishibuchi et al., *Pareto Fronts of Many-Objective Degenerate Test Problems*, IEEE Transactions on Evolutionary Computation 20(5), 2016. The original equations and subsequent published analyses identify Pareto-optimal regions away from `g=0`. The historical warning in both `ps()` implementations did not make these samples complete GT; the canonical methods now fail closed for M>=4.
 
 ## Exact parameterization of the original decision-space image
 
@@ -63,6 +63,32 @@ dominated_by_curve = np.array([
 ])
 print(np.count_nonzero(~dominated_by_curve))  # 190
 ```
+
+## Exact continuous g=0-curve dominance test (new)
+
+The older 2,001-point discrete diagnostic can now be strengthened to an **exact continuous-curve statement**, independently of grid density. For the intended `g=0` Pareto curve, write
+
+```
+C(t) = (a_1 cos(t), ..., a_{M-1} cos(t), sin(t)),  0 <= t <= pi/2,
+a_1 = 2^(-(M-2)/2),
+a_j = 2^(-(M-j)/2) for j=2,...,M-1.
+```
+
+For any nonnegative objective vector `y`, a point on this **entire continuous curve** weakly dominates `y` if and only if
+
+```
+y_j >= a_j * sqrt(1 - min(y_M,1)^2)   for every j=1,...,M-1.
+```
+
+**Proof.** `sin(t) <= y_M` restricts `t <= arcsin(min(y_M,1))`. Since all preceding curve coordinates are positive multiples of the decreasing function `cos(t)`, the largest feasible angle minimizes them simultaneously. Therefore the displayed inequalities are necessary and sufficient. For `y_M>=1`, the endpoint `t=pi/2` dominates the nonnegative vector.
+
+Applying this criterion to the same fixed-seed 6,000-sample M=4 DTLZ5 diagnostic gives **190 points not dominated by any point on the continuous g=0 curve**; the earlier finite-curve result was not an artifact of the 2,001-point discretization. One explicit witness uses `u=(0.173406,0.976618,0.066887)`, `g=0.328135`, with objectives approximately `(0.5893373,0.4183464,1.0554343,0.3573078)`. It violates the required inequality in objective 2 by approximately `0.04865`. The same `(g,u)` objectives are feasible in original DTLZ6, using the appropriate original decision-space realization. The independent continuous-oracle test is in `tests/unit/test_issue65_continuous_curve_oracle.py`.
+
+**Crucial qualification:** non-domination by the g=0 curve is **not** proof of global Pareto optimality against all feasible `g>0` points. A necessary/sufficient global characterization remains outstanding.
+
+## Safety contract now active
+
+As an immediate correctness measure, original `DTLZ5.ps()/pf()` and `DTLZ6.ps()/pf()` for `M>=4` **raise `NotImplementedError`** instead of returning a known-incomplete GT. `evaluation()` remains unchanged and callable. The explicitly obsolete regression asserting legacy g=0 output and the historical warn-only safeguard were replaced with fail-closed tests under the maintainer's authorization. ADR 0006 documents this scientific exception. This is not completion of the full-front implementation.
 
 ## Required steps before replacing canonical PS/PF
 
