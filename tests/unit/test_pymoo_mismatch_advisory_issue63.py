@@ -6,6 +6,7 @@ Existing environment-verification regressions remain unchanged.
 """
 
 import pytest
+import warnings
 from moeabench import environment_verification as ev
 
 
@@ -23,7 +24,8 @@ def test_pymoo_version_drift_prompts_manual_behavior_verification(monkeypatch):
         ev.warn_on_unverified()
 
     # The existing nonrepeating-advisory contract is preserved.
-    with pytest.warns(None) as record:
+    with warnings.catch_warnings(record=True) as record:
+        warnings.simplefilter("always")
         ev.warn_on_unverified()
     assert not record
 
