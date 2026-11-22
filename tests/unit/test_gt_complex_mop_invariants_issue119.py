@@ -22,11 +22,19 @@ def test_independent_disconnected_record_membership_classifies_both_components()
 
 
 @pytest.mark.parametrize("name",["DTLZ5","DTLZ6"])
-def test_known_incomplete_m5_subfront_is_flagged_not_certified(name):
+def test_corrected_m5_reference_contains_nonzero_g_without_false_certificate(name):
+    """The #119 finite audit observes #65's correction without overclaiming proof."""
     r=audit(name,5,32)
-    assert r["known_incomplete_subfront_for_M_ge_4"] is True
+    assert r["known_incomplete_subfront_for_M_ge_4"] is False
+    assert r["numerically_bounded_full_front_sampler"] is True
+    assert r["distance_g_from_generated_decision_variables"] > 1e-6
+    assert r["pf_returned"] == 32
+    assert r["pf_duplicates"] == 0
+    assert r["pf_internal_dominated"] == 0
+    # This limited audit deliberately does not constitute a proof of
+    # continuous front coverage; that requires the independent #65 method.
     assert r["globally_pareto_complete_certified"] is False
-    assert any("not a complete Ground Truth" in s for s in r["warnings"])
+    assert not any("not a complete Ground Truth" in s for s in r["warnings"])
 
 
 @pytest.mark.parametrize("name",["DTLZ7","DPF2"])
