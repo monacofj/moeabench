@@ -366,6 +366,28 @@ def _independent_probes(kind, mop, count, seed):
     return None
 
 
+def _component_labels(kind, points, mop):
+    """Identify verified named Pareto components in objective space."""
+    if kind in ("dtlz7", "dpf2"):
+        _, reentry, _ = _dtlz7_record_bounds()
+        dimension = mop.M-1 if kind == "dtlz7" else mop.D-1
+        mask = points[:, :dimension] >= reentry
+        return np.array([
+            "record_" + "".join(str(int(bit)) for bit in row)
+            for row in mask], dtype=str)
+    if kind == "dtlz8":
+        if mop.M == 2:
+            return np.full(len(points), "line", dtype=str)
+        t = points[:, -1]
+        minimum = np.argmin(points[:, :-1], axis=1)
+        return np.array([
+            "line" if t[i] >= 1/3 else f"patch_{minimum[i]}"
+            for i in range(len(points))], dtype=str)
+    if kind == "dpf5":
+        return np.where(points[:, -1] < .5, "P", "D")
+    return None
+
+
 def assess_gt(mop, reference=None, *, n_points=None, probes=128,
               seed=0, tolerance=1e-9):
     """Inspect a GT reference without writing, calibrating or modifying it.
@@ -515,31 +537,73 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             "unverified", basis="no independent component and extrema oracle")
 
     independent = _independent_probes(kind, mop, probes, int(seed))
+    labels = _component_labels(kind, distinct, mop)
     if independent is not None:
         distances = cKDTree(distinct).query(independent, k=1)[0]
+        gaps = {"max_probe_gap": float(np.max(distances)),
+                "mean_probe_gap": float(np.mean(distances))}
+        # Do not average measures across disconnected or different-dimensional
+        # components. Report each region's independently probed gap.
+        if labels is not None:
+            probe_labels = _component_labels(kind, independent, mop)
+            gaps_by_component = {}
+            for label in np.unique(probe_labels):
+                chosen = probe_labels == label
+                region = distinct[labels == label]
+                if len(region):
+                    d = cKDTree(region).query(independent[chosen], k=1)[0]
+                    gaps_by_component[str(label)] = {
+                        "probes": int(np.count_nonzero(chosen)),
+                        "points": int(len(region)),
+                        "max_probe_gap": float(np.max(d)),
+                        "mean_probe_gap": float(np.mean(d)),
+                    }
+                else:
+                    gaps_by_component[str(label)] = {
+                        "probes": int(np.count_nonzero(chosen)),
+                        "points": 0,
+                        "max_probe_gap": None,
+                        "mean_probe_gap": None,
+                    }
+            gaps["by_component"] = gaps_by_component
         coverage = GTProperty(
-            "unverified",
-            value={"max_probe_gap": float(np.max(distances)),
-                   "mean_probe_gap": float(np.mean(distances))},
+            "unverified", value=gaps,
             basis="independent finite true-front probes; NOT a continuous bound",
             unit="original objective-space Euclidean distance")
     else:
-        coverage = GTProperty("unverified",
-                              basis="independent true-front probes unavailable")
+        coverage = GTProperty(
+            "unverified", basis="independent true-front probes unavailable")
 
-    if unique_n >= 3:
-        spacing = cKDTree(distinct).query(distinct, k=2)[0][:, 1]
-        mean = float(np.mean(spacing))
+    def spacing_diagnostics(rows):
+        if len(rows) < 2:
+            return {"count": len(rows), "mean_nearest_neighbor": None,
+                    "cv_nearest_neighbor": None, "max_nearest_neighbor": None}
+        d = cKDTree(rows).query(rows, k=2)[0][:, 1]
+        mean = float(np.mean(d))
+        return {
+            "count": len(rows),
+            "mean_nearest_neighbor": mean,
+            "cv_nearest_neighbor":
+                float(np.std(d)/mean) if mean > 0 else None,
+            "max_nearest_neighbor": float(np.max(d))
+        }
+
+    if labels is not None:
+        parts = {str(label): spacing_diagnostics(distinct[labels == label])
+                 for label in np.unique(labels)}
         regularity = GTProperty(
-            "unverified",
-            value={"mean_nearest_neighbor": mean,
-                   "cv_nearest_neighbor":
-                   float(np.std(spacing) / mean) if mean > 0 else None},
-            basis="whole-reference Euclidean NN; component grouping not verified",
+            "unverified", value={"by_component": parts},
+            basis="within-component objective-space nearest neighbors; "
+                  "no intercomponent probability weighting",
+            unit="original objective-space Euclidean distance")
+    elif unique_n >= 2:
+        regularity = GTProperty(
+            "unverified", value=spacing_diagnostics(distinct),
+            basis="whole-reference Euclidean nearest-neighbor distances",
             unit="original objective-space Euclidean distance")
     else:
         regularity = GTProperty(
-            "unverified", basis="at least three distinct points required")
+            "unverified", basis="at least two distinct points required")
 
     # Replaying PS/PF without a sound budget bound may be expensive and could
     # consume an opaque custom MOP RNG. Do not claim determinism by inference.
