@@ -264,3 +264,37 @@ def test_unproven_full_pareto_geometry_is_not_falsely_certified(name):
     result = mop.assess_gt(n_points=2, probes=16)
     assert result.validity.status == "unverified"
     assert result.coverage.status == "unverified"
+
+
+@pytest.mark.parametrize("klass,configuration", [
+    (mb.mops.DTLZ7, {"M": 3}),
+    (mb.mops.DTLZ8, {"M": 3}),
+    (mb.mops.DPF2, {"M": 5, "D": 3}),
+    (mb.mops.DPF5, {"M": 3, "D": 2}),
+])
+def test_componentwise_quality_preserves_region_identity(klass, configuration):
+    mop = klass(**configuration)
+    result = mop.assess_gt(n_points=64, probes=64, seed=23)
+    by_region = result.coverage.value["by_component"]
+    spacing = result.regularity.value["by_component"]
+    assert len(by_region) > 1
+    assert len(spacing) > 1
+    assert all(v["probes"] > 0 for v in by_region.values())
+    assert all(v["points"] > 0 for v in by_region.values())
+    assert all(np.isfinite(v["max_probe_gap"]) for v in by_region.values())
+    assert all(v["mean_nearest_neighbor"] is not None for v in spacing.values()
+               if v["count"] > 1)
+    import json
+    json.dumps(result.to_dict())
+    with pytest.raises(TypeError):
+        next(iter(by_region.values()))["max_probe_gap"] = 0
+
+
+def test_missing_component_has_no_fabricated_probe_gap():
+    mop = mb.mops.DTLZ8(M=3)
+    front = mop.pf(n_points=48)
+    only_line = front[front[:, -1] >= 1/3]
+    result = mop.assess_gt(reference=only_line, probes=64, seed=23)
+    assert result.components.status == "fail"
+    assert result.coverage.value["by_component"]["patch_0"]["points"] == 0
+    assert result.coverage.value["by_component"]["patch_0"]["max_probe_gap"] is None
