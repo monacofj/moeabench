@@ -400,6 +400,24 @@ class MetricMatrix(Reportable):
                     "fraction dominated in the combined reference",
                 ),
             ]
+            if (self.is_abs and self.diagnostics.get("hv_abs_reference_basis")):
+                fields.extend([
+                    (
+                        "Absolute HV basis",
+                        self.diagnostics["hv_abs_reference_basis"],
+                        "continuous true-front proof or sampled calibrated GT",
+                    ),
+                    (
+                        "Absolute HV denominator",
+                        f"{self.diagnostics['hv_abs_denominator']:.{prec}f}",
+                        "positive volume used to scale the absolute metric",
+                    ),
+                    (
+                        "Calibrated GT points",
+                        str(self.diagnostics["hv_abs_gt_points"]),
+                        "MOP-owned reference points retained for provenance",
+                    ),
+                ])
             if len(affected):
                 fields.append((
                     "Global/local ND coverage < 1",
@@ -627,11 +645,19 @@ class MetricMatrix(Reportable):
                 "",
             ])
         elif is_hypervolume and self.is_abs:
-            lines.extend([
-                "**Theoretical Optimality**: How close is this algorithm to mathematical perfection?",
-                "Values are normalized by the pre-calculated Ground Truth of the problem (1.0 = Opt).",
-                "",
-            ])
+            basis = self.diagnostics.get("hv_abs_reference_basis", "sampled_gt")
+            if basis == "continuous_exact":
+                lines.extend([
+                    "**Certified Continuous-Front Reference**: Absolute HV uses a proven continuous Pareto-front denominator in the current normalization geometry.",
+                    "For feasible populations and an exact numerator, 1.0 is the mathematical optimum. Monte Carlo remains approximate.",
+                    "",
+                ])
+            else:
+                lines.extend([
+                    "**Finite Calibrated-GT Reference**: Absolute HV is measured relative to the sampled MOP-owned GT.",
+                    "A value of 1.0 matches the sampled GT, not necessarily the continuous mathematical optimum; values above 1.0 can result from finite discretization.",
+                    "",
+                ])
         lines.append("#### Final Performance (Last Gen)")
         if is_ordinal_hypervolume:
             lines.extend(["", self._report_block("\n".join(
