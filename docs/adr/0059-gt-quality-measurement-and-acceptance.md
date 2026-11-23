@@ -102,8 +102,11 @@ feasible-image constraints, mathematically necessary minimum radial
 the feasible-image or minimum-radius conditions is `fail`.
 A feasible positive-`g` point without an independent global
 dominance exclusion is **`unverified`**, even when its necessary
-geometry checks pass. A mixture of proved `g=0` points and such
-positive-`g` points is consequently `unverified` as a whole.
+geometry checks pass. For `M>=4`, the **whole-GT validity status stays `unverified`** even
+when a supplied reference contains only individually proved `g=0`
+points: those points alone do not cover the original complete PF.
+A mixture of proved `g=0` points and such positive-`g` points
+is likewise `unverified` as a whole.
 Separate counts show both parts of the corrected original reference.
 The independent necessary-geometry audit is **not** the final
 full-Pareto-membership oracle and does not certify all positive-`g`
