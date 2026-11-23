@@ -164,6 +164,59 @@ software's ordinary operations. A confirmed false Pareto point
 or missing mandatory component is a scientific defect requiring
 correction under the existing ADR/regression safeguards.
 
+## Certification of locally generated experimental evidence
+
+**Normative rule (maintainer approval 2026-11-23):** scientific evidence
+generated on an uncertified local machine is **provisional** until its
+execution environment and numerical results have passed an independent,
+source-bound verification. Recording a dependency list or a Git commit
+alone does not certify an execution. Conversely, running on a verified
+platform does not establish the mathematical validity of an oracle.
+
+Certification requires **three separate gates**:
+
+1. **Mathematical/oracle gate:** use an independent published-equation
+   derivation, analytic invariant, rigorous bound, or suitable trusted
+   numerical reference. An oracle must not certify the GT simply by
+   reusing the same `pf()`, `ps()` or evaluator implementation;
+   agreement between two implementations sharing an error is not proof.
+2. **Environment gate:** capture the exact source revision, Python and
+   installed dependency versions, numerical backends (including relevant
+   BLAS/LAPACK details), platform/architecture, algorithm/validator
+   versions and numerical settings. Run the established MoeaBench
+   numerical stability checks on **that execution environment** with
+   approved, immutable references and tolerances. If a check is
+   unavailable or fails, the environment is **unverified** and its
+   outputs cannot be promoted to certified evidence.
+3. **Result/provenance gate:** record MOP class/configuration, original
+   GT origin, point and probe budgets, seeds, method parameters,
+   geometry/normalization, thresholds and output hashes. Validate
+   mathematical residuals and representative computed outputs against
+   an **independent reference** (including a bounded source-bound
+   cross-platform/CI check where applicable), using justified numeric
+   tolerances. Report the check's outcome and limitations.
+
+Large local experiments may be run in parallel and their outputs reused
+as **provisional evidence**. They become certified only when the three
+gates above pass for the **same source, environment and artifact**.
+Portable containers, lockfiles and environment manifests improve
+reproducibility but do not alone guarantee bitwise identical
+floating-point behavior or establish platform certification. In
+particular, differing BLAS kernels, floating-point reduction order
+and optimization paths may alter numerical outcomes.
+
+The certification record must distinguish `method_validated`,
+`environment_verified`, and `result_verified` as separate
+claims, with explicit evidence and `unverified` or `fail` when
+applicable. No unpublished local computation is silently treated as
+a certified GT or as authority to replace frozen baselines.
+
+This rule governs the forthcoming scientific certification pipeline;
+**it does not assert that the current `GTAssessment` API already
+implements all three gates**. Implementation and artifact-schema
+acceptance are tracked under [#175](https://github.com/monacofj/moeabench/issues/175)
+and [superissue #176](https://github.com/monacofj/moeabench/issues/176).
+
 ## Relationship to existing accepted decisions
 
 - ADR 0006 governs original MOP mathematical PS/PF.
