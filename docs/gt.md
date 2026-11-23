@@ -738,42 +738,74 @@ experiments, and rejected remedies are preserved in the
 [issue #89 memorial](research/hv-issue89-research-memorial.md)
 and its linked specialized research notes.
 
-### 9.4. GT quality assessment: current requirements and proposed API
+### 9.4. Read-only GT quality assessment (ADR 0059)
 
-The accepted scientific contract in [ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md)
-requires independent mathematical validation of GT membership,
-feasibility, component coverage, numerical fidelity and reproducibility.
-An adequate finite GT also requires the user to understand its
-resolution, spatial regularity, component allocation and effect on
-reference-based indicators. These are **different properties**:
-a reference can be mathematically on-front while sampling its
-components poorly. Conversely, nondominance within a finite sample
-does not certify that any point belongs to the globally optimal PF.
+MoeaBench exposes a read-only `mop.assess_gt()` method and includes the
+assessment in `mop.report()` when the instance has an explicitly
+calibrated GT in memory. Neither operation generates a hidden
+calibration, reads an on-disk sidecar on the user's behalf, writes files,
+or replaces scientific references.
 
-The current `pf()`, `ps()` and `calibrate()` contracts do
-**not yet expose one consolidated public GT-quality assessment object**.
-[Proposed ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md)
-specifies a future opt-in `mop.assess_gt()` design:
-structured quantitative findings with explicit
-`pass`/`fail`/`unverified`/`not_applicable` scientific
-statuses, mathematical-oracle identity, tolerances, declared
-sampling budgets and geometry; the same diagnostic implementation
-would power independent tests and API reports. This is a
-**proposal**, not an available API or a claim that every GT is
-certified today.
+```python
+mop = mb.mops.DTLZ2(M=3)
+candidate = mop.assess_gt(n_points=128, probes=128, seed=42)
+print(candidate.validity.status, candidate.coverage.value)
+# 'pass' on the independent unit-sphere membership oracle;
+# empirical covering statistics without a certified bound.
 
-A mathematically justified release-readiness gate should reject
-proven off-front/infeasible GT points and verified missing required
-components at eligible sampling budgets. Finite-probe covering gaps,
-within-component spacing statistics, budget-dependent effective
-uniqueness and sensitivity of IGD/IGD+/HV should be exposed
-**without a universal arbitrary quality threshold**. They can be
-compared meaningfully when the norm, reference geometry, component
-measure, budget and independent probing protocol coincide.
-A geometric property with insufficient proof must remain
-`unverified`, rather than silently being reported as adequate.
-No regression test or immutable numerical/performance baseline
-may be changed to force these checks to pass.
+mop.calibrate(source_baseline="dtlz2-gt.json", n_points=2000)
+assessment = mop.assess_gt()   # examines the actual calibrated GT
+print(assessment.to_dict())
+mop.report()                  # includes the same GT diagnostics
+```
+
+The assessment returns a structured `GTAssessment` carrying
+`GTProperty` entries for: exact row count, numerical uniqueness,
+independent true-front membership when an approved oracle exists,
+mathematically known components/extremes, finite-probe covering
+distances, nearest-neighbor spatial regularity, feasibility and
+reproducibility. Each property has `status`, `value`, `basis`,
+`threshold`, and `unit` fields; statuses are `pass`, `fail`,
+`unverified` or `not_applicable`. The `summary()` method provides
+a compact textual representation and `to_dict()` returns
+machine-readable evidence.
+
+**Current implementation limits are explicit.** Independent
+objective-space analytical membership oracles are implemented for
+original DTLZ1–4, DTLZ7–9 and DPF1. These test exact simplex,
+positive unit sphere, disconnected DTLZ7 record regions, constrained
+DTLZ8 line/patch geometry, DTLZ9 constrained curve and DPF1
+nonnegative linear projections, as applicable. Unmodified original
+class identity is required. Unsupported MOPs or custom subclasses
+are deliberately `unverified` for analytical membership,
+not presumed correct. No objective-only GT can independently
+establish decision feasibility; absent a decision-space witness
+that status is `unverified`.
+
+Where an independent continuous-PF sampler is scientifically justified,
+covering gaps are computed against seeded **independent true-front
+probes** in the original Euclidean objective geometry. These are
+**finite-sample measurements, not proven continuous Hausdorff
+bounds**. Regularity reports objective-space nearest-neighbor
+statistics, but a single whole-reference number must not be
+interpreted as a canonical mixed-dimensional component weighting.
+Without independently approved, configuration/budget-specific
+acceptance limits, such quality measures remain marked
+`unverified` even though their numerical values are available
+and comparable under matching geometry and protocol.
+
+The initial unit battery injects incorrect off-front samples,
+missing proved extrema/components, and duplicate-heavy samples,
+and verifies a corresponding diagnostic failure. New source-bound
+scientific qualification suites must complete independent oracles
+for the remaining DTLZ5/6 and DPF2–5 configurations, branch-aware
+regularity, feasibility and replay checks, and justified acceptance
+thresholds before claiming **all** supported built-in GTs are
+certified. The inspection API does not override
+[ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md)
+or certify an exact continuous-HV denominator under
+[ADR 0058](adr/0058-scalar-absolute-hv-certified-reference.md).
+
 
 ## 10. Historical References, Regression, and Certification
 
