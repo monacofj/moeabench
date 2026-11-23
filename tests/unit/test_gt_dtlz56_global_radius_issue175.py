@@ -126,3 +126,38 @@ def test_independent_global_oracle_does_not_reuse_production_scalarization(
         1.1*_manual_g0_endpoint(4),
         problem="DTLZ5", k=10, g_gap=.01)
     assert out.status == "witness"
+
+
+@pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
+def test_independent_positive_g_boundary_is_audited_without_fake_pass(problem):
+    from moeabench.mops._dtlz56_independent_audit import (
+        inspect_dtlz56_geometry,
+    )
+    g = 0.3
+    lower = np.pi/(4*(1+g))
+    upper = np.pi*(1+2*g)/(4*(1+g))
+    t1 = np.pi/5
+    r = 1+g
+    # Independent published spherical objective equations, no call to
+    # the MOP's sampler/evaluator or production Chebyshev scalarizer.
+    candidate = np.array([
+        r*np.cos(t1)*np.cos(lower)*np.cos(upper),
+        r*np.cos(t1)*np.cos(lower)*np.sin(upper),
+        r*np.cos(t1)*np.sin(lower),
+        r*np.sin(t1),
+    ])
+    geometry = inspect_dtlz56_geometry(
+        candidate[None, :], m=4, k=10, problem=problem)
+    assert geometry["violations"] == 0
+    assert geometry["unverified_positive_g"] == 1
+    finding = audit_global_radius_dominance(
+        candidate, problem=problem, k=10, g_gap=.03,
+        max_intervals=64)
+    assert finding.g_candidate == pytest.approx(g, abs=5e-14)
+    assert finding.g_checked_upper == pytest.approx(g-.03, abs=5e-14)
+    assert finding.status in ("witness", "excluded", "unverified")
+    if finding.status == "witness":
+        z = np.asarray(finding.witness_objectives)
+        assert np.all(z <= candidate + 1e-10)
+        assert np.linalg.norm(z) < np.linalg.norm(candidate)-.015
+    json.dumps(finding.to_dict(), allow_nan=False)
