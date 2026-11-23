@@ -738,6 +738,43 @@ experiments, and rejected remedies are preserved in the
 [issue #89 memorial](research/hv-issue89-research-memorial.md)
 and its linked specialized research notes.
 
+### 9.4. GT quality assessment: current requirements and proposed API
+
+The accepted scientific contract in [ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md)
+requires independent mathematical validation of GT membership,
+feasibility, component coverage, numerical fidelity and reproducibility.
+An adequate finite GT also requires the user to understand its
+resolution, spatial regularity, component allocation and effect on
+reference-based indicators. These are **different properties**:
+a reference can be mathematically on-front while sampling its
+components poorly. Conversely, nondominance within a finite sample
+does not certify that any point belongs to the globally optimal PF.
+
+The current `pf()`, `ps()` and `calibrate()` contracts do
+**not yet expose one consolidated public GT-quality assessment object**.
+[Proposed ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md)
+specifies a future opt-in `mop.assess_gt()` design:
+structured quantitative findings with explicit
+`pass`/`fail`/`unverified`/`not_applicable` scientific
+statuses, mathematical-oracle identity, tolerances, declared
+sampling budgets and geometry; the same diagnostic implementation
+would power independent tests and API reports. This is a
+**proposal**, not an available API or a claim that every GT is
+certified today.
+
+A mathematically justified release-readiness gate should reject
+proven off-front/infeasible GT points and verified missing required
+components at eligible sampling budgets. Finite-probe covering gaps,
+within-component spacing statistics, budget-dependent effective
+uniqueness and sensitivity of IGD/IGD+/HV should be exposed
+**without a universal arbitrary quality threshold**. They can be
+compared meaningfully when the norm, reference geometry, component
+measure, budget and independent probing protocol coincide.
+A geometric property with insufficient proof must remain
+`unverified`, rather than silently being reported as adequate.
+No regression test or immutable numerical/performance baseline
+may be changed to force these checks to pass.
+
 ## 10. Historical References, Regression, and Certification
 
 ### 10.1. In what sense is a historical baseline “wrong”?
