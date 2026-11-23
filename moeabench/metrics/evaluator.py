@@ -1120,19 +1120,28 @@ def hypervolume(exp, ref=None, mode='auto', scale='raw', n_samples=100000,
         gt = np.asarray(abs_gt, dtype=float)
         if gt.ndim != 2 or gt.shape[1] != M or not np.all(np.isfinite(gt)):
             raise ValueError("Calibrated MOP Ground Truth has incompatible objectives.")
-        if hv_backend == 'monte_carlo':
-            gt_metric = GEN_mc_hypervolume(
-                [gt], M, min_val, max_val,
-                n_samples=n_samples, seed=resolved_mc_seed,
-            )
-        else:
-            gt_metric = GEN_hypervolume([gt], M, min_val, max_val)
-        gt_hv = float(gt_metric.evaluate()[0])
+        # ADR 0058: a certified continuous-front denominator is valid only
+        # for a proved original built-in MOP, analytical GT provenance and
+        # exactly matching true axis normalization. Otherwise preserve the
+        # historical finite sampled-GT denominator and its unclipped ratio.
+        from ._absolute_hv_reference import exact_continuous_hv
+        gt_hv = exact_continuous_hv(evaluation_mop, min_val, max_val)
+        basis = "continuous_exact" if gt_hv is not None else "sampled_gt"
+        if gt_hv is None:
+            if hv_backend == 'monte_carlo':
+                gt_metric = GEN_mc_hypervolume(
+                    [gt], M, min_val, max_val,
+                    n_samples=n_samples, seed=resolved_mc_seed,
+                )
+            else:
+                gt_metric = GEN_hypervolume([gt], M, min_val, max_val)
+            gt_hv = float(gt_metric.evaluate()[0])
         if not np.isfinite(gt_hv) or gt_hv <= 0:
-            raise ValueError("Calibrated MOP Ground Truth has no positive dominated volume.")
+            raise ValueError("Absolute Hypervolume reference has no positive dominated volume.")
         mat /= gt_hv
         diagnostics["hv_abs_gt_points"] = len(gt)
         diagnostics["hv_abs_denominator"] = gt_hv
+        diagnostics["hv_abs_reference_basis"] = basis
         final_name = "Hypervolume (Absolute)"
 
     elif scale == 'raw':
