@@ -155,7 +155,7 @@ def test_all_built_in_mops_offer_generic_assessment_without_fake_proof():
 def test_more_published_geometry_oracles_and_probes(klass, m):
     mop = klass(M=m)
     result = mop.assess_gt(n_points=48, probes=48, seed=29)
-    assert result.validity.status == "pass"
+    assert result.validity.status == "pass", result.validity.to_dict()
     assert result.coverage.status == "unverified"
     assert np.isfinite(result.coverage.value["max_probe_gap"])
     assert result.components.status in ("pass", "unverified")
