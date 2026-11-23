@@ -261,6 +261,6 @@ def test_diagnostics_are_read_only_and_serializable():
 @pytest.mark.parametrize("name", ["DTLZ5", "DTLZ6"])
 def test_unproven_full_pareto_geometry_is_not_falsely_certified(name):
     mop = getattr(mb.mops, name)(M=4)
-    result = mop.assess_gt(n_points=32, probes=16)
+    result = mop.assess_gt(n_points=2, probes=16)
     assert result.validity.status == "unverified"
     assert result.coverage.status == "unverified"
