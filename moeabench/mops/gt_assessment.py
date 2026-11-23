@@ -813,20 +813,14 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
     if kind in ("dtlz5", "dtlz6"):
         from ._dtlz56_g0_curve import audit_g0_curve_dominance
         findings = [
-            audit_g0_curve_dominance(p, tolerance=tolerance)
-            for p in points
-            if np.all(p >= 0)
+            (i, audit_g0_curve_dominance(point, tolerance=tolerance))
+            for i, point in enumerate(points)
+            if np.all(point >= 0)
         ]
-        # Include all rows in the count. Invalid or nonnegative-violating
-        # rows must not quietly count as a successful audit.
-        invalid = int(np.count_nonzero(np.any(points < 0, axis=1)))
+        invalid = n - len(findings)
         witnesses = [
             {"index": int(i), "details": result.to_dict()}
-            for i, (p, result) in enumerate(
-                (p, audit_g0_curve_dominance(p, tolerance=tolerance))
-                for p in points
-                if np.all(p >= 0)
-            )
+            for i, result in findings
             if result.status == "witness"
         ]
         curve_dominance = GTProperty(
@@ -835,9 +829,9 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
                 "numerical_witnesses": witnesses,
                 "witness_count": len(witnesses),
                 "no_curve_dominator": sum(
-                    x.status == "no_curve_dominator" for x in findings),
+                    x.status == "no_curve_dominator" for _, x in findings),
                 "ambiguous": sum(
-                    x.status == "unverified" for x in findings),
+                    x.status == "unverified" for _, x in findings),
                 "invalid_objective_rows": invalid,
             },
             basis="independent exact continuous g=0 curve theorem; "
