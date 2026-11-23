@@ -189,3 +189,46 @@ def test_dtlz7_budget_below_number_of_regions_is_unverified_not_failed():
     assert result.components.status == "unverified"
     assert result.components.value["expected"] == 64
     assert result.components.value["represented"] == 24
+
+
+@pytest.mark.parametrize("name,dimensions", [
+    ("DPF1", {"M": 3, "D": 2}),
+    ("DPF2", {"M": 3, "D": 2}),
+    ("DPF2", {"M": 5, "D": 3}),
+    ("DPF3", {"M": 3, "D": 2}),
+    ("DPF3", {"M": 5, "D": 3}),
+    ("DPF4", {"M": 3, "D": 2}),
+    ("DPF4", {"M": 5, "D": 3}),
+    ("DPF5", {"M": 3, "D": 2}),
+    ("DPF5", {"M": 5, "D": 3}),
+])
+def test_independent_dpf_published_geometry_oracles(name, dimensions):
+    mop = getattr(mb.mops, name)(**dimensions)
+    result = mop.assess_gt(n_points=64, probes=32, seed=31)
+    assert result.validity.status == "pass"
+    assert result.coverage.status == "unverified"
+    assert np.isfinite(result.coverage.value["max_probe_gap"])
+    assert result.cardinality.status == "pass"
+
+
+@pytest.mark.parametrize("name,dimensions", [
+    ("DPF2", {"M": 3, "D": 2}),
+    ("DPF3", {"M": 3, "D": 2}),
+    ("DPF4", {"M": 3, "D": 2}),
+    ("DPF5", {"M": 3, "D": 2}),
+])
+def test_independent_dpf_oracles_reject_off_front_data(name, dimensions):
+    mop = getattr(mb.mops, name)(**dimensions)
+    front = mop.pf(n_points=64)
+    front[-1] = front[-1] + np.array([0.125, 0.3125, 0.5])
+    assert mop.assess_gt(reference=front, probes=16).validity.status == "fail"
+
+
+def test_dpf5_missing_p_branch_fails_component_check():
+    mop = mb.mops.DPF5(M=3, D=2)
+    front = mop.pf(n_points=64)
+    d_only = front[front[:, -1] >= .5]
+    outcome = mop.assess_gt(reference=d_only, probes=16)
+    assert outcome.validity.status == "pass"
+    assert outcome.components.status == "fail"
+    assert outcome.components.value["P"] == 0
