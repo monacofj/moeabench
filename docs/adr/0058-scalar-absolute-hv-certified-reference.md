@@ -47,7 +47,9 @@ of 1.0 as mathematical perfection.
    per-axis ideal/nadir in that problem's objective units; and
    (d) the reference point is the unchanged normalized 1.1 in each
    objective. The exact formula applies in this **same** geometry.
-   Do not extrapolate from the class name to subclasses/custom MOPs.
+   Do not extrapolate from the class name to subclasses/custom MOPs, or
+   instances whose `pf`, `ps` or `evaluation` methods have been overridden
+   (their analytical generation is no longer the certified built-in one).
 3. The current certified formulas for any integer M>=2 are
    `DTLZ1: 1.1^M - 1/M!` and
    `DTLZ2/3/4: 1.1^M - pi^(M/2)/(2^M Gamma(M/2+1))`.
