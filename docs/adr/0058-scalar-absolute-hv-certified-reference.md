@@ -114,6 +114,37 @@ bounded feasibility assumptions and source-bound validation before
 whitelisting. The research link to finite-discretization-sensitive
 FAIR methodology remains deferred, not a production dependency.
 
+## Normative GT / HV contract and documentation authority
+
+The precise **current technical specification** of GT provenance,
+sampling responsibilities and how a certified continuous denominator
+differs from a sampled GT is maintained in
+[`docs/gt.md`](../gt.md), Sections 3.4 and 9.1–9.3.
+The implementation of these normative conditions is in
+`moeabench/mops/calibration.py`,
+`moeabench/metrics/_absolute_hv_reference.py` and
+`moeabench/metrics/evaluator.py`.
+
+This ADR defines **what is mandatory**; the specification explains
+how the current code fulfills it. Research narratives under
+[`docs/research/`](../research/hv-issue89-research-memorial.md)
+record hypotheses and historical experiments and cannot
+override this adopted decision. In particular, references to the
+previous all-sampled `H_abs` behavior in earlier research notes
+describe their **investigation-time** behavior, not the
+current operating contract.
+
+A calibrated GT and a certified denominator are separately
+identified objects. Merely labelling a GT source `analytical`,
+raising the point count, observing numerical convergence, or
+attaching an external reference does not certify the continuum
+volume. Ineligible contexts **must** use the sampled-GT basis,
+not an unsupported extrapolation of an exact formula. Neither
+`ps()` nor `pf()` implicitly calibrates or writes a sidecar;
+no implicit GT budget or schema migration is authorized by this
+ADR. The `hv_abs_reference_basis` diagnostic is a required
+provenance field; it does not replace the scalar metric result.
+
 ## Evidence
 
 See `docs/research/hv-finite-reference-issue89.md`,
