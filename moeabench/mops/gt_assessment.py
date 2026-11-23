@@ -388,8 +388,27 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
     if points.ndim != 2 or points.shape[1] != mop.M or not len(points):
         raise ValueError(f"GT must be a nonempty two-dimensional (n, {mop.M}) array")
     if not np.all(np.isfinite(points)):
-        # A nonfinite GT should be measurable, not silently considered valid.
-        raise ValueError("GT contains NaN or infinity; finite GT is required")
+        n = len(points)
+        invalid = int(np.size(points) - np.count_nonzero(np.isfinite(points)))
+        unverified = GTProperty("unverified", basis="nonfinite coordinates prevent geometry tests")
+        return GTAssessment(
+            mop_id=str(mop.name), objectives=int(mop.M),
+            variables=None if mop.N is None else int(mop.N),
+            provenance=provenance, requested_count=n_points,
+            count=n, unique_count=0, probe_count=probes,
+            seed=int(seed), tolerance=float(tolerance),
+            validity=GTProperty("fail",
+                value={"nonfinite_coordinates": invalid},
+                basis="finite float64 coordinates required"),
+            feasibility=unverified, components=unverified,
+            coverage=unverified, regularity=unverified,
+            cardinality=GTProperty(
+                "pass" if n_points is None or n==n_points else "fail",
+                value={"requested": n_points, "actual": n},
+                basis="exact row count"),
+            uniqueness=unverified, replay=unverified,
+            diagnostics=("Nonfinite GT coordinates prevent scientific use.",)
+        )
 
     n = len(points)
     distinct = np.unique(points, axis=0)
