@@ -151,7 +151,8 @@ def _independent_oracle(kind, points, tolerance, mop):
         base = np.column_stack((x, final_base))
         weights = np.asarray(mop._chaos_pool[:(m-d)*d]).reshape(m-d, d)
         predicted = (base @ weights.T)**2
-        residual = np.max(np.abs(points[:, d-1:] - predicted), axis=1)
+        residual = np.maximum(np.abs(points[:, d-1] - final_base),
+                              np.max(np.abs(points[:, d:] - predicted), axis=1))
         residual = np.where(np.all(allowed, axis=1), residual, np.inf)
         proof = "independent DPF2 record-domain and squared nonnegative projections"
     elif kind == "dtlz9":
