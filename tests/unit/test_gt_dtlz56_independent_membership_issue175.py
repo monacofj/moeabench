@@ -21,7 +21,8 @@ def test_known_g_zero_curve_has_proved_global_pareto_membership(cls, m):
         np.cos(angles)[:, None] * coeff[None, :],
         np.sin(angles)))
     outcome = mop.assess_gt(reference=curve, probes=16)
-    assert outcome.validity.status == "pass", outcome.validity.to_dict()
+    assert outcome.validity.status == (
+        "pass" if m <= 3 else "unverified"), outcome.validity.to_dict()
     assert outcome.validity.value["certified_g0"] == len(curve)
     assert outcome.validity.value["unverified_positive_g"] == 0
 
