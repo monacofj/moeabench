@@ -90,6 +90,9 @@ def _original_problem_kind(mop):
     from .DTLZ9 import DTLZ9
     from .DPF1 import DPF1
     from .DPF2 import DPF2
+    from .DPF3 import DPF3
+    from .DPF4 import DPF4
+    from .DPF5 import DPF5
     if any(name in vars(mop) for name in ("pf", "ps", "evaluation")):
         return None
     kind = type(mop)
@@ -107,6 +110,12 @@ def _original_problem_kind(mop):
         return "dpf1"
     if kind is DPF2:
         return "dpf2"
+    if kind is DPF3:
+        return "dpf3"
+    if kind is DPF4:
+        return "dpf4"
+    if kind is DPF5:
+        return "dpf5"
     return None
 
 
@@ -155,6 +164,39 @@ def _independent_oracle(kind, points, tolerance, mop):
                               np.max(np.abs(points[:, d:] - predicted), axis=1))
         residual = np.where(np.all(allowed, axis=1), residual, np.inf)
         proof = "independent DPF2 record-domain and squared nonnegative projections"
+    elif kind in ("dpf3", "dpf4"):
+        d = mop.D
+        y = points[:, :d-1] if kind == "dpf3" else np.sqrt(
+            np.maximum(points[:, :d-1], 0))
+        sphere = 1-y
+        sq = np.sum(sphere**2, axis=1)
+        last_sphere = np.sqrt(np.maximum(0, 1-sq))
+        y_last = 1-last_sphere
+        eta = np.sort(np.asarray(mop._chaos_pool[:m-d]))
+        redundant = [np.minimum(y_last, eta[0])]
+        for j in range(m-d-1):
+            redundant.append(np.minimum(np.maximum(y_last, eta[j]), eta[j+1]))
+        redundant.append(np.maximum(y_last, eta[-1]))
+        projected = np.column_stack(redundant)
+        if kind == "dpf4":
+            projected = projected**2
+        residual = np.maximum(
+            np.abs(sq + last_sphere**2 - 1),
+            np.max(np.abs(points[:, d-1:]-projected), axis=1))
+        residual = np.where(sq <= 1+tolerance, residual, np.inf)
+        proof = "independent inverted essential sphere and published ordered projections"
+    elif kind == "dpf5":
+        # On the published Pareto branches g=0 and norm(F)=1.
+        # P has first angle < pi/6, equivalent to f_M < 1/2.
+        # D has f_M >= 1/2 and M-D+1 repeated first coordinates.
+        t = points[:, -1]
+        repeats = m-mop.D+1
+        d_equal = np.max(
+            np.abs(points[:, :repeats]-points[:, :1]), axis=1)
+        allowed = (t < .5+tolerance) | (d_equal <= tolerance)
+        residual = np.abs(np.linalg.norm(points, axis=1)-1)
+        residual = np.where(allowed, residual, np.inf)
+        proof = "independent published DPF5 P/D unit-sphere and repeated-coordinate geometry"
     elif kind == "dtlz9":
         t = points[:, -1]
         expected = np.sqrt(np.clip(1-t*t, 0, None))
