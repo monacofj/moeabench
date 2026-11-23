@@ -3,13 +3,15 @@ SPDX-FileCopyrightText: 2026 Monaco F. J.
 SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
-# ADR 0059 (Proposed): Measurable GT Quality and Independent Acceptance
+# ADR 0059: Measurable GT Quality and Independent Acceptance
 
 ## Status
 
-**Proposed for explicit maintainer review; not yet an accepted or implemented
-public API contract.** This proposal records a design, not proof that
-all built-in MOP configurations have already passed.
+**Accepted (maintainer authorization 2026-11-23).** Initial opt-in API and
+MOP report integration implemented for structural diagnostics and independent
+DTLZ1–4 objective-space oracles. MOP-specific scientific certification for
+remaining families is still incomplete; unsupported properties report
+\`unverified\`, not \`pass\`.
 
 ## Motivation and architectural boundary
 
@@ -37,44 +39,54 @@ they actually employ**, while tests can compare the same declared
 properties to MOP-specific acceptance criteria, without duplicating
 diagnostic mathematics in two unrelated implementations.
 
-## Proposed API
-
-Add a **read-only, explicitly invoked** method to `BaseMop`:
+## Implemented initial API and report behavior
 
 ```python
 assessment = mop.assess_gt(
-    reference=None,        # None selects calibrated_gt, if available
-    n_points=None,         # explicit on-demand analytical candidate only
-    probes=512,            # deterministic, independent audit sample budget
-    seed=0,                # only affects the independent audit protocol
+    reference=None,  # uses in-memory calibrated GT by default
+    n_points=None,   # opt-in read-only on-demand analytical candidate
+    probes=128,
+    seed=0,
+    tolerance=1e-9,
 )
 assessment.summary()
 assessment.to_dict()
 assessment.validity
 assessment.coverage
 assessment.regularity
-assessment.provenance
+mop.report(show=False)  # includes assessment when calibrated in memory
 ```
 
-The precise signature, result type and name are **proposed**. The
-method must never modify `mop.calibrated_gt`, create or overwrite
-sidecars, consume global RNG state, regenerate the reference
-implicitly, or set a validation flag without independent checks.
-It should be available to arbitrary user MOPs, but a user MOP
-without an analytical oracle can receive only generic diagnostics
-and `unverified` for unsupported scientific claims.
+The implementation is read-only and does not calibrate, load sidecars,
+change GT, or consume global RNG. `reference` and `n_points`
+are mutually exclusive. `mop.report(show=False)` uses the
+standard `Reportable` convention and reports that the GT is
+uncalibrated when none has been explicitly loaded; it never
+implicitly creates one. `assess=False` suppresses detailed
+diagnostics in the MOP report.
 
-The return value should be an immutable **structured result**,
-not a scalar score. Stable machine-readable fields must include
-`mop_id`, objective and decision dimensions, source/provenance,
-requested and actual count, distinct objective vectors, numerical
-tolerance and normalization geometry; each scientific diagnostic
-has an explicit status `pass`, `fail`, `unverified` or
-`not_applicable`, observed value(s), units, oracle/basis, and
-applicable threshold if any. Include enough information to reproduce
-the audit (sampler/validator version, seed, budget, platform,
-source revision when available). `summary()` provides a
-human-readable display but cannot change the data's meaning.
+A frozen `GTAssessment` contains status-tagged `GTProperty`
+measurements and a machine-readable `to_dict()`. The initial
+validator scope is intentionally conservative: independent
+DTLZ1 simplex and DTLZ2–4 sphere membership oracles, plus
+corresponding true axis extrema. Other built-in and user MOPs
+receive structural/spacing diagnostics but have
+`validity=unverified` until independent specialized oracles
+are implemented. Component-weighted regularity and continuous
+Hausdorff upper bounds are not currently certified.
+
+Decision-space feasibility cannot be inferred solely from
+objective GT coordinates and is reported `unverified`.
+Covering and spacing are quantitative, but, absent a
+scientifically justified MOP/budget-specific threshold,
+their acceptance status remains `unverified` rather than
+an invented `pass`. Reproducibility cannot be asserted
+without independent replay and is also `unverified`.
+
+**This initial implementation is an infrastructure step, not
+a claim that all MOP GTs are certified or a release gate has
+passed.** The remaining MOP-specific oracle coverage and
+scientifically grounded thresholds are required work.
 
 ## Property schema and scientific interpretation
 
@@ -193,7 +205,7 @@ Until this ADR is explicitly accepted and implemented, the proposed
 `assess_gt()` API and quality status fields are not available
 as public guarantees.
 
-## Open design decisions to resolve before implementation
+## Remaining implementation and scientific validation tasks
 
 - Final API name and return type, including how MOP-specific
   component data and unavailable diagnostics are represented.
