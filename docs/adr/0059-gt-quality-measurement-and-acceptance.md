@@ -9,8 +9,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 **Accepted (maintainer authorization 2026-11-23).** Initial opt-in API and
 MOP report integration implemented for structural diagnostics and independent
-DTLZ1–4 objective-space oracles. MOP-specific scientific certification for
-remaining families is still incomplete; unsupported properties report
+DTLZ1–4, DTLZ7–9 and DPF1–5 objective-space geometric oracles.
+MOP-specific scientific certification for DTLZ5/6 and other
+unsupported properties remains incomplete; unsupported claims report
 \`unverified\`, not \`pass\`.
 
 ## Motivation and architectural boundary
