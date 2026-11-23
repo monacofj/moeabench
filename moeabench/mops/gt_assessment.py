@@ -74,6 +74,8 @@ class GTAssessment:
         "not_applicable", basis="bounded-margin dominance audit not requested"))
     global_dominance: GTProperty = field(default_factory=lambda: GTProperty(
         "not_applicable", basis="global radial-g audit not requested"))
+    curve_dominance: GTProperty = field(default_factory=lambda: GTProperty(
+        "not_applicable", basis="complete g=0 curve oracle unavailable"))
     diagnostics: tuple = field(default_factory=tuple)
 
     def to_dict(self):
@@ -85,7 +87,7 @@ class GTAssessment:
             "seed": self.seed, "tolerance": self.tolerance,
             **{k: getattr(self, k).to_dict() for k in (
                 "validity", "feasibility", "components", "coverage",
-                "regularity", "cardinality", "uniqueness", "replay", "dominance", "global_dominance")},
+                "regularity", "cardinality", "uniqueness", "replay", "dominance", "global_dominance", "curve_dominance")},
             "diagnostics": list(self.diagnostics),
         }
 
@@ -94,7 +96,7 @@ class GTAssessment:
                  f"Reference: {self.count} rows; {self.unique_count} unique; "
                  f"source={self.provenance or 'unknown'}"]
         for name in ("cardinality", "uniqueness", "validity", "feasibility",
-                     "components", "coverage", "regularity", "replay", "dominance", "global_dominance"):
+                     "components", "coverage", "regularity", "replay", "dominance", "global_dominance", "curve_dominance"):
             p = getattr(self, name)
             value = "" if p.value is None else f" | {p.value}"
             lines.append(f"  {name:12s} {p.status:14s}{value}"
@@ -806,6 +808,38 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             threshold=float(dominance_g_gap),
             unit="radial g difference")
 
+    curve_dominance = GTProperty(
+        "not_applicable", basis="complete g=0 curve oracle unavailable")
+    if kind in ("dtlz5", "dtlz6"):
+        from ._dtlz56_g0_curve import audit_g0_curve_dominance
+        findings = [
+            (i, audit_g0_curve_dominance(point, tolerance=tolerance))
+            for i, point in enumerate(points)
+            if np.all(point >= 0)
+        ]
+        invalid = n - len(findings)
+        witnesses = [
+            {"index": int(i), "details": result.to_dict()}
+            for i, result in findings
+            if result.status == "witness"
+        ]
+        curve_dominance = GTProperty(
+            "unverified",
+            value={
+                "numerical_witnesses": witnesses,
+                "witness_count": len(witnesses),
+                "no_curve_dominator": sum(
+                    x.status == "no_curve_dominator" for _, x in findings),
+                "ambiguous": sum(
+                    x.status == "unverified" for _, x in findings),
+                "invalid_objective_rows": invalid,
+            },
+            basis="independent exact continuous g=0 curve theorem; "
+                  "numerically reconstructed provisional witnesses; "
+                  "no global positive-g nondominance claim",
+            threshold=tolerance,
+            unit="original objective-space coordinates")
+
     # Replaying PS/PF without a sound budget bound may be expensive and could
     # consume an opaque custom MOP RNG. Do not claim determinism by inference.
     replay = GTProperty(
@@ -821,6 +855,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         regularity=regularity, cardinality=cardinality,
         uniqueness=uniqueness, replay=replay, dominance=dominance,
         global_dominance=global_dominance,
+        curve_dominance=curve_dominance,
         diagnostics=("No finite-probe covering bound is a continuous guarantee.",
                      "A GT assessment is not a release certificate."),
     )

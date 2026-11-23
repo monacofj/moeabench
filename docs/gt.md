@@ -545,6 +545,31 @@ to the diagnosis in issue #65; it prevents mistaking
 a dense or continuously checked \(g=0\) reference
 for the full original PF.
 
+**Implemented independent check.** The module
+[`_dtlz56_g0_curve.py`](../moeabench/mops/_dtlz56_g0_curve.py)
+constructs the complete-curve candidate with
+`t=asin(min(y_M,1))` directly from the analytical
+coefficients in (DTLZ56-9), without sampling `pf()`, `ps()`,
+or calling the original evaluator or production scalarizer.
+If the reconstructed curve vector lies strictly inside the
+candidate's first (M-1) objective caps by a declared numerical
+safety margin, and the candidate has positive radial (g),
+it reports a provisional **dominance witness**. If a cap
+fails the complete-curve inequality by more than tolerance,
+it reports `no_curve_dominator`; boundary cases remain
+`unverified`. These are finite-arithmetic outcomes,
+not directed-rounded interval certificates.
+
+The structured `mop.assess_gt()` result includes
+`curve_dominance` and its numerical witness count and rows
+for original DTLZ5/6; `mop.report()` includes the same
+evidence for an existing calibrated GT. **Its scientific
+status stays `unverified`** until the numerical result has
+passed the ADR 0059 environment and output gates. In
+particular, finding no point on the `g=0` curve that
+dominates (y) does **not** establish global efficiency
+against the positive-(g) feasible image.
+
 ### 3.6.8. Theorem 7 — global Chebyshev scalarization and Pareto tie-breaking
 
 Let \(w\in\mathbb R_{>0}^M\) be a positive vector
