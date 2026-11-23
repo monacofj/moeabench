@@ -158,3 +158,26 @@ def test_instance_overridden_pf_stays_on_finite_reference_contract(tmp_path):
         float(hv(gt, gt, scale="raw"))
     )
     assert float(result) == pytest.approx(1)
+
+
+def test_user_report_identifies_exact_and_sampled_reference_basis(tmp_path):
+    gt = np.array([[0., .5], [.5, 0.]])
+    sampled_mop = mb.mops.DTLZ1(M=2)
+    sampled_mop.calibrate(source_gt=gt,
+                          source_baseline=tmp_path / "sampled.json")
+    sampled = hv(owned([[.25, .25]], sampled_mop), gt)
+    sampled_report = sampled.report(show=False, markdown=True)
+    assert "Finite Calibrated-GT Reference" in sampled_report
+    assert "sampled_gt" in sampled_report
+    assert "not necessarily the continuous mathematical optimum" in sampled_report
+
+    certified_mop = mb.mops.DTLZ1(M=2)
+    certified_mop.calibrate(
+        source_baseline=tmp_path / "certified.json", n_points=32
+    )
+    exact = hv(owned([[.25, .25]], certified_mop),
+               certified_mop.calibrated_gt)
+    exact_report = exact.report(show=False, markdown=True)
+    assert "Certified Continuous-Front Reference" in exact_report
+    assert "continuous_exact" in exact_report
+    assert "mathematical optimum" in exact_report
