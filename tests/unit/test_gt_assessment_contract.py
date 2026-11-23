@@ -232,3 +232,35 @@ def test_dpf5_missing_p_branch_fails_component_check():
     assert outcome.validity.status == "pass"
     assert outcome.components.status == "fail"
     assert outcome.components.value["P"] == 0
+
+
+def test_nonfinite_reference_is_reported_as_invalid_not_certified():
+    mop = mb.mops.DTLZ2(M=2)
+    front = mop.pf(n_points=16)
+    front[0, 0] = np.nan
+    result = mop.assess_gt(reference=front, probes=16)
+    assert result.validity.status == "fail"
+    assert result.validity.value["nonfinite_coordinates"] == 1
+    assert result.coverage.status == "unverified"
+
+
+def test_diagnostics_are_read_only_and_serializable():
+    import json
+    from dataclasses import FrozenInstanceError
+    mop = mb.mops.DTLZ2(M=2)
+    result = mop.assess_gt(n_points=16, probes=16)
+    with pytest.raises(TypeError):
+        result.coverage.value["max_probe_gap"] = 0
+    with pytest.raises(FrozenInstanceError):
+        result.count = 0
+    as_data = result.to_dict()
+    json.dumps(as_data)
+    assert as_data["coverage"]["value"]["max_probe_gap"] >= 0
+
+
+@pytest.mark.parametrize("name", ["DTLZ5", "DTLZ6"])
+def test_unproven_full_pareto_geometry_is_not_falsely_certified(name):
+    mop = getattr(mb.mops, name)(M=4)
+    result = mop.assess_gt(n_points=32, probes=16)
+    assert result.validity.status == "unverified"
+    assert result.coverage.status == "unverified"
