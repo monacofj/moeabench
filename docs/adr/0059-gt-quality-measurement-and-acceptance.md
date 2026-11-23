@@ -154,6 +154,35 @@ implicitly establish row-aligned decision witnesses.
 already-calibrated in-memory GT without creating,
 reordering or writing any reference rows.
 
+## Analytical g=0 curve dominance witnesses
+
+For original DTLZ5/6, `GTAssessment.curve_dominance`
+records an independent check against the **complete continuous
+g=0 Pareto curve** (Theorem 6 of [`docs/gt.md`](../gt.md)).
+The comparison is analytical, not a discrete GT lookup or a
+second call to the production sampler or evaluator.
+Its result distinguishes reconstructed numerical dominance
+witnesses, objectives that violate the complete-curve dominance
+criterion, and tolerance-sensitive boundary cases. It records
+the original row indices and witness objective vectors.
+
+A feasible positive-`g` objective vector that is strictly
+dominated by a reconstructed `g=0` curve vector is **not**
+globally Pareto-optimal; numerical evidence is nevertheless
+subject to the accepted mathematical, environment and
+output gates before promotion to a certified failure.
+Conversely, **absence of a g=0 curve dominator is never a
+global Pareto pass**, because a positive-`g` feasible point
+may still dominate it. As currently implemented,
+`curve_dominance.status=unverified` documents this limited
+scientific certification status.
+
+This check uses objective coordinates already supplied to
+`assess_gt()` and appears in `mop.report()` for original
+DTLZ5/6 without an additional scalar optimization search.
+It does not alter GT generation, numeric thresholds or frozen
+calibration references.
+
 ## Optional DTLZ5/6 bounded-margin dominance diagnostic
 
 For the original DTLZ5/6 only, `assess_gt()` accepts
