@@ -424,21 +424,36 @@ mop.report(assess=False)           # MOP and calibration state only
 ```
 
 `assess_gt(reference=None, *, n_points=None, probes=128, seed=0,
-tolerance=1e-9)` accepts either an explicit objective matrix or an
-on-demand analytical sample budget, but not both. By default, it
+tolerance=1e-9, dominance_margin=None,
+dominance_max_intervals=4096)` accepts either an explicit objective
+matrix or an on-demand analytical sample budget, but not both. By default, it
 inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
 `validity`, `feasibility`, `components`, `coverage`,
-`regularity`, `cardinality`, `uniqueness`, `replay`, and
-`provenance`, along with `summary()` and `to_dict()`.
+`regularity`, `cardinality`, `uniqueness`, `replay`,
+`dominance`, and `provenance`, along with `summary()` and
+`to_dict()`. The `dominance` property is `not_applicable` unless
+a positive `dominance_margin` is requested explicitly for original
+DTLZ5/6. Such an audit uses independent optimistic feasibility
+bounds over all continuous `g` intervals to numerically exclude
+coordinatewise improvements of at least the requested margin.
+It remains `unverified` as a scientific pass/fail judgment:
+finite-margin exclusion is not exact Pareto optimality and floating-
+point outward slack is not directed-rounded formal interval proof.
+`mop.report(dominance_margin=0.01)` runs this optional diagnostic
+on the calibrated GT without modifying it; routine `report()`
+avoids the cost.
 
 Individual property results have `status`, `value`, `basis`,
 `threshold`, `unit`. `unverified` explicitly means that a
 property was measured without an accepted pass/fail threshold or
 cannot be scientifically certified by the available oracle.
-Independent analytical membership oracles currently cover original
-DTLZ1–4, DTLZ7–9 and DPF1–5. DTLZ5/6 and other unsupported MOPs receive generic
-measurements but do not inherit a false scientific certificate.
+Independent global membership oracles cover original DTLZ1–4,
+DTLZ7–9 and DPF1–5. DTLZ5/6 additionally have independent
+feasible-image, minimum radial-`g` and same-ray dominance checks;
+positive-`g` global Pareto membership remains `unverified`,
+rather than receiving a false full-front certificate.
+Custom MOPs without a proved oracle retain structural measurements.
 The `mop.report(show=False, markdown=True)` output follows the
 standard report convention. See [ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md)
 and [GT specification](gt.md#94-read-only-gt-quality-assessment-adr-0059).
