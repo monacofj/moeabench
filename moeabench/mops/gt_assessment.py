@@ -106,6 +106,8 @@ def _original_problem_kind(mop):
     from .DTLZ2 import DTLZ2
     from .DTLZ3 import DTLZ3
     from .DTLZ4 import DTLZ4
+    from .DTLZ5 import DTLZ5
+    from .DTLZ6 import DTLZ6
     from .DTLZ7 import DTLZ7
     from .DTLZ8 import DTLZ8
     from .DTLZ9 import DTLZ9
@@ -121,6 +123,10 @@ def _original_problem_kind(mop):
         return "simplex"
     if kind in (DTLZ2, DTLZ3, DTLZ4):
         return "sphere"
+    if kind is DTLZ5:
+        return "dtlz5"
+    if kind is DTLZ6:
+        return "dtlz6"
     if kind is DTLZ7:
         return "dtlz7"
     if kind is DTLZ8:
@@ -161,6 +167,23 @@ def _independent_oracle(kind, points, tolerance, mop):
     elif kind == "sphere":
         residual = np.abs(np.linalg.norm(points, axis=1) - 1.0)
         proof = "independent DTLZ2/3/4 positive unit sphere"
+    elif kind in ("dtlz5", "dtlz6"):
+        from ._dtlz56_independent_audit import inspect_dtlz56_geometry
+        evidence = inspect_dtlz56_geometry(
+            points, m=m, k=mop.N-m+1, problem=kind.upper(),
+            tolerance=tolerance)
+        if evidence["violations"]:
+            status = "fail"
+        elif evidence["unverified_positive_g"]:
+            status = "unverified"
+        else:
+            status = "pass"
+        return GTProperty(
+            status, value=evidence,
+            basis="independent original DTLZ5/6 angular image and minimal-g "
+                  "radial dominance; exact global PF membership proved at g=0; "
+                  "g>0 remains unverified for global Pareto efficiency",
+            threshold=tolerance, unit="objective-space geometry")
     elif kind == "dpf1":
         d = mop.D
         essential = points[:, :d]
@@ -491,6 +514,23 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             "pass" if all(axis_found) else "fail",
             value={"true_axis_extrema_present": axis_found},
             basis=f"proved {kind} axis extrema", threshold=tolerance)
+    elif kind in ("dtlz5", "dtlz6"):
+        from ._dtlz56_independent_audit import inspect_dtlz56_geometry
+        evidence = inspect_dtlz56_geometry(
+            points, m=mop.M, k=mop.N-mop.M+1,
+            problem=kind.upper(), tolerance=tolerance)
+        zero = evidence["g_zero"]
+        positive = evidence["g_positive"]
+        if mop.M >= 4:
+            status = ("pass" if zero and positive else "fail") if n >= 4 else "unverified"
+        else:
+            status = "pass" if zero == n else "fail"
+        components = GTProperty(
+            status,
+            value={"g_zero": zero, "g_positive": positive,
+                   "expected_positive_g": mop.M >= 4},
+            basis="independent full-original-front g=0 and g>0 region occupancy; "
+                  "presence alone does not certify global membership")
     elif kind == "dtlz7":
         first, reentry, _ = _dtlz7_record_bounds()
         x = points[:, :-1]
