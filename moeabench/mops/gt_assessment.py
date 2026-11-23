@@ -438,7 +438,7 @@ def _component_labels(kind, points, mop):
 def assess_gt(mop, reference=None, *, n_points=None, probes=128,
               seed=0, tolerance=1e-9, dominance_margin=None,
               dominance_max_intervals=4096, dominance_g_gap=None,
-              dominance_g_max_intervals=8192):
+              dominance_g_max_intervals=8192, decision_reference=None):
     """Inspect a GT reference without writing, calibrating or modifying it.
 
     If neither a reference nor n_points is supplied, an existing in-memory
@@ -464,6 +464,10 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         if (not isinstance(dominance_g_max_intervals, int)
                 or dominance_g_max_intervals < 1):
             raise ValueError("dominance_g_max_intervals must be positive")
+    if decision_reference is not None and n_points is not None:
+        raise ValueError(
+            "Use an explicit objective reference alongside decision_reference; "
+            "on-demand pf rows have no implicit certified decision correspondence")
     if reference is not None and n_points is not None:
         raise ValueError("Supply reference or n_points, not both")
     if n_points is not None:
@@ -518,10 +522,59 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
     kind = _original_problem_kind(mop)
     validity = _independent_oracle(kind, points, tolerance, mop)
 
-    # A point in objective space cannot, on its own, establish that a
-    # feasible decision generated it. This is intentionally unverified.
+    # Objective-only GT cannot prove a feasible decision generated it.
     feasibility = GTProperty(
         "unverified", basis="decision-space witness unavailable in GT objectives")
+    if decision_reference is not None:
+        x = np.asarray(decision_reference, dtype=float)
+        if (x.ndim != 2 or len(x) != n or
+                mop.N is None or x.shape[1] != mop.N):
+            raise ValueError(
+                "Decision witness must have exactly (n_GT, N) aligned rows")
+        if kind in ("dtlz5", "dtlz6"):
+            from ._dtlz56_decision_witness import (
+                inspect_dtlz56_decision_witness)
+            observed = inspect_dtlz56_decision_witness(
+                x, points, problem=kind.upper(), m=mop.M,
+                tolerance=tolerance)
+            feasibility = GTProperty(
+                "fail" if observed["violations"] else "pass",
+                value=observed,
+                basis="independent published DTLZ5/6 decision-space bounds "
+                      "and reconstructed objective equations; does not prove "
+                      "global Pareto efficiency",
+                threshold=tolerance,
+                unit="original decision and objective coordinates")
+        else:
+            lower = getattr(mop, "xl", None)
+            upper = getattr(mop, "xu", None)
+            if lower is not None and upper is not None:
+                lower = np.asarray(lower)
+                upper = np.asarray(upper)
+            if (lower is None or upper is None or
+                    lower.shape != (mop.N,) or
+                    upper.shape != (mop.N,)):
+                invalid = int(np.count_nonzero(~np.isfinite(x).all(axis=1)))
+                feasibility = GTProperty(
+                    "fail" if invalid else "unverified",
+                    value={"decision_rows": int(n),
+                           "nonfinite_decisions": invalid},
+                    basis="independent bounds unavailable; no decision "
+                          "feasibility certificate")
+            else:
+                bounds_ok = (
+                    np.isfinite(x).all(axis=1)
+                    & (x >= lower-tolerance).all(axis=1)
+                    & (x <= upper+tolerance).all(axis=1))
+                invalid = int(np.count_nonzero(~bounds_ok))
+                feasibility = GTProperty(
+                    "fail" if invalid else "unverified",
+                    value={"decision_rows": int(n),
+                           "invalid_decisions": invalid},
+                    basis="declared MOP decision bounds checked; "
+                          "independent equations/constraints not certified",
+                    threshold=tolerance)
+
 
     # For the simplex and sphere, axis extrema can be checked against exact
     # mathematical extrema. This is not an overall covering guarantee.

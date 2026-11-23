@@ -121,6 +121,39 @@ feasibility cannot be deduced from objective coordinates alone;
 it is explicitly `unverified` without verified decision witnesses.
 Replay is also `unverified` until separately tested.
 
+## Explicit decision-space witness verification for original DTLZ5/6
+
+The initial API now additionally accepts an optional
+`decision_reference` matrix. It must have the **same number
+of rows** as the specified objective `reference`, in exactly
+the same order, with (N) decision coordinates per row.
+The check is entirely opt-in; no PS or evaluation is
+generated from a calibrated objective-only sidecar.
+
+For original unmodified DTLZ5/6, independent published
+decision bounds, distance functions, angles and spherical
+objectives are recomputed without calling the production
+MOP evaluator or sampler. The resulting
+`feasibility.status` is `pass` only when every provided
+decision is within bounds and produces its **aligned**
+claimed objective row within the declared tolerance.
+It is `fail` on invalid decision coordinates or
+objective mismatches. No such result is a certificate
+of global Pareto optimality (which remains a separate
+global scalar-`g` question), finite covering, platform
+portability or numerical backend validity.
+
+For other MOPs, only declared decision bounds may be
+checked generically; without an independently established
+original equation/constraint oracle, feasibility remains
+`unverified` for otherwise bounded points. An explicit
+`decision_reference` and `n_points` cannot be
+combined, because sampling an objective GT does not
+implicitly establish row-aligned decision witnesses.
+`mop.report(decision_reference=...)` inspects an
+already-calibrated in-memory GT without creating,
+reordering or writing any reference rows.
+
 ## Optional DTLZ5/6 bounded-margin dominance diagnostic
 
 For the original DTLZ5/6 only, `assess_gt()` accepts
@@ -350,8 +383,7 @@ in [`docs/gt.md`](../gt.md); historical experiments belong in
    for the original DTLZ5/6 positive-`g` boundary (necessary radial
    geometry and exact `g=0` membership are now measured), and
    configuration-specific evidence beyond the cases checked.
-2. Decision-space feasibility witnesses, verified replay and
-   source provenance at the assessed-reference level.
+2. Decision-space feasibility for **all remaining MOPs and constraints**, verified replay, and source provenance at the assessed-reference level. Aligned original DTLZ5/6 decision-to-objective witnesses are now independently inspected; this does not establish overall GT certification.
 3. Approved per-MOP/per-component quantitative resolution and
    regularity thresholds, and comparison with the original
    2,000/10,000 calibration budgets.

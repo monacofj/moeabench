@@ -663,6 +663,62 @@ be promoted beyond `unverified`; **finite-sample coverage,
 regularity, component completeness and indicator sensitivity
 still require their separate certification gates**.
 
+### 3.6.10. Independent decision-space witnesses and limits
+
+A GT is generally saved as a cloud of **objective** vectors;
+those coordinates alone cannot establish that any **feasible
+decision** actually produced them. For original DTLZ5/6,
+`assess_gt()` now accepts an explicitly aligned
+`decision_reference`, in addition to the objective
+`reference`:
+
+```python
+mop = mb.mops.DTLZ5(M=4)
+decisions = ...  # exact rows whose objective evaluations formed the GT
+objectives = ... # matching rows, in the same order
+a = mop.assess_gt(
+    reference=objectives,
+    decision_reference=decisions,
+)
+print(a.feasibility.to_dict())
+# With an existing, explicitly calibrated objective GT:
+mop.report(decision_reference=decisions)
+```
+
+The independently implemented
+[`_dtlz56_decision_witness.py`](../moeabench/mops/_dtlz56_decision_witness.py)
+checks every supplied decision against the original
+\(x\in[0,1]^N\) bounds, independently computes the exact
+DTLZ5 or DTLZ6 distance function and angular transform in
+(DTLZ56-1)–(DTLZ56-2), reconstructs the objective vector, and
+compares it row-for-row with the claimed GT using the declared
+numerical tolerance. It does **not** invoke the production
+`evaluation()`, `ps()`, `pf()`, or scalarizer.
+
+A `feasibility.status="pass"` certifies the **stated
+decision/objective correspondence within the numerical
+tolerance** for the original DTLZ5/6 equations, **not**
+the global Pareto efficiency of those points, which is
+governed independently by (DTLZ56-4). Incorrect row
+alignment, missing decisions, bounds violations and
+objective mismatches must not be hidden by merely
+rechecking finite objective-space nondominance.
+
+The witness is optional, read-only and has to be
+**supplied explicitly**. For on-demand
+`n_points` samples, decision correspondence is
+not assumed automatically: use an explicit
+`reference` and matching decisions instead.
+The reporting method similarly never regenerates a
+PS or changes an existing calibration sidecar.
+Other MOPs may have their declared decision bounds
+checked, but without a verified independent
+equation/constraint oracle, their general
+`feasibility` remains `unverified`.
+Independent replay, constrained decision equations
+for other families and platform-certified numerical
+comparison remain separate #175 obligations.
+
 ## 4. DPF3: Mathematical Definition and Chaotic Thresholds
 
 ### 4.1. Essential objectives
@@ -1252,9 +1308,12 @@ DTLZ8 line/patch geometry, DTLZ9 constrained curve and DPF1
 nonnegative linear projections, as applicable. Unmodified original
 class identity is required. Unsupported MOPs or custom subclasses
 are deliberately `unverified` for analytical membership,
-not presumed correct. No objective-only GT can independently
-establish decision feasibility; absent a decision-space witness
-that status is `unverified`.
+not presumed correct. No objective-only GT can independently establish decision
+feasibility. Original DTLZ5/6 now accept explicit aligned
+`decision_reference` rows for independent decision-bound and
+equation verification (Section 3.6.10); all other unproved
+decision/constraint claims remain `unverified` without a
+corresponding scientific oracle.
 
 Where an independent continuous-PF sampler is scientifically justified,
 covering gaps are computed against seeded **independent true-front
