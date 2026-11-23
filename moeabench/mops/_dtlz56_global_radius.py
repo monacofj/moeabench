@@ -135,7 +135,8 @@ def audit_global_radius_dominance(
 
     gy = float(np.linalg.norm(y)-1)
     upper = max(0.0, gy-float(g_gap))
-    if upper == 0.0:
+    if gy < g_gap:
+        # No feasible g can be negative, hence no improvement by this gap.
         return GlobalRadiusAudit(
             "excluded", gy, float(g_gap), 0.0, 0, 0,
             max_intervals)
