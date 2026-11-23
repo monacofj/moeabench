@@ -27,6 +27,12 @@ def exact_continuous_hv(mop, ideal, nadir):
     """
     if getattr(mop, "_gt_provenance", None) != "analytical":
         return None
+    # An instance with an overridden analytical generator/evaluator is
+    # not certified merely because it retains a built-in class identity.
+    # In particular, an ad-hoc injected pf() must keep its historical
+    # finite-sample GT denominator even if its endpoints happen to match.
+    if any(key in vars(mop) for key in ("pf", "ps", "evaluation")):
+        return None
 
     kind = type(mop)
     m = mop.M
