@@ -83,7 +83,7 @@ applicable ADR and its later supersessions. Accepted-in-principle ADRs govern di
 | GT calibration and point budgets | 0017, **0018 (currently normative)**, 0021 | 0057 accepted direction (runtime ADR 0018 defaults remain), #119; #54 empirical GT |
 | View and topology | 0014, 0040; follow API lineage 0039 → 0048 | #119 only for GT source/visual decimation considerations |
 | Save/load, provenance | 0011, 0032, 0050 | proposed GT archive integration, undecided |
-| Conventional Hypervolume | 0019 → 0035 → **0047** (`rel`) and **0058** (`abs`), plus 0020, 0042–0043 | #89 certification and unsupported fronts |
+| Conventional Hypervolume | 0019 → 0035 → **0047** (`rel`) and **0058** (`abs`), plus 0020, 0042–0043 | [GT specification](../gt.md#92-current-scalar-absolute-hv-reference-specification-adr-0058); [#89 research memorial](../research/hv-issue89-research-memorial.md) |
 | Numerical and stochastic certification | **0050 and 0056 (read through final addenda)** | #63 external dependency verification |
 | FAIR historical research | accepted API lineage where still applicable | proposed 0051–0055; FAIR not a core GT dependency |
 
@@ -95,6 +95,7 @@ The status column records whether a historical ADR remains wholly normative or h
 
 - Nomenclature and reporting: [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) → [0035](0035-triple-mode-hypervolume-reporting.md) → [0047](0047-conventional-hypervolume-relative-scaling.md) for `rel`; [0058](0058-scalar-absolute-hv-certified-reference.md) governs `abs` denominator provenance and certification.
 - Conventional geometry and computation: [0020](0020-standardized-reference-point-strategy-for-normalization.md) → [0042](0042-hypervolume-bbox-diagnostics.md) / [0043](0043-hypervolume-engine-selection.md), with current relative scaling in [0047](0047-conventional-hypervolume-relative-scaling.md).
+- Absolute-GT reference policy: [0058](0058-scalar-absolute-hv-certified-reference.md) is normative; [the GT specification](../gt.md) defines the current operational behavior; [the issue #89 research memorial](../research/hv-issue89-research-memorial.md) preserves historical experiments and rejected alternatives.
 - Ordinal branch: [0044](0044-ordinal-hypervolume.md) → [0046](0046-relative-ordinal-hypervolume.md).
 
 ### Environment, numerical stability and regression validation
