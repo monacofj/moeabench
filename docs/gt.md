@@ -268,8 +268,12 @@ itself is **not** a characterization of which feasible points are Pareto-optimal
 
 ### 3.6.2. Theorem 1 — least feasible radial distance in each direction
 
-For any feasible nonnegative objective vector \(y\ne0\), reconstruct
-its spherical inner angles \(\theta_2,\ldots,\theta_{M-1}\).
+For any feasible nonnegative objective vector \(y\ne0\), consider
+**a feasible angular representation** of its objective direction,
+with inner angles \(\theta_2,\ldots,\theta_{M-1}\). Such a
+representation is unique away from hyperspherical coordinate
+singularities; when leading coordinate groups vanish, multiple
+angle tuples can represent the same direction.
 Define
 
 \[
@@ -288,10 +292,14 @@ The angular constraints (DTLZ56-2) are equivalent to
 \le \frac{g}{1+g},\qquad i=2,\ldots,M-1.
 \]
 
-**Theorem.** For a feasible angular direction, \(g_{\min}(\theta)\)
-is the smallest attainable \(g\), and a feasible point with
+**Theorem.** For a **specified feasible angular tuple**
+\(\theta\), \(g_{\min}(\theta)\) is the smallest attainable
+\(g\) realizing that tuple. A feasible point with
 \(g>g_{\min}(\theta)\) is strictly Pareto-dominated by another
-feasible point on **the same ray**.
+feasible point on **the same objective-space ray**. At a
+hyperspherical coordinate singularity, the least feasible \(g\)
+of the ray itself may be even smaller, because the same ray can
+admit several angular tuples.
 
 **Proof.** Taking the maximum of the angular inequalities yields
 \(q\le g/(1+g)\), equivalent to \(g\ge q/(1-q)\). At
@@ -305,16 +313,18 @@ without increasing any other objective, and at least one coordinate
 strictly decreases because the vector has positive norm. Hence the
 larger-\(g\) point is dominated. \(\square\)
 
-**Corollary.** Every globally Pareto-optimal vector belongs to the
-minimal-radius boundary \(g=g_{\min}(\theta)\). If \(g>0\), at
-least one inner angle lies at an endpoint of (DTLZ56-2), equivalently
+**Corollary.** Every globally Pareto-optimal vector must satisfy
+\(g=g_{\min}(\theta)\) for **every** feasible angular realization
+of that vector. If \(g>0\), at least one inner angle in each
+such realization lies at an endpoint of (DTLZ56-2), equivalently
 at least one position variable \(x_i\), \(2\le i\le M-1\), equals
-zero or one. **This is a necessary condition, not a sufficient
+zero or one. A degenerate ray that also admits a \(g=0\)
+realization cannot contain a Pareto-optimal \(g>0\) point. **This is a necessary condition, not a sufficient
 global-optimality proof**: different boundary directions may
 dominate one another.
 
 The independent implementation
-[<code>_dtlz56_independent_audit.py</code>](../moeabench/mops/_dtlz56_independent_audit.py)
+[`_dtlz56_independent_audit.py`](../moeabench/mops/_dtlz56_independent_audit.py)
 uses objective norms, inverse angles and (DTLZ56-3). It detects
 infeasible angular/radial images and points with provable same-ray
 dominance. Numerical residual checks are subject to the declared
@@ -338,7 +348,7 @@ one strict inequality, implies
 \(g=0\) points. It does **not** certify an entire finite GT
 consisting only of such points when the original PF contains
 positive-\(g\) regions. In particular, the original \(M\ge4\)
-full-front assessment is not automatically \`pass\` merely
+full-front assessment is not automatically `pass` merely
 because these points are valid.
 
 ### 3.6.4. Theorem 3 — exact global Pareto criterion using only scalar g
@@ -447,7 +457,7 @@ vector in \(\mathcal F(g)\). \(\square\)
 For \(M=2\), there are no constrained inner angles and the
 intermediate loop is empty. This predicate is independently
 represented in
-[<code>scripts/audit/dtlz56_fixed_g_dominance_oracle.py</code>](../scripts/audit/dtlz56_fixed_g_dominance_oracle.py).
+[`scripts/audit/dtlz56_fixed_g_dominance_oracle.py`](../scripts/audit/dtlz56_fixed_g_dominance_oracle.py).
 Floating-point implementations require slack near angle/radius
 boundaries; passing finite tests is not equivalent to directed-rounded
 certification of (DTLZ56-5).
@@ -500,9 +510,9 @@ Three **separate layers** implement these results:
 
 | Layer | Implemented independent code | What is established | What remains unresolved |
 |---|---|---|---|
-| Feasible-image and same-ray audit | \`moeabench/mops/_dtlz56_independent_audit.py\` | Feasible angular/radial constraints; minimal-\(g\) lower bound; pointwise \(g=0\) proof; rejection of radially dominated candidates | Global efficiency of positive-\(g\) minimal-radius candidates |
-| Objective-coordinate margin exclusion | \`moeabench/mops/_dtlz56_dominance_bounds.py\` | Numerically excludes a dominator that improves any coordinate by at least a selected \(\delta_f>0\), across all \(g\) intervals examined | Improvements below \(\delta_f\); formal directed-rounding guarantees |
-| Radial-gap global audit | \`moeabench/mops/_dtlz56_global_radius.py\` | Searches the continuous **closed** subinterval \(0\le g\le g_y-\delta_g\); records a reconstructed numerical witness, optimistic interval exclusion, or unresolved budget | The open interval \(g_y-\delta_g<g<g_y\); directed-rounding and full source-bound environment verification |
+| Feasible-image and same-ray audit | `moeabench/mops/_dtlz56_independent_audit.py` | Feasible angular/radial constraints; minimal-\(g\) lower bound; pointwise \(g=0\) proof; rejection of radially dominated candidates | Global efficiency of positive-\(g\) minimal-radius candidates |
+| Objective-coordinate margin exclusion | `moeabench/mops/_dtlz56_dominance_bounds.py` | Numerically excludes a dominator that improves any coordinate by at least a selected \(\delta_f>0\), across all \(g\) intervals examined | Improvements below \(\delta_f\); formal directed-rounding guarantees |
+| Radial-gap global audit | `moeabench/mops/_dtlz56_global_radius.py` | Searches the continuous **closed** subinterval \(0\le g\le g_y-\delta_g\); records a reconstructed numerical witness, optimistic interval exclusion, or unresolved budget | The open interval \(g_y-\delta_g<g<g_y\); directed-rounding and full source-bound environment verification |
 
 The **global mathematical criterion** (DTLZ56-4) is exact.
 **Its current executable implementation is not an exact
@@ -512,8 +522,8 @@ heuristic slack is **not** a formal interval-arithmetic
 certificate; comparisons near a boundary can depend on
 rounding, transcendental functions, BLAS/libm and platform.
 The current audit appropriately preserves
-\`global_dominance.status = "unverified"\` and full-original
-DTLZ5/6 \`validity.status = "unverified"\` for \(M\ge4\),
+`global_dominance.status = "unverified"` and full-original
+DTLZ5/6 `validity.status = "unverified"` for \(M\ge4\),
 even when all checked finite-gap intervals were numerically
 excluded. A reconstructed dominance witness is actionable
 evidence that requires independent feasibility verification,
@@ -521,7 +531,7 @@ not automatic promotion to a portable certificate.
 
 Users may request these additional read-only measurements explicitly:
 
-\`\`\`python
+```python
 mop = mb.mops.DTLZ5(M=4)
 candidate = mop.assess_gt(
     n_points=32, probes=128,
@@ -533,9 +543,9 @@ candidate = mop.assess_gt(
 print(candidate.validity.to_dict())
 print(candidate.dominance.to_dict())
 print(candidate.global_dominance.to_dict())
-\`\`\`
+```
 
-Both optional audits also appear in \`mop.report(...)\`
+Both optional audits also appear in `mop.report(...)`
 when explicitly requested for an already calibrated GT.
 Neither changes the MOP, GT, calibration sidecar or
 historical regression baseline. They are disabled by default
@@ -550,7 +560,7 @@ bounds (or another demonstrably rigorous decision procedure)
 and certify the execution environment and resultant artifacts
 under [ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md).
 Only then can the front membership of positive-\(g\) points
-be promoted beyond \`unverified\`; **finite-sample coverage,
+be promoted beyond `unverified`; **finite-sample coverage,
 regularity, component completeness and indicator sensitivity
 still require their separate certification gates**.
 
