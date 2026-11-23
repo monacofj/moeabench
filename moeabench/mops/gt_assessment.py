@@ -546,18 +546,34 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
                 threshold=tolerance,
                 unit="original decision and objective coordinates")
         else:
-            bounds_ok = (
-                np.isfinite(x).all(axis=1)
-                & (x >= -tolerance).all(axis=1)
-                & (x <= 1+tolerance).all(axis=1))
-            invalid = int(np.count_nonzero(~bounds_ok))
-            feasibility = GTProperty(
-                "fail" if invalid else "unverified",
-                value={"decision_rows": int(n),
-                       "invalid_decisions": invalid},
-                basis="decision rows checked against generic [0,1] bounds; "
-                      "independent MOP equations/constraints not yet certified",
-                threshold=tolerance)
+            lower = getattr(mop, "xl", None)
+            upper = getattr(mop, "xu", None)
+            if lower is not None and upper is not None:
+                lower = np.asarray(lower)
+                upper = np.asarray(upper)
+            if (lower is None or upper is None or
+                    lower.shape != (mop.N,) or
+                    upper.shape != (mop.N,)):
+                invalid = int(np.count_nonzero(~np.isfinite(x).all(axis=1)))
+                feasibility = GTProperty(
+                    "fail" if invalid else "unverified",
+                    value={"decision_rows": int(n),
+                           "nonfinite_decisions": invalid},
+                    basis="independent bounds unavailable; no decision "
+                          "feasibility certificate")
+            else:
+                bounds_ok = (
+                    np.isfinite(x).all(axis=1)
+                    & (x >= lower-tolerance).all(axis=1)
+                    & (x <= upper+tolerance).all(axis=1))
+                invalid = int(np.count_nonzero(~bounds_ok))
+                feasibility = GTProperty(
+                    "fail" if invalid else "unverified",
+                    value={"decision_rows": int(n),
+                           "invalid_decisions": invalid},
+                    basis="declared MOP decision bounds checked; "
+                          "independent equations/constraints not certified",
+                    threshold=tolerance)
 
 
     # For the simplex and sphere, axis extrema can be checked against exact
