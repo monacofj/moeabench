@@ -265,9 +265,10 @@ def _independent_oracle(kind, points, tolerance, mop):
         return GTProperty("unverified", basis="no independent certified oracle")
     bad = np.count_nonzero(np.any(points < -tolerance, axis=1) |
                            (residual > tolerance))
+    maximum = float(np.max(residual))
     return GTProperty("fail" if bad else "pass",
                       value={"violations": int(bad),
-                             "max_residual": float(np.max(residual))},
+                             "max_residual": maximum if np.isfinite(maximum) else None},
                       basis=proof, threshold=tolerance,
                       unit="objective coordinates")
 
