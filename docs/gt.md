@@ -772,7 +772,7 @@ machine-readable evidence.
 
 **Current implementation limits are explicit.** Independent
 objective-space analytical membership oracles are implemented for
-original DTLZ1–4, DTLZ7–9 and DPF1. These test exact simplex,
+original DTLZ1–4, DTLZ7–9 and DPF1–5. These test exact simplex,
 positive unit sphere, disconnected DTLZ7 record regions, constrained
 DTLZ8 line/patch geometry, DTLZ9 constrained curve and DPF1
 nonnegative linear projections, as applicable. Unmodified original
@@ -797,8 +797,8 @@ and comparable under matching geometry and protocol.
 The initial unit battery injects incorrect off-front samples,
 missing proved extrema/components, and duplicate-heavy samples,
 and verifies a corresponding diagnostic failure. New source-bound
-scientific qualification suites must complete independent oracles
-for the remaining DTLZ5/6 and DPF2–5 configurations, branch-aware
+scientific qualification suites must complete independent global
+Pareto oracles for DTLZ5/6 (including g>0 regions), branch-aware
 regularity, feasibility and replay checks, and justified acceptance
 thresholds before claiming **all** supported built-in GTs are
 certified. The inspection API does not override
