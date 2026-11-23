@@ -189,23 +189,28 @@ def _independent_oracle(kind, points, tolerance, mop):
         d = mop.D
         y = points[:, :d-1] if kind == "dpf3" else np.sqrt(
             np.maximum(points[:, :d-1], 0))
-        sphere = 1-y
-        sq = np.sum(sphere**2, axis=1)
-        last_sphere = np.sqrt(np.maximum(0, 1-sq))
-        y_last = 1-last_sphere
+        s = 1-y
         eta = np.sort(np.asarray(mop._chaos_pool[:m-d]))
+        observed = (points[:, d-1:] if kind == "dpf3"
+                    else np.sqrt(np.maximum(points[:, d-1:], 0)))
+        # The published clipped projections partition y_last:
+        # sum_j projected_j = y_last + sum_j eta_j.
+        # Recover y_last directly instead of subtracting nearly equal
+        # squared sphere coordinates and taking an unstable square root.
+        y_last = np.sum(observed, axis=1) - np.sum(eta)
         redundant = [np.minimum(y_last, eta[0])]
         for j in range(m-d-1):
             redundant.append(np.minimum(np.maximum(y_last, eta[j]), eta[j+1]))
         redundant.append(np.maximum(y_last, eta[-1]))
-        projected = np.column_stack(redundant)
-        if kind == "dpf4":
-            projected = projected**2
-        residual = np.maximum(
-            np.abs(sq + last_sphere**2 - 1),
-            np.max(np.abs(points[:, d-1:]-projected), axis=1))
-        residual = np.where(sq <= 1+tolerance, residual, np.inf)
-        proof = "independent inverted essential sphere and published ordered projections"
+        expected = np.column_stack(redundant)
+        sphere_residual = np.abs(np.sum(s*s, axis=1) +
+                                 (1-y_last)**2 - 1)
+        projection_residual = np.max(np.abs(observed-expected), axis=1)
+        residual = np.maximum(sphere_residual, projection_residual)
+        residual = np.where((y_last >= -tolerance) &
+                            (y_last <= 1+tolerance), residual, np.inf)
+        proof = ("independent inverted sphere and sum-inverted "
+                 "published ordered projections")
     elif kind == "dpf5":
         # On the published Pareto branches g=0 and norm(F)=1.
         # P has first angle < pi/6, equivalent to f_M < 1/2.
