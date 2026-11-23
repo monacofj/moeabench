@@ -406,6 +406,43 @@ prob = mb.mops.DTLZ2(M=3)
 prob_many = mb.mops.DTLZ2(M=10, K=20)
 ```
 
+### **Ground Truth assessment and MOP report**
+
+Every `BaseMop` provides a **read-only** diagnostic API:
+
+```python
+mop = mb.mops.DTLZ2(M=3)
+candidate = mop.assess_gt(n_points=128, probes=128, seed=42)
+print(candidate.validity.status)   # 'pass' for proved unit sphere
+print(candidate.coverage.value)    # observed finite-probe distance, not a bound
+
+mop.calibrate(source_baseline="dtlz2-gt.json", n_points=2000)
+audit = mop.assess_gt()            # actual calibrated in-memory GT
+print(audit.to_dict())
+mop.report()                       # includes the same assessment
+mop.report(assess=False)           # MOP and calibration state only
+```
+
+`assess_gt(reference=None, *, n_points=None, probes=128, seed=0,
+tolerance=1e-9)` accepts either an explicit objective matrix or an
+on-demand analytical sample budget, but not both. By default, it
+inspects the calibrated GT already held by the MOP instance; it does
+not create calibration or sidecar files. `GTAssessment` provides
+`validity`, `feasibility`, `components`, `coverage`,
+`regularity`, `cardinality`, `uniqueness`, `replay`, and
+`provenance`, along with `summary()` and `to_dict()`.
+
+Individual property results have `status`, `value`, `basis`,
+`threshold`, `unit`. `unverified` explicitly means that a
+property was measured without an accepted pass/fail threshold or
+cannot be scientifically certified by the available oracle.
+Independent analytical membership oracles currently cover original
+DTLZ1–4, DTLZ7–9 and DPF1. Other MOPs receive generic
+measurements but do not inherit a false scientific certificate.
+The `mop.report(show=False, markdown=True)` output follows the
+standard report convention. See [ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md)
+and [GT specification](gt.md#94-read-only-gt-quality-assessment-adr-0059).
+
 ### **DPF Family**
 `DPF1` - `DPF5` (Degenerate Pareto Fronts).
 *   **Args**: `M` (Objectives), `D` (Base dims), `K` (Distance vars), `**kwargs`.
