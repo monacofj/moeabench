@@ -29,7 +29,7 @@ This directory contains records of the key architectural decisions made during t
 | [0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Guided Geometric Solvers | Accepted | 2026-01-25 |
 | [0017](0017-comprehensive-calibration-and-testing-framework.md) | Calibration & Testing Framework | Accepted | 2026-02-01 |
 | [0018](0018-consolidated-scientific-report-and-gt-density-refinement.md) | Consolidated Report & GT Density | Accepted | 2026-02-02 |
-| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Partially Superseded by 0047 | 2026-02-03 |
+| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Partially Superseded by 0047 (`rel`) and 0058 (`abs`) | 2026-02-03 |
 | [0020](0020-standardized-reference-point-strategy-for-normalization.md) | Standardized Reference Point Strategy | Accepted | 2026-02-04 |
 | [0021](0021-numerical-integrity-and-validation-pipeline-float64-policy.md) | Numerical Integrity (Float64 Policy) | Accepted | 2026-02-05 |
 | [0022](0022-emd-as-primary-diagnostic-for-degenerate-manifolds.md) | EMD as Primary Diagnostic | Accepted | 2026-02-06 |
@@ -45,7 +45,7 @@ This directory contains records of the key architectural decisions made during t
 | [0032](0032-enhanced-persistence-metadata-and-diagnostic-simplification.md) | Diagnostic Simplification | Accepted | 2026-02-22 |
 | [0033](0033-flexible-reference-management-for-longitudinal-auditing.md) | Flexible Reference Management | Accepted | 2026-02-23 |
 | [0034](0034-unified-metric-analysis-api.md) | Unified Metric Analysis API | Accepted | 2026-02-24 |
-| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 | 2026-02-25 |
+| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 (`rel`) and 0058 (`abs`) | 2026-02-25 |
 | [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Partially Superseded by 0037 | 2026-02-25 |
 | [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Partially Superseded by 0049 | 2026-03-08 |
 | [0038](0038-runtime-output-and-sidecar-hygiene-v0.13.3.md) | Runtime Output Control and Sidecar Hygiene (v0.13.3) | Accepted | 2026-03-11 |
