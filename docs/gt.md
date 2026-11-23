@@ -786,9 +786,14 @@ Where an independent continuous-PF sampler is scientifically justified,
 covering gaps are computed against seeded **independent true-front
 probes** in the original Euclidean objective geometry. These are
 **finite-sample measurements, not proven continuous Hausdorff
-bounds**. Regularity reports objective-space nearest-neighbor
-statistics, but a single whole-reference number must not be
-interpreted as a canonical mixed-dimensional component weighting.
+bounds**. For disconnected or separately characterized components,
+covering reports independent probe gaps **per component**, explicitly
+recording missing regions as unavailable; regularity reports
+nearest-neighbor statistics within each known component rather than
+combining incompatible geometric measures. On single-component
+fronts, it reports ordinary objective-space nearest-neighbor
+statistics. These data do not define a canonical mixed-dimensional
+probability weighting.
 Without independently approved, configuration/budget-specific
 acceptance limits, such quality measures remain marked
 `unverified` even though their numerical values are available
