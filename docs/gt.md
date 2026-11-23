@@ -816,6 +816,26 @@ conditions for Pareto efficiency: the quality API reports
 with diagnostic counts and `g=0`/`g>0` occupancy. It does **not**
 mislabel this partial characterization as global certification.
 
+A separate optional numerical bound is now available for DTLZ5/6:
+`mop.assess_gt(reference=..., dominance_margin=0.01,
+dominance_max_intervals=4096)`. Its `dominance` result
+reports how many objective vectors **numerically exclude**
+all feasible dominating improvements of at least the stated
+objective-space margin over the continuous `g` interval.
+`mop.report(dominance_margin=0.01)` includes the same
+opt-in diagnostic on an existing in-memory calibrated GT.
+No run is triggered by default.
+
+This establishes **neither** exact Pareto efficiency (an
+improvement smaller than the margin is not ruled out) **nor**
+a portable rigorous numerical proof (ordinary floating point
+is used with conservative numerical slack, not verified
+directed rounding). For those reasons its property status
+remains `unverified` regardless of a successful finite-margin
+exclusion. The original full-front validity status for
+`M>=4` remains `unverified` until stronger independent
+scientific evidence is accepted.
+
 New source-bound scientific qualification suites must establish
 independent sufficient global membership for DTLZ5/6 `g>0`
 regions, branch-aware regularity, feasibility and replay checks,

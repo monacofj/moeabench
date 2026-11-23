@@ -121,6 +121,40 @@ feasibility cannot be deduced from objective coordinates alone;
 it is explicitly `unverified` without verified decision witnesses.
 Replay is also `unverified` until separately tested.
 
+## Optional DTLZ5/6 bounded-margin dominance diagnostic
+
+For the original DTLZ5/6 only, `assess_gt()` accepts
+`dominance_margin=delta` and
+`dominance_max_intervals=4096`. `mop.report()` forwards
+the same optional arguments. The default `None` **does not**
+perform this potentially expensive numerical search.
+
+The independent `_dtlz56_dominance_bounds` implementation tests
+whether the entire continuous feasible scalar `g` interval can
+exclude a feasible vector that weakly improves all coordinates and
+strictly improves **at least one** by the requested positive
+objective-space margin. For each `g` interval `[L,U]`, the
+feasibility relaxation uses smaller radius `1+L` and a larger
+angular patch from `U`. If a dominator existed anywhere in the
+interval, its radial contraction would be feasible in this
+relaxation; excluding the relaxed patch therefore excludes the
+whole interval **under exact real arithmetic**. Interval budget
+exhaustion always produces `unverified`, not a spurious pass.
+
+The result appears in the distinct `assessment.dominance`
+property. It records `numerically_excluded`, `unresolved`,
+the margin and interval effort, while **the property status
+remains `unverified`**: the numerical implementation uses
+ordinary floating point with outward safety slack, not a
+directed-rounded proof; furthermore, proving that no
+`delta`-dominator exists does **not** exclude strict
+improvements smaller than `delta`. This is incremental
+quantitative evidence, **not** sufficient global Pareto
+membership or a certification-environment gate. The normal
+`validity` status for the full original `M>=4` GT
+is unchanged. No official tolerance or release threshold
+is established by this opt-in diagnostic.
+
 ## Quantitative finite-reference diagnostics
 
 Generic structural checks report input shape, finite values,

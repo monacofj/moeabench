@@ -70,6 +70,8 @@ class GTAssessment:
     cardinality: GTProperty
     uniqueness: GTProperty
     replay: GTProperty
+    dominance: GTProperty = field(default_factory=lambda: GTProperty(
+        "not_applicable", basis="bounded-margin dominance audit not requested"))
     diagnostics: tuple = field(default_factory=tuple)
 
     def to_dict(self):
@@ -81,7 +83,7 @@ class GTAssessment:
             "seed": self.seed, "tolerance": self.tolerance,
             **{k: getattr(self, k).to_dict() for k in (
                 "validity", "feasibility", "components", "coverage",
-                "regularity", "cardinality", "uniqueness", "replay")},
+                "regularity", "cardinality", "uniqueness", "replay", "dominance")},
             "diagnostics": list(self.diagnostics),
         }
 
@@ -90,7 +92,7 @@ class GTAssessment:
                  f"Reference: {self.count} rows; {self.unique_count} unique; "
                  f"source={self.provenance or 'unknown'}"]
         for name in ("cardinality", "uniqueness", "validity", "feasibility",
-                     "components", "coverage", "regularity", "replay"):
+                     "components", "coverage", "regularity", "replay", "dominance"):
             p = getattr(self, name)
             value = "" if p.value is None else f" | {p.value}"
             lines.append(f"  {name:12s} {p.status:14s}{value}"
@@ -432,7 +434,8 @@ def _component_labels(kind, points, mop):
 
 
 def assess_gt(mop, reference=None, *, n_points=None, probes=128,
-              seed=0, tolerance=1e-9):
+              seed=0, tolerance=1e-9, dominance_margin=None,
+              dominance_max_intervals=4096):
     """Inspect a GT reference without writing, calibrating or modifying it.
 
     If neither a reference nor n_points is supplied, an existing in-memory
@@ -447,6 +450,11 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         raise ValueError("seed must be a nonnegative integer")
     if not np.isfinite(tolerance) or tolerance <= 0:
         raise ValueError("tolerance must be finite and positive")
+    if dominance_margin is not None:
+        if not np.isfinite(dominance_margin) or dominance_margin <= 0:
+            raise ValueError("dominance_margin must be finite and positive")
+        if not isinstance(dominance_max_intervals, int) or dominance_max_intervals < 1:
+            raise ValueError("dominance_max_intervals must be a positive integer")
     if reference is not None and n_points is not None:
         raise ValueError("Supply reference or n_points, not both")
     if n_points is not None:
@@ -665,6 +673,36 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         regularity = GTProperty(
             "unverified", basis="at least two distinct points required")
 
+    dominance = GTProperty(
+        "not_applicable", basis="bounded-margin dominance audit not requested")
+    if dominance_margin is not None:
+        if kind not in ("dtlz5", "dtlz6"):
+            raise ValueError(
+                "bounded-margin dominance audit supports only original DTLZ5/6")
+        from ._dtlz56_dominance_bounds import audit_delta_dominance
+        results = [
+            audit_delta_dominance(
+                point, problem=kind.upper(), k=mop.N-mop.M+1,
+                margin=float(dominance_margin),
+                max_intervals=dominance_max_intervals)
+            for point in points
+        ]
+        excluded = sum(a.status == "excluded" for a in results)
+        dominance = GTProperty(
+            "unverified",
+            value={
+                "margin": float(dominance_margin),
+                "numerically_excluded": excluded,
+                "unresolved": len(results)-excluded,
+                "total_g_intervals": sum(a.intervals_tested for a in results),
+                "max_intervals_per_point": dominance_max_intervals,
+            },
+            basis="independent continuous-g interval exclusion of "
+                  "coordinatewise improvement >= margin; numerical slack, "
+                  "no directed rounding or full Pareto proof",
+            threshold=float(dominance_margin),
+            unit="objective coordinates")
+
     # Replaying PS/PF without a sound budget bound may be expensive and could
     # consume an opaque custom MOP RNG. Do not claim determinism by inference.
     replay = GTProperty(
@@ -678,7 +716,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         validity=validity, feasibility=feasibility,
         components=components, coverage=coverage,
         regularity=regularity, cardinality=cardinality,
-        uniqueness=uniqueness, replay=replay,
+        uniqueness=uniqueness, replay=replay, dominance=dominance,
         diagnostics=("No finite-probe covering bound is a continuous guarantee.",
                      "A GT assessment is not a release certificate."),
     )
