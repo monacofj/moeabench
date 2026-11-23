@@ -71,7 +71,7 @@ This directory contains records of the key architectural decisions made during t
 | [0056](0056-versioned-certification-and-performance-reference-lifecycle.md) | Versioned Numerical and Performance Certification | Accepted (read final addenda) | 2026-11-18 |
 | [0057](0057-proposed-purpose-specific-gt-budgets.md) | On-Demand, Geometry-Aware Ground Truth | Accepted; MOP-specific GT implemented; automatic budget policy pending | 2026-11-19 |
 | [0058](0058-scalar-absolute-hv-certified-reference.md) | Scalar Absolute HV: Certified or Sampled Reference | Accepted and implemented (#89, PR #170) | 2026-11-23 |
-| [0059](0059-gt-quality-measurement-and-acceptance.md) | Measurable GT Quality and Independent Acceptance | Proposed; API and test implementation pending maintainer review | 2026-11-23 |
+| [0059](0059-gt-quality-measurement-and-acceptance.md) | Measurable GT Quality and Independent Acceptance | Accepted; initial API/report implemented, further MOP oracles pending | 2026-11-23 |
 
 ### Quick component lookup (check lineage and final dated addenda)
 
@@ -103,7 +103,7 @@ The status column records whether a historical ADR remains wholly normative or h
   deployed universal selection algorithm (ADR 0018 defaults remain).
 - **GT validity, coverage and regularity as measurable API/test data:**
   [ADR 0059](0059-gt-quality-measurement-and-acceptance.md) is
-  **proposed only**. It must not be presented as already implemented.
+  **accepted, with initial implementation**. The opt-in inspection API and report are implemented; remaining scientific validators and acceptance thresholds are not yet certified.
   Any future accepted GT-quality contract must use independent
   mathematical validators and distinguish error, finite-sample
   adequacy and unverified claims.
