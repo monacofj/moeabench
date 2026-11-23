@@ -805,8 +805,12 @@ and verifies a corresponding diagnostic failure. For original DTLZ5/6, an indepe
 `g=||f||_2-1`, verifies the original feasible angular interval
 and minimum attainable radial `g` for the point's angular direction,
 and rejects points provably radially dominated at the same direction.
-At `g=0`, global Pareto membership follows from the minimum possible
-objective norm. For `g>0`, these are **necessary but not sufficient**
+At `g=0`, **individual-point** global Pareto membership follows
+from the minimum possible objective norm. For `M>=4`, even a GT
+consisting exclusively of these proved points remains
+`validity=unverified` as a full-original-front assessment, since
+it omits the known positive-`g` Pareto regions. For `g>0`, these
+are **necessary but not sufficient**
 conditions for Pareto efficiency: the quality API reports
 `validity=unverified` on otherwise feasible positive-`g` points,
 with diagnostic counts and `g=0`/`g>0` occupancy. It does **not**
