@@ -142,3 +142,19 @@ def test_fast_backend_returns_scalar_and_exact_denominator(tmp_path):
     )
     assert np.isscalar(float(result))
     assert np.isfinite(float(result))
+
+
+def test_instance_overridden_pf_stays_on_finite_reference_contract(tmp_path):
+    # An unverified instance-level sampler is not made mathematically
+    # certified by its built-in class identity or axis endpoints alone.
+    gt = np.array([[0., 1.], [.5, np.sqrt(.75)],
+                   [np.sqrt(.75), .5], [1., 0.]])
+    mop = mb.mops.DTLZ2(M=2)
+    mop.pf = lambda n_points=4: gt.copy()
+    mop.calibrate(source_baseline=tmp_path / "custom_pf.json", n_points=4)
+    result = hv(owned(gt, mop), gt)
+    assert result.diagnostics["hv_abs_reference_basis"] == "sampled_gt"
+    assert result.diagnostics["hv_abs_denominator"] == pytest.approx(
+        float(hv(gt, gt, scale="raw"))
+    )
+    assert float(result) == pytest.approx(1)
