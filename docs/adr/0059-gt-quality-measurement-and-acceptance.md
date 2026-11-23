@@ -155,6 +155,66 @@ membership or a certification-environment gate. The normal
 is unchanged. No official tolerance or release threshold
 is established by this opt-in diagnostic.
 
+## Exact scalar-radius dominance theorem and numerical audit
+
+For the **original** DTLZ5/6 objective image, every feasible vector
+satisfies `||f||_2 = 1 + g`. Consequently, for an independently verified
+feasible point `y`, the following is an **exact necessary and sufficient
+mathematical condition** for global Pareto efficiency:
+
+```
+y belongs to the true Pareto front
+   iff there is no feasible z <= y with g(z) < g(y).
+```
+
+Proof: if `z <= y` with a strict improvement in any coordinate,
+the nonnegative Euclidean norm decreases strictly, hence
+`g(z) < g(y)`. Conversely, if `g(z) < g(y)` and `z <= y`,
+the strict radius decrease ensures a strict objective improvement.
+This reduces the global dominance predicate to feasibility of
+objective caps over **one continuous scalar g**, independent of the
+number of original decision-space distance variables.
+
+An **optional numerical approximation**, distinct from the previous
+coordinatewise-`dominance_margin` test, is exposed as
+
+```python
+audit = mop.assess_gt(
+    reference=front,
+    dominance_g_gap=1e-4,
+    dominance_g_max_intervals=8192,
+)
+print(audit.global_dominance.to_dict())
+mop.report(dominance_g_gap=1e-4)
+```
+
+The independent audit restricts attention to
+`0 <= g <= g(y)-dominance_g_gap`. It either obtains an
+independently reconstructed feasible *numerical dominance witness*,
+excludes the continuous closed interval by optimistic angular/radial
+feasibility relaxations (under floating-point slack), or reports the
+unresolved search budget. It never silently reuses the production
+scalarizer, PS/PF or evaluator. It is disabled by default.
+
+**Do not conflate the exact mathematical equivalence with its finite
+numerical evaluator.** This implementation neither excludes
+improvements with `0 < g(y)-g(z) < dominance_g_gap`, nor uses
+directed-rounded or verified transcendental interval bounds.
+Consequently the public `global_dominance.status` remains
+`unverified` for the scientific certification decision, even
+when the numerical check excludes the requested gap; the
+original DTLZ5/6 M>=4 `validity` status stays `unverified`.
+Numerically reconstructed witnesses are reported with their
+coordinates/parameters for independently checked scientific
+investigation. They should be confirmed on the certified
+execution environment before being accepted as a definitive
+software defect.
+
+Remaining step: establish mathematically and numerically justified
+evaluation of the **zero-gap** criterion (including boundary limits
+and directed-rounding uncertainties), then complete the GT
+configuration, coverage and indicator-adequacy evidence.
+
 ## Quantitative finite-reference diagnostics
 
 Generic structural checks report input shape, finite values,
