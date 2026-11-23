@@ -5,6 +5,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Exact Hypervolume of continuous DTLZ1 and DTLZ2 fronts in arbitrary M (#89)
 
+> **Historical research status (2026-11-23):** The experiment and any
+> investigation-time statements below are preserved as research evidence.
+> Since this study, the maintainer accepted
+> [ADR 0058](../adr/0058-scalar-absolute-hv-certified-reference.md)
+> and merged implementation PR #170: `H_abs` now uses an exact
+> continuous-front denominator **only in mathematically certified,
+> provenance-verified normalization contexts**, retaining the original
+> finite sampled-GT scalar otherwise. This study is **not** a normative
+> description of the current API. See the [GT specification](../gt.md)
+> and the [consolidated issue #89 memorial](hv-issue89-research-memorial.md)
+> for the current outcome and chronology.
+
 **Research only.** The existing public `scale="abs"` continues to divide
 by the calibrated finite GT. This note proposes no API change, no new
 uncertainty output and no replacement for an accepted ADR or frozen reference.
