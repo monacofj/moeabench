@@ -437,7 +437,7 @@ Individual property results have `status`, `value`, `basis`,
 property was measured without an accepted pass/fail threshold or
 cannot be scientifically certified by the available oracle.
 Independent analytical membership oracles currently cover original
-DTLZ1–4, DTLZ7–9 and DPF1. Other MOPs receive generic
+DTLZ1–4, DTLZ7–9 and DPF1–5. DTLZ5/6 and other unsupported MOPs receive generic
 measurements but do not inherit a false scientific certificate.
 The `mop.report(show=False, markdown=True)` output follows the
 standard report convention. See [ADR 0059](adr/0059-gt-quality-measurement-and-acceptance.md)
