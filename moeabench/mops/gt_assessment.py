@@ -15,6 +15,22 @@ import numpy as np
 from scipy.spatial import cKDTree
 
 
+def _immutable(value):
+    if isinstance(value, dict):
+        return MappingProxyType({k: _immutable(v) for k, v in value.items()})
+    if isinstance(value, (tuple, list)):
+        return tuple(_immutable(v) for v in value)
+    return value
+
+
+def _plain(value):
+    if isinstance(value, MappingProxyType):
+        return {k: _plain(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return [_plain(v) for v in value]
+    return value
+
+
 @dataclass(frozen=True)
 class GTProperty:
     status: str
@@ -26,17 +42,10 @@ class GTProperty:
     def __post_init__(self):
         if self.status not in ("pass", "fail", "unverified", "not_applicable"):
             raise ValueError(f"Unknown GT property status: {self.status}")
-        if isinstance(self.value, dict):
-            frozen = {k: tuple(v) if isinstance(v, list) else v
-                      for k, v in self.value.items()}
-            object.__setattr__(self, "value", MappingProxyType(frozen))
+        object.__setattr__(self, "value", _immutable(self.value))
 
     def to_dict(self):
-        value = self.value
-        if isinstance(value, MappingProxyType):
-            value = {k: list(v) if isinstance(v, tuple) else v
-                     for k, v in value.items()}
-        return {"status": self.status, "value": value,
+        return {"status": self.status, "value": _plain(self.value),
                 "basis": self.basis, "threshold": self.threshold,
                 "unit": self.unit}
 
