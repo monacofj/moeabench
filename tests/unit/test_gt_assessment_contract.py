@@ -33,6 +33,8 @@ def test_independent_oracle_catches_true_off_front_candidate():
     result = mop.assess_gt(reference=front, probes=16)
     assert result.validity.status == "fail"
     assert result.validity.value["violations"] >= 1
+    import json
+    json.dumps(result.to_dict(), allow_nan=False)
     assert result.components.status == "fail"
 
 
