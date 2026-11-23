@@ -425,13 +425,14 @@ mop.report(assess=False)           # MOP and calibration state only
 
 `assess_gt(reference=None, *, n_points=None, probes=128, seed=0,
 tolerance=1e-9, dominance_margin=None,
-dominance_max_intervals=4096)` accepts either an explicit objective
+dominance_max_intervals=4096, dominance_g_gap=None,
+dominance_g_max_intervals=8192)` accepts either an explicit objective
 matrix or an on-demand analytical sample budget, but not both. By default, it
 inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
 `validity`, `feasibility`, `components`, `coverage`,
 `regularity`, `cardinality`, `uniqueness`, `replay`,
-`dominance`, and `provenance`, along with `summary()` and
+`dominance`, `global_dominance`, and `provenance`, along with `summary()` and
 `to_dict()`. The `dominance` property is `not_applicable` unless
 a positive `dominance_margin` is requested explicitly for original
 DTLZ5/6. Such an audit uses independent optimistic feasibility
@@ -443,6 +444,19 @@ point outward slack is not directed-rounded formal interval proof.
 `mop.report(dominance_margin=0.01)` runs this optional diagnostic
 on the calibrated GT without modifying it; routine `report()`
 avoids the cost.
+
+A second, separate **global radial** diagnostic is available for
+original DTLZ5/6 with `dominance_g_gap=1e-4` (and optional
+`dominance_g_max_intervals`). It exploits the exact theorem that
+a feasible `y` is Pareto-optimal iff no feasible
+`z <= y` has `g(z) < g(y)`. The numerical check only
+excludes improvements in radial `g` of at least the
+requested gap, or reports a reconstructed witness or an
+unresolved interval. The `global_dominance` property
+**remains `unverified`** because a finite-gap
+floating-point exclusion is not an exact global proof.
+`mop.report(dominance_g_gap=1e-4)` exposes it explicitly;
+routine `report()` does not pay this cost.
 
 Individual property results have `status`, `value`, `basis`,
 `threshold`, `unit`. `unverified` explicitly means that a
