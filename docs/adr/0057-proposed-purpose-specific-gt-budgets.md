@@ -5,7 +5,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # ADR 0057: On-Demand, Geometry-Aware Ground Truth
 
-**Status:** Accepted — current policy as of 2026-11-21.
+**Status:** Accepted — normative decisions updated to reflect implemented source through 2026-11-23.
 
 ## Decision
 
@@ -46,16 +46,23 @@ display sample for a calibrated scientific reference.
 3. **DPF5:** evaluate the published P/D spherical equations, with
    strict P ownership of `x1 < 1/3`, and D ownership of the
    boundary `x1 = 1/3`. Sampling must respect each component.
-4. **DTLZ8:** replace mathematically invalid GT sampling with
-   deterministic analytical sampling of its true Pareto geometry:
-   the single-constraint line for M=2 and, for M>=3, a central
-   line plus M-1 surface patches. A geometry-aware hybrid is the
-   current research candidate for M=3/5/10; M=4 may preserve
-   independently verified on-front incumbent points and complete
+4. **DTLZ8 (implemented, PR #146):** the production analytical
+   `ps()`/`pf()` generator samples the true constrained Pareto
+   geometry: the single line for M=2; for M>=3, a central line
+   and M-1 surface patches. Its deterministic hybrid constructs
+   the published components and exact requested unique objective
+   count for supported budgets. At M=4 it preserves independently
+   verified on-front historical points when eligible and completes
    missing points by objective-space farthest-first selection.
-   **Candidate selection requires component-wise validation before
-   being promoted as certified GT**, including arbitrary supported
-   M and nonmultiple N behavior.
+   Supported nonmultiple N preserves the evaluator's existing
+   ignored-tail behavior. The *production source selection* is
+   completed, not an unpromoted research candidate.
+   **Scientific qualification remains bounded by the tested
+   configurations:** pointwise Pareto membership, feasibility,
+   cardinality, components and reproducibility have independent
+   evidence; finite-sample coverage/regularity and relative
+   line/patch weighting are configuration-specific diagnostics,
+   not a universal optimality or surface-measure certificate.
 5. **Public compatibility:** retain MOP evaluator and constraint
    semantics, `BaseMop.pf()` delegation, public `ps()/pf()`
    signatures and initial defaults, and explicit calibration-source
@@ -63,6 +70,24 @@ display sample for a calibrated scientific reference.
    warning and ignoring trailing variables; GT reconstruction must
    respect that behavior unless a separately approved API change
    is adopted.
+
+## Scientific status versus historical experiments
+
+The production status in the numbered list above is authoritative
+for implemented generators. Earlier dated research in
+`docs/research/gt-issue119/` may describe experimental samplers
+as provisional or earlier defects as unresolved; those statements
+retain their historical meaning and **must not** be copied into
+current normative status without checking merged code, source-bound
+tests and the issue closure evidence.
+
+Current architectural correctness and finite-sample suitability
+are separate claims. Independent Pareto membership/feasibility
+and complete component support are scientific correctness
+requirements. Point density, coverage, regularity, numerical
+sensitivity and cost require explicitly identified geometries,
+budgets and probe/reference methods; a small empirical covering
+gap does not prove optimal sampling.
 
 ## Calibration budgets and provenance
 
