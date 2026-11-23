@@ -174,6 +174,11 @@ def _independent_oracle(kind, points, tolerance, mop):
             tolerance=tolerance)
         if evidence["violations"]:
             status = "fail"
+        elif m >= 4:
+            # Even exact-g0 points prove their own membership, they do not
+            # certify that a finite GT covers the original full PF with
+            # positive-g branches. Preserve the established regression gate.
+            status = "unverified"
         elif evidence["unverified_positive_g"]:
             status = "unverified"
         else:
