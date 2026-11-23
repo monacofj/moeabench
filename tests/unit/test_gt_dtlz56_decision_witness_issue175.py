@@ -99,7 +99,8 @@ def test_report_verifies_supplied_decision_witness_without_sidecar_mutation(tmp_
     report = mop.report(
         show=False, markdown=False, decision_reference=x, probes=16)
     assert "feasibility" in report
-    assert "independent published DTLZ5/6" in report
+    assert "feasibility  pass" in report
+    assert "'objective_mismatch': 0" in report
     assert source.read_bytes() == before
 
 
