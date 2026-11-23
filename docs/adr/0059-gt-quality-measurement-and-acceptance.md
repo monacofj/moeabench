@@ -94,13 +94,25 @@ published-geometry certificate.
 | DPF5 | Published positive-unit-sphere P/D branches and D-branch repeated coordinates; both-branch occupancy |
 
 DTLZ5/6 (including genuine `g>0` Pareto regions at `M>=4`)
-**do not** inherit a DTLZ2 spherical certificate. Their objective
-membership remains `unverified` in this initial API, even though
-the original samplers were corrected and independently investigated
-under issue #65. Those problems require a dedicated valid
-full-front independent oracle. Built-in configurations outside
-the proved ranges, custom MOPs, missing component-oracle support,
-and unavailable diagnostics likewise remain `unverified`.
+**do not** inherit a DTLZ2 spherical certificate. The independent
+objective-space geometry audit now verifies the original angular
+feasible-image constraints, mathematically necessary minimum radial
+`g`, and the global Pareto membership of exact `g=0` vectors
+(by the global minimum feasible Euclidean norm). A point violating
+the feasible-image or minimum-radius conditions is `fail`.
+A feasible positive-`g` point without an independent global
+dominance exclusion is **`unverified`**, even when its necessary
+geometry checks pass. For `M>=4`, the **whole-GT validity status stays `unverified`** even
+when a supplied reference contains only individually proved `g=0`
+points: those points alone do not cover the original complete PF.
+A mixture of proved `g=0` points and such positive-`g` points
+is likewise `unverified` as a whole.
+Separate counts show both parts of the corrected original reference.
+The independent necessary-geometry audit is **not** the final
+full-Pareto-membership oracle and does not certify all positive-`g`
+regions. Built-in configurations outside proved ranges, custom
+MOPs, missing component oracles and unsupported diagnostics remain
+`unverified`.
 
 A **positive analytical membership result** confirms the stated
 geometric relation under a declared tolerance, **not** a proof that
@@ -240,9 +252,10 @@ in [`docs/gt.md`](../gt.md); historical experiments belong in
 
 ## Explicitly remaining work
 
-1. Independent full-Pareto-membership oracles for original DTLZ5/6,
-   and configuration-specific scientific evidence beyond those
-   currently checked.
+1. Independent **sufficient** global Pareto-membership certification
+   for the original DTLZ5/6 positive-`g` boundary (necessary radial
+   geometry and exact `g=0` membership are now measured), and
+   configuration-specific evidence beyond the cases checked.
 2. Decision-space feasibility witnesses, verified replay and
    source provenance at the assessed-reference level.
 3. Approved per-MOP/per-component quantitative resolution and

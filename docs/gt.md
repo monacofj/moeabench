@@ -801,12 +801,26 @@ and comparable under matching geometry and protocol.
 
 The initial unit battery injects incorrect off-front samples,
 missing proved extrema/components, and duplicate-heavy samples,
-and verifies a corresponding diagnostic failure. New source-bound
-scientific qualification suites must complete independent global
-Pareto oracles for DTLZ5/6 (including g>0 regions), branch-aware
-regularity, feasibility and replay checks, and justified acceptance
-thresholds before claiming **all** supported built-in GTs are
-certified. The inspection API does not override
+and verifies a corresponding diagnostic failure. For original DTLZ5/6, an independent geometric audit now extracts
+`g=||f||_2-1`, verifies the original feasible angular interval
+and minimum attainable radial `g` for the point's angular direction,
+and rejects points provably radially dominated at the same direction.
+At `g=0`, **individual-point** global Pareto membership follows
+from the minimum possible objective norm. For `M>=4`, even a GT
+consisting exclusively of these proved points remains
+`validity=unverified` as a full-original-front assessment, since
+it omits the known positive-`g` Pareto regions. For `g>0`, these
+are **necessary but not sufficient**
+conditions for Pareto efficiency: the quality API reports
+`validity=unverified` on otherwise feasible positive-`g` points,
+with diagnostic counts and `g=0`/`g>0` occupancy. It does **not**
+mislabel this partial characterization as global certification.
+
+New source-bound scientific qualification suites must establish
+independent sufficient global membership for DTLZ5/6 `g>0`
+regions, branch-aware regularity, feasibility and replay checks,
+and scientifically grounded acceptance thresholds before claiming
+**all** supported built-in GTs are certified. The inspection API does not override
 [ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md)
 or certify an exact continuous-HV denominator under
 [ADR 0058](adr/0058-scalar-absolute-hv-certified-reference.md).
