@@ -432,7 +432,7 @@ inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
 `validity`, `feasibility`, `components`, `coverage`,
 `regularity`, `cardinality`, `uniqueness`, `replay`,
-`dominance`, `global_dominance`, and `provenance`, along with `summary()` and
+`dominance`, `global_dominance`, `curve_dominance`, and `provenance`, along with `summary()` and
 `to_dict()`. The `dominance` property is `not_applicable` unless
 a positive `dominance_margin` is requested explicitly for original
 DTLZ5/6. Such an audit uses independent optimistic feasibility
@@ -474,6 +474,18 @@ calibrated GT. A witness cannot be combined with
 invent PS/PF row correspondence. Other built-in/custom
 MOPs without an independent equation oracle retain
 `unverified` for otherwise bounded decisions.
+
+For original DTLZ5/6, `curve_dominance` reports an
+independent analytical comparison with the **entire continuous
+g=0 Pareto curve** (no finite curve sampling).
+It reports numerical `witness_count`, independently
+constructed objective witnesses with reference-row indices,
+`no_curve_dominator` and ambiguous boundary counts.
+A witnessed strict dominating point is evidence against
+global efficiency; absence of a curve dominator does
+**not** rule out dominators with positive `g`.
+Its status remains `unverified` for portable
+scientific certification until the ADR 0059 gates pass.
 
 Individual property results have `status`, `value`, `basis`,
 `threshold`, `unit`. `unverified` explicitly means that a
