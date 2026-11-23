@@ -426,7 +426,7 @@ mop.report(assess=False)           # MOP and calibration state only
 `assess_gt(reference=None, *, n_points=None, probes=128, seed=0,
 tolerance=1e-9, dominance_margin=None,
 dominance_max_intervals=4096, dominance_g_gap=None,
-dominance_g_max_intervals=8192)` accepts either an explicit objective
+dominance_g_max_intervals=8192, decision_reference=None)` accepts either an explicit objective
 matrix or an on-demand analytical sample budget, but not both. By default, it
 inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
@@ -457,6 +457,23 @@ unresolved interval. The `global_dominance` property
 floating-point exclusion is not an exact global proof.
 `mop.report(dominance_g_gap=1e-4)` exposes it explicitly;
 routine `report()` does not pay this cost.
+
+An optional aligned `decision_reference` matrix provides
+**decision-to-objective witnesses** for original DTLZ5/6.
+`mop.assess_gt(reference=F, decision_reference=X)` independently
+reconstructs the original distance function, angular equations
+and all objectives from each decision row, without calling the
+production evaluator. It returns `feasibility=pass`
+only when the decisions are within declared bounds
+and match the corresponding objective rows within tolerance.
+This does **not** certify global Pareto membership. The
+same optional witness can be supplied to
+`mop.report(decision_reference=X)` for an already
+calibrated GT. A witness cannot be combined with
+`n_points`, because the method will not silently
+invent PS/PF row correspondence. Other built-in/custom
+MOPs without an independent equation oracle retain
+`unverified` for otherwise bounded decisions.
 
 Individual property results have `status`, `value`, `basis`,
 `threshold`, `unit`. `unverified` explicitly means that a
