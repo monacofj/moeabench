@@ -504,7 +504,106 @@ relaxation cannot, by itself, prove the existence of a true
 dominator.* Any positive witness must instead be reconstructed
 and checked against (DTLZ56-1)–(DTLZ56-2).
 
-### 3.6.7. What has and has not been certified numerically
+### 3.6.7. Theorem 6 — exact dominance by the entire g=0 curve
+
+For \(M\ge2\), write the analytical \(g=0\) Pareto curve as
+
+\[
+C(t)=\big(a_1\cos t,\ldots,a_{M-1}\cos t,\sin t\big),
+\quad t\in[0,\pi/2],
+\]
+
+where \(a_1=2^{-(M-2)/2}\) and
+\(a_j=2^{-(M-j)/2}\) for \(2\le j\le M-1\).
+For an arbitrary **nonnegative** objective vector \(y\),
+the curve contains a weakly dominating vector if and only if
+
+\[
+y_j\ge a_j\sqrt{1-\min(y_M,1)^2}
+\quad\text{for all }j=1,\ldots,M-1.
+\tag{DTLZ56-9}
+\]
+
+**Proof.** The last coordinate constraint
+\(\sin t\le y_M\) bounds the feasible angle by
+\(t\le\arcsin(\min(y_M,1))\). Every other coordinate
+of \(C(t)\) is a nonnegative multiple of \(\cos t\),
+which decreases as \(t\) increases in the prescribed
+interval. Thus the largest admissible angle minimizes
+**all** those coordinates simultaneously, producing
+(DTLZ56-9). If \(y_M\ge1\), the endpoint \(t=\pi/2\)
+has zero first \(M-1\) coordinates and the same
+formula applies. \(\square\)
+
+This test is **necessary and sufficient for weak
+dominance by the complete \(g=0\) curve**, not for
+global Pareto membership against all positive-\(g\)
+feasible points. A point outside the curve's
+dominance region may still be dominated by a
+positive-\(g\) point. This distinction was essential
+to the diagnosis in issue #65; it prevents mistaking
+a dense or continuously checked \(g=0\) reference
+for the full original PF.
+
+### 3.6.8. Theorem 7 — global Chebyshev scalarization and Pareto tie-breaking
+
+Let \(w\in\mathbb R_{>0}^M\) be a positive vector
+of objective weights. Consider the **global**
+weighted Chebyshev problem over the entire original
+feasible decision domain:
+
+\[
+t^\star(w)=
+\min_{x\in[0,1]^N}\max_{1\le i\le M}\frac{f_i(x)}{w_i}.
+\tag{DTLZ56-10}
+\]
+
+**Coverage of strictly positive Pareto vectors.**
+For any globally Pareto-optimal \(y\in\mathbb R_{>0}^M\),
+choose \(w=y\). Its own feasible realization gives
+\(t^\star(w)\le1\). If the global optimum were strictly
+less than one, some feasible vector would improve
+**every** objective relative to \(y\), contradicting
+Pareto optimality. Hence \(t^\star(y)=1\), and \(y\)
+is itself a global minimizer. Consequently the union
+of global minimizers over positive weights includes
+every strictly positive Pareto vector, without any
+convexity assumption.
+
+**Safe tie-breaking.** Select a global minimizer of
+(DTLZ56-10) having the **smallest \(g\)** among all
+global minimizers with the same optimal value.
+It is Pareto-optimal. Otherwise a feasible
+dominator would have Chebyshev value no greater
+than the global optimum, hence would also be a
+global minimizer; by Theorem 3, its strictly
+smaller norm would give strictly smaller \(g\),
+contradicting the tie-break. \(\square\)
+
+The *global* qualifier is essential: a locally
+minimized scalarization value or a solver that
+stops at a finite numerical tolerance does not
+automatically certify its objective vector as
+Pareto-optimal. Zero-weight or zero-objective
+boundary cases are **not** covered by this
+strictly positive weight construction; such
+points require direct boundary checks or a
+separate limiting argument.
+
+The production full-front sampler corrected in
+[#65](https://github.com/monacofj/moeabench/issues/65)
+uses bounded scalarization to **construct finite
+candidate references**, while the independent
+global criterion of Theorem 3 and its audits
+in #175 are used to **check** objective-space
+dominance without trusting the same production
+scalarizer as an oracle. The mathematical
+coverage theorem does not guarantee that any
+fixed collection of weights or any finite point
+budget covers every relevant component at an
+acceptable resolution.
+
+### 3.6.9. What has and has not been certified numerically
 
 Three **separate layers** implement these results:
 
