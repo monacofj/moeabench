@@ -47,7 +47,13 @@ def _load_sidecar(path, mop):
         raise ValueError(f"Calibration sidecar {path} belongs to a different MOP.")
     if int(data.get("mop_dimension", -1)) != mop.M:
         raise ValueError(f"Calibration sidecar {path} has a different objective count.")
-    return _reference_array(data["gt_reference"], mop)
+    # Existing mop_gt_v1 sidecars already record gt_source. Missing or
+    # unrecognized provenance must never promote an external GT to an
+    # analytical certificate.
+    origin = data.get("gt_source")
+    if origin not in ("analytical", "external", "empirical_search"):
+        origin = None
+    return _reference_array(data["gt_reference"], mop), origin
 
 
 def calibrate_mop(
@@ -77,9 +83,10 @@ def calibrate_mop(
         )
     path = _sidecar_path(mop, source_baseline)
     if path.is_file() and not force:
-        gt = _load_sidecar(path, mop)
+        gt, origin = _load_sidecar(path, mop)
         mop._gt_reference = np.array(gt, copy=True)
         mop._gt_source = str(path)
+        mop._gt_provenance = origin
         return False
 
     if source_search is not None:
@@ -119,6 +126,7 @@ def calibrate_mop(
         json.dump(data, stream, allow_nan=False)
     mop._gt_reference = np.array(gt, copy=True)
     mop._gt_source = str(path)
+    mop._gt_provenance = provenance
     return True
 
 

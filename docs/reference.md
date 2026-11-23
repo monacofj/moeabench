@@ -41,7 +41,7 @@ This document provides the exhaustive technical specification for the MoeaBench 
 | **H** | Hypervolume | The volume of the objective space dominated by a solution set. |
 | **H_raw** | Raw Hypervolume | Dominated volume in the selected self-derived or external-reference normalization context. |
 | **H_rel** | Relative Hypervolume | Normalized by the best final HV in the selected reference context: the best evaluated run under self-reference, or the best individual final reference front under explicit `ref`. Values are not clipped and may exceed `1.0` with an external reference. (Pre-v0.11.2: `H_ratio`). |
-| **H_abs** | Absolute Hypervolume | Normalized by exactly one explicitly supplied reference front; depends on its representativeness. |
+| **H_abs** | Absolute Hypervolume | Requires MOP-owned calibrated GT; uses a proven continuous-front denominator only in certified original MOP geometry, otherwise finite sampled-GT HV. Optional `ref` sets the normalization geometry, not GT ownership. |
 | **OHV** | Ordinal Hypervolume | Hypervolume computed in an ordinal objective space whose consecutive distinct reference levels are separated by one unit. |
 | **IGD** | Inverted Generational Distance | Measure of proximity/convergence to the Ground Truth (Average distance from GT to Solution). |
 | **GD** | Generational Distance | Measure of convergence (Average distance from Solution to GT). |
@@ -506,11 +506,20 @@ Calculates Hypervolume for an experiment, run, or population. Across the metric 
 *   `scale` (str): Narrative perspective for normalization:
     *   `'raw'` (Default): Returns dominated volume in the selected normalization context. Without `ref`, it is self-referenced and not directly comparable with separately normalized experiments. With `ref`, it is comparable to results using that same fixed reference.
     *   `'rel'`: Divides the complete trajectory by one fixed best-final denominator. Without explicit `ref`, the candidates are the evaluated runs and the denominator is their greatest final HV. With explicit `ref`, each individual final reference front is evaluated under bounds derived only from that common reference context and the greatest of those HVs is used. The denominator is not the HV of the pooled union, values are not clipped, `1.0` means equality with the chosen denominator, and values above `1.0` are possible when evaluated data outperform an external reference.
-    *   `'abs'`: Divides by the HV of exactly one explicitly supplied reference (`ref`), evaluated with identical normalization bounds. The reference must have positive HV.
+    *   `'abs'`: Requires the MOP's own calibrated GT (`mop.calibrate()`). Uses a proven continuous-front denominator only for certified original built-in MOP geometry, analytical GT provenance and matching axis bounds; otherwise uses the calibrated finite-GT denominator. Optional `ref` selects normalization bounds only. Neither variant clips the scalar ratio.
 *   `gens` (optional): Slice or integer to limit the generation scope.
 *   `progress` (bool): Displays calculation progress, updated after each generation.
 
 `scale` is post-processing and never selects or changes normalization bounds. Evaluated points outside external ideal/nadir bounds do not expand them. Points beyond the normalized Hypervolume reference point contribute no volume; points better than the external ideal may contribute beyond the nominal unit cube. A reference with zero range in any objective is rejected. `H_rel` is therefore a relative comparison scale, not a claim of theoretical optimality.
+
+The `scale="abs"` result records `hv_abs_reference_basis`
+(`continuous_exact` or `sampled_gt`), `hv_abs_denominator`, and
+`hv_abs_gt_points` in `MetricMatrix.diagnostics`. A value of 1.0
+means a theoretical upper bound **only** for a proven continuous
+denominator and an exact numerator from a feasible population; the
+finite-GT ratio may exceed one because of discretization. The
+`fast` Monte Carlo backend still approximates the numerator.
+See [ADR 0058](adr/0058-scalar-absolute-hv-certified-reference.md).
 
 #### Hypervolume reference diagnostics
 
