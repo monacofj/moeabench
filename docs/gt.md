@@ -162,6 +162,33 @@ but does not yet authorize an automatic replacement numerical budget.
 Neither `ps()` nor `pf()` implicitly persists a sidecar. This contract
 is independent of deferred FAIR research.
 
+### 3.5. Status of further MOP-specific GT geometry
+
+The principles in Sections 3.1–3.4 apply beyond the detailed DPF3/DPF5
+case studies below. The current original **DTLZ5 and DTLZ6**
+implementations use `moeabench/mops/_dtlz56_front.py` to sample
+the full-front geometry for `M>=4`, including Pareto-optimal regions
+with `g>0`, instead of incorrectly assuming that `g=0` alone
+always describes the complete original front. For `M<=3`, they
+retain their analytically supported historical degenerate
+sampling strategy. These are **MOP-specific PF/PS facts** and
+do not certify the continuous HV denominator; DTLZ5/6 must not
+inherit DTLZ2's spherical exact-volume formula merely because
+they share spherical expressions in parts of the evaluator.
+
+For other special geometries, including DPF4's own ordered
+projection thresholds, DPF5's distinct P/D components and
+DTLZ8's constrained line-and-patch front, the mathematical
+definition and configuration-specific coverage requirements
+take precedence over a generic sampler. Any unverified
+sampler candidate remains a **research candidate**, not an
+automatic certified GT, until its component-wise/global
+membership, constraints, effective cardinality and numerical
+quality are independently established. See
+[ADR 0057](adr/0057-proposed-purpose-specific-gt-budgets.md)
+and [issue #119](https://github.com/monacofj/moeabench/issues/119)
+for the adopted scope and outstanding requirements.
+
 ## 4. DPF3: Mathematical Definition and Chaotic Thresholds
 
 ### 4.1. Essential objectives
