@@ -638,13 +638,11 @@ Let `V(P)` be the raw HV of the evaluated population in the selected
 fixed geometry. The absolute result is
 
 \[
-H_{\\mathrm{abs}}(P)=\\frac{V(P)}{D},
-\\qquad
-D=
-\\begin{cases}
-HV(PF_{\\mathrm{true}}), & \\text{when certified and applicable},\\\\
-HV(G), & \\text{otherwise}.
-\\end{cases}
+H_{\mathrm{abs}}(P)=\frac{V(P)}{D},\qquad
+D=\begin{cases}
+HV(PF_{\mathrm{true}}), & \text{if certified and applicable},\\
+HV(G), & \text{otherwise}.
+\end{cases}
 \]
 
 The exact continuous denominator is selected only if **all** of these
