@@ -186,18 +186,59 @@ def _independent_oracle(kind, points, tolerance, mop):
                       unit="objective coordinates")
 
 
-def _independent_probes(kind, m, count, seed):
-    """Independent objective geometry, never mop.pf() for validation."""
+def _independent_probes(kind, mop, count, seed):
+    """True-front objective probes derived from independent geometry."""
+    m = mop.M
     rng = np.random.default_rng(seed)
     if kind == "simplex":
-        directions = rng.dirichlet(np.ones(m), size=count) * .5
-    elif kind == "sphere":
+        return rng.dirichlet(np.ones(m), size=count) * .5
+    if kind == "sphere":
         directions = np.abs(rng.standard_normal((count, m)))
-        norms = np.linalg.norm(directions, axis=1)
-        directions /= norms[:, None]
-    else:
-        return None
-    return directions
+        return directions / np.linalg.norm(directions, axis=1)[:, None]
+    if kind == "dpf1":
+        d = mop.D
+        first = rng.dirichlet(np.ones(d), size=count) * .5
+        weights = np.asarray(mop._chaos_pool[:(m-d)*d]).reshape(m-d, d)
+        return np.column_stack((first, first @ weights.T))
+    if kind == "dtlz9":
+        t = rng.uniform(0., np.pi/2, size=count)
+        return np.column_stack((
+            np.broadcast_to(np.cos(t)[:, None], (count, m-1)),
+            np.sin(t)))
+    if kind == "dtlz7":
+        first, reentry, last = _dtlz7_record_bounds()
+        masks = rng.integers(0, 2, size=(count, m-1))
+        unit = rng.uniform(size=(count, m-1))
+        x = np.where(masks == 0,
+                     first * unit,
+                     reentry + 1e-8 + (last-reentry-1e-8)*unit)
+        f = 2*m - np.sum(x*(1 + np.sin(3*np.pi*x)), axis=1)
+        return np.column_stack((x, f))
+    if kind == "dtlz8":
+        groups = max(2, m)
+        labels = np.arange(count) % groups
+        rng.shuffle(labels)
+        t = rng.uniform(size=count)
+        out = np.empty((count, m))
+        if m == 2:
+            out[:, -1] = t
+            out[:, 0] = (1-t)/4
+            return out
+        # Component index 0 denotes the line; remaining labels the patches.
+        on_line = labels == 0
+        out[on_line, -1] = 1/3 + (2/3)*t[on_line]
+        out[on_line, :-1] = ((1-out[on_line, -1])/4)[:, None]
+        patch = ~on_line
+        out[patch, -1] = t[patch]/3
+        b = 1-2*out[patch, -1]
+        a = (1-out[patch, -1])/4
+        low = a + rng.uniform(size=np.count_nonzero(patch))*(b/2-a)
+        high = b-low
+        out[patch, :-1] = high[:, None]
+        selected = labels[patch]-1
+        out[np.flatnonzero(patch), selected] = low
+        return out
+    return None
 
 
 def assess_gt(mop, reference=None, *, n_points=None, probes=128,
@@ -310,7 +351,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         components = GTProperty(
             "unverified", basis="no independent component and extrema oracle")
 
-    independent = _independent_probes(kind, mop.M, probes, int(seed))
+    independent = _independent_probes(kind, mop, probes, int(seed))
     if independent is not None:
         distances = cKDTree(distinct).query(independent, k=1)[0]
         coverage = GTProperty(
