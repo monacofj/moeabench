@@ -144,3 +144,48 @@ def test_all_built_in_mops_offer_generic_assessment_without_fake_proof():
         assert outcome.cardinality.status in ("pass", "fail")
         assert outcome.validity.status in ("pass", "fail", "unverified")
         assert outcome.coverage.status == "unverified"
+
+
+@pytest.mark.parametrize("klass,m", [
+    (mb.mops.DTLZ7, 2), (mb.mops.DTLZ7, 3),
+    (mb.mops.DTLZ8, 2), (mb.mops.DTLZ8, 3),
+    (mb.mops.DTLZ8, 4), (mb.mops.DTLZ9, 2),
+    (mb.mops.DTLZ9, 3), (mb.mops.DPF1, 3),
+])
+def test_more_published_geometry_oracles_and_probes(klass, m):
+    mop = klass(M=m)
+    result = mop.assess_gt(n_points=48, probes=48, seed=29)
+    assert result.validity.status == "pass"
+    assert result.coverage.status == "unverified"
+    assert np.isfinite(result.coverage.value["max_probe_gap"])
+    assert result.components.status in ("pass", "unverified")
+
+
+@pytest.mark.parametrize("klass,m", [
+    (mb.mops.DTLZ7, 3), (mb.mops.DTLZ8, 3),
+    (mb.mops.DTLZ9, 3), (mb.mops.DPF1, 3),
+])
+def test_independent_analytic_oracles_detect_corrupt_reference(klass, m):
+    mop = klass(M=m)
+    front = mop.pf(n_points=48)
+    front[-1] += 0.17
+    result = mop.assess_gt(reference=front, probes=16)
+    assert result.validity.status == "fail"
+
+
+def test_dtlz8_missing_patch_is_visible_and_fails_occupancy():
+    mop = mb.mops.DTLZ8(M=3)
+    front = mop.pf(n_points=48)
+    front = front[front[:, -1] >= 1/3]
+    result = mop.assess_gt(reference=front, probes=16)
+    assert result.validity.status == "pass"
+    assert result.components.status == "fail"
+
+
+def test_dtlz7_budget_below_number_of_regions_is_unverified_not_failed():
+    mop = mb.mops.DTLZ7(M=7)
+    result = mop.assess_gt(n_points=24, probes=16)
+    assert result.validity.status == "pass"
+    assert result.components.status == "unverified"
+    assert result.components.value["expected"] == 64
+    assert result.components.value["represented"] == 24
