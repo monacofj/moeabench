@@ -383,6 +383,25 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             if coverage_possible else "unverified",
             value={"expected": n_components, "represented": distinct_components},
             basis="independent Cartesian disconnected record-interval identities")
+    elif kind == "dpf2":
+        _, reentry, _ = _dtlz7_record_bounds()
+        x = points[:, :mop.D-1]
+        masks = (x >= reentry).astype(np.int64)
+        expected = 1 << (mop.D-1)
+        observed = len(set(
+            sum(int(bit) << i for i, bit in enumerate(row)) for row in masks))
+        components = GTProperty(
+            ("pass" if expected == observed else "fail") if n >= expected
+            else "unverified",
+            value={"expected": expected, "represented": observed},
+            basis="independent DPF2 essential record-component identities")
+    elif kind == "dpf5":
+        p_count = int(np.count_nonzero(points[:, -1] < .5-tolerance))
+        d_count = n-p_count
+        components = GTProperty(
+            "pass" if p_count and d_count else "fail",
+            value={"P": p_count, "D": d_count},
+            basis="published DPF5 first-angle P/D branch condition")
     elif kind == "dtlz8":
         t = points[:, -1]
         x = points[:, :-1]
