@@ -29,7 +29,7 @@ This directory contains records of the key architectural decisions made during t
 | [0016](0016-evolution-of-scientific-validation-and-guided-geometric-solvers.md) | Guided Geometric Solvers | Accepted | 2026-01-25 |
 | [0017](0017-comprehensive-calibration-and-testing-framework.md) | Calibration & Testing Framework | Accepted | 2026-02-01 |
 | [0018](0018-consolidated-scientific-report-and-gt-density-refinement.md) | Consolidated Report & GT Density | Accepted | 2026-02-02 |
-| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Partially Superseded by 0047 | 2026-02-03 |
+| [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) | Tripartite Hypervolume Metrics | Partially Superseded by 0047 (`rel`) and 0058 (`abs`) | 2026-02-03 |
 | [0020](0020-standardized-reference-point-strategy-for-normalization.md) | Standardized Reference Point Strategy | Accepted | 2026-02-04 |
 | [0021](0021-numerical-integrity-and-validation-pipeline-float64-policy.md) | Numerical Integrity (Float64 Policy) | Accepted | 2026-02-05 |
 | [0022](0022-emd-as-primary-diagnostic-for-degenerate-manifolds.md) | EMD as Primary Diagnostic | Accepted | 2026-02-06 |
@@ -45,7 +45,7 @@ This directory contains records of the key architectural decisions made during t
 | [0032](0032-enhanced-persistence-metadata-and-diagnostic-simplification.md) | Diagnostic Simplification | Accepted | 2026-02-22 |
 | [0033](0033-flexible-reference-management-for-longitudinal-auditing.md) | Flexible Reference Management | Accepted | 2026-02-23 |
 | [0034](0034-unified-metric-analysis-api.md) | Unified Metric Analysis API | Accepted | 2026-02-24 |
-| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 | 2026-02-25 |
+| [0035](0035-triple-mode-hypervolume-reporting.md) | Triple-Mode Hypervolume Reporting | Partially Superseded by 0047 (`rel`) and 0058 (`abs`) | 2026-02-25 |
 | [0036](0036-half-normal-closeness-v0.12.0.md) | Half-Normal Projection (v0.12.0) | Partially Superseded by 0037 | 2026-02-25 |
 | [0037](0037-plausible-q1-and-search-drive-headway-v0.13.1.md) | Plausible Q1 and Search-Drive Headway (v0.13.1) | Partially Superseded by 0049 | 2026-03-08 |
 | [0038](0038-runtime-output-and-sidecar-hygiene-v0.13.3.md) | Runtime Output Control and Sidecar Hygiene (v0.13.3) | Accepted | 2026-03-11 |
@@ -83,7 +83,7 @@ applicable ADR and its later supersessions. Accepted-in-principle ADRs govern di
 | GT calibration and point budgets | 0017, **0018 (currently normative)**, 0021 | 0057 accepted direction (runtime ADR 0018 defaults remain), #119; #54 empirical GT |
 | View and topology | 0014, 0040; follow API lineage 0039 → 0048 | #119 only for GT source/visual decimation considerations |
 | Save/load, provenance | 0011, 0032, 0050 | proposed GT archive integration, undecided |
-| Conventional Hypervolume | 0019 → 0035 → **0047** (`rel`) and **0058** (`abs`), plus 0020, 0042–0043 | #89 certification and unsupported fronts |
+| Conventional Hypervolume | 0019 → 0035 → **0047** (`rel`) and **0058** (`abs`), plus 0020, 0042–0043 | [GT specification](../gt.md#92-current-scalar-absolute-hv-reference-specification-adr-0058); [#89 research memorial](../research/hv-issue89-research-memorial.md) |
 | Numerical and stochastic certification | **0050 and 0056 (read through final addenda)** | #63 external dependency verification |
 | FAIR historical research | accepted API lineage where still applicable | proposed 0051–0055; FAIR not a core GT dependency |
 
@@ -95,6 +95,7 @@ The status column records whether a historical ADR remains wholly normative or h
 
 - Nomenclature and reporting: [0019](0019-tripartite-hypervolume-metrics-nomenclature.md) → [0035](0035-triple-mode-hypervolume-reporting.md) → [0047](0047-conventional-hypervolume-relative-scaling.md) for `rel`; [0058](0058-scalar-absolute-hv-certified-reference.md) governs `abs` denominator provenance and certification.
 - Conventional geometry and computation: [0020](0020-standardized-reference-point-strategy-for-normalization.md) → [0042](0042-hypervolume-bbox-diagnostics.md) / [0043](0043-hypervolume-engine-selection.md), with current relative scaling in [0047](0047-conventional-hypervolume-relative-scaling.md).
+- Absolute-GT reference policy: [0058](0058-scalar-absolute-hv-certified-reference.md) is normative; [the GT specification](../gt.md) defines the current operational behavior; [the issue #89 research memorial](../research/hv-issue89-research-memorial.md) preserves historical experiments and rejected alternatives.
 - Ordinal branch: [0044](0044-ordinal-hypervolume.md) → [0046](0046-relative-ordinal-hypervolume.md).
 
 ### Environment, numerical stability and regression validation

@@ -73,8 +73,11 @@ This map is a navigation aid, **not** a substitute for reading the ADRs:
 - Views: ADR 0014, ADR 0040, applicable API decisions and
   `moeabench/view/topo.py`; do not equate plot sampling with scientific
   calibration.
-- HV: ADR 0019, 0035, 0047 and applicable normalization/engine ADRs;
-  research #89 does not change the established contract.
+- HV: ADRs 0019 and 0035 establish historical nomenclature; ADR 0047
+  governs `rel` and accepted ADR 0058 governs the certified-or-sampled
+  scalar `abs` denominator. Read `docs/gt.md` Sections 3.4 and 9.1–9.3
+  for the current specification; `docs/research/hv-issue89-research-memorial.md`
+  preserves investigation history, not current normative policy.
 - Numerical/performance certification: ADR 0050 and **ADR 0056 including
   its final dated addenda**, and `docs/test.md`.
 - FAIR historical research: proposed ADRs 0051–0055, archived or

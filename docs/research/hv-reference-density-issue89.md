@@ -5,6 +5,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Reference-density sensitivity at 2,000 and 10,000 points (#89)
 
+> **Historical research status (2026-11-23):** The experiment and any
+> investigation-time statements below are preserved as research evidence.
+> Since this study, the maintainer accepted
+> [ADR 0058](../adr/0058-scalar-absolute-hv-certified-reference.md)
+> and merged implementation PR #170: `H_abs` now uses an exact
+> continuous-front denominator **only in mathematically certified,
+> provenance-verified normalization contexts**, retaining the original
+> finite sampled-GT scalar otherwise. This study is **not** a normative
+> description of the current API. See the [GT specification](../gt.md)
+> and the [consolidated issue #89 memorial](hv-issue89-research-memorial.md)
+> for the current outcome and chronology.
+
 **Status:** independently derived 2D evidence; source-bound CI still required.
 This work does not change any public metric, GT sampler, ADR or baseline.
 

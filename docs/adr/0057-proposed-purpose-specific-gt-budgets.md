@@ -102,6 +102,25 @@ explicitly reviewed reference-migration decision; an updated PS/PF
 implementation alone does not authorize their silent replacement.
 No automatic `calibrate()` default change is authorized here.
 
+## Relationship to absolute Hypervolume certification (ADR 0058)
+
+This ADR governs **the MOP-owned GT's mathematical definition,
+generation, calibration controls, sample budgets and provenance**.
+An analytically generated GT is still finite and may underestimate
+the continuous Pareto-front Hypervolume. This ADR does not promise
+that `HV(GT_sample)` equals the continuous optimal volume or that
+every absolute HV ratio is bounded by one.
+
+[ADR 0058](0058-scalar-absolute-hv-certified-reference.md) is the
+separate normative decision for `scale="abs"`: the original
+calibrated GT remains mandatory, while the denominator is a proven
+continuous-front scalar **only** for the explicitly certified built-in
+problem/normalization cases, with a finite-GT fallback otherwise.
+The current technical specification and applicability matrix are
+in [`docs/gt.md`](../gt.md), Sections 3.4–3.5 and 9.1–9.3.
+This cross-reference introduces **no new sampler, automatic budget,
+sidecar schema migration or implicit calibration behavior**.
+
 ## Evidence and history
 
 See `docs/gt.md` and `docs/research/gt-issue119/` for
