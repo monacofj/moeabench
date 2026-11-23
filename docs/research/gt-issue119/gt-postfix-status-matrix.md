@@ -5,6 +5,20 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Built-in MOP Ground Truth — Post-correction Scientific Status (#119)
 
+> **Historical snapshot — not the current certification status.**
+> The table below records evidence before the final #119/#65
+> closures and before subsequent source-bound certifications.
+> Both issues have since been closed/completed. Original
+> DTLZ5/6 M>=4 full-front sampling was corrected through PR #159,
+> and the DTLZ8 production hybrid was merged through PR #146.
+> Preserve the experimental findings and pending qualifications
+> **as of that checkpoint**, but obtain present-day normative
+> status from [ADR 0057](../../adr/0057-proposed-purpose-specific-gt-budgets.md)
+> and [the GT specification](../../gt.md).
+> [Proposed ADR 0059](../../adr/0059-gt-quality-measurement-and-acceptance.md)
+> separately defines a future quantitative API/test gate, not
+> a retroactive conclusion that every historical measurement passed.
+
 **Snapshot:** 2026-11-21, following mainline PRs #140, #143, #146,
 #147, #148, #149 and #150. This is a research **status record**, not
 an assertion that the final issue #119 release certification is complete.
