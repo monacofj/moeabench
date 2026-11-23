@@ -306,7 +306,8 @@ hv_a = mb.metrics.hv(expA, ref=R, scale='rel')
 hv_b = mb.metrics.hv(expB, ref=R, scale='rel')
 
 # Scenario C: Absolute Validation (Proximity to GT)
-# Scale is normalized against theoretical Ground Truth (H_abs).
+# Calibrated MOP GT is required. An exact continuous denominator is used
+# only for analytically certified built-in MOPs in proven reference geometry.
 hv_abs = mb.metrics.hv(expA, ref=exp_truth, scale='abs')
 
 # Scenario D: Absolute consistency (Global Standard)
@@ -318,6 +319,44 @@ hv_b = mb.metrics.hv(expB, ref=exp_truth)
 
 > [!TIP]
 > **Best Practice**: For academic studies, use one fixed external reference such as `exp.optimal_front()` or an explicitly frozen pool of all algorithms. Reuse that same object for every comparison so values do not fluctuate with the evaluated experiment.
+
+#### Absolute Hypervolume reference: exact when proven, sampled otherwise
+
+`scale="abs"` always returns one scalar Hypervolume ratio and requires a
+previously calibrated MOP (`mop.calibrate()`). Its interpretation depends
+on the **mathematical basis of the denominator** under the *selected*
+normalization context:
+
+- **`continuous_exact`**: for the original built-in DTLZ1–DTLZ4 problems
+  with any supported objective count, and DPF1 with `M=3,D=2`, when
+  analytical GT provenance and the exact continuous-front ideal/nadir
+  bounds are verified, the denominator is the proven continuous-front
+  Hypervolume. For exact numerators from feasible fronts, its mathematical
+  maximum is 1.
+- **`sampled_gt`**: for any external/empirical GT, user-defined or
+  unsupported MOP, missing calibration provenance, or a normalization
+  geometry that does not match the analytical proof, the denominator
+  remains the Hypervolume of the *finite calibrated GT*. That ratio may
+  exceed 1 without implying better-than-optimal solutions. It is
+  **not** clipped, and 1 means matching that sampled reference.
+
+Inspect the reference basis and actual denominator in the result:
+
+```python
+result = mb.metrics.hv(exp, ref=reference, scale="abs")
+print(result.diagnostics["hv_abs_reference_basis"])
+print(result.diagnostics["hv_abs_denominator"])
+```
+
+An explicit `ref` fixes the normalization ideal/nadir; it does **not**
+replace the MOP's calibrated GT or implicitly guarantee exact reference
+geometry. `scale="raw"` and `scale="rel"` are unchanged; competitive
+`rel` may exceed 1 legitimately (ADR 0047). In `mode="fast"`, Monte
+Carlo still approximates the numerator, so a proved exact denominator
+does not eliminate numerical approximation errors. All results retain
+the standard scalar `MetricMatrix` interface; no special
+`HV ± uncertainty` output is introduced. See
+[ADR 0058](adr/0058-scalar-absolute-hv-certified-reference.md).
 
 #### Diagnosing the fixed Hypervolume geometry
 
