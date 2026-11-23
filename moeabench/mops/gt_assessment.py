@@ -89,6 +89,7 @@ def _original_problem_kind(mop):
     from .DTLZ8 import DTLZ8
     from .DTLZ9 import DTLZ9
     from .DPF1 import DPF1
+    from .DPF2 import DPF2
     if any(name in vars(mop) for name in ("pf", "ps", "evaluation")):
         return None
     kind = type(mop)
@@ -104,6 +105,8 @@ def _original_problem_kind(mop):
         return "dtlz9"
     if kind is DPF1:
         return "dpf1"
+    if kind is DPF2:
+        return "dpf2"
     return None
 
 
@@ -137,6 +140,20 @@ def _independent_oracle(kind, points, tolerance, mop):
         residual = np.maximum(residual, np.max(np.abs(
             points[:, d:] - predicted), axis=1))
         proof = "independent DPF1 essential simplex and chaotic linear projections"
+    elif kind == "dpf2":
+        d = mop.D
+        x = points[:, :d-1]
+        first, reentry, last = _dtlz7_record_bounds()
+        allowed = (((x >= -tolerance) & (x <= first+tolerance)) |
+                   ((x >= reentry-tolerance) & (x <= last+tolerance)))
+        final_base = 2*d - np.sum(
+            x*(1 + np.sin(3*np.pi*x)), axis=1)
+        base = np.column_stack((x, final_base))
+        weights = np.asarray(mop._chaos_pool[:(m-d)*d]).reshape(m-d, d)
+        predicted = (base @ weights.T)**2
+        residual = np.max(np.abs(points[:, d-1:] - predicted), axis=1)
+        residual = np.where(np.all(allowed, axis=1), residual, np.inf)
+        proof = "independent DPF2 record-domain and squared nonnegative projections"
     elif kind == "dtlz9":
         t = points[:, -1]
         expected = np.sqrt(np.clip(1-t*t, 0, None))
