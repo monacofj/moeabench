@@ -6,8 +6,9 @@
 from abc import ABC, abstractmethod
 import numpy as np
 from typing import Optional, Dict, Any, Union
+from ..core.base import Reportable
 
-class BaseMop(ABC):
+class BaseMop(Reportable, ABC):
     """
     Abstract Base Class for all Multi-Objective Problems (MOPs) in moeabench.
     """
@@ -122,3 +123,45 @@ class BaseMop(ABC):
         """Return a copy of this MOP's calibrated objective-space truth."""
         from .calibration import calibrated_gt
         return calibrated_gt(self)
+
+    def assess_gt(self, reference=None, *, n_points=None, probes=128,
+                  seed=0, tolerance=1e-9):
+        """Read-only structured GT assessment (ADR 0059).
+
+        Use the calibrated in-memory GT by default, an explicit objective
+        matrix via reference, or an on-demand analytical sample via n_points.
+        Never calibrates or writes a reference implicitly.
+        """
+        from .gt_assessment import assess_gt
+        return assess_gt(self, reference=reference, n_points=n_points,
+                         probes=probes, seed=seed, tolerance=tolerance)
+
+    def report(self, show: bool = True, *, assess: bool = True,
+               probes: int = 128, seed: int = 0, **kwargs) -> str:
+        """MOP definition and the current calibrated GT's quality context.
+
+        Existing in-memory calibration is assessed read-only; this report
+        never generates a new GT, reads sidecars or runs a hidden
+        calibration. Explicitly pass assess=False for a cheap MOP summary.
+        """
+        lines = [
+            f"### Multiobjective Problem: {self.name}",
+            "",
+            f"Objectives (M): {self.M}",
+            f"Decision variables (N): {self.N}",
+            f"Constraints: {self.get_n_ieq_constr()} inequalities",
+            "",
+            "### Ground Truth",
+        ]
+        gt = getattr(self, "_gt_reference", None)
+        if gt is None:
+            lines.append("Not calibrated on this MOP instance. "
+                         "Call mop.calibrate() explicitly.")
+        elif not assess:
+            lines.append("Calibrated GT present; assessment not requested.")
+        else:
+            assessment = self.assess_gt(probes=probes, seed=seed)
+            lines.append("Quality diagnostics (not a proof of full coverage):")
+            lines.append(self._report_block(assessment.summary()))
+        lines.append("")
+        return self._render_report("\n".join(lines), show=show, **kwargs)
