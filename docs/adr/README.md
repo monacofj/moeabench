@@ -69,8 +69,9 @@ This directory contains records of the key architectural decisions made during t
 | [0055](0055-dpf5-closeness-reference-protocol.md) | DPF5 Closeness ideal and unfavorable reference laws; multi-seed validation contract (issue #81) | Proposed / noncertified | 2026-11-12 |
 
 | [0056](0056-versioned-certification-and-performance-reference-lifecycle.md) | Versioned Numerical and Performance Certification | Accepted (read final addenda) | 2026-11-18 |
-| [0057](0057-proposed-purpose-specific-gt-budgets.md) | Purpose-Specific On-Demand GT Budgets | Accepted in principle; numerical implementation pending | 2026-11-19 |
-| [0058](0058-scalar-absolute-hv-certified-reference.md) | Scalar Absolute HV: Certified or Sampled Reference | Accepted; implementation under #89 | 2026-11-23 |
+| [0057](0057-proposed-purpose-specific-gt-budgets.md) | On-Demand, Geometry-Aware Ground Truth | Accepted; MOP-specific GT implemented; automatic budget policy pending | 2026-11-19 |
+| [0058](0058-scalar-absolute-hv-certified-reference.md) | Scalar Absolute HV: Certified or Sampled Reference | Accepted and implemented (#89, PR #170) | 2026-11-23 |
+| [0059](0059-gt-quality-measurement-and-acceptance.md) | Measurable GT Quality and Independent Acceptance | Proposed; API and test implementation pending maintainer review | 2026-11-23 |
 
 ### Quick component lookup (check lineage and final dated addenda)
 
@@ -79,17 +80,37 @@ applicable ADR and its later supersessions. Accepted-in-principle ADRs govern di
 
 | Work area | Start with accepted decisions | Current pending research |
 |---|---|---|
-| MOP formulas, Pareto set/front | 0006, 0016 (supersedes 0015), 0017 | #65 and #119; 0057 governs agreed direction; numeric policy pending |
-| GT calibration and point budgets | 0017, **0018 (currently normative)**, 0021 | 0057 accepted direction (runtime ADR 0018 defaults remain), #119; #54 empirical GT |
+| MOP formulas, Pareto set/front | 0006, 0016 (supersedes 0015), 0017, **0057** | #119 and #65 completed; 0059 proposed GT-quality API and certification matrix |
+| GT calibration and point budgets | 0017, **0018 (current 2,000/10,000 defaults)**, **0057** | Automatic adaptive budget remains unimplemented; 0059 proposed diagnostics; #54 empirical GT independent |
 | View and topology | 0014, 0040; follow API lineage 0039 → 0048 | #119 only for GT source/visual decimation considerations |
 | Save/load, provenance | 0011, 0032, 0050 | proposed GT archive integration, undecided |
 | Conventional Hypervolume | 0019 → 0035 → **0047** (`rel`) and **0058** (`abs`), plus 0020, 0042–0043 | [GT specification](../gt.md#92-current-scalar-absolute-hv-reference-specification-adr-0058); [#89 research memorial](../research/hv-issue89-research-memorial.md) |
-| Numerical and stochastic certification | **0050 and 0056 (read through final addenda)** | #63 external dependency verification |
+| Numerical and stochastic certification | **0050 and 0056 (read through final addenda)** | #63 completed; source-bound certification still required for future changes |
 | FAIR historical research | accepted API lineage where still applicable | proposed 0051–0055; FAIR not a core GT dependency |
 
 ## Decision Lineage
 
 The status column records whether a historical ADR remains wholly normative or has been superseded in a specific part. Superseded ADRs are retained as historical records rather than rewritten to match later behavior.
+
+### Ground Truth
+
+- **Current MOP-owned GT source and calibration requirements:**
+  [ADR 0057](0057-proposed-purpose-specific-gt-budgets.md),
+  implemented analytical samplers and the
+  [GT specification](../gt.md).
+  #119 and #65 are closed/completed. The automatic, geometry-aware
+  calibration **budget** remains an accepted direction without a
+  deployed universal selection algorithm (ADR 0018 defaults remain).
+- **GT validity, coverage and regularity as measurable API/test data:**
+  [ADR 0059](0059-gt-quality-measurement-and-acceptance.md) is
+  **proposed only**. It must not be presented as already implemented.
+  Any future accepted GT-quality contract must use independent
+  mathematical validators and distinguish error, finite-sample
+  adequacy and unverified claims.
+- **Historical evidence** belongs under
+  [research/gt-issue119](../research/gt-issue119/);
+  its old statuses are snapshots and do not override current
+  normative ADRs or production source.
 
 ### Hypervolume
 
