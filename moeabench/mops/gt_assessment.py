@@ -80,11 +80,15 @@ class GTAssessment:
 
 
 def _original_problem_kind(mop):
-    """Restrict proven oracles to unmodified original built-in classes."""
+    """Restrict published-geometry oracles to unmodified original built-ins."""
     from .DTLZ1 import DTLZ1
     from .DTLZ2 import DTLZ2
     from .DTLZ3 import DTLZ3
     from .DTLZ4 import DTLZ4
+    from .DTLZ7 import DTLZ7
+    from .DTLZ8 import DTLZ8
+    from .DTLZ9 import DTLZ9
+    from .DPF1 import DPF1
     if any(name in vars(mop) for name in ("pf", "ps", "evaluation")):
         return None
     kind = type(mop)
@@ -92,16 +96,85 @@ def _original_problem_kind(mop):
         return "simplex"
     if kind in (DTLZ2, DTLZ3, DTLZ4):
         return "sphere"
+    if kind is DTLZ7:
+        return "dtlz7"
+    if kind is DTLZ8:
+        return "dtlz8"
+    if kind is DTLZ9:
+        return "dtlz9"
+    if kind is DPF1:
+        return "dpf1"
     return None
 
 
-def _independent_oracle(kind, points, tolerance):
+def _dtlz7_record_bounds():
+    """Independent derivative and record-crossing roots for a(x)=x(1+sin(3*pi*x))."""
+    from scipy.optimize import brentq
+    def a(t):
+        return t * (1 + np.sin(3 * np.pi * t))
+    def derivative(t):
+        return 1 + np.sin(3 * np.pi * t) + 3 * np.pi * t * np.cos(3 * np.pi * t)
+    first = brentq(derivative, .20, .30)
+    last = brentq(derivative, .80, .90)
+    reentry = brentq(lambda t: a(t) - a(first), .55, .75)
+    return first, reentry, last
+
+
+def _independent_oracle(kind, points, tolerance, mop):
+    m = points.shape[1]
     if kind == "simplex":
         residual = np.abs(np.sum(points, axis=1) - 0.5)
         proof = "independent DTLZ1 simplex: f>=0, sum(f)=0.5"
     elif kind == "sphere":
         residual = np.abs(np.linalg.norm(points, axis=1) - 1.0)
         proof = "independent DTLZ2/3/4 positive unit sphere"
+    elif kind == "dpf1":
+        d = mop.D
+        essential = points[:, :d]
+        residual = np.abs(np.sum(essential, axis=1) - 0.5)
+        weights = np.asarray(mop._chaos_pool[:(m-d)*d]).reshape(m-d, d)
+        predicted = essential @ weights.T
+        residual = np.maximum(residual, np.max(np.abs(
+            points[:, d:] - predicted), axis=1))
+        proof = "independent DPF1 essential simplex and chaotic linear projections"
+    elif kind == "dtlz9":
+        t = points[:, -1]
+        expected = np.sqrt(np.clip(1-t*t, 0, None))
+        residual = np.max(np.abs(points[:, :-1] - expected[:, None]), axis=1)
+        residual = np.maximum(residual, np.maximum(-t, t-1))
+        proof = "independent constrained DTLZ9 circular objective curve"
+    elif kind == "dtlz7":
+        first, reentry, last = _dtlz7_record_bounds()
+        x = points[:, :-1]
+        allowed = (((x >= -tolerance) & (x <= first+tolerance)) |
+                   ((x >= reentry-tolerance) & (x <= last+tolerance)))
+        benefit = np.sum(x * (1 + np.sin(3*np.pi*x)), axis=1)
+        expected = 2*m - benefit
+        residual = np.abs(points[:, -1] - expected)
+        residual = np.where(np.all(allowed, axis=1), residual, np.inf)
+        proof = "independent DTLZ7 record-interval roots and final-objective equation"
+    elif kind == "dtlz8":
+        t = points[:, -1]
+        f = points[:, :-1]
+        a = ((1-t)/4)[:, None]
+        if m == 2:
+            residual = np.abs(f[:, 0] - a[:, 0])
+        else:
+            # Central line for t>=1/3, and M-1 boundary patches below.
+            b = (1-2*t)[:, None]
+            low = np.min(f, axis=1)[:, None]
+            high = b-low
+            k = np.argmin(f, axis=1)
+            predicted = np.broadcast_to(high, f.shape).copy()
+            predicted[np.arange(len(f)), k] = low[:, 0]
+            patch_err = np.max(np.abs(f-predicted), axis=1)
+            legal_low = ((low[:, 0] >= a[:, 0]-tolerance) &
+                         (low[:, 0] <= (b[:, 0]/2)+tolerance))
+            patch_err = np.where(legal_low, patch_err, np.inf)
+            line_err = np.max(np.abs(f-a), axis=1)
+            residual = np.where(t < 1/3, patch_err, line_err)
+        residual = np.maximum(residual, np.maximum(-t, t-1))
+        proof = "independent constrained DTLZ8 line and M-1 patch equations"
     else:
         return GTProperty("unverified", basis="no independent certified oracle")
     bad = np.count_nonzero(np.any(points < -tolerance, axis=1) |
@@ -176,7 +249,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         value={"distinct": unique_n, "duplicates": n - unique_n},
         basis="exact float64 row equality")
     kind = _original_problem_kind(mop)
-    validity = _independent_oracle(kind, points, tolerance)
+    validity = _independent_oracle(kind, points, tolerance, mop)
 
     # A point in objective space cannot, on its own, establish that a
     # feasible decision generated it. This is intentionally unverified.
@@ -196,6 +269,43 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             "pass" if all(axis_found) else "fail",
             value={"true_axis_extrema_present": axis_found},
             basis=f"proved {kind} axis extrema", threshold=tolerance)
+    elif kind == "dtlz7":
+        first, reentry, _ = _dtlz7_record_bounds()
+        x = points[:, :-1]
+        masks = (x >= reentry).astype(np.int64)
+        n_components = 1 << (mop.M-1)
+        distinct_components = len(set(
+            sum(int(bit) << i for i, bit in enumerate(row)) for row in masks))
+        coverage_possible = n >= n_components
+        components = GTProperty(
+            ("pass" if distinct_components == n_components else "fail")
+            if coverage_possible else "unverified",
+            value={"expected": n_components, "represented": distinct_components},
+            basis="independent Cartesian disconnected record-interval identities")
+    elif kind == "dtlz8":
+        t = points[:, -1]
+        x = points[:, :-1]
+        if mop.M == 2:
+            counts = {"line": int(n)}
+            complete = True
+        else:
+            line = t >= 1/3 - tolerance
+            counts = {"line": int(np.count_nonzero(line))}
+            for i in range(mop.M-1):
+                counts[f"patch_{i}"] = int(np.count_nonzero(
+                    (~line) & (np.argmin(x, axis=1) == i)))
+            complete = all(v > 0 for v in counts.values())
+        components = GTProperty(
+            ("pass" if complete else "fail") if n >= mop.M+1
+            else "unverified",
+            value=counts, basis="independent line/patch index from published geometry")
+    elif kind == "dtlz9":
+        t = points[:, -1]
+        count = sum(bool(np.any(abs(t-v) <= tolerance)) for v in (0., 1.))
+        components = GTProperty(
+            "pass" if count == 2 else "fail",
+            value={"true_curve_endpoints_present": count},
+            basis="DTLZ9 true objective arc endpoints")
     else:
         components = GTProperty(
             "unverified", basis="no independent component and extrema oracle")
