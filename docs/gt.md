@@ -836,6 +836,31 @@ exclusion. The original full-front validity status for
 `M>=4` remains `unverified` until stronger independent
 scientific evidence is accepted.
 
+An **exact global dominance equivalence** is now available for
+the original DTLZ5/6 feasible objective image: a feasible `y`
+is globally Pareto-optimal if and only if there is **no**
+feasible `z <= y` with `g(z) < g(y)`. This follows directly
+from the exact nonnegative spherical norm
+`||f||_2 = 1+g`: any strict coordinatewise improvement
+must strictly decrease the norm, and vice versa under
+`z <= y`. It reduces global dominance to a continuous
+**one-scalar g feasibility** problem.
+
+The read-only, opt-in `assess_gt(..., dominance_g_gap=1e-4,
+dominance_g_max_intervals=8192)` checks this condition
+**only for improvements in g at least the specified gap**.
+The result is available as `assessment.global_dominance`
+and in `mop.report(dominance_g_gap=1e-4)`. Numerical
+witnesses, excluded gap intervals and unresolved attempts
+are recorded separately; the default assessment does not
+run this potentially costly branch-and-bound. The finite
+gap and ordinary floating-point slack prevent a claim
+of **exact zero-gap Pareto certification**, so
+`global_dominance.status` and the original `M>=4`
+overall `validity.status` remain `unverified`.
+This is a stronger diagnostic than simple finite-cloud
+non-dominance, but not the final scientific certificate.
+
 New source-bound scientific qualification suites must establish
 independent sufficient global membership for DTLZ5/6 `g>0`
 regions, branch-aware regularity, feasibility and replay checks,
