@@ -246,6 +246,18 @@ def _independent_oracle(kind, points, tolerance, mop):
                       unit="objective coordinates")
 
 
+def _spherical_oracle_coordinates(angles):
+    """Objective-space positive hypersphere, independent of MOP evaluators."""
+    n, q = angles.shape
+    result = np.ones((n, q+1))
+    for j in range(q+1):
+        if j < q:
+            result[:, j] *= np.prod(np.cos(angles[:, :q-j]), axis=1)
+        if j:
+            result[:, j] *= np.sin(angles[:, q-j])
+    return result
+
+
 def _independent_probes(kind, mop, count, seed):
     """True-front objective probes derived from independent geometry."""
     m = mop.M
@@ -297,6 +309,47 @@ def _independent_probes(kind, mop, count, seed):
         out[patch, :-1] = high[:, None]
         selected = labels[patch]-1
         out[np.flatnonzero(patch), selected] = low
+        return out
+    if kind == "dpf2":
+        d = mop.D
+        first, reentry, last = _dtlz7_record_bounds()
+        mask = rng.integers(0, 2, size=(count, d-1))
+        u = rng.uniform(size=(count, d-1))
+        x = np.where(mask == 0, first*u,
+                     reentry+1e-8+(last-reentry-1e-8)*u)
+        f_last = 2*d - np.sum(x*(1+np.sin(3*np.pi*x)), axis=1)
+        base = np.column_stack((x, f_last))
+        weights = np.asarray(mop._chaos_pool[:(m-d)*d]).reshape(m-d,d)
+        return np.column_stack((base, (base @ weights.T)**2))
+    if kind in ("dpf3", "dpf4"):
+        d = mop.D
+        theta = rng.uniform(0, np.pi/2, size=(count, d-1))
+        sphere = _spherical_oracle_coordinates(theta)
+        y = 1-sphere
+        eta = np.sort(np.asarray(mop._chaos_pool[:m-d]))
+        last = y[:, -1]
+        parts = [np.minimum(last, eta[0])]
+        for j in range(m-d-1):
+            parts.append(np.minimum(np.maximum(last, eta[j]), eta[j+1]))
+        parts.append(np.maximum(last, eta[-1]))
+        full = np.column_stack((y[:, :-1], np.column_stack(parts)))
+        return full if kind == "dpf3" else full**2
+    if kind == "dpf5":
+        d = mop.D
+        mask = np.arange(count) % 2 == 0
+        angles_p = rng.uniform(0, np.pi/2, size=(int(np.count_nonzero(mask)),m-1))
+        angles_p[:, 0] *= 1/3
+        p = _spherical_oracle_coordinates(angles_p)
+        angles_d = rng.uniform(0, np.pi/2, size=(count-len(p),d-1))
+        angles_d[:, 0] = np.pi/6 + (np.pi/3)*angles_d[:, 0]/(np.pi/2)
+        essential = _spherical_oracle_coordinates(angles_d)
+        repeats = m-d+1
+        dd = np.column_stack((
+            np.repeat(essential[:, :1]/np.sqrt(repeats), repeats, axis=1),
+            essential[:, 1:]))
+        out = np.empty((count,m))
+        out[mask] = p
+        out[~mask] = dd
         return out
     return None
 
