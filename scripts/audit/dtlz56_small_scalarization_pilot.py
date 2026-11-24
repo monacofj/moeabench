@@ -131,8 +131,20 @@ def run_pilot(*, problem, m=4, k=1, abs_tol=1e-5, max_nodes=5000):
     if audit["independent_objective_alignment"] != "pass":
         raise AssertionError("Production scalarization decisions failed independent evaluation")
 
+    # Separate opt-in theorem ledger: does not change the established
+    # exact-rational-g classifier contract or any stored GT status.
+    irrational_dtlz6_support = None
+    if problem == "DTLZ6":
+        from .dtlz56_dtlz6_radial_enclosure import (
+            audit_dtlz6_irrational_radial_rows,
+        )
+        irrational_dtlz6_support = audit_dtlz6_irrational_radial_rows(
+            decisions, objective_rows, m=m, k=k,
+        )
+
     result = {
         "schema": SCHEMA,
+        "dtlz6_irrational_radial_support": irrational_dtlz6_support,
         "problem": problem,
         "M": m, "K": k,
         "method": "production_scalarized_candidate_and_decision_vector",
