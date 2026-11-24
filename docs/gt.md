@@ -2800,3 +2800,75 @@ helper use small explicitly constructed decision
 matrices and therefore never invoke the expensive
 sampler.
 
+## Conditional per-row mathematical triage of paired GT evidence
+
+The independent paired candidate artifact (above) makes it possible
+to ask a narrower and more informative question than a whole-GT
+`pass`: **which exact decision vectors underlying the stored
+floating-point objective rows fall into a mathematically proved
+original DTLZ5/6 stratum?**
+
+The read-only research helper
+[`dtlz56_paired_symbolic_audit.py`](../scripts/audit/dtlz56_paired_symbolic_audit.py)
+takes an already captured paired NPZ and emits a per-row ledger.
+It **never** invokes `ps()`, `pf()` or any production MOP
+evaluator and does not modify the bundle:
+
+```bash
+python -m scripts.audit.dtlz56_paired_symbolic_audit \
+  --bundle dtlz5-M4-paired.npz --problem DTLZ5 --m 4 --k 4 \
+  --expected-sha256 ARTIFACT_SHA256
+```
+
+Each row can be marked
+`symbolic_decision_global_pf` (the unit-radius norm theorem
+or the exact supporting-stratum/open-first-angle sufficient
+theorems), `symbolic_decision_dominated` (the exact
+same-ray construction), or `unverified` (no applicable
+mathematical proof, uncertain exact radial value, or failed
+objective-row numerical alignment). The ledger reports counts,
+row indices, theorem identifiers and exact rational `g`
+when demonstrable. It does **not** classify unverified rows
+as globally efficient or dominated.
+
+Crucially, a stored floating-point **decision coordinate**
+is interpreted as the precise binary rational it encodes.
+The original DTLZ5 squared-distance function can then be
+recomputed with exact rational arithmetic. DTLZ6 uses tenth
+roots of tail variables; the helper requires each rational
+tail to be a provable perfect tenth power of a rational
+number (using integer root tests). Otherwise, the
+radial value is **unverified**, not silently replaced by
+a float. For instance, the exact dyadic \(1/1024\)
+has tenth root \(1/2\); a stored `0.5`
+does not have a rational tenth root.
+
+**The ledger is a conditional decision-image classification,
+not a certification of stored floating-point objective
+coordinates.** Even when an independent numeric evaluation
+agrees with the saved objective row within tolerance,
+the stored float is not generally *exactly equal*
+to the mathematically defined point involving
+transcendental angular functions. Such an observation
+is reported separately from the symbolic result.
+Accordingly, the whole-reference membership, finite
+coverage, and scientific acceptance fields remain
+`unverified`. The helper also does not change the
+existing public `assess_gt()` semantics or the
+calibration sidecar schema.
+
+There is a further sampling implication. The default
+DTLZ5/6 M>=4 sampler computes positions using
+floating-point scalarization; it need not return
+**exact** inner boundary positions required by
+the supporting-stratum theorems. A low proportion
+of provable rows therefore indicates the reach
+of the *present proof predicates* on the
+captured decisions, not a demonstrated defect
+or low Pareto efficiency of the sampler.
+The next scientific gate is to evaluate these
+proportions on source-bound representative outputs,
+then formulate and validate a suitable global
+oracle or explicit GT geometry-aware generation
+policy **before** costly full-budget runs.
+
