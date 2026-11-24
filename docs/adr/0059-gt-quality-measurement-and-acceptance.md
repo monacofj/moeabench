@@ -100,9 +100,22 @@ feasible-image constraints, mathematically necessary minimum radial
 `g`, and the global Pareto membership of exact `g=0` vectors
 (by the global minimum feasible Euclidean norm). A point violating
 the feasible-image or minimum-radius conditions is `fail`.
-A feasible positive-`g` point without an independent global
-dominance exclusion is **`unverified`**, even when its necessary
-geometry checks pass. For `M>=4`, the **whole-GT validity status stays `unverified`** even
+For the **original M=2/3** problems, the mathematical Pareto front
+is exactly the complete `g=0` curve: an independent zero-gap
+constructive proof in [docs/gt.md, Section 3.6.12](../gt.md)
+establishes that every feasible positive-`g` point is strictly
+dominated by a feasible `g=0` point, including open-endpoint and
+angular-boundary cases. The standalone independent research
+diagnostic `_dtlz56_lowdim_curve.py` constructs provisional
+numerical witnesses and has new source-bound tests. It has
+**not** been incorporated into the public `assess_gt()` contract
+or promoted to a numerically certified status; original
+finite-reference quality and ADR 0059 environment/result gates
+remain separate obligations.
+
+For **M>=4**, a feasible positive-`g` point without an independent
+global dominance exclusion is **`unverified`**, even when its
+necessary geometry checks pass. For `M>=4`, the **whole-GT validity status stays `unverified`** even
 when a supplied reference contains only individually proved `g=0`
 points: those points alone do not cover the original complete PF.
 A mixture of proved `g=0` points and such positive-`g` points
@@ -123,8 +136,8 @@ regression tests preserve these cases without
 weakening any previously approved baseline.
 
 The independent necessary-geometry audit is **not** the final
-full-Pareto-membership oracle and does not certify all positive-`g`
-regions. Built-in configurations outside proved ranges, custom
+full-Pareto-membership oracle for original M>=4 and does not certify
+its positive-`g` regions. Built-in configurations outside proved ranges, custom
 MOPs, missing component oracles and unsupported diagnostics remain
 `unverified`.
 
