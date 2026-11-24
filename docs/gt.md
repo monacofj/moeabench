@@ -3081,3 +3081,91 @@ rounded away. The pilot is not the full `ps()` GT,
 and neither its few proof outcomes nor the distances
 estimate statistical reference coverage.
 
+## Stratified intermediate audit of the original DTLZ5/6 candidate-pool mechanism
+
+Before running the full \(n=2000\) calibration, a
+**source-bound, budgeted intermediate diagnostic** now measures the
+three distinct preference-ray families that feed the existing
+\(M\ge4\) DTLZ5/6 global scalarization mechanism:
+
+1. Sobol rays formed by evaluating original decisions with
+   deterministic angular boundary faces;
+2. strictly positive Gaussian preference vectors;
+3. sparse Gamma preference vectors.
+
+The opt-in research procedure
+[`scripts/audit/dtlz56_stratified_medium_pilot.py`](../scripts/audit/dtlz56_stratified_medium_pilot.py)
+mirrors the **existing** deterministic ray-source construction at
+\(M=4,K=1\), `n_points=64` (source pool size 256), and selects
+**eight evenly spaced source indices per ray family**.
+It executes the production `scalarized_candidate()` and
+`decision_vector()` on the resulting **24 source rays for
+each original problem**, with a strict limit of 5,000
+branch-and-bound nodes **per scalarization** and
+absolute gap budget \(10^{-5}\). It stores the actual
+aligned decision/objective matrices and their byte digests;
+checks the original equations independently; evaluates
+the previous, scientifically conservative exact-decision
+Pareto/dominance predicates; and reports per-family
+optimizer cost and theorem applicability. The original
+source algorithm, branch-and-bound, `ps()` and
+the public calibration interface are left unchanged.
+
+The CI workflow
+[`gt-dtlz56-stratified-medium-175.yml`](../.github/workflows/gt-dtlz56-stratified-medium-175.yml)
+uses a source-bound Python 3.12 runner, one BLAS thread,
+a **15-minute job budget**, the same source seed and
+no unbounded optimizations. Raw JSON artifacts and
+the resulting per-family counts are preserved for 90 days.
+Run explicitly from a pinned checkout with:
+
+```bash
+python -m scripts.audit.dtlz56_stratified_medium_pilot \
+  --problem DTLZ5 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-medium-DTLZ5-M4-K1.json
+python -m scripts.audit.dtlz56_stratified_medium_pilot \
+  --problem DTLZ6 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-medium-DTLZ6-M4-K1.json
+```
+
+**What is and is not measured.** This intermediate run
+tests **48 selected, actual optimizer-derived candidate
+rays in total**. It samples each preference-source
+mechanism but **does not reproduce the production sampler's
+full candidate pool** (448 scalarizations for nominal 64
+points), its greedy maximin selection, or the geometry
+of the resulting finite GT. The eight fixed source
+indices per family are not a random sample suitable
+for population inference. Per-family proof counts
+measure the *reach of known sufficient theorems*, not
+the proportion of Pareto-optimal points.
+The reported scalarization gaps bound weighted
+Chebyshev optimality, not pointwise Pareto membership
+or a finite reference's Hausdorff coverage.
+
+The appropriate interpretation gate is:
+(i) all original decision/objective rows are
+numerically independently aligned;
+(ii) every scalarized optimizer stays within its
+declared node and gap budgets;
+(iii) exact-decision membership, dominance and
+unknown counts and any DTLZ6 proven-PF proximity
+bounds are reported **separately**;
+(iv) the source SHA, seed, ray indices, versions and
+matrix digests are preserved. An unsuccessful
+optimization or source inconsistency is a
+**pilot failure to investigate**, not an accepted GT;
+a low exact-theorem applicability count is
+**scientifically inconclusive** about GT quality.
+No outcome in this pilot automatically certifies
+the full GT, changes an ADR 0059 gate, changes
+`assess_gt()`, or justifies replacing stored
+references or frozen numeric baselines.
+
+The intermediate stage supplies a reproducible
+cost/behavior checkpoint before making the distinct
+decision to run production \(n=2000\) on a
+source/environment-pinned, potentially faster
+local machine with the full reference-coverage
+and indicator-adequacy acceptance protocol.
+
