@@ -426,13 +426,14 @@ mop.report(assess=False)           # MOP and calibration state only
 `assess_gt(reference=None, *, n_points=None, probes=128, seed=0,
 tolerance=1e-9, dominance_margin=None,
 dominance_max_intervals=4096, dominance_g_gap=None,
-dominance_g_max_intervals=8192, decision_reference=None)` accepts either an explicit objective
+dominance_g_max_intervals=8192, decision_reference=None,
+local_descent=False)` accepts either an explicit objective
 matrix or an on-demand analytical sample budget, but not both. By default, it
 inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
 `validity`, `feasibility`, `components`, `coverage`,
 `regularity`, `cardinality`, `uniqueness`, `replay`,
-`dominance`, `global_dominance`, `curve_dominance`, and `provenance`, along with `summary()` and
+`dominance`, `global_dominance`, `curve_dominance`, `local_descent`, and `provenance`, along with `summary()` and
 `to_dict()`. The `dominance` property is `not_applicable` unless
 a positive `dominance_margin` is requested explicitly for original
 DTLZ5/6. Such an audit uses independent optimistic feasibility
@@ -486,6 +487,31 @@ global efficiency; absence of a curve dominator does
 **not** rule out dominators with positive `g`.
 Its status remains `unverified` for portable
 scientific certification until the ADR 0059 gates pass.
+
+For original DTLZ5/6, the additional **opt-in**
+`local_descent=True` diagnostic requires the
+`decision_reference` matrix aligned with objective
+`reference`. It searches for feasible one-sided
+position-variable directions with strictly positive
+derivatives of **all** objectives as `g` increases.
+Such a direction implies a strictly dominating
+feasible point at an arbitrarily small **reduction**
+of `g` (Theorem 8, [GT specification](gt.md)).
+The independent audit constructs a numerical
+decision-and-objective witness with smaller `g`;
+its `local_descent` property records witness
+coordinates, derivative margins and original row
+indices. An absent witness is **not** evidence
+of positive global Pareto membership. The
+property status stays `unverified` until the
+independent numerical/platform gates in ADR 0059
+have been satisfied; the mathematical sufficiency
+theorem by itself is exact.
+
+`mop.report(local_descent=True, decision_reference=X)`
+provides the same read-only opt-in audit for a
+calibrated GT. Routine reports do not run
+additional LP calculations.
 
 Individual property results have `status`, `value`, `basis`,
 `threshold`, `unit`. `unverified` explicitly means that a
