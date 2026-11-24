@@ -2128,6 +2128,44 @@ certification statuses are unchanged.
 The global positive-membership problem for
 original M>=4 remains open.
 
+### 3.6.11b. Bounded independent discovery of certified tangents
+
+The rigorous first-order derivative certificate of
+Section 3.6.11a needs a user-supplied feasible
+one-sided rational velocity. A small deterministic
+search can find such a direction without trusting
+a numerical LP solver or adopting its approximate
+derivative output as proof.
+
+The standalone helper
+[`dtlz56_rational_tangent_search.py`](../scripts/audit/dtlz56_rational_tangent_search.py)
+enumerates a fixed sequence of low-complexity rational
+directions (first-angle moves and selected individual
+inner-angle moves), skips those violating the original
+one-sided box constraints, and sends each feasible
+candidate to the **independent exact-rational
+Machin/Taylor derivative verifier**. Search cost is
+bounded by `max_candidates` (default 16; hard cap 128).
+Every accepted witness carries its exact rational
+velocity and complete lower/upper derivative certificate.
+Replaying it recomputes the enumeration and checks the
+underlying proof. This is an opt-in research diagnostic
+and does not change GT calibration or public assessment.
+
+This deterministic search can discover zero-gap
+different-ray domination of some original
+DTLZ5/6 angular-boundary candidates. Nevertheless,
+**absence of a found witness is unverified**, even
+when the finite search exhausts every candidate.
+The enumerated directions are not exhaustive;
+strict first-order tangent certificates themselves
+are only *sufficient* for negative membership.
+The unresolved global-positive-membership problem
+includes nonlocal, higher-order and tangential
+dominators, as well as full scientifically certified
+feasibility and finite reference adequacy. No
+ADR 0059 certification gate is promoted by this search.
+
 ### 3.6.12. Theorem 9 — complete zero-gap dominance for M=2 and M=3
 
 For **original** DTLZ5 and DTLZ6 with \(M=2\) or \(M=3\),
