@@ -2925,3 +2925,81 @@ ADR 0059 scientific acceptance statuses remain `unverified`.
 The finite pilot cannot replace full-budget experiments or
 a complete global positive-membership oracle.
 
+## Exact positive-membership certificates with irrational DTLZ6 radial distance
+
+The original DTLZ6 distance is
+\(g=\sum_{i=M}^{M+K-1}x_i^{1/10}\).
+A saved floating-point tail coordinate is an *exact binary rational
+declaration*, but its mathematical tenth root is generally
+irrational. The per-row classifier introduced above therefore
+correctly abstains when it cannot represent \(g\) as a rational.
+That necessary safeguard does **not** imply that its conditional
+global-PF theorems are inapplicable.
+
+The independent opt-in extension
+[`dtlz56_dtlz6_radial_enclosure.py`](../scripts/audit/dtlz56_dtlz6_radial_enclosure.py)
+rigorously encloses the exact root of each rational tail value
+\(v\in[0,1]\) in a dyadic rational interval
+\([n/2^b,(n+1)/2^b]\). The integer \(n\) is found **only through
+exact comparisons** \(n^{10}v_{\rm den}\le
+v_{\rm num}2^{10b}\); perfect tenth powers have coincident exact
+endpoints. Summing yields exact rational bounds
+\(g_-\le g\le g_+\), with the original range
+\(0\le g\le K\) enforced. Any nonzero tail coordinate proves
+\(g>0\), even if \(g_-=0\) at finite precision.
+
+For a supporting inner-angle pattern of
+Section 3.6.3b with \(p\ge2\), the first angle
+\(x_1\) need not vanish. The actual last
+objective is
+\(c=(1+g)\sin(\pi x_1/2)\).
+Machin's exact bounds
+\(\pi_-\le\pi\le\pi_+\) and
+\(\sin t\le t\) give
+
+\[
+c^2\le B_+^2,\qquad
+B_+=\frac{(1+g_+)\pi_+ x_1}{2}.
+\]
+
+Consequently the **strict rational test**
+
+\[
+\boxed{B_+^2 < 1-\frac{4}{p\pi_-}}
+\tag{DTLZ56-PF14}
+\]
+
+proves the actual strict global condition
+(DTLZ56-PF12) for the *irrational* real \(g\).
+The original positive-\(g\) theorem therefore
+proves global Pareto membership of that exact
+decision-image point over all \(0\le g'<g\).
+This applies even when a float approximation
+to \(g\) would not be acceptable as a
+scientific proof.
+
+The helper returns an exact hexadecimal rational
+root enclosure and strict proof margin; its
+replay recomputes the integer-power comparisons
+and sufficient inequality. A separate **opt-in**
+per-row audit checks source-decision/objective
+numerical alignment and reports proved decision
+images and unresolved rows. Importantly, the
+earlier exact-rational per-row audit and its
+existing regression contracts are **unchanged**;
+the source-bound eight-ray pilot reports both
+classifiers separately.
+
+**Interpretation remains conditional.** An exact
+decision-image theorem is not an exact identity
+between transcendental original objectives and
+their saved floating-point matrix, nor a proof
+of GT-wide coverage, general positive-g PF
+classification, method/environment identity or
+ADR 0059 numerical/result acceptance. These
+fields stay `unverified`. An unresolved row
+does not establish that it is dominated. The
+new pilot is still only four fixed optimizer-derived
+rays per original problem, not a representative
+full reference.
+
