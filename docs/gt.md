@@ -3003,3 +3003,81 @@ new pilot is still only four fixed optimizer-derived
 rays per original problem, not a representative
 full reference.
 
+## Certified distance from original DTLZ6 decisions to proved Pareto-support strata
+
+The source-bound four-ray pilot identified a specific limitation
+of the strict supporting-boundary predicates: an optimizer may return
+a binary-floating decision with a constrained inner position
+*extremely close to*, but not **exactly equal to**, its required
+boundary value \(0\) or \(1\). Replacing such a coordinate by its
+nominal boundary **without an explicit mathematical distinction**
+would turn an approximate generated point into a falsely
+certified exact Pareto member. The proper separate question is:
+**how far is its exact-real original objective image from
+a separately proven Pareto point?**
+
+For original DTLZ6, fix a feasible decision with first-angle
+position \(x_1\) and tail \(x_M,\ldots,x_{M+K-1}\);
+the exact radial distance \(g\) may be irrational. Consider an
+inner-angle position vector \(u'\) obtained by snapping only
+the constrained positions needed for a supporting stratum of
+Section 3.6.3b (all-upper, or the relevant upper-prefix and
+one lower position). Keep \(x_1\) and the **entire tail unchanged**.
+The independent irrational-radial theorem of
+Section *Exact positive-membership certificates with irrational
+DTLZ6 radial distance* must first prove that
+\(F(u',g)\) is globally Pareto optimal.
+
+Let \(m\) be the objective dimension and
+\(\Delta=\sum_{i=2}^{m-1}|x_i-x'_i|\).
+Changing one inner hyperspherical angle at a time and integrating
+its original angle derivative gives the **exact-real Euclidean bound**
+
+\[
+\bigl\|F(u,g)-F(u',g)\bigr\|_2
+\le \frac{\pi g}{2}
+  \sum_{i=2}^{m-1}|x_i-x'_i|.
+\tag{DTLZ56-PF15}
+\]
+
+Indeed, the norm of every angular partial derivative of the
+unit hypersphere parameterization is at most \(1\);
+multiplication by the radial factor \(1+g\)
+and the original relation
+\(|\Delta\theta_i|=
+\pi g|\Delta x_i|/[2(1+g)]\)
+produce (DTLZ56-PF15).
+
+The independent, read-only
+[`scripts/audit/dtlz56_dtlz6_support_proximity.py`](../scripts/audit/dtlz56_dtlz6_support_proximity.py)
+enumerates the finitely many objective-support patterns,
+verifies that the **snapped** decision satisfies the rigorous
+global theorem, and reports the smallest **certified**
+upper bound among those enumerated strata. It replaces
+\(\pi\) and the potentially irrational \(g\) by rigorously
+computed **rational upper bounds** from Machin series and
+integer tenth-power comparisons. It records the full original
+decision declaration, snapped decision, supporting-PF
+certificate, objective index, and hexadecimal rational
+distance bound for exact replay.
+
+This is a **one-sided distance-to-front upper bound**:
+it proves that a particular globally Pareto-optimal point is
+within the stated distance of the *exact-real image of the
+source decision*. It does not prove that the source decision
+is itself Pareto optimal or dominated, that the selected
+front point is the closest on the entire Pareto front,
+or that a stored IEEE-754 objective row is *identically*
+equal to the exact-real objective image. All public and
+whole-reference ADR 0059 certification statuses therefore
+remain `unverified`.
+
+The source-bound pilot records its complete four source
+decision vectors alongside the existing original symbolic
+membership ledger and the new proximity result, so that
+a tiny boundary reconstruction discrepancy remains
+scientifically inspectable rather than being silently
+rounded away. The pilot is not the full `ps()` GT,
+and neither its few proof outcomes nor the distances
+estimate statistical reference coverage.
+

@@ -58,6 +58,14 @@ jobs:
               if d["problem"] == "DTLZ6":
                   print("  irrational-radial rigorous support:",
                         d["dtlz6_irrational_radial_support"]["counts"])
+                  for entry in d["dtlz6_certified_support_proximity"]:
+                      record = entry["certificate"]
+                      upper = record["certified_l2_distance_upper"]
+                      bound = (None if upper is None else
+                          float(int(upper["numerator_hex"], 16) /
+                                int(upper["denominator_hex"], 16)))
+                      print("  PF proximity row", entry["row"],
+                            entry["status"], "rigorous L2 upper", bound)
               print("  actual g:", [round(x["evaluated_radial_g"], 9)
                   for x in d["per_row_audit"]["rows"]])
               print("  scalarization gaps:", [x["scalarization_abs_gap"]

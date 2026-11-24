@@ -142,8 +142,29 @@ def run_pilot(*, problem, m=4, k=1, abs_tol=1e-5, max_nodes=5000):
             decisions, objective_rows, m=m, k=k,
         )
 
+    # Complement the earlier *membership* ledger with conditional
+    # distances to independently proved PF points. Never promote it to
+    # membership; preserve individual exact source decision coordinates.
+    support_proximity = None
+    if problem == "DTLZ6":
+        from .dtlz56_dtlz6_support_proximity import (
+            certify_dtlz6_support_proximity,
+        )
+        support_proximity = []
+        for i, decision in enumerate(decisions):
+            cert = certify_dtlz6_support_proximity(
+                decision[:m-1], decision[m-1:], k=k,
+            )
+            support_proximity.append({
+                "row": i,
+                "status": cert.conclusion,
+                "certificate": cert.to_dict(),
+            })
+
     result = {
         "schema": SCHEMA,
+        "exact_source_decisions": decisions.tolist(),
+        "dtlz6_certified_support_proximity": support_proximity,
         "dtlz6_irrational_radial_support": irrational_dtlz6_support,
         "problem": problem,
         "M": m, "K": k,
