@@ -3246,3 +3246,183 @@ No existing baselines, reference data,
 ADRs or public GT acceptance criteria
 are changed by this observation.
 
+## Source-bound audit of the actual final-selected 16-point original DTLZ5/6 GT
+
+The stratified source-ray diagnostic above inspected 48 candidate
+scalarizations **before** the production greedy maximin stage.
+Its observed concentration of \(g=0\) cannot establish the
+radial distribution, coverage or adequacy of the final GT.
+The next bounded experiment therefore calls the **unchanged
+public original `mop.ps(n_points=16)` exactly once**
+for each of DTLZ5 and DTLZ6 at \(M=4,K=1\).
+This exercise includes the real source preference pool,
+the default `scalar_tol=1e-7` Chebyshev solves,
+\(g=0\) anchors, and the actual objective-space
+greedy maximin selection. The original MOP `evaluation()`
+is then called on the final selected 16 decisions.
+
+The separate opt-in research program
+[`scripts/audit/dtlz56_final_selected_small_gt.py`](../scripts/audit/dtlz56_final_selected_small_gt.py)
+uses [the immutable paired-evidence protocol above](#paired-original-dtlz56-gt-evidence-independent-alignment-preflight)
+to retain **both PS and ordered F** in an independently
+replayable NPZ file, with its SHA-256 in a separate JSON
+diagnostic. It independently evaluates the published
+original equations; reports exact numeric \(g=0\) counts,
+positive-\(g\) counts and radial quantiles;
+records objective-component spans and normalized
+nearest-neighbor distances **within only the final
+selected sample**; and uses the independent,
+conditional exact-decision theorem ledgers.
+For DTLZ6 it also reports optional irrational-radial
+global-PF sufficiency and certified distance to
+proven support strata. The source SHA, Python,
+NumPy and SciPy versions, source seed, and
+expected number of scalarizations are recorded.
+
+The source-bound GitHub Actions
+[`gt-dtlz56-final-small-selected-175.yml`](../.github/workflows/gt-dtlz56-final-small-selected-175.yml)
+limits the job to **20 minutes** and one BLAS
+thread, and archives all four files (two PS/F
+bundles and two JSON reports) for 90 days.
+Unlike the 48-ray preselection audit, this
+experiment invokes the actual final-stage
+sampler: with \(n=16\), its deterministic
+source pool still has **256 Sobol, 128 Gaussian
+and 64 Gamma rays, i.e. 448 scalarizations
+per original problem**. No \(n=2000\) run
+is launched. The unit tests mock `ps()`
+to avoid this substantial cost in the
+ordinary regression suite.
+
+Reproduce manually from a pinned checkout:
+
+```bash
+python -m scripts.audit.dtlz56_final_selected_small_gt \
+  --problem DTLZ5 --m 4 --k 1 --points 16 \
+  --bundle gt175-final-DTLZ5-M4-K1-paired.npz \
+  --report gt175-final-DTLZ5-M4-K1-report.json
+
+python -m scripts.audit.dtlz56_final_selected_small_gt \
+  --problem DTLZ6 --m 4 --k 1 --points 16 \
+  --bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+  --report gt175-final-DTLZ6-M4-K1-report.json
+```
+
+Both outputs use exclusive creation and never replace
+a production calibration sidecar, baseline or
+historical reference. The verification step
+must independently replay the archived PS/F
+bundle digest and original equations. The
+spherical norm residual and objective-space
+distance statistics are **observational**:
+they cannot prove exact membership of an
+approximate finite-precision objective row,
+continuous-front coverage, reference
+regularity, unbiased source-selection
+probabilities or indicator adequacy.
+All global GT, finite-coverage, indicator
+and ADR 0059 scientific acceptance statuses
+remain `unverified` regardless of a
+successful 16-point source-bound experiment.
+
+The actionable next decision is based on
+**the radial \(g\) values after maximin
+selection**, not on the earlier pool-only
+candidate counts. Positive-\(g\) components
+that are absent or sparse in this small sample
+would justify an explicit larger source-bound
+geometry audit, not automatically altering
+the production sampler or its regression
+tests. Conversely, a healthy radial spread
+among just 16 points does not itself prove
+that a 2,000-point GT will cover the front.
+
+### Observed final-selected 16-point DTLZ5/6 results and acceptance blocker (2026-11-24)
+
+The source-bound original production final-selection
+[GitHub Actions run #45485829134](https://github.com/monacofj/moeabench/actions/runs/45485829134)
+passed its 10 independently scoped tests and
+executed **448 actual scalarizations per problem**,
+including production objective-space greedy
+maximin selection, with Python 3.12.16, NumPy
+2.5.5, SciPy 1.18.1 and PR checkout source SHA
+`93f75b35a00b8678cf3b2f1b0787437773f68eac`.
+The immutable raw paired decision/objective
+matrices and JSON reports were archived as
+[`issue175-original-final-selected-16-point-paired-gt`](https://github.com/monacofj/moeabench/actions/runs/45485829134/artifacts/14962532983).
+
+| Actual final-selected \(M=4,K=1\) | DTLZ5 | DTLZ6 |
+|---|---:|---:|
+| Total selected | 16 | 16 |
+| Numerically exact \(g=0\) | 8 | 6 |
+| Positive \(g\) | 8 | 10 |
+| Exact-rational-\(g\) conditional global-PF decision proofs | 12 | 8 |
+| Exact-rational-\(g\) conditional **strict domination** proofs | **1** | 0 |
+| Unverified under that exact-rational-\(g\) classifier | 3 | 8 |
+| Additional DTLZ6 irrational-\(g\) support proofs | — | 5 |
+| Independent equation maximum residual | \(1.11\cdot10^{-16}\) | \(2.22\cdot10^{-16}\) |
+| Sample-normalized nearest-neighbor min / median / max | 0.1752 / 0.2036 / 0.3144 | 0.2719 / 0.2814 / 0.3757 |
+
+The DTLZ6 irrational-\(g\) proofs overlap some
+exact-rational proofs. They **must not** be
+added to the 8/16 total until deduplicated by
+original row index. These selected-sample
+nearest-neighbor observations are not a
+Hausdorff bound or a certified measure of
+coverage of the unknown continuous front.
+
+**Confirmed experimental failure: original DTLZ5
+selected row 10 (zero-based).** The archived binary
+decision (decimal display) is
+\(x_1=0.1671198950208142\),
+\(x_2=0.999999658561122\),
+\(x_3=0.9999999999999996\) and
+\(x_4=0.6805481014263987\), with
+\(g\approx0.03259761692867714\).
+Both inner positions are **strictly interior** in
+their exact IEEE-754 dyadic interpretation.
+The independently verified exact same-ray theorem
+from Section 3.6.3 produces a valid decision
+with strictly smaller \(g\) and the same
+objective direction, and hence an **exact
+strict componentwise dominator** of this
+candidate's original exact-real image.
+This is a rigorously detected defect in the
+small final-selected *candidate reference*,
+independently of the numerical magnitude
+of its dominance gap. It is tracked as
+[issue #209](https://github.com/monacofj/moeabench/issues/209)
+under the open GT certification work #175/#176.
+
+The new research-only report includes a distinct
+**experimental reference gate**:
+`blocked_proven_dominated_decision`
+with exact row indices if any such sufficient
+mathematical dominance witness exists; otherwise
+it reports `unverified_no_known_dominator`,
+never an inferred whole-GT `pass`.
+This gate is outside the public calibration
+contract and does **not** silently change
+`assess_gt()`, an accepted ADR or a
+historical numerical baseline.
+
+**Scientific decision:** the source-ray \(g=0\)
+concentration from the previous pilot is
+strongly altered by final maximin selection;
+there are 8 positive-\(g\) DTLZ5 and 10
+positive-\(g\) DTLZ6 selected rows.
+That is useful observational geometry evidence,
+but cannot vindicate the reference given the
+positive strict domination witness.
+The next work item is to **replay and diagnose
+the exact witness** and locate whether the
+problem arises during original scalarization,
+inverse decision reconstruction and/or
+final candidate selection. A production fix
+must first be checked against the governing
+ADRs and existing regression barriers; no
+existing test or baseline should be rewritten
+to hide the witness. Full \(n=2000\) generation
+remains deferred until this source-bound
+quality gate is addressed.
+
