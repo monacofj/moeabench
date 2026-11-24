@@ -154,6 +154,49 @@ implicitly establish row-aligned decision witnesses.
 already-calibrated in-memory GT without creating,
 reordering or writing any reference rows.
 
+## Strict differential local dominance (zero-gap negative evidence)
+
+An additional independent, **opt-in** diagnostic is available
+for original DTLZ5/6 through
+`mop.assess_gt(reference=F, decision_reference=X,
+local_descent=True)` or the corresponding report call.
+
+The exact mathematical theorem (Section 3.6.11 in
+[`docs/gt.md`](../gt.md)) states that if a feasible
+one-sided decision-position path `u(g)=u0+(g-g0)*v`
+has **strictly positive derivatives in every objective**
+at `g0>0`, then sufficiently small **decreases**
+of `g` strictly improve all objectives. This
+establishes the *existence* of a local dominator
+without assuming any fixed positive `g` gap.
+One-sided derivative constraints explicitly preserve
+position bounds for points lying at `u_i=0`
+or `u_i=1`.
+
+The new independent analytic derivative implementation
+searches feasible directions by a linear program and
+reconstructs an actual feasible original-decision and
+objective witness for a smaller `g`. This provides
+**negative scientific evidence** for a dominated GT
+candidate; it is **not** a sufficient criterion
+for global Pareto membership. A missing positive
+direction, solver uncertainty, or absence of a
+finite witness **never** yields a positive
+global certification claim. All first-order LP
+and witness measurements require the accepted
+method/environment/result gates before numerical
+results may be promoted to certified evidence,
+so `local_descent.status` remains
+`unverified` for portable scientific certification.
+
+This opt-in procedure requires aligned decision
+witnesses because the objective-only GT does
+not carry the original position variables.
+The default GT assessment and report remain
+lightweight, do not generate new references,
+and do not modify original sidecars, regressions
+or approved baselines.
+
 ## Analytical g=0 curve dominance witnesses
 
 For original DTLZ5/6, `GTAssessment.curve_dominance`

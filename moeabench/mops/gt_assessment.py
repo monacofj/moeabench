@@ -76,6 +76,8 @@ class GTAssessment:
         "not_applicable", basis="global radial-g audit not requested"))
     curve_dominance: GTProperty = field(default_factory=lambda: GTProperty(
         "not_applicable", basis="complete g=0 curve oracle unavailable"))
+    local_descent: GTProperty = field(default_factory=lambda: GTProperty(
+        "not_applicable", basis="independent local first-order audit not requested"))
     diagnostics: tuple = field(default_factory=tuple)
 
     def to_dict(self):
@@ -87,7 +89,7 @@ class GTAssessment:
             "seed": self.seed, "tolerance": self.tolerance,
             **{k: getattr(self, k).to_dict() for k in (
                 "validity", "feasibility", "components", "coverage",
-                "regularity", "cardinality", "uniqueness", "replay", "dominance", "global_dominance", "curve_dominance")},
+                "regularity", "cardinality", "uniqueness", "replay", "dominance", "global_dominance", "curve_dominance", "local_descent")},
             "diagnostics": list(self.diagnostics),
         }
 
@@ -96,7 +98,7 @@ class GTAssessment:
                  f"Reference: {self.count} rows; {self.unique_count} unique; "
                  f"source={self.provenance or 'unknown'}"]
         for name in ("cardinality", "uniqueness", "validity", "feasibility",
-                     "components", "coverage", "regularity", "replay", "dominance", "global_dominance", "curve_dominance"):
+                     "components", "coverage", "regularity", "replay", "dominance", "global_dominance", "curve_dominance", "local_descent"):
             p = getattr(self, name)
             value = "" if p.value is None else f" | {p.value}"
             lines.append(f"  {name:12s} {p.status:14s}{value}"
@@ -440,7 +442,8 @@ def _component_labels(kind, points, mop):
 def assess_gt(mop, reference=None, *, n_points=None, probes=128,
               seed=0, tolerance=1e-9, dominance_margin=None,
               dominance_max_intervals=4096, dominance_g_gap=None,
-              dominance_g_max_intervals=8192, decision_reference=None):
+              dominance_g_max_intervals=8192, decision_reference=None,
+              local_descent=False):
     """Inspect a GT reference without writing, calibrating or modifying it.
 
     If neither a reference nor n_points is supplied, an existing in-memory
@@ -466,6 +469,8 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         if (not isinstance(dominance_g_max_intervals, int)
                 or dominance_g_max_intervals < 1):
             raise ValueError("dominance_g_max_intervals must be positive")
+    if local_descent and decision_reference is None:
+        raise ValueError("local_descent requires explicit aligned decision_reference")
     if decision_reference is not None and n_points is not None:
         raise ValueError(
             "Use an explicit objective reference alongside decision_reference; "
@@ -840,6 +845,49 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
             threshold=tolerance,
             unit="original objective-space coordinates")
 
+    local_descent_result = GTProperty(
+        "not_applicable",
+        basis="independent local first-order audit not requested")
+    if local_descent:
+        if kind not in ("dtlz5", "dtlz6"):
+            raise ValueError(
+                "local_descent supports only original DTLZ5/6")
+        from ._dtlz56_local_descent import audit_local_dtlz56_descent
+        attempts = []
+        from ._dtlz56_decision_witness import inspect_dtlz56_decision_witness
+        for i, x_row in enumerate(np.asarray(decision_reference)):
+            if not np.isfinite(x_row).all() or np.any(x_row < 0) or np.any(x_row > 1):
+                attempts.append((i, None))
+                continue
+            # A direction calculated for one decision MUST NOT be
+            # reported against unrelated or forged objective rows.
+            linked = inspect_dtlz56_decision_witness(
+                x_row[None, :], points[i:i+1], problem=kind.upper(),
+                m=mop.M, tolerance=tolerance)
+            if linked["violations"]:
+                attempts.append((i, None))
+                continue
+            trial = audit_local_dtlz56_descent(
+                x_row, problem=kind.upper(), m=mop.M)
+            attempts.append((i, trial))
+        witnesses = [
+            {"index": int(i), "details": trial.to_dict()}
+            for i, trial in attempts
+            if trial is not None and trial.status == "witness"
+        ]
+        local_descent_result = GTProperty(
+            "unverified",
+            value={
+                "witness_count": len(witnesses),
+                "numerical_witnesses": witnesses,
+                "unresolved": len(attempts)-len(witnesses),
+            },
+            basis="strictly positive independent analytic one-sided "
+                  "objective derivative gives existence of a local "
+                  "strict dominator for lower g; finite witnesses "
+                  "require numerical environment verification; "
+                  "no converse global Pareto-membership claim",
+            unit="original objective-space coordinates")
     # Replaying PS/PF without a sound budget bound may be expensive and could
     # consume an opaque custom MOP RNG. Do not claim determinism by inference.
     replay = GTProperty(
@@ -856,6 +904,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         uniqueness=uniqueness, replay=replay, dominance=dominance,
         global_dominance=global_dominance,
         curve_dominance=curve_dominance,
+        local_descent=local_descent_result,
         diagnostics=("No finite-probe covering bound is a continuous guarantee.",
                      "A GT assessment is not a release certificate."),
     )

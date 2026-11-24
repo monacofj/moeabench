@@ -744,6 +744,142 @@ Independent replay, constrained decision equations
 for other families and platform-certified numerical
 comparison remain separate #175 obligations.
 
+### 3.6.11. Theorem 8 — sufficient zero-gap local dominance by a feasible differential path
+
+The exact global condition (DTLZ56-4) has an open endpoint
+\(g\uparrow g_y\), which cannot be certified by increasing
+the resolution of an ordinary positive-gap search. There is,
+however, a separate **constructive sufficient condition for
+non-Pareto-optimality** that works without prespecifying any
+positive radial improvement.
+
+Write the original feasible objective parameterization as
+\(F(g,u)\), with \(u=(x_1,\ldots,x_{M-1})\in[0,1]^{M-1}\)
+and \(g\in[0,g_{\max}]\), as in (DTLZ56-1)–(DTLZ56-2).
+At a feasible candidate with \(g_0>0\) and position \(u_0\),
+choose a one-sided path
+
+\[
+u(g)=u_0+(g-g_0)v,\qquad g\le g_0.
+\tag{DTLZ56-11}
+\]
+
+For this path to remain in the original position bounds
+for all sufficiently small reductions of \(g\), the
+direction \(v\) must satisfy
+
+\[
+v_i\le0\quad\text{when }u_{0,i}=0,\qquad
+v_i\ge0\quad\text{when }u_{0,i}=1,
+\tag{DTLZ56-12}
+\]
+
+with no sign restriction when \(0<u_{0,i}<1\).
+The distance variables can independently realize every
+nearby \(g\ge0\) using the constructions in Section 3.6.1.
+
+**Theorem (strict differential sufficiency).** If such a
+feasible \(v\) exists with
+
+\[
+\left.
+\frac{dF_j(g,u(g))}{dg}\right|_{g=g_0}
+>0\quad\text{for every }j=1,\ldots,M,
+\tag{DTLZ56-13}
+\]
+
+then the candidate is **not** globally Pareto-optimal:
+there exists a feasible \(g'<g_0\), arbitrarily close
+to \(g_0\), with
+
+\[
+F_j(g',u(g'))<F_j(g_0,u_0)\quad\forall j.
+\]
+
+**Proof.** For \(g_0>0\), the original spherical map and
+its angle formulas are continuously differentiable in
+a neighborhood of \((g_0,u_0)\). By (DTLZ56-12), the
+path is feasible for sufficiently small positive
+\(\varepsilon\) with \(g'=g_0-\varepsilon\ge0\).
+By (DTLZ56-13) and continuity of every derivative,
+each objective is strictly increasing with \(g\)
+throughout some left-neighborhood of \(g_0\) along
+the path. Consequently reducing \(g\) strictly
+decreases **all** objectives, furnishing a feasible
+dominator. \(\square\)
+
+An equivalent **linear feasibility problem** follows
+from differentiating the original equations:
+
+\[
+\frac{dF}{dg}=b(g_0,u_0)+A(g_0,u_0)v.
+\]
+
+Here \(b\) contains the radial derivative and
+the fixed-position angular derivatives, while
+\(A\) contains the angular Jacobian multiplied
+by the derivatives with respect to \(v\).
+One can maximize a common derivative floor \(t\)
+subject to
+
+\[
+b+Av\ge t\mathbf 1,\qquad
+v\text{ obeys (DTLZ56-12)}.
+\tag{DTLZ56-14}
+\]
+
+A strictly positive **mathematically verified** feasible
+solution \(t>0\) establishes (DTLZ56-13).
+A zero, negative, solver-failed or merely unverified
+numerical value **does not prove global Pareto
+optimality**: other feasible paths, nonlocal dominators
+or higher-order improvements can exist.
+
+The independent implementation
+[`_dtlz56_local_descent.py`](../moeabench/mops/_dtlz56_local_descent.py)
+uses product differentiation of the original
+hyperspherical equations (avoiding divisions by
+zero at coordinate boundaries), a bounded-variable
+linear program to search for \(v\), and **directly
+reconstructs a finite feasible objective-and-decision
+witness** at some smaller \(g\). It is available
+on request through
+
+```python
+audit = mop.assess_gt(
+    reference=objectives,
+    decision_reference=decisions,
+    local_descent=True,
+)
+print(audit.local_descent.to_dict())
+# Also: mop.report(decision_reference=decisions, local_descent=True)
+```
+
+The extra optimization cost is **opt-in** and requires
+aligned decision witnesses; objective coordinates alone
+do not preserve the necessary original position
+variables. The public `local_descent.status` is
+`unverified` at the **portable scientific certificate**
+level, even when a strictly improving numerical
+witness was found: the derivative calculation,
+LP and trigonometric reconstruction use ordinary
+floating point and have not been certified through
+the three ADR 0059 gates. Such a witness is useful
+actionable evidence against that candidate's
+membership. Absence of a witness is **never**
+a global Pareto certificate.
+
+**Scope relative to the remaining blocker.** This
+theorem rigorously identifies some candidates for
+which dominance exists at arbitrarily small positive
+\(g\)-gaps. It does **not** establish the complementary
+zero-gap global nondominance needed to certify
+every positive-\(g\) true-front point. A complete
+method must still prove exclusion of all smaller
+feasible \(g\), including the entire open endpoint
+of (DTLZ56-4), or provide an equivalent independently
+proved characterization.
+
 ## 4. DPF3: Mathematical Definition and Chaotic Thresholds
 
 ### 4.1. Essential objectives
