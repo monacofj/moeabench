@@ -25,10 +25,8 @@ def test_last_axis_curve_dominates_positive_g_at_any_dimension(problem, m):
 @pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
 @pytest.mark.parametrize("m", [3, 4, 5, 10])
 def test_different_ray_dominator_on_original_angular_boundary(problem, m):
-    # theta_1=0; at g>0, all inner angles can equal pi/4
-    # (position variable 1/2). The rational point below has radius >1,
-    # and is componentwise above a g=0 curve point; it is *not*
-    # constructed by the same-ray code's positive-g boundary condition.
+    # Rational objective caps, without assuming they form a feasible GT row.
+    # This tests the curve-cap predicate, not original image membership.
     y = [Fraction(1)]*m
     result = exact_g0_curve_dominance(y, problem=problem, k=4)
     assert result.conclusion == "exact_g0_curve_dominator"
@@ -45,7 +43,7 @@ def test_exact_unit_radius_endpoint_is_not_strict(m):
 def test_exact_curve_failure_is_not_global_nondominance():
     # Nonnegative, norm>1, but the first objective is too small to
     # admit any unit-radius point on the complete curve.
-    y = [Fraction(0),Fraction(1,4),Fraction(2,3)]
+    y = [Fraction(0),Fraction(2),Fraction(2,3)]
     result = exact_g0_curve_dominance(
         y, problem="DTLZ6", k=4)
     assert result.conclusion == "no_g0_curve_dominator"
