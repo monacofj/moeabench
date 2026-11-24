@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
+      - "moeabench/mops/_dtlz56_front.py"
       - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
   workflow_dispatch:
 
