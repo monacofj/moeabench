@@ -456,6 +456,117 @@ positive-\(g\) regions. In particular, the original \(M\ge4\)
 full-front assessment is not automatically `pass` merely
 because these points are valid.
 
+### 3.6.3a. Theorem — a certified positive-g global PF stratum for M>=4
+
+The original DTLZ5 and DTLZ6 problems admit an explicitly
+characterized **globally Pareto-optimal positive-\(g\) stratum** for
+every \(M\ge4\), not merely numerical evidence of positive-\(g\)
+front existence.
+
+Fix any \(0<g_y\le g_{\max}\) and any valid original position
+variables \(u=(x_1,\ldots,x_{M-1})\) such that
+
+\[
+x_1=0,\qquad x_2=1,\qquad x_3=0,
+\tag{DTLZ56-PF1}
+\]
+
+with the remaining \(x_i\in[0,1]\) arbitrary. Let
+\(y=F(g_y,u)\). Then **\(y\) is globally Pareto-optimal**.
+
+**Proof.** By the original angular equations,
+\(\theta_1=0\),
+\(\theta_2=b(g_y)=\pi/2-a(g_y)\) and
+\(\theta_3=a(g_y)\), where
+\(a(g)=\pi/[4(1+g)]\).
+The candidate's last objective is \(y_M=0\),
+and its \((M-2)\)-th objective is exactly
+
+\[
+y_{M-2}
+=(1+g_y)\cos\theta_2\sin\theta_3
+=(1+g_y)\sin^2 a(g_y)
+=:h(g_y).
+\tag{DTLZ56-PF2}
+\]
+
+Suppose another original feasible vector \(z\le y\)
+strictly dominates \(y\). The nonnegative spherical
+norm law (DTLZ56-1) implies that the dominator has
+\(g_z<g_y\). Because \(z_M\le y_M=0\),
+it must have \(z_M=0\), forcing
+\(\theta_1(z)=0\). For every \(g\ge0\)
+and every feasible pair of inner angles,
+\(\cos\theta_2\ge\sin a(g)\) and
+\(\sin\theta_3\ge\sin a(g)\). Consequently
+
+\[
+z_{M-2}\ge
+(1+g_z)\sin^2 a(g_z)=h(g_z).
+\tag{DTLZ56-PF3}
+\]
+
+It remains to establish that \(h\) decreases
+**strictly** on the entire original \(g\ge0\)
+domain. Write \(r=1+g\ge1\) and
+\(t=\pi/(4r)\in(0,\pi/4]\).
+Direct differentiation yields
+
+\[
+\frac{dh}{dr}
+=\sin t\,(\sin t-2t\cos t).
+\tag{DTLZ56-PF4}
+\]
+
+The tangent function is convex on
+\([0,\pi/4]\) and lies below the chord joining
+its endpoint values \(0\) and \(1\).
+Thus \(\tan t\le4t/\pi<2t\) for \(t>0\);
+hence \(dh/dr<0\). Since \(g_z<g_y\),
+
+\[
+z_{M-2}\ge h(g_z)>h(g_y)=y_{M-2},
+\]
+
+contradicting \(z\le y\). Therefore no
+feasible strict dominator exists. \(\square\)
+
+This is a **sufficient global positive-membership
+theorem** for a specific nontrivial stratum;
+it does not classify every original positive-\(g\)
+boundary point. It also applies at \(g_y=0\)
+by Theorem 2, although the positive-\(g\)
+statement concerns \(g_y>0\).
+
+The research helper
+[`scripts/audit/dtlz56_positive_g_global_pf.py`](../scripts/audit/dtlz56_positive_g_global_pf.py)
+checks the exact rational declarations
+\(x_1=0,x_2=1,x_3=0\), original
+distance range, problem identity and dimension,
+and emits a lossless replayable symbolic theorem
+record. It does not compute a floating-point
+global optimum or invoke the production GT
+generator or evaluator. New independent tests
+cover original DTLZ5/6 for \(M=4,5,10\),
+arbitrarily small positive rational \(g\),
+rational endpoints and abstention outside
+this stratum.
+
+**Scientific acceptance separation.** The proof
+establishes global membership for a *genuinely
+feasible and aligned original candidate with
+these exact positions*. An objective-only
+floating-point GT row must first have
+independent source/decision alignment and
+feasibility verification before this theorem
+can be applied to it. The helper does not
+promote the public `assess_gt()` status,
+certify a finite GT's component coverage,
+or bypass the environment/result gates of
+ADR 0059. The full positive-\(g\)
+membership problem for arbitrary \(M\ge4\)
+points remains open.
+
 ### 3.6.4. Theorem 3 — exact global Pareto criterion using only scalar g
 
 Let \(y\) be any feasible objective vector and let
