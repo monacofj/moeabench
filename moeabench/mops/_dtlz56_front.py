@@ -27,6 +27,10 @@ class ScalarizedCandidate:
     lower_bound: float
     abs_gap: float
     nodes: int
+    # None for historical/custom callers; otherwise active angular faces
+    # in original position order x_2,...,x_(M-1). Values are 0, 1 or None
+    # (interior). Preserve exact constrained endpoints in decision_vector.
+    angular_active_faces: tuple[int | None, ...] | None = None
 
 
 def _check_weights(weights):
@@ -174,10 +178,15 @@ def scalarized_candidate(
     b = pi * (1.0 + 2.0 * best_g) / (4.0 * (1.0 + best_g))
     capacity = float(w[0])
     inner_angles = []
+    inner_faces = []
     for j in range(1, len(w) - 1):
         cap = float(w[j])
         raw_angle = atan2(cap, capacity)
         angle = max(a, min(b, raw_angle))
+        # This is a discrete active-set decision from the original
+        # bounded optimizer, not a tolerance-based post-hoc snap.
+        inner_faces.append(0 if raw_angle < a else
+                           1 if raw_angle > b else None)
         if raw_angle < a:
             capacity = cap / sin(a)
         elif raw_angle > b:
@@ -205,6 +214,7 @@ def scalarized_candidate(
         lower_bound=max(0.0, best - abs_tol - 4e-12),
         abs_gap=abs_tol + 4e-12 + max(0.0, actual - best),
         nodes=nodes,
+        angular_active_faces=tuple(reversed(inner_faces)),
     )
 
 
@@ -223,12 +233,23 @@ def decision_vector(candidate, *, M, K, problem):
         raise ValueError("Candidate g outside the original problem range")
 
     x = np.zeros(M + K - 1)
+    faces = candidate.angular_active_faces
+    if faces is not None and (
+        len(faces) != M - 2 or
+        any(face not in (None, 0, 1) for face in faces)
+    ):
+        raise ValueError("Candidate angular active faces do not match M")
     for i in range(M - 1):
         # Inverse of the original positive hypersphere parameterization.
         index = M - i - 1
         theta = np.arctan2(f[index], np.linalg.norm(f[:index]))
         if i == 0:
             x[i] = theta / (pi / 2.0)
+        elif faces is not None and faces[i - 1] is not None:
+            # The original optimizer has already established that this
+            # face is exactly active. Re-inverting atan2 would introduce
+            # a tiny interior displacement and false same-ray dominance.
+            x[i] = float(faces[i - 1])
         elif g == 0.0:
             x[i] = 0.5
         else:
