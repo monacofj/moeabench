@@ -98,3 +98,75 @@ def observe_fixed_g_energy_feasibility(
         float(g), beta, q,
         None if gap >= 0 else 1, gap,
     )
+
+
+@dataclass(frozen=True)
+class SquaredIntervalExclusion:
+    observation: str
+    g_lower: float
+    g_upper: float
+    beta_lower: float
+    residual_lower_squared: float
+    stopping_objective: int | None
+    numerical_gap: float
+    basis: str = (
+        "Exact-real optimistic continuous-g squared-energy lower bound; "
+        "ordinary FP cannot provide a rigorous outward enclosure"
+    )
+
+    def to_dict(self):
+        return {
+            "observation": self.observation,
+            "g_lower": self.g_lower,
+            "g_upper": self.g_upper,
+            "beta_lower": self.beta_lower,
+            "residual_lower_squared": self.residual_lower_squared,
+            "stopping_objective": self.stopping_objective,
+            "numerical_gap": self.numerical_gap,
+            "basis": self.basis,
+            "scientific_status": "unverified",
+        }
+
+
+def observe_interval_energy_exclusion(
+    objectives, *, g_lower, g_upper, problem, k
+) -> SquaredIntervalExclusion:
+    """Optimistically exclude all fixed-g feasibilities in [L,U].
+
+    Exact-real proof: r(g)^2 is increasing and beta(g) decreasing.
+    For all g in [L,U], q0(g)>=max(0,(1+L)^2-y_M^2) and
+    beta(g)>=sin(pi/(4(1+U)))**2. The functions
+    max(q*beta,q-cap**2) and q*beta are nondecreasing in both
+    nonnegative q and beta. Propagate lower q bounds; only an
+    infeasible cap for *every* g can produce an exclusion.
+    Ordinary float output is a provisional observation, not a
+    directed-rounded continuous-interval scientific certificate.
+    """
+    y = np.asarray(objectives, dtype=float)
+    if y.ndim != 1 or y.size < 2 or not np.all(np.isfinite(y)):
+        raise ValueError("Expected finite objective vector M>=2")
+    if np.any(y < 0):
+        raise ValueError("Objective caps must be nonnegative")
+    if problem not in ("DTLZ5", "DTLZ6") or type(k) is not int or k < 1:
+        raise ValueError("Expected original DTLZ5/6, integer K>=1")
+    maximum = k / 4.0 if problem == "DTLZ5" else float(k)
+    if (not isfinite(g_lower) or not isfinite(g_upper) or
+            g_lower < 0 or g_lower > g_upper or g_upper > maximum):
+        raise ValueError("Expected 0 <= g_lower <= g_upper <= original g_max")
+    lower, upper = float(g_lower), float(g_upper)
+    beta_lower = sin(pi/(4*(1+upper)))**2
+    q_lower = max(0.0, (1+lower)**2-float(y[-1])**2)
+    for j in range(len(y)-2, 0, -1):
+        margin = float(y[j])**2-q_lower*beta_lower
+        if margin < 0:
+            return SquaredIntervalExclusion(
+                "numerically_excluded", lower, upper, beta_lower,
+                q_lower, j+1, margin,
+            )
+        q_lower = max(q_lower*beta_lower, q_lower-float(y[j])**2)
+    final_margin = float(y[0])**2-q_lower
+    return SquaredIntervalExclusion(
+        "numerically_excluded" if final_margin < 0 else "unresolved",
+        lower, upper, beta_lower, q_lower,
+        1 if final_margin < 0 else None, final_margin,
+    )
