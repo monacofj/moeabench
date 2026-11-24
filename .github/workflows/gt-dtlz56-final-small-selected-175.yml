@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
+      - "moeabench/mops/_dtlz56_front.py"
       - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
   workflow_dispatch:
 
@@ -52,6 +53,13 @@ jobs:
               assert d["n_points"]==16
               assert d["source_expected_total_scalarizations"]==448
               assert d["source"]=="unchanged_production_mop.ps_final_maximin_selection"
+              # This fixed M4/K1 original source sample is a regression
+              # sentinel: an exact same-ray dominance witness is a
+              # scientific failure even for tiny numerical improvements.
+              assert d["proven_dominated_decision_row_indices"] == [], (
+                  d["problem"], d["proven_dominated_decision_row_indices"])
+              assert d["experimental_reference_gate"] == (
+                  "unverified_no_known_dominator")
               for field in ("scientific_certification",
                             "whole_gt_global_membership",
                             "continuous_front_coverage",

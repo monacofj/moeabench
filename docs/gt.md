@@ -3426,3 +3426,109 @@ to hide the witness. Full \(n=2000\) generation
 remains deferred until this source-bound
 quality gate is addressed.
 
+### Reconstruction repair candidate — preserve exact active angular faces (#209)
+
+The actual final-selected sixteen-point DTLZ5
+reference exposed an exact-representational
+domination witness at selected row 10:
+the weighted Chebyshev solver correctly
+restricts angular coordinates to its original
+admissible interval
+\([a(g),b(g)]\), but the original
+`decision_vector()` regenerated position
+variables from rounded trigonometric
+*objective values* using `atan2` and an
+inverse scaling with a divisor proportional
+to \(g\). A mathematically active angular
+bound can consequently emerge as an
+IEEE-754 position *slightly inside*
+\((0,1)\), losing its exact endpoint
+constraint. The original exact same-ray
+criterion then finds a strictly
+smaller-\(g\) dominator, even when the
+objective improvement is smaller than
+routine floating-point resolution.
+
+The proposed implementation change
+**preserves the solver's discrete active
+angular face state** (lower \(0\),
+upper \(1\), or interior `None`) in the
+research `ScalarizedCandidate` output.
+The decision reconstruction emits
+*exactly* \(0\) or \(1\) for active faces
+and retains the original analytical
+inverse for interior angles and
+historical candidates without metadata.
+This is not a tolerance-driven blanket
+snap: only faces known active by the
+actual branch-and-bound scalarizer
+are reconstructed as exact endpoints.
+The original MOP evaluation equations,
+objective-space weighted Chebyshev solver,
+candidate ordering, final greedy maximin
+policy and public calibration contracts
+remain unchanged.
+
+**Scientific acceptance requires independent
+replay** on the actual final selected
+source-bound n=16 paired reference. The
+research-only gate should report no
+mathematically proven strictly dominated
+exact decision images. That necessary
+condition alone remains insufficient
+to certify arbitrary remaining positive-g
+points, continuous-front coverage,
+indicator fitness, the identity of
+stored floating-point objective rows
+with their exact-real images, or full
+ADR 0059 acceptance. No regression
+test or frozen numerical baseline may
+be modified to make this check pass.
+
+### Source-bound validation of the angular active-face repair (#209)
+
+The real production sampler was rerun in
+[PR #210](https://github.com/monacofj/moeabench/pull/210)
+with the original \(M=4,K=1,n=16\)
+parameters and all **448 scalarizations per
+problem**, followed by the unchanged greedy
+maximin selection. On the first complete
+experimental job, 12 new scoped tests
+passed, with the following results:
+
+| Original final-selected sampler | Before active-face repair (#208) | After active-face repair (#210) |
+|---|---:|---:|
+| DTLZ5 exact globally-PF decision-image proofs | 12 | **13** |
+| DTLZ5 provably dominated exact decision images | **1** | **0** |
+| DTLZ5 unverified exact decision images | 3 | 3 |
+| DTLZ6 exact-rational decision-image proofs | 8 | 8 |
+| DTLZ6 provably dominated decision images | 0 | 0 |
+
+The fixed-source comparison reveals that the
+previously dominated DTLZ5 row is now
+reconstructed exactly on the face known active
+to the original scalarizer, eliminating its
+strict same-ray witness **without changing the
+weighted scalar objective optimization or
+farthest-point selection**. These are
+conditional *exact-decision-image* certificates,
+not an exact statement about equality of
+transcendental objective coordinates to
+stored IEEE-754 values. The remaining
+unverified rows must not be silently
+promoted to membership or rejection.
+
+The research-only n16 CI gate is now **strict**
+for known mathematically proved dominated
+rows: a candidate with any exact strict
+same-ray dominator makes that source-bound
+experiment fail. Passing that negative
+guard means only *no such witness detected
+among these sixteen decisions*, never
+complete GT scientific acceptance. Existing
+historical regression tests, numerical
+baselines, public `assess_gt()` semantics,
+MOP equations, and governing ADR 0059 are
+unchanged. Full GT and coverage certification
+remains `unverified`.
+
