@@ -3337,3 +3337,92 @@ tests. Conversely, a healthy radial spread
 among just 16 points does not itself prove
 that a 2,000-point GT will cover the front.
 
+### Observed final-selected 16-point DTLZ5/6 results and acceptance blocker (2026-11-24)
+
+The source-bound original production final-selection
+[GitHub Actions run #45485829134](https://github.com/monacofj/moeabench/actions/runs/45485829134)
+passed its 10 independently scoped tests and
+executed **448 actual scalarizations per problem**,
+including production objective-space greedy
+maximin selection, with Python 3.12.16, NumPy
+2.5.5, SciPy 1.18.1 and PR checkout source SHA
+`93f75b35a00b8678cf3b2f1b0787437773f68eac`.
+The immutable raw paired decision/objective
+matrices and JSON reports were archived as
+[`issue175-original-final-selected-16-point-paired-gt`](https://github.com/monacofj/moeabench/actions/runs/45485829134/artifacts/14962532983).
+
+| Actual final-selected \(M=4,K=1\) | DTLZ5 | DTLZ6 |
+|---|---:|---:|
+| Total selected | 16 | 16 |
+| Numerically exact \(g=0\) | 8 | 6 |
+| Positive \(g\) | 8 | 10 |
+| Exact-rational-\(g\) conditional global-PF decision proofs | 12 | 8 |
+| Exact-rational-\(g\) conditional **strict domination** proofs | **1** | 0 |
+| Unverified under that exact-rational-\(g\) classifier | 3 | 8 |
+| Additional DTLZ6 irrational-\(g\) support proofs | — | 5 |
+| Independent equation maximum residual | \(1.11\cdot10^{-16}\) | \(2.22\cdot10^{-16}\) |
+| Sample-normalized nearest-neighbor min / median / max | 0.1752 / 0.2036 / 0.3144 | 0.2719 / 0.2814 / 0.3757 |
+
+The DTLZ6 irrational-\(g\) proofs overlap some
+exact-rational proofs. They **must not** be
+added to the 8/16 total until deduplicated by
+original row index. These selected-sample
+nearest-neighbor observations are not a
+Hausdorff bound or a certified measure of
+coverage of the unknown continuous front.
+
+**Confirmed experimental failure: original DTLZ5
+selected row 10 (zero-based).** The archived binary
+decision (decimal display) is
+\(x_1=0.1671198950208142\),
+\(x_2=0.999999658561122\),
+\(x_3=0.9999999999999996\) and
+\(x_4=0.6805481014263987\), with
+\(g\approx0.03259761692867714\).
+Both inner positions are **strictly interior** in
+their exact IEEE-754 dyadic interpretation.
+The independently verified exact same-ray theorem
+from Section 3.6.3 produces a valid decision
+with strictly smaller \(g\) and the same
+objective direction, and hence an **exact
+strict componentwise dominator** of this
+candidate's original exact-real image.
+This is a rigorously detected defect in the
+small final-selected *candidate reference*,
+independently of the numerical magnitude
+of its dominance gap. It is tracked as
+[issue #209](https://github.com/monacofj/moeabench/issues/209)
+under the open GT certification work #175/#176.
+
+The new research-only report includes a distinct
+**experimental reference gate**:
+`blocked_proven_dominated_decision`
+with exact row indices if any such sufficient
+mathematical dominance witness exists; otherwise
+it reports `unverified_no_known_dominator`,
+never an inferred whole-GT `pass`.
+This gate is outside the public calibration
+contract and does **not** silently change
+`assess_gt()`, an accepted ADR or a
+historical numerical baseline.
+
+**Scientific decision:** the source-ray \(g=0\)
+concentration from the previous pilot is
+strongly altered by final maximin selection;
+there are 8 positive-\(g\) DTLZ5 and 10
+positive-\(g\) DTLZ6 selected rows.
+That is useful observational geometry evidence,
+but cannot vindicate the reference given the
+positive strict domination witness.
+The next work item is to **replay and diagnose
+the exact witness** and locate whether the
+problem arises during original scalarization,
+inverse decision reconstruction and/or
+final candidate selection. A production fix
+must first be checked against the governing
+ADRs and existing regression barriers; no
+existing test or baseline should be rewritten
+to hide the witness. Full \(n=2000\) generation
+remains deferred until this source-bound
+quality gate is addressed.
+
