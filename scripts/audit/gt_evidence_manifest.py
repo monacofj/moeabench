@@ -188,8 +188,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
 
     if args.command == "capture":
-        if args.manifest.resolve() == args.artifact.resolve():
-            parser.error("Manifest must not overwrite the artifact")
+        if args.manifest.resolve() in (
+            args.artifact.resolve(), args.config.resolve()
+        ):
+            parser.error("Manifest must not overwrite artifact or configuration")
+        if args.manifest.exists():
+            parser.error("Refusing to replace an existing evidence manifest")
         config = json.loads(args.config.read_text(encoding="utf-8"))
         data = create_manifest(args.artifact, config, args.repo_root)
         args.manifest.write_text(
