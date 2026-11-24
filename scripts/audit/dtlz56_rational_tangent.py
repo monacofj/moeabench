@@ -69,7 +69,7 @@ def _trigonometric_bounds(angle, pairs):
 
     Sine is increasing, cosine decreasing. Even-length alternating
     sine sums bound below, odd-length bound above; for cosine,
-    odd-length sums bound below, even-length bound above.
+    even-length sums bound below, odd-length bound above.
     """
     a, b = angle
     assert 0 <= a <= b < 2
@@ -78,8 +78,8 @@ def _trigonometric_bounds(angle, pairs):
         min(Fraction(1), _sin_taylor(b, 2*pairs+1)),
     )
     cos_interval = (
-        max(Fraction(0), _cos_taylor(b, 2*pairs+1)),
-        min(Fraction(1), _cos_taylor(a, 2*pairs)),
+        max(Fraction(0), _cos_taylor(b, 2*pairs)),
+        min(Fraction(1), _cos_taylor(a, 2*pairs+1)),
     )
     if sin_interval[0] > sin_interval[1] or cos_interval[0] > cos_interval[1]:
         raise ArithmeticError("Trigonometric bounds not ordered")
