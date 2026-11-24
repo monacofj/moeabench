@@ -3426,3 +3426,62 @@ to hide the witness. Full \(n=2000\) generation
 remains deferred until this source-bound
 quality gate is addressed.
 
+### Reconstruction repair candidate — preserve exact active angular faces (#209)
+
+The actual final-selected sixteen-point DTLZ5
+reference exposed an exact-representational
+domination witness at selected row 10:
+the weighted Chebyshev solver correctly
+restricts angular coordinates to its original
+admissible interval
+\([a(g),b(g)]\), but the original
+`decision_vector()` regenerated position
+variables from rounded trigonometric
+*objective values* using `atan2` and an
+inverse scaling with a divisor proportional
+to \(g\). A mathematically active angular
+bound can consequently emerge as an
+IEEE-754 position *slightly inside*
+\((0,1)\), losing its exact endpoint
+constraint. The original exact same-ray
+criterion then finds a strictly
+smaller-\(g\) dominator, even when the
+objective improvement is smaller than
+routine floating-point resolution.
+
+The proposed implementation change
+**preserves the solver's discrete active
+angular face state** (lower \(0\),
+upper \(1\), or interior `None`) in the
+research `ScalarizedCandidate` output.
+The decision reconstruction emits
+*exactly* \(0\) or \(1\) for active faces
+and retains the original analytical
+inverse for interior angles and
+historical candidates without metadata.
+This is not a tolerance-driven blanket
+snap: only faces known active by the
+actual branch-and-bound scalarizer
+are reconstructed as exact endpoints.
+The original MOP evaluation equations,
+objective-space weighted Chebyshev solver,
+candidate ordering, final greedy maximin
+policy and public calibration contracts
+remain unchanged.
+
+**Scientific acceptance requires independent
+replay** on the actual final selected
+source-bound n=16 paired reference. The
+research-only gate should report no
+mathematically proven strictly dominated
+exact decision images. That necessary
+condition alone remains insufficient
+to certify arbitrary remaining positive-g
+points, continuous-front coverage,
+indicator fitness, the identity of
+stored floating-point objective rows
+with their exact-real images, or full
+ADR 0059 acceptance. No regression
+test or frozen numerical baseline may
+be modified to make this check pass.
+
