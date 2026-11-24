@@ -219,7 +219,7 @@ def audit_paired_bundle(path, *, problem, m, k, tolerance=1e-9,
             raise ValueError("Unexpected paired GT bundle members")
         if (data["problem"].item() != problem or
                 int(data["M"].item()) != m or int(data["K"].item()) != k):
-            raise ValueError("Paired bundle original problem or dimensions mismatch")
+            raise ValueError("Paired bundle metadata: original problem or dimensions mismatch")
         output = audit_symbolic_candidate(
             data["decisions"], data["objectives"], problem=problem,
             m=m, k=k, tolerance=tolerance,
