@@ -3169,3 +3169,80 @@ source/environment-pinned, potentially faster
 local machine with the full reference-coverage
 and indicator-adequacy acceptance protocol.
 
+### Observed 48-ray stratified diagnostic (2026-11-24, PR #207)
+
+The original bounded workflow
+[`run #45480846865`](https://github.com/monacofj/moeabench/actions/runs/45480846865)
+passed its new 13 tests and both 24-source-ray production
+scalarizations. Its raw output is
+[`issue175-stratified-medium-source-ray-audit`](https://github.com/monacofj/moeabench/actions/runs/45480846865/artifacts/14960139061).
+The GitHub runner checkout recorded source SHA
+`27a7c84cf54f82a56e404d28c8c6233541947561`,
+NumPy 2.5.5 and SciPy 1.18.1. The experiment used
+the explicitly stated deterministic indices and
+M=4, K=1, \(10^{-5}\) scalarization absolute-gap
+budget and 5,000 max nodes per solve.
+
+**Observed decisions, not inferences about the final GT:**
+
+| Problem | Total rays | Exact \(g=0\) rows | \(g>0\) rows | Conditional globally efficient exact-decision images | Remaining unverified |
+|---|---:|---:|---:|---:|---:|
+| Original DTLZ5 | 24 | 22 | 2 | 24 | 0 |
+| Original DTLZ6 | 24 | 22 | 2 | 23 | 1 |
+
+In both problems, the only two positive-\(g\) rows
+were indices 10 (positive-Gaussian source index 32)
+and 18 (sparse-Gamma source index 16).
+DTLZ5 had \(g=0.25\) for both; DTLZ6 had
+\(g=1.0\) and approximately
+\(g=0.9025764465332031\), respectively.
+The first DTLZ6 positive-\(g\) row satisfies
+the exact-rational supporting-stratum theorem;
+its independent irrational-radial certificate
+also applies (the latter is **not an additional
+distinct row**). The second remains unverified
+by the exact membership predicates, but a
+separately proved Pareto-support proximity
+bound exists; that is **not** a proof of
+membership or of domination.
+
+All 24 DTLZ5 source decisions and 23/24 DTLZ6
+source decisions had conditional exact
+global-membership proofs. In **both**
+problems, **22/24** were \(g=0\) anchors of
+the known unit-radius theorem. A high total
+count therefore says little about the
+**difficult positive-\(g\) component**.
+Independent original-equation residual maxima
+were about \(1.11\times10^{-16}\) for DTLZ5
+and exactly zero in the observed DTLZ6
+finite-precision comparison. The maximum
+scalarization nodes over the selected rays
+were 69 (DTLZ5) and 151 (DTLZ6), both below
+the declared 5,000 bound; reported finite
+scalarization gaps remained approximately
+\(10^{-5}\). By family, 8/8 DTLZ5 rays in
+each family received exact-decision proofs;
+for DTLZ6, the Gaussian and Sobol family
+were 8/8 each and the sparse-Gamma family
+was 7/8.
+
+**Research decision for the next gate.** The
+mechanism-stratified sample showed unexpectedly
+many \(g=0\) selections among fixed preference
+rays, but has not examined the production
+sampler's **full pool** or its **final
+farthest-point selected** objective sample.
+Before committing to \(n=2000\), compare
+the radial distribution \(g\) and objective
+coverage on the *actual final selected*
+small-\(n\) PS/F reference, preserving
+complete paired evidence. A second,
+explicitly targeted positive-\(g\) ray study
+may diagnose missing sufficient proofs,
+but its targeted counts must not be
+represented as unbiased GT-wide rates.
+No existing baselines, reference data,
+ADRs or public GT acceptance criteria
+are changed by this observation.
+
