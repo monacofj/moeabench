@@ -85,6 +85,16 @@ def _sine_lower_bound(x: Fraction, pairs: int):
 
 
 def _as_exact_fraction(value, *, name):
+    """Preserve exact rational inputs; interpret floats as binary rationals.
+
+    In particular, splitting an interval with Fraction midpoints must NOT
+    silently round its endpoints back to IEEE-754. Such rounding would
+    invalidate the partition invariant used by proof certificates.
+    """
+    if isinstance(value, bool):
+        raise ValueError(name + " must be a real number, not bool")
+    if isinstance(value, (Fraction, int)):
+        return Fraction(value)
     try:
         number = float(value)
     except (TypeError, ValueError, OverflowError) as exc:
