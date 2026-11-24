@@ -492,6 +492,89 @@ Floating-point implementations require slack near angle/radius
 boundaries; passing finite tests is not equivalent to directed-rounded
 certification of (DTLZ56-5).
 
+### 3.6.5a. Corollary — squared-energy fixed-g feasibility recurrence
+
+The fixed-\(g\) predicate of Theorem 4 admits an **equivalent
+exact-real recurrence without intermediate square roots**. This
+reformulation is useful when constructing independently verified
+numerical enclosures, but does not itself certify floating-point
+computations.
+
+Put \(r=1+g\), \(a=\pi/(4r)\), and
+\(\beta(g)=\sin^2(a)\). The upper constrained angular limit
+is \(b=\pi/2-a\), so \(\cos^2(b)=\beta\).
+If \(y_M\ge r\), choose \(\theta_1=\pi/2\);
+the last-axis point fits every nonnegative cap.
+
+Otherwise, after greedily allocating \(z_M=y_M\), define
+the **squared residual** \(q=r^2-y_M^2>0\).
+Process \(j=M-1,M-2,\ldots,2\). The necessary
+minimum contribution \(z_j=\sqrt q\sin a\)
+fits the cap precisely when
+
+\[
+q\beta(g)\le y_j^2.
+\tag{DTLZ56-17}
+\]
+
+If it does not fit, the candidate caps are infeasible at
+this \(g\). If it fits, maximize the feasible contribution:
+\(z_j=\min(y_j,\sqrt q\sin b)\). The squared residual
+after this allocation is exactly
+
+\[
+q_{\mathrm{new}}
+=q-\min(y_j^2,q\sin^2 b)
+=\max\bigl(q-y_j^2,\ q\beta(g)\bigr).
+\tag{DTLZ56-18}
+\]
+
+After the inner objectives have been processed,
+the remaining first objective fits if and only if
+\(q\le y_1^2\). For \(M=2\), the inner loop is
+empty.
+
+**Proof.** The minimum and maximum angle bounds,
+monotonicity of sine on \([0,\pi/2]\), and
+Theorem 4's optimal greedy allocation establish
+(DTLZ56-17). Squaring the nonnegative admissible
+contributions and applying the Pythagorean residual
+identity establishes (DTLZ56-18). Each step is
+equivalent to Theorem 4's exact-real construction,
+so the final first-coordinate condition is also
+necessary and sufficient. \(\square\)
+
+This exposes a fixed-\(g\) decision predicate built
+from nonnegative arithmetic, comparisons, one
+\(\sin^2\) expression and \(\max\). In particular,
+the original repeated floating-point square-root
+recursion is **not necessary** for the fixed-\(g\)
+decision. A future validated interval evaluator can
+enclose the sine term and all squared quantities,
+while explicitly marking uncertain comparisons.
+
+The independent research implementation
+[`scripts/audit/dtlz56_energy_recurrence.py`](../scripts/audit/dtlz56_energy_recurrence.py)
+returns only `numerically_feasible` or
+`numerically_infeasible` **observations** and
+records `scientific_status=unverified`. New tests
+compare it to an independently written original
+angle/length construction at \(M=2,3,4,5,10\),
+including singular-axis boundaries. These are
+ordinary floating-point consistency tests, not
+directed-rounding proofs.
+
+**Crucial remaining difficulty:** a test at one
+fixed \(g\), even if rigorously evaluated, cannot
+prove \(\neg D(g;y)\) for every
+\(0\le g<g_y\). Full positive-\(g\)
+Pareto certification for \(M\ge4\) still needs
+a mathematically exhaustive treatment of the
+continuous scalar domain and its open endpoint.
+Neither this corollary nor the new helper changes
+public `assess_gt()` status, numerical baselines
+or any accepted certification gate.
+
 ### 3.6.6. Theorem 5 — sound continuous-interval *relaxation*
 
 For any \(0\le L\le U\le g_{\max}\), the angular domain is
