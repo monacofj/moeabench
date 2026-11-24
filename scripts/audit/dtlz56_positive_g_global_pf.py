@@ -37,6 +37,8 @@ from .dtlz56_exact_same_ray import _encode
 class PositiveGGlobalPFCertificate:
     conclusion: str
     dimension: int
+    problem: str
+    tail_dimension: int
     radial_g: dict
     active_positions: tuple[dict, dict, dict]
     proof_id: str = "DTLZ56-M4PLUS-SQUARED-SINE-SUPPORT"
@@ -49,6 +51,8 @@ class PositiveGGlobalPFCertificate:
         return {
             "conclusion": self.conclusion,
             "dimension": self.dimension,
+            "problem": self.problem,
+            "tail_dimension": self.tail_dimension,
             "radial_g": self.radial_g,
             "active_positions": list(self.active_positions),
             "proof_id": self.proof_id,
@@ -84,7 +88,7 @@ def certify_positive_g_global_pf(positions, *, g, problem, k):
         "rigorously_global_pf_member" if (
             u[0] == 0 and u[1] == 1 and u[2] == 0
         ) else "unverified",
-        len(u) + 1, _encode(gy),
+        len(u) + 1, problem, k, _encode(gy),
         tuple(_encode(v) for v in active),
     )
 
