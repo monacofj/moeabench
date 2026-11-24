@@ -907,6 +907,64 @@ particular, finding no point on the `g=0` curve that
 dominates (y) does **not** establish global efficiency
 against the positive-(g) feasible image.
 
+### 3.6.7a. Exact-rational decision for complete g=0-curve dominance
+
+The complete-curve criterion (DTLZ56-9) can be decided
+**without a numerical square root, trigonometric evaluation,
+or a nonzero tolerance**, when the input objective caps are
+specified as rational numbers.
+
+Let \(c=\min(y_M,1)\), and assume all \(y_j\ge0\).
+Since the two sides of (DTLZ56-9) are nonnegative,
+the necessary-and-sufficient conditions are exactly
+
+\[
+ y_j^2\ge a_j^2(1-c^2),
+ \qquad j=1,\ldots,M-1,
+ \tag{DTLZ56-9a}
+\]
+
+where \(a_1^2=2^{-(M-2)}\) and
+\(a_j^2=2^{-(M-j)}\) for \(2\le j\le M-1\).
+Every coefficient is dyadic rational. Hence the predicate
+requires only exact rational products and comparisons.
+
+If all inequalities hold and \(\|y\|_2^2>1\),
+the constructed \(g=0\) vector has unit norm and
+is componentwise no larger than \(y\); it must be
+strictly different from \(y\) and therefore **strictly
+dominates** it. This applies to angular-boundary
+candidates and a dominating direction different from
+the candidate's original ray. If \(\|y\|_2^2=1\),
+a curve fit gives only weak dominance and cannot be
+promoted to strict membership rejection. If any
+inequality fails, the **entire \(g=0\) curve** is
+excluded as a dominator, but a positive-\(g\)
+dominator may still exist for original \(M\ge4\).
+
+The independent helper
+[`scripts/audit/dtlz56_exact_g0_curve.py`](../scripts/audit/dtlz56_exact_g0_curve.py)
+implements this predicate with `Fraction` and returns
+a losslessly encoded rational comparison and a
+replayable result. Ordinary float inputs are
+interpreted as their exact binary-rational values.
+The test is mathematically exact **for those values**,
+including arbitrarily small rational strict
+separations. As with all objective-only tests, an
+actual GT row must separately pass the original
+feasible-image/decision alignment oracle before
+a conditional dominance result can justify a
+scientific rejection. The helper does not change
+the public assessment's scientific status.
+
+The **still-unsolved** part of the open-endpoint
+problem comprises the candidates on minimal
+same-ray radial boundaries for which the complete
+\(g=0\) curve does not dominate them. A globally
+sufficient oracle must also decide possible
+different-ray dominators with \(0<g'<g_y\),
+including as \(g'\uparrow g_y\).
+
 ### 3.6.8. Theorem 7 — global Chebyshev scalarization and Pareto tie-breaking
 
 Let \(w\in\mathbb R_{>0}^M\) be a positive vector
