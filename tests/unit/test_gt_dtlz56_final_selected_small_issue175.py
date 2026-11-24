@@ -107,3 +107,30 @@ def test_invalid_configs_rejected_before_expensive_ps(tmp_path,bad):
             **bad,bundle=tmp_path/"p.npz",
             report=tmp_path/"r.json",
         )
+
+
+def test_proven_dominated_source_decision_blocks_experimental_reference():
+    # Make both inner angles strictly interior at positive original g,
+    # triggering the pre-existing *exact rational* same-ray witness.
+    x=_synthetic_original_decisions("DTLZ5")
+    x[-1,1]=.99
+    x[-1,2]=.999
+    x[-1,3]=.7
+    y,_=_original_objectives(x,problem="DTLZ5",m=4,k=1)
+    result=audit.analyze_final_selected(
+        x,y,problem="DTLZ5",m=4,k=1,
+    )
+    assert result["proven_dominated_decision_row_indices"]==[15]
+    assert result["experimental_reference_gate"]=="blocked_proven_dominated_decision"
+    assert result["scientific_certification"]=="unverified"
+
+
+def test_no_known_dominator_never_implies_certification():
+    x=_synthetic_original_decisions("DTLZ5")
+    y,_=_original_objectives(x,problem="DTLZ5",m=4,k=1)
+    result=audit.analyze_final_selected(
+        x,y,problem="DTLZ5",m=4,k=1,
+    )
+    assert result["proven_dominated_decision_row_indices"]==[]
+    assert result["experimental_reference_gate"]=="unverified_no_known_dominator"
+    assert result["continuous_front_coverage"]=="unverified"
