@@ -1,0 +1,92 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 DTLZ6 final selected sixteen-point source GT audit (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
+      - "scripts/audit/dtlz56_final_selected_small_gt.py"
+      - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  real-final-selected-reference:
+    name: "Actual original final PS selection: n=16 DTLZ5/6"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install source and tests
+        run: python -m pip install -e . pytest
+      - name: Test analysis and sidecar discipline without expensive PS
+        run: python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py -q
+      - name: Run actual unchanged original production PS and final maximin selection
+        run: |
+          python -m scripts.audit.dtlz56_final_selected_small_gt \
+            --problem DTLZ5 --m 4 --k 1 --points 16 \
+            --bundle gt175-final-DTLZ5-M4-K1-paired.npz \
+            --report gt175-final-DTLZ5-M4-K1-report.json
+          python -m scripts.audit.dtlz56_final_selected_small_gt \
+            --problem DTLZ6 --m 4 --k 1 --points 16 \
+            --bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+            --report gt175-final-DTLZ6-M4-K1-report.json
+      - name: Validate complete source-bound output fields and summarize
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.audit.dtlz56_paired_gt_evidence import verify_paired_candidate
+          for path in sorted(Path('.').glob('gt175-final-*-report.json')):
+              d=json.loads(path.read_text())
+              assert d["n_points"]==16
+              assert d["source_expected_total_scalarizations"]==448
+              assert d["source"]=="unchanged_production_mop.ps_final_maximin_selection"
+              for field in ("scientific_certification",
+                            "whole_gt_global_membership",
+                            "continuous_front_coverage",
+                            "indicator_fitness"):
+                  assert d[field]=="unverified"
+              bundle=Path(path.name.replace('-report.json','-paired.npz'))
+              verification=verify_paired_candidate(
+                  bundle,problem=d["problem"],m=4,k=1,
+                  expected_sha256=d["paired_artifact_sha256"])
+              assert verification["independent_objective_alignment"]=="pass"
+              assert verification["expected_digest_match"] is True
+              print(path.name)
+              print("  source commit:",d["source_sha"])
+              print("  environment:",d["python"],d["numpy"],d["scipy"])
+              print("  selected g:",d["radial"])
+              print("  original alignment:",d["geometry_observational"][
+                  "max_original_equation_residual"])
+              print("  objective spans:",d["geometry_observational"][
+                  "objective_component_span"])
+              print("  normalized nearest distances:",
+                    [d["geometry_observational"][key] for key in (
+                        "objective_range_normalized_nearest_neighbor_min",
+                        "objective_range_normalized_nearest_neighbor_median",
+                        "objective_range_normalized_nearest_neighbor_max")])
+              print("  exact image proofs:",
+                    d["exact_rational_g_decision_image_ledger"]["counts"])
+              if d["dtlz6_irrational_g_support_ledger"] is not None:
+                  print("  additional irrational g support:",
+                        d["dtlz6_irrational_g_support_ledger"]["counts"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue175-original-final-selected-16-point-paired-gt
+          path: |
+            gt175-final-*-paired.npz
+            gt175-final-*-report.json
+          if-no-files-found: error
+          retention-days: 90
