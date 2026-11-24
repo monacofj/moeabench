@@ -360,6 +360,81 @@ infeasible angular/radial images and points with provable same-ray
 dominance. Numerical residual checks are subject to the declared
 tolerance; the algebraic theorem does not inherit their rounding error.
 
+### 3.6.2a. Constructive exact-rational near-endpoint same-ray descent
+
+The necessary minimum-ray-radius condition above admits a **fully
+constructive exact-rational certificate**, without a numerical
+dominance search or a fixed positive improvement margin.
+
+Let \(u=(u_1,\ldots,u_{M-1})\) be original feasible DTLZ5/6 position
+variables, and let \(g>0\) be the independently feasible original
+distance value. For each constrained inner angle \(i\ge2\), define
+
+\[
+d_i=\frac{g(2u_i-1)}{1+g},\qquad
+q=\max_{i\ge2}|d_i|,\qquad
+g_{\min}=\frac{q}{1-q},
+\tag{DTLZ56-3a}
+\]
+
+with \(q=0\) when \(M=2\). If \(g_{\min}<g\), take
+\(g'=(g+g_{\min})/2\), and define
+
+\[
+u_1'=u_1,\qquad
+u_i'=\frac12+\frac{d_i(1+g')}{2g'},\quad i\ge2.
+\tag{DTLZ56-3b}
+\]
+
+Then \(0\le u_i'\le1\) follows directly from
+\(|d_i|\le g'/(1+g')\), and \(0<g'<g\).
+The original angular equation gives
+
+\[
+\frac{1+2g'u_i'}{1+g'}
+=\frac{1+2gu_i}{1+g}
+\quad\text{for every }i\ge2.
+\]
+
+The first angle also remains unchanged. Hence the new point has the
+**same original angular direction**, and its objective vector is exactly
+
+\[
+F(g',u')=\frac{1+g'}{1+g}\,F(g,u).
+\tag{DTLZ56-3c}
+\]
+
+All coordinates are nonnegative, at least one is strictly positive, and
+the scale is strictly less than one. Thus the constructed point
+**strictly dominates** the original point, for arbitrarily small
+positive \(g\) and without a prescribed positive `g` gap.
+Both original distance functions realize the smaller
+\(g'\in[0,g_{\max}]\), so this is a feasible dominator.
+If any constrained inner position is at \(0\) or \(1\), then
+\(g_{\min}=g\) may hold and this *same-ray method* abstains:
+it does not claim global Pareto efficiency at such a boundary.
+
+The independent helper
+[`scripts/audit/dtlz56_exact_same_ray.py`](../scripts/audit/dtlz56_exact_same_ray.py)
+implements these algebraic steps using exact Python `Fraction` values,
+returning the rational witness positions, smaller radial distance and
+objective scale in lossless hexadecimal form. Its replay function
+reconstructs the same certificate and verifies every angular equality
+and strict radial reduction. No floating-point trigonometry, numerical
+optimizer or production GT generator is used. Supplied numerical inputs
+are interpreted as exact rational declarations; an external objective
+GT row still requires separate *independent feasibility and alignment*
+evidence before this conditional theorem can be used as a scientific
+claim about that row. The helper therefore leaves
+`scientific_certification=unverified` in its output.
+
+This settles a **negative-membership subset** of the open-endpoint
+problem; the hard positive-membership problem for \(M\ge4\) remains on
+the minimal-ray-radius boundary and requires excluding *different-ray*
+dominators as \(g'\uparrow g\). Theorem 1 already identifies this
+necessary boundary; this corollary adds an exactly replayable constructive
+witness and zero-gap tests, not a general converse.
+
 ### 3.6.3. Theorem 2 — globally Pareto-optimal unit-radius points
 
 **Theorem.** Every **feasible** objective vector satisfying \(g=0\)
