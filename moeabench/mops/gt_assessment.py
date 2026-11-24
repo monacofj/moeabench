@@ -854,8 +854,17 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
                 "local_descent supports only original DTLZ5/6")
         from ._dtlz56_local_descent import audit_local_dtlz56_descent
         attempts = []
+        from ._dtlz56_decision_witness import inspect_dtlz56_decision_witness
         for i, x_row in enumerate(np.asarray(decision_reference)):
             if not np.isfinite(x_row).all() or np.any(x_row < 0) or np.any(x_row > 1):
+                attempts.append((i, None))
+                continue
+            # A direction calculated for one decision MUST NOT be
+            # reported against unrelated or forged objective rows.
+            linked = inspect_dtlz56_decision_witness(
+                x_row[None, :], points[i:i+1], problem=kind.upper(),
+                m=mop.M, tolerance=tolerance)
+            if linked["violations"]:
                 attempts.append((i, None))
                 continue
             trial = audit_local_dtlz56_descent(
