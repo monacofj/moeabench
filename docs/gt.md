@@ -657,7 +657,9 @@ The machine-readable result states
 `rigorously_excluded` or
 `unresolved`, the rational interval,
 the failed objective and the exact
-positive rational separation. It
+positive rational separation (numerator and denominator encoded
+as hexadecimal integers to avoid Python's decimal-digit conversion
+limit). It
 retains `scientific_certification=unverified`:
 a sound partial interval exclusion is
 not an independent proof that the
