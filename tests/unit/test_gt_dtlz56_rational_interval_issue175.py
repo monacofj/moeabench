@@ -69,7 +69,13 @@ def test_rational_certificate_excludes_clearly_infeasible_interval(m):
     )
     assert outcome.conclusion=="rigorously_excluded"
     assert outcome.stopping_objective is not None
-    assert Fraction(outcome.strict_margin)>0
+    margin = Fraction(
+        int(outcome.strict_margin["numerator_hex"], 16),
+        int(outcome.strict_margin["denominator_hex"], 16),
+    )
+    assert margin > 0
+    import json
+    json.dumps(outcome.to_dict(), allow_nan=False)
     assert outcome.to_dict()["scientific_certification"]=="unverified"
 
 
