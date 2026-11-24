@@ -42,8 +42,19 @@ def inspect_dtlz56_geometry(points, *, m, k, problem, tolerance=1e-9):
     inner = []
     for i in range(1, m-1):
         index = m-i-1
-        theta = np.arctan2(f[:, index],
-                           np.linalg.norm(f[:, :index], axis=1))
+        # Hyperspherical coordinates are not unique when BOTH the
+        # angle's numerator and its remaining subvector vanish.
+        # In particular the valid theta_1=pi/2 front endpoint has
+        # all inner angles undefined: atan2(0, 0) would incorrectly
+        # impose theta_i=0 and reject an exactly feasible g=0 vector.
+        # Choosing pi/4 in that case is a realizable representation
+        # at every g, minimizes the necessary angular distortion, and
+        # MUST NOT be interpreted as a uniquely recovered angle.
+        numerator = f[:, index]
+        subradius = np.linalg.norm(f[:, :index], axis=1)
+        undefined = (numerator == 0.0) & (subradius == 0.0)
+        theta = np.arctan2(numerator, subradius)
+        theta = np.where(undefined, np.pi / 4.0, theta)
         inner.append(theta)
     if inner:
         angles = np.column_stack(inner)
