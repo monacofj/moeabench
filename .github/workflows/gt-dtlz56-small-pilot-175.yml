@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 DTLZ6 source-bound four-ray pilot (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-dtlz56-small-pilot-175.yml"
+      - "scripts/audit/dtlz56_small_scalarization_pilot.py"
+      - "tests/unit/test_gt_dtlz56_small_scalarization_pilot_issue175.py"
+      - "scripts/audit/dtlz56_paired_symbolic_audit.py"
+      - "moeabench/mops/_dtlz56_front.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fixed-ray-pilot:
+    name: "Four preference rays each: original DTLZ5/6 M=4 K=1"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install actual MoeaBench and tests
+        run: python -m pip install -e . pytest
+      - name: Independently test pilot boundaries
+        run: python -m pytest tests/unit/test_gt_dtlz56_small_scalarization_pilot_issue175.py -q
+      - name: Run fixed deterministic rays with real production scalarization
+        run: |
+          python -m scripts.audit.dtlz56_small_scalarization_pilot \
+            --problem DTLZ5 --m 4 --k 1 --abs-tol 1e-5 \
+            --max-nodes 5000 --output gt175-dtlz5-M4-K1-small-pilot.json
+          python -m scripts.audit.dtlz56_small_scalarization_pilot \
+            --problem DTLZ6 --m 4 --k 1 --abs-tol 1e-5 \
+            --max-nodes 5000 --output gt175-dtlz6-M4-K1-small-pilot.json
+      - name: Publish raw and summarized science-safe diagnostic
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path('.').glob('gt175-*-small-pilot.json')):
+              d = json.loads(path.read_text())
+              assert d["ray_count"] == 4
+              assert d["scientific_certification"] == "unverified"
+              assert d["per_row_audit"]["independent_objective_alignment"] == "pass"
+              print(path.name, "source", d["source_sha"])
+              print("  environment:", d["python"], d["numpy"], d["scipy"])
+              print("  independent max residual:", d["independent_max_abs_objective_error"])
+              print("  exact-decision conditional categories:", d["per_row_audit"]["counts"])
+              print("  actual g:", [round(x["evaluated_radial_g"], 9)
+                  for x in d["per_row_audit"]["rows"]])
+              print("  scalarization gaps:", [x["scalarization_abs_gap"]
+                  for x in d["optimizer"]])
+              print("  nodes:", [x["nodes"] for x in d["optimizer"]])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue175-source-bound-dtlz56-small-pilot
+          path: gt175-*-small-pilot.json
+          if-no-files-found: error
+          retention-days: 90

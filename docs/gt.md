@@ -2872,3 +2872,56 @@ then formulate and validate a suitable global
 oracle or explicit GT geometry-aware generation
 policy **before** costly full-budget runs.
 
+## Bounded source-bound pilot before full DTLZ5/6 GT generation
+
+To measure the *actual* source code's behavior without prematurely
+committing to costly \(n=2000\) references, the independent research
+preflight
+[`dtlz56_small_scalarization_pilot.py`](../scripts/audit/dtlz56_small_scalarization_pilot.py)
+runs **four fixed preference rays** each for the original DTLZ5 and
+DTLZ6 at \(M=4,K=1\). The input rays are obtained by evaluating
+four fixed, valid decisions with the original MOP and applying
+the production sampler's positive weight floor. The audit then
+calls the **actual** production `scalarized_candidate()` and
+`decision_vector()` for each ray, evaluates the recovered decisions
+with the real MOP and the independently implemented original
+equations, and applies the conservative per-row symbolic triage
+(Section above).
+
+The source-bound GitHub Actions job
+[`gt-dtlz56-small-pilot-175.yml`](../.github/workflows/gt-dtlz56-small-pilot-175.yml)
+runs that finite pilot for both original problems under an explicitly
+declared Python environment, with one numerical BLAS thread and a
+15-minute job budget. It records source SHA, versions, problem/M/K,
+all four fixed rays, optimizer scalar gaps and explored nodes,
+recovered radial values, original decision/objective byte digests,
+independent alignment residuals and per-row theorem categories.
+Full raw JSON reports are retained as source-bound workflow
+artifacts for 90 days. This CI job does **not** run either
+`mop.ps(n_points=2000)` or a large reference calibration.
+
+To reproduce the same limited experiment from a pinned checkout:
+
+```bash
+python -m scripts.audit.dtlz56_small_scalarization_pilot \
+  --problem DTLZ5 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-dtlz5-M4-K1-small-pilot.json
+python -m scripts.audit.dtlz56_small_scalarization_pilot \
+  --problem DTLZ6 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-dtlz6-M4-K1-small-pilot.json
+```
+
+**Interpretation:** These are **eight optimizer-derived candidate
+decisions**, four for each problem, not the `ps()`
+farthest-point-selected front or a statistically representative
+sample of it. Neither the fraction of decisions covered by
+our sufficient mathematical proofs nor the returned scalarization
+gap implies a certified GT membership rate, empirical coverage
+probability, or a Hausdorff bound for the entire continuous front.
+DTLZ6 tail tenth roots may not be rational for stored floats, so
+a low proof count must not be interpreted as a defect in
+the original GT generator. All whole-GT, finite-reference and
+ADR 0059 scientific acceptance statuses remain `unverified`.
+The finite pilot cannot replace full-budget experiments or
+a complete global positive-membership oracle.
+
