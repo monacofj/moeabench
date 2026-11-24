@@ -1817,3 +1817,59 @@ certificate of any \(M\ge4\) positive-\(g\) front region. Complete zero-gap nond
 cross-platform numerical verification, and finite coverage
 remain separate #175/#176 acceptance gates.
 
+## Provisional evidence capture for expensive GT experiments
+
+The lightweight command-line helper
+[`scripts/audit/gt_evidence_manifest.py`](../scripts/audit/gt_evidence_manifest.py)
+can record a reproducible **identity manifest** beside an expensive
+locally generated experiment artifact. The helper deliberately does
+not implement or claim the three scientific certification gates of
+ADR 0059.
+
+The input configuration is a JSON object with at least
+`problem`, `parameters`, `seed`, `budget`, `oracle` and
+`tolerance`. Include normalization, component definitions, reference
+identity, parallelism and any other scientifically relevant settings
+under `parameters` for a real experiment. The artifact may be a
+binary NumPy result or another immutable output file.
+
+```bash
+python scripts/audit/gt_evidence_manifest.py capture \
+  --artifact gt-results.npz \
+  --config gt-config.json \
+  --manifest gt-results.manifest.json
+
+python scripts/audit/gt_evidence_manifest.py verify \
+  --artifact gt-results.npz \
+  --manifest gt-results.manifest.json \
+  --expected-commit FULL_40_CHARACTER_COMMIT_SHA
+```
+
+Capture rejects a dirty tracked Git working tree and refuses to overwrite an existing manifest, output artifact or configuration file. It records the
+full commit, Python/platform information, installed dependency
+versions, NumPy build/BLAS configuration when available,
+experiment configuration, artifact digest and canonical manifest
+digest. Verification checks recorded manifest integrity and artifact
+identity (optionally against an externally supplied expected SHA).
+A matching manifest is only evidence of **byte identity and
+recorded provenance**, not of mathematical validity, actual
+environment certification or equivalent results on a second
+platform. The tool leaves `mathematical_oracle`,
+`execution_environment` and `result_reproducibility`
+explicitly `unverified` and rejects attempts to promote
+those fields to `pass` using this helper.
+
+To obtain a scientific GT certificate, the same source-bound
+artifact must separately pass the independent mathematical
+oracle, the numerical stability controls on its actual execution
+environment, and the verified-result/cross-platform comparison
+specified by ADR 0059. Certification decisions belong in a
+separately reviewed acceptance record, not in this hash manifest.
+
+Large 2,000/10,000-point GT quality matrices and multi-budget
+indicator sensitivity runs may benefit from running locally,
+but **do not start those until the specific MOP configurations,
+independent oracle, thresholds and acceptance artifact are
+fixed**. Otherwise heavy computations would produce
+reproducible but scientifically inconclusive data.
+
