@@ -78,6 +78,8 @@ jobs:
                         "objective_range_normalized_nearest_neighbor_max")])
               print("  exact image proofs:",
                     d["exact_rational_g_decision_image_ledger"]["counts"])
+              print("  experimental reference gate:",d["experimental_reference_gate"])
+              print("  proved dominated indices:",d["proven_dominated_decision_row_indices"])
               if d["dtlz6_irrational_g_support_ledger"] is not None:
                   print("  additional irrational g support:",
                         d["dtlz6_irrational_g_support_ledger"]["counts"])
