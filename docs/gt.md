@@ -1807,10 +1807,13 @@ A returned numerical dominance witness is provisional
 under ADR 0059; no witness or an ill-conditioned inversion
 returns `unverified`.
 
-This is a research-only helper, **not a public `assess_gt()`
-extension**, not a globally sufficient positive-membership
-test, and not a certificate of any \(M\ge4\) positive-\(g\)
-front region. Complete zero-gap nondominance,
+The helper is also available as an **explicit, opt-in public diagnostic**
+through `assess_gt(..., objective_only_local_descent=True)`
+and `mop.report(objective_only_local_descent=True)` when a calibrated
+GT is already present. It records numerical witnesses in
+`local_descent` without writing or changing any GT. This is **not**
+a globally sufficient positive-membership test, and **not** a
+certificate of any \(M\ge4\) positive-\(g\) front region. Complete zero-gap nondominance,
 cross-platform numerical verification, and finite coverage
 remain separate #175/#176 acceptance gates.
 
