@@ -679,6 +679,152 @@ or indicator fitness. No default GT
 generator or public `assess_gt()` status
 is changed.
 
+### 3.6.3c. A nonzero first-angle interval of globally optimal positive-g points
+
+The support construction of Section 3.6.3b can be
+extended from the hyperplane \(x_1=0\) to a
+**nonzero interval of first-angle positions**, with
+a fully global, sufficient non-dominance condition.
+
+Fix an original DTLZ5/6 problem with \(M\ge4\).
+Take an independently feasible candidate at radial
+\(r_y=1+g_y>1\), where its inner-angle position
+variables satisfy one of the support patterns
+(DTLZ56-PF5) for an objective
+\(j\in\{1,\ldots,M-2\}\) with \(p=p_j\ge2\).
+The first angle is now
+\(\theta_1=\pi x_1/2\), with \(x_1\ge0\)
+**not required to vanish**. Let
+
+\[
+c=y_M=r_y\sin\theta_1,\qquad
+a(r)=\frac{\pi}{4r}.
+\]
+
+The supporting objective of the candidate equals
+
+\[
+y_j=\sqrt{r_y^2-c^2}\,\sin^p a(r_y).
+\tag{DTLZ56-PF8}
+\]
+
+For any hypothetical strictly dominating feasible
+\(z\), nonnegative norm ordering gives
+\(1\le r_z<r_y\), while the last objective cap
+requires \(0\le z_M\le c\). If \(c<1\), then
+
+\[
+z_j\ge \sqrt{r_z^2-c^2}\,\sin^p a(r_z)
+=: H_p(r_z;c).
+\tag{DTLZ56-PF9}
+\]
+
+The inequality follows because the candidate's
+\(j\)-th objective consists of \(\cos\theta_1\)
+and precisely \(p\) constrained inner-angle
+sine/cosine factors; each such factor is at
+least \(\sin a(r_z)\). Moreover
+\(r_z\cos\theta_1(z)=\sqrt{r_z^2-z_M^2}
+\ge\sqrt{r_z^2-c^2}\).
+
+**Strict global monotonicity condition.** With
+\(t=\pi/(4r)\), logarithmic differentiation
+of \(H_p(r;c)\) gives
+
+\[
+r\frac{\partial}{\partial r}\log H_p(r;c)
+=\frac{r^2}{r^2-c^2}-p\,t\cot t.
+\tag{DTLZ56-PF10}
+\]
+
+For every \(r\ge1\) and \(0\le c<1\),
+
+\[
+\frac{r^2}{r^2-c^2}\le\frac{1}{1-c^2},
+\qquad
+p\,t\cot t\ge \frac{p\pi}{4}.
+\tag{DTLZ56-PF11}
+\]
+
+The second inequality follows from the fact
+that \(t\cot t\) decreases in \(t\) on
+\((0,\pi/4]\), while \(t=\pi/(4r)\le\pi/4\).
+Consequently, the **strict sufficient condition**
+
+\[
+\boxed{\quad c^2<1-\frac{4}{p\pi}\quad}
+\tag{DTLZ56-PF12}
+\]
+
+makes \(H_p(r;c)\) strictly decreasing on the
+**entire domain \(r\ge1\)**. Thus every
+hypothetical dominator obeys
+
+\[
+z_j\ge H_p(r_z;c)>H_p(r_y;c)=y_j,
+\]
+
+a contradiction. Every candidate meeting the
+support pattern and (DTLZ56-PF12) is globally
+Pareto-optimal for its original problem, even
+with \(x_1>0\), for the **entire open range**
+\(0\le g_z<g_y\). The result also contains the
+previous \(x_1=0\) strata as a special case.
+
+**Exact-rational implementation without approximate
+trigonometry.** The independent helper
+[`scripts/audit/dtlz56_positive_g_open_first_angle.py`](../scripts/audit/dtlz56_positive_g_open_first_angle.py)
+uses exact rational declarations of \(x_1\)
+and \(g_y\), the original support-pattern
+checker, and certified rational bounds
+\(\pi_{\rm lo}<\pi<\pi_{\rm hi}\) from Machin's
+identity. Since \(0\le\sin\theta_1\le\theta_1\),
+
+\[
+c^2\le B^2,\qquad
+B=\frac{r_y\pi_{\rm hi}x_1}{2}.
+\]
+
+The machine-readable proof is accepted only if
+
+\[
+\boxed{\quad B^2<
+1-\frac{4}{p\pi_{\rm lo}}\quad,}
+\tag{DTLZ56-PF13}
+\]
+
+which is **strictly stronger** than
+(DTLZ56-PF12), and is decided through
+exact rational arithmetic. The lossless
+hexadecimal certificate records the rational
+strict margin and all supplied positions.
+An independent replay procedure recomputes
+the complete inequality. A failure to satisfy
+the conservative bound returns `unverified`:
+the candidate may still be Pareto-optimal and
+the result must never be interpreted as
+a proof of domination.
+
+New tests check nonzero \(x_1\) for all
+supporting objectives at \(M=4,5,7,10\),
+both original distance functions, very small
+positive \(g\), strict global bound behavior,
+tampering, invalid inputs and safe abstention.
+The independent finite-trigonometric sanity
+checks are not premises of the proof.
+
+As for earlier theorems, scientific
+application to a stored **objective-only**
+GT row requires separately verified
+original decision-to-objective alignment,
+feasible \(g\), source/environment/result
+provenance and adequate finite-reference
+coverage under ADR 0059. This is a
+sufficient global membership certificate for
+a **wider positive-dimensional subset**
+of the original front, not a complete
+characterization for arbitrary \(M\ge4\).
+
 ### 3.6.4. Theorem 3 — exact global Pareto criterion using only scalar g
 
 Let \(y\) be any feasible objective vector and let
