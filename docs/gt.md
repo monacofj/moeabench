@@ -567,6 +567,118 @@ ADR 0059. The full positive-\(g\)
 membership problem for arbitrary \(M\ge4\)
 points remains open.
 
+### 3.6.3b. Generalized theorem — global positive-g PF strata for all supporting objectives
+
+The positive-\(g\) global-membership argument in Theorem
+3.6.3a extends beyond the single \((M-2)\)-th
+objective. For every original DTLZ5/6 problem with
+\(M\ge4\), each objective index
+\(j\in\{1,\ldots,M-2\}\) supplies a separate
+**sufficient global Pareto-membership stratum**.
+
+Let \(g_y\in(0,g_{\max}]\) and let
+\(y=F(g_y,x)\) be an independently feasible
+original decision. Require \(x_1=0\) and:
+
+* For the first objective (\(j=1\)), set
+  \(x_2=\cdots=x_{M-1}=1\). Then
+  \(p_j=M-2\).
+* For \(2\le j\le M-2\), set
+  \(x_2=\cdots=x_{M-j}=1\) and
+  \(x_{M-j+1}=0\), leaving every subsequent
+  position coordinate unrestricted. Then
+  \(p_j=M-j\).
+
+All listed exponents satisfy \(p_j\ge2\).
+For either pattern, the original hyperspherical
+product equations give
+
+\[
+y_M=0,\qquad
+y_j=h_{p_j}(g_y),\qquad
+h_p(g)=(1+g)\sin^p\!\left(\frac{\pi}{4(1+g)}\right).
+\tag{DTLZ56-PF5}
+\]
+
+**Proof of global nondominance.** Suppose a
+feasible \(z\le y\) strictly dominates \(y\).
+The nonnegative norm identity requires
+\(g_z<g_y\); and \(y_M=0\) forces
+\(\theta_1(z)=0\).
+At any original feasible \(g\ge0\),
+every constrained cosine factor satisfies
+\(\cos\theta_i\ge\sin a(g)\), and every
+constrained sine factor satisfies
+\(\sin\theta_i\ge\sin a(g)\), where
+\(a(g)=\pi/[4(1+g)]\). The \(j\)-th
+objective therefore obeys
+
+\[
+z_j\ge h_{p_j}(g_z).
+\tag{DTLZ56-PF6}
+\]
+
+Writing \(r=1+g\) and \(t=\pi/(4r)\),
+direct differentiation gives
+
+\[
+\frac{d}{dr}\bigl(r\sin^p t\bigr)
+=\sin^{p-1}t\,(\sin t-p\,t\cos t).
+\tag{DTLZ56-PF7}
+\]
+
+For \(0<t\le\pi/4\), convexity of tangent
+yields \(\tan t\le4t/\pi<2t\le p\,t\).
+Thus \(h_p\) is strictly decreasing for
+every \(p\ge2\). In particular,
+
+\[
+z_j\ge h_{p_j}(g_z)>
+h_{p_j}(g_y)=y_j,
+\]
+
+contradicting \(z\le y\). Therefore \(y\)
+is globally Pareto-optimal. \(\square\)
+
+The previous theorem with
+\(x_1=0,x_2=1,x_3=0\) is recovered by
+taking \(j=M-2\) and \(p_j=2\).
+For \(j=1\), the theorem supplies an
+additional all-upper-angle stratum not
+covered by that construction. It gives
+a family for every other
+\(j=2,\ldots,M-3\), including
+higher-order powers \(\sin^p a(g)\).
+The range of admissible \(g\) is the
+full original range; no positive
+radial gap, sampling density or
+numerical tangent argument is assumed.
+
+The independent research helper
+[`scripts/audit/dtlz56_generalized_positive_g_pf.py`](../scripts/audit/dtlz56_generalized_positive_g_pf.py)
+checks exact rational position declarations,
+reports the supporting objective and sine
+power, and records a replayable symbolic
+theorem identifier. Tests independently
+evaluate the original hyperspherical
+equations for DTLZ5/6 with
+\(M=4,5,7,10\), all eligible supporting
+objectives, very small positive \(g\),
+and rational invalid/boundary examples.
+
+This is a **set of sufficient strata**,
+not a complete positive-\(g\) front
+characterization. A stored objective-only
+GT point must first establish independently
+that its claimed decision coordinates
+and \(g\) really produce that point.
+Theorem application does not automatically
+pass ADR 0059 method, environment or
+result gates, GT component coverage,
+or indicator fitness. No default GT
+generator or public `assess_gt()` status
+is changed.
+
 ### 3.6.4. Theorem 3 — exact global Pareto criterion using only scalar g
 
 Let \(y\) be any feasible objective vector and let
