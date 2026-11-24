@@ -564,6 +564,49 @@ including singular-axis boundaries. These are
 ordinary floating-point consistency tests, not
 directed-rounding proofs.
 
+**Conservative continuous-interval extension.** For any
+closed interval \([L,U]\subseteq[0,g_{\max}]\),
+the functions \(r(g)^2=(1+g)^2\) and
+\(\beta(g)=\sin^2(\pi/(4(1+g)))\) are respectively
+increasing and decreasing. For every \(g\in[L,U]\),
+
+\[
+q_0(g)\ge q_0^-=
+\max\{0,(1+L)^2-y_M^2\},\qquad
+\beta(g)\ge\beta^-=
+\sin^2\!\left(\frac{\pi}{4(1+U)}\right).
+\tag{DTLZ56-19}
+\]
+
+The maps \(q\beta\) and
+\(\max(q\beta,q-y_j^2)\) are nondecreasing
+in nonnegative \(q,\beta\). Consequently the
+fixed-\(g\) recurrence admits a conservative
+interval **lower bound**, using
+\(q_0^-\) and \(\beta^-\) throughout. If
+\(q^-\beta^->y_j^2\) at an inner objective,
+or the final \(q^->y_1^2\), every
+\(g\in[L,U]\) is infeasible. Otherwise the
+interval is **unresolved**: the optimistic
+lower bound cannot prove that a feasible
+dominator exists. This implication holds in
+exact real arithmetic, including degenerate
+intervals and coordinate singularities.
+
+The independent
+`observe_interval_energy_exclusion()` helper
+in the same module implements this conservative
+recurrence. Its `numerically_excluded` outcome
+is **not a certified exclusion**, because
+ordinary floating-point evaluation has not yet
+established outward error enclosures. In
+particular, for a candidate at \(g_y>0\),
+checking \([0,g_y-\delta]\) cannot resolve
+the open interval \((g_y-\delta,g_y)\);
+even applying the bound to \([0,g_y]\)
+typically remains unresolved because it
+contains the original feasible candidate.
+
 **Crucial remaining difficulty:** a test at one
 fixed \(g\), even if rigorously evaluated, cannot
 prove \(\neg D(g;y)\) for every
