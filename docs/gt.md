@@ -3246,3 +3246,94 @@ No existing baselines, reference data,
 ADRs or public GT acceptance criteria
 are changed by this observation.
 
+## Source-bound audit of the actual final-selected 16-point original DTLZ5/6 GT
+
+The stratified source-ray diagnostic above inspected 48 candidate
+scalarizations **before** the production greedy maximin stage.
+Its observed concentration of \(g=0\) cannot establish the
+radial distribution, coverage or adequacy of the final GT.
+The next bounded experiment therefore calls the **unchanged
+public original `mop.ps(n_points=16)` exactly once**
+for each of DTLZ5 and DTLZ6 at \(M=4,K=1\).
+This exercise includes the real source preference pool,
+the default `scalar_tol=1e-7` Chebyshev solves,
+\(g=0\) anchors, and the actual objective-space
+greedy maximin selection. The original MOP `evaluation()`
+is then called on the final selected 16 decisions.
+
+The separate opt-in research program
+[`scripts/audit/dtlz56_final_selected_small_gt.py`](../scripts/audit/dtlz56_final_selected_small_gt.py)
+uses [the immutable paired-evidence protocol above](#paired-original-dtlz56-gt-evidence-independent-alignment-preflight)
+to retain **both PS and ordered F** in an independently
+replayable NPZ file, with its SHA-256 in a separate JSON
+diagnostic. It independently evaluates the published
+original equations; reports exact numeric \(g=0\) counts,
+positive-\(g\) counts and radial quantiles;
+records objective-component spans and normalized
+nearest-neighbor distances **within only the final
+selected sample**; and uses the independent,
+conditional exact-decision theorem ledgers.
+For DTLZ6 it also reports optional irrational-radial
+global-PF sufficiency and certified distance to
+proven support strata. The source SHA, Python,
+NumPy and SciPy versions, source seed, and
+expected number of scalarizations are recorded.
+
+The source-bound GitHub Actions
+[`gt-dtlz56-final-small-selected-175.yml`](../.github/workflows/gt-dtlz56-final-small-selected-175.yml)
+limits the job to **20 minutes** and one BLAS
+thread, and archives all four files (two PS/F
+bundles and two JSON reports) for 90 days.
+Unlike the 48-ray preselection audit, this
+experiment invokes the actual final-stage
+sampler: with \(n=16\), its deterministic
+source pool still has **256 Sobol, 128 Gaussian
+and 64 Gamma rays, i.e. 448 scalarizations
+per original problem**. No \(n=2000\) run
+is launched. The unit tests mock `ps()`
+to avoid this substantial cost in the
+ordinary regression suite.
+
+Reproduce manually from a pinned checkout:
+
+```bash
+python -m scripts.audit.dtlz56_final_selected_small_gt \
+  --problem DTLZ5 --m 4 --k 1 --points 16 \
+  --bundle gt175-final-DTLZ5-M4-K1-paired.npz \
+  --report gt175-final-DTLZ5-M4-K1-report.json
+
+python -m scripts.audit.dtlz56_final_selected_small_gt \
+  --problem DTLZ6 --m 4 --k 1 --points 16 \
+  --bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+  --report gt175-final-DTLZ6-M4-K1-report.json
+```
+
+Both outputs use exclusive creation and never replace
+a production calibration sidecar, baseline or
+historical reference. The verification step
+must independently replay the archived PS/F
+bundle digest and original equations. The
+spherical norm residual and objective-space
+distance statistics are **observational**:
+they cannot prove exact membership of an
+approximate finite-precision objective row,
+continuous-front coverage, reference
+regularity, unbiased source-selection
+probabilities or indicator adequacy.
+All global GT, finite-coverage, indicator
+and ADR 0059 scientific acceptance statuses
+remain `unverified` regardless of a
+successful 16-point source-bound experiment.
+
+The actionable next decision is based on
+**the radial \(g\) values after maximin
+selection**, not on the earlier pool-only
+candidate counts. Positive-\(g\) components
+that are absent or sparse in this small sample
+would justify an explicit larger source-bound
+geometry audit, not automatically altering
+the production sampler or its regression
+tests. Conversely, a healthy radial spread
+among just 16 points does not itself prove
+that a 2,000-point GT will cover the front.
+
