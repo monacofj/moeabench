@@ -607,6 +607,67 @@ even applying the bound to \([0,g_y]\)
 typically remains unresolved because it
 contains the original feasible candidate.
 
+**Exact-rational interval exclusion (research implementation).**
+The new independent helper
+[`scripts/audit/dtlz56_rational_interval.py`](../scripts/audit/dtlz56_rational_interval.py)
+evaluates the conservative exclusion implication
+(DTLZ56-19) with exact Python rational arithmetic.
+It does **not** call hardware sine or use heuristic
+floating-point slacks. Instead, it constructs
+provable rational upper and lower bounds on
+\(\pi\), using Machin's identity
+
+\[
+\pi=16\arctan(1/5)-4\arctan(1/239)
+\tag{DTLZ56-20}
+\]
+
+and alternating rational \(\arctan\) series.
+For \(0\le t\le\pi/4<1\), an even number
+of terms of the alternating sine Taylor
+series gives a rigorous lower bound on
+\(\sin t\). Combining these bounds with
+the monotonicity of sine on this domain
+gives an **exact-rational lower bound**
+on \(\beta(g)\) throughout \([L,U]\).
+
+The lower squared-residual recurrence
+then uses only exact rational addition,
+multiplication, subtraction, \(\max\)
+and strictly positive comparisons. If
+a lower bound proves \(q^-\beta^->y_j^2\),
+or the final \(q^->y_1^2\), **no feasible
+original DTLZ5/6 objective vector with
+any \(g\in[L,U]\) satisfies the supplied
+caps**. If strict separation cannot be
+proved, the method returns `unresolved`,
+even if an ordinary floating-point
+implementation happens to report infeasibility.
+
+Floating-point **inputs** supplied to
+this helper are first converted to their
+exact binary-rational values. The
+conclusion therefore concerns those
+precisely specified objective caps
+and interval endpoints. It is independent
+of the host machine's BLAS, libm and
+floating-point trigonometric behavior.
+
+The machine-readable result states
+`rigorously_excluded` or
+`unresolved`, the rational interval,
+the failed objective and the exact
+positive rational separation. It
+retains `scientific_certification=unverified`:
+a sound partial interval exclusion is
+not an independent proof that the
+candidate \(y\) is a feasible original
+GT point, nor a complete exclusion
+of \([0,g_y)\), nor a demonstration of
+finite GT coverage or indicator fitness.
+Source- and result-bound acceptance
+under ADR 0059 remains required.
+
 **Crucial remaining difficulty:** a test at one
 fixed \(g\), even if rigorously evaluated, cannot
 prove \(\neg D(g;y)\) for every
