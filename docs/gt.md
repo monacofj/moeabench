@@ -3081,3 +3081,168 @@ rounded away. The pilot is not the full `ps()` GT,
 and neither its few proof outcomes nor the distances
 estimate statistical reference coverage.
 
+## Stratified intermediate audit of the original DTLZ5/6 candidate-pool mechanism
+
+Before running the full \(n=2000\) calibration, a
+**source-bound, budgeted intermediate diagnostic** now measures the
+three distinct preference-ray families that feed the existing
+\(M\ge4\) DTLZ5/6 global scalarization mechanism:
+
+1. Sobol rays formed by evaluating original decisions with
+   deterministic angular boundary faces;
+2. strictly positive Gaussian preference vectors;
+3. sparse Gamma preference vectors.
+
+The opt-in research procedure
+[`scripts/audit/dtlz56_stratified_medium_pilot.py`](../scripts/audit/dtlz56_stratified_medium_pilot.py)
+mirrors the **existing** deterministic ray-source construction at
+\(M=4,K=1\), `n_points=64` (source pool size 256), and selects
+**eight evenly spaced source indices per ray family**.
+It executes the production `scalarized_candidate()` and
+`decision_vector()` on the resulting **24 source rays for
+each original problem**, with a strict limit of 5,000
+branch-and-bound nodes **per scalarization** and
+absolute gap budget \(10^{-5}\). It stores the actual
+aligned decision/objective matrices and their byte digests;
+checks the original equations independently; evaluates
+the previous, scientifically conservative exact-decision
+Pareto/dominance predicates; and reports per-family
+optimizer cost and theorem applicability. The original
+source algorithm, branch-and-bound, `ps()` and
+the public calibration interface are left unchanged.
+
+The CI workflow
+[`gt-dtlz56-stratified-medium-175.yml`](../.github/workflows/gt-dtlz56-stratified-medium-175.yml)
+uses a source-bound Python 3.12 runner, one BLAS thread,
+a **15-minute job budget**, the same source seed and
+no unbounded optimizations. Raw JSON artifacts and
+the resulting per-family counts are preserved for 90 days.
+Run explicitly from a pinned checkout with:
+
+```bash
+python -m scripts.audit.dtlz56_stratified_medium_pilot \
+  --problem DTLZ5 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-medium-DTLZ5-M4-K1.json
+python -m scripts.audit.dtlz56_stratified_medium_pilot \
+  --problem DTLZ6 --m 4 --k 1 --abs-tol 1e-5 \
+  --max-nodes 5000 --output gt175-medium-DTLZ6-M4-K1.json
+```
+
+**What is and is not measured.** This intermediate run
+tests **48 selected, actual optimizer-derived candidate
+rays in total**. It samples each preference-source
+mechanism but **does not reproduce the production sampler's
+full candidate pool** (448 scalarizations for nominal 64
+points), its greedy maximin selection, or the geometry
+of the resulting finite GT. The eight fixed source
+indices per family are not a random sample suitable
+for population inference. Per-family proof counts
+measure the *reach of known sufficient theorems*, not
+the proportion of Pareto-optimal points.
+The reported scalarization gaps bound weighted
+Chebyshev optimality, not pointwise Pareto membership
+or a finite reference's Hausdorff coverage.
+
+The appropriate interpretation gate is:
+(i) all original decision/objective rows are
+numerically independently aligned;
+(ii) every scalarized optimizer stays within its
+declared node and gap budgets;
+(iii) exact-decision membership, dominance and
+unknown counts and any DTLZ6 proven-PF proximity
+bounds are reported **separately**;
+(iv) the source SHA, seed, ray indices, versions and
+matrix digests are preserved. An unsuccessful
+optimization or source inconsistency is a
+**pilot failure to investigate**, not an accepted GT;
+a low exact-theorem applicability count is
+**scientifically inconclusive** about GT quality.
+No outcome in this pilot automatically certifies
+the full GT, changes an ADR 0059 gate, changes
+`assess_gt()`, or justifies replacing stored
+references or frozen numeric baselines.
+
+The intermediate stage supplies a reproducible
+cost/behavior checkpoint before making the distinct
+decision to run production \(n=2000\) on a
+source/environment-pinned, potentially faster
+local machine with the full reference-coverage
+and indicator-adequacy acceptance protocol.
+
+### Observed 48-ray stratified diagnostic (2026-11-24, PR #207)
+
+The original bounded workflow
+[`run #45480846865`](https://github.com/monacofj/moeabench/actions/runs/45480846865)
+passed its new 13 tests and both 24-source-ray production
+scalarizations. Its raw output is
+[`issue175-stratified-medium-source-ray-audit`](https://github.com/monacofj/moeabench/actions/runs/45480846865/artifacts/14960139061).
+The GitHub runner checkout recorded source SHA
+`27a7c84cf54f82a56e404d28c8c6233541947561`,
+NumPy 2.5.5 and SciPy 1.18.1. The experiment used
+the explicitly stated deterministic indices and
+M=4, K=1, \(10^{-5}\) scalarization absolute-gap
+budget and 5,000 max nodes per solve.
+
+**Observed decisions, not inferences about the final GT:**
+
+| Problem | Total rays | Exact \(g=0\) rows | \(g>0\) rows | Conditional globally efficient exact-decision images | Remaining unverified |
+|---|---:|---:|---:|---:|---:|
+| Original DTLZ5 | 24 | 22 | 2 | 24 | 0 |
+| Original DTLZ6 | 24 | 22 | 2 | 23 | 1 |
+
+In both problems, the only two positive-\(g\) rows
+were indices 10 (positive-Gaussian source index 32)
+and 18 (sparse-Gamma source index 16).
+DTLZ5 had \(g=0.25\) for both; DTLZ6 had
+\(g=1.0\) and approximately
+\(g=0.9025764465332031\), respectively.
+The first DTLZ6 positive-\(g\) row satisfies
+the exact-rational supporting-stratum theorem;
+its independent irrational-radial certificate
+also applies (the latter is **not an additional
+distinct row**). The second remains unverified
+by the exact membership predicates, but a
+separately proved Pareto-support proximity
+bound exists; that is **not** a proof of
+membership or of domination.
+
+All 24 DTLZ5 source decisions and 23/24 DTLZ6
+source decisions had conditional exact
+global-membership proofs. In **both**
+problems, **22/24** were \(g=0\) anchors of
+the known unit-radius theorem. A high total
+count therefore says little about the
+**difficult positive-\(g\) component**.
+Independent original-equation residual maxima
+were about \(1.11\times10^{-16}\) for DTLZ5
+and exactly zero in the observed DTLZ6
+finite-precision comparison. The maximum
+scalarization nodes over the selected rays
+were 69 (DTLZ5) and 151 (DTLZ6), both below
+the declared 5,000 bound; reported finite
+scalarization gaps remained approximately
+\(10^{-5}\). By family, 8/8 DTLZ5 rays in
+each family received exact-decision proofs;
+for DTLZ6, the Gaussian and Sobol family
+were 8/8 each and the sparse-Gamma family
+was 7/8.
+
+**Research decision for the next gate.** The
+mechanism-stratified sample showed unexpectedly
+many \(g=0\) selections among fixed preference
+rays, but has not examined the production
+sampler's **full pool** or its **final
+farthest-point selected** objective sample.
+Before committing to \(n=2000\), compare
+the radial distribution \(g\) and objective
+coverage on the *actual final selected*
+small-\(n\) PS/F reference, preserving
+complete paired evidence. A second,
+explicitly targeted positive-\(g\) ray study
+may diagnose missing sufficient proofs,
+but its targeted counts must not be
+represented as unbiased GT-wide rates.
+No existing baselines, reference data,
+ADRs or public GT acceptance criteria
+are changed by this observation.
+
