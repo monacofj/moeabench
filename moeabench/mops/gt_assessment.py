@@ -443,7 +443,7 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
               seed=0, tolerance=1e-9, dominance_margin=None,
               dominance_max_intervals=4096, dominance_g_gap=None,
               dominance_g_max_intervals=8192, decision_reference=None,
-              local_descent=False):
+              local_descent=False, objective_only_local_descent=False):
     """Inspect a GT reference without writing, calibrating or modifying it.
 
     If neither a reference nor n_points is supplied, an existing in-memory
@@ -469,8 +469,15 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
         if (not isinstance(dominance_g_max_intervals, int)
                 or dominance_g_max_intervals < 1):
             raise ValueError("dominance_g_max_intervals must be positive")
+    if local_descent and objective_only_local_descent:
+        raise ValueError(
+            "Choose either aligned local_descent or objective_only_local_descent")
     if local_descent and decision_reference is None:
         raise ValueError("local_descent requires explicit aligned decision_reference")
+    if objective_only_local_descent and decision_reference is not None:
+        raise ValueError(
+            "objective_only_local_descent reconstructs decisions independently; "
+            "do not supply decision_reference")
     if decision_reference is not None and n_points is not None:
         raise ValueError(
             "Use an explicit objective reference alongside decision_reference; "
@@ -848,10 +855,41 @@ def assess_gt(mop, reference=None, *, n_points=None, probes=128,
     local_descent_result = GTProperty(
         "not_applicable",
         basis="independent local first-order audit not requested")
-    if local_descent:
+    if local_descent or objective_only_local_descent:
         if kind not in ("dtlz5", "dtlz6"):
             raise ValueError(
                 "local_descent supports only original DTLZ5/6")
+    if objective_only_local_descent:
+        from ._dtlz56_objective_descent import audit_objective_local_descent
+        attempts = []
+        for i, point in enumerate(points):
+            try:
+                trial = audit_objective_local_descent(
+                    point, problem=kind.upper(), k=mop.N-mop.M+1,
+                    tolerance=tolerance)
+            except ValueError:
+                trial = None
+            attempts.append((i, trial))
+        witnesses = [
+            {"index": int(i), "details": trial.to_dict()}
+            for i, trial in attempts
+            if trial is not None and trial.status == "witness"
+        ]
+        local_descent_result = GTProperty(
+            "unverified",
+            value={
+                "mode": "independent_objective_reconstruction",
+                "witness_count": len(witnesses),
+                "numerical_witnesses": witnesses,
+                "unresolved": len(attempts)-len(witnesses),
+            },
+            basis="independent original DTLZ5/6 objective-to-decision "
+                  "reconstruction with row-aligned equation check and "
+                  "first-order local strict-dominance witnesses; "
+                  "ordinary FP is provisional, absence of a witness "
+                  "does not prove global Pareto optimality",
+            threshold=tolerance, unit="original objective-space coordinates")
+    if local_descent:
         from ._dtlz56_local_descent import audit_local_dtlz56_descent
         attempts = []
         from ._dtlz56_decision_witness import inspect_dtlz56_decision_witness
