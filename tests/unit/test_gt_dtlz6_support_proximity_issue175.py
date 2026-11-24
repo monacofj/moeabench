@@ -78,7 +78,8 @@ def test_zero_bound_for_exact_known_pf_is_valid():
 def test_distance_is_upper_bound_not_membership_or_nearest_front_proof():
     # A near-PF candidate is *not* classified as globally Pareto optimal.
     u=[Q(1,4),Q(1)-Q(1,2**52),Q(0)]
-    result=certify_dtlz6_support_proximity(u,[Q(1,2)],k=1)
+    tail=[Q.from_float(float(0.2**10))]
+    result=certify_dtlz6_support_proximity(u,tail,k=1)
     report=result.to_dict()
     assert report["conclusion"]=="rigorously_within_certified_pf_distance"
     assert report["scientific_certification"]=="unverified"
@@ -98,7 +99,7 @@ def test_near_support_but_unsafe_first_angle_abstains():
 
 def test_tampering_bound_or_snapped_pf_proof_is_rejected():
     u=[Q(1,4),Q(1)-Q(1,2**52),Q(0)]
-    tail=[Q(1,2)]
+    tail=[Q.from_float(float(0.2**10))]
     record=certify_dtlz6_support_proximity(u,tail,k=1).to_dict()
     assert replay_dtlz6_support_proximity(u,tail,record,k=1)
     for property_path in ("certified_l2_distance_upper",
