@@ -323,6 +323,36 @@ realization cannot contain a Pareto-optimal \(g>0\) point. **This is a necessary
 global-optimality proof**: different boundary directions may
 dominate one another.
 
+**Coordinate-singularity refinement.** The inverse angular
+representation is nonunique whenever an objective and all
+preceding coordinates in its hyperspherical subvector
+vanish simultaneously. In that case `atan2(0, 0)`
+is a library convention, **not** a mathematically
+determined angle. Since the original angular intervals
+always contain `pi/4`, an undetermined inner angle
+may be chosen as `pi/4` in a feasible representation;
+its contribution to the minimum required radial
+`g` is therefore zero. This choice is independent
+for every undetermined angle and realizes the
+minimum feasible `g` over representations of
+the same objective ray.
+
+For example, the original endpoint
+`(0, ..., 0, 1)` is feasible and Pareto-optimal
+at `g=0` (take `theta_1=pi/2`); forcing its
+indeterminate inner angles to the numerical
+value `atan2(0, 0)=0` incorrectly rejects it.
+The independent inverse-geometry auditor
+explicitly handles only **exactly zero**
+numerator-and-subradius pairs in this way.
+Near-zero but determined angles still require
+the ordinary mathematical feasibility checks;
+this is not a blanket numerical tolerance
+that makes an impossible direction feasible.
+A positive-`g` vector on the same last-axis
+ray remains provably radially dominated by
+its unit-radius representative.
+
 The independent implementation
 [`_dtlz56_independent_audit.py`](../moeabench/mops/_dtlz56_independent_audit.py)
 uses objective norms, inverse angles and (DTLZ56-3). It detects

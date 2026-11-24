@@ -108,6 +108,20 @@ points: those points alone do not cover the original complete PF.
 A mixture of proved `g=0` points and such positive-`g` points
 is likewise `unverified` as a whole.
 Separate counts show both parts of the corrected original reference.
+At hyperspherical coordinate singularities, `atan2(0,0)`
+does not define a unique angular coordinate. The independent
+feasible-image validator must choose a realizable angle inside
+the original admissible interval (the midpoint `pi/4`)
+rather than rejecting the original last-axis Pareto
+endpoint `(0,...,0,1)`. This implements the proven
+minimum-angular-distortion construction documented
+in [`docs/gt.md`](../gt.md), Section 3.6.2.
+Positive-`g` points on the identical singular ray
+remain radially dominated; truly determined forbidden
+angles must continue to fail. Dedicated new
+regression tests preserve these cases without
+weakening any previously approved baseline.
+
 The independent necessary-geometry audit is **not** the final
 full-Pareto-membership oracle and does not certify all positive-`g`
 regions. Built-in configurations outside proved ranges, custom
