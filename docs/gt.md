@@ -2718,3 +2718,85 @@ independent oracle, thresholds and acceptance artifact are
 fixed**. Otherwise heavy computations would produce
 reproducible but scientifically inconclusive data.
 
+## Paired original DTLZ5/6 GT evidence: independent alignment preflight
+
+The original **M≥4 DTLZ5/6** `ps()` implementation uses
+globally bounded **numerical weighted Chebyshev scalarization** and
+greedy objective-space sampling to approximate the original
+positive-\(g\) front. Its scalarization tolerance is finite.
+Consequently, a point produced by `ps()` and `pf()` should
+not be assumed to possess a *mathematically exact global PF
+membership certificate*. The exact positive-membership
+theorems in Section 3.6 instead apply to independently
+verified **specific original decision strata**.
+
+The current `mop.calibrate()` `mop_gt_v1` sidecar stores
+the **objective-only** `gt_reference`, source label and
+dimensions. It does not contain the decision vectors that
+produced its rows. The separate `decision_reference` option
+in `mop.assess_gt()` can inspect an explicitly supplied
+pair, but it cannot recover the original generating decisions
+from a pre-existing objective-only sidecar. Generating
+`mop.ps(n_points)` again merely supplies a new candidate;
+without explicit row alignment it must not be presented
+as proof that it produced the archived sidecar.
+
+For source-bound research **without changing either public
+calibration or the existing sidecar schema**, use the
+independent provisional artifact helper
+[`scripts/audit/dtlz56_paired_gt_evidence.py`](../scripts/audit/dtlz56_paired_gt_evidence.py).
+Its `sample` command invokes the original `ps()` **once**,
+evaluates those decisions with the original production
+MOP for capture, and stores both arrays in one
+immutable-on-create NPZ bundle:
+
+```bash
+python scripts/audit/dtlz56_paired_gt_evidence.py sample \
+  --problem DTLZ5 --m 4 --k 4 --points 2000 \
+  --bundle dtlz5-M4-paired.npz
+
+python scripts/audit/dtlz56_paired_gt_evidence.py verify \
+  --problem DTLZ5 --m 4 --k 4 \
+  --bundle dtlz5-M4-paired.npz \
+  --expected-sha256 ARTIFACT_SHA256
+```
+
+The verifier computes the original DTLZ5/6 position
+angles and distance function **independently of the
+production MOP evaluation**, checks every decision
+against \([0,1]^N\), compares each objective row
+against the corresponding independently recomputed
+one, and optionally compares the same ordered
+objective matrix against an already existing
+`mop_gt_v1` sidecar using `--sidecar PATH`.
+Any mismatched row, dimension, original problem,
+artifact digest or existing-sidecar ordering is
+reported as a failed alignment, not silently repaired.
+The sampling command refuses to overwrite an
+existing candidate bundle or sidecar.
+
+A complete **source- and environment-bound** record
+must additionally apply
+[`gt_evidence_manifest.py`](../scripts/audit/gt_evidence_manifest.py)
+to the produced NPZ, with exact seed, budget,
+M, K, algorithm, original evaluator and tolerance
+in the configuration. Neither program, alone
+or together, proves exact mathematical Pareto
+membership of numerically scalarized positive-\(g\)
+points, finite GT coverage or the complete
+method/environment/result certification gates of
+ADR 0059. Those remain `unverified`.
+
+**Cost and location:** generating the current
+full 2,000-point DTLZ5/6 samples can involve
+thousands of globally bounded scalarizations
+plus an objective-space farthest-point selection.
+It should be performed locally **only after**
+fixing the precise M/K cases, computation budget,
+source commit and acceptance thresholds. Do not
+start that expense merely to repeat objective-only
+calibration. The unit tests for the paired evidence
+helper use small explicitly constructed decision
+matrices and therefore never invoke the expensive
+sampler.
+
