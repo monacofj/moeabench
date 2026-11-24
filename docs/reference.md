@@ -427,7 +427,7 @@ mop.report(assess=False)           # MOP and calibration state only
 tolerance=1e-9, dominance_margin=None,
 dominance_max_intervals=4096, dominance_g_gap=None,
 dominance_g_max_intervals=8192, decision_reference=None,
-local_descent=False)` accepts either an explicit objective
+local_descent=False, objective_only_local_descent=False)` accepts either an explicit objective
 matrix or an on-demand analytical sample budget, but not both. By default, it
 inspects the calibrated GT already held by the MOP instance; it does
 not create calibration or sidecar files. `GTAssessment` provides
@@ -458,6 +458,21 @@ unresolved interval. The `global_dominance` property
 floating-point exclusion is not an exact global proof.
 `mop.report(dominance_g_gap=1e-4)` exposes it explicitly;
 routine `report()` does not pay this cost.
+
+An additional opt-in diagnostic, `objective_only_local_descent=True`,
+uses independent inverse geometry for the **original DTLZ5/6**
+to reconstruct a feasible decision from each existing objective row.
+The reconstruction is checked against the supplied row before
+the independent first-order descent search. Its findings are
+reported in `local_descent` with
+`mode=independent_objective_reconstruction`. It is mutually
+exclusive with `local_descent=True` and with an explicit
+`decision_reference`. The result is **always `unverified` at the
+scientific-certification level**: numerical dominance witnesses
+are provisional; no found witness does not establish global
+Pareto membership. This mode is off by default and works in
+`mop.report(objective_only_local_descent=True)` for an existing
+calibrated GT, without regenerating or writing reference files.
 
 An optional aligned `decision_reference` matrix provides
 **decision-to-objective witnesses** for original DTLZ5/6.

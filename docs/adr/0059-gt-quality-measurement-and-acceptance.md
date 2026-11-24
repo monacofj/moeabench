@@ -216,13 +216,23 @@ results may be promoted to certified evidence,
 so `local_descent.status` remains
 `unverified` for portable scientific certification.
 
-This opt-in procedure requires aligned decision
-witnesses because the objective-only GT does
-not carry the original position variables.
-The default GT assessment and report remain
-lightweight, do not generate new references,
-and do not modify original sidecars, regressions
-or approved baselines.
+This opt-in procedure requires **verified aligned decision
+witnesses**. With `local_descent=True`, the user supplies
+`decision_reference` aligned to the objective rows. As an
+additional explicit mode, `objective_only_local_descent=True`
+reconstructs each decision from the original DTLZ5/6 inverse
+equations, verifies it independently against the existing objective
+row, and then runs the same first-order descent diagnostic.
+The two modes are mutually exclusive. No assumption that a
+production PS/PF sampler supplies aligned decisions is allowed.
+The result remains `local_descent.status=unverified` at the
+scientific-certification level even if a provisional numeric witness
+is found. No witness must never be promoted to positive global
+Pareto membership.
+
+The default GT assessment and report remain lightweight,
+do not generate new references, and do not modify original
+sidecars, regressions or approved baselines.
 
 ## Analytical g=0 curve dominance witnesses
 

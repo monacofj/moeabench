@@ -128,7 +128,8 @@ class BaseMop(Reportable, ABC):
                   seed=0, tolerance=1e-9, dominance_margin=None,
                   dominance_max_intervals=4096,
                   dominance_g_gap=None, dominance_g_max_intervals=8192,
-                  decision_reference=None, local_descent=False):
+                  decision_reference=None, local_descent=False,
+                  objective_only_local_descent=False):
         """Read-only structured GT assessment (ADR 0059).
 
         Use the calibrated in-memory GT by default, an explicit objective
@@ -144,13 +145,15 @@ class BaseMop(Reportable, ABC):
             dominance_g_gap=dominance_g_gap,
             dominance_g_max_intervals=dominance_g_max_intervals,
             decision_reference=decision_reference,
-            local_descent=local_descent)
+            local_descent=local_descent,
+            objective_only_local_descent=objective_only_local_descent)
 
     def report(self, show: bool = True, *, assess: bool = True,
                probes: int = 128, seed: int = 0,
                dominance_margin=None, dominance_max_intervals=4096,
                dominance_g_gap=None, dominance_g_max_intervals=8192,
                decision_reference=None, local_descent=False,
+               objective_only_local_descent=False,
                **kwargs) -> str:
         """MOP definition and the current calibrated GT's quality context.
 
@@ -181,7 +184,8 @@ class BaseMop(Reportable, ABC):
                 dominance_g_gap=dominance_g_gap,
                 dominance_g_max_intervals=dominance_g_max_intervals,
                 decision_reference=decision_reference,
-                local_descent=local_descent)
+                local_descent=local_descent,
+                objective_only_local_descent=objective_only_local_descent)
             lines.append("Quality diagnostics (not a proof of full coverage):")
             lines.append(self._report_block(assessment.summary()))
         lines.append("")
