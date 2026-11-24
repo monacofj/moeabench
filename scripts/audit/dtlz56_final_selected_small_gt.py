@@ -122,6 +122,18 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
                 "supporting_objective":cert.supporting_objective,
             })
 
+    # A rigorously dominated exact-decision image is a concrete reject
+    # condition for the sampled reference, regardless of how close it
+    # lies to the front. Inconclusive cases are NOT automatically accepted.
+    proven_dominated_rows = [
+        entry["row"] for entry in theoretical["rows"]
+        if entry["status"] == "symbolic_decision_dominated"
+    ]
+    experimental_reference_gate = (
+        "blocked_proven_dominated_decision"
+        if proven_dominated_rows else "unverified_no_known_dominator"
+    )
+
     # The results are measurements of the selected points, not a
     # measure of unknown continuous-front coverage.
     return {
@@ -154,6 +166,8 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
                 aligned["max_abs_objective_error"],
         },
         "exact_rational_g_decision_image_ledger":theoretical,
+        "proven_dominated_decision_row_indices":proven_dominated_rows,
+        "experimental_reference_gate":experimental_reference_gate,
         "dtlz6_irrational_g_support_ledger":irrational,
         "dtlz6_certified_pf_proximity":proximity,
         "whole_gt_global_membership":"unverified",
