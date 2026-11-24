@@ -2055,6 +2055,79 @@ None of these requirements forces different MOPs to use one generator. On the co
 
 **Governing principle:** GT must represent the **correct mathematical problem** with **coverage, numerical fidelity, and provenance appropriate for its intended purpose**. Each MOP owns its geometry and reference-generation strategy; supporting infrastructure can be shared only where its scientific validity is established.
 
+### 3.6.11a. Exact-rational first-order boundary dominance certificates
+
+The differential sufficiency theorem (DTLZ56-13) also admits
+**machine-checkable strict rational certificates** for rational
+position variables \(u\), distance \(g>0\), and one-sided rational
+velocity \(v\). This is useful specifically at the
+\(g=g_{\min}(\text{ray})\) angular boundary where
+the exact same-ray witness necessarily abstains.
+
+For the original hyperspherical product
+\(F_j(g,u)=(1+g)\prod_i h_{ji}(\theta_i)\),
+each factor \(h_{ji}\) is either \(\sin\theta_i\),
+\(\cos\theta_i\), or \(1\). Along the feasible path
+\(u(g')=u+(g'-g)v\), the angle derivatives are
+
+\[
+\theta_1'=\frac{\pi v_1}{2},\qquad
+\theta_i'=\pi\left(
+\frac{2u_i-1}{4(1+g)^2}
++\frac{gv_i}{2(1+g)}
+\right),\quad i\ge2.
+\tag{DTLZ56-14a}
+\]
+
+Product differentiation expresses each \(dF_j/dg\)
+using sums and products of \(\sin\theta_i\),
+\(\cos\theta_i\), rational quantities and \(\pi\).
+Machin rational bounds enclose \(\pi\) exactly;
+alternating Taylor sums and monotonicity of
+sine and cosine on \([0,\pi/2]\) give rational
+lower and upper bounds for each trigonometric
+factor. Applying interval arithmetic to the
+product derivative yields a rational enclosure
+\([\underline d_j,\overline d_j]\) containing
+the exact \(dF_j/dg\).
+
+If the prescribed \(v\) obeys the one-sided
+box constraints (DTLZ56-12) and all
+\(\underline d_j>0\), the strict differential
+sufficiency theorem proves that **some feasible
+\(g'<g\), arbitrarily close to \(g\), strictly
+improves every objective**. This establishes a
+zero-gap local non-Pareto-membership proof without
+needing to construct a numerically separated
+finite-distance witness.
+
+The independent helper
+[`scripts/audit/dtlz56_rational_tangent.py`](../scripts/audit/dtlz56_rational_tangent.py)
+accepts a rational \(u,g,v\), calculates exact
+outward enclosures for the complete original
+derivatives, records exact hex-rational margins
+and independently replays a certificate.
+New tests cover M=4 angular-boundary points
+with exact rational directions (including
+one or multiple active inner-angle bounds),
+finite checks against separately implemented
+original spherical equations, and safe
+abstention when derivatives are not all
+strictly positive.
+
+A **nonpositive or undecidable** derivative
+enclosure must return `unverified`. Failure to
+find such a direction does not prove
+Pareto optimality, because possible dominators
+may follow curved paths with higher-order
+improvement or arise nonlocally. The supplied
+candidate's original feasible-image
+correspondence remains a separate requirement,
+and public `assess_gt()` and ADR 0059
+certification statuses are unchanged.
+The global positive-membership problem for
+original M>=4 remains open.
+
 ### 3.6.12. Theorem 9 — complete zero-gap dominance for M=2 and M=3
 
 For **original** DTLZ5 and DTLZ6 with \(M=2\) or \(M=3\),
