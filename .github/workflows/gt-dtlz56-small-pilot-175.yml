@@ -55,6 +55,9 @@ jobs:
               print("  environment:", d["python"], d["numpy"], d["scipy"])
               print("  independent max residual:", d["independent_max_abs_objective_error"])
               print("  exact-decision conditional categories:", d["per_row_audit"]["counts"])
+              if d["problem"] == "DTLZ6":
+                  print("  irrational-radial rigorous support:",
+                        d["dtlz6_irrational_radial_support"]["counts"])
               print("  actual g:", [round(x["evaluated_radial_g"], 9)
                   for x in d["per_row_audit"]["rows"]])
               print("  scalarization gaps:", [x["scalarization_abs_gap"]
