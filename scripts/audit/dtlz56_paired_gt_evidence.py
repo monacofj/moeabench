@@ -178,6 +178,10 @@ def sample_candidate(*, problem, m, k, points, bundle, tolerance=1e-9):
     """Explicitly expensive candidate generation, never automatic."""
     if type(points) is not int or points < 1:
         raise ValueError("points must be a positive integer")
+    if problem not in ("DTLZ5", "DTLZ6") or type(m) is not int or m < 4:
+        raise ValueError("Explicit sampler requires original DTLZ5/6 M>=4")
+    if type(k) is not int or k < 1:
+        raise ValueError("Explicit sampler requires integer K>=1")
     if Path(bundle).exists():
         raise FileExistsError(f"Refusing to overwrite {bundle}")
     from moeabench.mops import DTLZ5, DTLZ6
