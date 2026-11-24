@@ -8,6 +8,7 @@ import pytest
 
 from scripts.audit.dtlz56_energy_recurrence import (
     observe_fixed_g_energy_feasibility,
+    observe_interval_energy_exclusion,
 )
 
 
@@ -122,3 +123,66 @@ def test_invalid_caps_rejected(y):
     with pytest.raises(ValueError):
         observe_fixed_g_energy_feasibility(
             y, g=0.0, problem="DTLZ5", k=4)
+
+
+@pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
+@pytest.mark.parametrize("m", [2, 3, 4, 5, 10])
+def test_interval_exclusion_never_discards_interior_feasible_point(problem, m):
+    # Strictly positive cap slack avoids threshold-sensitive comparisons.
+    g = 0.2
+    y = _original_feasible_point(m, g, pi/3, 0.3) + 1e-8
+    outcome = observe_interval_energy_exclusion(
+        y, g_lower=0.1, g_upper=0.4, problem=problem, k=4
+    )
+    assert outcome.observation == "unresolved"
+    assert outcome.to_dict()["scientific_status"] == "unverified"
+
+
+@pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
+@pytest.mark.parametrize("m", [2, 3, 4, 5, 10])
+def test_interval_exclusion_matches_independent_fixed_g_observations(problem,m):
+    rng = np.random.default_rng(100+m)
+    for _ in range(32):
+        lo = float(rng.uniform(.01, .4))
+        hi = float(rng.uniform(lo, .9))
+        y = rng.uniform(0.0, 2.5, m)
+        interval = observe_interval_energy_exclusion(
+            y, g_lower=lo, g_upper=hi, problem=problem, k=4
+        )
+        if interval.observation == "numerically_excluded":
+            # A finite grid is a consistency check, NOT the mathematical proof.
+            for g in np.linspace(lo, hi, 11):
+                assert not _independent_angle_feasibility(y, float(g))
+
+
+@pytest.mark.parametrize("m", [2, 3, 4, 5, 10])
+def test_obvious_infeasible_interval_is_excluded(m):
+    result = observe_interval_energy_exclusion(
+        np.zeros(m), g_lower=0.2, g_upper=0.5,
+        problem="DTLZ6", k=4,
+    )
+    assert result.observation == "numerically_excluded"
+    assert result.numerical_gap < 0
+
+
+def test_interval_invalid_parameters_rejected():
+    y = np.ones(4)
+    for low, high in [(-0.1,0.2), (0.3,0.1), (0.1,1.01)]:
+        with pytest.raises(ValueError):
+            observe_interval_energy_exclusion(
+                y, g_lower=low, g_upper=high, problem="DTLZ5", k=4
+            )
+
+
+def test_singleton_interval_matches_fixed_g_interior():
+    y = np.array([.4,.6,.8,.7])
+    g = 0.25
+    point = observe_fixed_g_energy_feasibility(
+        y, g=g, problem="DTLZ6", k=4
+    )
+    interval = observe_interval_energy_exclusion(
+        y, g_lower=g, g_upper=g, problem="DTLZ6", k=4
+    )
+    assert (interval.observation == "numerically_excluded") == (
+        point.observation == "numerically_infeasible"
+    )
