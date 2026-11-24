@@ -114,6 +114,6 @@ def test_tampered_witness_rejected():
     ([Fraction(1,2)],Fraction(1,4),"DTLZ6",0),
     ([Fraction(1,2)],Fraction(1,4),"DTLZ2",4),
 ]):
-    def test_invalid_inputs_rejected(positions,g,problem,k):
-        with pytest.raises(ValueError):
-            construct_same_ray_witness(positions,g=g,problem=problem,k=k)
+def test_invalid_inputs_rejected(positions,g,problem,k):
+    with pytest.raises(ValueError):
+        construct_same_ray_witness(positions,g=g,problem=problem,k=k)
