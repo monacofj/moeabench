@@ -112,3 +112,28 @@ def test_dirty_git_worktree_rejected(tmp_path, monkeypatch):
     monkeypatch.setattr(evidence.subprocess, "check_output", fake_check_output)
     with pytest.raises(ValueError, match="uncommitted"):
         evidence.revision(tmp_path)
+
+
+def test_capture_refuses_to_overwrite_existing_manifest(specimen):
+    artifact, config, root = specimen
+    source = root / "configuration.json"
+    manifest = root / "record.json"
+    source.write_text(json.dumps(config), encoding="utf-8")
+    manifest.write_text('{"protected": true}', encoding="utf-8")
+    with pytest.raises(SystemExit):
+        evidence.main([
+            "capture", "--artifact", str(artifact), "--config", str(source),
+            "--manifest", str(manifest), "--repo-root", str(root)])
+    assert manifest.read_text(encoding="utf-8") == '{"protected": true}'
+
+
+def test_capture_refuses_to_overwrite_configuration(specimen):
+    artifact, config, root = specimen
+    source = root / "configuration.json"
+    source.write_text(json.dumps(config), encoding="utf-8")
+    before = source.read_bytes()
+    with pytest.raises(SystemExit):
+        evidence.main([
+            "capture", "--artifact", str(artifact), "--config", str(source),
+            "--manifest", str(source), "--repo-root", str(root)])
+    assert source.read_bytes() == before
