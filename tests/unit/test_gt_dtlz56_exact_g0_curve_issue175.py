@@ -24,7 +24,7 @@ def test_last_axis_curve_dominates_positive_g_at_any_dimension(problem, m):
 
 @pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
 @pytest.mark.parametrize("m", [3, 4, 5, 10])
-def test_different_ray_dominator_on_original_angular_boundary(problem, m):
+def test_curve_dominates_rational_objective_caps_without_feasibility_assumption(problem, m):
     # Rational objective caps, without assuming they form a feasible GT row.
     # This tests the curve-cap predicate, not original image membership.
     y = [Fraction(1)]*m
