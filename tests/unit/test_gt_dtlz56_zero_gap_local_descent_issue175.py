@@ -41,6 +41,8 @@ def test_strict_first_order_direction_constructs_real_positive_g_dominator(
     def forbidden(*args,**kwargs):
         pytest.fail("production evaluator reused inside independent local oracle")
     monkeypatch.setattr(klass,"evaluation",forbidden)
+    second=audit_local_dtlz56_descent(x,problem=problem,m=4)
+    assert second.status=="witness"
     np.testing.assert_array_less(witness,candidate)
     f=outcome.to_dict()
     assert f["status"]=="witness"
@@ -112,3 +114,16 @@ def test_invalid_local_protocol_is_rejected(bad):
     with pytest.raises(ValueError):
         audit_local_dtlz56_descent(
             _decision("DTLZ5"),problem="DTLZ5",m=4,**bad)
+
+
+def test_forged_objective_reference_never_inherits_local_descent_witness():
+    mop=DTLZ5(M=4)
+    x=_decision("DTLZ5")
+    f=mop.evaluation(x)["F"].copy()
+    f[0,0]+=.2
+    out=mop.assess_gt(
+        reference=f,decision_reference=x[None,:],
+        local_descent=True,probes=16)
+    assert out.feasibility.status=="fail"
+    assert out.local_descent.value["witness_count"]==0
+    assert out.local_descent.value["unresolved"]==1
