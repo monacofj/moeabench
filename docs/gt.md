@@ -1769,3 +1769,48 @@ oracle for those regions. Their scientific certification,
 finite-GT covering quality and indicator suitability
 remain open under #175/#176.
 
+### 3.6.13. Objective-only reconstruction for M>=4 local-dominance diagnostics
+
+A saved objective-space reference does not normally retain an aligned
+decision-space witness. For an original DTLZ5/6 objective vector
+\(y\) with independently checked feasible image, the radial
+parameter is \(g=\lVert y\rVert_2-1\). Away from angular
+coordinate singularities, the published hyperspherical equations
+recover \(\theta_1,\ldots,\theta_{M-1}\) by inverse `atan2`
+coordinates. For \(g>0\), the original position variables follow
+
+\[
+x_1=2\theta_1/\pi,\qquad
+x_i=\frac{4(1+g)\theta_i/\pi-1}{2g},
+\quad 2\le i\le M-1.
+\tag{DTLZ56-16}
+\]
+
+For a genuinely indeterminate inner angle (exact zero
+numerator and subradius), \(\pi/4\) supplies a feasible
+representative; the reconstructed decision then has
+\(x_i=1/2\). The distance variables independently realize
+\(g\) using the formulas in Section 3.6.1. The resulting
+decision must be **re-evaluated by independent equations**
+and compared row-for-row to the supplied objective vector;
+the feasibility check alone is not sufficient to accept
+floating-point inversion.
+
+The research helper
+[`_dtlz56_objective_descent.py`](../moeabench/mops/_dtlz56_objective_descent.py)
+implements this checked reconstruction and then runs the
+existing independent first-order local dominance oracle.
+This gives a way to seek **negative membership evidence**
+from an objective-only GT, without assuming that the
+production `ps()` or `pf()` can supply an aligned witness.
+A returned numerical dominance witness is provisional
+under ADR 0059; no witness or an ill-conditioned inversion
+returns `unverified`.
+
+This is a research-only helper, **not a public `assess_gt()`
+extension**, not a globally sufficient positive-membership
+test, and not a certificate of any \(M\ge4\) positive-\(g\)
+front region. Complete zero-gap nondominance,
+cross-platform numerical verification, and finite coverage
+remain separate #175/#176 acceptance gates.
+
