@@ -185,8 +185,8 @@ def scalarized_candidate(
         angle = max(a, min(b, raw_angle))
         # This is a discrete active-set decision from the original
         # bounded optimizer, not a tolerance-based post-hoc snap.
-        inner_faces.append(0 if raw_angle < a else
-                           1 if raw_angle > b else None)
+        inner_faces.append(0 if raw_angle <= a else
+                           1 if raw_angle >= b else None)
         if raw_angle < a:
             capacity = cap / sin(a)
         elif raw_angle > b:
