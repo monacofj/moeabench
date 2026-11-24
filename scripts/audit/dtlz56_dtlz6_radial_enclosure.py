@@ -171,3 +171,64 @@ def replay_dtlz6_radial_interval_pf(
         )
     except (KeyError, ValueError, TypeError, ZeroDivisionError):
         return False
+
+def audit_dtlz6_irrational_radial_rows(
+    decisions, objectives, *, m, k, tolerance=1e-9,
+    root_bits=40, pi_terms=8,
+):
+    """Separate opt-in extension; do NOT redefine historical triage output.
+
+    A result categorizes exact-real source decisions, conditional on a
+    numerical source-objective row alignment check. Existing per-row
+    symbolic audit and its regression contract stay untouched.
+    """
+    from collections import Counter
+    import numpy as np
+    from .dtlz56_paired_gt_evidence import (
+        _original_objectives, audit_paired_candidate,
+    )
+
+    aligned = audit_paired_candidate(
+        decisions, objectives, problem="DTLZ6", m=m, k=k,
+        tolerance=tolerance,
+    )
+    x = np.asarray(decisions, dtype=float)
+    f = np.asarray(objectives, dtype=float)
+    independent, _ = _original_objectives(x, problem="DTLZ6", m=m, k=k)
+    mismatched = np.max(np.abs(independent-f), axis=1) > tolerance
+    rows = []
+    for i, decision in enumerate(x):
+        certificate = None
+        status = "unverified"
+        if not mismatched[i]:
+            evidence = certify_dtlz6_radial_interval_pf(
+                decision[:m-1], decision[m-1:], k=k,
+                root_bits=root_bits, pi_terms=pi_terms,
+            )
+            if evidence.conclusion == "rigorously_global_pf_member":
+                status = "symbolic_decision_global_pf"
+                certificate = evidence.to_dict()
+        rows.append({
+            "row": i, "status": status,
+            "basis": ("Exact irrational-radius support theorem"
+                      if certificate is not None
+                      else "No independent global support certificate"),
+            "certificate": certificate,
+        })
+    counted = Counter(row["status"] for row in rows)
+    return {
+        "schema": "moeabench_dtlz6_irrational_g_support_extension_v1",
+        "problem": "DTLZ6", "M": m, "K": k,
+        "source_objective_numerical_alignment":
+            aligned["independent_objective_alignment"],
+        "counts": {
+            "symbolic_decision_global_pf":
+                counted.get("symbolic_decision_global_pf", 0),
+            "unverified": counted.get("unverified", 0),
+        },
+        "rows": rows,
+        "exact_decision_image_only": True,
+        "whole_reference_membership": "unverified",
+        "finite_gt_coverage": "unverified",
+        "scientific_certification": "unverified",
+    }
