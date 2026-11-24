@@ -1,0 +1,68 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 DTLZ6 bounded stratified source-ray audit (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/gt-dtlz56-stratified-medium-175.yml"
+      - "scripts/audit/dtlz56_stratified_medium_pilot.py"
+      - "tests/unit/test_gt_dtlz56_stratified_medium_pilot_issue175.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-stratified-rays:
+    name: "Source pool ray strata (24 per original problem)"
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install current source and new tests
+        run: python -m pip install -e . pytest
+      - name: Validate bounded research-only procedure
+        run: python -m pytest tests/unit/test_gt_dtlz56_stratified_medium_pilot_issue175.py -q
+      - name: Evaluate production scalarization on each original candidate source stratum
+        run: |
+          python -m scripts.audit.dtlz56_stratified_medium_pilot \
+            --problem DTLZ5 --m 4 --k 1 --abs-tol 1e-5 \
+            --max-nodes 5000 --output gt175-medium-DTLZ5-M4-K1.json
+          python -m scripts.audit.dtlz56_stratified_medium_pilot \
+            --problem DTLZ6 --m 4 --k 1 --abs-tol 1e-5 \
+            --max-nodes 5000 --output gt175-medium-DTLZ6-M4-K1.json
+      - name: Summarize exact observed diagnostics without claiming GT certification
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in sorted(Path('.').glob('gt175-medium-*.json')):
+              data=json.loads(path.read_text())
+              assert data["stratified_ray_count"]==24
+              assert data["full_gt_coverage"]=="unverified"
+              assert data["scientific_certification"]=="unverified"
+              assert data["exact_rational_g_audit"]["independent_objective_alignment"]=="pass"
+              print(path.name)
+              print("  commit:",data["source_sha"])
+              print("  versions:",data["numpy"],data["scipy"])
+              print("  max original equation residual:",data["independent_max_abs_error"])
+              print("  original exact-rational decisions:",data["exact_rational_g_audit"]["counts"])
+              if data["problem"]=="DTLZ6":
+                  print("  irrational-g global support:",data["irrational_g_global_support"]["counts"])
+              for name,subset in data["stratum_diagnostics"].items():
+                  print("  ",name,subset)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: issue175-stratified-medium-source-ray-audit
+          path: gt175-medium-*.json
+          if-no-files-found: error
+          retention-days: 90
