@@ -147,3 +147,18 @@ def test_no_implicit_heavy_generation_and_validation(tmp_path,monkeypatch):
     # The standalone artifact can be created without calling .ps().
     p.save_paired_candidate(tmp_path/"manual.npz",x,y,
                             problem="DTLZ5",m=4,k=4)
+
+
+@pytest.mark.parametrize("problem", ["DTLZ5", "DTLZ6"])
+@pytest.mark.parametrize("m", [3, 4, 5])
+def test_independent_original_equations_match_real_production_evaluator(problem,m):
+    from moeabench.mops import DTLZ5, DTLZ6
+    rng=np.random.default_rng(8712+m)
+    k=3
+    x=rng.uniform(.01,.99,size=(7,m+k-1))
+    x[0,m-1:]=.5 if problem=="DTLZ5" else 0.
+    independent,_=_original_objectives(x,problem=problem,m=m,k=k)
+    mop=(DTLZ5 if problem=="DTLZ5" else DTLZ6)(M=m,K=k)
+    actual=mop.evaluation(x)["F"]
+    assert actual.shape==independent.shape
+    np.testing.assert_allclose(actual,independent,atol=1e-12,rtol=0)
