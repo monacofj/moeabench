@@ -670,6 +670,49 @@ finite GT coverage or indicator fitness.
 Source- and result-bound acceptance
 under ADR 0059 remains required.
 
+**Bounded, replayable continuous-domain partitions.**
+The independent
+[`dtlz56_rational_partition.py`](../scripts/audit/dtlz56_rational_partition.py)
+builds a binary partition of a **specified closed**
+\(g\)-interval with exact rational endpoints.
+Each excluded leaf stores a separate strict-rational
+certificate from the preceding oracle; unresolved
+leaves, including those caused by the explicit node
+or depth budget, retain their exact endpoints.
+Because adjacent leaves share their endpoints and
+their union covers the specified input range,
+**a complete partition of excluded leaves proves
+the absence of dominated feasible points throughout
+that closed interval for the exact supplied objective
+caps**. A separate replay method recomputes every
+strict inequality from those caps and verifies
+continuous endpoint coverage rather than trusting
+the stored exclusion labels or margins.
+
+Rational split endpoints are retained exactly
+(in particular, not converted to binary floats
+when the denominator becomes large). Their
+serialized form uses hexadecimal numerator
+and denominator. The implementation has finite
+node and recursion-depth budgets and never
+interprets exhaustion or unresolved leaves as
+an absence of possible dominators. It preserves
+the original distinction between a mathematical
+exclusion of the examined domain and a certified
+**GT membership** result.
+
+**Open-endpoint limitation:** even a replay-verified
+exclusion of \([0,g_y-\delta]\) does not prove the
+absence of dominators for \(g_y-\delta<g<g_y\).
+Choosing \(\delta\) smaller or increasing the
+partition budget is not a substitute for an exact
+endpoint argument. The routine therefore exposes
+only `rigorously_excluded_closed_range` or
+`unverified`; it never emits a global Pareto
+membership `pass`. Candidate feasibility,
+sample coverage and all ADR 0059 result/environment
+gates remain separate obligations.
+
 **Crucial remaining difficulty:** a test at one
 fixed \(g\), even if rigorously evaluated, cannot
 prove \(\neg D(g;y)\) for every
