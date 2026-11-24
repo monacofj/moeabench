@@ -32,7 +32,7 @@ class RationalIntervalCertificate:
     g_lower: str
     g_upper: str
     stopping_objective: int | None
-    strict_margin: str | None
+    strict_margin: dict | None
     pi_terms: int
     sine_pairs: int
     basis: str = (
@@ -162,6 +162,8 @@ def rigorously_exclude_g_interval(
 
     return RationalIntervalCertificate(
         conclusion, str(lo), str(hi), violated,
-        str(separation) if separation is not None else None,
+        ({"numerator_hex": hex(separation.numerator),
+          "denominator_hex": hex(separation.denominator)}
+         if separation is not None else None),
         pi_terms, sine_pairs,
     )
