@@ -1845,7 +1845,7 @@ python scripts/audit/gt_evidence_manifest.py verify \
   --expected-commit FULL_40_CHARACTER_COMMIT_SHA
 ```
 
-Capture rejects a dirty tracked Git working tree. It records the
+Capture rejects a dirty tracked Git working tree and refuses to overwrite an existing manifest, output artifact or configuration file. It records the
 full commit, Python/platform information, installed dependency
 versions, NumPy build/BLAS configuration when available,
 experiment configuration, artifact digest and canonical manifest
