@@ -1689,3 +1689,83 @@ None of these requirements forces different MOPs to use one generator. On the co
 ---
 
 **Governing principle:** GT must represent the **correct mathematical problem** with **coverage, numerical fidelity, and provenance appropriate for its intended purpose**. Each MOP owns its geometry and reference-generation strategy; supporting infrastructure can be shared only where its scientific validity is established.
+
+### 3.6.12. Theorem 9 — complete zero-gap dominance for M=2 and M=3
+
+For **original** DTLZ5 and DTLZ6 with \(M=2\) or \(M=3\),
+every feasible point with \(g>0\) is globally dominated by
+a feasible point on the \(g=0\) Pareto curve. Hence, for
+these objective counts, the **entire mathematical Pareto
+front** is exactly the \(g=0\) curve. This statement does
+not extend to the original \(M\ge4\) fronts.
+
+**Proof for \(M=2\).** Every feasible point is
+\((1+g)(\cos\theta_1,\sin\theta_1)\). The feasible
+\(g=0\) point with identical \(\theta_1\) has both
+objectives no larger and a strictly smaller norm
+when \(g>0\), so it strictly dominates the original
+point.
+
+**Proof for \(M=3\).** Write \(r=1+g>1\),
+\(t=\theta_1\), and \(s=\theta_2\).
+The feasible objective vector is
+
+\[
+y=r(\cos t\cos s,\ \cos t\sin s,\ \sin t).
+\]
+
+The angular constraint gives
+\(s\in[a(g),\pi/2-a(g)]\), with
+\(a(g)=\pi/(4r)\). Thus
+\(\sin s,\cos s\ge\sin(\pi/(4r))\).
+On \([0,\pi/4]\), sine is concave and vanishes at
+zero. Taking the chord between zero and \(\pi/4\),
+
+\[
+\sin\!\left(\frac{\pi}{4r}\right)
+\ge \frac1r\sin\!\left(\frac\pi4\right)
+=\frac{1}{r\sqrt2}.
+\tag{DTLZ56-15}
+\]
+
+Consequently \(y_1,y_2\ge\cos t/\sqrt2\)
+and \(y_3=r\sin t\ge\sin t\).
+The \(g=0\) curve point
+
+\[
+z=(\cos t/\sqrt2,\ \cos t/\sqrt2,\ \sin t)
+\]
+
+is feasible and satisfies \(z\le y\).
+Since \(\lVert z\rVert_2=1<r=\lVert y\rVert_2\),
+the two vectors cannot be identical: \(z\)
+strictly dominates \(y\), including all boundary
+angles and arbitrarily small positive \(g\).
+Combined with Theorem 2, this establishes the
+claimed **necessary and sufficient mathematical
+membership characterization** for \(M=2,3\).
+\(\square\)
+
+**Independent numerical diagnostic.**
+[`_dtlz56_lowdim_curve.py`](../moeabench/mops/_dtlz56_lowdim_curve.py)
+constructs the same-\(\theta_1\), \(g=0\) vector from
+the objective norm and last coordinate without
+calling the production PS/PF, evaluator or scalarizer.
+It checks original feasible-image conditions,
+componentwise numerical dominance and strictly
+smaller norm. This helper is not yet wired into the
+public `assess_gt()` result; it is a new directly
+tested independent research diagnostic. Its numerical
+`witness` status is provisional until ADR 0059's
+three source/environment/result gates are satisfied.
+Near-boundary cases remain `unverified` instead
+of receiving unsupported floating-point certification.
+
+**Remaining global problem:** For \(M\ge4\),
+genuine \(g>0\) Pareto-optimal regions exist. Neither
+this low-dimensional theorem nor its implementation
+supplies the required exhaustive zero-gap nondominance
+oracle for those regions. Their scientific certification,
+finite-GT covering quality and indicator suitability
+remain open under #175/#176.
+
