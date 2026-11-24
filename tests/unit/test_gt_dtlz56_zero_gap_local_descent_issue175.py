@@ -77,7 +77,7 @@ def test_opt_in_assessment_and_report_remain_read_only(tmp_path):
     assert a.local_descent.status=="unverified"
     assert a.local_descent.value["witness_count"]==1
     assert a.local_descent.value["numerical_witnesses"][0]["index"]==0
-    assert a.validity.status=="fail"  # nonminimal g, same-ray dominated
+    assert a.validity.status=="unverified"  # whole-front certificate remains withheld
     json.dumps(a.to_dict(),allow_nan=False)
     ordinary=mop.assess_gt(reference=f,probes=16)
     assert ordinary.local_descent.status=="not_applicable"
