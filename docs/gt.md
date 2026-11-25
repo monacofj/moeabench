@@ -3532,3 +3532,107 @@ MOP equations, and governing ADR 0059 are
 unchanged. Full GT and coverage certification
 remains `unverified`.
 
+### Rigorous Taylor refinement of the nonzero-first-angle support theorem (#175)
+
+The original global membership proof in Section 3.6.3c
+requires the exact-real last objective
+\(c=(1+g)\sin(\pi x_1/2)\) to satisfy
+
+\[
+c^2<1-\frac{4}{p\pi},\qquad p\ge2,
+\tag{DTLZ56-PF16}
+\]
+
+at an exact supporting inner-angle stratum.
+The first independent rational checker used the
+conservative inequality \(\sin t\le t\).
+That overestimate is **too coarse** for
+two actual DTLZ5 M=4 K=1 final-selected n16
+positive-\(g\) decision images: rows 7 and 11.
+
+No new global membership assumption is necessary.
+For \(0\le t\le\pi/2\), the alternating
+Taylor series gives a mathematically rigorous
+upper bound
+
+\[
+\sin t\le T_5(t)
+:=t-\frac{t^3}{6}+\frac{t^5}{120}.
+\tag{DTLZ56-PF17}
+\]
+
+With exact Machin \(\pi_{\rm lo}<\pi<\pi_{\rm hi}\),
+put \(t_{\rm hi}=\pi_{\rm hi}x_1/2<2\).
+Since sine is increasing on its original
+first-angle domain,
+\(\sin(\pi x_1/2)\le\sin(t_{\rm hi})
+\le T_5(t_{\rm hi})\).
+The entire following check is made using exact
+fractions (IEEE-754 inputs are read as their
+precise dyadic rational declarations):
+
+\[
+\boxed{\quad
+((1+g)T_5(t_{\rm hi}))^2
+<
+1-\frac{4}{p\pi_{\rm lo}}.
+\quad}
+\tag{DTLZ56-PF18}
+\]
+
+When this inequality is strictly verified,
+the earlier all-\(g'\in[0,g)\) global Pareto
+non-dominance theorem applies with no
+numerical tolerance or open-endpoint gap.
+
+A separate opt-in
+[`dtlz56_tight_sine_global_pf.py`](../scripts/audit/dtlz56_tight_sine_global_pf.py)
+implements the exact-rational proof, lossless
+replayable inputs and proof margin. It
+does **not** alter the previous conservative
+checker or its regression contracts.
+
+For the preserved original DTLZ5 M=4 K=1
+source decisions from the fixed n16
+post-#209 final selected PS/F:
+- Row 7: \(x_1\approx0.3108514266364233\),
+  \(x_2=1,x_3=0,g=1/4\), with
+  actual \(c^2\approx0.34385229\).
+- Row 11: \(x_1\approx0.3104519947719909\),
+  \(x_2=x_3=1,g=1/4\), with
+  actual \(c^2\approx0.34304034\).
+
+Both are strictly below the exact required
+threshold \(1-2/\pi\approx0.36338023\),
+and the tighter rational inequality
+(DTLZ56-PF18) has independently
+positive rational margins for both.
+The previous \(\sin t\le t\) helper
+correctly abstained because its bound
+was looser. The new separate theorem
+expands exact-decision-image membership
+coverage from **13/16 to 15/16** for
+that source-bound sample, without changing
+the historical decision-image ledger.
+
+Row 10, with \(x_2\) strictly interior
+near 1 and \(x_3=1\), does not
+satisfy the **exact** support pattern
+of this theorem and remains
+`unverified`; no arbitrary angular
+rounding is applied.
+
+These are conditional theorems about
+the original exact-real images of
+given feasible **decision vectors**,
+not certificates for the identity of
+stored finite-precision objective rows,
+arbitrary positive-\(g\) points,
+finite-reference coverage or ADR 0059
+environment/result acceptance. The
+source-bound small selected-reference
+audit reports original and new theorem
+ledgers separately and also their
+**deduplicated row-index union**;
+unknown rows remain unknown.
+
