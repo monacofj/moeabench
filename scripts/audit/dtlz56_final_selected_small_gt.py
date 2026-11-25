@@ -104,6 +104,17 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
         x, f, problem=problem, m=m, k=k,
         tolerance=tolerance,
     )
+    # A separate exact sine upper-bound theorem expands the *conditional*
+    # DTLZ5 decision-image proof reach without silently changing the prior
+    # per-row classifier or its approved regression results.
+    tight_sine=None
+    if problem=="DTLZ5":
+        from .dtlz56_tight_sine_global_pf import (
+            audit_tight_sine_original_rows,
+        )
+        tight_sine=audit_tight_sine_original_rows(
+            x,f,problem=problem,m=m,k=k,tolerance=tolerance,
+        )
     irrational=None
     proximity=None
     if problem=="DTLZ6":
@@ -166,6 +177,16 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
                 aligned["max_abs_objective_error"],
         },
         "exact_rational_g_decision_image_ledger":theoretical,
+        "dtlz5_tight_sine_global_support_ledger":tight_sine,
+        "global_pf_conditional_distinct_row_indices":sorted(set(
+            entry["row"] for entry in theoretical["rows"]
+            if entry["status"]=="symbolic_decision_global_pf"
+        ) | (set(tight_sine["proved_global_decision_image_indices"])
+             if tight_sine is not None else set()) | (
+            set(entry["row"] for entry in irrational["rows"]
+                if entry["status"]=="symbolic_decision_global_pf")
+            if irrational is not None else set())
+        ),
         "proven_dominated_decision_row_indices":proven_dominated_rows,
         "experimental_reference_gate":experimental_reference_gate,
         "dtlz6_irrational_g_support_ledger":irrational,

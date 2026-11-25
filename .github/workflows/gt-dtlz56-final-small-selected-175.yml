@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
+      - "scripts/audit/dtlz56_tight_sine_global_pf.py"
       - "moeabench/mops/_dtlz56_front.py"
       - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
   workflow_dispatch:
@@ -86,6 +87,12 @@ jobs:
                         "objective_range_normalized_nearest_neighbor_max")])
               print("  exact image proofs:",
                     d["exact_rational_g_decision_image_ledger"]["counts"])
+              print("  deduplicated conditional global PF row indices:",
+                    d["global_pf_conditional_distinct_row_indices"])
+              if d["problem"]=="DTLZ5":
+                  print("  additional rigorous Taylor-sine support:",
+                        d["dtlz5_tight_sine_global_support_ledger"][
+                            "proved_global_decision_image_indices"])
               print("  experimental reference gate:",d["experimental_reference_gate"])
               print("  proved dominated indices:",d["proven_dominated_decision_row_indices"])
               if d["dtlz6_irrational_g_support_ledger"] is not None:
