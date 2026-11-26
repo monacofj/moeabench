@@ -4134,3 +4134,29 @@ archived finite-precision F equals the mathematical image
 exactly, or that any IGD/HV quality threshold is met.
 Any normalized-objective-space version additionally needs
 independently controlled coordinate scaling.
+
+
+#### Uniform-parameter mean distance on the same exact g=0 curve
+
+A second *component-only* mathematical consequence concerns the declared
+uniform `x1` parameter measure on the exact `g=0` curve. On each
+anchor interval of exact dyadic width `Delta_i`, the integral
+of the distance to the nearest angular anchor is bounded by
+`(pi/2) * Delta_i^2/4`. Therefore the mean raw Euclidean
+distance of the entire continuous curve to the reference obeys
+
+```text
+integral_(x1=0)^1 min_(s in reference) ||F_g=0(x1)-s||_2 dx1
+    <= (pi_upper/8) * sum_i (a[i+1]-a[i])^2.
+```
+
+The same independent exact-rational certificate now records this
+`uniform_x1_mean_raw_distance_upper` and rejects a tampered
+record on replay. For four evenly distributed nominal source anchors,
+the value is approximately `pi/24 = 0.130900`
+(with exact binary anchor coordinates and a rigorous upper bound
+in the implementation). This is **not** an IGD certificate for
+the entire DTLZ5/6 Pareto front: a global IGD-like mean requires
+a separately specified and justified probability measure on the
+full mixed-dimensional PF, while the present result assumes
+uniform `x1` only on the degenerate component.
