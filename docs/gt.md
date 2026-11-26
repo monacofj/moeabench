@@ -4594,3 +4594,50 @@ membership of all original selected rows, indicator suitability
 and ADR0059 GT certification are **not** proved. The module
 changes no production sampler, existing regressions or
 numerical stability baselines.
+
+
+### Source-bound results for complete radial-range support faces (2026-11-26)
+
+The independent source-bound
+[CI run #45892410392](https://github.com/monacofj/moeabench/actions/runs/45892410392)
+successfully regenerated both original DTLZ5/DTLZ6
+`M=4,K=1,n=16` selected PS/F references, passed every
+new additive full-radial-face proof unit test and **successfully
+replayed** complete rigorous rational continuous-support-face
+coverage certificates against the actual selected decision
+images. The original DTLZ5 strict dominated-row negative
+scientific acceptance **still failed intentionally afterward**.
+The original paired PS/F artifacts, source audit reports,
+prior local patch proofs and both new complete-radial-face
+proof records were preserved in
+[artifact #15152302187](https://github.com/monacofj/moeabench/actions/runs/45892410392/artifacts/15152302187),
+ZIP SHA256
+`91d83c974010d0f542e86df21c91ae4ff7b6bd18b744da6ce1665586b5487560`.
+
+| Complete-radial original M4/K1 support face | Continuous face-to-5×5 exact grid upper (raw L2) | Worst grid-node-to-actual PS upper (rational L1) | **Rigorous full face-to-original selected PS upper (raw L2)** |
+| --- | ---: | ---: | ---: |
+| DTLZ5: `0<=x1<=1/4, x2=x3=1, 0<=x4<=1` | 0.38270877236478773 | 0.22497869351873598 | **0.6076874658835237** |
+| DTLZ6: `0<=x1<=3/16, x2=x3=1, 0<=g=u<=1, x4=u^10` | 0.3949806186678729 | 0.5671665175563947 | **0.9621471362242676** |
+
+All displayed decimal quantities render exact recorded rational
+**upper** bounds, not floating acceptance thresholds. The
+DTLZ5 paired bundle digest was
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 paired bundle digest was
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`.
+The DTLZ6 certificate uses integer-derived rational
+outward tenth-root bounds on actual selected tail decisions.
+Both results include the **entire admissible original g-range
+on one angular support face**. Their raw upper bounds are
+larger than the earlier restricted-rectangle bounds because
+the present continuous domains are substantially larger.
+They do not establish remaining angular support-face or
+whole-PF coverage, positive membership of all selected
+decisions, aligned finite stored F, or IGD/IGD+/HV fitness.
+The DTLZ5 selected reference remains rigorously invalid
+because of its previously proved dominated row.
+
+The new exact-rational source-bound procedure is
+[`dtlz56_full_radial_face_actual_source.py`](../scripts/audit/dtlz56_full_radial_face_actual_source.py).
+No production sampler, accepted ADR, frozen baseline or
+preexisting regression test was changed.
