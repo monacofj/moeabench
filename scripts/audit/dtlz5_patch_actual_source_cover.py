@@ -33,7 +33,7 @@ from .dtlz5_positive_g_patch_cover import (
     certify_positive_g_patch_cover,
     replay_positive_g_patch_cover,
 )
-from .dtlz5_row10_exact_dominance import _original_objective_intervals
+from .dtlz5_row10_exact_dominance import _trig_bounds
 from .dtlz56_rational_interval import _pi_rational_bounds
 from .dtlz56_exact_same_ray import _encode
 
@@ -55,6 +55,49 @@ def _exact_decisions(decisions):
                        for row in rows):
         raise ValueError("Original M4/K1 source PS must be nonempty and feasible")
     return rows
+
+
+def _endpoint_safe_objective_intervals(decision, pi_bounds):
+    """Conservative exact rational original equations even at cos(pi/2)=0.
+
+    Taylor cosine lower polynomial may be negative near pi/2.
+    Since original feasible sine/cosine factors are nonnegative,
+    intersecting each rigorous interval with [0,+infinity) preserves
+    containment, including exact endpoint zeros.
+    """
+    x1,x2,x3,tail=decision
+    g=(tail-Fraction(1,2))**2
+    r=1+g
+    angular_coeffs=(
+        x1/2,
+        (1+2*g*x2)/(4*r),
+        (1+2*g*x3)/(4*r),
+    )
+    if any(not 0<=c<=Fraction(1,2) for c in angular_coeffs):
+        raise ValueError("Invalid original DTLZ5 angular parameter")
+    cosines=[]
+    sines=[]
+    for coeff in angular_coeffs:
+        clo,chi=_trig_bounds(coeff,pi_bounds,sine=False)
+        slo,shi=_trig_bounds(coeff,pi_bounds,sine=True)
+        cosines.append((max(Fraction(0),clo),chi))
+        sines.append((max(Fraction(0),slo),shi))
+    factors=(
+        (cosines[0],cosines[1],cosines[2]),
+        (cosines[0],cosines[1],sines[2]),
+        (cosines[0],sines[1]),
+        (sines[0],),
+    )
+    result=[]
+    for group in factors:
+        lower=upper=r
+        for a,b in group:
+            if not 0<=a<=b:
+                raise ArithmeticError("Invalid outward nonnegative trig enclosure")
+            lower*=a
+            upper*=b
+        result.append((lower,upper))
+    return result
 
 
 def _interval_l1_distance_upper(a,b):
@@ -80,12 +123,12 @@ def certify_dtlz5_patch_to_source_cover(
 
     pi_bounds=_pi_rational_bounds(pi_terms)
     selected_intervals=[
-        _original_objective_intervals(row,pi_bounds) for row in ps
+        _endpoint_safe_objective_intervals(row,pi_bounds) for row in ps
     ]
     candidates=[]
     for node in patch["grid_decision_images"]:
         grid_row=tuple(_decode(v) for v in node["decision"])
-        grid_intervals=_original_objective_intervals(
+        grid_intervals=_endpoint_safe_objective_intervals(
             grid_row,pi_bounds)
         distances=[
             _interval_l1_distance_upper(grid_intervals,source)
