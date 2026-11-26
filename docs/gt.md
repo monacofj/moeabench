@@ -3702,3 +3702,34 @@ accepted ADR, frozen baseline or regression test merely to make
 the new guard pass. Diagnose why the final greedy/maximin source
 includes a dominated decision, and repair the generation mechanism
 only after independent acceptance tests.
+
+
+### Diagnostic: Chebyshev source objective versus reconstructed PS objective (#209)
+
+To distinguish possible mechanisms of the remaining exact off-ray
+strict dominator, the opt-in
+[`dtlz5_final_selection_trace.py`](../scripts/audit/dtlz5_final_selection_trace.py)
+instruments a **single unchanged public** original DTLZ5
+`mop.ps(16)` call (`M=4,K=1`, all 448 original scalarizations).
+It captures each candidate's solver objective vector, bound
+`abs_gap`, active angular faces, numerical scalar `g`, original
+preference weights and reconstructed decision. Independently
+implemented original equations evaluate every reconstructed
+decision. The trace reports the differences, links selected
+decisions to source candidate indices and identifies whether the
+exact archived post-#210 row-10 decision is reproduced.
+
+The separate
+[`gt-dtlz5-selection-trace-175.yml`](../.github/workflows/gt-dtlz5-selection-trace-175.yml)
+archives an immutable JSON research report from the bounded source
+run. Its new unit tests mock the source and verify restoration of
+temporary instrumentation. No generator, scalarizer, calibration
+sidecar or historical regression is modified.
+
+The experiment is **numerical diagnosis**, not another exact global
+Pareto membership test: a discrepancy alone cannot prove causality,
+and a finite scalarization gap is insufficient for zero-gap Pareto
+membership. Even if solver and reconstructed objectives agree within
+floating-point resolution, the strict rational off-ray witness
+continues to block the sampled DTLZ5 GT. The source identity and
+negative scientific gate remain separate mandatory checks.
