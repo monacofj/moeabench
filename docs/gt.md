@@ -4417,3 +4417,62 @@ No archived F exactness, full positive-g component coverage,
 whole-PF Hausdorff/IGD/IGD+/HV quality or final GT acceptance
 is implied. Research-only changes have not modified production,
 accepted ADRs, historic regression tests or frozen baselines.
+
+
+### Nested-grid exact covering sensitivity on actual selected original PS (2026-11-26)
+
+The independent opt-in
+[`dtlz56_patch_actual_multiresolution.py`](../scripts/audit/dtlz56_patch_actual_multiresolution.py)
+holds each unchanged original DTLZ5/DTLZ6 `M=4,K=1,n=16`
+paired PS fixed and independently replays the previously proved
+restricted continuous positive-`g` patch-to-actual-reference
+certificates using nested **3×3** and **5×5** exact dyadic
+auxiliary grids. Each resulting upper bound is a rational
+inequality about the *same* continuous subset and *same*
+actual selected decision images. Taking the **minimum** of
+the two rigorous bounds remains a rigorous upper bound;
+the method does not assume monotonic bounds under mesh
+refinement.
+
+[Source-bound CI #45891263978](https://github.com/monacofj/moeabench/actions/runs/45891263978)
+passed all newly added focused tests, independently recomputed
+and replayed both mesh resolutions for each original problem,
+and preserved both PS/F pairs and all exact JSON certificates
+in [artifact #15151333105](https://github.com/monacofj/moeabench/actions/runs/45891263978/artifacts/15151333105)
+(ZIP SHA256
+`a8bcbe00f6f5713bd6206a34b60c39203fd511a65a2a5bd5e05aa6cda1537668`).
+
+| Original M4/K1 n16 | 3×3 continuum-to-grid | 3×3 grid-to-actual | 3×3 total | 5×5 continuum-to-grid | 5×5 grid-to-actual | 5×5 total |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.2128301172 | 0.2249786935 | 0.4378088107 | 0.1064150586 | 0.2249786935 | **0.3313937521** |
+| DTLZ6 | 0.2220340019 | 0.2816161739 | 0.5036501759 | 0.1110170010 | 0.3499557024 | **0.4609727034** |
+
+Each decimal in the table is a descriptive rendering of an
+**exactly recorded rational upper bound**; the on-disk
+certificate contains its original integer numerator and
+denominator. DTLZ5's finer grid lowers the upper bound by
+about 24.3%. DTLZ6's finer grid lowers it by about 8.5%:
+although its interpolation term halves, its *largest
+grid-to-source distance upper* increases. This is expected
+when a refined grid samples a less-well-represented region;
+a finer auxiliary mesh alone does not certify tighter
+actual-source geometry monotonically.
+
+The DTLZ5 paired source bundle SHA256 is
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 bundle SHA256 in this source-bound rerun is
+`d4dd6e5da6f9e9c1b9dda3fc0788d75382a56ed8f54adde1ca60ff8615cc6c78`.
+A differing compressed NPZ byte digest across runs does
+not by itself establish a decision-matrix difference;
+compare lossless decision rows or a canonical member digest
+before making any such claim.
+
+The unchanged original DTLZ5 sampled GT remains
+**scientifically rejected**, with the independently proved
+strictly dominated selected row 10. Both nested-grid bounds
+cover *only the declared continuous positive-`g` patches*;
+none establishes the entire original PF, pointwise
+membership of all source-selected reference decisions,
+an accepted IGD/IGD+/HV error or scientific acceptance
+under ADR 0059. No production code, accepted ADR, frozen
+baseline or existing regression test is modified.
