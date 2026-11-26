@@ -4476,3 +4476,68 @@ membership of all source-selected reference decisions,
 an accepted IGD/IGD+/HV error or scientific acceptance
 under ADR 0059. No production code, accepted ADR, frozen
 baseline or existing regression test is modified.
+
+
+### Complete radial-range global PF support faces for original DTLZ5 and DTLZ6 M4/K1
+
+The previous positive-`g` rectangles had deliberately limited
+radial extents. An independent stronger exact theorem now covers
+**the full original feasible radial parameter range** on
+the same boundary angular face `x2=x3=1`, while retaining a
+nontrivial continuous `x1` interval. It is implemented in the
+research-only
+[`dtlz56_full_radial_support_face.py`](../scripts/audit/dtlz56_full_radial_support_face.py):
+
+* **DTLZ5:** `0<=x1<=1/4`, `x2=x3=1`, `0<=x4=t<=1`,
+  `g=(t-1/2)^2`. Both distinct decision-tail branches
+  `t<1/2` and `t>1/2` are included, and
+  **every** admissible original radial value `0<=g<=1/4`
+  is represented.
+* **DTLZ6:** `0<=x1<=3/16`, `x2=x3=1`,
+  `0<=u=g<=1`, `x4=u^10`. Every original radial
+  value `0<=g<=1` is represented exactly, with no
+  approximate real tenth-root evaluation in the uniform proof.
+
+For either problem let `rmax=5/4` (DTLZ5) or `2`
+(DTLZ6), and `xmax=1/4` or `3/16` respectively.
+At every **real** point of each two-dimensional patch,
+`c=(1+g)sin(pi*x1/2)` satisfies
+
+```text
+c² <= (rmax*pi_upper*xmax/2)² < 1-2/pi_lower.
+```
+
+The strict second inequality is checked with **exact rational**
+Machin enclosures. It directly invokes the independent
+global-Pareto sufficient sine-power support theorem (`p=2`)
+uniformly over the *entire* continuous surface.
+The original norm/spherical geometry also yields
+`||dF/dx1||<=rmax*pi/2` and
+`||dF/dradial||<=1+pi/2`, using `t` for DTLZ5 and
+`u=g` for DTLZ6. Therefore for exact rational tensor-grid
+parameter gaps `dx,dr`, the raw objective Euclidean
+distance from every point of the **whole supported surface**
+to the nearest exact grid decision image is at most
+
+```text
+rmax*pi_upper*dx/4 + (1+pi_upper/2)*dr/2.
+```
+
+An independent strict certificate/replayer records the exact
+support margin, grid endpoints, all 25 default 5×5 rational
+decision images, exact radial values, and the covering bound.
+Every nonzero-`g` grid node also receives a separately
+replayed exact rational DTLZ5 support proof or outward
+integer tenth-root DTLZ6 proof. The zero-radius nodes use
+the unit-radius theorem. The default decision grid is
+**synthetic** and its objective images are the exact real
+original equations, not rounded stored F.
+
+This is a substantial enlargement of mathematically characterized
+positive-`g` geometry, yet it covers only one angular
+support **face**; it does **not** prove that no other
+positive-`g` branches exist, their relative weights in
+indicator reference measures, entire continuous PF coverage
+by the existing source-selected GT, or scientific release
+acceptance. No production algorithm, accepted ADR, existing
+regression test or frozen baseline is modified.
