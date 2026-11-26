@@ -3937,3 +3937,52 @@ no claim that a finite maximin diversity score is a continuous
 front-covering proof. This selection remains strictly outside
 production until source-bound results and component adequacy
 are reviewed.
+
+
+### Proved-only maximin and explicitly stratified small-g source comparison
+
+[GitHub Actions #45879726840](https://github.com/monacofj/moeabench/actions/runs/45879726840)
+passed new additive research tests and an unchanged original
+DTLZ5 `ps(16)` source run. In an observational counterfactual,
+only candidates with independently replayable exact global-PF
+decision-image proofs were eligible for the 12 non-anchor places;
+the four original `g=0` anchors were fixed, and the same
+full-source objective range scales and greedy maximin distance
+objective were used for comparison. The source selected reference
+had 8 `g=0` and 8 positive-`g` rows, including one proved
+dominated row; the proof-gated counterfactual retained 8+8,
+no proved dominator, all 16 source rows proven globally Pareto
+members. Nearest-neighbor minimum changed
+`0.1752192283 -> 0.1766101540`, median was unchanged
+`0.2036436915`, and all four normalized spans remained `1`.
+However the smallest **positive sampled** `g` rose from
+`0.0325976169` (the dominated row) to `0.0930470228`.
+This source sample therefore does not automatically establish
+small-positive-`g` component representation.
+
+A follow-up [CI run #45879973365](https://github.com/monacofj/moeabench/actions/runs/45879973365)
+passed an additional **exploratory, explicitly stratified**
+counterfactual: before ordinary maximin selection, choose one
+independently proven candidate from the declared radial stratum
+`0<g<=1/16` using the maximum distance to the four original
+anchors; then fill the other 11 non-anchor places with unchanged
+greedy distances over the proved candidate pool. This preserved
+8 `g=0` + 8 positive-`g` rows, with the minimum positive
+`g=0.0060629953`. Every non-anchor row has an individual
+exact proof. The normalized nearest-neighbor minimum was
+`0.1752192283`, median `0.1993838215`, and spans were
+`(1, 0.9971492482, 1, 1)`. These are observational tradeoffs
+on one deterministic finite source pool, not a certified
+continuous-front coverage measure. The radial boundary `1/16`
+was explicitly chosen for this *research probe*, not adopted as
+a scientific acceptance threshold. Source results, candidate
+indices and metrics were preserved as
+[artifact #15147142356](https://github.com/monacofj/moeabench/actions/runs/45879973365/artifacts/15147142356).
+
+Both proof-only selectors are strictly outside production.
+The scientific acceptance of the unchanged original generator
+continues to **fail correctly**. Future development must
+justify a general component-sensitive coverage policy,
+independently verify the selected original PS/F rows, measure
+indicator fitness and reproduce results under governed
+environments before acceptance under ADR 0059.
