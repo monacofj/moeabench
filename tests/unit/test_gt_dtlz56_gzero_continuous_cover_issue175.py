@@ -25,6 +25,11 @@ def test_exact_cover_proof_replays_and_preserves_scope(problem):
     upper=Fraction(int(bound["numerator_hex"],16),
                    int(bound["denominator_hex"],16))
     assert Fraction(1,4)<upper<Fraction(27,100)
+    mean=cert["uniform_x1_mean_raw_distance_upper"]
+    mean_upper=Fraction(int(mean["numerator_hex"],16),
+                        int(mean["denominator_hex"],16))
+    assert Fraction(12,100)<mean_upper<Fraction(14,100)
+    assert mean_upper < upper
     assert cert["continuous_gzero_component_only"] is True
     assert cert["whole_gt_coverage"]=="unverified"
     assert cert["scientific_certification"]=="unverified"
@@ -35,6 +40,7 @@ def test_missing_curve_endpoint_fails_closed(problem):
     rows=anchor_rows(problem,xs=(0.,1./3,2./3))
     cert=certify_gzero_curve_cover(rows,problem=problem)
     assert cert["conclusion"]=="unverified_missing_curve_endpoint"
+    assert cert["uniform_x1_mean_raw_distance_upper"] is None
     assert not replay_gzero_curve_cover(rows,cert,problem=problem)
 
 
@@ -48,6 +54,11 @@ def test_stricter_anchor_mesh_has_no_larger_bound():
         return Fraction(int(x["numerator_hex"],16),
                         int(x["denominator_hex"],16))
     assert rational(fine)<rational(coarse)
+    def mean(record):
+        x=record["uniform_x1_mean_raw_distance_upper"]
+        return Fraction(int(x["numerator_hex"],16),
+                        int(x["denominator_hex"],16))
+    assert mean(fine)<mean(coarse)
 
 
 def test_forged_bound_and_wrong_problem_cannot_replay():
