@@ -9,6 +9,7 @@ on:
       - "scripts/audit/dtlz5_final_selection_trace.py"
       - "tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py"
       - "tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py"
+      - "tests/unit/test_gt_dtlz5_stratified_proof_only_maximin_issue175.py"
       - ".github/workflows/gt-dtlz5-pool-proof-reach-175.yml"
   workflow_dispatch:
 
@@ -30,7 +31,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e . pytest
       - name: Check exact decision classifier without expensive sampler
-        run: python -m pytest tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py -q
+        run: python -m pytest tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py tests/unit/test_gt_dtlz5_stratified_proof_only_maximin_issue175.py -q
       - name: Run one unchanged original 448-source PS and independently classify
         run: |
           python -m scripts.audit.dtlz5_pool_proof_reach \
@@ -65,6 +66,14 @@ jobs:
           print("original selection",selected["original_selection"])
           print("proof-only selection",selected["proof_gated_selection"])
           print("proof-only indices",selected["proved_source_candidate_indices"])
+          stratified=r["low_g_stratified_proof_gated_comparison"]
+          assert stratified["status"]=="observational_proved_only_stratified_maximin"
+          assert stratified["selected_proof_statuses"]==["proved_pf"]*12
+          assert stratified["proof_gated_selection"]["positive_g_min"]<=1/16
+          assert stratified["first_four_anchors_unchanged"] is True
+          assert stratified["scientific_certification"]=="unverified"
+          print("low-g stratified",stratified["proof_gated_selection"])
+          print("low-g indices",stratified["proved_source_candidate_indices"])
           PY
       - uses: actions/upload-artifact@v4
         if: always()
