@@ -4160,3 +4160,69 @@ the entire DTLZ5/6 Pareto front: a global IGD-like mean requires
 a separately specified and justified probability measure on the
 full mixed-dimensional PF, while the present result assumes
 uniform `x1` only on the degenerate component.
+
+
+### Certified nondegenerate continuous Pareto patch for original DTLZ5 M4/K1
+
+An independently checkable **continuous positive-g subset** is now
+specified without inferring membership from finite scalarization gaps.
+For original DTLZ5 with `M=4,K=1`, consider the rectangle
+
+```text
+0 <= x1 <= 1/8,  x2 = x3 = 1,  1/2 <= t=x4 <= 3/4,
+g=(t-1/2)^2,  0 <= g <= 1/16.
+```
+
+This subset contains strictly positive-`g` interior decisions. The
+original sine-power supporting theorem with `p=2` proves **every
+point** of the entire rectangle's exact-real objective image belongs
+to the global original Pareto front, including the boundary `g=0`
+(by the unit-radius theorem). Indeed, write `r=1+g`,
+`c=r*sin(pi*x1/2)`. Uniformly on the rectangle,
+
+```text
+c² <= ((17/16) * pi_upper/16)² < 1 - 2/pi_lower.
+```
+
+Both strict sides are compared using EXACT rational Machin bounds,
+not sampled or floating-point approximations. This is a sufficient
+global-PF supporting inequality uniformly valid on the whole
+two-parameter patch.
+
+For a grid of exact dyadic coordinates along `x1` and `t`,
+let `dx` and `dt` denote the maximum successive gaps. The original
+spherical equations give conservative parameter-Lipschitz bounds
+`||dF/dx1|| <= (17/16)*pi/2` and
+`||dF/dt|| <= 1+pi/2`. The latter accounts for the radial
+term `g=(t-1/2)^2` and the two changing inner angles.
+Therefore the **continuous patch-to-synthetic-grid raw Euclidean
+covering** satisfies the rigorous inequality
+
+```text
+sup_(q in this patch) min_(s in exact grid) ||F(q)-F(s)||_2
+ <= ((17/16)*pi_upper/2)*(dx/2)
+    + (1+pi_upper/2)*(dt/2).
+```
+
+For the opt-in 3×3 dyadic grid
+`x1=(0,1/16,1/8)`,
+`t=(1/2,5/8,3/4)`, the right-hand side is about `0.213`
+under the raw objective Euclidean metric. Each of the six
+positive-`g` grid decision images is **separately** certified by
+the previously independent exact Taylor-sine theorem and replay,
+while the three `g=0` nodes follow from the global norm theorem.
+The result is recomputed by
+[`dtlz5_positive_g_patch_cover.py`](../scripts/audit/dtlz5_positive_g_patch_cover.py);
+independent additive unit tests check exact replay, grid refinement,
+forged records and invalid parameters.
+
+This is a **real continuous-front subset certificate**, unlike
+empirical nearest-source sampling, but it is deliberately **not**
+coverage of the full positive-`g` component or the actual
+production GT. The grid is synthetic; its exact-real mathematical
+objective images are not claimed to be identical to stored float
+`F` entries. Remaining work includes complete positive-`g`
+component classification, a finite reference projection strategy,
+indicator quality, numerical execution provenance and acceptance
+thresholds under ADR 0059. No accepted ADR, regression baseline or
+production sampler is changed by this opt-in proof.
