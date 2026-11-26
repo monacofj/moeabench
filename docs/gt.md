@@ -4270,3 +4270,51 @@ Pareto optimal, but the patch is only a *subset* of the full
 original DTLZ6 positive-`g` PF. The synthetic grid and derived
 covering bound are not the actual selected reference and do not
 constitute an IGD/IGD+/HV or full GT certificate.
+
+
+### Bridging a continuous positive-g patch to the actual original selected GT
+
+The independent opt-in
+[`dtlz5_patch_actual_source_cover.py`](../scripts/audit/dtlz5_patch_actual_source_cover.py)
+now replaces the **synthetic reference** in the patch coverage claim
+with the *actual sixteen decisions* obtained from the original
+source-bound paired DTLZ5 M4/K1 PS/F artifact. It does not alter that
+source, assume those sixteen decisions are all Pareto optimal, or
+require that any synthetic grid node be selected.
+
+For each of the nine exact decision-image patch-grid nodes `q_i`
+and each actual selected binary decision `s_j`, the independent
+original four-objective equations are enclosed with **outward
+exact-rational** Machin-pi and alternating sine/cosine Taylor bounds.
+These yield certified per-objective intervals for both nodes.
+For each pair, the sum of maximal interval-coordinate separations
+bounds `||F(q_i)-F(s_j)||_1`, and hence also the Euclidean distance.
+Taking the minimum such upper bound over all 16 actual reference rows
+at each grid node gives `D_i`, and the rigorous triangle inequality
+establishes the **restricted continuous patch-to-actual-selected-GT
+decision-image** coverage bound:
+
+```text
+sup_(q in certified continuous patch) min_(s in actual selected PS)
+       ||F(q)-F(s)||_2
+ <= Lx * dx/2 + Lt * dt/2 + max_(grid node i) D_i.
+```
+
+The first term is the previously certified *continuous patch to
+synthetic grid* bound, while the new second term accounts for the
+measured-but-certified **gap from every grid node to the actual
+sampled reference**. This is a genuine one-sided mathematically
+rigorous statement about *one continuous subset* and *one actual
+reference*, and does not rely on finite sampled source-pool density,
+ordinary floating-point distance or an arbitrary error margin.
+The JSON records all exact binary source decisions, digest,
+independent per-grid chosen row and exact rational bounds, and
+full replay recomputes the entire statement from source.
+
+The source-bound workflow computes this certificate **before**
+the unchanged correct negative acceptance gate rejects the
+known dominated DTLZ5 selected row 10. Thus a scientifically
+invalid global GT can still possess valid local continuous
+component coverage bounds. This result in no way asserts
+whole-PF coverage, global GT membership, exact saved finite F
+identity, full indicator adequacy, or ADR 0059 final acceptance.
