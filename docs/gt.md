@@ -3885,3 +3885,55 @@ remain blocked. A general production remedy must preserve all
 true Pareto branches, handle mathematically valid but unproved
 points conservatively, and quantify both computational cost and
 coverage for realistic sampling budgets.
+
+
+### Original DTLZ5 M4 K1 source pool: exact proof reach (2026-11-26)
+
+The independent opt-in
+[`dtlz5_pool_proof_reach.py`](../scripts/audit/dtlz5_pool_proof_reach.py)
+executed the unchanged `ps(16)` exactly once, captured all 448 source
+candidate decisions and classified each **exact IEEE-754 dyadic
+decision image** using the existing symbolic support theorems,
+global tight-sine bounds, rational same-ray strict dominance, and
+the separate arbitrary-ray counterexample. Its new additive
+classifier/grouping tests and the entire bounded source-bound
+[CI run #45879534486](https://github.com/monacofj/moeabench/actions/runs/45879534486)
+passed. The exact-row source and classification JSON was retained
+as [artifact #15145777855](https://github.com/monacofj/moeabench/actions/runs/45879534486/artifacts/15145777855).
+
+**Across the full 448-source pool:** 430 mathematically global-PF
+decision images **proved** (95.98%), 1 mathematically **dominated**
+(the already identified original Sobol 157 source), and 17
+**unverified**. Source-family breakdown is Sobol (242 proved,
+1 dominated, 13 unverified), Gaussian (124 proved, 0 dominated,
+4 unverified), gamma (64 proved, 0 dominated, 0 unverified).
+By distance: exact `g=0` has 375 proved, while positive `g`
+has 55 proved, 1 dominated and 17 unverified. Thus this specific
+finite candidate pool contains genuine positive-`g` points with
+independent global-membership proofs. The current 16-point
+original final maximin selection has **15 proved PF, 1 dominated,
+0 unverified**. These results are theorem classifications of
+exact source decision images, conditional on independent
+evaluation/archival identity, not claims of entire GT adequacy.
+
+The 17 abstentions concentrate among small nonzero `g` candidates
+(14 for `0<g<=1/16` and 3 for `g>1/8`) and principally
+`x3=1` angular faces (14). A proof-only filter must not silently
+equate these 17 abstentions with dominated points; mathematical
+validity outside the present sufficient theorems is unresolved.
+The 430/448 source proof rate is encouraging for a research
+candidate pool, not a quantified statement of continuous-front
+component coverage, finite IGD/HV accuracy, or original DTLZ6
+behavior. No production sampler, accepted ADR, frozen baseline
+or historical regression test has been altered.
+
+An additional **observational** same-budget experiment in the
+same research module greedily selects 12 points only from the
+proved original source candidates while preserving the four
+original `g=0` anchors. It uses identical source-pool
+normalization for comparisons, records normalized nearest-neighbor
+geometry, objective spans and positive-`g` occupancy, and makes
+no claim that a finite maximin diversity score is a continuous
+front-covering proof. This selection remains strictly outside
+production until source-bound results and component adequacy
+are reviewed.
