@@ -4084,3 +4084,53 @@ ADR 0059 remain untouched. Full scientific GT acceptance
 still requires exact source/finite-F alignment, continuous
 component bounds, reference quality/indicator suitability,
 and approved environment/provenance replay.
+
+
+### Exact continuous coverage bound for the degenerate g=0 component (DTLZ5/DTLZ6)
+
+For the **original M=4, K=1** DTLZ5 and DTLZ6 problems, every
+decision with exact `g=0` maps to the same one-dimensional
+unit-sphere curve. The last objective is `sin(theta)` and the
+first three objectives are `cos(theta) v`, where
+`theta=pi*x1/2`, `v` is the fixed nonnegative unit vector
+determined by the original inner angles `pi/4`, and
+`v` is orthogonal to the last-axis basis vector. At exact
+`g=0`, the original inner-position variables do not affect `v`.
+
+Given any subset of reference decisions whose **exact** binary
+tail coordinates imply `g=0`, sort their exact dyadic first
+coordinates `0=a0<a1<...<ar=1`, and let
+`Delta=max(a[i+1]-a[i])`. Every point on the complete
+continuous `g=0` curve is at most a half-gap from an
+anchor in `x1`. The Euclidean chord between unit vectors
+is at most their angular separation. Thus
+
+```text
+sup_(f in PF_g=0) min_(s in reference) ||f-s||_2
+    <= (pi/4) * Delta
+    <  (pi_upper/4) * Delta,
+```
+
+where the upper bound on `pi` is an **exact rational Machin
+enclosure** and `Delta` is computed from the exact IEEE-754
+dyadic anchor values. The bound is **raw objective-space
+Euclidean distance**, not an observed source-pool covering
+radius. For the four original `x1=(0,1/3,2/3,1)` float
+anchors, the resulting upper bound is approximately
+`0.2617994`; exact dyadic spacing, rather than idealized
+rational thirds, is used in the actual certificate.
+
+The opt-in
+[`dtlz56_gzero_continuous_cover.py`](../scripts/audit/dtlz56_gzero_continuous_cover.py)
+recomputes the rational bound and has an independently replayable
+strict proof record, using only exact Fraction operations.
+A missing endpoint, invalid decision, forged bound, wrong
+problem, or missing mathematical precondition fails closed.
+This theorem is an actual **continuous one-component
+covering upper bound**; it is independent of finite candidate-pool
+density and does **not** extend to the genuine positive-`g`
+Pareto strata or claim that the full PF is covered, that the
+archived finite-precision F equals the mathematical image
+exactly, or that any IGD/HV quality threshold is met.
+Any normalized-objective-space version additionally needs
+independently controlled coordinate scaling.
