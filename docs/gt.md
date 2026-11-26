@@ -4226,3 +4226,47 @@ component classification, a finite reference projection strategy,
 indicator quality, numerical execution provenance and acceptance
 thresholds under ADR 0059. No accepted ADR, regression baseline or
 production sampler is changed by this opt-in proof.
+
+
+### Certified nondegenerate continuous Pareto patch for original DTLZ6 M4/K1
+
+The DTLZ5 patch argument also yields an independently certified
+**continuous positive-g subset** of original DTLZ6, using radial
+parameter `u=g` instead of direct decision-tail changes:
+`x4=u^10`, so the original tenth-root function has exactly
+`g=(u^10)^(1/10)=u` for nonnegative real `u`.
+On the rectangle
+`0<=x1<=1/8`, `x2=x3=1`, `0<=u<=1/4`,
+the supporting sine-power theorem with `p=2` proves
+global Pareto membership **uniformly** because
+
+```text
+((5/4)*pi_upper/16)^2 < 1 - 2/pi_lower.
+```
+
+The exact `g=0` boundary is a proven unit-radius PF curve;
+every positive-`u` interior point is a genuine positive-`g`
+global Pareto member. The original spherical objectives have
+uniform derivative bounds `||dF/dx1|| <= (5/4)*pi/2` and
+`||dF/du||<=1+pi/2` along this rectangle. Therefore a synthetic
+dyadic grid with maximum radial/angular gaps `du,dx` has
+a rigorous **continuous patch-to-grid raw Euclidean** upper bound
+
+```text
+((5/4)*pi_upper/2)*dx/2 + (1+pi_upper/2)*du/2.
+```
+
+The default 3×3 synthetic grid has
+`x1=(0,1/16,1/8)`, `u=(0,1/8,1/4)`, and
+each exact decision-tail coordinate is `u^10`.
+Six positive-`g` grid points are independently replayed
+using the integer tenth-root enclosure support certificate,
+while the three zero-radius points invoke the unit-radius theorem.
+The whole-patch theorem, Lipschitz bounds and replay record are
+implemented *outside production* in
+[`dtlz6_positive_g_patch_cover.py`](../scripts/audit/dtlz6_positive_g_patch_cover.py)
+with new additive tests. The continuous image is proven globally
+Pareto optimal, but the patch is only a *subset* of the full
+original DTLZ6 positive-`g` PF. The synthetic grid and derived
+covering bound are not the actual selected reference and do not
+constitute an IGD/IGD+/HV or full GT certificate.
