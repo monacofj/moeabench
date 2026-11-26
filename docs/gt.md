@@ -3855,3 +3855,33 @@ GT membership, reference coverage and indicator fitness remain
 `unverified`. A production repair needs general component-preserving
 accept/reject/abstain semantics with a scientifically justified
 oracle, demonstrated success rate and bounded cost before approval.
+
+
+### CI validation of research-only proof gate (2026-11-26)
+
+[GitHub Actions #45876374564](https://github.com/monacofj/moeabench/actions/runs/45876374564)
+completed the new bounded source-157 proof-gated workflow with **all
+scoped unit tests and proof-replay assertions passing**. The original
+production scalarizer with `abs_tol=1e-7` used 60 nodes and returned
+the already independently proven **strictly dominated** exact source
+decision. The research acceptance gate correctly **rejected** it.
+On its second attempt, `abs_tol=1e-9` used 87 nodes and returned
+a different decision whose exact-real objective image has a positive
+rational Taylor-sine global-Pareto support certificate. A separate
+CI process independently recomputed the exact `g` from the lossless
+hex decision coordinates and replayed every certificate field;
+the accepted attempt index was **1**. No further tolerance attempts
+were needed. The immutable JSON research output is available as
+[artifact #15144938582](https://github.com/monacofj/moeabench/actions/runs/45876374564/artifacts/15144938582).
+
+This **demonstrates that a proof-gated refinement can reject a
+known dominated candidate and accept an independently proved
+replacement for one fixed original source direction**. It does not
+demonstrate that the present supporting-stratum theorem will
+certify enough of the complete original DTLZ5/6 candidate pool,
+or establish GT coverage and indicator fitness. The existing
+production GT and source-bound final-sample scientific acceptance
+remain blocked. A general production remedy must preserve all
+true Pareto branches, handle mathematically valid but unproved
+points conservatively, and quantify both computational cost and
+coverage for realistic sampling budgets.
