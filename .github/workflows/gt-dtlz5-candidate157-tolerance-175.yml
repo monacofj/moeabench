@@ -1,0 +1,57 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 original Sobol candidate 157 scalar tolerance sensitivity (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz5_candidate157_tolerance_sweep.py"
+      - "tests/unit/test_gt_dtlz5_candidate157_tolerance_issue175.py"
+      - ".github/workflows/gt-dtlz5-candidate157-tolerance-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-source-sweep:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Validate fixed Sobol ray and noncertifying contract
+        run: python -m pytest tests/unit/test_gt_dtlz5_candidate157_tolerance_issue175.py -q
+      - name: Run bounded original scalarizer on same source weights
+        run: |
+          python -m scripts.audit.dtlz5_candidate157_tolerance_sweep \
+            --report gt175-DTLZ5-candidate157-tolerances.json
+      - name: Assert scientific abstention and source identity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("gt175-DTLZ5-candidate157-tolerances.json").read_text())
+          assert d["source_candidate"] == 157
+          assert len(d["observations"]) == 3
+          assert d["scientific_certification"] == "unverified"
+          assert all(x["scientific_membership"] == "unverified" for x in d["observations"])
+          for x in d["observations"]:
+              print(x["tolerance"],x["status"],x.get("g"),x.get("nodes"),
+                    x.get("achieved_scalarization_gap_bound"),
+                    x.get("exact_archived_row10_match"))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue175-dtlz5-candidate157-tolerance-sensitivity
+          path: gt175-DTLZ5-candidate157-tolerances.json
+          if-no-files-found: error
+          retention-days: 90
