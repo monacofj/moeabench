@@ -4378,3 +4378,42 @@ forgery, tenth-root and endpoint tests and source-bound CI have
 been added. The result is *not* whole positive-`g` component
 coverage, an assertion about archived rounded F bytes, or
 whole GT scientific acceptance.
+
+
+### Validated actual original DTLZ6 positive-g patch coverage (2026-11-26)
+
+The new irrational-tenth-root interval bridge was independently
+executed against the **actual original M4/K1 n16 selected PS/F**
+in [source-bound CI #45889917080](https://github.com/monacofj/moeabench/actions/runs/45889917080).
+The dedicated additive DTLZ6 source-bridge unit tests passed,
+including distinct irrational radial enclosures, exact endpoint
+handling, invalid inputs, forged certificate replay and exact grid
+nodes. Its actual paired artifact digest was
+
+```text
+e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795
+```
+
+For the **previously declared continuous DTLZ6 M4/K1 patch**
+`0<=x1<=1/8, x2=x3=1, 0<=u=g<=1/4, x4=u^10`,
+the exact rational analysis proves the entire patch is
+covered by the objective images of the **actual sixteen selected
+source decisions** with raw Euclidean distance at most
+**0.5036501758766639** (decimal rendering of a rigorous rational
+upper). The bound includes the exact patch-to-grid Lipschitz term
+and all nine grid-to-actual-reference rational interval L1 terms.
+It does not assume the 16 selected decisions are all Pareto
+members; five remain unverified under the available theorems.
+
+The same run reverified the DTLZ5 actual-source positive-g patch
+upper **0.43780881073152883** and the unchanged rigorously dominated
+source decision row 10. Both paired PS/F bundles, JSON
+source-bound result reports and the two newly replayed exact
+patch-to-actual-source certificates were preserved together in
+[artifact #15149984539](https://github.com/monacofj/moeabench/actions/runs/45889917080/artifacts/15149984539).
+The final scientific negative acceptance assertion deliberately
+failed **after** both positive subset checks had passed.
+No archived F exactness, full positive-g component coverage,
+whole-PF Hausdorff/IGD/IGD+/HV quality or final GT acceptance
+is implied. Research-only changes have not modified production,
+accepted ADRs, historic regression tests or frozen baselines.
