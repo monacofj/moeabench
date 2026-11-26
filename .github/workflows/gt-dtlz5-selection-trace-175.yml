@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 source scalarizer versus reconstructed objective diagnostic (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz5_final_selection_trace.py"
+      - "tests/unit/test_gt_dtlz5_final_selection_trace_issue175.py"
+      - ".github/workflows/gt-dtlz5-selection-trace-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-source-trace:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Exercise read-only instrumentation with mocked source
+        run: python -m pytest tests/unit/test_gt_dtlz5_final_selection_trace_issue175.py -q
+      - name: Observe unchanged original DTLZ5 448-scalarization source once
+        run: |
+          python -m scripts.audit.dtlz5_final_selection_trace \
+            --report gt175-DTLZ5-M4K1-source-selection-trace.json
+      - name: Validate experiment identity and report limitations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("gt175-DTLZ5-M4K1-source-selection-trace.json").read_text())
+          assert d["num_scalarized_candidates"] == 448
+          assert len(d["selected_rows"]) == 16
+          assert d["scientific_certification"] == "unverified"
+          assert d["archived_row10_exact_match_count"] == 1, d["archived_row10_exact_match_count"]
+          selected=d["archived_row10_diagnostic"][0]
+          assert selected["selected_index"] == 10
+          assert selected["trace"] is not None
+          print("Selected index",selected["selected_index"])
+          print("Source candidate",selected["trace"]["scalarizer_candidate_index"])
+          print("Source family",selected["trace"]["source_family"])
+          print("Solver abs gap",selected["trace"]["scalarized_abs_gap_bound"])
+          print("Reconstruction max abs error",selected["trace"]["reconstruction_max_abs_error"])
+          print("Reconstruction minus solver",selected["trace"]["reconstruction_minus_solver_objectives"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue175-dtlz5-source-selection-trace
+          path: gt175-DTLZ5-M4K1-source-selection-trace.json
+          if-no-files-found: error
+          retention-days: 90
