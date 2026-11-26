@@ -51,7 +51,7 @@ def test_adversarial_record_rejected():
 
 
 @pytest.mark.parametrize("values",[
-    (0.,1/8), (0.,1/16,1/16,1/8),
+    (0.,1/16), (0.,1/16,1/16,1/8),
     (0.,float("nan"),1/8),(0.,1/8,1/16),
     (0.,1/16,1/4),
 ])
