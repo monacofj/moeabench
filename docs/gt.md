@@ -3733,3 +3733,40 @@ membership. Even if solver and reconstructed objectives agree within
 floating-point resolution, the strict rational off-ray witness
 continues to block the sampled DTLZ5 GT. The source identity and
 negative scientific gate remain separate mandatory checks.
+
+
+### Observed source trace for exact dominated DTLZ5 row 10 (2026-11-26)
+
+The bounded source workflow
+[run #45872188991](https://github.com/monacofj/moeabench/actions/runs/45872188991)
+completed **successfully** with a single unchanged DTLZ5 M4 K1
+`ps(16)` invocation and all 448 original scalarizations.
+Its trace independently matched all 16 selected decisions against the
+source scalarizer/reconstruction calls, and the archived dominated
+zero-based row 10 was matched **exactly once** to Sobol candidate
+index **157**. For that candidate the original solver reported
+`abs_gap=1.00004e-7`, `nodes=60`,
+`g=0.032597616928677145`, active inner faces
+`[None,1]` and objective values approximately
+`(0.4738962191839601, 0.4979981983889374,
+0.722407265038879, 0.26796594886356484)`.
+
+Independent evaluation of the reconstructed exact output decision
+differed from the scalarizer objective array by
+`(5.55e-17,1.11e-16,1.11e-16,5.55e-17)`,
+and the **maximum among all 448 candidate objective discrepancies**
+was `2.78e-16`. Hence the earlier hypothesis that objective
+reconstruction discrepancy is the significant source of the
+proven positive off-ray dominance gap (~`1e-9`) is not supported
+by this experiment. The finite scalarization gap is a plausible
+root cause, but its actual causal role has **not** been proved:
+a certified absolute scalarization value gap does not imply exact
+Pareto membership, even if it is made smaller. A focused tolerance
+sensitivity probe and a mathematically sound positive-PF generation
+criterion are still required before changing production policy.
+
+The source-bound trace JSON was preserved as
+[artifact #15142679220](https://github.com/monacofj/moeabench/actions/runs/45872188991/artifacts/15142679220).
+The scientific negative acceptance remains failed on the original
+sampler, by design; this trace neither changes ADR 0059 nor
+certifies an entire GT.
