@@ -50,6 +50,7 @@ def certify_gzero_curve_cover(decisions, *, problem, pi_terms=16):
             "anchor_x1": [_encode(v) for v in coordinates],
             "max_dyadic_parameter_gap":None,
             "raw_euclidean_cover_upper":None,
+            "uniform_x1_mean_raw_distance_upper":None,
             "pi_terms":pi_terms,
             "continuous_gzero_component_only":True,
             "whole_gt_coverage":"unverified",
@@ -61,12 +62,20 @@ def certify_gzero_curve_cover(decisions, *, problem, pi_terms=16):
     if not (3<pi_lo<pi_hi<4):
         raise ArithmeticError("Invalid rigorous Machin pi interval")
     upper=pi_hi*max_gap/4
+    # Uniform measure in x1 on [0,1] is NOT an assumed measure over
+    # the full original Pareto front. Integrate nearest-anchor angular
+    # distance over each exact dyadic parameter gap: integral = gap²/4.
+    uniform_mean_upper=pi_hi*sum(
+        ((b-a)**2 for a,b in zip(coordinates,coordinates[1:])),
+        Fraction(0),
+    )/8
     return {
         "proof_id":PROOF_ID, "problem":problem,
         "conclusion":"rigorously_bounded_continuous_gzero_cover",
         "anchor_x1":[_encode(v) for v in coordinates],
         "max_dyadic_parameter_gap":_encode(max_gap),
         "raw_euclidean_cover_upper":_encode(upper),
+        "uniform_x1_mean_raw_distance_upper":_encode(uniform_mean_upper),
         "pi_terms":pi_terms,
         "continuous_gzero_component_only":True,
         "whole_gt_coverage":"unverified",
