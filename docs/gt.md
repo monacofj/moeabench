@@ -4030,3 +4030,57 @@ tenth-root bounds, not the production floating-point radial
 value. Missing an exact supporting certificate leaves the
 row `unverified`; a numerical source-covering score never
 converts that status into a positive proof.
+
+
+### Exact source-pool proof reach and finite-source covering diagnostics: original DTLZ6 M4/K1
+
+The research-only source audit
+[`dtlz6_pool_proof_reach.py`](../scripts/audit/dtlz6_pool_proof_reach.py)
+ran one unchanged original DTLZ6 `ps(16)` source invocation
+(448 Chebyshev candidates), captured all reconstructed decisions,
+then classified each **exact binary decision image** conservatively.
+The `g=0` global-unit-radius theorem, rational-`g`
+support and the independent outward **integer tenth-root interval**
+global-PF theorem provide positive certificates; absence of any
+applicable theorem is always `unverified`, never an implicit
+negative dominance result or an approximate membership pass.
+
+The new independent, source-bound
+[CI #45883665074](https://github.com/monacofj/moeabench/actions/runs/45883665074)
+passed all additive unit tests, the actual 448-source capture,
+classification, counterfactual observations and result retention
+([artifact #15147319426](https://github.com/monacofj/moeabench/actions/runs/45883665074/artifacts/15147319426)).
+The observed full pool contained **413 exact mathematical
+PF-member proofs**, **0 proved dominated decisions** and
+**35 unverified** candidates. Its original final selection
+contained **11 proved PF members** and **5 unverified**
+(zero-based selected indices `[6,7,10,11,12]`).
+The source-family counts were Sobol 240 proved/16 unverified,
+Gaussian 113 proved/15 unverified, and gamma 60 proved/4
+unverified. Unverified does **not** imply dominated.
+
+A counterfactual research selector preserved the four original
+`g=0` anchors, selected twelve additional source candidates with
+individual exact positive PF proofs using the same normalized
+greedy maximin objective, and compared both 16-point
+references **against exactly the same finite set of 413 proved
+source objectives**. The empirical directed normalized pool
+covering radius was `0.2202018665534744` for the unchanged
+selection versus `0.15132096602167847` for the proved-only
+counterfactual (~31.3% smaller). The counterfactual selected
+ten positive-`g` source candidates in addition to the anchors.
+The counterfactual sample has a sound *pointwise* mathematical
+membership basis but these numbers are **not** a continuous
+front Hausdorff/covering bound, certified indicator fitness,
+or a claim that all nondegenerate original DTLZ6 components
+are represented adequately.
+
+This evidence complements the original DTLZ5 source-pool
+430-proved/1-dominated/17-unverified research result.
+Both comparisons are for original `M=4,K=1,n=16`,
+not arbitrary M/K/n or an accepted production change.
+The existing public samplers, baseline/regression guards and
+ADR 0059 remain untouched. Full scientific GT acceptance
+still requires exact source/finite-F alignment, continuous
+component bounds, reference quality/indicator suitability,
+and approved environment/provenance replay.
