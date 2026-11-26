@@ -3636,3 +3636,69 @@ ledgers separately and also their
 **deduplicated row-index union**;
 unknown rows remain unknown.
 
+
+
+### Exact off-support strict dominance of the post-repair DTLZ5 selected row 10 (#175)
+
+**New negative mathematical certificate (research gate, pending source-bound CI).**
+The remaining previously `unverified` DTLZ5 original
+`M=4,K=1,n=16` final-selected decision (zero-based row 10) from
+the post-PR #210 source-bound sample has a constructive **strict global
+dominance witness**. This defeats an assumption that improving the
+positive-`g` support proofs alone will eventually establish validity
+of this sampled reference. The complete exact-IEEE-754 declaration is
+
+```python
+source = (0.1671198950208142, 0.999999658561122,
+          1.0, 0.6805481014263987)
+witness = (source[0] - 2**-31, source[1] + 2**-23,
+           source[2], source[3] - 2**-26)
+```
+
+The `witness` expression above denotes **rational** binary
+displacements of the exact source coordinates (not rounded Python
+floating-point subtraction). Both decisions lie strictly within their
+original variable bounds, and the witness has smaller radial
+`g=(x4-1/2)^2`. The witness's second position remains strictly **below
+one**: neither decision is snapped to an angular endpoint.
+
+For the original four-objective DTLZ5 equations, put
+`t1=pi*x1/2`,
+`ti=pi*(1+2*g*xi)/(4*(1+g))` for `i=2,3`, and `r=1+g`.
+The four objective values are exactly
+`r*(cos(t1)*cos(t2)*cos(t3), cos(t1)*cos(t2)*sin(t3),
+cos(t1)*sin(t2), sin(t1))`.
+
+The independent opt-in
+[`scripts/audit/dtlz5_row10_exact_dominance.py`](../scripts/audit/dtlz5_row10_exact_dominance.py)
+uses Machin rational enclosures of pi and outward **exact rational**
+alternating Taylor bounds: for `0<=t<=pi/2`,
+`S17(t)-t^19/19! <= sin(t) <= S17(t)` and
+`C20(t)-t^22/22! <= cos(t) <= C20(t)`.
+Sine monotonicity and cosine antitonicity transfer the pi interval
+to the angular intervals; all factors are nonnegative and their
+products are enclosed with exact Fraction arithmetic. For each
+objective, the exact lower bound of the source **exceeds** the exact
+upper bound of the witness. With 16 Machin terms, the rigorously
+positive lower differences are approximately
+`(1.3725e-9, 5.3947e-9, 2.2833e-9, 2.1258e-9)`.
+These decimal displays are *descriptive only*: the certificate stores
+lossless rational hex numerators and denominators, and its replay
+recomputes all four strict inequalities without trusting stored
+margins, the production evaluator, a scalarizer or hardware trig.
+
+Thus, **conditional on independently replaying the original row
+identity from the immutable paired PS/F sample**, the post-repair
+DTLZ5 final-selected reference is mathematically **blocked**, despite
+the previously deduplicated 15/16 positive global membership proofs.
+The remaining row is *not merely inconclusive*: its exact-real image
+is strictly dominated. The reference cannot be promoted to an
+accepted GT. The source-bound strict negative guard must reject it
+when integrated/replayed. This research proof by itself does not
+verify exact identity of the archived finite-precision F row, broader
+component coverage, any platform/environment gate, or scientific
+certification under ADR 0059. Do not change the historical sampler,
+accepted ADR, frozen baseline or regression test merely to make
+the new guard pass. Diagnose why the final greedy/maximin source
+includes a dominated decision, and repair the generation mechanism
+only after independent acceptance tests.
