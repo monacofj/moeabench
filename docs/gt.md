@@ -3770,3 +3770,49 @@ The source-bound trace JSON was preserved as
 The scientific negative acceptance remains failed on the original
 sampler, by design; this trace neither changes ADR 0059 nor
 certifies an entire GT.
+
+
+### Measured candidate-157 scalarization tolerance sensitivity (2026-11-26)
+
+A second bounded source-bound
+[CI run #45872476443](https://github.com/monacofj/moeabench/actions/runs/45872476443)
+reconstructed exactly the original seeded Sobol candidate **157**
+preference weights from source (all four weights matched bit-for-bit),
+then evaluated **only that** original Chebyshev scalarizer at three
+declared absolute tolerances; no 448-solve GT rerun or change to
+production. The source-bound output was saved in
+[artifact #15142169556](https://github.com/monacofj/moeabench/actions/runs/45872476443/artifacts/15142169556).
+
+| `abs_tol` | B&B nodes | returned `g` | exact support-face geometry |
+| --- | ---: | ---: | --- |
+| `1e-7` | 60 | 0.032597616928677145 | `x2<1, x3=1`; exact archived strictly dominated decision |
+| `1e-9` | 87 | 0.032597601473098994 | **`x2=x3=1`** exactly |
+| `1e-11` | 114 | 0.032597601854404384 | `x2<1, x3=1` exactly |
+
+For the original exact-real *decision image* in the middle
+`1e-9` case, the existing independent strict Taylor-sine
+support theorem proves **global Pareto membership**, replayed
+from the lossless binary decision declarations in new additive
+[unit tests](../tests/unit/test_gt_dtlz5_candidate157_exact_tolerance_proofs_issue175.py)
+and passed in
+[focused source-bound CI #45872718128](https://github.com/monacofj/moeabench/actions/runs/45872718128).
+The `1e-11` decision's off-face support pattern is ineligible
+for that sufficient theorem, and exact same-ray reduction does not
+apply because `x3=1`. It remains **unverified**; absence of either
+proof is not a valid positive or negative classification. The
+`1e-7` original remains **rigorously dominated** by the
+independent arbitrary-ray rational witness.
+
+These observations demonstrate nonmonotonic *mathematical
+certifiability of selected decision coordinates* under changing
+finite scalarization tolerance, despite monotonic declared
+absolute solver-error budgets. They do **not** establish that
+`1e-11` is dominated or that `1e-9` makes the entire 16-point
+selected reference adequate. A production remedy should
+use independent **pointwise Pareto validity acceptance** rather
+than treating any particular finite Chebyshev tolerance as an
+exact-Pareto-membership certificate. It must separately retain
+component coverage, feasible positive-g geometry and reproducible
+bounded cost. No historical baseline, existing regression test,
+public GT sampler or accepted ADR has been modified during
+these diagnostics.
