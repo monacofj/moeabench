@@ -4641,3 +4641,55 @@ The new exact-rational source-bound procedure is
 [`dtlz56_full_radial_face_actual_source.py`](../scripts/audit/dtlz56_full_radial_face_actual_source.py).
 No production sampler, accepted ADR, frozen baseline or
 preexisting regression test was changed.
+
+
+### A second independent full-radial positive-PF supporting curve (M4/K1)
+
+The already established exact
+[`dtlz56_generalized_positive_g_pf.py`](../scripts/audit/dtlz56_generalized_positive_g_pf.py)
+global-PF theorem covers an angular support stratum **distinct
+from** the previously examined `x2=x3=1` surface:
+`(x1,x2,x3)=(0,1,0)`. Its supporting objective is the
+**second**, rather than the first, and its sine power is
+`p=2`. The global norm and supporting-objective argument
+holds for **every** original admissible radial value:
+
+* DTLZ5: `0<=x4=t<=1`, `g=(t-1/2)^2`;
+  both branches and every `0<=g<=1/4`.
+* DTLZ6: `0<=u=g<=1`, `x4=u^10`;
+  every `0<=g<=1`.
+
+This is a complete-radial **one-dimensional** continuous
+global-PF decision-image curve, not a proof of all angular
+positive-`g` PF strata. The independent opt-in
+[`dtlz56_second_support_full_radial.py`](../scripts/audit/dtlz56_second_support_full_radial.py)
+replays the exact generalized supporting-objective proof for
+every exact-rational grid node (including zero radius) and
+certifies a continuous curve-to-grid raw Euclidean upper bound
+of `(1+pi_upper/2)*max_radial_grid_gap/2`, from original
+spherical derivative and `|dg/dt|<=1` (DTLZ5) or `g=u`
+(DTLZ6). An adversarial test verifies a forged or incomplete
+proof fails closed. The nine-node default radial grid
+`(0,1/8,...,1)` has continuous upper approximately `0.160675`.
+This is a *separate PF supporting stratum* from the surface
+certified in previous source-bound experiments.
+
+The research-only
+[`dtlz56_second_support_actual_source.py`](../scripts/audit/dtlz56_second_support_actual_source.py)
+then connects this **entire** continuous curve to the actual
+16-point original selected PS: each grid node and selected
+source decision is evaluated with rigorous outward exact
+rational original-equation intervals (DTLZ6 uses exact
+integer tenth-root enclosures); the worst nearest-selected
+L1 interval distance upper plus the continuum-to-grid L2
+upper gives a **mathematically rigorous** raw Euclidean
+curve-to-actual-source upper. It records all exact decisions,
+the paired source digest and independently replayable
+per-node rational bounds. New additive tests and a
+source-bound CI step verify the assertions **before** the
+unchanged negative scientific DTLZ5 acceptance check.
+Neither the curve nor its covering upper certifies whole
+GT coverage or indicator fitness; other PF strata are
+still unverified, and preexisting regression tests, accepted
+ADRs, numerical baselines and production samplers remain
+untouched.
