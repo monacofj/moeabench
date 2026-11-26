@@ -4541,3 +4541,56 @@ indicator reference measures, entire continuous PF coverage
 by the existing source-selected GT, or scientific release
 acceptance. No production algorithm, accepted ADR, existing
 regression test or frozen baseline is modified.
+
+
+### Bridging the complete radial support face to original selected PS
+
+The separate opt-in
+[`dtlz56_full_radial_face_actual_source.py`](../scripts/audit/dtlz56_full_radial_face_actual_source.py)
+combines the new full-radial angular support-face theorem with
+the **actual original DTLZ5/6 M4/K1 n16 selected PS**. The
+complete DTLZ5 radial face includes `t=x4 in [0,1]`,
+`x1 in [0,1/4]`; the DTLZ6 radial face uses
+`x4=u^10`, `u=g in [0,1]` and `x1 in [0,3/16]`.
+Every point of these two continuous two-dimensional subsets
+is already independently proved globally Pareto optimal.
+
+For each of the 25 **exact rational** nodes on the declared
+full-radial 5×5 support-face grid, use the independent
+original-equation interval evaluators to compute strictly
+outward rational four-objective bounds for each grid node
+and each **actual source decision image**. The DTLZ6
+evaluator derives exact integer tenth-root bounds before
+propagating them through monotone angular coefficients and
+trigonometric Taylor/Machin intervals. For each grid node
+`q_i`, let `D_i` be the minimum over the 16 actual
+selected source decisions of the resulting *rigorous L1*
+upper bounds on `||F(q_i)-F(s_j)||_2`. Then the continuous
+full-radial support-face to actual selected-reference
+distance satisfies the exact rational bound
+
+```text
+sup_(q in certified complete-radial face)
+  min_(s in actual source PS) ||F(q)-F(s)||_2
+ <= certified_continuum_to_grid_L2
+    + max_i D_i.
+```
+
+The JSON proof records the actual selected decision bits,
+source digest, full mathematical face certificate, all per-grid
+nearest source row indices and rational margins. An independent
+replay reconstructs the complete statement and rejects
+different/forged source decisions. A source-bound CI step
+runs these certificates **before** the original DTLZ5
+negative scientific acceptance, which still must reject
+the mathematically dominated selected row 10.
+
+The intended improvement is **coverage of the complete radial
+range on one certified angular face**, rather than
+arbitrarily extending a local numerical observation to the
+whole original continuous front. The remaining angular
+support strata, objective F roundoff alignment, individual
+membership of all original selected rows, indicator suitability
+and ADR0059 GT certification are **not** proved. The module
+changes no production sampler, existing regressions or
+numerical stability baselines.
