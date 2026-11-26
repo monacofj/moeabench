@@ -24,7 +24,7 @@ from .dtlz56_paired_gt_evidence import _original_objectives
 from .dtlz5_row10_exact_dominance import SOURCE_ROW_10
 
 
-def trace_original_dtlz5_selection(*, n_points=16):
+def trace_original_dtlz5_selection(*, n_points=16, include_candidate_pool=False):
     if type(n_points) is not int or n_points != 16:
         raise ValueError("This research sentinel requires exactly 16 points")
     mop = DTLZ5(M=4, K=1)
@@ -118,7 +118,7 @@ def trace_original_dtlz5_selection(*, n_points=16):
     archived = [
         r for r in rows if r["is_exact_archived_row10"]
     ]
-    return {
+    output = {
         "schema": "dtlz5_final_selection_source_diagnostics_v1",
         "problem": "DTLZ5", "M": 4, "K": 1,
         "points": n_points,
@@ -132,6 +132,15 @@ def trace_original_dtlz5_selection(*, n_points=16):
         "archived_row10_diagnostic": archived,
         "scientific_certification": "unverified",
     }
+    if include_candidate_pool:
+        # Explicit opt-in, lossless research observations; no change to PS.
+        output["candidate_pool_decision_hex"] = [
+            [float(v).hex() for v in row] for row in all_x
+        ]
+        output["candidate_pool_source_families"] = (
+            ["sobol"]*256 + ["gaussian"]*128 + ["gamma"]*64
+        )
+    return output
 
 
 def main(argv=None):
