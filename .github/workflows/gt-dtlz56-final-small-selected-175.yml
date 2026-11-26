@@ -9,6 +9,7 @@ on:
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
       - "scripts/audit/dtlz56_tight_sine_global_pf.py"
       - "scripts/audit/dtlz5_row10_exact_dominance.py"
+      - "scripts/audit/dtlz56_gzero_continuous_cover.py"
       - "tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py"
       - "tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py"
       - "moeabench/mops/_dtlz56_front.py"
@@ -47,6 +48,28 @@ jobs:
             --problem DTLZ6 --m 4 --k 1 --points 16 \
             --bundle gt175-final-DTLZ6-M4-K1-paired.npz \
             --report gt175-final-DTLZ6-M4-K1-report.json
+      - name: Prove continuous g0 coverage from the actual paired decisions
+        run: |
+          python - <<'PY'
+          import json
+          import numpy as np
+          from pathlib import Path
+          from scripts.audit.dtlz56_gzero_continuous_cover import (
+              certify_gzero_curve_cover, replay_gzero_curve_cover)
+          for path in sorted(Path('.').glob('gt175-final-*-paired.npz')):
+              with np.load(path,allow_pickle=False) as data:
+                  problem=str(data["problem"].item())
+                  assert int(data["M"])==4 and int(data["K"])==1
+                  decisions=data["decisions"].copy()
+              proof=certify_gzero_curve_cover(
+                  decisions,problem=problem)
+              assert replay_gzero_curve_cover(
+                  decisions,proof,problem=problem), (problem,proof["conclusion"])
+              assert proof["whole_gt_coverage"]=="unverified"
+              print(problem,"rigorous continuous g0-only upper:",
+                    proof["raw_euclidean_cover_upper"])
+              print(problem,"anchor locations:",proof["anchor_x1"])
+          PY
       - name: Validate complete source-bound output fields and summarize
         run: |
           python - <<'PY'
