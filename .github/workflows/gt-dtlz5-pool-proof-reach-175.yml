@@ -8,6 +8,7 @@ on:
       - "scripts/audit/dtlz5_pool_proof_reach.py"
       - "scripts/audit/dtlz5_final_selection_trace.py"
       - "tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py"
+      - "tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py"
       - ".github/workflows/gt-dtlz5-pool-proof-reach-175.yml"
   workflow_dispatch:
 
@@ -29,7 +30,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e . pytest
       - name: Check exact decision classifier without expensive sampler
-        run: python -m pytest tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py -q
+        run: python -m pytest tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py -q
       - name: Run one unchanged original 448-source PS and independently classify
         run: |
           python -m scripts.audit.dtlz5_pool_proof_reach \
@@ -55,6 +56,15 @@ jobs:
           print("per-family",r["by_source_family"])
           print("per-g",r["by_radial_stratum"])
           print("per-face",r["by_angular_support"])
+          selected=r["proof_gated_maximin_comparison"]
+          assert selected["status"]=="observational_proved_only_maximin"
+          assert selected["first_four_anchors_unchanged"] is True
+          assert selected["selected_proof_statuses"]==["proved_pf"]*12
+          assert len(selected["proved_source_candidate_indices"])==12
+          assert selected["continuous_front_coverage"]=="unverified"
+          print("original selection",selected["original_selection"])
+          print("proof-only selection",selected["proof_gated_selection"])
+          print("proof-only indices",selected["proved_source_candidate_indices"])
           PY
       - uses: actions/upload-artifact@v4
         if: always()
