@@ -7,6 +7,7 @@ on:
     paths:
       - "scripts/audit/dtlz5_candidate157_tolerance_sweep.py"
       - "tests/unit/test_gt_dtlz5_candidate157_tolerance_issue175.py"
+      - "tests/unit/test_gt_dtlz5_candidate157_exact_tolerance_proofs_issue175.py"
       - ".github/workflows/gt-dtlz5-candidate157-tolerance-175.yml"
   workflow_dispatch:
 
@@ -28,7 +29,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install -e . pytest
       - name: Validate fixed Sobol ray and noncertifying contract
-        run: python -m pytest tests/unit/test_gt_dtlz5_candidate157_tolerance_issue175.py -q
+        run: python -m pytest tests/unit/test_gt_dtlz5_candidate157_tolerance_issue175.py tests/unit/test_gt_dtlz5_candidate157_exact_tolerance_proofs_issue175.py -q
       - name: Run bounded original scalarizer on same source weights
         run: |
           python -m scripts.audit.dtlz5_candidate157_tolerance_sweep \
