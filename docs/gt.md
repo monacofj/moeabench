@@ -3816,3 +3816,42 @@ component coverage, feasible positive-g geometry and reproducible
 bounded cost. No historical baseline, existing regression test,
 public GT sampler or accepted ADR has been modified during
 these diagnostics.
+
+
+### Research-only exact proof-gated candidate selection prototype (#209)
+
+The first bounded candidate-level corrective protocol is implemented
+*outside production* as
+[`dtlz5_source157_proof_gated_refinement.py`](../scripts/audit/dtlz5_source157_proof_gated_refinement.py).
+For the original DTLZ5 M4 K1 Sobol preference candidate 157, it runs
+the unchanged source scalarizer at declared bounded tolerances and
+computes the **exact rational** radial `g` and all support conditions
+from the returned binary decision. The existing independent
+Taylor-sine global-membership theorem must return a strict positive
+exact proof margin, and its stored rational proof must independently
+replay. Only then is that specific *decision image* accepted into
+the prototype's candidate pool.
+
+The earlier exact off-ray dominator and general exact same-ray theorem
+are separate **negative** checks; any conflicting positive/negative
+proof raises an error rather than choosing a convenient status.
+Unproved or dominated candidates are not accepted, and an exhausted
+bounded attempt list returns `unverified_no_accepted_candidate`.
+No conclusion is inferred merely because Chebyshev's numerical
+absolute gap has become smaller.
+
+A dedicated [bounded CI workflow](../.github/workflows/gt-dtlz5-source157-proof-gate-175.yml)
+independently replays the accepted original equations on the genuine
+source ray and tests the fail-closed cases without full original
+GT sampling. This experiment is a **feasibility proof for a
+research-only acceptance protocol**, not a universal oracle:
+the current sufficient supporting-stratum theorem does not recognize
+all mathematically genuine positive-`g` Pareto regions, and
+an arbitrary finite number of lower tolerances cannot guarantee
+one will land exactly on a recognized boundary stratum.
+Consequently **the production generator, maximin selection, default
+tolerance and accepted ADR 0059 remain unchanged**, while final
+GT membership, reference coverage and indicator fitness remain
+`unverified`. A production repair needs general component-preserving
+accept/reject/abstain semantics with a scientifically justified
+oracle, demonstrated success rate and bounded cost before approval.
