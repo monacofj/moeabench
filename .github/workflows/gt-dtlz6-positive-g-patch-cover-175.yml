@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ6 exact positive-g continuous PF patch cover (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz6_positive_g_patch_cover.py"
+      - "tests/unit/test_gt_dtlz6_positive_g_patch_cover_issue175.py"
+      - ".github/workflows/gt-dtlz6-positive-g-patch-cover-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-positive-g-patch-cover:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Validate exact positive-g patch membership and covering
+        run: python -m pytest tests/unit/test_gt_dtlz6_positive_g_patch_cover_issue175.py -q
+      - name: Independent full exact patch replay
+        run: |
+          python - <<'PY'
+          from fractions import Fraction
+          from scripts.audit.dtlz6_positive_g_patch_cover import (
+              certify_dtlz6_positive_g_patch_cover,replay_dtlz6_positive_g_patch_cover)
+          r=certify_dtlz6_positive_g_patch_cover()
+          assert replay_dtlz6_positive_g_patch_cover(r)
+          q=r["raw_euclidean_continuous_patch_cover_upper"]
+          b=Fraction(int(q["numerator_hex"],16),int(q["denominator_hex"],16))
+          assert Fraction(1,5)<b<Fraction(1,4)
+          assert r["whole_gt_coverage"]=="unverified"
+          assert r["indicator_fitness"]=="unverified"
+          print("DTLZ6 restricted positive-g continuous cover raw upper:",float(b))
+          print("grid decisions",len(r["grid_decision_images"]))
+          PY
