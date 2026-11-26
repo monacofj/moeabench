@@ -10,6 +10,8 @@ on:
       - "scripts/audit/dtlz56_tight_sine_global_pf.py"
       - "scripts/audit/dtlz5_row10_exact_dominance.py"
       - "scripts/audit/dtlz56_gzero_continuous_cover.py"
+      - "scripts/audit/dtlz5_patch_actual_source_cover.py"
+      - "tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py"
       - "tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py"
       - "tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py"
       - "moeabench/mops/_dtlz56_front.py"
@@ -37,7 +39,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
         run: |
-          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py -q
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -69,6 +71,25 @@ jobs:
               print(problem,"rigorous continuous g0-only upper:",
                     proof["raw_euclidean_cover_upper"])
               print(problem,"anchor locations:",proof["anchor_x1"])
+          PY
+      - name: Certify restricted DTLZ5 positive-g patch against actual paired PS
+        run: |
+          python -m scripts.audit.dtlz5_patch_actual_source_cover \
+            --paired-bundle gt175-final-DTLZ5-M4-K1-paired.npz \
+            --report gt175-final-DTLZ5-M4-K1-actual-patch-cover.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          d=json.loads(Path("gt175-final-DTLZ5-M4-K1-actual-patch-cover.json").read_text())
+          assert d["selected_decision_count"]==16
+          assert d["conclusion"]=="rigorously_bounded_continuous_patch_to_selected_source"
+          assert d["whole_gt_coverage"]=="unverified"
+          assert d["scientific_certification"]=="unverified"
+          b=d["continuous_patch_to_actual_source_l2_upper"]
+          q=Fraction(int(b["numerator_hex"],16),int(b["denominator_hex"],16))
+          print("Rigorous patch-to-ACTUAL selected source upper:",float(q))
+          print("Archive SHA256:",d["paired_artifact_sha256"])
           PY
       - name: Validate complete source-bound output fields and summarize
         run: |
@@ -134,5 +155,6 @@ jobs:
           path: |
             gt175-final-*-paired.npz
             gt175-final-*-report.json
+            gt175-final-*-actual-patch-cover.json
           if-no-files-found: error
           retention-days: 90
