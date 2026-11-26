@@ -8,6 +8,9 @@ on:
       - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
       - "scripts/audit/dtlz56_tight_sine_global_pf.py"
+      - "scripts/audit/dtlz5_row10_exact_dominance.py"
+      - "tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py"
+      - "tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py"
       - "moeabench/mops/_dtlz56_front.py"
       - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
   workflow_dispatch:
@@ -32,7 +35,8 @@ jobs:
       - name: Install source and tests
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
-        run: python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py -q
+        run: |
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -57,6 +61,7 @@ jobs:
               # This fixed M4/K1 original source sample is a regression
               # sentinel: an exact same-ray dominance witness is a
               # scientific failure even for tiny numerical improvements.
+              print("  strict off-ray witness rows:", [row["row"] for row in d.get("exact_off_ray_dominance_witnesses", [])])
               assert d["proven_dominated_decision_row_indices"] == [], (
                   d["problem"], d["proven_dominated_decision_row_indices"])
               assert d["experimental_reference_gate"] == (
@@ -100,6 +105,7 @@ jobs:
                         d["dtlz6_irrational_g_support_ledger"]["counts"])
           PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: issue175-original-final-selected-16-point-paired-gt
           path: |
