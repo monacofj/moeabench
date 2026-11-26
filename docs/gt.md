@@ -3986,3 +3986,47 @@ justify a general component-sensitive coverage policy,
 independently verify the selected original PS/F rows, measure
 indicator fitness and reproduce results under governed
 environments before acceptance under ADR 0059.
+
+
+### Coverage gate: mathematical scope versus finite-source observational radius
+
+The next source-bound DTLZ6 diagnostic
+[`dtlz6_pool_proof_reach.py`](../scripts/audit/dtlz6_pool_proof_reach.py)
+classifies all 448 unchanged original M4/K1 `ps(16)`
+scalarization-source decisions by independent exact-real proof
+and compares the original 16-point selection with a counterfactual
+proved-only 16-point maximin selection. The four original g=0 anchors
+are retained, positive-g support is reported, and the experimental
+distance is the directed **finite pool** normalized covering radius
+
+```text
+R(P,S) = max_{p in P} min_{s in S} ||(p-s)/scale(P)||_2
+```
+
+where `P` consists only of source candidate objective vectors
+whose decision-image Pareto membership has been independently
+proved, and `S` is the tested 16-point objective reference.
+Using the SAME `P` and scales for both selectors makes this
+finite-source comparison reproducible; it does not measure,
+bound or certify coverage of the **continuous** original PF.
+
+In general, a genuine upper bound on continuous-front covering
+radius requires an independently proved continuous-covering bound
+`epsilon` for `P`: by the triangle inequality the tested
+selection would then have coverage at most `epsilon + R(P,S)`
+in the same geometry. Neither `epsilon` nor an accepted
+component-appropriate tolerance exists for this source pool.
+A small empirical `R(P,S)` is therefore not an ADR 0059
+quality pass. A radial interval such as `0<g<=1/16`
+is only an exploratory selection stratum, not a substitute
+for an analytic continuous-front component description.
+Do not compare experimental DTLZ5 and DTLZ6 normalized
+radii as though their underlying front measures were identical.
+
+DTLZ6's tenth-root radial `g` may be irrational even when
+all saved decision coordinates are exact dyadic floats. The
+positive-membership test must use rigorous outward rational
+tenth-root bounds, not the production floating-point radial
+value. Missing an exact supporting certificate leaves the
+row `unverified`; a numerical source-covering score never
+converts that status into a positive proof.
