@@ -4318,3 +4318,63 @@ invalid global GT can still possess valid local continuous
 component coverage bounds. This result in no way asserts
 whole-PF coverage, global GT membership, exact saved finite F
 identity, full indicator adequacy, or ADR 0059 final acceptance.
+
+
+### Actual sampled DTLZ5 continuous patch: first source-bound exact result (2026-11-26)
+
+The source-bound workflow
+[CI #45889631355](https://github.com/monacofj/moeabench/actions/runs/45889631355)
+replayed a new independent, rigorous positive-`g` **continuous
+patch-to-actual-PS** bound for the original DTLZ5 M4/K1 n16
+sample. Its actual paired PS/F artifact has SHA256
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`.
+The exact rational bound on raw Euclidean distance of each
+point on the *previously defined continuous positive-`g` patch*
+to its closest objective image among the real sixteen selected
+source decisions is **0.43780881073152883** (decimal rendering
+of a rigorous rational upper). The independently replayed
+certificate uses exact binary source decisions, Machin/Taylor
+outward objective enclosures, an endpoint-safe nonnegative cosine
+interval, per-grid nearest actual-selected row and the continuous
+patch Lipschitz bridge. The scoped additive unit tests passed.
+The correctly failing DTLZ5 scientific acceptance guard still
+identified the rigorously dominated row 10, and the JSON proof
+and paired PS/F artifacts were preserved.
+
+The formal distinction is intentional: these sixteen selected
+points cover this **one** continuous region to the stated bound,
+yet one selected row is still mathematically dominated. **Neither
+this local component coverage nor a small numerical covering
+distance establishes whole GT validity or indicator fitness.**
+The separately selected positive-PF candidate references have
+not inherited this particular source-bound number.
+
+### DTLZ6 original selected source: exact irrational-radius patch bridge
+
+The companion
+[`dtlz6_patch_actual_source_cover.py`](../scripts/audit/dtlz6_patch_actual_source_cover.py)
+applies the same continuous patch-to-actual-selected-reference
+triangle inequality to original DTLZ6 M4/K1. The crucial
+difference is that each actual selected IEEE-754 tail coordinate
+may have an **irrational exact tenth root**. An independent
+exact-integer `rational_tenth_root_enclosure(bits=56)` gives
+rational `[g_low,g_high]`. For every inner original angle,
+the rational coefficient `c(g,x)=(1+2gx)/(4(1+g))`
+is monotone in `g`, since its derivative has sign `2x-1`.
+Therefore its extrema on the certified radial enclosure occur
+at the endpoints. Monotonic sine/cosine and outward Machin/Taylor
+rational bounds yield **exact objective-coordinate intervals**
+for every actual selected decision, including `x1=1` where
+a Taylor lower cosine bound is legitimately clamped to zero.
+
+The maximum of per-grid minimum rigorously upper-bounded L1
+source distances, plus the previously proved continuous patch
+Lipschitz bound, is a one-sided **mathematical Euclidean**
+upper bound for the complete declared continuous positive-`g`
+patch relative to the actual selected PS. It does not require
+source decisions to lie on that specific patch or depend on
+numerical alignment tolerances. New additive exact replay,
+forgery, tenth-root and endpoint tests and source-bound CI have
+been added. The result is *not* whole positive-`g` component
+coverage, an assertion about archived rounded F bytes, or
+whole GT scientific acceptance.
