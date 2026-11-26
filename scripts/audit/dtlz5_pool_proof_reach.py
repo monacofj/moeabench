@@ -134,7 +134,7 @@ def evaluate_proof_reach(source):
 
 
 
-def compare_proof_gated_maximin(source, reach):
+def compare_proof_gated_maximin(source, reach, *, require_low_g=False):
     """Observational same-budget maximin over independently proved candidates.
 
     Exact PF membership is already proved by 'reach', but score/spacing
@@ -180,7 +180,27 @@ def compare_proof_gated_maximin(source, reach):
         ((remaining[:,None,:]-anchor_y[None,:,:])/scales)**2,
         axis=2),axis=1)
     picked=[]
-    for _ in range(n-n_curve):
+    if require_low_g:
+        # Explicit exploratory radial-component sentinel, NOT a Hausdorff
+        # acceptance threshold: demand one proved 0 < g <= 1/16 point.
+        low_g=np.asarray([
+            0 < (Fraction.from_float(float(x[-1]))-Fraction(1,2))**2
+              <= Fraction(1,16)
+            for x in decisions[eligible]
+        ],dtype=bool)
+        if not np.any(low_g):
+            return {
+                "status":"unverified_missing_low_g_proved_component",
+                "scientific_certification":"unverified",
+            }
+        eligible_locations=np.flatnonzero(low_g)
+        seed_local=int(eligible_locations[np.argmax(distances[low_g])])
+        picked.append(int(eligible[seed_local]))
+        seed_distance=np.sum(
+            ((remaining-remaining[seed_local])/scales)**2,axis=1)
+        distances=np.minimum(distances,seed_distance)
+        distances[seed_local]=-1.
+    for _ in range(n-n_curve-len(picked)):
         local=int(np.argmax(distances))
         selected_index=int(eligible[local])
         picked.append(selected_index)
@@ -218,7 +238,9 @@ def compare_proof_gated_maximin(source, reach):
         }
 
     return {
-        "status":"observational_proved_only_maximin",
+        "status":("observational_proved_only_stratified_maximin"
+                  if require_low_g else "observational_proved_only_maximin"),
+        "experimental_low_g_stratum_required":bool(require_low_g),
         "original_selection":geometry(original,original_y),
         "proof_gated_selection":geometry(alternative,alternative_y),
         "proved_source_candidate_indices":picked,
@@ -244,6 +266,8 @@ def main(argv=None):
     result=evaluate_proof_reach(source)
     result["proof_gated_maximin_comparison"]=compare_proof_gated_maximin(
         source,result)
+    result["low_g_stratified_proof_gated_comparison"]=compare_proof_gated_maximin(
+        source,result,require_low_g=True)
 
     with args.report.open("x",encoding="utf-8") as f:
         json.dump(result,f,sort_keys=True,indent=2,allow_nan=False)
@@ -253,6 +277,7 @@ def main(argv=None):
             "pool_counts","by_source_family","by_radial_stratum",
             "by_angular_support","selected_counts","selected_rows",
             "proof_gated_maximin_comparison",
+            "low_g_stratified_proof_gated_comparison",
             "scientific_certification",
         )},sort_keys=True,indent=2))
     return 0
