@@ -4738,3 +4738,60 @@ measure, normalized indicator quality, mathematically exact
 archived F alignment or whole-GT scientific acceptance.
 No accepted ADR, production generator, frozen baseline or
 preexisting regression test was modified.
+
+
+### Verified-source union theorem for three continuous original PF subsets
+
+The research-only
+[`dtlz56_three_subset_union_cover.py`](../scripts/audit/dtlz56_three_subset_union_cover.py)
+combines three **independently proved continuous Pareto subsets**
+of each original DTLZ5/DTLZ6 `M=4,K=1` objective image,
+using **exactly the same unchanged n16 selected PS**:
+
+1. The complete `g=0` continuous unit-radius curve,
+   whose source-bound raw Euclidean covering upper is
+   `pi_upper*max_x1_anchor_gap/4`.
+2. The first `x2=x3=1` global support **surface**
+   over its complete original feasible radial parameter
+   range and the previously proved `x1` interval.
+3. The second `(x1,x2,x3)=(0,1,0)` global support
+   **curve** over its complete original radial range,
+   whose supporting objective differs from the first.
+
+Let the three supported continuous objective subsets be
+`A0,A1,A2`, the *actual original selected decision-image*
+reference be `S`, and let `B_i` be the independently
+replayed exact-rational upper bound for
+`sup_{y in A_i} min_{s in S} ||y-s||_2`.
+Then the union obeys the **exact** bound
+
+```text
+sup_{y in A0 union A1 union A2}
+    min_{s in S} ||y-s||_2
+ <= max(B0,B1,B2).
+```
+
+The result is a genuine **continuous union** certificate,
+not a statistical coverage estimate. Before computing the
+maximum, the script independently replays the source-bound
+first-support-surface and second-support-curve certificates
+against the **same paired original PS**, checks canonical
+decision sequence SHA256 agreement, and independently
+constructs/replays the complete `g=0` curve proof from
+those exact source decision bits. The source CLI additionally
+requires identical immutable **paired PS/F archive SHA256**
+in both input reports. It preserves exact rational
+component and maximum bounds in a write-once research JSON
+record, with an explicit `unverified` global status.
+New additive adversarial tests reject altered source,
+forged upper and cross-problem certificates.
+
+**Scope:** the three certified subsets may intersect and
+do not constitute a proven decomposition or complete
+cover of the original global Pareto front. Therefore no
+whole-GT Hausdorff, IGD, IGD+, HV, reference component
+completeness or scientific release acceptance follows.
+The already known DTLZ5 dominated source decision remains
+a definitive whole-GT rejection. No approved ADR,
+production sampler, existing regression or frozen numerical
+baseline was changed.
