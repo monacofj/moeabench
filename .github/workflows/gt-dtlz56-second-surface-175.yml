@@ -1,0 +1,55 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ56 second full radial support SURFACE exact proof (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_second_support_full_radial_surface.py"
+      - "scripts/audit/dtlz56_second_support_surface_actual_source.py"
+      - "scripts/audit/dtlz56_two_surface_union_cover.py"
+      - "tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py"
+      - "tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py"
+      - "tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py"
+      - ".github/workflows/gt-dtlz56-second-surface-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-second-support-exact-surface:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Independently verify both continuous original-PF surfaces
+        run: |
+          python -m pytest \
+            tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py \
+            tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py \
+            tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py -q
+      - name: Verify exact global PF uniform margin and incomplete status
+        run: |
+          python - <<'PY'
+          from fractions import Fraction
+          from scripts.audit.dtlz56_second_support_full_radial_surface import (
+              certify_second_support_full_radial_surface,
+              replay_second_support_full_radial_surface)
+          for problem in ("DTLZ5","DTLZ6"):
+              proof=certify_second_support_full_radial_surface(problem=problem)
+              assert replay_second_support_full_radial_surface(
+                  proof,problem=problem)
+              assert proof["complete_admissible_original_g_range"]
+              assert proof["all_other_pf_angular_regions"]=="unverified"
+              assert proof["scientific_certification"]=="unverified"
+              m=proof["global_pf_uniform_margin"]
+              margin=Fraction(int(m["numerator_hex"],16),
+                              int(m["denominator_hex"],16))
+              assert margin>0
+              print(problem,"second-support surface strict uniform margin",float(margin))
+          PY
