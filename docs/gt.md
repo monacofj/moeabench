@@ -5048,3 +5048,72 @@ independent unresolved obligations; DTLZ5's dominated
 selected row keeps the whole source reference rejected.
 No existing regression, production code, ADR or frozen
 baseline was modified.
+
+
+### Necessary angular-boundary condition for ALL original positive-g Pareto decisions
+
+A new **global negative result** substantially reduces the
+unresolved angular geometry. For any original DTLZ5 or
+DTLZ6 with `M>=3,K>=1`, every feasible decision
+`u=(x1,...,x_(M-1))` with `g>0` and **all**
+inner angular positions `0<x_i<1` for
+`i=2,...,M-1` is **rigorously dominated** by an
+independently constructed feasible decision. The original
+same-ray inversion lemma yields the proof directly, without
+a numerical search or a global optimizer:
+
+```text
+d_i = g*(2*x_i-1)/(1+g)
+q   = max_i |d_i|
+all 0<x_i<1 => q < g/(1+g)
+g_min = q/(1-q) < g
+g' = (g+g_min)/2
+x'_1=x_1
+x'_i = 1/2 + d_i*(1+g')/(2*g')  in [0,1]
+F(x',g') = ((1+g')/(1+g))*F(x,g)
+              with 0 < (1+g')/(1+g) < 1.
+```
+
+Because the objective vector has strictly positive norm
+`1+g` and all components are nonnegative, this is
+Pareto dominance with at least one strict improvement,
+not merely a change in an angular coordinate. Feasible
+original DTLZ5 tails realizing `g'` exist by the original
+radial range `[0,K/4]`; DTLZ6 tails similarly realize
+`g'` in `[0,K]`.
+
+Thus a **necessary** condition for a positive-`g`
+global Pareto decision is that **at least one inner
+position lies exactly at 0 or 1**. In original `M=4`,
+every positive-`g` Pareto decision must lie on at least
+one of the four angular boundary faces
+`x2=0`, `x2=1`, `x3=0`, `x3=1`.
+This excludes the entire positive-`g` open inner-angle
+region, including rational and irrational decision
+coordinates. It is a statement about the original
+continuous decision/objective geometry, not a finite
+sampling observation.
+
+The research-only
+[`dtlz56_open_inner_angle_exclusion.py`](../scripts/audit/dtlz56_open_inner_angle_exclusion.py)
+replays the existing independent exact-rational same-ray
+proof, records the strictly smaller radial witness and
+exact objective scale, and **fails closed** outside
+the open-inner domain (including `g=0` and boundary
+points). A new additive suite tests DTLZ5/DTLZ6,
+higher `M,K`, near-boundary cases and forged records;
+a separate focused CI workflow runs the theorem
+without regenerating source GTs.
+
+**Scientific limit:** being on one of the boundary faces
+is *necessary*, not *sufficient*. The newly proved
+first/second-support positive-`g` continuous surfaces
+are known global-PF subsets, but additional points on
+the four boundary faces may be Pareto, dominated or
+unverified. Further work must characterize these faces,
+their intersections and x1 extent before asserting
+whole-front completeness, indicator suitability or GT
+certification. The original DTLZ5 row-10 off-ray
+dominance result remains a separate mandatory
+scientific failure. No production, accepted ADR,
+frozen baseline or preexisting regression test changed.
