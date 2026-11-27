@@ -4982,3 +4982,69 @@ unverified. An exhaustive *front* decomposition would
 require additional independently proved necessity or
 dominance exclusions across all remaining angular
 decisions, and is a separate scientific obligation.
+
+
+### Source-bound validation of TWO full-radial continuous support surfaces (2026-11-27)
+
+The source-bound
+[CI #46023262888](https://github.com/monacofj/moeabench/actions/runs/46023262888)
+successfully executed the new additive mathematical/unit tests,
+reproduced the unchanged original DTLZ5/DTLZ6
+`M=4,K=1,n=16` source PS/F, independently replayed the
+new **continuous second-support 2D full-radial surface**
+proof against each original selected PS, and independently
+replayed the newer **union of the complete g=0 curve and TWO
+different full-radial positive-PF surfaces** before the
+unchanged scientific GT acceptance correctly rejected
+the rigorously dominated DTLZ5 source row 10.
+The focused mathematical
+[CI #46023366574](https://github.com/monacofj/moeabench/actions/runs/46023366574)
+also passed **12 new tests** including forged-proof and
+changed-source rejection, with uniform exact second-support
+margins `0.12242308893394799` (DTLZ5) and
+`0.016401947906620893` (DTLZ6).
+
+The bounds, all derived with exact rational outward original
+objective enclosures, are:
+
+| Original `M=4,K=1,n=16` selected PS | Complete radial **first** support surface (raw L2 upper) | Complete radial **second** support surface (raw L2 upper) | Complete `g=0` curve (raw L2 upper) | **Union of both surfaces and g=0** (raw L2 upper) |
+| --- | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.6076874658835237 | **0.6076874658835237** | 0.2617993877991494 | **0.6076874658835237** |
+| DTLZ6 | 0.9621471362242676 | **0.895105839761027** | 0.2617993877991494 | **0.9621471362242676** |
+
+The first support surface and second support surface have
+distinct angular boundary choices, `x2=x3=1` (objective 1)
+versus `x2=1,x3=0` (objective 2). The latter strictly
+extends the previously certified one-dimensional
+second-support radial curve. Thus the *covered continuous
+region* has expanded although the maximum numerical
+upper bound for the union did not decrease: the previous
+first-support surface remains the limiting bound.
+This is a genuine continuous-subset improvement,
+not an increased confidence in whole-PF completeness.
+
+The complete PS/F, first and second surface exact proof
+JSON records, previous continuous curve and union proofs,
+and both new two-surface union records were preserved in
+[artifact #15210212911](https://github.com/monacofj/moeabench/actions/runs/46023262888/artifacts/15210212911),
+ZIP SHA256
+`6cc8dda5d5f35f8e0c73ff828d780901a0268d7ea1dcce35c1d09e579fda5c75`.
+DTLZ5 paired PS/F SHA256
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 paired **ZIP/NPZ byte** SHA256 in this
+run was
+`d4dd6e5da6f9e9c1b9dda3fc0788d75382a56ed8f54adde1ca60ff8615cc6c78`,
+which should **not** be taken as evidence of different
+canonical decision rows compared with earlier runs.
+
+The first- and second-surface theorem cover the full
+original admissible radial interval but only two
+**sufficiently supported angular faces**. No proof
+establishes their union is the entire Pareto front.
+Finite source pointwise membership, exact stored F,
+full indicator suitability, continuous component
+necessity and ADR0059 final scientific approval remain
+independent unresolved obligations; DTLZ5's dominated
+selected row keeps the whole source reference rejected.
+No existing regression, production code, ADR or frozen
+baseline was modified.
