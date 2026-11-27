@@ -4795,3 +4795,48 @@ The already known DTLZ5 dominated source decision remains
 a definitive whole-GT rejection. No approved ADR,
 production sampler, existing regression or frozen numerical
 baseline was changed.
+
+
+### Source-bound CI validation of three-component continuous PF union (2026-11-27)
+
+The new proof-carrying exact-rational **union** certificate
+successfully executed on the **original unchanged DTLZ5/DTLZ6
+M=4,K=1,n=16 paired PS/F** in
+[CI run #46013316457](https://github.com/monacofj/moeabench/actions/runs/46013316457).
+The additive tests, original source regeneration, each prior
+source-bound continuous-component certificate, and the **new
+union validation/replay step all passed** before the
+original scientific DTLZ5 negative gate correctly failed
+on the already independently proved dominated selected row 10.
+The earlier failed first union CI attempt was a source-code
+**syntax error during test collection**, corrected in the
+new research module only; it did not produce or invalidate
+scientific evidence.
+
+| Original selected PS (M4/K1 n16) | Continuous `g=0` curve raw L2 upper | Complete radial first-support face upper | Complete radial second-support curve upper | **Rigorous upper for the UNION of these three continuous subsets** |
+| --- | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.2617993877991494 | 0.6076874658835237 | 0.3702598693766107 | **0.6076874658835237** |
+| DTLZ6 | 0.2617993877991494 | 0.9621471362242676 | 0.6162505890616926 | **0.9621471362242676** |
+
+These decimals are descriptive only; the source-bound JSON
+contains the **exact rational** numerators and denominators,
+the canonical selected decision digest, independent complete
+component replay evidence and matching original paired
+artifact SHA256 records. Original source paired SHA256:
+DTLZ5 `603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+DTLZ6 `e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`.
+The immutable paired source and proof outputs are retained in
+[artifact #15206175231](https://github.com/monacofj/moeabench/actions/runs/46013316457/artifacts/15206175231),
+ZIP SHA256
+`5b23aa36b3c8cc692d04ef34a876388168772f2508c84a20e6dabc3f044c305f`.
+
+**Scope limitation:** no mathematical result yet establishes that
+this three-subset union exhausts the entire original Pareto
+front. In particular, the missing angular strata and global
+indicator measure/quality obligations remain unresolved;
+the union coverage figure is not the global GT covering
+radius. Original DTLZ5 remains scientifically invalid because
+a selected decision has a strict exact off-ray dominator;
+the five original DTLZ6 unproved rows remain **unverified**.
+No accepted ADR, production generator, frozen baseline or
+preexisting regression test was modified.
