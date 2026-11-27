@@ -4964,3 +4964,21 @@ IGD/IGD+/HV reference measure, threshold or
 full-GT acceptance. No accepted ADR, production
 sampler, frozen baseline or existing regression
 test was changed.
+
+
+#### Exhaustiveness of the *currently available sufficient support patterns* at M=4
+
+The existing generalized sine-power support predicate has
+exactly **two** objective-support patterns at `M=4`:
+objective 1 with `x1=0,x2=x3=1), and objective 2 with
+`x1=0,x2=1,x3=0). The tight-sine theorem extends each
+pattern to a certified nonzero interval of `x1` with
+uniform radial restrictions derived above. These two
+patterns exhaust **only this particular sufficient
+global-support theorem**. They do **not** exhaust the
+entire unknown Pareto front: points not satisfying the
+patterns may be globally Pareto optimal, dominated, or
+unverified. An exhaustive *front* decomposition would
+require additional independently proved necessity or
+dominance exclusions across all remaining angular
+decisions, and is a separate scientific obligation.
