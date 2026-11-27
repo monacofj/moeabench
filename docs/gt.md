@@ -4907,3 +4907,60 @@ archived finite F alignment, indicator quality and ADR0059
 final acceptance remain separate open obligations.
 No existing regression, production implementation,
 approved ADR or frozen baseline was modified.
+
+
+### Two full-radial continuous support surfaces: exact union acceptance boundary
+
+For original `M=4,K=1` DTLZ5 and DTLZ6, the source-bound
+mathematical proof now studies **two distinct two-dimensional
+continuous positive-g supporting surfaces** (and the full
+`g=0` curve), instead of a surface and only a second
+one-dimensional radial curve:
+
+- First-support surface `x2=x3=1`, supporting objective 1.
+- Second-support surface `x2=1,x3=0`, supporting
+  objective 2, including an entire previously certified
+  `x1=0` second-support radial curve.
+
+Each surface has `0<=x1<=1/4` for DTLZ5 or
+`0<=x1<=3/16` for DTLZ6 and covers the **entire**
+original feasible radial range (`0<=g<=1/4` or `0<=g<=1`
+respectively). The second support surface is proved
+uniformly by the original p=2 exact global sine-power
+criterion for objective 2, independently replayed at
+all synthetic grid decisions. Its conservative spherical
+Lipschitz bound is the same as that of the first
+surface because it is uniform over these inner boundary
+angle choices. New research-only modules
+[`dtlz56_second_support_full_radial_surface.py`](../scripts/audit/dtlz56_second_support_full_radial_surface.py)
+and
+[`dtlz56_second_support_surface_actual_source.py`](../scripts/audit/dtlz56_second_support_surface_actual_source.py)
+connect this **second continuous surface** to the
+unchanged original source-selected PS using exact-rational
+outward trigonometric intervals, including tenth-root
+enclosures for the actual DTLZ6 decision-tail values.
+
+A new
+[`dtlz56_two_surface_union_cover.py`](../scripts/audit/dtlz56_two_surface_union_cover.py)
+takes the rigorous maximum of the complete g=0 curve,
+first surface and second surface **to the identical
+original selected PS**. It independently replays
+the previous source-bound three-subset proof, the
+new second-surface proof, the exact decision sequence
+SHA256 and original paired artifact SHA256; records
+all exact rational component bounds and does not replace
+the original sampler or proof ledger. The earlier
+one-dimensional second-support curve is a strict subset
+of the new second-support surface and is no longer
+an independent top-level union member.
+
+The union remains a **declared subset** of the
+unknown full original Pareto front. This work does
+not assert that these surfaces exhaust all active
+angular support patterns, or that source-selected
+decision images are all Pareto-valid (DTLZ5 row 10
+is rigorously dominated), or claim a certified
+IGD/IGD+/HV reference measure, threshold or
+full-GT acceptance. No accepted ADR, production
+sampler, frozen baseline or existing regression
+test was changed.
