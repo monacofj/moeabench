@@ -21,6 +21,10 @@ on:
       - "scripts/audit/dtlz56_second_support_actual_source.py"
       - "tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py"
       - "scripts/audit/dtlz56_three_subset_union_cover.py"
+      - "scripts/audit/dtlz56_second_support_full_radial_surface.py"
+      - "scripts/audit/dtlz56_second_support_surface_actual_source.py"
+      - "tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py"
+      - "tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py"
       - "tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py"
       - "tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py"
       - "tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py"
@@ -51,7 +55,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
         run: |
-          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py -q
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -233,6 +237,33 @@ jobs:
               assert whole==max(components)
               print(problem,"three-subset union raw bound",float(whole))
           PY
+      - name: Certify second support full radial SURFACE against actual PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_second_support_surface_actual_source \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-second-surface-actual.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-second-surface-actual.json"
+              ).read_text())
+              assert r["source_decision_count"]==16
+              assert r["independent_continuous_surface_pf_proof"][
+                  "second_support_objective"]==2
+              assert r["independent_continuous_surface_pf_proof"][
+                  "complete_admissible_original_g_range"] is True
+              assert r["scientific_certification"]=="unverified"
+              b=r["continuous_surface_to_actual_ps_l2_upper"]
+              upper=Fraction(int(b["numerator_hex"],16),
+                             int(b["denominator_hex"],16))
+              assert upper>0
+              print(problem,"second SUPPORT SURFACE bound",float(upper))
+          PY
       - name: Validate complete source-bound output fields and summarize
         run: |
           python - <<'PY'
@@ -302,5 +333,6 @@ jobs:
             gt175-final-*-full-radial-face.json
             gt175-final-*-second-support-actual.json
             gt175-final-*-three-subset-union.json
+            gt175-final-*-second-surface-actual.json
           if-no-files-found: error
           retention-days: 90
