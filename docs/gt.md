@@ -4840,3 +4840,70 @@ a selected decision has a strict exact off-ray dominator;
 the five original DTLZ6 unproved rows remain **unverified**.
 No accepted ADR, production generator, frozen baseline or
 preexisting regression test was modified.
+
+
+### From second-support radial curve to a complete-radial 2D surface (2026-11-27)
+
+A stronger result for the original `M=4,K=1` problems
+extends the separately certified second-support
+`(x1,x2,x3)=(0,1,0)` **curve** to a genuine continuous
+**surface** with `x1` varying. Its angular support face is
+`x2=1,x3=0`, distinct from the previous `x2=x3=1`
+first-support surface.
+
+For **DTLZ5**, the surface uses `0<=x1<=1/4`,
+`0<=t=x4<=1`, `g=(t-1/2)^2` (both tail branches and
+the complete original `0<=g<=1/4`). For **DTLZ6**, it uses
+`0<=x1<=3/16`, `0<=u=g<=1`, `x4=u^10`
+(the entire original `0<=g<=1`).
+
+The independent sine-power global support theorem for
+**objective 2** has exponent `p=2`. Because the sufficient
+strict inequality depends only on `rmax`, `x1` and
+this exponent, the previously exact-rationally proved
+uniform margin
+`1-2/pi_lower-(rmax*pi_upper*xmax/2)^2 > 0`
+applies to this second angular support face as well.
+The original spherical derivative bound is also uniform
+in the choice of these inner boundary angles. Therefore
+an exact rational tensor grid with maximum parameter
+gaps `dx,dr` has the rigorous raw Euclidean
+continuous surface-to-grid upper
+
+```text
+rmax*pi_upper*dx/4 + (1+pi_upper/2)*dr/2.
+```
+
+Research-only
+[`dtlz56_second_support_full_radial_surface.py`](../scripts/audit/dtlz56_second_support_full_radial_surface.py)
+recomputes the first-face *geometric* upper bound but
+**independently replays the second-support objective 2**
+global-PF certificate at each exact synthetic grid node,
+using rational DTLZ5 support or DTLZ6 integer tenth-root
+intervals. The proof applies uniformly to **every**
+point in each continuous second-support surface, not
+only its 25 grid nodes. At `g=0`, the original unit-radius
+Pareto theorem applies. Missing or forged proof records
+fail closed.
+
+A further research-only
+[`dtlz56_second_support_surface_actual_source.py`](../scripts/audit/dtlz56_second_support_surface_actual_source.py)
+then combines the continuum-to-grid L2 upper with rigorous
+per-node nearest-**actual original selected PS** interval
+L1 uppers. It verifies the original paired source PS/F
+identity and independently replays the entire certificate.
+Unlike the previously certified second-support radial
+curve, this is a **two-dimensional** positive-`g`
+surface over the full original feasible radial range.
+
+The only accepted scientific conclusion is the exact
+Pareto membership and covering upper for this **declared
+surface**. No theorem says the union of the existing
+first- and second-support surfaces, the g=0 curve and
+their intersections exhausts the full original PF;
+whole-reference validity, the rigorously known dominated
+DTLZ5 source decision, five unverified DTLZ6 rows,
+archived finite F alignment, indicator quality and ADR0059
+final acceptance remain separate open obligations.
+No existing regression, production implementation,
+approved ADR or frozen baseline was modified.
