@@ -4693,3 +4693,48 @@ GT coverage or indicator fitness; other PF strata are
 still unverified, and preexisting regression tests, accepted
 ADRs, numerical baselines and production samplers remain
 untouched.
+
+
+### Validated actual-source covering of second full-radial support curve (2026-11-26)
+
+The new source-bound
+[CI run #45906521686](https://github.com/monacofj/moeabench/actions/runs/45906521686)
+successfully executed and independently replayed **both** rigorous
+continuous second-support curve-to-original-selected-PS bounds for
+the unchanged original `M=4,K=1,n=16` references. The fixed
+angular stratum is `(x1,x2,x3)=(0,1,0)` and the supporting
+objective is 2, independently proved globally Pareto optimal for
+the full admissible radial range by the generalized exact theorem.
+The result differs geometrically from the earlier full-radial
+two-dimensional support face `x2=x3=1`.
+
+| Actual original selected 16-point reference | Rigorous full second-support curve-to-original PS upper (raw Euclidean) | Original source paired PS/F SHA256 |
+| --- | ---: | --- |
+| DTLZ5 | **0.3702598693766107** | `603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7` |
+| DTLZ6 | **0.6162505890616926** | `e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795` |
+
+Each displayed decimal renders an independently replayed exact
+rational upper, combining continuous curve-to-exact-grid
+spherical-Lipschitz geometry and exact interval grid-to-nearest
+**actual selected source** decision images. For DTLZ6 the
+latter uses rigorous integer tenth-root enclosures, not
+rounded estimates of the radial function.
+
+Both paired PS/F files, the new second-support rational proof
+records, and the earlier source audits were preserved in
+[artifact #15158049343](https://github.com/monacofj/moeabench/actions/runs/45906521686/artifacts/15158049343),
+ZIP SHA256
+`58d5e672dd2e2fd6118f4120c103882d2a82e62025f0e7a6f0e867b0d28e3ac0`.
+The dedicated original-source step **passed**; the workflow
+then correctly **failed** on the unchanged independent strict
+DTLZ5 row-10-dominance scientific acceptance check, as required.
+The other 5 DTLZ6 original-selected source row memberships
+remain unverified, not proved dominated.
+
+These are rigorous **one-sided** bounds for a particular second
+continuous support stratum. They do not establish all
+remaining positive-g angular strata, a common full-front
+measure, normalized indicator quality, mathematically exact
+archived F alignment or whole-GT scientific acceptance.
+No accepted ADR, production generator, frozen baseline or
+preexisting regression test was modified.
