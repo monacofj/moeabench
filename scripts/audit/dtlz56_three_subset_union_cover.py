@@ -43,10 +43,12 @@ def certify_three_subset_union(
     if problem not in ("DTLZ5","DTLZ6"):
         raise ValueError("Only original DTLZ5/6 M4 K1")
     if not replay_full_radial_face_to_source(
-        decisions,{k:v for k,v in full_radial_report.items()\n                   if k!="paired_artifact_sha256"},problem=problem):
+        decisions,{k:v for k,v in full_radial_report.items()
+                   if k!="paired_artifact_sha256"},problem=problem):
         raise ValueError("Full radial original source proof failed replay")
     if not replay_second_support_to_actual_ps(
-        decisions,{k:v for k,v in second_support_report.items()\n                   if k!="paired_artifact_sha256"},problem=problem):
+        decisions,{k:v for k,v in second_support_report.items()
+                   if k!="paired_artifact_sha256"},problem=problem):
         raise ValueError("Second global support original source proof failed replay")
     zero=certify_gzero_curve_cover(decisions,problem=problem)
     if not replay_gzero_curve_cover(decisions,zero,problem=problem):
