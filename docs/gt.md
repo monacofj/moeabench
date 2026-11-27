@@ -5117,3 +5117,40 @@ certification. The original DTLZ5 row-10 off-ray
 dominance result remains a separate mandatory
 scientific failure. No production, accepted ADR,
 frozen baseline or preexisting regression test changed.
+
+
+#### Applying the necessary angular-boundary theorem to original selected PS
+
+The additive research-only
+[`dtlz56_original_ps_open_inner_exclusion.py`](../scripts/audit/dtlz56_original_ps_open_inner_exclusion.py)
+applies the new **universal strict same-ray exclusion**
+to every original source-selected decision in the immutable
+paired `M=4,K=1,n=16` PS/F evidence. It uses the
+**exact IEEE-754 decision bits**, not approximate objective
+comparisons. Original DTLZ5 has `g>0` exactly iff
+`x4!=1/2`; original DTLZ6 has `g>0` exactly iff
+`x4>0`. Therefore the condition
+`0<x2<1 and 0<x3<1 and g>0`
+**rigorously proves that selected row strictly dominated**
+without a nonlinear solver. For DTLZ5, the exact rational
+same-ray witness is also fully constructed and replayed.
+For DTLZ6, the proof uses the *exact real* positive
+`g=x4^(1/10)`, which may be irrational: the symbolic
+witness with `g'=(g+gmin)/2`, exact
+`x4'=(g')^10` and the same unchanged-angle ratio
+`(1+g')/(1+g)<1` needs no unproved floating root.
+
+The new source-bound CI step regenerates both
+original n16 paired source PS/F bundles, writes a
+**write-once** source-digest-linked exclusion ledger,
+independently replays its exact decisions, and stores
+any proved dominated row indices. Other rows are
+**unverified**, never accepted merely because they
+lie on an angular boundary. The old strict off-ray
+DTLZ5 row-10 negative acceptance check is retained:
+the new necessary-condition screen is **additive**
+and cannot replace it. This may reveal additional
+known-bad source rows without requiring heavy
+numerical optimization. No old regression, accepted
+ADR, production sampler or historical baseline is
+changed.
