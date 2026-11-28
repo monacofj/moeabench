@@ -5978,3 +5978,63 @@ GT is repaired in production and no new
 canonical GT is scientifically accepted.
 The original DTLZ5 and DTLZ6 negative
 scientific gates remain mandatory.
+
+
+### Independent continuous-subset bounds for both proof-gated selected alternatives (2026-11-28)
+
+A research-only
+[`dtlz56_proof_gated_continuous_coverage.py`](../scripts/audit/dtlz56_proof_gated_continuous_coverage.py)
+now reconstructs the **unchanged original** DTLZ5/DTLZ6
+`M=4,K=1,n_points=16` source selections and their
+448 candidate decisions. It separately constructs
+the already documented same-budget, individually
+global-Pareto-proved alternatives from the original
+candidate pool, retaining the four original exact
+`g=0` anchors. For DTLZ5, the explicit
+low-positive-`g` stratified candidate is used;
+for DTLZ6, the source-normalized maximin selection
+must reproduce the earlier counterfactual indices
+exactly before any covering claim.
+
+To avoid conflating finite-source nearest-neighbor
+observations with continuous geometry, the new
+source-bound checker independently recomputes the
+preexisting **outward rational, one-sided raw Euclidean
+upper** from each of three **rigorously global-PF**
+continuous subsets to **each** selected reference:
+
+1. The complete original `g=0` Pareto curve.
+2. The first `x2=x3=1` full-admissible-radial
+   globally proved Pareto support surface.
+3. The second `x2=1,x3=0` full-admissible-radial
+   globally proved Pareto support surface.
+
+Each continuous-to-grid geometric Lipschitz bound
+is added to interval-arithmetic worst
+grid-to-nearest-actual-reference upper; the union
+of those three declared subsets inherits the
+maximum of the corresponding rigorous uppers.
+Original and alternative PS decisions, proofs,
+and immutable exact decision digests are retained
+separately; the original known negative membership
+indices `DTLZ5=[10]` and `DTLZ6=[7,11]`
+are not waived. An additive test and an independent
+CI workflow replay the calculation and persist
+the complete original/alternative mathematical
+proof JSON evidence without editing the original
+sampler or previously accepted regression tests.
+
+**Interpretation limitations:** a smaller
+*upper bound* need not imply a smaller actual
+covering radius (the upper may be conservative).
+Nor are these three declared continuous surfaces
+proved to exhaust the original full Pareto front;
+other positive-`g` angular configurations are
+unverified. Even a favorable three-subset
+comparison does **not** qualify the full
+GT, verify stored finite objective values or
+establish IGD/IGD+/HV scientific acceptance
+under ADR0059. A production change would require
+separate architecture, environment and regression
+review. The outcome of the new CI must be
+measured before claiming numerical bounds.
