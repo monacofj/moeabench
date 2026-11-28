@@ -5234,3 +5234,46 @@ DTLZ6 source decisions and final ADR0059
 acceptance remain separate. No production
 sampler, accepted ADR, frozen baseline
 or preexisting regression test was modified.
+
+
+### CI validation: both independent necessary angular exclusions on original selected PS (2026-11-28)
+
+The focused last-objective unit/analytic [CI #46170730180](https://github.com/monacofj/moeabench/actions/runs/46170730180) passed **27 additive tests** and independently reproduced positive rational exclusion margin `0.0393644740751976` for `x1=3/4,g_lower=1/8`, in original DTLZ5/DTLZ6.
+
+The unchanged original selected `M=4,K=1,n=16` source-bound [CI #46170730211](https://github.com/monacofj/moeabench/actions/runs/46170730211) passed **100** scientific/additive tests, regenerated original paired PS/F, and independently executed the **two** new exact source screens before the correctly failing old strict DTLZ5 off-ray scientific acceptance:
+
+| Exclusion applied to original 16 selected decisions | DTLZ5 rigorously dominated selected indices | DTLZ6 rigorously dominated selected indices |
+| --- | --- | --- |
+| Positive-`g` all-inner-angles-open same-ray necessary condition | `[]` | `[]` |
+| Positive-`g` last-objective exceeding unit-axis cap | `[]` | `[]` |
+| Independent original off-ray strict dominance theorem | **`[10]`** | No corresponding dominated result from this source gate |
+
+The absence of exclusion from either necessary-condition screen
+means **only that the particular criterion did not prove
+dominance**, not that a selected row is globally Pareto
+optimal. DTLZ5's known row 10 remains **proven dominated** by
+a different *off-ray* feasible decision and the original
+selected GT remains scientifically rejected. DTLZ6 original
+selected source rows with unresolved global membership
+remain unverified.
+
+The proof JSON ledgers, original paired PS/F evidence,
+full-radial surface proofs and union certificates were
+archived in
+[artifact #15273816716](https://github.com/monacofj/moeabench/actions/runs/46170730211/artifacts/15273816716),
+ZIP SHA256
+`5b781d8b926088dd36827a69a6a13c29d3d636d10731dc0957b3320c36e4fc8e`.
+The source-bound workflow's final RED status is intentional,
+caused by the **preexisting scientifically correct
+acceptance gate**, after both new screens and source-bound
+proofs passed.
+
+**Next scientific obligation:** develop boundary-specific
+*necessary-and-sufficient* Pareto conditions (or a rigorous
+general off-ray dominance classifier) for configurations
+satisfying both coarse necessary conditions, then use that
+to decide complete GT membership and coverage. The two
+exclusion conditions should not be mistaken for a global
+Pareto oracle. No production changes, ADR changes,
+existing regression modifications or baseline updates
+were made in this research work.
