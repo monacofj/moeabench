@@ -1,0 +1,74 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ6 original five selected exact offray witness audit (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz6_exact_offray_witness.py"
+      - "scripts/audit/dtlz6_selected_offray_search.py"
+      - "tests/unit/test_gt_dtlz6_exact_offray_witness_issue175.py"
+      - ".github/workflows/gt-dtlz6-selected-offray-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  original-selected-exact-offray:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Require mathematical dominance proof independent of optimizer
+        run: python -m pytest tests/unit/test_gt_dtlz6_exact_offray_witness_issue175.py -q
+      - name: Regenerate original selected DTLZ6 M4K1 PS/F
+        run: |
+          python -m scripts.audit.dtlz56_final_selected_small_gt \
+            --problem DTLZ6 --m 4 --k 1 --points 16 \
+            --bundle dtlz6-original-n16-offray-paired.npz \
+            --report dtlz6-original-n16-offray-source.json
+      - name: Attempt bounded offray dominators with exact rational verification
+        run: |
+          python -m scripts.audit.dtlz6_selected_offray_search \
+            --paired-bundle dtlz6-original-n16-offray-paired.npz \
+            --report dtlz6-original-n16-offray-witness-ledger.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path(
+              "dtlz6-original-n16-offray-witness-ledger.json"
+          ).read_text())
+          assert r["original_selected_n"]==16
+          assert r["target_indices"]==[6,7,10,11,12]
+          assert r["scientific_certification"]=="unverified"
+          assert r["full_front_or_indicator_quality"]=="unverified"
+          assert set(r["still_unverified_indices"]).isdisjoint(
+              r["rigorously_dominated_indices"])
+          assert set(r["still_unverified_indices"]) | set(
+              r["rigorously_dominated_indices"]) == {6,7,10,11,12}
+          assert all(row["exact_rational_proof"] is not None
+              for row in r["rows"] if
+              row["conclusion"]=="rigorously_strictly_dominated")
+          print("Strict mathematical dominated indices:",
+                r["rigorously_dominated_indices"])
+          print("Still unverified indices:",r["still_unverified_indices"])
+          PY
+      - name: Archive immutable original source and exact witness evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dtlz6-original-five-exact-offray-witness-ledger
+          path: |
+            dtlz6-original-n16-offray-paired.npz
+            dtlz6-original-n16-offray-source.json
+            dtlz6-original-n16-offray-witness-ledger.json
+          if-no-files-found: warn
