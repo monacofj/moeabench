@@ -5154,3 +5154,83 @@ known-bad source rows without requiring heavy
 numerical optimization. No old regression, accepted
 ADR, production sampler or historical baseline is
 changed.
+
+
+### Independent necessary last-objective cap for positive-g Pareto membership (2026-11-28)
+
+A second global **negative theorem** constrains the
+remaining original DTLZ5/DTLZ6 angular boundary regions.
+In the original nonnegative hyperspherical objectives,
+the **last** objective is exactly
+
+```text
+F_M=(1+g)*sin(pi*x1/2).
+```
+
+The original feasible `g=0,x1=1` axial decision,
+with arbitrary inner angular coordinates, has the
+exact-real objective image `(0,...,0,1)`.
+Consequently, ANY feasible original positive-`g`
+decision with
+`(1+g)*sin(pi*x1/2)>1` is **strictly globally
+dominated**, irrespective of **all** its inner
+angular positions. The exact endpoint `x1=1,g>0`
+is also strictly dominated, because
+`sin(pi/2)=1`, even when finite rational Taylor
+intervals cannot separate tiny `g>0`.
+
+This exclusion complements the earlier exact
+same-ray result: every original positive-`g`
+Pareto decision must simultaneously (i) have
+**at least one inner position at 0 or 1** and
+(ii) satisfy the **last-axis cap**
+`(1+g)*sin(pi*x1/2)<=1` (with `x1=1,g>0`
+excluded). The latter is **necessary, not
+sufficient**. For example, `x1>=3/4,g>=1/8`
+is a strictly dominated continuous angular wedge,
+since the exact rational bound
+`(1+1/8)*sin(3*pi/8)>1` has a positive margin.
+Both inequalities apply to any original `M>=2`
+and `K>=1` within the original feasible `g`
+ranges.
+
+The research-only module
+[`dtlz56_last_objective_cap_exclusion.py`](../scripts/audit/dtlz56_last_objective_cap_exclusion.py)
+uses outward rational Machin pi and alternating
+Taylor sine enclosures to prove strict positive
+separation from 1, with a separate symbolic
+`x1=1` endpoint proof. A declared exact
+rational `g_lower<=g` is sufficient, including
+a separately rigorous integer tenth-root lower
+bound for DTLZ6's possibly irrational radial
+function; the method does not approximate a
+real number and call it exact. Cases without
+strict proof **abstain**.
+
+An additive source-bound module
+[`dtlz56_original_ps_last_objective_cap.py`](../scripts/audit/dtlz56_original_ps_last_objective_cap.py)
+recomputes all **original selected binary PS
+decisions** (M4 K1 n16), derives DTLZ5
+`g=(tail-1/2)^2` exactly or DTLZ6
+`g_lower` by exact integer root enclosure,
+records any provably dominated rows, and
+independently replays a source-digest-linked
+write-once JSON ledger in the existing
+scientific original-source workflow. New additive
+theorem and source unit tests, a fast standalone
+CI workflow and the source-bound step reject
+forged records or wrong references. The
+earlier full off-ray DTLZ5 row-10 dominance
+gate remains independent, unchanged and
+mandatory: the last-axis cap must **not**
+replace a more complete scientific audit.
+
+**Scope:** these two exclusions shrink the
+possible complete positive-`g` frontier
+without claiming coverage or membership of
+the remaining boundary faces. Indicator
+fitness, exact stored finite F, unverified
+DTLZ6 source decisions and final ADR0059
+acceptance remain separate. No production
+sampler, accepted ADR, frozen baseline
+or preexisting regression test was modified.
