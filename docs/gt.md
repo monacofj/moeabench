@@ -5501,3 +5501,28 @@ complete original PF, finite stored objective
 equality or ADR0059 GT indicator acceptance.
 No accepted ADR, frozen baseline or
 preexisting regression test was changed.
+
+
+#### Audit fidelity to the preexisting five DTLZ6 inconclusive rows
+
+The exact source ledger now **also independently invokes the
+existing historical DTLZ6 mathematical source classifier**
+(`classify_dtlz6_decision`, without changing it) on
+each unchanged original selected decision, retaining
+its status and basis. Alongside the new exact
+Taylor/radial support proof, the report records
+`historical_unverified_indices`,
+`resolved_historical_unverified_indices`, and
+`still_unverified_historical_indices`.
+The ledger verifies that a row historically proved
+globally PF-optimal is **never downgraded** by the
+new method and that each newly resolved row carries a
+replayed positive exact-rational membership proof.
+This prevents falsely reporting a changed approximation
+precision as an independently resolved case, and ties
+the improvement to precisely the originally inconclusive
+selected indices, previously `[6,7,10,11,12]`.
+The new tests verify exact partition of that historical
+unverified set. A new source-bound CI run must still
+prove how many of those indices the stronger theorem
+resolves on the actual originally selected PS.
