@@ -5644,3 +5644,96 @@ No production sampler, approved ADR, regression
 test or frozen baseline was modified; the
 original DTLZ5 row 10 strictly dominated
 selected GT gate is retained unchanged.
+
+
+### NEW CONFIRMED DTLZ6 original selected strict off-ray dominators (2026-11-28)
+
+The **unchanged original DTLZ6 `M=4,K=1,n_points=16`**
+selected production PS **is scientifically INVALID**:
+two original selected decisions, **indices 7 and 11**,
+have **independently replayed exact-real feasible
+strict off-ray dominators**.
+
+The dedicated source-bound
+[CI #46180246011](https://github.com/monacofj/moeabench/actions/runs/46180246011)
+**PASSED** eight new additive verifier/search tests,
+regenerated the unchanged original selected
+PS/F (original paired SHA256
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`),
+and mathematically certified **all four source objective
+lower minus witness objective upper margins strictly
+positive** for **each** of rows **7** and **11**.
+All decision coordinates are interpreted as their
+exact original binary IEEE-754 rationals; the proof
+evaluates the **original DTLZ6 analytical equations**
+using outward exact rational Machin/Taylor trigonometric
+bounds and **rigorous integer tenth-root enclosures**
+for both potentially irrational source and feasible
+witness radial values.
+
+A deterministic bounded SLSQP numerical solver
+was used solely to **discover** candidate feasible
+witnesses. Its success/status and floating objective
+values have **no role whatsoever** in the
+mathematical acceptance. Each candidate must pass
+the separately recomputed
+[`dtlz6_exact_offray_witness.py`](../scripts/audit/dtlz6_exact_offray_witness.py)
+strict rational four-coordinate proof and replay,
+otherwise the report abstains. The original-source
+audit
+[`dtlz6_selected_offray_search.py`](../scripts/audit/dtlz6_selected_offray_search.py)
+recorded precisely:
+
+| Original DTLZ6 selected row | Independent strict off-ray membership result |
+| --- | --- |
+| **7** | **Rigorously strictly dominated** |
+| **11** | **Rigorously strictly dominated** |
+| 6, 10, 12 | **Unverified** (bounded numerical search is not a global dominance or membership oracle) |
+
+The original PS/F and source report, exact binary
+feasible dominator decisions and full independent
+outward rational proof records are preserved in
+[artifact #15276859964](https://github.com/monacofj/moeabench/actions/runs/46180246011/artifacts/15276859964),
+ZIP SHA256
+`291eba2f74bbd617ad0e39ccd49475ede93f3ed31f1d7b0167fc783c2a79c8f3`.
+
+**Scientific implication:** both original test reference
+samples are now **known invalid**: DTLZ5 original
+selected row 10 has its established independent
+strict off-ray dominator, and DTLZ6 original
+selected rows 7 and 11 have the two new independently
+verified strict off-ray dominators. This is a
+failure of individual required GT membership,
+regardless of continuous front coverage,
+IGD/IGD+/HV, finite stored F precision or the
+three still-unverified DTLZ6 selected rows.
+
+The original source-bound CI now includes a
+new additive DTLZ6 strict off-ray proof step
+*before* the unchanged mandatory DTLZ5
+negative scientific gate. A separate **additional**
+DTLZ6 scientific rejection step runs even after
+the expected DTLZ5 negative failure, independently
+requiring the DTLZ6 strict dominated selected
+indices to be **empty** for acceptance. The old
+DTLZ5 negative scientific check is **untouched**.
+Both fail-closed results and the source PS/F,
+all proof records and environment are archived
+before a research PR can claim the original GT
+was accepted. The new scientific bug is tracked
+separately as
+[issue #213](https://github.com/monacofj/moeabench/issues/213)
+and linked to the larger #175 and #176 efforts.
+
+**Repair remains outstanding**. Before changing
+production selection, ADR decisions or preexisting
+regression tests, review applicable accepted ADRs
+and explicitly seek authorization if an existing
+decision or regression needs modification.
+The previous proof-gated n16 counterfactual
+selection is exploratory and does not by itself
+constitute a validated original continuous PF,
+full GT or indicator suitability certificate.
+No production code, accepted ADR, existing
+regression tests or frozen numerical baseline
+was changed by this research discovery.
