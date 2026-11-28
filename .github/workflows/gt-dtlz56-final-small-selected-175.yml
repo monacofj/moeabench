@@ -26,6 +26,10 @@ on:
       - "scripts/audit/dtlz56_two_surface_union_cover.py"
       - "scripts/audit/dtlz56_open_inner_angle_exclusion.py"
       - "scripts/audit/dtlz56_original_ps_open_inner_exclusion.py"
+      - "scripts/audit/dtlz56_last_objective_cap_exclusion.py"
+      - "scripts/audit/dtlz56_original_ps_last_objective_cap.py"
+      - "tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py"
       - "tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py"
       - "tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py"
       - "tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py"
@@ -60,7 +64,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
         run: |
-          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py -q
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -322,6 +326,26 @@ jobs:
                     r["rigorously_dominated_open_inner_indices"])
               print(problem,"selected GT status",r["whole_reference_membership"])
           PY
+      - name: Exclude exact last objective cap dominated source PS rows
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_original_ps_last_objective_cap \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-last-axis-cap.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              report=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-last-axis-cap.json"
+              ).read_text())
+              assert report["selected_decision_count"]==16
+              assert report["scientific_certification"]=="unverified"
+              assert report["boundary_or_remaining_membership"]=="unverified"
+              print(problem,"rigorously last-axis dominated selected indices:",
+                    report["provably_dominated_last_objective_rows"])
+          PY
       - name: Validate complete source-bound output fields and summarize
         run: |
           python - <<'PY'
@@ -394,5 +418,6 @@ jobs:
             gt175-final-*-second-surface-actual.json
             gt175-final-*-two-surface-union.json
             gt175-final-*-open-inner-exclusion.json
+            gt175-final-*-last-axis-cap.json
           if-no-files-found: error
           retention-days: 90
