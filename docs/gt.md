@@ -5837,3 +5837,67 @@ witnesses, full continuous PF/component coverage and
 finite IGD/IGD+/HV suitability. Until then **neither
 original DTLZ5 nor DTLZ6 n16 selected reference is
 acceptable**.
+
+
+### Joint proof-gated original DTLZ5/DTLZ6 n16 replacement review (2026-11-28)
+
+The two original `M=4,K=1,n=16` production
+reference selections are now **rigorously proved
+invalid**: original DTLZ5 selected index 10
+and original DTLZ6 selected indices 7 and 11
+are each globally strictly dominated by independently
+verified original feasible off-ray decisions.
+Their negative scientific acceptance gates must
+remain active until a real production repair
+passes fresh exact source-bound proof.
+
+The research-only
+[`dtlz56_paired_proof_gated_replacement.py`](../scripts/audit/dtlz56_paired_proof_gated_replacement.py)
+reuses the earlier **independently proved** exact
+original 448-candidate source-pool membership
+audits (DTLZ5 and DTLZ6), without modifying the
+sampler. It compares the **same sixteen-point
+budget**, retaining four original `g=0` anchors
+and selecting the remaining twelve decisions
+only from a subset already carrying rigorous
+*individual* Pareto-membership certificates.
+All candidate indices are recorded for independent
+source replay. For DTLZ5, both ordinary maximin
+and a low-positive-`g` stratified alternative
+are retained. For DTLZ6, normalized objective
+distance is evaluated on exactly the same
+independently proved 448-source subset for
+original and proposed references.
+
+An additive focused CI, new regression-free unit
+contract and an archived paired JSON report
+compare original selected known defects,
+exact source proof eligibility, source-pool
+normalized nearest-reference distance, radial
+stratum coverage and original anchor preservation.
+These reports explicitly distinguish:
+
+* **Individual membership**: every proposed selected
+  original decision must have a separately replayed
+  global PF certificate, including any positive-g
+  component; no merely optimized candidate qualifies.
+* **Finite-source coverage**: a maximin/covering
+  number on the original 448-source proved-PF
+  candidate subset is **observational**; it does
+  **not** bound the complete continuous Pareto
+  front, establish component completeness or prove
+  finite IGD/IGD+/HV adequacy.
+* **Scientific acceptance**: whole-PF/component
+  membership, source-bound environment/result
+  verification and indicator-specific tolerances
+  prescribed by ADR0059 remain **unverified**.
+  Therefore none of these alternatives is approved
+  as a new canonical GT or a repair to production
+  `mop.ps()` by this comparison alone.
+
+The original production generators, ADR0059 and
+other accepted ADRs, old regression tests and
+historical numerical baselines are **unchanged**.
+Any production correction must be separately
+reviewed against accepted ADR0006/0018/0056/0057/
+0059 and the known exact off-ray failures.
