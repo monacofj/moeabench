@@ -54,6 +54,11 @@ def test_selected_ledger_and_tamper_rejection():
     r=audit_dtlz6_tight_selected(ps)
     assert replay_dtlz6_tight_selected(ps,r)
     assert r["source_selected_n"]==4
+    assert set(r["resolved_historical_unverified_indices"]).issubset(
+        set(r["historical_unverified_indices"]))
+    assert set(r["still_unverified_historical_indices"])==(
+        set(r["historical_unverified_indices"])-
+        set(r["resolved_historical_unverified_indices"]))
     assert r["proved_selected_count"]>=3
     assert 3 in r["still_unverified_indices"]
     assert r["scientific_certification"]=="unverified"
