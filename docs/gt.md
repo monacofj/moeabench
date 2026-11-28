@@ -5365,3 +5365,66 @@ be reported once CI has completed; the new theorem
 does not replace that independent rejection gate.
 No production sampler, accepted ADR, frozen
 baseline or preexisting regression test changed.
+
+
+### Validated exact g=0 continuous-curve off-ray source screen (2026-11-28)
+
+The independent focused
+[CI #46172599820](https://github.com/monacofj/moeabench/actions/runs/46172599820)
+**passed 16 new tests**, demonstrating strict
+global off-ray dominance by a feasible exact
+`g=0` curve point for independently constructed
+positive-`g` candidates and fail-closed abstention
+for proved globally Pareto-optimal positive-`g`
+angular stratum members. The test replayed the
+exact original rational squared-coordinate
+inequalities for both DTLZ5 and DTLZ6.
+
+Original unchanged selected
+`M=4,K=1,n=16` source-bound
+[CI #46172600009](https://github.com/monacofj/moeabench/actions/runs/46172600009)
+passed **116 mathematical/additive tests**
+and independently regenerated/replayed the
+source-bound off-ray curve ledgers.
+Its outcome for each selected source reference
+was:
+
+| Exact g=0 continuous-curve off-ray domination screen | Proved dominated selected indices |
+| --- | --- |
+| Original DTLZ5 n16 | `[]` |
+| Original DTLZ6 n16 | `[]` |
+
+This does **not** disprove the rigorously certified
+off-ray dominance of original DTLZ5 selected row 10.
+That separate exact witness decreases its objectives
+in a way not realized by a `g=0` point;
+indeed, this g=0 criterion's
+`4*y1² >= 1-c²` condition is false for
+that original row. As expected, the workflow
+correctly **failed its unchanged mandatory
+final DTLZ5 row-10 negative scientific acceptance**
+after every new source-bound strict screening
+step passed. The original PS/F and exact proof
+ledgers were preserved in
+[artifact #15274552687](https://github.com/monacofj/moeabench/actions/runs/46172600009/artifacts/15274552687),
+ZIP SHA256
+`cf5f233630324c5a6b67ddbb78721cff7641799a88c1ccf08b31d9f0ab9d5dd2`.
+
+**Research direction:** general necessary exclusions
+are useful to characterize continuous regions, but
+none of the new open-inner, last-axis and
+g=0 curve criteria has eliminated an additional
+selected source row for these exact original
+n16 test cases. The demonstrated DTLZ5
+defect requires off-ray domination by
+**positive-`g` feasible points**. Proceed with a
+sound global off-ray classifier for supported
+positive-`g` strata and assess a proof-gated
+replacement reference, without claiming that
+either constitutes a complete original PF
+or an accepted GT until ADR0059's conditions
+are met. The five still-unverified DTLZ6
+selected rows also need individual decisive
+classification. No accepted ADR, production
+sampler, frozen baseline or preexisting
+regression test has been modified.
