@@ -5790,3 +5790,50 @@ off-ray witness certificates. Any production
 repair must be justified against ADR0059 and
 existing implementation/GT regression contracts
 before changing the accepted behavior.
+
+
+#### CI integration: independent mandatory DTLZ5 AND DTLZ6 negative scientific gates
+
+[Full source-bound CI #46180571473](https://github.com/monacofj/moeabench/actions/runs/46180571473)
+has independently confirmed the two known scientifically
+invalid original selected M4/K1 n16 references:
+
+* **135** research/additive mathematical/unit tests **PASSED**,
+  including the new exact DTLZ6 interval strict
+  witness/replay tests. Reproduction of original DTLZ5
+  and DTLZ6 source PS/F and source-bound continuous
+  coverage proofs **PASSED**.
+* The **old, unchanged mandatory DTLZ5 scientific gate**
+  correctly **FAILED** with `('DTLZ5',[10])`.
+* The **new independent mandatory DTLZ6 scientific gate**
+  correctly **FAILED** with `('DTLZ6',[7,11])`.
+* The new DTLZ6 exact off-ray mathematical proof step
+  executed **successfully before both scientific gates**.
+  The remaining selected DTLZ6 rows `[6,10,12]`
+  are still **unverified**, never approved simply because
+  the bounded witness search found no dominator.
+* The workflow archives the unchanged original
+  PS/F, original reports, supporting continuous
+  certificates and exact DTLZ6 off-ray feasible
+  witness decisions and rational proof records under
+  [artifact #15277227441](https://github.com/monacofj/moeabench/actions/runs/46180571473/artifacts/15277227441),
+  ZIP SHA256
+  `89660922399456a5482c6da4b4daf077ebde9760f12e9a9b63257559c751d5b4`.
+
+The overall CI result is intentionally **RED** because
+there are two **independently proved scientific defects**,
+not because the new source-bound research checks failed.
+The general unit-contract and stability-separation
+workflows for the same research changes **PASSED**.
+The original DTLZ5 gate was not edited; DTLZ6's
+acceptance condition was added as a distinct
+fail-closed check. No production generator, existing
+regression test, accepted ADR or historical numerical
+baseline was changed.
+
+Remaining scientific work is **production GT repair**,
+replay against the independently verified exact negative
+witnesses, full continuous PF/component coverage and
+finite IGD/IGD+/HV suitability. Until then **neither
+original DTLZ5 nor DTLZ6 n16 selected reference is
+acceptable**.
