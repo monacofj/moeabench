@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ56 exact gzero global PF OFFRAY dominance (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_gzero_offray_dominance.py"
+      - "scripts/audit/dtlz56_original_ps_gzero_offray.py"
+      - "tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py"
+      - ".github/workflows/gt-dtlz56-gzero-offray-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-gzero-offray:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Exact source independent offray curve dominator verification
+        run: |
+          python -m pytest \
+            tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py \
+            tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py -q
+      - name: Confirm exact squared-coordinate dominance and ABSTENTION
+        run: |
+          python - <<'PY'
+          from fractions import Fraction
+          from scripts.audit.dtlz56_gzero_offray_dominance import (
+              certify_gzero_curve_offray_dominance,
+              replay_gzero_curve_offray_dominance)
+          for problem,tail,gzero in (
+              ("DTLZ5",Fraction(3,4),Fraction(1,2)),
+              ("DTLZ6",Fraction(1,4),Fraction(0))):
+              x=(Fraction(1,4),Fraction(1,2),Fraction(1,2),tail)
+              p=certify_gzero_curve_offray_dominance(x,problem=problem)
+              assert replay_gzero_curve_offray_dominance(
+                  x,p,problem=problem)
+              q=certify_gzero_curve_offray_dominance(
+                  (x[0],x[1],x[2],gzero),problem=problem)
+              assert q["conclusion"]=="unverified"
+              assert p["whole_gt_coverage"]=="unverified"
+              print(problem,"exact gzero offray dominance certified")
+          PY
