@@ -5901,3 +5901,80 @@ historical numerical baselines are **unchanged**.
 Any production correction must be separately
 reviewed against accepted ADR0006/0018/0056/0057/
 0059 and the known exact off-ray failures.
+
+
+#### CI result: paired original proof-gated finite-source alternatives
+
+The research-only paired
+[CI #46181475846](https://github.com/monacofj/moeabench/actions/runs/46181475846)
+**PASSED** the new additive test and independently
+regenerated both original `M=4,K=1`, n16/448
+source-pool proof-reach analyses. It constructed
+research-only alternatives retaining the four
+original g=0 anchors and choosing the other twelve
+decisions solely from **individually globally
+Pareto-proved original source candidates**.
+The entire alternative budgets therefore have
+individual membership certificates, including
+positive-g decisions, **without modifying** either
+original production sampler.
+
+Original 448-source pool proof reach remained:
+DTLZ5 **430 proved globally PF, 1 proved
+dominated, 17 unverified**; DTLZ6 **413 proved
+globally PF, 0 dominated under the historical
+coarse pool classifier, 35 unverified**.
+The newer independently certified off-ray
+dominators in DTLZ6 *selected* indices
+7 and 11 are additional negative evidence
+not automatically reflected in those older
+historical whole-pool status counts: a point
+that the original coarse classifier labelled
+`unverified` must not be read as Pareto-valid.
+
+Selected candidate-pool indices of the
+proof-gated alternatives (each preceded by the
+four original g=0 anchors) were:
+
+| Problem | Twelve original proved-PF source indices |
+| --- | --- |
+| DTLZ5 | `334,337,95,443,388,238,370,130,400,397,401,148` |
+| DTLZ6 | `288,415,396,379,382,410,116,157,388,158,362,339` |
+
+For original DTLZ6, normalized Euclidean
+finite-source covering radius **over the same
+independently proved source-PF subset**:
+original selected PS `0.2202018665534744`,
+proof-gated alternative PS
+`0.15132096602167844`;
+alternative/original ratio
+`0.6871920224387892` (~31.3% smaller).
+This is a controlled observational
+**finite 448-source subset comparison only**,
+not a continuous-front Hausdorff/IGD/IGD+/HV
+acceptance certificate. The DTLZ5 script
+also records both ordinary and explicit
+low-positive-g-stratified maximin selections
+and their original/alternative objective
+spacing observations. Full data and original
+configurations are archived in
+[artifact #15277452642](https://github.com/monacofj/moeabench/actions/runs/46181475846/artifacts/15277452642),
+ZIP SHA256
+`98a4cf2a3d4c7b73418691e2160f9ba2dc55c9f841a892d224f56289b209630e`.
+
+The paired result is an **actionable bounded
+replacement candidate** and demonstrates that
+individual GT membership can be repaired
+without simply deleting nondegenerate g>0
+components. It does **not** establish
+representation of every original PF component,
+quantitative coverage suitability for original
+2000/10000 calibration defaults, stable
+cross-platform generation or fitness for
+IGD/IGD+/HV. ADR0059's environment, result
+and finite-indicator thresholds remain
+unverified. Therefore neither original
+GT is repaired in production and no new
+canonical GT is scientifically accepted.
+The original DTLZ5 and DTLZ6 negative
+scientific gates remain mandatory.
