@@ -5428,3 +5428,76 @@ selected rows also need individual decisive
 classification. No accepted ADR, production
 sampler, frozen baseline or preexisting
 regression test has been modified.
+
+
+### Sharper original DTLZ6 irrational-radial membership proof (2026-11-28)
+
+The original DTLZ6 `M=4,K=1,n16` selected
+PS still contains rows whose positive-`g` global
+Pareto membership is **unverified**. The original
+integer tenth-root interval theorem was already
+rigorous, but conservatively used
+`sin(theta)<=theta` as its only sine upper
+bound. A new **research-only, opt-in** proof
+[`dtlz6_tight_irrational_pf.py`](../scripts/audit/dtlz6_tight_irrational_pf.py)
+combines the independently proven exact integer
+tenth-root enclosure `g<=g_upper` with the
+alternating Taylor upper bound
+
+```text
+sin(theta) <= theta-theta³/6+theta⁵/120
+  for theta in [0,pi/2], with
+theta_upper = pi_upper*x1/2.
+```
+
+The right-hand polynomial is increasing over
+the relevant interval, so it remains a valid
+upper when `theta` is replaced by
+`theta_upper`. For any established original
+inner-angle supporting-objective pattern of
+sine power `p>=2`, define
+
+```text
+c_upper = (1+g_upper) *
+  (theta_upper-theta_upper³/6+theta_upper⁵/120)
+strict_margin = 1-4/(p*pi_lower)-c_upper².
+```
+
+A **strictly positive exact rational margin**
+proves global Pareto membership of the
+exact-real original candidate decision image
+by the previously proved supporting-objective
+monotonicity theorem, including candidates
+whose radial tenth root is irrational.
+Using the same `g_upper` and `pi` enclosure,
+this cannot reject any case proved by the
+coarser `sin(theta)<=theta` inequality.
+Absence of proof is **unverified** and
+does not imply domination or PF acceptance.
+
+The companion
+[`dtlz6_tight_selected_source.py`](../scripts/audit/dtlz6_tight_selected_source.py)
+replays both old and new certificates against
+the **same exact IEEE-754 decision bits** of
+all originally selected PS rows, compares
+their independently proved membership,
+records newly proved indices and remaining
+unverified indices, and writes an immutable
+source-bound JSON evidence record.
+A newly added focused CI workflow runs
+this exact comparison after regenerating
+the **unchanged original** DTLZ6
+`M=4,K=1,n16` source PS/F; a separate fast
+CI checks adversarial tests and the analytical
+proof. The existing final source-bound workflow
+also records the result *before* the unchanged
+DTLZ5 dominated-row negative gate.
+
+This is explicitly **not** a production
+sampler change, a modification of previously
+accepted mathematical conclusions, a repair
+of a dominated DTLZ5 row, proof of the
+complete original PF, finite stored objective
+equality or ADR0059 GT indicator acceptance.
+No accepted ADR, frozen baseline or
+preexisting regression test was changed.
