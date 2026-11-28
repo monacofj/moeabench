@@ -5277,3 +5277,91 @@ exclusion conditions should not be mistaken for a global
 Pareto oracle. No production changes, ADR changes,
 existing regression modifications or baseline updates
 were made in this research work.
+
+
+### A rigorous OFF-RAY dominator from the entire original g=0 Pareto curve
+
+The two previously established global negative conditions
+(open inner angles and last-axis cap) did not identify any
+additional **original selected** M4/K1 n16 source rows.
+Neither condition addresses the general off-ray domination
+which was independently proved for DTLZ5 original row 10.
+
+A new exact global negative theorem uses the **entire**
+continuous original DTLZ5/DTLZ6 `g=0` PF curve, without
+sampling or a numerical optimization oracle. For original
+`M=4,K=1`, its objective image is exactly
+
+```text
+F_zero(a)=(cos(a)/2, cos(a)/2, cos(a)/sqrt(2), sin(a)),
+a in [0,pi/2].
+```
+
+For any feasible original candidate with exact-real
+objective vector `y=(y1,y2,y3,c)`, `0<=c<=1`,
+choose the **feasible** point on that continuous curve
+whose last objective equals `c`. Its image is exactly
+
+```text
+z=(sqrt(1-c²)/2, sqrt(1-c²)/2,
+   sqrt((1-c²)/2), c).
+```
+
+Therefore `z_i<=y_i` for all four objectives is
+**equivalent** to the three purely algebraic inequalities
+
+```text
+4*y1² >= 1-c²,
+4*y2² >= 1-c²,
+2*y3² >= 1-c².
+```
+
+For original `g>0`, `||y||_2=1+g>1=||z||_2`,
+so at least one inequality is strict. Hence this
+criterion proves true **global, off-ray, strict**
+domination by a genuine original feasible g=0
+decision, for **any** angular boundary configuration.
+It is a sufficient strict-dominance theorem, not a
+sufficient Pareto-membership theorem.
+
+The research-only
+[`dtlz56_gzero_offray_dominance.py`](../scripts/audit/dtlz56_gzero_offray_dominance.py)
+proves the three inequalities using **outward exact-rational
+intervals of the original objective equations**, with
+Machin/Taylor sine and cosine enclosures, and
+integer tenth-root rational enclosures of potentially
+irrational original DTLZ6 radial `g`.
+For interval lower bounds `L_i` of the first three
+objective coordinates, and lower/upper `L_c,U_c`
+of the last coordinate, a **sound sufficient**
+certificate requires `U_c<=1`,
+`g>0` exactly, and
+
+```text
+4*L1² >= 1-Lc²,
+4*L2² >= 1-Lc²,
+2*L3² >= 1-Lc².
+```
+
+The same independent verifier deliberately **abstains**
+if the strict conclusion cannot be proved (including
+`g=0`, missing angular precision, last-objective cap
+violations and other cases). It never promotes an
+unexcluded decision to a proved Pareto member.
+
+An additive original-selected PS ledger
+[`dtlz56_original_ps_gzero_offray.py`](../scripts/audit/dtlz56_original_ps_gzero_offray.py)
+replays the inequality on all unchanged original
+selected M4/K1 n16 exact IEEE-754 decision rows,
+writes the original paired PS/F artifact SHA256,
+records any rigorously dominated indices and keeps
+all other rows `unverified`. New independent tests
+and a standalone fast CI check the mathematical
+criterion and fail-closed behavior. The source-bound
+CI uses this new theorem **before** the unchanged
+mandatory independent DTLZ5 row-10 scientific
+rejection. The actual source result should only
+be reported once CI has completed; the new theorem
+does not replace that independent rejection gate.
+No production sampler, accepted ADR, frozen
+baseline or preexisting regression test changed.
