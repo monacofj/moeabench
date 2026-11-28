@@ -6038,3 +6038,62 @@ under ADR0059. A production change would require
 separate architecture, environment and regression
 review. The outcome of the new CI must be
 measured before claiming numerical bounds.
+
+
+#### Source-bound validation of continuous-subset coverage of proof-gated alternatives
+
+The independent
+[CI #46182104930](https://github.com/monacofj/moeabench/actions/runs/46182104930)
+**PASSED** the new additive mathematical test,
+independently rebuilt the unchanged original 448
+candidate pools and all four original/alternative
+selected n16 decision lists, and replayed outward
+**exact-rational one-sided raw Euclidean coverage
+uppers** for the three rigorously globally Pareto
+continuous subsets described above:
+
+| Problem and 16-point selected reference | Complete g=0 curve upper | First full-radial surface upper | Second full-radial surface upper | Union upper (max) |
+| --- | ---: | ---: | ---: | ---: |
+| Original DTLZ5, **scientifically invalid** | 0.2617993877991494 | 0.6076874658835237 | 0.6076874658835237 | **0.6076874658835237** |
+| Individually proved-only DTLZ5 counterfactual | 0.2617993877991494 | 0.6076874658835237 | 0.6076874658835237 | **0.6076874658835237** |
+| Original DTLZ6, **scientifically invalid** | 0.2617993877991494 | 0.9621471362242676 | 0.895105839761027 | **0.9621471362242676** |
+| Individually proved-only DTLZ6 counterfactual | 0.2617993877991494 | **0.7690892931746114** | **0.9645018150046094** | **0.9645018150046094** |
+
+All numbers are **certified upper bounds**, not
+measurements of exact minimal distances and not
+estimates of the entire mixed-angular original PF.
+In DTLZ6 the alternative has a better **first**
+surface upper, but a worse **second** surface
+upper; the union maximum is therefore slightly
+larger. This does **not** prove that its actual
+continuous-subset coverage became worse. It
+does mean that a global source-normalized maximin
+selection should not be accepted as uniformly
+better on the two distinct certified positive-g
+surfaces. In DTLZ5 the coarse rigorous bounds
+remain unchanged, despite removing the known
+dominated original selected point 10.
+
+The complete source traces, exact decision SHA256
+records, per-node original-equation rational
+interval certificates and both alternatives are
+archived in
+[artifact #15277894631](https://github.com/monacofj/moeabench/actions/runs/46182104930/artifacts/15277894631),
+ZIP SHA256
+`0d75df188015b1e90a214f6bc85f04c119cd88963fb25a018d12cab900694b35`.
+
+**Scientific implication:** the earlier source-pool
+finite observational 31.3% DTLZ6 covering-radius
+improvement does **not** transfer automatically
+to the rigorous declared continuous PF subsets.
+A geometry-aware selection that explicitly
+balances independent support faces is a potential
+research improvement, but **even that** would
+still require mathematical full original PF
+decomposition, indicator-specific tolerances,
+certified result/environment provenance and
+review under ADR0059 prior to any production GT
+replacement. Both original DTLZ5/DTLZ6
+scientific negative membership gates must remain
+red. No existing regression, accepted ADR,
+production sampler or baseline changed.
