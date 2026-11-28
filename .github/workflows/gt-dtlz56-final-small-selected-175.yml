@@ -28,6 +28,10 @@ on:
       - "scripts/audit/dtlz56_original_ps_open_inner_exclusion.py"
       - "scripts/audit/dtlz56_last_objective_cap_exclusion.py"
       - "scripts/audit/dtlz56_original_ps_last_objective_cap.py"
+      - "scripts/audit/dtlz56_gzero_offray_dominance.py"
+      - "scripts/audit/dtlz56_original_ps_gzero_offray.py"
+      - "tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py"
       - "tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py"
       - "tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py"
       - "tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py"
@@ -64,7 +68,7 @@ jobs:
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
         run: |
-          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py -q
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -346,6 +350,26 @@ jobs:
               print(problem,"rigorously last-axis dominated selected indices:",
                     report["provably_dominated_last_objective_rows"])
           PY
+      - name: Prove original selected PS strict OFFRAY domination by full gzero PF curve
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_original_ps_gzero_offray \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-gzero-offray.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-gzero-offray.json"
+              ).read_text())
+              assert r["selected_n"]==16
+              assert r["scientific_certification"]=="unverified"
+              assert r["all_unexcluded_membership"]=="unverified"
+              print(problem,"rigorous continuous gzero OFFRAY domination:",
+                    r["rigorously_gzero_offray_dominated_indices"])
+          PY
       - name: Validate complete source-bound output fields and summarize
         run: |
           python - <<'PY'
@@ -419,5 +443,6 @@ jobs:
             gt175-final-*-two-surface-union.json
             gt175-final-*-open-inner-exclusion.json
             gt175-final-*-last-axis-cap.json
+            gt175-final-*-gzero-offray.json
           if-no-files-found: error
           retention-days: 90
