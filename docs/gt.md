@@ -5575,3 +5575,72 @@ are modified. It does not create an alternative
 whole-front oracle, and DTLZ5's proved dominated
 original selected row stays a separate rejection
 of that GT.
+
+
+### Exact five-row DTLZ6 obstruction split and positive-g off-ray verification (2026-11-28)
+
+A new focused immutable original-source
+[CI #46179984030](https://github.com/monacofj/moeabench/actions/runs/46179984030)
+**PASSED** five additive diagnostic tests, independently
+regenerated the original `M=4,K=1,n=16` selected DTLZ6
+PS/F with byte-identical SHA256
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`,
+replayed the old and new exact mathematical source
+certificates and characterized **all five remaining
+unverified selected rows**:
+
+| Selected row | Exact original angular boundary | Feasible radial regime | Exact proof obstruction |
+| --- | --- | --- | --- |
+| 6 | `x2=x3=1`, first-support objective 1 | `g=1` | **Nonpositive** strict sine-power support margin |
+| 7 | `x2=1`, `0<x3<1` (near zero) | `0<g<1` | No currently proved sufficient angular support pattern |
+| 10 | `x2=1,x3=0`, second-support objective 2 | `g=1` | **Nonpositive** strict sine-power support margin |
+| 11 | `0<x2<1` (near 1), `x3=1` | `0<g<1` | No currently proved sufficient angular support pattern |
+| 12 | `x2=x3=1`, first-support objective 1 | `0<g<1` | **Nonpositive** strict sine-power support margin |
+
+The source-selected original binary decision coordinates,
+independent exact integer tenth-root outward intervals,
+all available supporting objective/power/margin statements
+and explicit `unverified` scientific status were saved in
+[artifact #15277251018](https://github.com/monacofj/moeabench/actions/runs/46179984030/artifacts/15277251018),
+ZIP SHA256
+`86299f0300c4c2a852519daf2cb8b172a0848a194ff959e39312d8465f16be6f`.
+
+The result shows why another round of floating precision
+or a tighter version of this *same* sufficient inequality
+is unlikely to resolve all five cases. The two distinct
+obstructions require different mathematical approaches:
+necessary-and-sufficient support analysis (or strict
+off-ray dominance) for the three rows with a nonpositive
+margin, and genuinely new angular boundary support
+arguments (or strict off-ray dominance) for the two
+near-boundary rows. **Neither an absent supporting
+pattern nor a nonpositive sufficient margin establishes
+domination or Pareto membership**.
+
+A further research-only
+[`dtlz6_exact_offray_witness.py`](../scripts/audit/dtlz6_exact_offray_witness.py)
+introduces a general DTLZ6 strict mathematical
+domination checker for any proposed original
+`M=4,K=1` feasible witness using outward
+Machin/Taylor objective intervals and **integer
+tenth-root enclosures** for both source and
+witness original decision bits. It requires
+strictly positive source-lower minus witness-upper
+for **every** objective coordinate, and otherwise
+abstains. The bounded and deterministic exploratory
+[`dtlz6_selected_offray_search.py`](../scripts/audit/dtlz6_selected_offray_search.py)
+uses numerical SLSQP *only to propose feasible
+candidate witnesses*, and independently replays
+the exact rational proof before allowing any
+dominated-source conclusion. The source-bound
+CI archives all proposed rigorous certificates,
+distinguishes proven dominated from unverified
+original row indices and never claims that a
+numerical optimizer exhausts the feasible Pareto
+front. Pending CI results may not be asserted
+as scientific evidence.
+
+No production sampler, approved ADR, regression
+test or frozen baseline was modified; the
+original DTLZ5 row 10 strictly dominated
+selected GT gate is retained unchanged.
