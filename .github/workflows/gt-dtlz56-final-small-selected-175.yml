@@ -8,6 +8,47 @@ on:
       - ".github/workflows/gt-dtlz56-final-small-selected-175.yml"
       - "scripts/audit/dtlz56_final_selected_small_gt.py"
       - "scripts/audit/dtlz56_tight_sine_global_pf.py"
+      - "scripts/audit/dtlz5_row10_exact_dominance.py"
+      - "scripts/audit/dtlz56_gzero_continuous_cover.py"
+      - "scripts/audit/dtlz5_patch_actual_source_cover.py"
+      - "scripts/audit/dtlz6_patch_actual_source_cover.py"
+      - "tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py"
+      - "scripts/audit/dtlz56_patch_actual_multiresolution.py"
+      - "scripts/audit/dtlz56_full_radial_support_face.py"
+      - "scripts/audit/dtlz56_full_radial_face_actual_source.py"
+      - "tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py"
+      - "scripts/audit/dtlz56_second_support_full_radial.py"
+      - "scripts/audit/dtlz56_second_support_actual_source.py"
+      - "tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py"
+      - "scripts/audit/dtlz56_three_subset_union_cover.py"
+      - "scripts/audit/dtlz56_second_support_full_radial_surface.py"
+      - "scripts/audit/dtlz56_second_support_surface_actual_source.py"
+      - "scripts/audit/dtlz56_two_surface_union_cover.py"
+      - "scripts/audit/dtlz56_open_inner_angle_exclusion.py"
+      - "scripts/audit/dtlz56_original_ps_open_inner_exclusion.py"
+      - "scripts/audit/dtlz56_last_objective_cap_exclusion.py"
+      - "scripts/audit/dtlz56_original_ps_last_objective_cap.py"
+      - "scripts/audit/dtlz56_gzero_offray_dominance.py"
+      - "scripts/audit/dtlz56_original_ps_gzero_offray.py"
+      - "scripts/audit/dtlz6_tight_irrational_pf.py"
+      - "scripts/audit/dtlz6_tight_selected_source.py"
+      - "scripts/audit/dtlz6_exact_offray_witness.py"
+      - "scripts/audit/dtlz6_selected_offray_search.py"
+      - "tests/unit/test_gt_dtlz6_exact_offray_witness_issue175.py"
+      - "tests/unit/test_gt_dtlz6_tight_irrational_pf_issue175.py"
+      - "tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py"
+      - "tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py"
+      - "tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py"
+      - "tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py"
+      - "tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py"
+      - "tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py"
+      - "tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py"
+      - "tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py"
+      - "tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py"
+      - "tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py"
       - "moeabench/mops/_dtlz56_front.py"
       - "tests/unit/test_gt_dtlz56_final_selected_small_issue175.py"
   workflow_dispatch:
@@ -32,7 +73,8 @@ jobs:
       - name: Install source and tests
         run: python -m pip install -e . pytest
       - name: Test analysis and sidecar discipline without expensive PS
-        run: python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py -q
+        run: |
+          python -m pytest tests/unit/test_gt_dtlz56_final_selected_small_issue175.py tests/unit/test_gt_dtlz5_row10_exact_dominance_issue175.py tests/unit/test_gt_dtlz5_row10_final_selected_gate_issue175.py tests/unit/test_gt_dtlz5_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz6_patch_actual_source_cover_issue175.py tests/unit/test_gt_dtlz56_patch_actual_multiresolution_issue175.py tests/unit/test_gt_dtlz56_full_radial_face_actual_source_issue175.py tests/unit/test_gt_dtlz56_second_support_actual_source_issue175.py tests/unit/test_gt_dtlz56_three_subset_union_cover_issue175.py tests/unit/test_gt_dtlz56_second_support_full_radial_surface_issue175.py tests/unit/test_gt_dtlz56_second_support_surface_actual_source_issue175.py tests/unit/test_gt_dtlz56_two_surface_union_cover_issue175.py tests/unit/test_gt_dtlz56_original_ps_open_inner_exclusion_issue175.py tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py tests/unit/test_gt_dtlz56_gzero_offray_dominance_issue175.py tests/unit/test_gt_dtlz56_original_ps_gzero_offray_issue175.py tests/unit/test_gt_dtlz6_tight_irrational_pf_issue175.py tests/unit/test_gt_dtlz6_exact_offray_witness_issue175.py -q
       - name: Run actual unchanged original production PS and final maximin selection
         run: |
           python -m scripts.audit.dtlz56_final_selected_small_gt \
@@ -43,6 +85,340 @@ jobs:
             --problem DTLZ6 --m 4 --k 1 --points 16 \
             --bundle gt175-final-DTLZ6-M4-K1-paired.npz \
             --report gt175-final-DTLZ6-M4-K1-report.json
+      - name: Prove continuous g0 coverage from the actual paired decisions
+        run: |
+          python - <<'PY'
+          import json
+          import numpy as np
+          from pathlib import Path
+          from scripts.audit.dtlz56_gzero_continuous_cover import (
+              certify_gzero_curve_cover, replay_gzero_curve_cover)
+          for path in sorted(Path('.').glob('gt175-final-*-paired.npz')):
+              with np.load(path,allow_pickle=False) as data:
+                  problem=str(data["problem"].item())
+                  assert int(data["M"])==4 and int(data["K"])==1
+                  decisions=data["decisions"].copy()
+              proof=certify_gzero_curve_cover(
+                  decisions,problem=problem)
+              assert replay_gzero_curve_cover(
+                  decisions,proof,problem=problem), (problem,proof["conclusion"])
+              assert proof["whole_gt_coverage"]=="unverified"
+              print(problem,"rigorous continuous g0-only upper:",
+                    proof["raw_euclidean_cover_upper"])
+              print(problem,"anchor locations:",proof["anchor_x1"])
+          PY
+      - name: Certify restricted DTLZ5 positive-g patch against actual paired PS
+        run: |
+          python -m scripts.audit.dtlz5_patch_actual_source_cover \
+            --paired-bundle gt175-final-DTLZ5-M4-K1-paired.npz \
+            --report gt175-final-DTLZ5-M4-K1-actual-patch-cover.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          d=json.loads(Path("gt175-final-DTLZ5-M4-K1-actual-patch-cover.json").read_text())
+          assert d["selected_decision_count"]==16
+          assert d["conclusion"]=="rigorously_bounded_continuous_patch_to_selected_source"
+          assert d["whole_gt_coverage"]=="unverified"
+          assert d["scientific_certification"]=="unverified"
+          b=d["continuous_patch_to_actual_source_l2_upper"]
+          q=Fraction(int(b["numerator_hex"],16),int(b["denominator_hex"],16))
+          print("Rigorous patch-to-ACTUAL selected source upper:",float(q))
+          print("Archive SHA256:",d["paired_artifact_sha256"])
+          PY
+      - name: Certify restricted DTLZ6 positive-g patch against actual paired PS
+        run: |
+          python -m scripts.audit.dtlz6_patch_actual_source_cover \
+            --paired-bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+            --report gt175-final-DTLZ6-M4-K1-actual-patch-cover.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          r=json.loads(Path("gt175-final-DTLZ6-M4-K1-actual-patch-cover.json").read_text())
+          assert r["conclusion"]=="rigorously_bounded_continuous_patch_to_selected_source"
+          assert r["selected_decision_count"]==16
+          assert r["whole_gt_coverage"]=="unverified"
+          assert r["scientific_certification"]=="unverified"
+          b=r["continuous_patch_to_actual_source_l2_upper"]
+          upper=Fraction(int(b["numerator_hex"],16),
+                         int(b["denominator_hex"],16))
+          print("Rigorous DTLZ6 patch-to-ACTUAL selected source upper:",float(upper))
+          print("Archive SHA256:",r["paired_artifact_sha256"])
+          PY
+      - name: Compare rigorous 3x3 vs 5x5 restricted patch coverage on actual PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_patch_actual_multiresolution \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-multiresolution-cover.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for name in ("DTLZ5","DTLZ6"):
+              p=Path(f"gt175-final-{name}-M4-K1-multiresolution-cover.json")
+              d=json.loads(p.read_text())
+              assert d["scientific_certification"]=="unverified"
+              assert len(d["records"])==2
+              bounds=[]
+              for item in d["records"]:
+                  q=item["patch_to_selected_source_l2_upper"]
+                  bounds.append(Fraction(int(q["numerator_hex"],16),
+                                         int(q["denominator_hex"],16)))
+              q=d["best_rigorous_upper"]
+              best=Fraction(int(q["numerator_hex"],16),
+                            int(q["denominator_hex"],16))
+              assert best==min(bounds)
+              print(name,"source-bound rigorous bounds", [float(x) for x in bounds])
+          PY
+      - name: Prove complete radial support face against actual selected PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_full_radial_face_actual_source \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-full-radial-face.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for problem in ("DTLZ5","DTLZ6"):
+              path=Path(f"gt175-final-{problem}-M4-K1-full-radial-face.json")
+              report=json.loads(path.read_text())
+              assert report["source_decision_count"]==16
+              assert report["whole_pf_coverage"]=="unverified"
+              assert report["indicator_fitness"]=="unverified"
+              assert report["scientific_certification"]=="unverified"
+              assert report["uniform_full_radial_face_pf_certificate"][
+                  "certified_full_original_radial_range"] is True
+              x=report["full_radial_face_to_actual_source_l2_upper"]
+              upper=Fraction(int(x["numerator_hex"],16),
+                             int(x["denominator_hex"],16))
+              assert upper>0
+              print(problem,"rigorous FULL RADIAL support FACE upper:",float(upper))
+          PY
+      - name: Certify second complete radial global support curve against actual PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_second_support_actual_source \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-second-support-actual.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for problem in ("DTLZ5","DTLZ6"):
+              report=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-second-support-actual.json"
+              ).read_text())
+              assert report["selected_decision_count"]==16
+              assert report["curve_pf_proof"]["complete_admissible_g_range"] is True
+              assert report["whole_pf_coverage"]=="unverified"
+              assert report["scientific_certification"]=="unverified"
+              b=report["continuous_curve_to_actual_source_l2_upper"]
+              upper=Fraction(int(b["numerator_hex"],16),
+                             int(b["denominator_hex"],16))
+              assert upper>0
+              print(problem,"second support radial curve actual PS upper:",float(upper))
+          PY
+      - name: Certify union of three continuous global PF subsets to actual PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_three_subset_union_cover \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --full-radial gt175-final-${problem}-M4-K1-full-radial-face.json \
+              --second-support gt175-final-${problem}-M4-K1-second-support-actual.json \
+              --report gt175-final-${problem}-M4-K1-three-subset-union.json
+          done
+          python - <<'PY'
+          import json
+          from fractions import Fraction
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              report=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-three-subset-union.json"
+              ).read_text())
+              assert report["certified_subset_count"]==3
+              assert report["actual_selected_decision_count"]==16
+              assert report["scientific_certification"]=="unverified"
+              assert report["whole_pareto_front_cover"]=="unverified"
+              components=[
+                  Fraction(int(x["numerator_hex"],16),
+                           int(x["denominator_hex"],16))
+                  for x in report["continuous_component_upper_bounds"].values()
+              ]
+              x=report["union_continuous_cover_raw_l2_upper"]
+              whole=Fraction(int(x["numerator_hex"],16),
+                             int(x["denominator_hex"],16))
+              assert whole==max(components)
+              print(problem,"three-subset union raw bound",float(whole))
+          PY
+      - name: Certify second support full radial SURFACE against actual PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_second_support_surface_actual_source \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-second-surface-actual.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-second-surface-actual.json"
+              ).read_text())
+              assert r["source_decision_count"]==16
+              assert r["independent_continuous_surface_pf_proof"][
+                  "second_support_objective"]==2
+              assert r["independent_continuous_surface_pf_proof"][
+                  "complete_admissible_original_g_range"] is True
+              assert r["scientific_certification"]=="unverified"
+              b=r["continuous_surface_to_actual_ps_l2_upper"]
+              upper=Fraction(int(b["numerator_hex"],16),
+                             int(b["denominator_hex"],16))
+              assert upper>0
+              print(problem,"second SUPPORT SURFACE bound",float(upper))
+          PY
+      - name: Independently certify two full radial PF SURFACES union on real PS
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_two_surface_union_cover \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --first-support gt175-final-${problem}-M4-K1-full-radial-face.json \
+              --second-curve gt175-final-${problem}-M4-K1-second-support-actual.json \
+              --second-surface gt175-final-${problem}-M4-K1-second-surface-actual.json \
+              --report gt175-final-${problem}-M4-K1-two-surface-union.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-two-surface-union.json"
+              ).read_text())
+              assert r["original_selected_n"]==16
+              assert r["complete_original_pf_decomposition"]=="unverified"
+              assert r["scientific_certification"]=="unverified"
+              parts=[
+                  Fraction(int(v["numerator_hex"],16),
+                           int(v["denominator_hex"],16))
+                  for v in r["component_bounds"].values()
+              ]
+              b=r["union_continuous_raw_l2_upper"]
+              bound=Fraction(int(b["numerator_hex"],16),
+                             int(b["denominator_hex"],16))
+              assert bound==max(parts)
+              print(problem,"two-surface + g0 union",float(bound))
+          PY
+      - name: Exclude provably dominated open-inner selected source rows (exact)
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_original_ps_open_inner_exclusion \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-open-inner-exclusion.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-open-inner-exclusion.json"
+              ).read_text())
+              assert r["selected_count"]==16
+              assert r["scientific_certification"]=="unverified"
+              assert r["remaining_boundary_rows"]=="unverified"
+              print(problem,"original exact open-inner dominated selected rows:",
+                    r["rigorously_dominated_open_inner_indices"])
+              print(problem,"selected GT status",r["whole_reference_membership"])
+          PY
+      - name: Exclude exact last objective cap dominated source PS rows
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_original_ps_last_objective_cap \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-last-axis-cap.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              report=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-last-axis-cap.json"
+              ).read_text())
+              assert report["selected_decision_count"]==16
+              assert report["scientific_certification"]=="unverified"
+              assert report["boundary_or_remaining_membership"]=="unverified"
+              print(problem,"rigorously last-axis dominated selected indices:",
+                    report["provably_dominated_last_objective_rows"])
+          PY
+      - name: Prove original selected PS strict OFFRAY domination by full gzero PF curve
+        run: |
+          for problem in DTLZ5 DTLZ6; do
+            python -m scripts.audit.dtlz56_original_ps_gzero_offray \
+              --paired-bundle gt175-final-${problem}-M4-K1-paired.npz \
+              --report gt175-final-${problem}-M4-K1-gzero-offray.json
+          done
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for problem in ("DTLZ5","DTLZ6"):
+              r=json.loads(Path(
+                  f"gt175-final-{problem}-M4-K1-gzero-offray.json"
+              ).read_text())
+              assert r["selected_n"]==16
+              assert r["scientific_certification"]=="unverified"
+              assert r["all_unexcluded_membership"]=="unverified"
+              print(problem,"rigorous continuous gzero OFFRAY domination:",
+                    r["rigorously_gzero_offray_dominated_indices"])
+          PY
+      - name: Reclassify 5 inconclusive original DTLZ6 selected rows with tight exact Taylor
+        run: |
+          python -m scripts.audit.dtlz6_tight_selected_source \
+            --paired-bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+            --report gt175-final-DTLZ6-M4-K1-tight-taylor-membership.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path(
+              "gt175-final-DTLZ6-M4-K1-tight-taylor-membership.json"
+          ).read_text())
+          assert r["source_selected_n"]==16
+          assert r["scientific_certification"]=="unverified"
+          assert r["full_original_pf_completeness"]=="unverified"
+          assert r["finite_objective_F_alignment"]=="unverified"
+          print("DTLZ6 newly proved selected rows from exact Taylor:",
+                r["newly_proved_over_coarse_indices"])
+          print("DTLZ6 unverified selected rows under exact Taylor:",
+                r["still_unverified_indices"])
+          PY
+      - name: Prove original DTLZ6 selected strict offray dominated rows independently
+        run: |
+          python -m scripts.audit.dtlz6_selected_offray_search \
+            --paired-bundle gt175-final-DTLZ6-M4-K1-paired.npz \
+            --report gt175-final-DTLZ6-M4-K1-strict-offray-witnesses.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path(
+              "gt175-final-DTLZ6-M4-K1-strict-offray-witnesses.json"
+          ).read_text())
+          assert r["original_selected_n"]==16
+          assert r["target_indices"]==[6,7,10,11,12]
+          assert r["scientific_certification"]=="unverified"
+          assert r["full_front_or_indicator_quality"]=="unverified"
+          assert all(x["exact_rational_proof"] is not None
+              for x in r["rows"] if
+              x["conclusion"]=="rigorously_strictly_dominated")
+          print("Exact DTLZ6 strictly dominated selected rows:",
+                r["rigorously_dominated_indices"])
+          print("Still unverified selected rows:",
+                r["still_unverified_indices"])
+          PY
       - name: Validate complete source-bound output fields and summarize
         run: |
           python - <<'PY'
@@ -57,6 +433,7 @@ jobs:
               # This fixed M4/K1 original source sample is a regression
               # sentinel: an exact same-ray dominance witness is a
               # scientific failure even for tiny numerical improvements.
+              print("  strict off-ray witness rows:", [row["row"] for row in d.get("exact_off_ray_dominance_witnesses", [])])
               assert d["proven_dominated_decision_row_indices"] == [], (
                   d["problem"], d["proven_dominated_decision_row_indices"])
               assert d["experimental_reference_gate"] == (
@@ -99,11 +476,40 @@ jobs:
                   print("  additional irrational g support:",
                         d["dtlz6_irrational_g_support_ledger"]["counts"])
           PY
+      - name: Reject mathematically dominated original DTLZ6 GT rows
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path("gt175-final-DTLZ6-M4-K1-strict-offray-witnesses.json")
+          assert path.is_file(), "DTLZ6 mandatory exact offray evidence missing"
+          report=json.loads(path.read_text())
+          assert report["original_selected_n"]==16
+          assert report["target_indices"]==[6,7,10,11,12]
+          assert report["scientific_certification"]=="unverified"
+          rejected=report["rigorously_dominated_indices"]
+          print("Original DTLZ6 strictly dominated selected rows:",rejected)
+          assert rejected==[], ("DTLZ6",rejected)
+          PY
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: issue175-original-final-selected-16-point-paired-gt
           path: |
             gt175-final-*-paired.npz
             gt175-final-*-report.json
+            gt175-final-*-actual-patch-cover.json
+            gt175-final-*-multiresolution-cover.json
+            gt175-final-*-full-radial-face.json
+            gt175-final-*-second-support-actual.json
+            gt175-final-*-three-subset-union.json
+            gt175-final-*-second-surface-actual.json
+            gt175-final-*-two-surface-union.json
+            gt175-final-*-open-inner-exclusion.json
+            gt175-final-*-last-axis-cap.json
+            gt175-final-*-gzero-offray.json
+            gt175-final-DTLZ6-M4-K1-tight-taylor-membership.json
+            gt175-final-DTLZ6-M4-K1-strict-offray-witnesses.json
           if-no-files-found: error
           retention-days: 90

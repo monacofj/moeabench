@@ -1,0 +1,64 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 candidate 157 independent proof gated research selection (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz5_source157_proof_gated_refinement.py"
+      - "tests/unit/test_gt_dtlz5_source157_proof_gated_refinement_issue175.py"
+      - ".github/workflows/gt-dtlz5-source157-proof-gate-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-proof-gate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Verify reject/accept/abstain contract without actual solver
+        run: python -m pytest tests/unit/test_gt_dtlz5_source157_proof_gated_refinement_issue175.py -q
+      - name: Run original candidate-157 only with independent proof gate
+        run: |
+          python -m scripts.audit.dtlz5_source157_proof_gated_refinement \
+            --report gt175-DTLZ5-candidate157-proof-gate.json
+      - name: Assert rigorous proof is the only accepted selection
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from scripts.audit.dtlz56_tight_sine_global_pf import replay_tight_sine_global_pf
+          from fractions import Fraction
+          d=json.loads(Path("gt175-DTLZ5-candidate157-proof-gate.json").read_text())
+          assert d["accepted_attempt_index"]==1
+          assert len(d["attempts"])==2
+          assert d["attempts"][0]["status"]=="rigorously_dominated"
+          assert d["attempts"][1]["status"]=="rigorously_global_decision_image"
+          good=d["attempts"][1]
+          x=tuple(float.fromhex(v) for v in good["decision_hex"])
+          g=(Fraction.from_float(x[3])-Fraction(1,2))**2
+          assert replay_tight_sine_global_pf(x[:3], good["exact_pf_proof"],
+              g=g, problem="DTLZ5", k=1)
+          assert d["whole_gt_membership"]=="unverified"
+          assert d["finite_gt_coverage"]=="unverified"
+          assert d["scientific_certification"]=="unverified"
+          print("original dominated candidate rejected; revised exact PF proof replay passed")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue175-dtlz5-source157-proof-gate
+          path: gt175-DTLZ5-candidate157-proof-gate.json
+          if-no-files-found: error
+          retention-days: 90

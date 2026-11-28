@@ -1,0 +1,84 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 448-source exact proof reach research (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz5_pool_proof_reach.py"
+      - "scripts/audit/dtlz5_final_selection_trace.py"
+      - "tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py"
+      - "tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py"
+      - "tests/unit/test_gt_dtlz5_stratified_proof_only_maximin_issue175.py"
+      - ".github/workflows/gt-dtlz5-pool-proof-reach-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-source-proof-reach:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Check exact decision classifier without expensive sampler
+        run: python -m pytest tests/unit/test_gt_dtlz5_pool_proof_reach_issue175.py tests/unit/test_gt_dtlz5_proof_only_maximin_comparison_issue175.py tests/unit/test_gt_dtlz5_stratified_proof_only_maximin_issue175.py -q
+      - name: Run one unchanged original 448-source PS and independently classify
+        run: |
+          python -m scripts.audit.dtlz5_pool_proof_reach \
+            --report gt175-DTLZ5-M4K1-448-proof-reach.json
+      - name: Verify all source/selected rows and preserve conservative claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("gt175-DTLZ5-M4K1-448-proof-reach.json").read_text())
+          assert r["source_candidate_count"]==448
+          assert r["source_selection_count"]==16
+          assert sum(r["pool_counts"].values())==448
+          assert sum(r["selected_counts"].values())==16
+          assert r["current_proof_reach_not_complete_pf_oracle"] is True
+          assert r["scientific_certification"]=="unverified"
+          assert r["finite_gt_coverage"]=="unverified"
+          assert r["indicator_fitness"]=="unverified"
+          assert any(row["index"]==10 and row["status"]=="dominated"
+                     for row in r["selected_rows"])
+          print("full pool",r["pool_counts"])
+          print("selected",r["selected_counts"])
+          print("per-family",r["by_source_family"])
+          print("per-g",r["by_radial_stratum"])
+          print("per-face",r["by_angular_support"])
+          selected=r["proof_gated_maximin_comparison"]
+          assert selected["status"]=="observational_proved_only_maximin"
+          assert selected["first_four_anchors_unchanged"] is True
+          assert selected["selected_proof_statuses"]==["proved_pf"]*12
+          assert len(selected["proved_source_candidate_indices"])==12
+          assert selected["continuous_front_coverage"]=="unverified"
+          print("original selection",selected["original_selection"])
+          print("proof-only selection",selected["proof_gated_selection"])
+          print("proof-only indices",selected["proved_source_candidate_indices"])
+          stratified=r["low_g_stratified_proof_gated_comparison"]
+          assert stratified["status"]=="observational_proved_only_stratified_maximin"
+          assert stratified["selected_proof_statuses"]==["proved_pf"]*12
+          assert stratified["proof_gated_selection"]["positive_g_min"]<=1/16
+          assert stratified["first_four_anchors_unchanged"] is True
+          assert stratified["scientific_certification"]=="unverified"
+          print("low-g stratified",stratified["proof_gated_selection"])
+          print("low-g indices",stratified["proved_source_candidate_indices"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue175-dtlz5-448-pool-exact-proof-reach
+          path: gt175-DTLZ5-M4K1-448-proof-reach.json
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,71 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ6 448 original source mathematical proof reach (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz6_pool_proof_reach.py"
+      - "tests/unit/test_gt_dtlz6_pool_proof_reach_issue175.py"
+      - ".github/workflows/gt-dtlz6-pool-proof-reach-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dtlz6-original-source-proof-reach:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: '1'
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Check independent exact classifier without PS run
+        run: python -m pytest tests/unit/test_gt_dtlz6_pool_proof_reach_issue175.py -q
+      - name: Capture and classify one unchanged original DTLZ6 full source
+        run: |
+          python -m scripts.audit.dtlz6_pool_proof_reach \
+            --report gt175-DTLZ6-M4K1-448-proof-reach.json
+      - name: Check complete provenance and conservative claims
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path("gt175-DTLZ6-M4K1-448-proof-reach.json").read_text())
+          assert r["n_source_candidates"]==448
+          assert r["n_selected"]==16
+          assert sum(r["pool_counts"].values())==448
+          assert sum(r["selected_counts"].values())==16
+          assert all(sum(v.values())==n for v,n in zip(
+              [r["by_family"][name] for name in ("sobol","gaussian","gamma")],
+              (256,128,64)))
+          assert r["scientific_certification"]=="unverified"
+          assert r["continuous_front_coverage"]=="unverified"
+          assert r["indicator_fitness"]=="unverified"
+          c=r["counterfactual"]
+          assert c["scientific_certification"]=="unverified"
+          if c["status"]=="observational_proved_only_counterfactual":
+              assert c["all_nonanchor_exact_pf_members"] is True
+              assert c["finite_source_only_not_continuous_coverage"] is True
+              assert len(c["selected_proved_candidate_indices"])==12
+          print("proof reach",r["pool_counts"],r["selected_counts"])
+          print("candidate families",r["by_family"])
+          print("same-pool observations",c)
+          print("unverified selected",[
+              x["index"] for x in r["selected_rows"]
+              if x["status"]=="unverified"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: issue175-dtlz6-448-source-proof-reach
+          path: gt175-DTLZ6-M4K1-448-proof-reach.json
+          if-no-files-found: error
+          retention-days: 90

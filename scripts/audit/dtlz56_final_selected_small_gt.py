@@ -140,6 +140,31 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
         entry["row"] for entry in theoretical["rows"]
         if entry["status"] == "symbolic_decision_dominated"
     ]
+    # New *additive* strict off-ray witness for an exact archived decision
+    # identified after the PR #210 active-face repair. Do not generalize
+    # its proof to nearby floats or other source rows.
+    strict_off_ray = []
+    if problem == "DTLZ5" and m == 4 and k == 1:
+        from .dtlz5_row10_exact_dominance import (
+            SOURCE_ROW_10, archived_row10_witness,
+            certify_strict_dtlz5_m4_dominator,
+        )
+        for row_index, decision in enumerate(x):
+            if (tuple(float(v) for v in decision) ==
+                    SOURCE_ROW_10 and
+                    theoretical["rows"][row_index]["status"] !=
+                    "symbolic_decision_global_pf"):
+                certificate = certify_strict_dtlz5_m4_dominator(
+                    decision, archived_row10_witness(),
+                )
+                if certificate["conclusion"] == "rigorously_strictly_dominated":
+                    strict_off_ray.append({
+                        "row": row_index,
+                        "certificate": certificate,
+                    })
+    proven_dominated_rows = sorted(set(proven_dominated_rows) | {
+        entry["row"] for entry in strict_off_ray
+    })
     experimental_reference_gate = (
         "blocked_proven_dominated_decision"
         if proven_dominated_rows else "unverified_no_known_dominator"
@@ -188,6 +213,7 @@ def analyze_final_selected(decisions, objectives, *, problem, m, k,
             if irrational is not None else set())
         ),
         "proven_dominated_decision_row_indices":proven_dominated_rows,
+        "exact_off_ray_dominance_witnesses":strict_off_ray,
         "experimental_reference_gate":experimental_reference_gate,
         "dtlz6_irrational_g_support_ledger":irrational,
         "dtlz6_certified_pf_proximity":proximity,

@@ -3636,3 +3636,2464 @@ ledgers separately and also their
 **deduplicated row-index union**;
 unknown rows remain unknown.
 
+
+
+### Exact off-support strict dominance of the post-repair DTLZ5 selected row 10 (#175)
+
+**New negative mathematical certificate (research gate, pending source-bound CI).**
+The remaining previously `unverified` DTLZ5 original
+`M=4,K=1,n=16` final-selected decision (zero-based row 10) from
+the post-PR #210 source-bound sample has a constructive **strict global
+dominance witness**. This defeats an assumption that improving the
+positive-`g` support proofs alone will eventually establish validity
+of this sampled reference. The complete exact-IEEE-754 declaration is
+
+```python
+source = (0.1671198950208142, 0.999999658561122,
+          1.0, 0.6805481014263987)
+witness = (source[0] - 2**-31, source[1] + 2**-23,
+           source[2], source[3] - 2**-26)
+```
+
+The `witness` expression above denotes **rational** binary
+displacements of the exact source coordinates (not rounded Python
+floating-point subtraction). Both decisions lie strictly within their
+original variable bounds, and the witness has smaller radial
+`g=(x4-1/2)^2`. The witness's second position remains strictly **below
+one**: neither decision is snapped to an angular endpoint.
+
+For the original four-objective DTLZ5 equations, put
+`t1=pi*x1/2`,
+`ti=pi*(1+2*g*xi)/(4*(1+g))` for `i=2,3`, and `r=1+g`.
+The four objective values are exactly
+`r*(cos(t1)*cos(t2)*cos(t3), cos(t1)*cos(t2)*sin(t3),
+cos(t1)*sin(t2), sin(t1))`.
+
+The independent opt-in
+[`scripts/audit/dtlz5_row10_exact_dominance.py`](../scripts/audit/dtlz5_row10_exact_dominance.py)
+uses Machin rational enclosures of pi and outward **exact rational**
+alternating Taylor bounds: for `0<=t<=pi/2`,
+`S17(t)-t^19/19! <= sin(t) <= S17(t)` and
+`C20(t)-t^22/22! <= cos(t) <= C20(t)`.
+Sine monotonicity and cosine antitonicity transfer the pi interval
+to the angular intervals; all factors are nonnegative and their
+products are enclosed with exact Fraction arithmetic. For each
+objective, the exact lower bound of the source **exceeds** the exact
+upper bound of the witness. With 16 Machin terms, the rigorously
+positive lower differences are approximately
+`(1.3725e-9, 5.3947e-9, 2.2833e-9, 2.1258e-9)`.
+These decimal displays are *descriptive only*: the certificate stores
+lossless rational hex numerators and denominators, and its replay
+recomputes all four strict inequalities without trusting stored
+margins, the production evaluator, a scalarizer or hardware trig.
+
+Thus, **conditional on independently replaying the original row
+identity from the immutable paired PS/F sample**, the post-repair
+DTLZ5 final-selected reference is mathematically **blocked**, despite
+the previously deduplicated 15/16 positive global membership proofs.
+The remaining row is *not merely inconclusive*: its exact-real image
+is strictly dominated. The reference cannot be promoted to an
+accepted GT. The source-bound strict negative guard must reject it
+when integrated/replayed. This research proof by itself does not
+verify exact identity of the archived finite-precision F row, broader
+component coverage, any platform/environment gate, or scientific
+certification under ADR 0059. Do not change the historical sampler,
+accepted ADR, frozen baseline or regression test merely to make
+the new guard pass. Diagnose why the final greedy/maximin source
+includes a dominated decision, and repair the generation mechanism
+only after independent acceptance tests.
+
+
+### Diagnostic: Chebyshev source objective versus reconstructed PS objective (#209)
+
+To distinguish possible mechanisms of the remaining exact off-ray
+strict dominator, the opt-in
+[`dtlz5_final_selection_trace.py`](../scripts/audit/dtlz5_final_selection_trace.py)
+instruments a **single unchanged public** original DTLZ5
+`mop.ps(16)` call (`M=4,K=1`, all 448 original scalarizations).
+It captures each candidate's solver objective vector, bound
+`abs_gap`, active angular faces, numerical scalar `g`, original
+preference weights and reconstructed decision. Independently
+implemented original equations evaluate every reconstructed
+decision. The trace reports the differences, links selected
+decisions to source candidate indices and identifies whether the
+exact archived post-#210 row-10 decision is reproduced.
+
+The separate
+[`gt-dtlz5-selection-trace-175.yml`](../.github/workflows/gt-dtlz5-selection-trace-175.yml)
+archives an immutable JSON research report from the bounded source
+run. Its new unit tests mock the source and verify restoration of
+temporary instrumentation. No generator, scalarizer, calibration
+sidecar or historical regression is modified.
+
+The experiment is **numerical diagnosis**, not another exact global
+Pareto membership test: a discrepancy alone cannot prove causality,
+and a finite scalarization gap is insufficient for zero-gap Pareto
+membership. Even if solver and reconstructed objectives agree within
+floating-point resolution, the strict rational off-ray witness
+continues to block the sampled DTLZ5 GT. The source identity and
+negative scientific gate remain separate mandatory checks.
+
+
+### Observed source trace for exact dominated DTLZ5 row 10 (2026-11-26)
+
+The bounded source workflow
+[run #45872188991](https://github.com/monacofj/moeabench/actions/runs/45872188991)
+completed **successfully** with a single unchanged DTLZ5 M4 K1
+`ps(16)` invocation and all 448 original scalarizations.
+Its trace independently matched all 16 selected decisions against the
+source scalarizer/reconstruction calls, and the archived dominated
+zero-based row 10 was matched **exactly once** to Sobol candidate
+index **157**. For that candidate the original solver reported
+`abs_gap=1.00004e-7`, `nodes=60`,
+`g=0.032597616928677145`, active inner faces
+`[None,1]` and objective values approximately
+`(0.4738962191839601, 0.4979981983889374,
+0.722407265038879, 0.26796594886356484)`.
+
+Independent evaluation of the reconstructed exact output decision
+differed from the scalarizer objective array by
+`(5.55e-17,1.11e-16,1.11e-16,5.55e-17)`,
+and the **maximum among all 448 candidate objective discrepancies**
+was `2.78e-16`. Hence the earlier hypothesis that objective
+reconstruction discrepancy is the significant source of the
+proven positive off-ray dominance gap (~`1e-9`) is not supported
+by this experiment. The finite scalarization gap is a plausible
+root cause, but its actual causal role has **not** been proved:
+a certified absolute scalarization value gap does not imply exact
+Pareto membership, even if it is made smaller. A focused tolerance
+sensitivity probe and a mathematically sound positive-PF generation
+criterion are still required before changing production policy.
+
+The source-bound trace JSON was preserved as
+[artifact #15142679220](https://github.com/monacofj/moeabench/actions/runs/45872188991/artifacts/15142679220).
+The scientific negative acceptance remains failed on the original
+sampler, by design; this trace neither changes ADR 0059 nor
+certifies an entire GT.
+
+
+### Measured candidate-157 scalarization tolerance sensitivity (2026-11-26)
+
+A second bounded source-bound
+[CI run #45872476443](https://github.com/monacofj/moeabench/actions/runs/45872476443)
+reconstructed exactly the original seeded Sobol candidate **157**
+preference weights from source (all four weights matched bit-for-bit),
+then evaluated **only that** original Chebyshev scalarizer at three
+declared absolute tolerances; no 448-solve GT rerun or change to
+production. The source-bound output was saved in
+[artifact #15142169556](https://github.com/monacofj/moeabench/actions/runs/45872476443/artifacts/15142169556).
+
+| `abs_tol` | B&B nodes | returned `g` | exact support-face geometry |
+| --- | ---: | ---: | --- |
+| `1e-7` | 60 | 0.032597616928677145 | `x2<1, x3=1`; exact archived strictly dominated decision |
+| `1e-9` | 87 | 0.032597601473098994 | **`x2=x3=1`** exactly |
+| `1e-11` | 114 | 0.032597601854404384 | `x2<1, x3=1` exactly |
+
+For the original exact-real *decision image* in the middle
+`1e-9` case, the existing independent strict Taylor-sine
+support theorem proves **global Pareto membership**, replayed
+from the lossless binary decision declarations in new additive
+[unit tests](../tests/unit/test_gt_dtlz5_candidate157_exact_tolerance_proofs_issue175.py)
+and passed in
+[focused source-bound CI #45872718128](https://github.com/monacofj/moeabench/actions/runs/45872718128).
+The `1e-11` decision's off-face support pattern is ineligible
+for that sufficient theorem, and exact same-ray reduction does not
+apply because `x3=1`. It remains **unverified**; absence of either
+proof is not a valid positive or negative classification. The
+`1e-7` original remains **rigorously dominated** by the
+independent arbitrary-ray rational witness.
+
+These observations demonstrate nonmonotonic *mathematical
+certifiability of selected decision coordinates* under changing
+finite scalarization tolerance, despite monotonic declared
+absolute solver-error budgets. They do **not** establish that
+`1e-11` is dominated or that `1e-9` makes the entire 16-point
+selected reference adequate. A production remedy should
+use independent **pointwise Pareto validity acceptance** rather
+than treating any particular finite Chebyshev tolerance as an
+exact-Pareto-membership certificate. It must separately retain
+component coverage, feasible positive-g geometry and reproducible
+bounded cost. No historical baseline, existing regression test,
+public GT sampler or accepted ADR has been modified during
+these diagnostics.
+
+
+### Research-only exact proof-gated candidate selection prototype (#209)
+
+The first bounded candidate-level corrective protocol is implemented
+*outside production* as
+[`dtlz5_source157_proof_gated_refinement.py`](../scripts/audit/dtlz5_source157_proof_gated_refinement.py).
+For the original DTLZ5 M4 K1 Sobol preference candidate 157, it runs
+the unchanged source scalarizer at declared bounded tolerances and
+computes the **exact rational** radial `g` and all support conditions
+from the returned binary decision. The existing independent
+Taylor-sine global-membership theorem must return a strict positive
+exact proof margin, and its stored rational proof must independently
+replay. Only then is that specific *decision image* accepted into
+the prototype's candidate pool.
+
+The earlier exact off-ray dominator and general exact same-ray theorem
+are separate **negative** checks; any conflicting positive/negative
+proof raises an error rather than choosing a convenient status.
+Unproved or dominated candidates are not accepted, and an exhausted
+bounded attempt list returns `unverified_no_accepted_candidate`.
+No conclusion is inferred merely because Chebyshev's numerical
+absolute gap has become smaller.
+
+A dedicated [bounded CI workflow](../.github/workflows/gt-dtlz5-source157-proof-gate-175.yml)
+independently replays the accepted original equations on the genuine
+source ray and tests the fail-closed cases without full original
+GT sampling. This experiment is a **feasibility proof for a
+research-only acceptance protocol**, not a universal oracle:
+the current sufficient supporting-stratum theorem does not recognize
+all mathematically genuine positive-`g` Pareto regions, and
+an arbitrary finite number of lower tolerances cannot guarantee
+one will land exactly on a recognized boundary stratum.
+Consequently **the production generator, maximin selection, default
+tolerance and accepted ADR 0059 remain unchanged**, while final
+GT membership, reference coverage and indicator fitness remain
+`unverified`. A production repair needs general component-preserving
+accept/reject/abstain semantics with a scientifically justified
+oracle, demonstrated success rate and bounded cost before approval.
+
+
+### CI validation of research-only proof gate (2026-11-26)
+
+[GitHub Actions #45876374564](https://github.com/monacofj/moeabench/actions/runs/45876374564)
+completed the new bounded source-157 proof-gated workflow with **all
+scoped unit tests and proof-replay assertions passing**. The original
+production scalarizer with `abs_tol=1e-7` used 60 nodes and returned
+the already independently proven **strictly dominated** exact source
+decision. The research acceptance gate correctly **rejected** it.
+On its second attempt, `abs_tol=1e-9` used 87 nodes and returned
+a different decision whose exact-real objective image has a positive
+rational Taylor-sine global-Pareto support certificate. A separate
+CI process independently recomputed the exact `g` from the lossless
+hex decision coordinates and replayed every certificate field;
+the accepted attempt index was **1**. No further tolerance attempts
+were needed. The immutable JSON research output is available as
+[artifact #15144938582](https://github.com/monacofj/moeabench/actions/runs/45876374564/artifacts/15144938582).
+
+This **demonstrates that a proof-gated refinement can reject a
+known dominated candidate and accept an independently proved
+replacement for one fixed original source direction**. It does not
+demonstrate that the present supporting-stratum theorem will
+certify enough of the complete original DTLZ5/6 candidate pool,
+or establish GT coverage and indicator fitness. The existing
+production GT and source-bound final-sample scientific acceptance
+remain blocked. A general production remedy must preserve all
+true Pareto branches, handle mathematically valid but unproved
+points conservatively, and quantify both computational cost and
+coverage for realistic sampling budgets.
+
+
+### Original DTLZ5 M4 K1 source pool: exact proof reach (2026-11-26)
+
+The independent opt-in
+[`dtlz5_pool_proof_reach.py`](../scripts/audit/dtlz5_pool_proof_reach.py)
+executed the unchanged `ps(16)` exactly once, captured all 448 source
+candidate decisions and classified each **exact IEEE-754 dyadic
+decision image** using the existing symbolic support theorems,
+global tight-sine bounds, rational same-ray strict dominance, and
+the separate arbitrary-ray counterexample. Its new additive
+classifier/grouping tests and the entire bounded source-bound
+[CI run #45879534486](https://github.com/monacofj/moeabench/actions/runs/45879534486)
+passed. The exact-row source and classification JSON was retained
+as [artifact #15145777855](https://github.com/monacofj/moeabench/actions/runs/45879534486/artifacts/15145777855).
+
+**Across the full 448-source pool:** 430 mathematically global-PF
+decision images **proved** (95.98%), 1 mathematically **dominated**
+(the already identified original Sobol 157 source), and 17
+**unverified**. Source-family breakdown is Sobol (242 proved,
+1 dominated, 13 unverified), Gaussian (124 proved, 0 dominated,
+4 unverified), gamma (64 proved, 0 dominated, 0 unverified).
+By distance: exact `g=0` has 375 proved, while positive `g`
+has 55 proved, 1 dominated and 17 unverified. Thus this specific
+finite candidate pool contains genuine positive-`g` points with
+independent global-membership proofs. The current 16-point
+original final maximin selection has **15 proved PF, 1 dominated,
+0 unverified**. These results are theorem classifications of
+exact source decision images, conditional on independent
+evaluation/archival identity, not claims of entire GT adequacy.
+
+The 17 abstentions concentrate among small nonzero `g` candidates
+(14 for `0<g<=1/16` and 3 for `g>1/8`) and principally
+`x3=1` angular faces (14). A proof-only filter must not silently
+equate these 17 abstentions with dominated points; mathematical
+validity outside the present sufficient theorems is unresolved.
+The 430/448 source proof rate is encouraging for a research
+candidate pool, not a quantified statement of continuous-front
+component coverage, finite IGD/HV accuracy, or original DTLZ6
+behavior. No production sampler, accepted ADR, frozen baseline
+or historical regression test has been altered.
+
+An additional **observational** same-budget experiment in the
+same research module greedily selects 12 points only from the
+proved original source candidates while preserving the four
+original `g=0` anchors. It uses identical source-pool
+normalization for comparisons, records normalized nearest-neighbor
+geometry, objective spans and positive-`g` occupancy, and makes
+no claim that a finite maximin diversity score is a continuous
+front-covering proof. This selection remains strictly outside
+production until source-bound results and component adequacy
+are reviewed.
+
+
+### Proved-only maximin and explicitly stratified small-g source comparison
+
+[GitHub Actions #45879726840](https://github.com/monacofj/moeabench/actions/runs/45879726840)
+passed new additive research tests and an unchanged original
+DTLZ5 `ps(16)` source run. In an observational counterfactual,
+only candidates with independently replayable exact global-PF
+decision-image proofs were eligible for the 12 non-anchor places;
+the four original `g=0` anchors were fixed, and the same
+full-source objective range scales and greedy maximin distance
+objective were used for comparison. The source selected reference
+had 8 `g=0` and 8 positive-`g` rows, including one proved
+dominated row; the proof-gated counterfactual retained 8+8,
+no proved dominator, all 16 source rows proven globally Pareto
+members. Nearest-neighbor minimum changed
+`0.1752192283 -> 0.1766101540`, median was unchanged
+`0.2036436915`, and all four normalized spans remained `1`.
+However the smallest **positive sampled** `g` rose from
+`0.0325976169` (the dominated row) to `0.0930470228`.
+This source sample therefore does not automatically establish
+small-positive-`g` component representation.
+
+A follow-up [CI run #45879973365](https://github.com/monacofj/moeabench/actions/runs/45879973365)
+passed an additional **exploratory, explicitly stratified**
+counterfactual: before ordinary maximin selection, choose one
+independently proven candidate from the declared radial stratum
+`0<g<=1/16` using the maximum distance to the four original
+anchors; then fill the other 11 non-anchor places with unchanged
+greedy distances over the proved candidate pool. This preserved
+8 `g=0` + 8 positive-`g` rows, with the minimum positive
+`g=0.0060629953`. Every non-anchor row has an individual
+exact proof. The normalized nearest-neighbor minimum was
+`0.1752192283`, median `0.1993838215`, and spans were
+`(1, 0.9971492482, 1, 1)`. These are observational tradeoffs
+on one deterministic finite source pool, not a certified
+continuous-front coverage measure. The radial boundary `1/16`
+was explicitly chosen for this *research probe*, not adopted as
+a scientific acceptance threshold. Source results, candidate
+indices and metrics were preserved as
+[artifact #15147142356](https://github.com/monacofj/moeabench/actions/runs/45879973365/artifacts/15147142356).
+
+Both proof-only selectors are strictly outside production.
+The scientific acceptance of the unchanged original generator
+continues to **fail correctly**. Future development must
+justify a general component-sensitive coverage policy,
+independently verify the selected original PS/F rows, measure
+indicator fitness and reproduce results under governed
+environments before acceptance under ADR 0059.
+
+
+### Coverage gate: mathematical scope versus finite-source observational radius
+
+The next source-bound DTLZ6 diagnostic
+[`dtlz6_pool_proof_reach.py`](../scripts/audit/dtlz6_pool_proof_reach.py)
+classifies all 448 unchanged original M4/K1 `ps(16)`
+scalarization-source decisions by independent exact-real proof
+and compares the original 16-point selection with a counterfactual
+proved-only 16-point maximin selection. The four original g=0 anchors
+are retained, positive-g support is reported, and the experimental
+distance is the directed **finite pool** normalized covering radius
+
+```text
+R(P,S) = max_{p in P} min_{s in S} ||(p-s)/scale(P)||_2
+```
+
+where `P` consists only of source candidate objective vectors
+whose decision-image Pareto membership has been independently
+proved, and `S` is the tested 16-point objective reference.
+Using the SAME `P` and scales for both selectors makes this
+finite-source comparison reproducible; it does not measure,
+bound or certify coverage of the **continuous** original PF.
+
+In general, a genuine upper bound on continuous-front covering
+radius requires an independently proved continuous-covering bound
+`epsilon` for `P`: by the triangle inequality the tested
+selection would then have coverage at most `epsilon + R(P,S)`
+in the same geometry. Neither `epsilon` nor an accepted
+component-appropriate tolerance exists for this source pool.
+A small empirical `R(P,S)` is therefore not an ADR 0059
+quality pass. A radial interval such as `0<g<=1/16`
+is only an exploratory selection stratum, not a substitute
+for an analytic continuous-front component description.
+Do not compare experimental DTLZ5 and DTLZ6 normalized
+radii as though their underlying front measures were identical.
+
+DTLZ6's tenth-root radial `g` may be irrational even when
+all saved decision coordinates are exact dyadic floats. The
+positive-membership test must use rigorous outward rational
+tenth-root bounds, not the production floating-point radial
+value. Missing an exact supporting certificate leaves the
+row `unverified`; a numerical source-covering score never
+converts that status into a positive proof.
+
+
+### Exact source-pool proof reach and finite-source covering diagnostics: original DTLZ6 M4/K1
+
+The research-only source audit
+[`dtlz6_pool_proof_reach.py`](../scripts/audit/dtlz6_pool_proof_reach.py)
+ran one unchanged original DTLZ6 `ps(16)` source invocation
+(448 Chebyshev candidates), captured all reconstructed decisions,
+then classified each **exact binary decision image** conservatively.
+The `g=0` global-unit-radius theorem, rational-`g`
+support and the independent outward **integer tenth-root interval**
+global-PF theorem provide positive certificates; absence of any
+applicable theorem is always `unverified`, never an implicit
+negative dominance result or an approximate membership pass.
+
+The new independent, source-bound
+[CI #45883665074](https://github.com/monacofj/moeabench/actions/runs/45883665074)
+passed all additive unit tests, the actual 448-source capture,
+classification, counterfactual observations and result retention
+([artifact #15147319426](https://github.com/monacofj/moeabench/actions/runs/45883665074/artifacts/15147319426)).
+The observed full pool contained **413 exact mathematical
+PF-member proofs**, **0 proved dominated decisions** and
+**35 unverified** candidates. Its original final selection
+contained **11 proved PF members** and **5 unverified**
+(zero-based selected indices `[6,7,10,11,12]`).
+The source-family counts were Sobol 240 proved/16 unverified,
+Gaussian 113 proved/15 unverified, and gamma 60 proved/4
+unverified. Unverified does **not** imply dominated.
+
+A counterfactual research selector preserved the four original
+`g=0` anchors, selected twelve additional source candidates with
+individual exact positive PF proofs using the same normalized
+greedy maximin objective, and compared both 16-point
+references **against exactly the same finite set of 413 proved
+source objectives**. The empirical directed normalized pool
+covering radius was `0.2202018665534744` for the unchanged
+selection versus `0.15132096602167847` for the proved-only
+counterfactual (~31.3% smaller). The counterfactual selected
+ten positive-`g` source candidates in addition to the anchors.
+The counterfactual sample has a sound *pointwise* mathematical
+membership basis but these numbers are **not** a continuous
+front Hausdorff/covering bound, certified indicator fitness,
+or a claim that all nondegenerate original DTLZ6 components
+are represented adequately.
+
+This evidence complements the original DTLZ5 source-pool
+430-proved/1-dominated/17-unverified research result.
+Both comparisons are for original `M=4,K=1,n=16`,
+not arbitrary M/K/n or an accepted production change.
+The existing public samplers, baseline/regression guards and
+ADR 0059 remain untouched. Full scientific GT acceptance
+still requires exact source/finite-F alignment, continuous
+component bounds, reference quality/indicator suitability,
+and approved environment/provenance replay.
+
+
+### Exact continuous coverage bound for the degenerate g=0 component (DTLZ5/DTLZ6)
+
+For the **original M=4, K=1** DTLZ5 and DTLZ6 problems, every
+decision with exact `g=0` maps to the same one-dimensional
+unit-sphere curve. The last objective is `sin(theta)` and the
+first three objectives are `cos(theta) v`, where
+`theta=pi*x1/2`, `v` is the fixed nonnegative unit vector
+determined by the original inner angles `pi/4`, and
+`v` is orthogonal to the last-axis basis vector. At exact
+`g=0`, the original inner-position variables do not affect `v`.
+
+Given any subset of reference decisions whose **exact** binary
+tail coordinates imply `g=0`, sort their exact dyadic first
+coordinates `0=a0<a1<...<ar=1`, and let
+`Delta=max(a[i+1]-a[i])`. Every point on the complete
+continuous `g=0` curve is at most a half-gap from an
+anchor in `x1`. The Euclidean chord between unit vectors
+is at most their angular separation. Thus
+
+```text
+sup_(f in PF_g=0) min_(s in reference) ||f-s||_2
+    <= (pi/4) * Delta
+    <  (pi_upper/4) * Delta,
+```
+
+where the upper bound on `pi` is an **exact rational Machin
+enclosure** and `Delta` is computed from the exact IEEE-754
+dyadic anchor values. The bound is **raw objective-space
+Euclidean distance**, not an observed source-pool covering
+radius. For the four original `x1=(0,1/3,2/3,1)` float
+anchors, the resulting upper bound is approximately
+`0.2617994`; exact dyadic spacing, rather than idealized
+rational thirds, is used in the actual certificate.
+
+The opt-in
+[`dtlz56_gzero_continuous_cover.py`](../scripts/audit/dtlz56_gzero_continuous_cover.py)
+recomputes the rational bound and has an independently replayable
+strict proof record, using only exact Fraction operations.
+A missing endpoint, invalid decision, forged bound, wrong
+problem, or missing mathematical precondition fails closed.
+This theorem is an actual **continuous one-component
+covering upper bound**; it is independent of finite candidate-pool
+density and does **not** extend to the genuine positive-`g`
+Pareto strata or claim that the full PF is covered, that the
+archived finite-precision F equals the mathematical image
+exactly, or that any IGD/HV quality threshold is met.
+Any normalized-objective-space version additionally needs
+independently controlled coordinate scaling.
+
+
+#### Uniform-parameter mean distance on the same exact g=0 curve
+
+A second *component-only* mathematical consequence concerns the declared
+uniform `x1` parameter measure on the exact `g=0` curve. On each
+anchor interval of exact dyadic width `Delta_i`, the integral
+of the distance to the nearest angular anchor is bounded by
+`(pi/2) * Delta_i^2/4`. Therefore the mean raw Euclidean
+distance of the entire continuous curve to the reference obeys
+
+```text
+integral_(x1=0)^1 min_(s in reference) ||F_g=0(x1)-s||_2 dx1
+    <= (pi_upper/8) * sum_i (a[i+1]-a[i])^2.
+```
+
+The same independent exact-rational certificate now records this
+`uniform_x1_mean_raw_distance_upper` and rejects a tampered
+record on replay. For four evenly distributed nominal source anchors,
+the value is approximately `pi/24 = 0.130900`
+(with exact binary anchor coordinates and a rigorous upper bound
+in the implementation). This is **not** an IGD certificate for
+the entire DTLZ5/6 Pareto front: a global IGD-like mean requires
+a separately specified and justified probability measure on the
+full mixed-dimensional PF, while the present result assumes
+uniform `x1` only on the degenerate component.
+
+
+### Certified nondegenerate continuous Pareto patch for original DTLZ5 M4/K1
+
+An independently checkable **continuous positive-g subset** is now
+specified without inferring membership from finite scalarization gaps.
+For original DTLZ5 with `M=4,K=1`, consider the rectangle
+
+```text
+0 <= x1 <= 1/8,  x2 = x3 = 1,  1/2 <= t=x4 <= 3/4,
+g=(t-1/2)^2,  0 <= g <= 1/16.
+```
+
+This subset contains strictly positive-`g` interior decisions. The
+original sine-power supporting theorem with `p=2` proves **every
+point** of the entire rectangle's exact-real objective image belongs
+to the global original Pareto front, including the boundary `g=0`
+(by the unit-radius theorem). Indeed, write `r=1+g`,
+`c=r*sin(pi*x1/2)`. Uniformly on the rectangle,
+
+```text
+c² <= ((17/16) * pi_upper/16)² < 1 - 2/pi_lower.
+```
+
+Both strict sides are compared using EXACT rational Machin bounds,
+not sampled or floating-point approximations. This is a sufficient
+global-PF supporting inequality uniformly valid on the whole
+two-parameter patch.
+
+For a grid of exact dyadic coordinates along `x1` and `t`,
+let `dx` and `dt` denote the maximum successive gaps. The original
+spherical equations give conservative parameter-Lipschitz bounds
+`||dF/dx1|| <= (17/16)*pi/2` and
+`||dF/dt|| <= 1+pi/2`. The latter accounts for the radial
+term `g=(t-1/2)^2` and the two changing inner angles.
+Therefore the **continuous patch-to-synthetic-grid raw Euclidean
+covering** satisfies the rigorous inequality
+
+```text
+sup_(q in this patch) min_(s in exact grid) ||F(q)-F(s)||_2
+ <= ((17/16)*pi_upper/2)*(dx/2)
+    + (1+pi_upper/2)*(dt/2).
+```
+
+For the opt-in 3×3 dyadic grid
+`x1=(0,1/16,1/8)`,
+`t=(1/2,5/8,3/4)`, the right-hand side is about `0.213`
+under the raw objective Euclidean metric. Each of the six
+positive-`g` grid decision images is **separately** certified by
+the previously independent exact Taylor-sine theorem and replay,
+while the three `g=0` nodes follow from the global norm theorem.
+The result is recomputed by
+[`dtlz5_positive_g_patch_cover.py`](../scripts/audit/dtlz5_positive_g_patch_cover.py);
+independent additive unit tests check exact replay, grid refinement,
+forged records and invalid parameters.
+
+This is a **real continuous-front subset certificate**, unlike
+empirical nearest-source sampling, but it is deliberately **not**
+coverage of the full positive-`g` component or the actual
+production GT. The grid is synthetic; its exact-real mathematical
+objective images are not claimed to be identical to stored float
+`F` entries. Remaining work includes complete positive-`g`
+component classification, a finite reference projection strategy,
+indicator quality, numerical execution provenance and acceptance
+thresholds under ADR 0059. No accepted ADR, regression baseline or
+production sampler is changed by this opt-in proof.
+
+
+### Certified nondegenerate continuous Pareto patch for original DTLZ6 M4/K1
+
+The DTLZ5 patch argument also yields an independently certified
+**continuous positive-g subset** of original DTLZ6, using radial
+parameter `u=g` instead of direct decision-tail changes:
+`x4=u^10`, so the original tenth-root function has exactly
+`g=(u^10)^(1/10)=u` for nonnegative real `u`.
+On the rectangle
+`0<=x1<=1/8`, `x2=x3=1`, `0<=u<=1/4`,
+the supporting sine-power theorem with `p=2` proves
+global Pareto membership **uniformly** because
+
+```text
+((5/4)*pi_upper/16)^2 < 1 - 2/pi_lower.
+```
+
+The exact `g=0` boundary is a proven unit-radius PF curve;
+every positive-`u` interior point is a genuine positive-`g`
+global Pareto member. The original spherical objectives have
+uniform derivative bounds `||dF/dx1|| <= (5/4)*pi/2` and
+`||dF/du||<=1+pi/2` along this rectangle. Therefore a synthetic
+dyadic grid with maximum radial/angular gaps `du,dx` has
+a rigorous **continuous patch-to-grid raw Euclidean** upper bound
+
+```text
+((5/4)*pi_upper/2)*dx/2 + (1+pi_upper/2)*du/2.
+```
+
+The default 3×3 synthetic grid has
+`x1=(0,1/16,1/8)`, `u=(0,1/8,1/4)`, and
+each exact decision-tail coordinate is `u^10`.
+Six positive-`g` grid points are independently replayed
+using the integer tenth-root enclosure support certificate,
+while the three zero-radius points invoke the unit-radius theorem.
+The whole-patch theorem, Lipschitz bounds and replay record are
+implemented *outside production* in
+[`dtlz6_positive_g_patch_cover.py`](../scripts/audit/dtlz6_positive_g_patch_cover.py)
+with new additive tests. The continuous image is proven globally
+Pareto optimal, but the patch is only a *subset* of the full
+original DTLZ6 positive-`g` PF. The synthetic grid and derived
+covering bound are not the actual selected reference and do not
+constitute an IGD/IGD+/HV or full GT certificate.
+
+
+### Bridging a continuous positive-g patch to the actual original selected GT
+
+The independent opt-in
+[`dtlz5_patch_actual_source_cover.py`](../scripts/audit/dtlz5_patch_actual_source_cover.py)
+now replaces the **synthetic reference** in the patch coverage claim
+with the *actual sixteen decisions* obtained from the original
+source-bound paired DTLZ5 M4/K1 PS/F artifact. It does not alter that
+source, assume those sixteen decisions are all Pareto optimal, or
+require that any synthetic grid node be selected.
+
+For each of the nine exact decision-image patch-grid nodes `q_i`
+and each actual selected binary decision `s_j`, the independent
+original four-objective equations are enclosed with **outward
+exact-rational** Machin-pi and alternating sine/cosine Taylor bounds.
+These yield certified per-objective intervals for both nodes.
+For each pair, the sum of maximal interval-coordinate separations
+bounds `||F(q_i)-F(s_j)||_1`, and hence also the Euclidean distance.
+Taking the minimum such upper bound over all 16 actual reference rows
+at each grid node gives `D_i`, and the rigorous triangle inequality
+establishes the **restricted continuous patch-to-actual-selected-GT
+decision-image** coverage bound:
+
+```text
+sup_(q in certified continuous patch) min_(s in actual selected PS)
+       ||F(q)-F(s)||_2
+ <= Lx * dx/2 + Lt * dt/2 + max_(grid node i) D_i.
+```
+
+The first term is the previously certified *continuous patch to
+synthetic grid* bound, while the new second term accounts for the
+measured-but-certified **gap from every grid node to the actual
+sampled reference**. This is a genuine one-sided mathematically
+rigorous statement about *one continuous subset* and *one actual
+reference*, and does not rely on finite sampled source-pool density,
+ordinary floating-point distance or an arbitrary error margin.
+The JSON records all exact binary source decisions, digest,
+independent per-grid chosen row and exact rational bounds, and
+full replay recomputes the entire statement from source.
+
+The source-bound workflow computes this certificate **before**
+the unchanged correct negative acceptance gate rejects the
+known dominated DTLZ5 selected row 10. Thus a scientifically
+invalid global GT can still possess valid local continuous
+component coverage bounds. This result in no way asserts
+whole-PF coverage, global GT membership, exact saved finite F
+identity, full indicator adequacy, or ADR 0059 final acceptance.
+
+
+### Actual sampled DTLZ5 continuous patch: first source-bound exact result (2026-11-26)
+
+The source-bound workflow
+[CI #45889631355](https://github.com/monacofj/moeabench/actions/runs/45889631355)
+replayed a new independent, rigorous positive-`g` **continuous
+patch-to-actual-PS** bound for the original DTLZ5 M4/K1 n16
+sample. Its actual paired PS/F artifact has SHA256
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`.
+The exact rational bound on raw Euclidean distance of each
+point on the *previously defined continuous positive-`g` patch*
+to its closest objective image among the real sixteen selected
+source decisions is **0.43780881073152883** (decimal rendering
+of a rigorous rational upper). The independently replayed
+certificate uses exact binary source decisions, Machin/Taylor
+outward objective enclosures, an endpoint-safe nonnegative cosine
+interval, per-grid nearest actual-selected row and the continuous
+patch Lipschitz bridge. The scoped additive unit tests passed.
+The correctly failing DTLZ5 scientific acceptance guard still
+identified the rigorously dominated row 10, and the JSON proof
+and paired PS/F artifacts were preserved.
+
+The formal distinction is intentional: these sixteen selected
+points cover this **one** continuous region to the stated bound,
+yet one selected row is still mathematically dominated. **Neither
+this local component coverage nor a small numerical covering
+distance establishes whole GT validity or indicator fitness.**
+The separately selected positive-PF candidate references have
+not inherited this particular source-bound number.
+
+### DTLZ6 original selected source: exact irrational-radius patch bridge
+
+The companion
+[`dtlz6_patch_actual_source_cover.py`](../scripts/audit/dtlz6_patch_actual_source_cover.py)
+applies the same continuous patch-to-actual-selected-reference
+triangle inequality to original DTLZ6 M4/K1. The crucial
+difference is that each actual selected IEEE-754 tail coordinate
+may have an **irrational exact tenth root**. An independent
+exact-integer `rational_tenth_root_enclosure(bits=56)` gives
+rational `[g_low,g_high]`. For every inner original angle,
+the rational coefficient `c(g,x)=(1+2gx)/(4(1+g))`
+is monotone in `g`, since its derivative has sign `2x-1`.
+Therefore its extrema on the certified radial enclosure occur
+at the endpoints. Monotonic sine/cosine and outward Machin/Taylor
+rational bounds yield **exact objective-coordinate intervals**
+for every actual selected decision, including `x1=1` where
+a Taylor lower cosine bound is legitimately clamped to zero.
+
+The maximum of per-grid minimum rigorously upper-bounded L1
+source distances, plus the previously proved continuous patch
+Lipschitz bound, is a one-sided **mathematical Euclidean**
+upper bound for the complete declared continuous positive-`g`
+patch relative to the actual selected PS. It does not require
+source decisions to lie on that specific patch or depend on
+numerical alignment tolerances. New additive exact replay,
+forgery, tenth-root and endpoint tests and source-bound CI have
+been added. The result is *not* whole positive-`g` component
+coverage, an assertion about archived rounded F bytes, or
+whole GT scientific acceptance.
+
+
+### Validated actual original DTLZ6 positive-g patch coverage (2026-11-26)
+
+The new irrational-tenth-root interval bridge was independently
+executed against the **actual original M4/K1 n16 selected PS/F**
+in [source-bound CI #45889917080](https://github.com/monacofj/moeabench/actions/runs/45889917080).
+The dedicated additive DTLZ6 source-bridge unit tests passed,
+including distinct irrational radial enclosures, exact endpoint
+handling, invalid inputs, forged certificate replay and exact grid
+nodes. Its actual paired artifact digest was
+
+```text
+e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795
+```
+
+For the **previously declared continuous DTLZ6 M4/K1 patch**
+`0<=x1<=1/8, x2=x3=1, 0<=u=g<=1/4, x4=u^10`,
+the exact rational analysis proves the entire patch is
+covered by the objective images of the **actual sixteen selected
+source decisions** with raw Euclidean distance at most
+**0.5036501758766639** (decimal rendering of a rigorous rational
+upper). The bound includes the exact patch-to-grid Lipschitz term
+and all nine grid-to-actual-reference rational interval L1 terms.
+It does not assume the 16 selected decisions are all Pareto
+members; five remain unverified under the available theorems.
+
+The same run reverified the DTLZ5 actual-source positive-g patch
+upper **0.43780881073152883** and the unchanged rigorously dominated
+source decision row 10. Both paired PS/F bundles, JSON
+source-bound result reports and the two newly replayed exact
+patch-to-actual-source certificates were preserved together in
+[artifact #15149984539](https://github.com/monacofj/moeabench/actions/runs/45889917080/artifacts/15149984539).
+The final scientific negative acceptance assertion deliberately
+failed **after** both positive subset checks had passed.
+No archived F exactness, full positive-g component coverage,
+whole-PF Hausdorff/IGD/IGD+/HV quality or final GT acceptance
+is implied. Research-only changes have not modified production,
+accepted ADRs, historic regression tests or frozen baselines.
+
+
+### Nested-grid exact covering sensitivity on actual selected original PS (2026-11-26)
+
+The independent opt-in
+[`dtlz56_patch_actual_multiresolution.py`](../scripts/audit/dtlz56_patch_actual_multiresolution.py)
+holds each unchanged original DTLZ5/DTLZ6 `M=4,K=1,n=16`
+paired PS fixed and independently replays the previously proved
+restricted continuous positive-`g` patch-to-actual-reference
+certificates using nested **3×3** and **5×5** exact dyadic
+auxiliary grids. Each resulting upper bound is a rational
+inequality about the *same* continuous subset and *same*
+actual selected decision images. Taking the **minimum** of
+the two rigorous bounds remains a rigorous upper bound;
+the method does not assume monotonic bounds under mesh
+refinement.
+
+[Source-bound CI #45891263978](https://github.com/monacofj/moeabench/actions/runs/45891263978)
+passed all newly added focused tests, independently recomputed
+and replayed both mesh resolutions for each original problem,
+and preserved both PS/F pairs and all exact JSON certificates
+in [artifact #15151333105](https://github.com/monacofj/moeabench/actions/runs/45891263978/artifacts/15151333105)
+(ZIP SHA256
+`a8bcbe00f6f5713bd6206a34b60c39203fd511a65a2a5bd5e05aa6cda1537668`).
+
+| Original M4/K1 n16 | 3×3 continuum-to-grid | 3×3 grid-to-actual | 3×3 total | 5×5 continuum-to-grid | 5×5 grid-to-actual | 5×5 total |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.2128301172 | 0.2249786935 | 0.4378088107 | 0.1064150586 | 0.2249786935 | **0.3313937521** |
+| DTLZ6 | 0.2220340019 | 0.2816161739 | 0.5036501759 | 0.1110170010 | 0.3499557024 | **0.4609727034** |
+
+Each decimal in the table is a descriptive rendering of an
+**exactly recorded rational upper bound**; the on-disk
+certificate contains its original integer numerator and
+denominator. DTLZ5's finer grid lowers the upper bound by
+about 24.3%. DTLZ6's finer grid lowers it by about 8.5%:
+although its interpolation term halves, its *largest
+grid-to-source distance upper* increases. This is expected
+when a refined grid samples a less-well-represented region;
+a finer auxiliary mesh alone does not certify tighter
+actual-source geometry monotonically.
+
+The DTLZ5 paired source bundle SHA256 is
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 bundle SHA256 in this source-bound rerun is
+`d4dd6e5da6f9e9c1b9dda3fc0788d75382a56ed8f54adde1ca60ff8615cc6c78`.
+A differing compressed NPZ byte digest across runs does
+not by itself establish a decision-matrix difference;
+compare lossless decision rows or a canonical member digest
+before making any such claim.
+
+The unchanged original DTLZ5 sampled GT remains
+**scientifically rejected**, with the independently proved
+strictly dominated selected row 10. Both nested-grid bounds
+cover *only the declared continuous positive-`g` patches*;
+none establishes the entire original PF, pointwise
+membership of all source-selected reference decisions,
+an accepted IGD/IGD+/HV error or scientific acceptance
+under ADR 0059. No production code, accepted ADR, frozen
+baseline or existing regression test is modified.
+
+
+### Complete radial-range global PF support faces for original DTLZ5 and DTLZ6 M4/K1
+
+The previous positive-`g` rectangles had deliberately limited
+radial extents. An independent stronger exact theorem now covers
+**the full original feasible radial parameter range** on
+the same boundary angular face `x2=x3=1`, while retaining a
+nontrivial continuous `x1` interval. It is implemented in the
+research-only
+[`dtlz56_full_radial_support_face.py`](../scripts/audit/dtlz56_full_radial_support_face.py):
+
+* **DTLZ5:** `0<=x1<=1/4`, `x2=x3=1`, `0<=x4=t<=1`,
+  `g=(t-1/2)^2`. Both distinct decision-tail branches
+  `t<1/2` and `t>1/2` are included, and
+  **every** admissible original radial value `0<=g<=1/4`
+  is represented.
+* **DTLZ6:** `0<=x1<=3/16`, `x2=x3=1`,
+  `0<=u=g<=1`, `x4=u^10`. Every original radial
+  value `0<=g<=1` is represented exactly, with no
+  approximate real tenth-root evaluation in the uniform proof.
+
+For either problem let `rmax=5/4` (DTLZ5) or `2`
+(DTLZ6), and `xmax=1/4` or `3/16` respectively.
+At every **real** point of each two-dimensional patch,
+`c=(1+g)sin(pi*x1/2)` satisfies
+
+```text
+c² <= (rmax*pi_upper*xmax/2)² < 1-2/pi_lower.
+```
+
+The strict second inequality is checked with **exact rational**
+Machin enclosures. It directly invokes the independent
+global-Pareto sufficient sine-power support theorem (`p=2`)
+uniformly over the *entire* continuous surface.
+The original norm/spherical geometry also yields
+`||dF/dx1||<=rmax*pi/2` and
+`||dF/dradial||<=1+pi/2`, using `t` for DTLZ5 and
+`u=g` for DTLZ6. Therefore for exact rational tensor-grid
+parameter gaps `dx,dr`, the raw objective Euclidean
+distance from every point of the **whole supported surface**
+to the nearest exact grid decision image is at most
+
+```text
+rmax*pi_upper*dx/4 + (1+pi_upper/2)*dr/2.
+```
+
+An independent strict certificate/replayer records the exact
+support margin, grid endpoints, all 25 default 5×5 rational
+decision images, exact radial values, and the covering bound.
+Every nonzero-`g` grid node also receives a separately
+replayed exact rational DTLZ5 support proof or outward
+integer tenth-root DTLZ6 proof. The zero-radius nodes use
+the unit-radius theorem. The default decision grid is
+**synthetic** and its objective images are the exact real
+original equations, not rounded stored F.
+
+This is a substantial enlargement of mathematically characterized
+positive-`g` geometry, yet it covers only one angular
+support **face**; it does **not** prove that no other
+positive-`g` branches exist, their relative weights in
+indicator reference measures, entire continuous PF coverage
+by the existing source-selected GT, or scientific release
+acceptance. No production algorithm, accepted ADR, existing
+regression test or frozen baseline is modified.
+
+
+### Bridging the complete radial support face to original selected PS
+
+The separate opt-in
+[`dtlz56_full_radial_face_actual_source.py`](../scripts/audit/dtlz56_full_radial_face_actual_source.py)
+combines the new full-radial angular support-face theorem with
+the **actual original DTLZ5/6 M4/K1 n16 selected PS**. The
+complete DTLZ5 radial face includes `t=x4 in [0,1]`,
+`x1 in [0,1/4]`; the DTLZ6 radial face uses
+`x4=u^10`, `u=g in [0,1]` and `x1 in [0,3/16]`.
+Every point of these two continuous two-dimensional subsets
+is already independently proved globally Pareto optimal.
+
+For each of the 25 **exact rational** nodes on the declared
+full-radial 5×5 support-face grid, use the independent
+original-equation interval evaluators to compute strictly
+outward rational four-objective bounds for each grid node
+and each **actual source decision image**. The DTLZ6
+evaluator derives exact integer tenth-root bounds before
+propagating them through monotone angular coefficients and
+trigonometric Taylor/Machin intervals. For each grid node
+`q_i`, let `D_i` be the minimum over the 16 actual
+selected source decisions of the resulting *rigorous L1*
+upper bounds on `||F(q_i)-F(s_j)||_2`. Then the continuous
+full-radial support-face to actual selected-reference
+distance satisfies the exact rational bound
+
+```text
+sup_(q in certified complete-radial face)
+  min_(s in actual source PS) ||F(q)-F(s)||_2
+ <= certified_continuum_to_grid_L2
+    + max_i D_i.
+```
+
+The JSON proof records the actual selected decision bits,
+source digest, full mathematical face certificate, all per-grid
+nearest source row indices and rational margins. An independent
+replay reconstructs the complete statement and rejects
+different/forged source decisions. A source-bound CI step
+runs these certificates **before** the original DTLZ5
+negative scientific acceptance, which still must reject
+the mathematically dominated selected row 10.
+
+The intended improvement is **coverage of the complete radial
+range on one certified angular face**, rather than
+arbitrarily extending a local numerical observation to the
+whole original continuous front. The remaining angular
+support strata, objective F roundoff alignment, individual
+membership of all original selected rows, indicator suitability
+and ADR0059 GT certification are **not** proved. The module
+changes no production sampler, existing regressions or
+numerical stability baselines.
+
+
+### Source-bound results for complete radial-range support faces (2026-11-26)
+
+The independent source-bound
+[CI run #45892410392](https://github.com/monacofj/moeabench/actions/runs/45892410392)
+successfully regenerated both original DTLZ5/DTLZ6
+`M=4,K=1,n=16` selected PS/F references, passed every
+new additive full-radial-face proof unit test and **successfully
+replayed** complete rigorous rational continuous-support-face
+coverage certificates against the actual selected decision
+images. The original DTLZ5 strict dominated-row negative
+scientific acceptance **still failed intentionally afterward**.
+The original paired PS/F artifacts, source audit reports,
+prior local patch proofs and both new complete-radial-face
+proof records were preserved in
+[artifact #15152302187](https://github.com/monacofj/moeabench/actions/runs/45892410392/artifacts/15152302187),
+ZIP SHA256
+`91d83c974010d0f542e86df21c91ae4ff7b6bd18b744da6ce1665586b5487560`.
+
+| Complete-radial original M4/K1 support face | Continuous face-to-5×5 exact grid upper (raw L2) | Worst grid-node-to-actual PS upper (rational L1) | **Rigorous full face-to-original selected PS upper (raw L2)** |
+| --- | ---: | ---: | ---: |
+| DTLZ5: `0<=x1<=1/4, x2=x3=1, 0<=x4<=1` | 0.38270877236478773 | 0.22497869351873598 | **0.6076874658835237** |
+| DTLZ6: `0<=x1<=3/16, x2=x3=1, 0<=g=u<=1, x4=u^10` | 0.3949806186678729 | 0.5671665175563947 | **0.9621471362242676** |
+
+All displayed decimal quantities render exact recorded rational
+**upper** bounds, not floating acceptance thresholds. The
+DTLZ5 paired bundle digest was
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 paired bundle digest was
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`.
+The DTLZ6 certificate uses integer-derived rational
+outward tenth-root bounds on actual selected tail decisions.
+Both results include the **entire admissible original g-range
+on one angular support face**. Their raw upper bounds are
+larger than the earlier restricted-rectangle bounds because
+the present continuous domains are substantially larger.
+They do not establish remaining angular support-face or
+whole-PF coverage, positive membership of all selected
+decisions, aligned finite stored F, or IGD/IGD+/HV fitness.
+The DTLZ5 selected reference remains rigorously invalid
+because of its previously proved dominated row.
+
+The new exact-rational source-bound procedure is
+[`dtlz56_full_radial_face_actual_source.py`](../scripts/audit/dtlz56_full_radial_face_actual_source.py).
+No production sampler, accepted ADR, frozen baseline or
+preexisting regression test was changed.
+
+
+### A second independent full-radial positive-PF supporting curve (M4/K1)
+
+The already established exact
+[`dtlz56_generalized_positive_g_pf.py`](../scripts/audit/dtlz56_generalized_positive_g_pf.py)
+global-PF theorem covers an angular support stratum **distinct
+from** the previously examined `x2=x3=1` surface:
+`(x1,x2,x3)=(0,1,0)`. Its supporting objective is the
+**second**, rather than the first, and its sine power is
+`p=2`. The global norm and supporting-objective argument
+holds for **every** original admissible radial value:
+
+* DTLZ5: `0<=x4=t<=1`, `g=(t-1/2)^2`;
+  both branches and every `0<=g<=1/4`.
+* DTLZ6: `0<=u=g<=1`, `x4=u^10`;
+  every `0<=g<=1`.
+
+This is a complete-radial **one-dimensional** continuous
+global-PF decision-image curve, not a proof of all angular
+positive-`g` PF strata. The independent opt-in
+[`dtlz56_second_support_full_radial.py`](../scripts/audit/dtlz56_second_support_full_radial.py)
+replays the exact generalized supporting-objective proof for
+every exact-rational grid node (including zero radius) and
+certifies a continuous curve-to-grid raw Euclidean upper bound
+of `(1+pi_upper/2)*max_radial_grid_gap/2`, from original
+spherical derivative and `|dg/dt|<=1` (DTLZ5) or `g=u`
+(DTLZ6). An adversarial test verifies a forged or incomplete
+proof fails closed. The nine-node default radial grid
+`(0,1/8,...,1)` has continuous upper approximately `0.160675`.
+This is a *separate PF supporting stratum* from the surface
+certified in previous source-bound experiments.
+
+The research-only
+[`dtlz56_second_support_actual_source.py`](../scripts/audit/dtlz56_second_support_actual_source.py)
+then connects this **entire** continuous curve to the actual
+16-point original selected PS: each grid node and selected
+source decision is evaluated with rigorous outward exact
+rational original-equation intervals (DTLZ6 uses exact
+integer tenth-root enclosures); the worst nearest-selected
+L1 interval distance upper plus the continuum-to-grid L2
+upper gives a **mathematically rigorous** raw Euclidean
+curve-to-actual-source upper. It records all exact decisions,
+the paired source digest and independently replayable
+per-node rational bounds. New additive tests and a
+source-bound CI step verify the assertions **before** the
+unchanged negative scientific DTLZ5 acceptance check.
+Neither the curve nor its covering upper certifies whole
+GT coverage or indicator fitness; other PF strata are
+still unverified, and preexisting regression tests, accepted
+ADRs, numerical baselines and production samplers remain
+untouched.
+
+
+### Validated actual-source covering of second full-radial support curve (2026-11-26)
+
+The new source-bound
+[CI run #45906521686](https://github.com/monacofj/moeabench/actions/runs/45906521686)
+successfully executed and independently replayed **both** rigorous
+continuous second-support curve-to-original-selected-PS bounds for
+the unchanged original `M=4,K=1,n=16` references. The fixed
+angular stratum is `(x1,x2,x3)=(0,1,0)` and the supporting
+objective is 2, independently proved globally Pareto optimal for
+the full admissible radial range by the generalized exact theorem.
+The result differs geometrically from the earlier full-radial
+two-dimensional support face `x2=x3=1`.
+
+| Actual original selected 16-point reference | Rigorous full second-support curve-to-original PS upper (raw Euclidean) | Original source paired PS/F SHA256 |
+| --- | ---: | --- |
+| DTLZ5 | **0.3702598693766107** | `603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7` |
+| DTLZ6 | **0.6162505890616926** | `e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795` |
+
+Each displayed decimal renders an independently replayed exact
+rational upper, combining continuous curve-to-exact-grid
+spherical-Lipschitz geometry and exact interval grid-to-nearest
+**actual selected source** decision images. For DTLZ6 the
+latter uses rigorous integer tenth-root enclosures, not
+rounded estimates of the radial function.
+
+Both paired PS/F files, the new second-support rational proof
+records, and the earlier source audits were preserved in
+[artifact #15158049343](https://github.com/monacofj/moeabench/actions/runs/45906521686/artifacts/15158049343),
+ZIP SHA256
+`58d5e672dd2e2fd6118f4120c103882d2a82e62025f0e7a6f0e867b0d28e3ac0`.
+The dedicated original-source step **passed**; the workflow
+then correctly **failed** on the unchanged independent strict
+DTLZ5 row-10-dominance scientific acceptance check, as required.
+The other 5 DTLZ6 original-selected source row memberships
+remain unverified, not proved dominated.
+
+These are rigorous **one-sided** bounds for a particular second
+continuous support stratum. They do not establish all
+remaining positive-g angular strata, a common full-front
+measure, normalized indicator quality, mathematically exact
+archived F alignment or whole-GT scientific acceptance.
+No accepted ADR, production generator, frozen baseline or
+preexisting regression test was modified.
+
+
+### Verified-source union theorem for three continuous original PF subsets
+
+The research-only
+[`dtlz56_three_subset_union_cover.py`](../scripts/audit/dtlz56_three_subset_union_cover.py)
+combines three **independently proved continuous Pareto subsets**
+of each original DTLZ5/DTLZ6 `M=4,K=1` objective image,
+using **exactly the same unchanged n16 selected PS**:
+
+1. The complete `g=0` continuous unit-radius curve,
+   whose source-bound raw Euclidean covering upper is
+   `pi_upper*max_x1_anchor_gap/4`.
+2. The first `x2=x3=1` global support **surface**
+   over its complete original feasible radial parameter
+   range and the previously proved `x1` interval.
+3. The second `(x1,x2,x3)=(0,1,0)` global support
+   **curve** over its complete original radial range,
+   whose supporting objective differs from the first.
+
+Let the three supported continuous objective subsets be
+`A0,A1,A2`, the *actual original selected decision-image*
+reference be `S`, and let `B_i` be the independently
+replayed exact-rational upper bound for
+`sup_{y in A_i} min_{s in S} ||y-s||_2`.
+Then the union obeys the **exact** bound
+
+```text
+sup_{y in A0 union A1 union A2}
+    min_{s in S} ||y-s||_2
+ <= max(B0,B1,B2).
+```
+
+The result is a genuine **continuous union** certificate,
+not a statistical coverage estimate. Before computing the
+maximum, the script independently replays the source-bound
+first-support-surface and second-support-curve certificates
+against the **same paired original PS**, checks canonical
+decision sequence SHA256 agreement, and independently
+constructs/replays the complete `g=0` curve proof from
+those exact source decision bits. The source CLI additionally
+requires identical immutable **paired PS/F archive SHA256**
+in both input reports. It preserves exact rational
+component and maximum bounds in a write-once research JSON
+record, with an explicit `unverified` global status.
+New additive adversarial tests reject altered source,
+forged upper and cross-problem certificates.
+
+**Scope:** the three certified subsets may intersect and
+do not constitute a proven decomposition or complete
+cover of the original global Pareto front. Therefore no
+whole-GT Hausdorff, IGD, IGD+, HV, reference component
+completeness or scientific release acceptance follows.
+The already known DTLZ5 dominated source decision remains
+a definitive whole-GT rejection. No approved ADR,
+production sampler, existing regression or frozen numerical
+baseline was changed.
+
+
+### Source-bound CI validation of three-component continuous PF union (2026-11-27)
+
+The new proof-carrying exact-rational **union** certificate
+successfully executed on the **original unchanged DTLZ5/DTLZ6
+M=4,K=1,n=16 paired PS/F** in
+[CI run #46013316457](https://github.com/monacofj/moeabench/actions/runs/46013316457).
+The additive tests, original source regeneration, each prior
+source-bound continuous-component certificate, and the **new
+union validation/replay step all passed** before the
+original scientific DTLZ5 negative gate correctly failed
+on the already independently proved dominated selected row 10.
+The earlier failed first union CI attempt was a source-code
+**syntax error during test collection**, corrected in the
+new research module only; it did not produce or invalidate
+scientific evidence.
+
+| Original selected PS (M4/K1 n16) | Continuous `g=0` curve raw L2 upper | Complete radial first-support face upper | Complete radial second-support curve upper | **Rigorous upper for the UNION of these three continuous subsets** |
+| --- | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.2617993877991494 | 0.6076874658835237 | 0.3702598693766107 | **0.6076874658835237** |
+| DTLZ6 | 0.2617993877991494 | 0.9621471362242676 | 0.6162505890616926 | **0.9621471362242676** |
+
+These decimals are descriptive only; the source-bound JSON
+contains the **exact rational** numerators and denominators,
+the canonical selected decision digest, independent complete
+component replay evidence and matching original paired
+artifact SHA256 records. Original source paired SHA256:
+DTLZ5 `603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+DTLZ6 `e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`.
+The immutable paired source and proof outputs are retained in
+[artifact #15206175231](https://github.com/monacofj/moeabench/actions/runs/46013316457/artifacts/15206175231),
+ZIP SHA256
+`5b23aa36b3c8cc692d04ef34a876388168772f2508c84a20e6dabc3f044c305f`.
+
+**Scope limitation:** no mathematical result yet establishes that
+this three-subset union exhausts the entire original Pareto
+front. In particular, the missing angular strata and global
+indicator measure/quality obligations remain unresolved;
+the union coverage figure is not the global GT covering
+radius. Original DTLZ5 remains scientifically invalid because
+a selected decision has a strict exact off-ray dominator;
+the five original DTLZ6 unproved rows remain **unverified**.
+No accepted ADR, production generator, frozen baseline or
+preexisting regression test was modified.
+
+
+### From second-support radial curve to a complete-radial 2D surface (2026-11-27)
+
+A stronger result for the original `M=4,K=1` problems
+extends the separately certified second-support
+`(x1,x2,x3)=(0,1,0)` **curve** to a genuine continuous
+**surface** with `x1` varying. Its angular support face is
+`x2=1,x3=0`, distinct from the previous `x2=x3=1`
+first-support surface.
+
+For **DTLZ5**, the surface uses `0<=x1<=1/4`,
+`0<=t=x4<=1`, `g=(t-1/2)^2` (both tail branches and
+the complete original `0<=g<=1/4`). For **DTLZ6**, it uses
+`0<=x1<=3/16`, `0<=u=g<=1`, `x4=u^10`
+(the entire original `0<=g<=1`).
+
+The independent sine-power global support theorem for
+**objective 2** has exponent `p=2`. Because the sufficient
+strict inequality depends only on `rmax`, `x1` and
+this exponent, the previously exact-rationally proved
+uniform margin
+`1-2/pi_lower-(rmax*pi_upper*xmax/2)^2 > 0`
+applies to this second angular support face as well.
+The original spherical derivative bound is also uniform
+in the choice of these inner boundary angles. Therefore
+an exact rational tensor grid with maximum parameter
+gaps `dx,dr` has the rigorous raw Euclidean
+continuous surface-to-grid upper
+
+```text
+rmax*pi_upper*dx/4 + (1+pi_upper/2)*dr/2.
+```
+
+Research-only
+[`dtlz56_second_support_full_radial_surface.py`](../scripts/audit/dtlz56_second_support_full_radial_surface.py)
+recomputes the first-face *geometric* upper bound but
+**independently replays the second-support objective 2**
+global-PF certificate at each exact synthetic grid node,
+using rational DTLZ5 support or DTLZ6 integer tenth-root
+intervals. The proof applies uniformly to **every**
+point in each continuous second-support surface, not
+only its 25 grid nodes. At `g=0`, the original unit-radius
+Pareto theorem applies. Missing or forged proof records
+fail closed.
+
+A further research-only
+[`dtlz56_second_support_surface_actual_source.py`](../scripts/audit/dtlz56_second_support_surface_actual_source.py)
+then combines the continuum-to-grid L2 upper with rigorous
+per-node nearest-**actual original selected PS** interval
+L1 uppers. It verifies the original paired source PS/F
+identity and independently replays the entire certificate.
+Unlike the previously certified second-support radial
+curve, this is a **two-dimensional** positive-`g`
+surface over the full original feasible radial range.
+
+The only accepted scientific conclusion is the exact
+Pareto membership and covering upper for this **declared
+surface**. No theorem says the union of the existing
+first- and second-support surfaces, the g=0 curve and
+their intersections exhausts the full original PF;
+whole-reference validity, the rigorously known dominated
+DTLZ5 source decision, five unverified DTLZ6 rows,
+archived finite F alignment, indicator quality and ADR0059
+final acceptance remain separate open obligations.
+No existing regression, production implementation,
+approved ADR or frozen baseline was modified.
+
+
+### Two full-radial continuous support surfaces: exact union acceptance boundary
+
+For original `M=4,K=1` DTLZ5 and DTLZ6, the source-bound
+mathematical proof now studies **two distinct two-dimensional
+continuous positive-g supporting surfaces** (and the full
+`g=0` curve), instead of a surface and only a second
+one-dimensional radial curve:
+
+- First-support surface `x2=x3=1`, supporting objective 1.
+- Second-support surface `x2=1,x3=0`, supporting
+  objective 2, including an entire previously certified
+  `x1=0` second-support radial curve.
+
+Each surface has `0<=x1<=1/4` for DTLZ5 or
+`0<=x1<=3/16` for DTLZ6 and covers the **entire**
+original feasible radial range (`0<=g<=1/4` or `0<=g<=1`
+respectively). The second support surface is proved
+uniformly by the original p=2 exact global sine-power
+criterion for objective 2, independently replayed at
+all synthetic grid decisions. Its conservative spherical
+Lipschitz bound is the same as that of the first
+surface because it is uniform over these inner boundary
+angle choices. New research-only modules
+[`dtlz56_second_support_full_radial_surface.py`](../scripts/audit/dtlz56_second_support_full_radial_surface.py)
+and
+[`dtlz56_second_support_surface_actual_source.py`](../scripts/audit/dtlz56_second_support_surface_actual_source.py)
+connect this **second continuous surface** to the
+unchanged original source-selected PS using exact-rational
+outward trigonometric intervals, including tenth-root
+enclosures for the actual DTLZ6 decision-tail values.
+
+A new
+[`dtlz56_two_surface_union_cover.py`](../scripts/audit/dtlz56_two_surface_union_cover.py)
+takes the rigorous maximum of the complete g=0 curve,
+first surface and second surface **to the identical
+original selected PS**. It independently replays
+the previous source-bound three-subset proof, the
+new second-surface proof, the exact decision sequence
+SHA256 and original paired artifact SHA256; records
+all exact rational component bounds and does not replace
+the original sampler or proof ledger. The earlier
+one-dimensional second-support curve is a strict subset
+of the new second-support surface and is no longer
+an independent top-level union member.
+
+The union remains a **declared subset** of the
+unknown full original Pareto front. This work does
+not assert that these surfaces exhaust all active
+angular support patterns, or that source-selected
+decision images are all Pareto-valid (DTLZ5 row 10
+is rigorously dominated), or claim a certified
+IGD/IGD+/HV reference measure, threshold or
+full-GT acceptance. No accepted ADR, production
+sampler, frozen baseline or existing regression
+test was changed.
+
+
+#### Exhaustiveness of the *currently available sufficient support patterns* at M=4
+
+The existing generalized sine-power support predicate has
+exactly **two** objective-support patterns at `M=4`:
+objective 1 with `x1=0,x2=x3=1), and objective 2 with
+`x1=0,x2=1,x3=0). The tight-sine theorem extends each
+pattern to a certified nonzero interval of `x1` with
+uniform radial restrictions derived above. These two
+patterns exhaust **only this particular sufficient
+global-support theorem**. They do **not** exhaust the
+entire unknown Pareto front: points not satisfying the
+patterns may be globally Pareto optimal, dominated, or
+unverified. An exhaustive *front* decomposition would
+require additional independently proved necessity or
+dominance exclusions across all remaining angular
+decisions, and is a separate scientific obligation.
+
+
+### Source-bound validation of TWO full-radial continuous support surfaces (2026-11-27)
+
+The source-bound
+[CI #46023262888](https://github.com/monacofj/moeabench/actions/runs/46023262888)
+successfully executed the new additive mathematical/unit tests,
+reproduced the unchanged original DTLZ5/DTLZ6
+`M=4,K=1,n=16` source PS/F, independently replayed the
+new **continuous second-support 2D full-radial surface**
+proof against each original selected PS, and independently
+replayed the newer **union of the complete g=0 curve and TWO
+different full-radial positive-PF surfaces** before the
+unchanged scientific GT acceptance correctly rejected
+the rigorously dominated DTLZ5 source row 10.
+The focused mathematical
+[CI #46023366574](https://github.com/monacofj/moeabench/actions/runs/46023366574)
+also passed **12 new tests** including forged-proof and
+changed-source rejection, with uniform exact second-support
+margins `0.12242308893394799` (DTLZ5) and
+`0.016401947906620893` (DTLZ6).
+
+The bounds, all derived with exact rational outward original
+objective enclosures, are:
+
+| Original `M=4,K=1,n=16` selected PS | Complete radial **first** support surface (raw L2 upper) | Complete radial **second** support surface (raw L2 upper) | Complete `g=0` curve (raw L2 upper) | **Union of both surfaces and g=0** (raw L2 upper) |
+| --- | ---: | ---: | ---: | ---: |
+| DTLZ5 | 0.6076874658835237 | **0.6076874658835237** | 0.2617993877991494 | **0.6076874658835237** |
+| DTLZ6 | 0.9621471362242676 | **0.895105839761027** | 0.2617993877991494 | **0.9621471362242676** |
+
+The first support surface and second support surface have
+distinct angular boundary choices, `x2=x3=1` (objective 1)
+versus `x2=1,x3=0` (objective 2). The latter strictly
+extends the previously certified one-dimensional
+second-support radial curve. Thus the *covered continuous
+region* has expanded although the maximum numerical
+upper bound for the union did not decrease: the previous
+first-support surface remains the limiting bound.
+This is a genuine continuous-subset improvement,
+not an increased confidence in whole-PF completeness.
+
+The complete PS/F, first and second surface exact proof
+JSON records, previous continuous curve and union proofs,
+and both new two-surface union records were preserved in
+[artifact #15210212911](https://github.com/monacofj/moeabench/actions/runs/46023262888/artifacts/15210212911),
+ZIP SHA256
+`6cc8dda5d5f35f8e0c73ff828d780901a0268d7ea1dcce35c1d09e579fda5c75`.
+DTLZ5 paired PS/F SHA256
+`603155b6782c12def81e0279b7b8a476e3e70eef588722bd3d5ec6e053d39fc7`;
+the DTLZ6 paired **ZIP/NPZ byte** SHA256 in this
+run was
+`d4dd6e5da6f9e9c1b9dda3fc0788d75382a56ed8f54adde1ca60ff8615cc6c78`,
+which should **not** be taken as evidence of different
+canonical decision rows compared with earlier runs.
+
+The first- and second-surface theorem cover the full
+original admissible radial interval but only two
+**sufficiently supported angular faces**. No proof
+establishes their union is the entire Pareto front.
+Finite source pointwise membership, exact stored F,
+full indicator suitability, continuous component
+necessity and ADR0059 final scientific approval remain
+independent unresolved obligations; DTLZ5's dominated
+selected row keeps the whole source reference rejected.
+No existing regression, production code, ADR or frozen
+baseline was modified.
+
+
+### Necessary angular-boundary condition for ALL original positive-g Pareto decisions
+
+A new **global negative result** substantially reduces the
+unresolved angular geometry. For any original DTLZ5 or
+DTLZ6 with `M>=3,K>=1`, every feasible decision
+`u=(x1,...,x_(M-1))` with `g>0` and **all**
+inner angular positions `0<x_i<1` for
+`i=2,...,M-1` is **rigorously dominated** by an
+independently constructed feasible decision. The original
+same-ray inversion lemma yields the proof directly, without
+a numerical search or a global optimizer:
+
+```text
+d_i = g*(2*x_i-1)/(1+g)
+q   = max_i |d_i|
+all 0<x_i<1 => q < g/(1+g)
+g_min = q/(1-q) < g
+g' = (g+g_min)/2
+x'_1=x_1
+x'_i = 1/2 + d_i*(1+g')/(2*g')  in [0,1]
+F(x',g') = ((1+g')/(1+g))*F(x,g)
+              with 0 < (1+g')/(1+g) < 1.
+```
+
+Because the objective vector has strictly positive norm
+`1+g` and all components are nonnegative, this is
+Pareto dominance with at least one strict improvement,
+not merely a change in an angular coordinate. Feasible
+original DTLZ5 tails realizing `g'` exist by the original
+radial range `[0,K/4]`; DTLZ6 tails similarly realize
+`g'` in `[0,K]`.
+
+Thus a **necessary** condition for a positive-`g`
+global Pareto decision is that **at least one inner
+position lies exactly at 0 or 1**. In original `M=4`,
+every positive-`g` Pareto decision must lie on at least
+one of the four angular boundary faces
+`x2=0`, `x2=1`, `x3=0`, `x3=1`.
+This excludes the entire positive-`g` open inner-angle
+region, including rational and irrational decision
+coordinates. It is a statement about the original
+continuous decision/objective geometry, not a finite
+sampling observation.
+
+The research-only
+[`dtlz56_open_inner_angle_exclusion.py`](../scripts/audit/dtlz56_open_inner_angle_exclusion.py)
+replays the existing independent exact-rational same-ray
+proof, records the strictly smaller radial witness and
+exact objective scale, and **fails closed** outside
+the open-inner domain (including `g=0` and boundary
+points). A new additive suite tests DTLZ5/DTLZ6,
+higher `M,K`, near-boundary cases and forged records;
+a separate focused CI workflow runs the theorem
+without regenerating source GTs.
+
+**Scientific limit:** being on one of the boundary faces
+is *necessary*, not *sufficient*. The newly proved
+first/second-support positive-`g` continuous surfaces
+are known global-PF subsets, but additional points on
+the four boundary faces may be Pareto, dominated or
+unverified. Further work must characterize these faces,
+their intersections and x1 extent before asserting
+whole-front completeness, indicator suitability or GT
+certification. The original DTLZ5 row-10 off-ray
+dominance result remains a separate mandatory
+scientific failure. No production, accepted ADR,
+frozen baseline or preexisting regression test changed.
+
+
+#### Applying the necessary angular-boundary theorem to original selected PS
+
+The additive research-only
+[`dtlz56_original_ps_open_inner_exclusion.py`](../scripts/audit/dtlz56_original_ps_open_inner_exclusion.py)
+applies the new **universal strict same-ray exclusion**
+to every original source-selected decision in the immutable
+paired `M=4,K=1,n=16` PS/F evidence. It uses the
+**exact IEEE-754 decision bits**, not approximate objective
+comparisons. Original DTLZ5 has `g>0` exactly iff
+`x4!=1/2`; original DTLZ6 has `g>0` exactly iff
+`x4>0`. Therefore the condition
+`0<x2<1 and 0<x3<1 and g>0`
+**rigorously proves that selected row strictly dominated**
+without a nonlinear solver. For DTLZ5, the exact rational
+same-ray witness is also fully constructed and replayed.
+For DTLZ6, the proof uses the *exact real* positive
+`g=x4^(1/10)`, which may be irrational: the symbolic
+witness with `g'=(g+gmin)/2`, exact
+`x4'=(g')^10` and the same unchanged-angle ratio
+`(1+g')/(1+g)<1` needs no unproved floating root.
+
+The new source-bound CI step regenerates both
+original n16 paired source PS/F bundles, writes a
+**write-once** source-digest-linked exclusion ledger,
+independently replays its exact decisions, and stores
+any proved dominated row indices. Other rows are
+**unverified**, never accepted merely because they
+lie on an angular boundary. The old strict off-ray
+DTLZ5 row-10 negative acceptance check is retained:
+the new necessary-condition screen is **additive**
+and cannot replace it. This may reveal additional
+known-bad source rows without requiring heavy
+numerical optimization. No old regression, accepted
+ADR, production sampler or historical baseline is
+changed.
+
+
+### Independent necessary last-objective cap for positive-g Pareto membership (2026-11-28)
+
+A second global **negative theorem** constrains the
+remaining original DTLZ5/DTLZ6 angular boundary regions.
+In the original nonnegative hyperspherical objectives,
+the **last** objective is exactly
+
+```text
+F_M=(1+g)*sin(pi*x1/2).
+```
+
+The original feasible `g=0,x1=1` axial decision,
+with arbitrary inner angular coordinates, has the
+exact-real objective image `(0,...,0,1)`.
+Consequently, ANY feasible original positive-`g`
+decision with
+`(1+g)*sin(pi*x1/2)>1` is **strictly globally
+dominated**, irrespective of **all** its inner
+angular positions. The exact endpoint `x1=1,g>0`
+is also strictly dominated, because
+`sin(pi/2)=1`, even when finite rational Taylor
+intervals cannot separate tiny `g>0`.
+
+This exclusion complements the earlier exact
+same-ray result: every original positive-`g`
+Pareto decision must simultaneously (i) have
+**at least one inner position at 0 or 1** and
+(ii) satisfy the **last-axis cap**
+`(1+g)*sin(pi*x1/2)<=1` (with `x1=1,g>0`
+excluded). The latter is **necessary, not
+sufficient**. For example, `x1>=3/4,g>=1/8`
+is a strictly dominated continuous angular wedge,
+since the exact rational bound
+`(1+1/8)*sin(3*pi/8)>1` has a positive margin.
+Both inequalities apply to any original `M>=2`
+and `K>=1` within the original feasible `g`
+ranges.
+
+The research-only module
+[`dtlz56_last_objective_cap_exclusion.py`](../scripts/audit/dtlz56_last_objective_cap_exclusion.py)
+uses outward rational Machin pi and alternating
+Taylor sine enclosures to prove strict positive
+separation from 1, with a separate symbolic
+`x1=1` endpoint proof. A declared exact
+rational `g_lower<=g` is sufficient, including
+a separately rigorous integer tenth-root lower
+bound for DTLZ6's possibly irrational radial
+function; the method does not approximate a
+real number and call it exact. Cases without
+strict proof **abstain**.
+
+An additive source-bound module
+[`dtlz56_original_ps_last_objective_cap.py`](../scripts/audit/dtlz56_original_ps_last_objective_cap.py)
+recomputes all **original selected binary PS
+decisions** (M4 K1 n16), derives DTLZ5
+`g=(tail-1/2)^2` exactly or DTLZ6
+`g_lower` by exact integer root enclosure,
+records any provably dominated rows, and
+independently replays a source-digest-linked
+write-once JSON ledger in the existing
+scientific original-source workflow. New additive
+theorem and source unit tests, a fast standalone
+CI workflow and the source-bound step reject
+forged records or wrong references. The
+earlier full off-ray DTLZ5 row-10 dominance
+gate remains independent, unchanged and
+mandatory: the last-axis cap must **not**
+replace a more complete scientific audit.
+
+**Scope:** these two exclusions shrink the
+possible complete positive-`g` frontier
+without claiming coverage or membership of
+the remaining boundary faces. Indicator
+fitness, exact stored finite F, unverified
+DTLZ6 source decisions and final ADR0059
+acceptance remain separate. No production
+sampler, accepted ADR, frozen baseline
+or preexisting regression test was modified.
+
+
+### CI validation: both independent necessary angular exclusions on original selected PS (2026-11-28)
+
+The focused last-objective unit/analytic [CI #46170730180](https://github.com/monacofj/moeabench/actions/runs/46170730180) passed **27 additive tests** and independently reproduced positive rational exclusion margin `0.0393644740751976` for `x1=3/4,g_lower=1/8`, in original DTLZ5/DTLZ6.
+
+The unchanged original selected `M=4,K=1,n=16` source-bound [CI #46170730211](https://github.com/monacofj/moeabench/actions/runs/46170730211) passed **100** scientific/additive tests, regenerated original paired PS/F, and independently executed the **two** new exact source screens before the correctly failing old strict DTLZ5 off-ray scientific acceptance:
+
+| Exclusion applied to original 16 selected decisions | DTLZ5 rigorously dominated selected indices | DTLZ6 rigorously dominated selected indices |
+| --- | --- | --- |
+| Positive-`g` all-inner-angles-open same-ray necessary condition | `[]` | `[]` |
+| Positive-`g` last-objective exceeding unit-axis cap | `[]` | `[]` |
+| Independent original off-ray strict dominance theorem | **`[10]`** | No corresponding dominated result from this source gate |
+
+The absence of exclusion from either necessary-condition screen
+means **only that the particular criterion did not prove
+dominance**, not that a selected row is globally Pareto
+optimal. DTLZ5's known row 10 remains **proven dominated** by
+a different *off-ray* feasible decision and the original
+selected GT remains scientifically rejected. DTLZ6 original
+selected source rows with unresolved global membership
+remain unverified.
+
+The proof JSON ledgers, original paired PS/F evidence,
+full-radial surface proofs and union certificates were
+archived in
+[artifact #15273816716](https://github.com/monacofj/moeabench/actions/runs/46170730211/artifacts/15273816716),
+ZIP SHA256
+`5b781d8b926088dd36827a69a6a13c29d3d636d10731dc0957b3320c36e4fc8e`.
+The source-bound workflow's final RED status is intentional,
+caused by the **preexisting scientifically correct
+acceptance gate**, after both new screens and source-bound
+proofs passed.
+
+**Next scientific obligation:** develop boundary-specific
+*necessary-and-sufficient* Pareto conditions (or a rigorous
+general off-ray dominance classifier) for configurations
+satisfying both coarse necessary conditions, then use that
+to decide complete GT membership and coverage. The two
+exclusion conditions should not be mistaken for a global
+Pareto oracle. No production changes, ADR changes,
+existing regression modifications or baseline updates
+were made in this research work.
+
+
+### A rigorous OFF-RAY dominator from the entire original g=0 Pareto curve
+
+The two previously established global negative conditions
+(open inner angles and last-axis cap) did not identify any
+additional **original selected** M4/K1 n16 source rows.
+Neither condition addresses the general off-ray domination
+which was independently proved for DTLZ5 original row 10.
+
+A new exact global negative theorem uses the **entire**
+continuous original DTLZ5/DTLZ6 `g=0` PF curve, without
+sampling or a numerical optimization oracle. For original
+`M=4,K=1`, its objective image is exactly
+
+```text
+F_zero(a)=(cos(a)/2, cos(a)/2, cos(a)/sqrt(2), sin(a)),
+a in [0,pi/2].
+```
+
+For any feasible original candidate with exact-real
+objective vector `y=(y1,y2,y3,c)`, `0<=c<=1`,
+choose the **feasible** point on that continuous curve
+whose last objective equals `c`. Its image is exactly
+
+```text
+z=(sqrt(1-c²)/2, sqrt(1-c²)/2,
+   sqrt((1-c²)/2), c).
+```
+
+Therefore `z_i<=y_i` for all four objectives is
+**equivalent** to the three purely algebraic inequalities
+
+```text
+4*y1² >= 1-c²,
+4*y2² >= 1-c²,
+2*y3² >= 1-c².
+```
+
+For original `g>0`, `||y||_2=1+g>1=||z||_2`,
+so at least one inequality is strict. Hence this
+criterion proves true **global, off-ray, strict**
+domination by a genuine original feasible g=0
+decision, for **any** angular boundary configuration.
+It is a sufficient strict-dominance theorem, not a
+sufficient Pareto-membership theorem.
+
+The research-only
+[`dtlz56_gzero_offray_dominance.py`](../scripts/audit/dtlz56_gzero_offray_dominance.py)
+proves the three inequalities using **outward exact-rational
+intervals of the original objective equations**, with
+Machin/Taylor sine and cosine enclosures, and
+integer tenth-root rational enclosures of potentially
+irrational original DTLZ6 radial `g`.
+For interval lower bounds `L_i` of the first three
+objective coordinates, and lower/upper `L_c,U_c`
+of the last coordinate, a **sound sufficient**
+certificate requires `U_c<=1`,
+`g>0` exactly, and
+
+```text
+4*L1² >= 1-Lc²,
+4*L2² >= 1-Lc²,
+2*L3² >= 1-Lc².
+```
+
+The same independent verifier deliberately **abstains**
+if the strict conclusion cannot be proved (including
+`g=0`, missing angular precision, last-objective cap
+violations and other cases). It never promotes an
+unexcluded decision to a proved Pareto member.
+
+An additive original-selected PS ledger
+[`dtlz56_original_ps_gzero_offray.py`](../scripts/audit/dtlz56_original_ps_gzero_offray.py)
+replays the inequality on all unchanged original
+selected M4/K1 n16 exact IEEE-754 decision rows,
+writes the original paired PS/F artifact SHA256,
+records any rigorously dominated indices and keeps
+all other rows `unverified`. New independent tests
+and a standalone fast CI check the mathematical
+criterion and fail-closed behavior. The source-bound
+CI uses this new theorem **before** the unchanged
+mandatory independent DTLZ5 row-10 scientific
+rejection. The actual source result should only
+be reported once CI has completed; the new theorem
+does not replace that independent rejection gate.
+No production sampler, accepted ADR, frozen
+baseline or preexisting regression test changed.
+
+
+### Validated exact g=0 continuous-curve off-ray source screen (2026-11-28)
+
+The independent focused
+[CI #46172599820](https://github.com/monacofj/moeabench/actions/runs/46172599820)
+**passed 16 new tests**, demonstrating strict
+global off-ray dominance by a feasible exact
+`g=0` curve point for independently constructed
+positive-`g` candidates and fail-closed abstention
+for proved globally Pareto-optimal positive-`g`
+angular stratum members. The test replayed the
+exact original rational squared-coordinate
+inequalities for both DTLZ5 and DTLZ6.
+
+Original unchanged selected
+`M=4,K=1,n=16` source-bound
+[CI #46172600009](https://github.com/monacofj/moeabench/actions/runs/46172600009)
+passed **116 mathematical/additive tests**
+and independently regenerated/replayed the
+source-bound off-ray curve ledgers.
+Its outcome for each selected source reference
+was:
+
+| Exact g=0 continuous-curve off-ray domination screen | Proved dominated selected indices |
+| --- | --- |
+| Original DTLZ5 n16 | `[]` |
+| Original DTLZ6 n16 | `[]` |
+
+This does **not** disprove the rigorously certified
+off-ray dominance of original DTLZ5 selected row 10.
+That separate exact witness decreases its objectives
+in a way not realized by a `g=0` point;
+indeed, this g=0 criterion's
+`4*y1² >= 1-c²` condition is false for
+that original row. As expected, the workflow
+correctly **failed its unchanged mandatory
+final DTLZ5 row-10 negative scientific acceptance**
+after every new source-bound strict screening
+step passed. The original PS/F and exact proof
+ledgers were preserved in
+[artifact #15274552687](https://github.com/monacofj/moeabench/actions/runs/46172600009/artifacts/15274552687),
+ZIP SHA256
+`cf5f233630324c5a6b67ddbb78721cff7641799a88c1ccf08b31d9f0ab9d5dd2`.
+
+**Research direction:** general necessary exclusions
+are useful to characterize continuous regions, but
+none of the new open-inner, last-axis and
+g=0 curve criteria has eliminated an additional
+selected source row for these exact original
+n16 test cases. The demonstrated DTLZ5
+defect requires off-ray domination by
+**positive-`g` feasible points**. Proceed with a
+sound global off-ray classifier for supported
+positive-`g` strata and assess a proof-gated
+replacement reference, without claiming that
+either constitutes a complete original PF
+or an accepted GT until ADR0059's conditions
+are met. The five still-unverified DTLZ6
+selected rows also need individual decisive
+classification. No accepted ADR, production
+sampler, frozen baseline or preexisting
+regression test has been modified.
+
+
+### Sharper original DTLZ6 irrational-radial membership proof (2026-11-28)
+
+The original DTLZ6 `M=4,K=1,n16` selected
+PS still contains rows whose positive-`g` global
+Pareto membership is **unverified**. The original
+integer tenth-root interval theorem was already
+rigorous, but conservatively used
+`sin(theta)<=theta` as its only sine upper
+bound. A new **research-only, opt-in** proof
+[`dtlz6_tight_irrational_pf.py`](../scripts/audit/dtlz6_tight_irrational_pf.py)
+combines the independently proven exact integer
+tenth-root enclosure `g<=g_upper` with the
+alternating Taylor upper bound
+
+```text
+sin(theta) <= theta-theta³/6+theta⁵/120
+  for theta in [0,pi/2], with
+theta_upper = pi_upper*x1/2.
+```
+
+The right-hand polynomial is increasing over
+the relevant interval, so it remains a valid
+upper when `theta` is replaced by
+`theta_upper`. For any established original
+inner-angle supporting-objective pattern of
+sine power `p>=2`, define
+
+```text
+c_upper = (1+g_upper) *
+  (theta_upper-theta_upper³/6+theta_upper⁵/120)
+strict_margin = 1-4/(p*pi_lower)-c_upper².
+```
+
+A **strictly positive exact rational margin**
+proves global Pareto membership of the
+exact-real original candidate decision image
+by the previously proved supporting-objective
+monotonicity theorem, including candidates
+whose radial tenth root is irrational.
+Using the same `g_upper` and `pi` enclosure,
+this cannot reject any case proved by the
+coarser `sin(theta)<=theta` inequality.
+Absence of proof is **unverified** and
+does not imply domination or PF acceptance.
+
+The companion
+[`dtlz6_tight_selected_source.py`](../scripts/audit/dtlz6_tight_selected_source.py)
+replays both old and new certificates against
+the **same exact IEEE-754 decision bits** of
+all originally selected PS rows, compares
+their independently proved membership,
+records newly proved indices and remaining
+unverified indices, and writes an immutable
+source-bound JSON evidence record.
+A newly added focused CI workflow runs
+this exact comparison after regenerating
+the **unchanged original** DTLZ6
+`M=4,K=1,n16` source PS/F; a separate fast
+CI checks adversarial tests and the analytical
+proof. The existing final source-bound workflow
+also records the result *before* the unchanged
+DTLZ5 dominated-row negative gate.
+
+This is explicitly **not** a production
+sampler change, a modification of previously
+accepted mathematical conclusions, a repair
+of a dominated DTLZ5 row, proof of the
+complete original PF, finite stored objective
+equality or ADR0059 GT indicator acceptance.
+No accepted ADR, frozen baseline or
+preexisting regression test was changed.
+
+
+#### Audit fidelity to the preexisting five DTLZ6 inconclusive rows
+
+The exact source ledger now **also independently invokes the
+existing historical DTLZ6 mathematical source classifier**
+(`classify_dtlz6_decision`, without changing it) on
+each unchanged original selected decision, retaining
+its status and basis. Alongside the new exact
+Taylor/radial support proof, the report records
+`historical_unverified_indices`,
+`resolved_historical_unverified_indices`, and
+`still_unverified_historical_indices`.
+The ledger verifies that a row historically proved
+globally PF-optimal is **never downgraded** by the
+new method and that each newly resolved row carries a
+replayed positive exact-rational membership proof.
+This prevents falsely reporting a changed approximation
+precision as an independently resolved case, and ties
+the improvement to precisely the originally inconclusive
+selected indices, previously `[6,7,10,11,12]`.
+The new tests verify exact partition of that historical
+unverified set. A new source-bound CI run must still
+prove how many of those indices the stronger theorem
+resolves on the actual originally selected PS.
+
+
+#### Exact failure-mode diagnosis of original DTLZ6 inconclusive selected rows
+
+The stronger rational tenth-root plus Taylor-sine theorem
+**passed** its focused mathematical
+[CI #46178006172](https://github.com/monacofj/moeabench/actions/runs/46178006172)
+with 11 new tests. The source-bound
+[CI #46178006290](https://github.com/monacofj/moeabench/actions/runs/46178006290)
+replayed its decision-image proof over the unchanged
+original DTLZ6 M4/K1 n16 selected PS with 127
+passing mathematical/source tests: newly proved
+historical selected indices `[]`, still
+unverified indices `[6,7,10,11,12]`.
+The old mandatory original DTLZ5 dominated row-10
+acceptance remained correctly RED after those
+independent positive checks. **Tightening the
+existing sufficient support inequality did not
+certify any of the historical five.**
+
+To direct further mathematics, the research-only
+[`dtlz6_selected_support_obstruction.py`](../scripts/audit/dtlz6_selected_support_obstruction.py)
+replays the original historical source classifier
+and new Taylor/root certificates on the exact
+same original selected PS. For each historically
+inconclusive row it records exact original binary
+decision bits, the rigorous g lower/upper interval,
+inner angular boundary identities, available
+supporting objective/exponent, and the exact
+rational strict support margin. The classification
+separates an absent **currently sufficient**
+angular support pattern from a supported pattern
+with **nonpositive proven margin**. In either
+case, the mathematically correct conclusion
+remains `unverified`: a failed sufficient theorem
+never implies Pareto domination. A new focused
+source-bound workflow independently regenerates
+the original DTLZ6 PS/F and archives a write-once
+per-row report after verifying the five expected
+historical indices; its actual results must not
+be cited before CI approval.
+
+This diagnostic is research evidence only; neither
+the original sampler, the current accepted ADR,
+the regression tests nor numerical baselines
+are modified. It does not create an alternative
+whole-front oracle, and DTLZ5's proved dominated
+original selected row stays a separate rejection
+of that GT.
+
+
+### Exact five-row DTLZ6 obstruction split and positive-g off-ray verification (2026-11-28)
+
+A new focused immutable original-source
+[CI #46179984030](https://github.com/monacofj/moeabench/actions/runs/46179984030)
+**PASSED** five additive diagnostic tests, independently
+regenerated the original `M=4,K=1,n=16` selected DTLZ6
+PS/F with byte-identical SHA256
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`,
+replayed the old and new exact mathematical source
+certificates and characterized **all five remaining
+unverified selected rows**:
+
+| Selected row | Exact original angular boundary | Feasible radial regime | Exact proof obstruction |
+| --- | --- | --- | --- |
+| 6 | `x2=x3=1`, first-support objective 1 | `g=1` | **Nonpositive** strict sine-power support margin |
+| 7 | `x2=1`, `0<x3<1` (near zero) | `0<g<1` | No currently proved sufficient angular support pattern |
+| 10 | `x2=1,x3=0`, second-support objective 2 | `g=1` | **Nonpositive** strict sine-power support margin |
+| 11 | `0<x2<1` (near 1), `x3=1` | `0<g<1` | No currently proved sufficient angular support pattern |
+| 12 | `x2=x3=1`, first-support objective 1 | `0<g<1` | **Nonpositive** strict sine-power support margin |
+
+The source-selected original binary decision coordinates,
+independent exact integer tenth-root outward intervals,
+all available supporting objective/power/margin statements
+and explicit `unverified` scientific status were saved in
+[artifact #15277251018](https://github.com/monacofj/moeabench/actions/runs/46179984030/artifacts/15277251018),
+ZIP SHA256
+`86299f0300c4c2a852519daf2cb8b172a0848a194ff959e39312d8465f16be6f`.
+
+The result shows why another round of floating precision
+or a tighter version of this *same* sufficient inequality
+is unlikely to resolve all five cases. The two distinct
+obstructions require different mathematical approaches:
+necessary-and-sufficient support analysis (or strict
+off-ray dominance) for the three rows with a nonpositive
+margin, and genuinely new angular boundary support
+arguments (or strict off-ray dominance) for the two
+near-boundary rows. **Neither an absent supporting
+pattern nor a nonpositive sufficient margin establishes
+domination or Pareto membership**.
+
+A further research-only
+[`dtlz6_exact_offray_witness.py`](../scripts/audit/dtlz6_exact_offray_witness.py)
+introduces a general DTLZ6 strict mathematical
+domination checker for any proposed original
+`M=4,K=1` feasible witness using outward
+Machin/Taylor objective intervals and **integer
+tenth-root enclosures** for both source and
+witness original decision bits. It requires
+strictly positive source-lower minus witness-upper
+for **every** objective coordinate, and otherwise
+abstains. The bounded and deterministic exploratory
+[`dtlz6_selected_offray_search.py`](../scripts/audit/dtlz6_selected_offray_search.py)
+uses numerical SLSQP *only to propose feasible
+candidate witnesses*, and independently replays
+the exact rational proof before allowing any
+dominated-source conclusion. The source-bound
+CI archives all proposed rigorous certificates,
+distinguishes proven dominated from unverified
+original row indices and never claims that a
+numerical optimizer exhausts the feasible Pareto
+front. Pending CI results may not be asserted
+as scientific evidence.
+
+No production sampler, approved ADR, regression
+test or frozen baseline was modified; the
+original DTLZ5 row 10 strictly dominated
+selected GT gate is retained unchanged.
+
+
+### NEW CONFIRMED DTLZ6 original selected strict off-ray dominators (2026-11-28)
+
+The **unchanged original DTLZ6 `M=4,K=1,n_points=16`**
+selected production PS **is scientifically INVALID**:
+two original selected decisions, **indices 7 and 11**,
+have **independently replayed exact-real feasible
+strict off-ray dominators**.
+
+The dedicated source-bound
+[CI #46180246011](https://github.com/monacofj/moeabench/actions/runs/46180246011)
+**PASSED** eight new additive verifier/search tests,
+regenerated the unchanged original selected
+PS/F (original paired SHA256
+`e8298e5f348275df6fe5ba58dbce2b7234b32a5a85f12ec15766ec0e008b0795`),
+and mathematically certified **all four source objective
+lower minus witness objective upper margins strictly
+positive** for **each** of rows **7** and **11**.
+All decision coordinates are interpreted as their
+exact original binary IEEE-754 rationals; the proof
+evaluates the **original DTLZ6 analytical equations**
+using outward exact rational Machin/Taylor trigonometric
+bounds and **rigorous integer tenth-root enclosures**
+for both potentially irrational source and feasible
+witness radial values.
+
+A deterministic bounded SLSQP numerical solver
+was used solely to **discover** candidate feasible
+witnesses. Its success/status and floating objective
+values have **no role whatsoever** in the
+mathematical acceptance. Each candidate must pass
+the separately recomputed
+[`dtlz6_exact_offray_witness.py`](../scripts/audit/dtlz6_exact_offray_witness.py)
+strict rational four-coordinate proof and replay,
+otherwise the report abstains. The original-source
+audit
+[`dtlz6_selected_offray_search.py`](../scripts/audit/dtlz6_selected_offray_search.py)
+recorded precisely:
+
+| Original DTLZ6 selected row | Independent strict off-ray membership result |
+| --- | --- |
+| **7** | **Rigorously strictly dominated** |
+| **11** | **Rigorously strictly dominated** |
+| 6, 10, 12 | **Unverified** (bounded numerical search is not a global dominance or membership oracle) |
+
+The original PS/F and source report, exact binary
+feasible dominator decisions and full independent
+outward rational proof records are preserved in
+[artifact #15276859964](https://github.com/monacofj/moeabench/actions/runs/46180246011/artifacts/15276859964),
+ZIP SHA256
+`291eba2f74bbd617ad0e39ccd49475ede93f3ed31f1d7b0167fc783c2a79c8f3`.
+
+**Scientific implication:** both original test reference
+samples are now **known invalid**: DTLZ5 original
+selected row 10 has its established independent
+strict off-ray dominator, and DTLZ6 original
+selected rows 7 and 11 have the two new independently
+verified strict off-ray dominators. This is a
+failure of individual required GT membership,
+regardless of continuous front coverage,
+IGD/IGD+/HV, finite stored F precision or the
+three still-unverified DTLZ6 selected rows.
+
+The original source-bound CI now includes a
+new additive DTLZ6 strict off-ray proof step
+*before* the unchanged mandatory DTLZ5
+negative scientific gate. A separate **additional**
+DTLZ6 scientific rejection step runs even after
+the expected DTLZ5 negative failure, independently
+requiring the DTLZ6 strict dominated selected
+indices to be **empty** for acceptance. The old
+DTLZ5 negative scientific check is **untouched**.
+Both fail-closed results and the source PS/F,
+all proof records and environment are archived
+before a research PR can claim the original GT
+was accepted. The new scientific bug is tracked
+separately as
+[issue #213](https://github.com/monacofj/moeabench/issues/213)
+and linked to the larger #175 and #176 efforts.
+
+**Repair remains outstanding**. Before changing
+production selection, ADR decisions or preexisting
+regression tests, review applicable accepted ADRs
+and explicitly seek authorization if an existing
+decision or regression needs modification.
+The previous proof-gated n16 counterfactual
+selection is exploratory and does not by itself
+constitute a validated original continuous PF,
+full GT or indicator suitability certificate.
+No production code, accepted ADR, existing
+regression tests or frozen numerical baseline
+was changed by this research discovery.
+
+
+#### Reproduced source scalarizer provenance of dominated DTLZ6 rows
+
+The independent research-only
+[`dtlz6_original_selected_scalarization_trace.py`](../scripts/audit/dtlz6_original_selected_scalarization_trace.py)
+wraps the **unchanged** original production
+`scalarized_candidate()` and
+`decision_vector()` for one original
+DTLZ6 M4/K1 n16 PS call, restores both
+functions in a `finally` block and traces
+every original scalarizer result, angular
+active-set flag, reconstructed decision and
+selected reference row. The focused
+[CI #46180704288](https://github.com/monacofj/moeabench/actions/runs/46180704288)
+**PASSED**, reproducing 448 candidates and
+the 16 selected rows. The two previously
+independently **proved strictly dominated**
+selected source rows have this precise original
+provenance:
+
+| Selected index | Original scalarizer pool index | Weight family | Original `angular_active_faces` (x2,x3) | Original selected decision near bound |
+| --- | ---: | --- | --- | --- |
+| **7** | **397** | Gamma | `[1,None]` | `x2=1`, `x3=0x1.48e188b289f83p-29` (interior extremely close to 0) |
+| **11** | **282** | Gaussian | `[None,1]` | `x2=0x1.fffffed018db9p-1` (interior extremely close to 1), `x3=1` |
+
+For each, the unchanged bounded scalarizer recorded
+`abs_gap=0x1.ad838f922b400p-24`.
+The original selected **decision sequence** SHA256
+is `2d651d3cf2b16bf38cab21a7c3b8643f645c515d675be4ae063b4a1917334fb0`
+(distinct from the original paired ZIP/NPZ byte
+SHA256). All original 448 reconstructed source
+provenance and the full 16-row selection map
+are archived in
+[artifact #15277122323](https://github.com/monacofj/moeabench/actions/runs/46180704288/artifacts/15277122323),
+ZIP SHA256
+`98335a5bd840648ecdb63f20e2f33ac9075b2bcc724cdcee7686cbbff409a869`.
+
+**Interpretation:** both invalid selected decisions
+are numerically very close to an angular boundary
+yet have `None` recorded for the corresponding
+active-set position. This is actionable original
+scalarization/reconstruction/selection provenance.
+It does **not** independently establish that
+the scalarization `abs_gap` itself caused
+the global domination, nor approve post-hoc
+rounding or snapping of near-boundary positions.
+The strict mathematical invalidity was already
+proved independently by feasible original
+off-ray witness certificates. Any production
+repair must be justified against ADR0059 and
+existing implementation/GT regression contracts
+before changing the accepted behavior.
+
+
+#### CI integration: independent mandatory DTLZ5 AND DTLZ6 negative scientific gates
+
+[Full source-bound CI #46180571473](https://github.com/monacofj/moeabench/actions/runs/46180571473)
+has independently confirmed the two known scientifically
+invalid original selected M4/K1 n16 references:
+
+* **135** research/additive mathematical/unit tests **PASSED**,
+  including the new exact DTLZ6 interval strict
+  witness/replay tests. Reproduction of original DTLZ5
+  and DTLZ6 source PS/F and source-bound continuous
+  coverage proofs **PASSED**.
+* The **old, unchanged mandatory DTLZ5 scientific gate**
+  correctly **FAILED** with `('DTLZ5',[10])`.
+* The **new independent mandatory DTLZ6 scientific gate**
+  correctly **FAILED** with `('DTLZ6',[7,11])`.
+* The new DTLZ6 exact off-ray mathematical proof step
+  executed **successfully before both scientific gates**.
+  The remaining selected DTLZ6 rows `[6,10,12]`
+  are still **unverified**, never approved simply because
+  the bounded witness search found no dominator.
+* The workflow archives the unchanged original
+  PS/F, original reports, supporting continuous
+  certificates and exact DTLZ6 off-ray feasible
+  witness decisions and rational proof records under
+  [artifact #15277227441](https://github.com/monacofj/moeabench/actions/runs/46180571473/artifacts/15277227441),
+  ZIP SHA256
+  `89660922399456a5482c6da4b4daf077ebde9760f12e9a9b63257559c751d5b4`.
+
+The overall CI result is intentionally **RED** because
+there are two **independently proved scientific defects**,
+not because the new source-bound research checks failed.
+The general unit-contract and stability-separation
+workflows for the same research changes **PASSED**.
+The original DTLZ5 gate was not edited; DTLZ6's
+acceptance condition was added as a distinct
+fail-closed check. No production generator, existing
+regression test, accepted ADR or historical numerical
+baseline was changed.
+
+Remaining scientific work is **production GT repair**,
+replay against the independently verified exact negative
+witnesses, full continuous PF/component coverage and
+finite IGD/IGD+/HV suitability. Until then **neither
+original DTLZ5 nor DTLZ6 n16 selected reference is
+acceptable**.
+
+
+### Joint proof-gated original DTLZ5/DTLZ6 n16 replacement review (2026-11-28)
+
+The two original `M=4,K=1,n=16` production
+reference selections are now **rigorously proved
+invalid**: original DTLZ5 selected index 10
+and original DTLZ6 selected indices 7 and 11
+are each globally strictly dominated by independently
+verified original feasible off-ray decisions.
+Their negative scientific acceptance gates must
+remain active until a real production repair
+passes fresh exact source-bound proof.
+
+The research-only
+[`dtlz56_paired_proof_gated_replacement.py`](../scripts/audit/dtlz56_paired_proof_gated_replacement.py)
+reuses the earlier **independently proved** exact
+original 448-candidate source-pool membership
+audits (DTLZ5 and DTLZ6), without modifying the
+sampler. It compares the **same sixteen-point
+budget**, retaining four original `g=0` anchors
+and selecting the remaining twelve decisions
+only from a subset already carrying rigorous
+*individual* Pareto-membership certificates.
+All candidate indices are recorded for independent
+source replay. For DTLZ5, both ordinary maximin
+and a low-positive-`g` stratified alternative
+are retained. For DTLZ6, normalized objective
+distance is evaluated on exactly the same
+independently proved 448-source subset for
+original and proposed references.
+
+An additive focused CI, new regression-free unit
+contract and an archived paired JSON report
+compare original selected known defects,
+exact source proof eligibility, source-pool
+normalized nearest-reference distance, radial
+stratum coverage and original anchor preservation.
+These reports explicitly distinguish:
+
+* **Individual membership**: every proposed selected
+  original decision must have a separately replayed
+  global PF certificate, including any positive-g
+  component; no merely optimized candidate qualifies.
+* **Finite-source coverage**: a maximin/covering
+  number on the original 448-source proved-PF
+  candidate subset is **observational**; it does
+  **not** bound the complete continuous Pareto
+  front, establish component completeness or prove
+  finite IGD/IGD+/HV adequacy.
+* **Scientific acceptance**: whole-PF/component
+  membership, source-bound environment/result
+  verification and indicator-specific tolerances
+  prescribed by ADR0059 remain **unverified**.
+  Therefore none of these alternatives is approved
+  as a new canonical GT or a repair to production
+  `mop.ps()` by this comparison alone.
+
+The original production generators, ADR0059 and
+other accepted ADRs, old regression tests and
+historical numerical baselines are **unchanged**.
+Any production correction must be separately
+reviewed against accepted ADR0006/0018/0056/0057/
+0059 and the known exact off-ray failures.
+
+
+#### CI result: paired original proof-gated finite-source alternatives
+
+The research-only paired
+[CI #46181475846](https://github.com/monacofj/moeabench/actions/runs/46181475846)
+**PASSED** the new additive test and independently
+regenerated both original `M=4,K=1`, n16/448
+source-pool proof-reach analyses. It constructed
+research-only alternatives retaining the four
+original g=0 anchors and choosing the other twelve
+decisions solely from **individually globally
+Pareto-proved original source candidates**.
+The entire alternative budgets therefore have
+individual membership certificates, including
+positive-g decisions, **without modifying** either
+original production sampler.
+
+Original 448-source pool proof reach remained:
+DTLZ5 **430 proved globally PF, 1 proved
+dominated, 17 unverified**; DTLZ6 **413 proved
+globally PF, 0 dominated under the historical
+coarse pool classifier, 35 unverified**.
+The newer independently certified off-ray
+dominators in DTLZ6 *selected* indices
+7 and 11 are additional negative evidence
+not automatically reflected in those older
+historical whole-pool status counts: a point
+that the original coarse classifier labelled
+`unverified` must not be read as Pareto-valid.
+
+Selected candidate-pool indices of the
+proof-gated alternatives (each preceded by the
+four original g=0 anchors) were:
+
+| Problem | Twelve original proved-PF source indices |
+| --- | --- |
+| DTLZ5 | `334,337,95,443,388,238,370,130,400,397,401,148` |
+| DTLZ6 | `288,415,396,379,382,410,116,157,388,158,362,339` |
+
+For original DTLZ6, normalized Euclidean
+finite-source covering radius **over the same
+independently proved source-PF subset**:
+original selected PS `0.2202018665534744`,
+proof-gated alternative PS
+`0.15132096602167844`;
+alternative/original ratio
+`0.6871920224387892` (~31.3% smaller).
+This is a controlled observational
+**finite 448-source subset comparison only**,
+not a continuous-front Hausdorff/IGD/IGD+/HV
+acceptance certificate. The DTLZ5 script
+also records both ordinary and explicit
+low-positive-g-stratified maximin selections
+and their original/alternative objective
+spacing observations. Full data and original
+configurations are archived in
+[artifact #15277452642](https://github.com/monacofj/moeabench/actions/runs/46181475846/artifacts/15277452642),
+ZIP SHA256
+`98a4cf2a3d4c7b73418691e2160f9ba2dc55c9f841a892d224f56289b209630e`.
+
+The paired result is an **actionable bounded
+replacement candidate** and demonstrates that
+individual GT membership can be repaired
+without simply deleting nondegenerate g>0
+components. It does **not** establish
+representation of every original PF component,
+quantitative coverage suitability for original
+2000/10000 calibration defaults, stable
+cross-platform generation or fitness for
+IGD/IGD+/HV. ADR0059's environment, result
+and finite-indicator thresholds remain
+unverified. Therefore neither original
+GT is repaired in production and no new
+canonical GT is scientifically accepted.
+The original DTLZ5 and DTLZ6 negative
+scientific gates remain mandatory.
+
+
+### Independent continuous-subset bounds for both proof-gated selected alternatives (2026-11-28)
+
+A research-only
+[`dtlz56_proof_gated_continuous_coverage.py`](../scripts/audit/dtlz56_proof_gated_continuous_coverage.py)
+now reconstructs the **unchanged original** DTLZ5/DTLZ6
+`M=4,K=1,n_points=16` source selections and their
+448 candidate decisions. It separately constructs
+the already documented same-budget, individually
+global-Pareto-proved alternatives from the original
+candidate pool, retaining the four original exact
+`g=0` anchors. For DTLZ5, the explicit
+low-positive-`g` stratified candidate is used;
+for DTLZ6, the source-normalized maximin selection
+must reproduce the earlier counterfactual indices
+exactly before any covering claim.
+
+To avoid conflating finite-source nearest-neighbor
+observations with continuous geometry, the new
+source-bound checker independently recomputes the
+preexisting **outward rational, one-sided raw Euclidean
+upper** from each of three **rigorously global-PF**
+continuous subsets to **each** selected reference:
+
+1. The complete original `g=0` Pareto curve.
+2. The first `x2=x3=1` full-admissible-radial
+   globally proved Pareto support surface.
+3. The second `x2=1,x3=0` full-admissible-radial
+   globally proved Pareto support surface.
+
+Each continuous-to-grid geometric Lipschitz bound
+is added to interval-arithmetic worst
+grid-to-nearest-actual-reference upper; the union
+of those three declared subsets inherits the
+maximum of the corresponding rigorous uppers.
+Original and alternative PS decisions, proofs,
+and immutable exact decision digests are retained
+separately; the original known negative membership
+indices `DTLZ5=[10]` and `DTLZ6=[7,11]`
+are not waived. An additive test and an independent
+CI workflow replay the calculation and persist
+the complete original/alternative mathematical
+proof JSON evidence without editing the original
+sampler or previously accepted regression tests.
+
+**Interpretation limitations:** a smaller
+*upper bound* need not imply a smaller actual
+covering radius (the upper may be conservative).
+Nor are these three declared continuous surfaces
+proved to exhaust the original full Pareto front;
+other positive-`g` angular configurations are
+unverified. Even a favorable three-subset
+comparison does **not** qualify the full
+GT, verify stored finite objective values or
+establish IGD/IGD+/HV scientific acceptance
+under ADR0059. A production change would require
+separate architecture, environment and regression
+review. The outcome of the new CI must be
+measured before claiming numerical bounds.
+
+
+#### Source-bound validation of continuous-subset coverage of proof-gated alternatives
+
+The independent
+[CI #46182104930](https://github.com/monacofj/moeabench/actions/runs/46182104930)
+**PASSED** the new additive mathematical test,
+independently rebuilt the unchanged original 448
+candidate pools and all four original/alternative
+selected n16 decision lists, and replayed outward
+**exact-rational one-sided raw Euclidean coverage
+uppers** for the three rigorously globally Pareto
+continuous subsets described above:
+
+| Problem and 16-point selected reference | Complete g=0 curve upper | First full-radial surface upper | Second full-radial surface upper | Union upper (max) |
+| --- | ---: | ---: | ---: | ---: |
+| Original DTLZ5, **scientifically invalid** | 0.2617993877991494 | 0.6076874658835237 | 0.6076874658835237 | **0.6076874658835237** |
+| Individually proved-only DTLZ5 counterfactual | 0.2617993877991494 | 0.6076874658835237 | 0.6076874658835237 | **0.6076874658835237** |
+| Original DTLZ6, **scientifically invalid** | 0.2617993877991494 | 0.9621471362242676 | 0.895105839761027 | **0.9621471362242676** |
+| Individually proved-only DTLZ6 counterfactual | 0.2617993877991494 | **0.7690892931746114** | **0.9645018150046094** | **0.9645018150046094** |
+
+All numbers are **certified upper bounds**, not
+measurements of exact minimal distances and not
+estimates of the entire mixed-angular original PF.
+In DTLZ6 the alternative has a better **first**
+surface upper, but a worse **second** surface
+upper; the union maximum is therefore slightly
+larger. This does **not** prove that its actual
+continuous-subset coverage became worse. It
+does mean that a global source-normalized maximin
+selection should not be accepted as uniformly
+better on the two distinct certified positive-g
+surfaces. In DTLZ5 the coarse rigorous bounds
+remain unchanged, despite removing the known
+dominated original selected point 10.
+
+The complete source traces, exact decision SHA256
+records, per-node original-equation rational
+interval certificates and both alternatives are
+archived in
+[artifact #15277894631](https://github.com/monacofj/moeabench/actions/runs/46182104930/artifacts/15277894631),
+ZIP SHA256
+`0d75df188015b1e90a214f6bc85f04c119cd88963fb25a018d12cab900694b35`.
+
+**Scientific implication:** the earlier source-pool
+finite observational 31.3% DTLZ6 covering-radius
+improvement does **not** transfer automatically
+to the rigorous declared continuous PF subsets.
+A geometry-aware selection that explicitly
+balances independent support faces is a potential
+research improvement, but **even that** would
+still require mathematical full original PF
+decomposition, indicator-specific tolerances,
+certified result/environment provenance and
+review under ADR0059 prior to any production GT
+replacement. Both original DTLZ5/DTLZ6
+scientific negative membership gates must remain
+red. No existing regression, accepted ADR,
+production sampler or baseline changed.

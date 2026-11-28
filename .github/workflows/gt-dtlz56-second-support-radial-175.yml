@@ -1,0 +1,44 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ5 DTLZ6 second support stratum full radial proof (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_second_support_full_radial.py"
+      - "tests/unit/test_gt_dtlz56_second_support_full_radial_issue175.py"
+      - ".github/workflows/gt-dtlz56-second-support-radial-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-second-support-stratum:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Verify second continuous supporting Pareto stratum and proof replay
+        run: python -m pytest tests/unit/test_gt_dtlz56_second_support_full_radial_issue175.py -q
+      - name: Independently certify full radial continuous support curve
+        run: |
+          python - <<'PY'
+          from fractions import Fraction
+          from scripts.audit.dtlz56_second_support_full_radial import (
+              certify_second_support_full_radial,replay_second_support_full_radial)
+          for problem in ("DTLZ5","DTLZ6"):
+              r=certify_second_support_full_radial(problem=problem)
+              assert replay_second_support_full_radial(r,problem=problem)
+              assert r["complete_admissible_g_range"] is True
+              assert r["whole_gt_coverage"]=="unverified"
+              b=r["raw_l2_continuous_to_grid_upper"]
+              upper=Fraction(int(b["numerator_hex"],16),
+                             int(b["denominator_hex"],16))
+              print(problem,"second-support full radial raw cover upper",float(upper))
+              print(problem,"all nodes",len(r["grid_decisions"]))
+          PY

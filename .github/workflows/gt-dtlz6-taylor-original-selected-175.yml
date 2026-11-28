@@ -1,0 +1,69 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Original DTLZ6 selected n16 tight irrational-root membership audit (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz6_tight_irrational_pf.py"
+      - "scripts/audit/dtlz6_tight_selected_source.py"
+      - "tests/unit/test_gt_dtlz6_tight_irrational_pf_issue175.py"
+      - ".github/workflows/gt-dtlz6-taylor-original-selected-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actual-selected-exact-reclassification:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Verify new proof without original generation
+        run: python -m pytest tests/unit/test_gt_dtlz6_tight_irrational_pf_issue175.py -q
+      - name: Regenerate actual original DTLZ6 n16 paired source PS/F
+        run: |
+          python -m scripts.audit.dtlz56_final_selected_small_gt \
+            --problem DTLZ6 --m 4 --k 1 --points 16 \
+            --bundle dtlz6-original-n16-actual-paired.npz \
+            --report dtlz6-original-n16-actual-source-report.json
+      - name: Independently replay exact source-selected proof
+        run: |
+          python -m scripts.audit.dtlz6_tight_selected_source \
+            --paired-bundle dtlz6-original-n16-actual-paired.npz \
+            --report dtlz6-original-n16-tight-taylor-proof.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=json.loads(Path(
+              "dtlz6-original-n16-tight-taylor-proof.json"
+          ).read_text())
+          assert p["source_selected_n"]==16
+          assert p["scientific_certification"]=="unverified"
+          assert p["full_original_pf_completeness"]=="unverified"
+          assert p["finite_objective_F_alignment"]=="unverified"
+          assert p["indicator_fitness"]=="unverified"
+          print("DTLZ6 selected rows proved only by new Taylor:",
+                p["newly_proved_over_coarse_indices"])
+          print("DTLZ6 still inconclusive selected rows:",
+                p["still_unverified_indices"])
+          PY
+      - name: Archive unchanged original source and exact new Taylor proof
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dtlz6-original-n16-tight-taylor-exact-proof
+          path: |
+            dtlz6-original-n16-actual-paired.npz
+            dtlz6-original-n16-actual-source-report.json
+            dtlz6-original-n16-tight-taylor-proof.json
+          if-no-files-found: warn

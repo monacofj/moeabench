@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ56 original vs proof-gated continuous subset bounds (issue 213)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_proof_gated_continuous_coverage.py"
+      - "tests/unit/test_gt_dtlz56_proof_gated_continuous_coverage_issue213.py"
+      - ".github/workflows/gt-dtlz56-proof-gated-continuous-213.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rigorous-continuous-subset-comparison:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Independent exact rational continuous-support bounds (both original GTs)
+        run: |
+          python -m pytest \
+            tests/unit/test_gt_dtlz56_proof_gated_continuous_coverage_issue213.py -q
+      - name: Preserve full source and independently recomputed before/after bounds
+        run: |
+          python -m scripts.audit.dtlz56_proof_gated_continuous_coverage \
+            --report dtlz56-original-versus-proof-gated-continuous-coverage.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from fractions import Fraction
+          d=json.loads(Path(
+              "dtlz56-original-versus-proof-gated-continuous-coverage.json"
+          ).read_text())
+          assert d["release_scientific_acceptance"]=="unverified"
+          assert d["complete_original_pareto_front"]=="unverified"
+          for problem,bad in (("DTLZ5",[10]),("DTLZ6",[7,11])):
+              entry=d[problem]
+              assert entry["scientifically_known_bad_original_selected_indices"]==bad
+              assert entry["same_first_four_gzero_anchors"]
+              for label in ("original_declared_subset_coverage",
+                            "alternative_declared_subset_coverage"):
+                  cert=entry[label]
+                  b=cert["union_rigorous_raw_l2_upper"]
+                  upper=Fraction(int(b["numerator_hex"],16),
+                                 int(b["denominator_hex"],16))
+                  assert upper>=0
+                  assert cert["entire_original_pf_coverage"]=="unverified"
+                  print(problem,label,"rigorous subset-only upper",float(upper))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dtlz56-proof-gated-vs-original-continuous-bounds
+          path: dtlz56-original-versus-proof-gated-continuous-coverage.json
+          if-no-files-found: warn

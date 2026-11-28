@@ -1,0 +1,54 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: Original DTLZ56 last-axis strict dominance (issue 175)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_last_objective_cap_exclusion.py"
+      - "scripts/audit/dtlz56_original_ps_last_objective_cap.py"
+      - "tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py"
+      - "tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py"
+      - ".github/workflows/gt-dtlz56-last-objective-cap-175.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-last-axis-dominance:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Independently verify exact last objective necessary condition and original PS screen
+        run: |
+          python -m pytest \
+            tests/unit/test_gt_dtlz56_last_objective_cap_exclusion_issue175.py \
+            tests/unit/test_gt_dtlz56_original_ps_last_objective_cap_issue175.py -q
+      - name: Verify both original problems and boundary abstention
+        run: |
+          python - <<'PY'
+          from fractions import Fraction
+          from scripts.audit.dtlz56_last_objective_cap_exclusion import (
+              certify_last_objective_cap_exclusion,
+              replay_last_objective_cap_exclusion)
+          from scripts.audit.dtlz56_exact_same_ray import _decode
+          for problem in ("DTLZ5","DTLZ6"):
+              p=certify_last_objective_cap_exclusion(
+                  Fraction(3,4),g_lower=Fraction(1,8),
+                  problem=problem,k=1)
+              assert replay_last_objective_cap_exclusion(
+                  Fraction(3,4),p,g_lower=Fraction(1,8),
+                  problem=problem,k=1)
+              assert _decode(p["strict_last_objective_separation_lower"])>0
+              q=certify_last_objective_cap_exclusion(
+                  Fraction(1,2),g_lower=0,problem=problem,k=1)
+              assert q["conclusion"]=="unverified"
+              print(problem,"strict rational separation",
+                    float(_decode(p["strict_last_objective_separation_lower"])))
+          PY

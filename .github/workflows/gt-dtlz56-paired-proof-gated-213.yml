@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: 2026 Monaco F. J.
+# SPDX-License-Identifier: GPL-3.0-or-later
+name: DTLZ56 paired original proof-gated n16 alternatives (issues 175 213)
+
+on:
+  pull_request:
+    paths:
+      - "scripts/audit/dtlz56_paired_proof_gated_replacement.py"
+      - "tests/unit/test_gt_dtlz56_paired_proof_gated_replacement_issue213.py"
+      - ".github/workflows/gt-dtlz56-paired-proof-gated-213.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  paired-original-replacement-review:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e . pytest
+      - name: Prove selection comparison preserves exact research scope
+        run: |
+          python -m pytest \
+            tests/unit/test_gt_dtlz56_paired_proof_gated_replacement_issue213.py -q
+      - name: Independently regenerate original 448 pools and review alternatives
+        run: |
+          python -m scripts.audit.dtlz56_paired_proof_gated_replacement \
+            --report dtlz56-original-proof-gated-paired-review.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path(
+              "dtlz56-original-proof-gated-paired-review.json"
+          ).read_text())
+          assert r["scientific_certification"]=="unverified"
+          assert r["production_sampler_modified"] is False
+          assert r["accepted_ADR_modified"] is False
+          assert r["original_IGD_IGDplus_HV_fitness"]=="unverified"
+          assert r["new_IGD_IGDplus_HV_fitness"]=="unverified"
+          assert r["DTLZ5"]["known_independently_dominated_selected_indices"]==[10]
+          assert r["DTLZ6"]["new_independently_dominated_selected_indices"]==[7,11]
+          for problem in ("DTLZ5","DTLZ6"):
+              d=r[problem]
+              assert len(d["alternative_proved_source_candidate_indices"])==12
+              assert d["complete_original_PF_coverage"]=="unverified"
+          print("Both alternatives individually proved,")
+          print("but complete PF and finite IGD/IGD+/HV: UNVERIFIED")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dtlz56-original-proof-gated-alternative-scientific-review
+          path: dtlz56-original-proof-gated-paired-review.json
+          if-no-files-found: warn
