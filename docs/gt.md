@@ -5526,3 +5526,52 @@ The new tests verify exact partition of that historical
 unverified set. A new source-bound CI run must still
 prove how many of those indices the stronger theorem
 resolves on the actual originally selected PS.
+
+
+#### Exact failure-mode diagnosis of original DTLZ6 inconclusive selected rows
+
+The stronger rational tenth-root plus Taylor-sine theorem
+**passed** its focused mathematical
+[CI #46178006172](https://github.com/monacofj/moeabench/actions/runs/46178006172)
+with 11 new tests. The source-bound
+[CI #46178006290](https://github.com/monacofj/moeabench/actions/runs/46178006290)
+replayed its decision-image proof over the unchanged
+original DTLZ6 M4/K1 n16 selected PS with 127
+passing mathematical/source tests: newly proved
+historical selected indices `[]`, still
+unverified indices `[6,7,10,11,12]`.
+The old mandatory original DTLZ5 dominated row-10
+acceptance remained correctly RED after those
+independent positive checks. **Tightening the
+existing sufficient support inequality did not
+certify any of the historical five.**
+
+To direct further mathematics, the research-only
+[`dtlz6_selected_support_obstruction.py`](../scripts/audit/dtlz6_selected_support_obstruction.py)
+replays the original historical source classifier
+and new Taylor/root certificates on the exact
+same original selected PS. For each historically
+inconclusive row it records exact original binary
+decision bits, the rigorous g lower/upper interval,
+inner angular boundary identities, available
+supporting objective/exponent, and the exact
+rational strict support margin. The classification
+separates an absent **currently sufficient**
+angular support pattern from a supported pattern
+with **nonpositive proven margin**. In either
+case, the mathematically correct conclusion
+remains `unverified`: a failed sufficient theorem
+never implies Pareto domination. A new focused
+source-bound workflow independently regenerates
+the original DTLZ6 PS/F and archives a write-once
+per-row report after verifying the five expected
+historical indices; its actual results must not
+be cited before CI approval.
+
+This diagnostic is research evidence only; neither
+the original sampler, the current accepted ADR,
+the regression tests nor numerical baselines
+are modified. It does not create an alternative
+whole-front oracle, and DTLZ5's proved dominated
+original selected row stays a separate rejection
+of that GT.
