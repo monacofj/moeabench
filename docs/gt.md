@@ -5737,3 +5737,56 @@ full GT or indicator suitability certificate.
 No production code, accepted ADR, existing
 regression tests or frozen numerical baseline
 was changed by this research discovery.
+
+
+#### Reproduced source scalarizer provenance of dominated DTLZ6 rows
+
+The independent research-only
+[`dtlz6_original_selected_scalarization_trace.py`](../scripts/audit/dtlz6_original_selected_scalarization_trace.py)
+wraps the **unchanged** original production
+`scalarized_candidate()` and
+`decision_vector()` for one original
+DTLZ6 M4/K1 n16 PS call, restores both
+functions in a `finally` block and traces
+every original scalarizer result, angular
+active-set flag, reconstructed decision and
+selected reference row. The focused
+[CI #46180704288](https://github.com/monacofj/moeabench/actions/runs/46180704288)
+**PASSED**, reproducing 448 candidates and
+the 16 selected rows. The two previously
+independently **proved strictly dominated**
+selected source rows have this precise original
+provenance:
+
+| Selected index | Original scalarizer pool index | Weight family | Original `angular_active_faces` (x2,x3) | Original selected decision near bound |
+| --- | ---: | --- | --- | --- |
+| **7** | **397** | Gamma | `[1,None]` | `x2=1`, `x3=0x1.48e188b289f83p-29` (interior extremely close to 0) |
+| **11** | **282** | Gaussian | `[None,1]` | `x2=0x1.fffffed018db9p-1` (interior extremely close to 1), `x3=1` |
+
+For each, the unchanged bounded scalarizer recorded
+`abs_gap=0x1.ad838f922b400p-24`.
+The original selected **decision sequence** SHA256
+is `2d651d3cf2b16bf38cab21a7c3b8643f645c515d675be4ae063b4a1917334fb0`
+(distinct from the original paired ZIP/NPZ byte
+SHA256). All original 448 reconstructed source
+provenance and the full 16-row selection map
+are archived in
+[artifact #15277122323](https://github.com/monacofj/moeabench/actions/runs/46180704288/artifacts/15277122323),
+ZIP SHA256
+`98335a5bd840648ecdb63f20e2f33ac9075b2bcc724cdcee7686cbbff409a869`.
+
+**Interpretation:** both invalid selected decisions
+are numerically very close to an angular boundary
+yet have `None` recorded for the corresponding
+active-set position. This is actionable original
+scalarization/reconstruction/selection provenance.
+It does **not** independently establish that
+the scalarization `abs_gap` itself caused
+the global domination, nor approve post-hoc
+rounding or snapping of near-boundary positions.
+The strict mathematical invalidity was already
+proved independently by feasible original
+off-ray witness certificates. Any production
+repair must be justified against ADR0059 and
+existing implementation/GT regression contracts
+before changing the accepted behavior.
